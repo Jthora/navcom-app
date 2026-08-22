@@ -31,7 +31,7 @@ Each cell is a pass. `—` not started, `✓` done, and a note when it found som
 
 | Milestone | Surface | U | I | S |
 |---|---|---|---|---|
-| **0** Prove what is built | Browser harness, service worker, offline, seeding, the verification layer itself | — | — | — |
+| **0** Prove what is built | Browser harness, service worker, offline, seeding, the verification layer itself | **✓** | — | — |
 | **1** One operator alone | Display rules, patrol record, contact, wipe, seeder | — | — | — |
 | **2** One watch staffed | Executor, pager, drills, web push, on-call | — | — | — |
 | **3** Two who met once | Peers, presence, cards, invites, public presence, buddy | — | — | — |
@@ -76,3 +76,60 @@ joins, discarded publish results, one machine's clock used as everyone's, second
 implementations of an existing rule, and documented behaviour connected to nothing. Those are
 fixed where found. **This grid should expect to find the same shapes in the tests themselves** —
 a suite has intakes, joins and duplicated rules exactly as a codebase does.
+
+
+---
+
+## 0.U — Milestone 0, unit tests
+
+Milestone 0's surface **is** the verification layer, so this pass measured whether the suite
+detects breakage rather than reading it.
+
+**The mechanical checks came back empty**, and that is worth stating because they are where
+dead tests usually hide: across 67 test files there are **no** unawaited Playwright
+assertions (a floating `expect` never fails a test), **no** tests without an assertion, and
+**no** skipped, focused or `todo` tests.
+
+### Mutation, in three rounds
+
+**Twenty-one of twenty-one caught.** Nine coarse mutations that violate an invariant outright —
+an agent stopping the ladder, an unproven drill no longer demoting, a stale volatile field
+showing its old value, presence accepted from a non-peer, anybody revoking anybody's
+credential. Then twelve subtler ones: boundaries moved by one, a drill made fresh for ever,
+duplicate acknowledgements counted again, the merge made order-dependent again, clock skew
+ignored, and six on the client. Every one failed the suite.
+
+**That sample was biased and I said so before drawing a conclusion from it.** All twenty-one
+mutations targeted code the *first* audit fixed — code whose tests I had written days earlier.
+The honest question was what happens to code no pass has touched.
+
+### What had no proof at all
+
+Eighty-four exported symbols are never named in any test. Most are constants or type unions
+covered indirectly, so naming is not the measure — mutation is. Mutating the security-relevant
+ones separated the two, and **four survived**:
+
+- **`setRelays` accepted a non-relay URL and nothing noticed.** 9.R established what this list
+  decides — everything an operator sends goes through it, which is why a crafted backup
+  setting it was a finding. The validation on the operator's *own* path was equally
+  load-bearing and equally unverified
+- **`withdrawCard` could leave the contact key behind.** That key **is** the public inbox, so
+  an operator who withdrew would still have an address anybody could write to, believing they
+  had closed it. This is the mechanism for becoming unfindable
+- **`withdrawCard` could leave the device listed** — the module's own docstring says why that
+  matters: *"a stale switch on is how somebody ends up publishing under a key they thought
+  they had thrown away"*
+- **`clearNote` could keep the note.** Wipeable-tier data about a doorway, where clearing
+  meaning *gone* is the whole point
+
+**No product bug in any of the four** — the code was correct. The finding is the absence of
+proof, which is exactly what this lens is for: every one of them would have been a silent
+regression the moment somebody edited it.
+
+Nineteen tests added, and all four mutations are caught now. Checked by re-running the same
+mutations rather than by assuming.
+
+**Method note.** `entryHashIsHonest`, `hybridSeal`/`hybridOpen` and `isPubkey` are also never
+named in a test — mutation showed the first is covered indirectly, and the other two need
+hand-written mutations rather than a string swap. They are the first thing to look at in a
+later pass rather than something to claim here.
