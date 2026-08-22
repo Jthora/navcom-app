@@ -37,7 +37,7 @@ Each cell is a pass. `—` not started, `✓` done, and a note when it found som
 | **3** Two who met once | Peers, presence, cards, invites, public presence, buddy | **✓** | **✓** | **✓** |
 | **4** Squad with no box | Watch mode, group sealing, board, handover, watch key | **✓** | **✓** | **✓** |
 | **5** Written-down properties | PQC, declined, battery, RTL, watch-state v4 | **✓** | **✓** | **✓** |
-| **6** Knowledge gets in | Corrections, merge, needs-checking, notes, promotion | **✓** | **✓** | — |
+| **6** Knowledge gets in | Corrections, merge, needs-checking, notes, promotion | **✓** | **✓** | **✓** |
 | **7** Standing | Credentials, claims, revocation, the watch gate | — | — | — |
 | **9** No single point of failure | Backup and restore, capability sentence, funding | — | — | — |
 
@@ -866,3 +866,42 @@ test, the attribution one, and the other five still pass. A correction that sile
 now a build failure.
 
 **Counts:** 416 core, 367 web, 207 watchtower, 203 browser (was 197).
+
+
+## 6.S — Milestone 6, the story
+
+**The trip nobody had to make twice.** Wren walks somebody to a shelter and it is locked. Ash,
+across the city, is deciding where to walk somebody right now. Does what Wren learned at that
+door reach Ash's phone before Ash sets out?
+
+[`web/e2e/story-doorway.spec.ts`](../web/e2e/story-doorway.spec.ts) — two real pages, and the
+only thing that crosses between them is an event the app itself published. Nothing is written
+into Ash's storage, and every step on both devices is a control a person can reach.
+
+Three tests: the report arrives **and names Wren**; the listing underneath survives intact;
+and it is still there after the phone has been put away and taken out again somewhere with no
+signal.
+
+### Nothing found, and here is why that is a result
+
+All three passed on the first run, which is not evidence of anything on its own. Two mutations,
+each aimed at a different half of the claim:
+
+- **Received corrections held in memory but never persisted.** Only the stairwell test failed;
+  the other two passed. That is the right shape — the correction still *arrives*, it just does
+  not *survive*, and exactly one test is about survival
+- **The report anonymised** — `An operator reported this` instead of the callsign. Two tests
+  failed, the two that assert a name, and the one about the listing surviving passed
+
+Each mutation sank precisely the tests that claim what it broke, and no others. That is what
+separates three passing tests from three tests that pass because they assert nothing.
+
+### Why the stairwell test exists
+
+The trip is the moment the knowledge has to be there, and the trip is where the signal is
+worst — a basement, a stairwell, a shelter with block walls. A correction that only exists
+while a relay is reachable is absent exactly when somebody is standing in front of the door.
+That was the case worth spending a test on, and it was previously covered by nothing: 6.E
+tested the *unsent* queue, which is the other direction entirely.
+
+**Counts:** 416 core, 367 web, 207 watchtower, 206 browser.
