@@ -32,7 +32,7 @@ Each cell is a pass. `—` not started, `✓` done, and a note when it found som
 | Milestone | Surface | U | I | S |
 |---|---|---|---|---|
 | **0** Prove what is built | Browser harness, service worker, offline, seeding, the verification layer itself | **✓** | **✓** | **✓** |
-| **1** One operator alone | Display rules, patrol record, contact, wipe, seeder | — | — | — |
+| **1** One operator alone | Display rules, patrol record, contact, wipe, seeder | **✓** | — | — |
 | **2** One watch staffed | Executor, pager, drills, web push, on-call | — | — | — |
 | **3** Two who met once | Peers, presence, cards, invites, public presence, buddy | — | — | — |
 | **4** Squad with no box | Watch mode, group sealing, board, handover, watch key | — | — | — |
@@ -221,3 +221,47 @@ does had never been walked end to end.
 the project has thought hardest about: she is told what to do first and never called
 incomplete, the word *unfinished* appears nowhere, the no-watch state is described as a normal
 way to work in those words, and an area can be carried by tapping it.
+
+
+## 1.U — Milestone 1, unit tests
+
+The display rules decide whether somebody walks across a city at 11pm, and they are numbered
+in the code, so each one can be checked on its own. Rules 1, 2, 3, 5, 6 and 7 are all named in
+tests — but 0.U established that naming is not proof, so each was mutated.
+
+**Rules 2, 3, 5, 6 and 7 are genuinely proven.** Blank stops meaning unknown, a warming centre
+shows hours it should not, a stale volatile field shows its old value, the flag stops coming
+first, seeded entries stop being marked — every one fails the suite.
+
+**Two of my own mutations were invalid and I caught it before writing them up.** Renaming
+`flagFirst:` and `seeded:` hit the **interface** rather than the implementation — a type-only
+edit that changes nothing at runtime. They came back "missed", which would have been two false
+findings. A mutation that does not change behaviour proves exactly as much as a test that
+cannot fail. Redone against the implementation, both were caught.
+
+### Rule 1 is real, unproven, and could not be tested as written
+
+*"A volatile value is never shown without its age."* Its guard is **unreachable**: every
+`last_verified` that produces a null age — absent, blank, `not-a-date`, a month thirteen, a
+date in 2099 — also produces `stale` confidence, so **rule 2 returns `call-first` before rule
+1 is consulted**. Probed across seven dates and four methods to establish that rather than
+assume it.
+
+So the rule is enforced today by rule 2's coincidence rather than by itself, and a test aimed
+at the branch could not fail without it. This project deletes tests that pass either way [0.R]
+rather than keeping them as decoration, so the rule is asserted **over the output** instead:
+across every combination of date and method, if a volatile field renders as a value then its
+age is not null.
+
+That test holds the rule up regardless of which line enforces it — verified by deleting *both*
+guards, which it catches. A branch test would not have survived somebody reordering the rules,
+which is the change most likely to happen here.
+
+**Nothing found across the rest of the milestone**: the overnight patrol marker, the `#`
+encoding in a phone number, burn taking the accruing tier, and two regions claiming one record
+id are each caught by an existing test.
+
+**Method note.** The build-freshness guard fired during verification — the built artifact had
+aged past what it tolerates while this pass ran. That is the verification layer catching
+exactly the hazard it exists for, and it is worth recording as working rather than only
+recording the things that were not.
