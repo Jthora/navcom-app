@@ -52,6 +52,22 @@ export function watchPubkey(): string | null {
 }
 
 /**
+ * The watch's secret as hex, for handing to somebody joining this squad.
+ *
+ * **The other half of `joinWatch`, and it was missing.** The screen says a squad shares one
+ * watch key *"handed over in person like everything else here"* and offers a box to paste one
+ * into — with nowhere to get one out of. So a squad could be described and never formed: every
+ * second member in every test was seeded straight into storage, because that was the only way
+ * one could exist [`audit-tests.md` 7.S].
+ *
+ * Separate from `watchKey` on purpose. Reading the key to sign with it and putting it on a
+ * screen are different acts, and only one of them should be possible by accident.
+ */
+export function watchSecretHex(): string | null {
+  return get<string>('accruing', SECRET) ?? null;
+}
+
+/**
  * Starts a new watch on this device.
  *
  * Deliberate and separate from reading, so nothing brings a Watchtower into existence as a

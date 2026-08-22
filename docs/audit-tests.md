@@ -38,7 +38,7 @@ Each cell is a pass. `—` not started, `✓` done, and a note when it found som
 | **4** Squad with no box | Watch mode, group sealing, board, handover, watch key | **✓** | **✓** | **✓** |
 | **5** Written-down properties | PQC, declined, battery, RTL, watch-state v4 | **✓** | **✓** | **✓** |
 | **6** Knowledge gets in | Corrections, merge, needs-checking, notes, promotion | **✓** | **✓** | **✓** |
-| **7** Standing | Credentials, claims, revocation, the watch gate | **✓** | **✓** | — |
+| **7** Standing | Credentials, claims, revocation, the watch gate | **✓** | **✓** | **✓** |
 | **9** No single point of failure | Backup and restore, capability sentence, funding | — | — | — |
 
 Milestone 8 has no row for the same reason as last time — it is unbuilt apart from 8.1, which
@@ -1002,3 +1002,52 @@ the click's async publish had landed. The second now waits on the screen — the
 when the withdrawal is actually made — rather than on a timer.
 
 **Counts:** 419 core, 367 web, 207 watchtower, 51 seeder, 214 browser (was 206).
+
+
+## 7.S — Milestone 7, the story
+
+**The second person who can hold the watch.** A squad with no box is the common case, and a
+squad of one is not a squad. Wren starts a watch, hands Ash the key in person, and Ash — who
+has just arrived with no standing at all — is told plainly that she cannot hold the board and
+by what route she could. Then Wren vouches, and only then does the button exist.
+
+### The story could not be told, and that is the finding
+
+Rule 9: *a story pass may only use controls a person can reach, and if the story needs a state
+the UI cannot produce, that is the finding.* This one hit that at the first step.
+
+`/terminal/watch/` says **"a squad shares one watch key, handed over in person like everything
+else here"** and offers a box to paste one into. **There is nowhere to get one out of.** No
+screen showed the key, `watch-key.ts` had no accessor that could, and every test in this
+repository that put a watch key on a second device — all of them — wrote it straight into
+`localStorage`, because that was the only way a second holder could exist.
+
+So Milestone 4 is called *squad with no box*, and the squad could be described and never
+formed. Four passes of the first grid worked on the watch screen without noticing, because
+every one of them started from a device that already held the key.
+
+Fixed rather than recorded: `Show the watch key`, deliberate and behind a tap, stating what the
+join side already states — whoever holds it can publish watch state as this watch, and removing
+them from the holders does not take that back. Build order 4.5.
+
+### What the story proves now
+
+[`web/e2e/story-second-holder.spec.ts`](../web/e2e/story-second-holder.spec.ts), four tests,
+nothing seeded past a screen:
+
+- The founder can hand over the key, the newcomer can take it, and both phones then show **the
+  same address** — which is what makes it one watch rather than two
+- **Holding the key is not permission to hold the board.** Ash can answer as this watch the
+  moment she has the key; she is still shown `data-ungated`, with no *Take the watch* button
+  and a sentence telling her what to do about it
+- One credential, handed over by hand, opens the gate — and the screen puts the claim and its
+  limit in one breath: somebody's word about how she has worked before *"is not a promise that
+  you will stay awake tonight"*
+- **The gate closes again.** Wren withdraws, Ash's phone hears it on the status screen, and the
+  button is gone the next time she opens the watch — which is the direction that matters,
+  because finding out at the moment you try is finding out too late
+
+Sensitivity measured, not assumed: making `joinWatch` record founding — the exact bug the code
+warns against in a comment — fails three of the four.
+
+**Counts:** 419 core, 367 web, 207 watchtower, 51 seeder, 218 browser (was 214).

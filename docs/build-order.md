@@ -467,6 +467,7 @@ the screen where somebody joins a squad-held watch.
 | 4.2 | ~~Sealing to several keys~~ | **done** | One encryption, one 32-byte wrap per holder. No pubkeys in the envelope, so a relay never sees the roster. A single-holder watch produces the same shape as a squad, so nobody can sort Watchtowers into "box" and "squad" without decrypting |
 | 4.3 | ~~A declaration must not read as a safety monitor~~ | **done** | *"This app does not watch anybody. You do."* Stated above the board, because everything below it looks like a monitor and is not one |
 | 4.4 | ~~Handover~~ | **done** | **Nobody hands over a board.** The incoming watch derives its own from operators re-announcing when their phones see the holder change — passing the outgoing holder's picture would make the new watch's board a thing it was told rather than derived |
+| 4.5 | ~~Handing the watch key to a second member~~ | **done** | Found by audit [`audit-tests.md` 7.S]. The screen said a squad shares one key *"handed over in person"* and offered a box to paste one into, with **nowhere to get one out of** — so a squad could be described and never formed, and every second member in every test was seeded straight into storage because that was the only way one could exist. `Show the watch key` on `/terminal/watch/`, deliberate and behind a tap |
 
 ## Milestone 5 — The properties we have written down
 

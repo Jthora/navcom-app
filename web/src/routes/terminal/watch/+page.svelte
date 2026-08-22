@@ -15,7 +15,7 @@
   import { onMount } from 'svelte';
   import { declineIsValid } from '@navcom/core';
   import { board, type Waiting } from '$lib/terminal/board.svelte';
-  import { createWatch, foundedHere, joinWatch, leaveWatch, watchPubkey, WatchKeyError } from '$lib/terminal/watch-key';
+  import { createWatch, foundedHere, joinWatch, leaveWatch, watchPubkey, watchSecretHex, WatchKeyError } from '$lib/terminal/watch-key';
   import { endorsersFor } from '$lib/terminal/standing';
   import { loadIdentity } from '$lib/terminal/identity';
   import { loadConfig } from '$lib/terminal/config';
@@ -28,6 +28,8 @@
   let text = $state('');
   let busy = $state(false);
   let confirmLeave = $state(false);
+  /** Deliberate: a secret does not appear on a screen because somebody opened the screen. */
+  let showingKey = $state<string | null>(null);
   /**
    * 7.3. `the-watch.md` specifies `can take watch` as the qualification and the watch
    * shipped with no gate at all.
@@ -270,6 +272,26 @@
         <strong>Your own terminal is not pointed at any watch.</strong> That is fine — you
         can hold a watch without being under one.
       </p>
+    {/if}
+  </section>
+
+  <section class="act">
+    <h2>Hand this watch to somebody</h2>
+    <p class="cost">
+      <!--
+        The join box has always been here and there was nothing to put in it. A squad that
+        cannot be formed is not a squad model, and Milestone 4 is "squad with no box".
+      -->
+      The <strong>key</strong>, not the address. Whoever holds it can answer as this watch and
+      publish watch state under it, so it goes to somebody you already know, in person — and
+      <strong>it does not come back</strong>. Removing them from the holders stops them reading
+      new signals; nothing stops them claiming to be this watch.
+    </p>
+    {#if showingKey}
+      <pre class="blob" data-watch-key>{showingKey}</pre>
+      <button onclick={() => (showingKey = null)}>Hide it</button>
+    {:else}
+      <button onclick={() => (showingKey = watchSecretHex())}>Show the watch key</button>
     {/if}
   </section>
 
