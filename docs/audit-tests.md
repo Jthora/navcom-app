@@ -31,7 +31,7 @@ Each cell is a pass. `—` not started, `✓` done, and a note when it found som
 
 | Milestone | Surface | U | I | S |
 |---|---|---|---|---|
-| **0** Prove what is built | Browser harness, service worker, offline, seeding, the verification layer itself | **✓** | **✓** | — |
+| **0** Prove what is built | Browser harness, service worker, offline, seeding, the verification layer itself | **✓** | **✓** | **✓** |
 | **1** One operator alone | Display rules, patrol record, contact, wipe, seeder | — | — | — |
 | **2** One watch staffed | Executor, pager, drills, web push, on-call | — | — | — |
 | **3** Two who met once | Peers, presence, cards, invites, public presence, buddy | — | — | — |
@@ -177,3 +177,47 @@ assumed.
 `/terminal/log/`. The first four are the zero-JavaScript public site, which the budget check
 already guards structurally; `/terminal/log/` is the accountability log and is the one worth a
 later pass.
+
+
+## 0.S — Milestone 0, story
+
+**The Newcomer, who knows nobody.** Handed a link at a meeting: no callsign, no watch, no
+peers. `CLAUDE.md` is emphatic that this is not a lesser state — *"the app must never present
+having no watch as incomplete setup"* — so the story is simply whether she gets a working tool.
+
+**She could not reach her own safety net from the home screen.**
+
+Status renders a Distress control in two branches: on station, and a configured watch. The
+third branch — **identity but no watch** — rendered only *"Cached directory"*. That branch's
+own comment explains itself well: *"This is a COMPLETE state, not an unfinished one — it is
+how an operator who patrols alone works, and it is the most common way to use this app. So it
+shows what is usable rather than what is missing."*
+
+The reasoning is right and it reached the wrong conclusion about this one control, because
+**Distress is usable for her** — with no watch it terminates in her own person, one tap away,
+which `contact.ts` calls *"not the third rung of anything. It is the whole safety net."*
+
+So the most common operator, in the most common state, had **no path from the home screen to
+the only safety net she has**. She would have had to know the URL.
+
+**This is the finding a story pass exists for.** Every screen involved works and has tests:
+`/terminal/distress/` is covered, the contact controls are covered, the Alone branch renders
+correctly. Nothing was broken. The *journey* had a hole, and no screen-by-screen pass can see
+one.
+
+### The lens's own rule found the harness fault first
+
+Rule 9 says a story may only use controls a person can reach — no seeding past a screen. That
+turned out to be impossible: `seedDevice` **stubs the network and writes storage in the same
+function**, so a test could not have a device that has never been opened *and* a phone that
+does not dial two strangers' relays. Passing no seed still marked the device seeded and wrote
+`{}` into both tiers, which is not what a first run looks like.
+
+Split into `blankDevice`. Of 131 browser tests before this pass, **118 seeded a device**, and
+most of the thirteen that did not were public-site tests — so the first thing every operator
+does had never been walked end to end.
+
+**Nothing found in four of the five steps**, which is worth saying because they are the ones
+the project has thought hardest about: she is told what to do first and never called
+incomplete, the word *unfinished* appears nowhere, the no-watch state is described as a normal
+way to work in those words, and an area can be carried by tapping it.

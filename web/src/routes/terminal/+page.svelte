@@ -245,6 +245,16 @@
   <nav class="actions single">
     <a class="action primary" href="/terminal/directory/">Cached directory</a>
   </nav>
+  <!--
+    Distress belongs here for exactly the reason this branch exists.
+    
+    It was on the two branches with a watch and not on this one — so the **most common
+    operator, in the most common state**, had no path from here to it and would have had to
+    know the URL. The branch above says it shows what is usable rather than what is missing,
+    and Distress is usable: with no watch it terminates in their own person, one tap away,
+    which `contact.ts` calls "not the third rung of anything. It is the whole safety net."
+  -->
+  <a class="action distress" href="/terminal/distress/">Distress</a>
 {/if}
 
 {#if cameHome}

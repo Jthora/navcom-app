@@ -51,6 +51,8 @@ interface Seed {
    */
   accruing?: Record<string, unknown>;
   relayEvents?: unknown[];
+  /** Internal, set by `blankDevice`: stub the network and write nothing. */
+  __noStorage?: boolean;
   /**
    * Accept subscriptions but refuse everything published.
    *
@@ -72,8 +74,21 @@ interface Seed {
  * exactly like the app not saving patrols. A harness that quietly undoes the thing under
  * test is worse than no harness.
  */
+/**
+ * A device that has never been opened, with no internet.
+ *
+ * `seedDevice` does two jobs — it stubs the network **and** writes storage — so a test could
+ * not have one without the other. A first-run journey needs exactly that combination: an
+ * operator arriving with nothing, on a phone that must not dial two strangers' relays because
+ * a test ran. Passing no seed still marked the device seeded and wrote `{}` into both tiers,
+ * which is not what a first run looks like.
+ */
+export async function blankDevice(page: Page): Promise<void> {
+  await seedDevice(page, { __noStorage: true } as Seed);
+}
+
 export async function seedDevice(page: Page, seed: Seed = {}): Promise<void> {
-  await page.addInitScript((s: Seed & { secret: string }) => {
+  await page.addInitScript((s: Seed & { secret: string; __noStorage?: boolean }) => {
     /**
      * No test touches the public internet.
      *
@@ -250,7 +265,12 @@ export async function seedDevice(page: Page, seed: Seed = {}): Promise<void> {
       // Presence of the key is the intent, not its length. `relayEvents: []` used to fall
       // through to the dead socket, so a test that meant "a relay that answers, with nothing
       // stored yet" silently got "no signal at all" — and the failure looked like the screen.
-      s.relayEvents !== undefined || s.refusePublish ? ReplayingSocket : DeadSocket;
+      s.relayEvents !== undefined || s.refusePublish || s.__noStorage
+        ? ReplayingSocket
+        : DeadSocket;
+
+    // A first run: stub the network and write nothing at all.
+    if (s.__noStorage) return;
 
     // Already set up by an earlier navigation in this test. Leave it alone.
     if (localStorage.getItem('navcom.seeded') === '1') return;
