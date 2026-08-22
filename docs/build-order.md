@@ -772,6 +772,7 @@ deploy account. All the same person.
 | 9.6 | **A restore drill** | **human** | The paging drill proves the pager works. Nothing proves a *second person* can stand a Watchtower up from the docs. **It will probably fail the first time, and that is the finding** |
 | 9.7 | More than one on-call, and a way to hand it over | **human** | 2.1 gets to one; this gets past one |
 | 9.8 | The log reviewer | **human** | Named in `CLAUDE.md` as a role that *"cannot be the agent or verification is theatre"* |
+| 9.9 | **CI is not running at all** | **human** | Found by audit [`audit-tests.md`]. Forty consecutive runs, zero successes, since 2026-08-19 — every one blocked before any step by *"your account is locked due to a billing issue"*. So the repository believes it has continuous verification and has none, which is worse than having none openly: **a check that never runs looks exactly like a check that passes.** It is a billing setting, not code |
 
 **Mostly not code**, which is the finding rather than an excuse.
 

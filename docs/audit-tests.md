@@ -950,6 +950,13 @@ main** — duplicate `import` statements across three test files, tolerated by v
 and rejected by TypeScript. One of them I introduced in **5.U**, in this grid, and did not see
 because I ran `npm test` rather than the project's own verify.
 
+> **Correction, made after pushing.** I wrote *"CI runs verify"* as though that were a live
+> safety net that had been reporting red. It is not: **CI has not executed since 2026-08-19.**
+> Every run is blocked before it starts by a billing lock on the account. The broken typecheck
+> was real and measured locally; the claim that anything automated had been noticing it was
+> not. See *No CI has run for three days* below — it is the larger finding, and this pass
+> walked past it.
+
 A check that is already red cannot report a new failure, and it proved that immediately: a dead
 helper field I wrote ten minutes earlier referenced a name not in scope, typechecked never, and
 nothing said so. Deduped; `npm run verify` at the repository root is green.
@@ -1217,3 +1224,28 @@ them.
 Two rules earned their place and both are about honesty rather than coverage: *a test that
 cannot fail is worse than none*, and *if the story needs a state the UI cannot produce, that is
 the finding*.
+
+
+
+## No CI has run for three days
+
+Found while pushing the grid, and it undoes an assumption three of these passes leaned on.
+
+`.github/workflows/web.yml` runs `npm run verify` for every workspace on push and on a
+schedule. **It has not run once since 2026-08-19.** Forty consecutive runs, zero successes, and
+every one of them carries the same annotation before any step executes:
+
+> The job was not started because your account is locked due to a billing issue.
+
+So the typecheck 7.U found broken on main was not being caught and reported by anything — it
+was invisible, in a repository that believes it has continuous verification. Every commit in
+this grid, including the thirty-one just pushed, is verified **only on one laptop**.
+
+That is precisely the shape of build order **9.4**: *"One Vercel account is a single point of
+failure for the artifact."* The same is true of the verification, and it is arguably worse —
+a deploy that fails is loud, and a check that never runs looks exactly like a check that
+passes. A green local `npm run verify` is what this project has, and it is not nothing; it is
+one person's machine, and the milestone this grid just finished is called *no single point of
+failure*.
+
+**Not agent work.** It is a billing setting on somebody's account. Recorded as **9.9**.
