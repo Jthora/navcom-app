@@ -34,7 +34,7 @@ Each cell is a pass. `—` not started, `✓` done, and a note when it found som
 | **0** Prove what is built | Browser harness, service worker, offline, seeding, the verification layer itself | **✓** | **✓** | **✓** |
 | **1** One operator alone | Display rules, patrol record, contact, wipe, seeder | **✓** | **✓** | **✓** |
 | **2** One watch staffed | Executor, pager, drills, web push, on-call | **✓** | **✓** | **✓** |
-| **3** Two who met once | Peers, presence, cards, invites, public presence, buddy | — | — | — |
+| **3** Two who met once | Peers, presence, cards, invites, public presence, buddy | **✓** | — | — |
 | **4** Squad with no box | Watch mode, group sealing, board, handover, watch key | — | — | — |
 | **5** Written-down properties | PQC, declined, battery, RTL, watch-state v4 | — | — | — |
 | **6** Knowledge gets in | Corrections, merge, needs-checking, notes, promotion | — | — | — |
@@ -459,3 +459,46 @@ failure the brief warns about.
 
 **What does work is now walked**: holding the watch, she sees Distress in its own section above
 everything [4.R], answers in one tap, and is never offered a way to decline it [invariant 2].
+
+
+## 3.U — Milestone 3, unit tests
+
+**Unlinkability is genuinely proven**, and it is worth saying so plainly because it is the
+hardest property in the project and the one with a named adversary. Four attacks, all caught:
+signing the wrapper with the operator's real key, reusing one ephemeral key across every peer
+in a beat, publishing the inner event unwrapped, and adding a `from` tag carrying the sender's
+pubkey. The presence tests earn their opening claim.
+
+**Two of my mutations were invalid again** — one added an unused variable (a no-op), the other
+referenced a variable that only existed if the first had been applied, so it failed to compile
+and reported as "caught" for the wrong reason. **A false *caught* is as bad as a false
+*missed***: it certifies a property nothing actually tested. Redone as one valid edit, the
+property held.
+
+That is the third time in this grid. Mutation testing has its own version of the failure it
+exists to detect, and the only defence is reading what the mutated file actually does.
+
+### Four privacy gates with no proof
+
+**`announceListed` published whether or not the operator had asked to be listed.** `listed()`
+is the switch that makes somebody findable, and it is the entire consent model for this
+milestone — an operator who never flipped it would have announced *"somebody is out in St.
+Louis"* to a public relay. **The Doxxer is a named adversary here**, and this is precisely the
+door he uses.
+
+**`publishCard` published without a callsign**, producing a public address nobody can put a
+name to.
+
+**`setBuddy` could mark every peer**, and **`buddies()` could return everyone.** Presence is
+explicit about why that matters: *"telling every peer you are watching them when you are
+watching one would be a lie told to several people at once, which is a worse failure than the
+one it replaced."* The guard against that lie existed; nothing proved it.
+
+**No product bug in any of the four.** As in 0.U, the finding is the absence of proof — and
+these are gates where a silent regression is not a wrong pixel but an operator announced to a
+relay they never chose. Eleven tests added; all four mutations are caught now, re-run rather
+than assumed.
+
+**One detail worth keeping.** `MyCard` has no `callsign` field at all — the name comes from the
+identity, *"rather than a second public name that could drift from the one peers already
+know."* My first fixtures invented one, and the type refused them. The type was right.
