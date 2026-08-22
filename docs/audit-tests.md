@@ -33,7 +33,7 @@ Each cell is a pass. `—` not started, `✓` done, and a note when it found som
 |---|---|---|---|---|
 | **0** Prove what is built | Browser harness, service worker, offline, seeding, the verification layer itself | **✓** | **✓** | **✓** |
 | **1** One operator alone | Display rules, patrol record, contact, wipe, seeder | **✓** | **✓** | **✓** |
-| **2** One watch staffed | Executor, pager, drills, web push, on-call | **✓** | — | — |
+| **2** One watch staffed | Executor, pager, drills, web push, on-call | **✓** | **✓** | — |
 | **3** Two who met once | Peers, presence, cards, invites, public presence, buddy | — | — | — |
 | **4** Squad with no box | Watch mode, group sealing, board, handover, watch key | — | — | — |
 | **5** Written-down properties | PQC, declined, battery, RTL, watch-state v4 | — | — | — |
@@ -382,3 +382,44 @@ matches an empty set is the worst kind of green.
 watchtower resolves `@navcom/core` to `dist/`. That is the third time that has mattered in this
 project, and the mutation harness now rebuilds between attempts rather than trusting the last
 build.
+
+
+## 2.I — Milestone 2, interface tests
+
+**Invariant 2's second half had never been rendered from a real event.**
+
+*"`Distress` terminates in a human, or tells the operator it couldn't."* The first half is
+proven exhaustively — nine numbered failure modes, all confirmed in 2.U. The **telling**
+happens on one screen, and although several browser tests open it, every one of them stops at
+the hold control, the missing-watch message, or the contact link. **Nothing ever put a response
+on it.**
+
+So the sentences an operator reads while somebody decides whether they are coming — *"Raven
+has it"*, *"an agent answered. Still looking for a human"* — existed only as a `switch` nobody
+had executed with real input.
+
+Now driven end to end using 0.I's answering harness: the operator holds the control, the app
+publishes a `20911`, the watch replies, and the screen renders it. Three claims asserted, and
+the middle one is the reason this pass matters:
+
+- A human acknowledgement is shown **by name**, with what they said
+- **An agent answering does not read as help arriving** [invariant 5]. It renders as *still
+  looking for a human*, and the acknowledged block stays absent. Verified by making the agent
+  case render as *"has it"* — which fails
+- **Nothing on the screen closes a Distress.** Only the operator ends one, and no button
+  offers to
+
+### The harness fought back, and the fix is worth keeping
+
+The hold control is `button.raise`, it **relabels and is replaced** by the live view once the
+hold completes, and dispatching a release afterwards hangs on a locator that no longer exists —
+long enough to exhaust the test budget, at which point the page closes and the error reads
+*"target page has been closed"*, which looks like a crash and is not one.
+
+Waiting on **the published event** instead of a fixed timeout fixed it. That is the honest
+signal: a timeout is a guess that goes stale on a slower machine, and this project's device
+floor is a slow machine.
+
+Same shape as 1.S's hold-to-wipe. Two of the three most safety-critical controls in this app
+are press-and-hold, and both are awkward to drive for the same reason — they are designed so a
+pocket cannot trigger them.
