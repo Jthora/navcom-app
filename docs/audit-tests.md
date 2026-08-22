@@ -38,7 +38,7 @@ Each cell is a pass. `—` not started, `✓` done, and a note when it found som
 | **4** Squad with no box | Watch mode, group sealing, board, handover, watch key | **✓** | **✓** | **✓** |
 | **5** Written-down properties | PQC, declined, battery, RTL, watch-state v4 | **✓** | **✓** | **✓** |
 | **6** Knowledge gets in | Corrections, merge, needs-checking, notes, promotion | **✓** | **✓** | **✓** |
-| **7** Standing | Credentials, claims, revocation, the watch gate | **✓** | — | — |
+| **7** Standing | Credentials, claims, revocation, the watch gate | **✓** | **✓** | — |
 | **9** No single point of failure | Backup and restore, capability sentence, funding | — | — | — |
 
 Milestone 8 has no row for the same reason as last time — it is unbuilt apart from 8.1, which
@@ -955,3 +955,50 @@ helper field I wrote ten minutes earlier referenced a name not in scope, typeche
 nothing said so. Deduped; `npm run verify` at the repository root is green.
 
 **Counts:** 419 core (was 416), 367 web, 207 watchtower, 206 browser.
+
+
+## 7.I — Milestone 7, interface tests
+
+The standing screen had no browser coverage at all, and it holds the only loop in this project
+that runs **entirely between two people with no relay in the middle**: a credential is written,
+handed over by hand, taken up, and later taken back.
+
+[`web/e2e/standing.spec.ts`](../web/e2e/standing.spec.ts) — eight tests, both devices driven
+only through controls. The credential crosses the way a person would carry it, by copying the
+text out of one screen and into the other's paste box; the *withdrawal* is the only thing that
+goes over a relay, because it is the only part that is published.
+
+What they hold down: a written credential has **no tags at all** and a content object with
+exactly `at`, `endorser`, `scope` — there is nowhere for a subject to go; taking one up needs no
+network and no approval; a credential dated 2099 renders as *"not an age you can weigh"* rather
+than as the freshest possible; rubbish in the paste box is an error on the screen; and a
+withdrawal published by the endorser reaches the holder **on the status screen**, which is where
+the subscription runs precisely so that a holder who never opens their standing still stops
+relying on it.
+
+### The finding: an end-to-end test cannot see which layer saved it
+
+The last test says a stranger cannot revoke on the endorser's behalf. It passed immediately, so
+I went to break it — and **removing the `pubkey !== endorserKey` check from `isRevokedBy` did
+not make it fail.** Nor did removing the ingest's guard. The forged revocation is stopped in
+three separate places: the subscription asks only for endorsers whose credentials are held,
+the ingest checks `isRevokedBy`, and `held()` checks it again on the way out. All three had to
+be deleted at once before the test failed, which was measured, not assumed.
+
+Good for the product. Awkward for the pass, and the reason is worth stating: **defence in depth
+makes an end-to-end test insensitive to any one layer.** A green run through the app cannot
+tell you your own check is there — only that something is. The check that is ours is proven in
+`endorsement.test.ts`, where it can be isolated, and the browser test now says so in place
+rather than implying more than it can.
+
+That is the mirror image of rule 7. A test that cannot fail is worse than none; a test that can
+only fail for a reason other than its name is the same problem wearing a better disguise.
+
+### Two of my own, both the same mistake twice
+
+Both remaining failures were my assertions, not the app: a regex spanning a line break (Playwright
+does not normalise whitespace inside one), and `deliver` reading what had been published before
+the click's async publish had landed. The second now waits on the screen — the row disappears
+when the withdrawal is actually made — rather than on a timer.
+
+**Counts:** 419 core, 367 web, 207 watchtower, 51 seeder, 214 browser (was 206).
