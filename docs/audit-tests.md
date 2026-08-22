@@ -35,7 +35,7 @@ Each cell is a pass. `—` not started, `✓` done, and a note when it found som
 | **1** One operator alone | Display rules, patrol record, contact, wipe, seeder | **✓** | **✓** | **✓** |
 | **2** One watch staffed | Executor, pager, drills, web push, on-call | **✓** | **✓** | **✓** |
 | **3** Two who met once | Peers, presence, cards, invites, public presence, buddy | **✓** | **✓** | **✓** |
-| **4** Squad with no box | Watch mode, group sealing, board, handover, watch key | **✓** | — | — |
+| **4** Squad with no box | Watch mode, group sealing, board, handover, watch key | **✓** | **✓** | — |
 | **5** Written-down properties | PQC, declined, battery, RTL, watch-state v4 | — | — | — |
 | **6** Knowledge gets in | Corrections, merge, needs-checking, notes, promotion | — | — | — |
 | **7** Standing | Credentials, claims, revocation, the watch gate | — | — | — |
@@ -604,3 +604,32 @@ leaving the payload unencrypted, and sealing to nobody.
 **No product bug in any of them.** The code was right; the proof was missing — and three of the
 four are cases where the failure is a squad that cannot operate rather than a screen that looks
 wrong.
+
+
+## 4.I — Milestone 4, interface tests
+
+**Answering had never been driven, and it is the whole job of a board.**
+
+Taking the watch, the qualification gate, giving it up, and the Distress section are all
+covered by existing tests — the surface looked well tested. What none of them did was **answer
+anybody**: somebody asked, and a human on the other end says something back. That is what a
+squad holds a board *for*.
+
+Now driven end to end: a query arrives sealed to the holder, the operator types a reply, and
+the test asserts something **actually left the phone** before checking the question came off
+the board. Asserting only that it disappeared would have passed against 4.E's original bug,
+where an answer that reached no relay cleared the item anyway.
+
+Two rules asserted alongside, because they are what make an answer trustworthy:
+
+- **A `Distress` never leaves the board, even after answering it.** Acknowledging is telling
+  somebody you are awake, not that it is over, and this screen cannot know that has happened
+  [invariant 2]. Verified by letting an answer clear it, which fails
+- ***"Nobody can come"* is offered for an Assist**, where it is a real and honest reply — an
+  operator who asked for help, got an acknowledgement and waited is worse off than one told
+  plainly. 2.S already proved it is refused for a `Distress`; this is the other half, and a
+  rule stated only as a prohibition is half-tested
+
+**Nothing found in the rest of the surface.** The gate, the handover confirmation and the
+address are already driven, and that is the honest answer for a milestone whose interface has
+had three passes over it in the first grid.
