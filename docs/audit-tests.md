@@ -34,7 +34,7 @@ Each cell is a pass. `—` not started, `✓` done, and a note when it found som
 | **0** Prove what is built | Browser harness, service worker, offline, seeding, the verification layer itself | **✓** | **✓** | **✓** |
 | **1** One operator alone | Display rules, patrol record, contact, wipe, seeder | **✓** | **✓** | **✓** |
 | **2** One watch staffed | Executor, pager, drills, web push, on-call | **✓** | **✓** | **✓** |
-| **3** Two who met once | Peers, presence, cards, invites, public presence, buddy | **✓** | **✓** | — |
+| **3** Two who met once | Peers, presence, cards, invites, public presence, buddy | **✓** | **✓** | **✓** |
 | **4** Squad with no box | Watch mode, group sealing, board, handover, watch key | — | — | — |
 | **5** Written-down properties | PQC, declined, battery, RTL, watch-state v4 | — | — | — |
 | **6** Knowledge gets in | Corrections, merge, needs-checking, notes, promotion | — | — | — |
@@ -530,3 +530,42 @@ when nobody is.
 **Nothing found in the buddy controls**, which are already driven end to end — *Watch for
 them* and *Stop watching*, both clicked in an existing browser test. 3.U proved the logic; the
 interface for it was already covered, which is the answer this lens hopes for.
+
+
+## 3.S — Milestone 3, story
+
+**Two people at a meeting**, which is the only way pairing ever happens.
+
+**No test had ever had one device publish something another received.** Second browser
+contexts existed — a fresh phone to restore a backup onto, a credential pasted from one screen
+into the same screen's other field — but every one of them was one device, or two devices
+exchanging a blob by hand. The Paired layer is *"two phones, no watch, no server, no leader"*,
+and the two-phone part had never run.
+
+The harness now carries what one phone published to the other, explicitly rather than in the
+background, so a test reads like the story: *she sends it, his phone receives it.* It returns
+how many events crossed, so an exchange that moved nothing cannot pass quietly.
+
+The story runs: Raven reads her code aloud, Wren types it in, they pair both ways, Raven signs
+on, and Wren's screen shows her out in north riverfront — with nothing between them but a
+relay carrying sealed bytes.
+
+### My own test was vacuous, and the discipline caught it
+
+The first version asserted only that *"Raven"* appeared on Wren's screen. **It passed with the
+relay severed.**
+
+The cause is 3.I's finding working against me: a paired peer nobody has heard from is listed
+by name anyway, with *"nothing heard"*. That is right for the product — silence is named, not
+hidden — and it meant my assertion could not fail. Rule 7 of this grid says a test that cannot
+fail is worse than no test, because it is a claim of coverage.
+
+Sharpened to assert what **only a decrypted heartbeat can produce**: out, with her area, and no
+*"nothing heard"*. It now fails when the relay is cut.
+
+**And the ordering was wrong for a real reason.** Delivery goes into subscriptions that are
+open *right now*, so Wren has to be looking at Status when it arrives — a navigation afterwards
+tears the subscription down and takes the heartbeat with it. That is not a harness quirk: it is
+true of a real phone, where a heartbeat that arrives while the app is closed is simply gone.
+**Nothing stores presence, by design**, and the test had to be written the way the product
+actually behaves rather than the way it was convenient to drive.

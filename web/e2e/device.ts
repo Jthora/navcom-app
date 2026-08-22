@@ -303,6 +303,40 @@ export async function seedDevice(page: Page, seed: Seed = {}): Promise<void> {
 }
 
 /**
+ * Carries what one phone published to the other.
+ *
+ * The Paired layer is *"two phones, no watch, no server, no leader"* — and until this existed
+ * **no test had ever had one device publish something another received.** Each page got its
+ * own socket replaying its own canned events, so every "two device" test so far was really
+ * one device, or two devices exchanging a blob by hand.
+ *
+ * Called explicitly rather than pumping in the background, so a test reads like the story:
+ * *she sends the invite, his phone receives it.* Timing that a reader can see beats timing
+ * that a reader has to trust.
+ *
+ * Returns how many events were carried, so a test can assert that something actually moved
+ * rather than passing on an empty exchange.
+ */
+const carried = new WeakMap<Page, number>();
+
+export async function deliver(from: Page, to: Page): Promise<number> {
+  const already = carried.get(from) ?? 0;
+  const fresh = await from.evaluate((n) => {
+    const w = window as unknown as { __navcomPublished?: unknown[] };
+    return (w.__navcomPublished ?? []).slice(n);
+  }, already);
+
+  carried.set(from, already + fresh.length);
+  for (const event of fresh) {
+    await to.evaluate(
+      (e) => (window as unknown as { __navcomDeliver: (x: unknown) => number }).__navcomDeliver(e),
+      event
+    );
+  }
+  return fresh.length;
+}
+
+/**
  * Waits for the app to publish a signal, then answers it.
  *
  * The reply is built and signed **in Node**, where the keys are, and pushed into the page's
