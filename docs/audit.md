@@ -580,8 +580,36 @@ Test counts moved from 364 core / 244 web / 189 watchtower / 129 browser to **40
 147** — 447 added, none removed.
 
 **What is still not covered.** Milestone 8 has no row: it is gated on Milestone 6 and unbuilt
-apart from 8.1, the printable sheet, which **is** built and **is** unaudited. That is the one
-known hole in this grid.
+apart from 8.1, the printable sheet — which was audited afterwards as a twenty-eighth pass,
+below.
+
+## 8.1 — the printed sheet, as a twenty-eighth pass
+
+Added after the grid closed, because 8.1 is built and had no cell.
+
+**The sheet carried the record's age and not its own.** `print.spec.ts` opens by naming the
+failure exactly — *"a printed page looks equally authoritative the day it was printed and
+eighteen months later"* — and then tests everything except that. A reader holding paper had
+the record's `last_verified` date and **no fixed point to compare it against**. The site ships
+no JavaScript and never will, so the print date cannot be the moment of printing; it is the
+build's, baked in at prerender, which still bounds the answer: *"published 2026-08-22. If that
+is long ago, treat everything here as out of date."*
+
+**And the screen's verdict did not reach paper.** A stale record printed identically to a
+fresh one apart from a raw date the reader had to interpret. It now carries the same
+`call-first` judgement the screen makes, decided by `displayField` rather than by a threshold
+invented for paper — the two surfaces must not disagree about the same record.
+
+**One half of that is currently unverifiable, and is recorded rather than faked.** No seeded
+record is more than sixty days old, so the stale branch has no data that reaches it. A fixture
+would prove the component renders a string, not that the two surfaces agree, so the browser
+test asserts the case that does occur and this notes the gap. It closes on its own when 6.9
+lands real directory data with real ages.
+
+**Nothing found in the rest of the print surface**, which was better covered than I expected:
+navigation dropped as dead ink, the provenance block hidden on screen where ages already show,
+`break-inside: avoid` so a record cannot split across a page, and forced black-on-white against
+a reader in dark mode — each with a test.
 
 ## 9.E — Milestone 9, error handling and reporting
 

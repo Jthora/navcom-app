@@ -10,6 +10,23 @@
   const now = $derived(new Date(data.builtAt));
   const record = $derived(data.record);
   const meta = $derived(displayRecord(record, now));
+  /** The build date, for the printed sheet. The site ships no JavaScript, so this is it. */
+  const publishedOn = $derived(data.builtAt.slice(0, 10));
+
+  /**
+   * Whether this record's most perishable facts have gone stale.
+   *
+   * Decided with the directory's own rule rather than a number invented here — `displayField`
+   * is what the screen uses, and paper must not disagree with the screen about the same
+   * record.
+   */
+  const staleOnPaper = $derived(
+    (['hours', 'intake_hours', 'phone'] as const).some(
+      // `call-first` is the screen's own verdict for a field a reader must not trust, which
+      // is exactly the thing paper has to carry.
+      (f) => record[f] && displayField(record, f, now).kind === 'call-first'
+    )
+  );
 </script>
 
 <svelte:head>
@@ -72,6 +89,27 @@
       {/if}
       Hours and intake rules change without notice.
     </p>
+    <!--
+      The sheet's own date, which it did not carry.
+      
+      It carried the record's age and not its own, and this spec's opening line names exactly
+      why that matters: a printed page looks equally authoritative the day it was printed and
+      eighteen months later. A reader holding paper has no way to know which day it is
+      relative to — unless the paper says. No JavaScript is involved and none could be: this
+      site ships none, so the date is the build's, baked in at prerender.
+    -->
+    <p>
+      Printed from a page published <strong>{publishedOn}</strong>. If that is long ago,
+      treat everything here as out of date.
+    </p>
+    {#if staleOnPaper}
+      <!--
+        The verdict the screen computes, in words, on the one surface that cannot be
+        corrected later. A stale record printed identically to a fresh one apart from a date
+        the reader had to interpret for themselves.
+      -->
+      <p><strong>This check is old enough that it may no longer be true.</strong></p>
+    {/if}
     <p><strong>Call before you go.</strong></p>
   </div>
 

@@ -64,3 +64,37 @@ test.describe('a printed record', () => {
     await expect(record).toBeVisible();
   });
 });
+
+test.describe('a sheet that has been in a pocket for a year', () => {
+  /**
+   * This file opens by naming the failure: *"a printed page looks equally authoritative the
+   * day it was printed and eighteen months later."* The sheet carried the **record's** age
+   * and not its own, so a reader holding paper had no fixed point to compare against.
+   */
+  test('says when the page it came from was published', async ({ page }) => {
+    await page.goto(RECORD);
+    await page.emulateMedia({ media: 'print' });
+
+    const block = page.locator('[data-print-provenance]');
+    await expect(block).toContainText(/published/i);
+    // A real date, not a relative phrase — a relative phrase stops being true on paper the
+    // moment the ink dries.
+    await expect(block).toContainText(/\d{4}-\d{2}-\d{2}/);
+    await expect(block).toContainText(/treat everything here as out of date/i);
+  });
+
+  test("does not warn about a record the screen considers current", async ({ page }) => {
+    // The other half — a stale record carrying the screen's own "call first" verdict onto
+    // paper — **cannot be exercised today**: no seeded record is more than sixty days old,
+    // so the branch has no data to reach it. Asserted here is the case that does occur, and
+    // the gap is recorded in the audit rather than faked with a fixture, because a fixture
+    // would prove the component renders a string and not that the two surfaces agree.
+    await page.goto(RECORD);
+    await page.emulateMedia({ media: 'print' });
+
+    await expect(page.locator('[data-print-provenance]'))
+      .not.toContainText(/may no longer be true/i);
+    // The unconditional half is still there, which is what a reader needs either way.
+    await expect(page.locator('[data-print-provenance]')).toContainText(/call before you go/i);
+  });
+});
