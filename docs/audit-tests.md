@@ -36,7 +36,7 @@ Each cell is a pass. `—` not started, `✓` done, and a note when it found som
 | **2** One watch staffed | Executor, pager, drills, web push, on-call | **✓** | **✓** | **✓** |
 | **3** Two who met once | Peers, presence, cards, invites, public presence, buddy | **✓** | **✓** | **✓** |
 | **4** Squad with no box | Watch mode, group sealing, board, handover, watch key | **✓** | **✓** | **✓** |
-| **5** Written-down properties | PQC, declined, battery, RTL, watch-state v4 | **✓** | — | — |
+| **5** Written-down properties | PQC, declined, battery, RTL, watch-state v4 | **✓** | **✓** | — |
 | **6** Knowledge gets in | Corrections, merge, needs-checking, notes, promotion | — | — | — |
 | **7** Standing | Credentials, claims, revocation, the watch gate | — | — | — |
 | **9** No single point of failure | Backup and restore, capability sentence, funding | — | — | — |
@@ -716,3 +716,42 @@ arbitrary, and the test pins the code against the spec rather than against itsel
 assumed rather than what the code does. The spec was corrected to the code, not the other way
 round. A spec written from memory is how two implementations end up disagreeing in the first
 place.
+
+
+## 5.I — Milestone 5, interface tests
+
+Two claims about phones that are only true on **some** phones, and neither had ever been
+rendered.
+
+**Right-to-left was enforced by scanning the built CSS**, which is the right check and is not
+the same as rendering. Nothing in this app sets `dir` at all — the message catalogue is
+deferred [5.9] — so a static scan was the only verification possible. A browser can force the
+direction, which turns *"the stylesheet contains no `border-left`"* into *"the app holds
+together mirrored"*: three screens now render in RTL and none of them scrolls sideways, which
+is a rule this project already holds itself to.
+
+**The battery warning had a rule with no test at all.** It is false while charging, however
+low, and the reason is written down: *"a phone on a charger at 4% is a phone that is fine in
+ten minutes, and warning about it is the kind of noise that trains people to dismiss
+warnings."* No test passed `charging: true`, so **the guard could have been deleted in
+silence** — and the thing it protects is whether the warning is worth reading at all. Covered
+now, and verified by removing the guard, which fails.
+
+The two negatives were already right and are now pinned: nothing at 82%, and nothing at all on
+a phone with no Battery Status API, which is every iPhone. *Absent* is the correct behaviour —
+nothing here estimates.
+
+**One thing the tests taught me about the product**, which is the good kind of failure: the
+warning is scoped to being **on station**, and my first attempt asserted it on a kitchen table.
+A phone at 9% doing nothing is nobody's problem. The warning exists because *"when it dies you
+stop sending, and the people watching for you will see nothing rather than something wrong."*
+
+### When a mutation does not fire, suspect the mutation
+
+Two attempts to break the RTL test did nothing — one styled an element that does not render
+without peers, the other was overridden by a later `margin: 0 auto`. Rather than guess a third
+time I **tested the assertion's own sensitivity**: with the page clean the overflow is 0, and
+with a deliberately 900px-wide element it is 515. The check works; my mutations did not.
+
+That is a better technique than another guess, and worth keeping: when a mutation comes back
+missed, the first question is whether it changed anything at all.
