@@ -39,8 +39,16 @@ import { bytesToHex, hexToBytes, randomBytes } from '@noble/hashes/utils';
  * and the app has to say so plainly rather than implying a safety net it is not providing.
  */
 
-/** Cost, chosen against the device floor rather than against a benchmark. */
-const KDF = { N: 2 ** 15, r: 8, p: 1, dkLen: 32 } as const;
+/**
+ * Cost, chosen against the device floor rather than against a benchmark.
+ *
+ * Exported so it can be pinned by a test. A work factor is the one security parameter that
+ * can be lowered by somebody with entirely good intentions — a slow test suite, a sluggish
+ * restore on an old phone — and nothing about the code would look wrong afterwards. The
+ * reasoning for this number is above; a test holds the number itself.
+ */
+export const BACKUP_KDF = { N: 2 ** 15, r: 8, p: 1, dkLen: 32 } as const;
+const KDF = BACKUP_KDF;
 const V = 1;
 
 export class BackupError extends Error {}

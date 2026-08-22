@@ -7,7 +7,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { BackupError, isBackup, openBackup, sealBackup } from '../src/index.js';
+import { BACKUP_KDF, BackupError, isBackup, openBackup, sealBackup } from '../src/index.js';
 
 const kit = { secret: 'a'.repeat(64), callsign: 'Wren', peers: [{ callsign: 'Raven' }] };
 
@@ -20,6 +20,27 @@ describe('a backup round trip', () => {
     // A fresh salt per backup. Two identical blobs would tell somebody holding both that
     // nothing had changed between them.
     expect(sealBackup('same', kit)).not.toBe(sealBackup('same', kit));
+  });
+
+  it('and differs because the salt is fresh, not only because the nonce is', () => {
+    /*
+     * The test above passes with a **hard-coded salt**, because NIP-44 picks a random nonce
+     * either way — so it asserts what the AEAD does and says nothing about what this module
+     * does. A fixed salt means one precomputation opens every backup ever made under a given
+     * passphrase, which is the whole reason the salt is there.
+     */
+    const salts = [sealBackup('same', kit), sealBackup('same', kit)].map(
+      (blob) => (JSON.parse(blob) as { salt: string }).salt
+    );
+    expect(salts[0]).not.toBe(salts[1]);
+    expect(salts[0]).toMatch(/^[0-9a-f]{32}$/);
+  });
+
+  it('costs what it says it costs', () => {
+    // A work factor is the security parameter most likely to be lowered by somebody with good
+    // intentions and a slow test suite. Nothing about the code would look wrong afterwards.
+    expect(BACKUP_KDF.N).toBe(2 ** 15);
+    expect(BACKUP_KDF.dkLen).toBe(32);
   });
 
   it('reveals nothing in the clear', () => {
@@ -48,6 +69,18 @@ describe('what it refuses', () => {
     const wrong = (() => { try { openBackup('wrong', blob); } catch (e) { return (e as Error).message; } })();
     const broken = (() => { try { openBackup('right', damaged); } catch (e) { return (e as Error).message; } })();
     expect(wrong).toBe(broken);
+
+    /*
+     * The comparison above cannot fail.
+     *
+     * Both messages come from the same `throw`, so it asserts that one string equals itself —
+     * it stays green if that string is changed to *"Wrong passphrase."*, which is precisely
+     * the oracle this test exists to prevent. What has to be checked is the message itself:
+     * it must leave both possibilities open, because a stolen backup plus a message that
+     * names the passphrase tells the holder they are getting closer.
+     */
+    expect(wrong).toMatch(/passphrase/i);
+    expect(wrong).toMatch(/damaged/i);
   });
 
   it('refuses anything that is not a backup', () => {

@@ -199,6 +199,23 @@ describe('watch state — what may honestly be published', () => {
     }).state).toBe('station');
   });
 
+  it('says what Dark means for the person about to walk out', () => {
+    /*
+     * The state an operator meets most often, and the one invariant 4 is about: *"an operator
+     * must never believe a human is watching when none is."*
+     *
+     * Both other branches were pinned and this one was not — it could have been replaced with
+     * *"No watch is on station right now"*, which is true, reads as a temporary gap, and does
+     * not tell somebody that pressing Distress will reach nobody at all. The consequence is
+     * the content of this sentence; the label is not.
+     */
+    const dark = capabilitySentence(publishableWatchState({ ...base, state: 'dark', holder: null, oncall: [] }), NOW_S);
+    expect(dark).toMatch(/page nobody/i);
+    // And the other half, which is what stops it reading as "this app does not work tonight".
+    expect(dark).toMatch(/tell you so/i);
+    expect(dark).toMatch(/offline/i);
+  });
+
   it('does not let a human at the console hide an empty ladder', () => {
     // The state that looks strongest used to say least. "Wren is at the console right now"
     // is true and is not a ladder -- Wren can be asleep by 3am, and with an empty roster a

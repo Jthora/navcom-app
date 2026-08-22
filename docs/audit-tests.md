@@ -39,7 +39,7 @@ Each cell is a pass. `—` not started, `✓` done, and a note when it found som
 | **5** Written-down properties | PQC, declined, battery, RTL, watch-state v4 | **✓** | **✓** | **✓** |
 | **6** Knowledge gets in | Corrections, merge, needs-checking, notes, promotion | **✓** | **✓** | **✓** |
 | **7** Standing | Credentials, claims, revocation, the watch gate | **✓** | **✓** | **✓** |
-| **9** No single point of failure | Backup and restore, capability sentence, funding | — | — | — |
+| **9** No single point of failure | Backup and restore, capability sentence, funding | **✓** | — | — |
 
 Milestone 8 has no row for the same reason as last time — it is unbuilt apart from 8.1, which
 was audited as a twenty-eighth pass at the end of `audit.md`.
@@ -1051,3 +1051,41 @@ Sensitivity measured, not assumed: making `joinWatch` record founding — the ex
 warns against in a comment — fails three of the four.
 
 **Counts:** 419 core, 367 web, 207 watchtower, 51 seeder, 218 browser (was 214).
+
+
+## 9.U — Milestone 9, unit tests
+
+Twelve mutations against the backup and the capability sentence — the file that is somebody's
+whole identity, and the sentence they read before walking out the door. **Eight caught, four
+survived**, and two of the four had a test that was supposed to catch them.
+
+### Two tests that could not fail
+
+- **`differs every time, even for the same data and passphrase`** passes with a hard-coded
+  salt. NIP-44 picks a random nonce either way, so the assertion measures what the AEAD does
+  and says nothing about what this module does — while its comment says *"a fresh salt per
+  backup"*. A fixed salt means one precomputation opens every backup ever made under a given
+  passphrase, which is the entire reason the salt exists. Now asserted on the `salt` field
+- **`says the same thing for a wrong passphrase as for a damaged blob`** compares two messages
+  that come from **the same `throw`**. It asserts that one string equals itself, and stays
+  green when that string is changed to *"Wrong passphrase."* — which is exactly the oracle the
+  test exists to prevent. Now checks the message leaves both possibilities open
+
+Both were written with the right intent and the wrong assertion. That is a different failure
+from an untested rule and harder to see, because the file reads as covered.
+
+### Two that nothing pinned
+
+- **The Dark sentence.** The station and agent branches are both pinned; the branch an operator
+  meets most often was not. It could have been replaced with *"No watch is on station right
+  now"* — true, reads as a temporary gap, and does not tell somebody that pressing `Distress`
+  will reach nobody at all. Invariant 4 is about this sentence
+- **The KDF work factor.** `N` could drop from 2^15 to 2^10 with nothing failing. This is the
+  one security parameter that gets lowered by people with entirely good intentions — a slow
+  suite, a sluggish restore on an old phone — and nothing about the code looks wrong
+  afterwards. `BACKUP_KDF` is now exported so the number itself is held down, with the
+  reasoning for it left where it was
+
+All four now kill their mutation.
+
+**Counts:** 422 core (was 419), 367 web, 207 watchtower, 51 seeder, 218 browser.
