@@ -1,5 +1,8 @@
 # The 27 passes
 
+A second grid follows this one — [`audit-tests.md`](audit-tests.md) — asking whether what is
+here is *proven, reachable, and useful to somebody*, rather than whether it breaks.
+
 Nine built milestones, three lenses each. Started 2026-08-21.
 
 **Why the count is specified.** Left to its own judgement an agent does one broad sweep,
