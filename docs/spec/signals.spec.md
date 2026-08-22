@@ -41,6 +41,22 @@ survives, the message stays private. This is the same shape TLS 1.3 ships as
 Nostr itself is untouched. The event, its tags and its signature are unchanged; only the
 content of the envelope differs, and relays never read that anyway.
 
+**How the two secrets are mixed**, because a second implementation cannot guess it and a
+CyberDeck is a second implementation:
+
+```
+key = HKDF-SHA256(
+        ikm  = classical_conversation_key || ml_kem_shared_secret,
+        info = "navcom-hybrid-wrap-v1",
+        len  = 32
+      )
+```
+
+The classical half comes first. That order is arbitrary and is therefore **normative** — two
+clients that disagree about it derive different keys and cannot read each other, while both
+round-trip perfectly on their own, which is the kind of fault that ships. `info` pins this
+construction so the same secrets cannot be reused to derive a key for anything else.
+
 **What it covers:** harvest-now-decrypt-later. Traffic captured today cannot be read by a
 future quantum computer.
 

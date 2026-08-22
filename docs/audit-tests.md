@@ -36,7 +36,7 @@ Each cell is a pass. `—` not started, `✓` done, and a note when it found som
 | **2** One watch staffed | Executor, pager, drills, web push, on-call | **✓** | **✓** | **✓** |
 | **3** Two who met once | Peers, presence, cards, invites, public presence, buddy | **✓** | **✓** | **✓** |
 | **4** Squad with no box | Watch mode, group sealing, board, handover, watch key | **✓** | **✓** | **✓** |
-| **5** Written-down properties | PQC, declined, battery, RTL, watch-state v4 | — | — | — |
+| **5** Written-down properties | PQC, declined, battery, RTL, watch-state v4 | **✓** | — | — |
 | **6** Knowledge gets in | Corrections, merge, needs-checking, notes, promotion | — | — | — |
 | **7** Standing | Credentials, claims, revocation, the watch gate | — | — | — |
 | **9** No single point of failure | Backup and restore, capability sentence, funding | — | — | — |
@@ -673,3 +673,46 @@ human is here, which is the entire reason `standDown` exists.
 board. That is deliberate and stated — *"nobody hands a board over, because nobody holds
 anybody else's picture… the way it fills is that operators say they are out again"* — so the
 test pins it rather than treating an empty board as a bug.
+
+
+## 5.U — Milestone 5, unit tests
+
+**The hybrid was proven to round-trip and not proven to be hybrid.**
+
+Either half could be removed — the ML-KEM shared secret or the classical conversation key —
+and every test still passed, because encrypt-then-decrypt works perfectly well with one of
+them.
+
+**The dangerous direction is losing the post-quantum half.** The envelope still carries its
+`q:` prefix, `coverOf` still reports covered, and the screen still tells the operator they are
+covered against somebody storing tonight's traffic for fifteen years. 5.R found that notice
+carefully written and honest — and it would have gone on being displayed over classical-only
+crypto with nothing to contradict it.
+
+Each half is now asserted to **contribute to the derived key**, which is the only thing that
+makes it a hybrid at all:
+
+- The post-quantum half: `encapsulate` is randomised, so two seals to one recipient share every
+  classical input and differ only in the ML-KEM secret. Identical keys would mean that secret
+  never reaches the derivation
+- The classical half: the same KEM ciphertext opened against a different claimed sender must
+  give a different key. If the classical exchange were not in the mix, it would be the same key
+  for anybody
+
+### The order was untestable because it was unwritten
+
+The third mutation — swapping the two halves — was missed, and it took a moment to see why it
+*should* be. Swapped consistently on both sides, it round-trips and is equally secure. There
+was nothing to be wrong against, because **the spec did not describe the construction at all.**
+
+Two clients that disagree about the mix derive different keys and cannot read each other,
+**while both round-trip perfectly on their own** — the kind of fault that ships. And a second
+implementation is not hypothetical: M10's CyberDeck is one.
+
+So `signals.spec.md` now states the derivation, marks the ordering normative *because* it is
+arbitrary, and the test pins the code against the spec rather than against itself.
+
+**I got the `info` string wrong writing it up**, and the test caught it — I had written what I
+assumed rather than what the code does. The spec was corrected to the code, not the other way
+round. A spec written from memory is how two implementations end up disagreeing in the first
+place.

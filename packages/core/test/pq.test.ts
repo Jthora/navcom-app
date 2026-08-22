@@ -10,6 +10,14 @@
  *     and the sender is told what actually happened rather than what was intended
  */
 
+import { hybridSeal, hybridOpen, kemKeypair } from '../src/crypto/pq';
+import { bytesToHex } from '@noble/hashes/utils';
+import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
+import { ml_kem768 } from '@noble/post-quantum/ml-kem.js';
+import { hkdf } from '@noble/hashes/hkdf';
+import { sha256 } from '@noble/hashes/sha2';
+import { concatBytes, hexToBytes } from '@noble/hashes/utils';
+import { nip44 } from 'nostr-tools';
 import { describe, expect, it } from 'vitest';
 import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import {
@@ -222,5 +230,96 @@ describe('the join between an address and its envelope', () => {
     expect(openFromGroup(holderA, wrenPub, event.content)).toEqual({});
     expect(openFromGroup(holderB, wrenPub, event.content)).toEqual({});
     expect(coverOf(to.holders, to.kem ?? {})).toBe('classical');
+  });
+});
+
+describe('the hybrid is actually hybrid', () => {
+  /**
+   * A hybrid that round-trips is not the same as a hybrid that protects.
+   *
+   * Both halves could be removed — the ML-KEM shared secret, or the classical conversation
+   * key — and every existing test still passed, because encrypt-then-decrypt works fine with
+   * one of them. **The dangerous direction is losing the post-quantum half**: the envelope
+   * still carries its `q:` prefix, `coverOf` still reports covered, and the screen still tells
+   * the operator they are covered against somebody storing tonight's traffic for fifteen
+   * years. Nothing would have said otherwise.
+   *
+   * So each half is asserted to *contribute to the derived key*, which is the only thing that
+   * makes it a hybrid at all.
+   */
+  const sender = generateSecretKey();
+  const recipient = generateSecretKey();
+  const recipientPub = getPublicKey(recipient);
+  const senderPub = getPublicKey(sender);
+
+  it('the post-quantum half contributes, so the key changes when it does', () => {
+    // `encapsulate` is randomised, so two seals to the same recipient share every classical
+    // input and differ only in the ML-KEM secret. Identical keys would mean that secret is
+    // not reaching the derivation at all.
+    const { publicKey } = kemKeypair(recipient);
+    const first = hybridSeal(sender, recipientPub, publicKey);
+    const second = hybridSeal(sender, recipientPub, publicKey);
+
+    expect(first.kem).not.toBe(second.kem);
+    expect(bytesToHex(first.key)).not.toBe(bytesToHex(second.key));
+  });
+
+  it('the classical half contributes, so the key changes with who is talking', () => {
+    // Same ML-KEM ciphertext, different claimed sender. If the classical exchange were not in
+    // the mix, the derived key would be the same for anybody.
+    const { publicKey } = kemKeypair(recipient);
+    const wrap = hybridSeal(sender, recipientPub, publicKey);
+
+    const asSender = hybridOpen(recipient, senderPub, wrap.kem);
+    const asSomebodyElse = hybridOpen(recipient, getPublicKey(generateSecretKey()), wrap.kem);
+    expect(bytesToHex(asSender)).not.toBe(bytesToHex(asSomebodyElse));
+  });
+
+  it('and the two sides still agree, which is what makes it usable', () => {
+    const { publicKey } = kemKeypair(recipient);
+    const wrap = hybridSeal(sender, recipientPub, publicKey);
+    expect(bytesToHex(hybridOpen(recipient, senderPub, wrap.kem))).toBe(bytesToHex(wrap.key));
+  });
+});
+
+describe('the mix is a wire format, not an implementation detail', () => {
+  /**
+   * Two clients that disagree about how the halves are combined derive different keys and
+   * cannot read each other — while both round-trip perfectly on their own. That is the kind
+   * of fault that ships, and `signals.spec.md` now states the construction so a second
+   * implementation has something to be right about.
+   *
+   * Pinned here against the spec rather than against the source, so changing the code without
+   * changing the spec fails.
+   */
+  const sender = generateSecretKey();
+  const recipient = generateSecretKey();
+
+  it('derives the key the spec describes: HKDF over classical then quantum', () => {
+    const { publicKey, secretKey } = kemKeypair(recipient);
+    const wrap = hybridSeal(sender, getPublicKey(recipient), publicKey);
+
+    const shared = ml_kem768.decapsulate(hexToBytes(wrap.kem), secretKey);
+    const classical = nip44.getConversationKey(recipient, getPublicKey(sender));
+    const expected = hkdf(
+      sha256,
+      concatBytes(classical, shared),
+      undefined,
+      'navcom-hybrid-wrap-v1',
+      32
+    );
+
+    expect(bytesToHex(wrap.key)).toBe(bytesToHex(expected));
+  });
+
+  it('and the order is load-bearing, so the other way round is a different key', () => {
+    const { publicKey, secretKey } = kemKeypair(recipient);
+    const wrap = hybridSeal(sender, getPublicKey(recipient), publicKey);
+
+    const shared = ml_kem768.decapsulate(hexToBytes(wrap.kem), secretKey);
+    const classical = nip44.getConversationKey(recipient, getPublicKey(sender));
+    const swapped = hkdf(sha256, concatBytes(shared, classical), undefined, 'navcom-hybrid-wrap-v1', 32);
+
+    expect(bytesToHex(wrap.key)).not.toBe(bytesToHex(swapped));
   });
 });
