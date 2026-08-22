@@ -1172,14 +1172,14 @@ them.
 **Counts:** 422 core, 368 web (was 367), 207 watchtower, 51 seeder, 226 browser (was 223).
 
 
-# After twenty-seven passes
+## After twenty-seven passes
 
 Test counts went from **416 / 353 / 207 / 197** to **422 / 368 / 207 / 226** — core, web,
 watchtower, browser — plus 51 in the seeder. That is 111 tests, and the count is the least
 interesting thing here. What the grid actually produced was a short list of ways a suite can
 be green and wrong.
 
-## The five shapes
+### The five shapes
 
 **1. Enforced on the way out, unchecked on the way in.** The single most common finding, and it
 was already a known one — the date checks in `endorsement.ts` had learned it before this grid
@@ -1206,7 +1206,7 @@ the first story that needed it.
 across three test files, one of which I broke in 5.U. It proved itself within ten minutes: a
 dead helper I had just written referenced a name not in scope, and nothing said so.
 
-## What the stories were for
+### What the stories were for
 
 The U and I lenses found bugs in what the code does. The S lens found things that **could not
 be done at all** — the key with no way out, the correction that reached a relay and no person,
