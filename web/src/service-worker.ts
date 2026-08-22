@@ -223,9 +223,19 @@ sw.addEventListener('push', (event) => {
     sw.registration.showNotification(
       drill ? 'NavCom drill — not an emergency' : 'NavCom — Distress',
       {
+        /*
+         * Named paths, because the previous text named one that does not exist.
+         *
+         * It said *"Open the terminal and acknowledge"* and **there is no acknowledge control
+         * in the terminal.** A squad member holding the watch answers from the board — the
+         * button is literally *"Tell them you are awake"* — and a node's on-call operator
+         * acknowledges in the console, which is what the SMS page already tells them. Somebody
+         * woken at 3am has seconds, and the one thing the text must not do is send them
+         * looking for a button that is not there.
+         */
         body: drill
-          ? 'A drill. Acknowledge it so the roster can be proven.'
-          : 'An operator is waiting for a human. Open the terminal and acknowledge.',
+          ? 'A drill, not an emergency. Acknowledge it in the console so the roster can be proven.'
+          : 'An operator is waiting for a human. Open the board and tell them you are awake.',
         // Distinguishable by the recipient, in the text they actually read [C29]. Somebody
         // woken at 3am has seconds and no context.
         tag: drill ? 'navcom-drill' : 'navcom-distress',

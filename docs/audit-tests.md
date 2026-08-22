@@ -33,7 +33,7 @@ Each cell is a pass. `—` not started, `✓` done, and a note when it found som
 |---|---|---|---|---|
 | **0** Prove what is built | Browser harness, service worker, offline, seeding, the verification layer itself | **✓** | **✓** | **✓** |
 | **1** One operator alone | Display rules, patrol record, contact, wipe, seeder | **✓** | **✓** | **✓** |
-| **2** One watch staffed | Executor, pager, drills, web push, on-call | **✓** | **✓** | — |
+| **2** One watch staffed | Executor, pager, drills, web push, on-call | **✓** | **✓** | **✓** |
 | **3** Two who met once | Peers, presence, cards, invites, public presence, buddy | — | — | — |
 | **4** Squad with no box | Watch mode, group sealing, board, handover, watch key | — | — | — |
 | **5** Written-down properties | PQC, declined, battery, RTL, watch-state v4 | — | — | — |
@@ -423,3 +423,39 @@ floor is a slow machine.
 Same shape as 1.S's hold-to-wipe. Two of the three most safety-critical controls in this app
 are press-and-hold, and both are awkward to drive for the same reason — they are designed so a
 pocket cannot trigger them.
+
+
+## 2.S — Milestone 2, story
+
+**The Sleeper's 3am.** This project's own name for the on-call person who sleeps through
+things — the reason drills are randomised, because *"the Sleeper learns a fixed schedule
+faster than anybody."* Her whole job is to be woken and say *"I have this"*, and
+`signals.spec.md` budgets that at **10 seconds: one tap, and somebody is waiting on it.**
+
+**The notification told her to do something the app cannot do.** It read *"An operator is
+waiting for a human. Open the terminal and acknowledge"* — and **there is no acknowledge
+control in the terminal.** She taps, arrives at Status, and there is nothing there. The ladder
+keeps paging; the operator is told nobody has it.
+
+Every other link in that chain is built. `distress-ack` is a defined signal type with its own
+budget. The executor accepts one and refuses it from outside the roster. 2.X made the config
+able to name whose key may send it. Two test files construct one by hand. **No client sends
+one.**
+
+The copy now names paths that exist: a squad member holding the watch answers from the board,
+where the button says *"Tell them you are awake"* — and a node's on-call operator acknowledges
+in the console, which is exactly what the SMS page already tells them. Somebody woken at 3am
+has seconds, and the one thing the text must not do is send her looking for a button that is
+not there.
+
+**The missing control is deferred rather than half-built**, and recorded as build item 2.5. The
+hard part is not the button: an ack must name a `distress_id` the paged person's device
+**cannot know** — they do not hold the watch key, so they cannot read the `20911`, and the push
+deliberately carries no payload from the wire, for a stated reason (*"a notification that
+quoted attacker-controlled text on a locked screen would be a way to put words in front of
+somebody at their least critical moment"*). That needs a spec decision before it needs code,
+and inventing one inside an audit pass would be exactly the *"turn every gap into work"*
+failure the brief warns about.
+
+**What does work is now walked**: holding the watch, she sees Distress in its own section above
+everything [4.R], answers in one tap, and is never offered a way to decline it [invariant 2].
