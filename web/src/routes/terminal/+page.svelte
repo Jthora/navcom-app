@@ -242,8 +242,18 @@
     operator who patrols alone works, and it is the most common way to use this app. So it
     shows what is usable rather than what is missing.
   -->
-  <nav class="actions single">
-    <a class="action primary" href="/terminal/directory/">Cached directory</a>
+  <!--
+    Signing on belongs here too, and for the same reason Distress does.
+
+    The Alone layer promises her *"your own patrol record"*, and a record starts by signing
+    on. The session layer supports that with no watch **on purpose** — its own words: *"the
+    session is set either way"*, and a watch's *"absence must not mean the patrol never
+    happened"* — and the sign-on screen is written for her, saying *"Nothing is watching. You
+    can still sign on."* Everything was built for this operator except the way in.
+  -->
+  <nav class="actions">
+    <a class="action primary" href="/terminal/sign-on/">Sign on</a>
+    <a class="action" href="/terminal/directory/">Cached directory</a>
   </nav>
   <!--
     Distress belongs here for exactly the reason this branch exists.

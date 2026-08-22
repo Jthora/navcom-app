@@ -32,7 +32,7 @@ Each cell is a pass. `—` not started, `✓` done, and a note when it found som
 | Milestone | Surface | U | I | S |
 |---|---|---|---|---|
 | **0** Prove what is built | Browser harness, service worker, offline, seeding, the verification layer itself | **✓** | **✓** | **✓** |
-| **1** One operator alone | Display rules, patrol record, contact, wipe, seeder | **✓** | **✓** | — |
+| **1** One operator alone | Display rules, patrol record, contact, wipe, seeder | **✓** | **✓** | **✓** |
 | **2** One watch staffed | Executor, pager, drills, web push, on-call | — | — | — |
 | **3** Two who met once | Peers, presence, cards, invites, public presence, buddy | — | — | — |
 | **4** Squad with no box | Watch mode, group sealing, board, handover, watch key | — | — | — |
@@ -302,3 +302,46 @@ remembering this pass.
 asserted the Generate keypair button was enabled on arrival. `makeIdentity` refuses an empty
 callsign with an error anyway, so disabling it removes a tap whose only possible outcome was
 that error. Same shape as the phone-number contract corrected in 1.R.
+
+
+## 1.S — Milestone 1, story
+
+**The Protest Medic's night**, with no watch: sign on, work, come home, and wipe.
+
+**She could not start a patrol from the screen she lands on.** The Alone layer promises her
+*"your own patrol record"*, and a record begins by signing on — but Status offered her only
+*"Cached directory"*.
+
+Everything else was already built for her, which is what makes this one sharp:
+
+- `signOn` sets and persists the session **outside** the watch branch, deliberately. Its own
+  docstring: *"So the session is set either way"*
+- `standDown` records the patrol whether or not a watch confirmed it, and says why: *"its
+  absence must not mean the patrol never happened"*
+- The sign-on screen is **written for her**, and says so on arrival: *"Nothing is watching. You
+  can still sign on — the signal will keep trying."*
+
+Every part of the capability existed. Only the way in was missing. That is the same branch of
+the same screen 0.S found the Distress gap in — so this pass and the last have now found the
+**two most important things an operator alone can do**, both unreachable from her home screen,
+both fully implemented behind it.
+
+Once she could get there, the rest of the night worked: the patrol lands in her own record with
+the note she wrote, a held wipe destroys it, and her identity survives so she can sign on again
+straight afterwards. **Invariant 7, walked rather than asserted.**
+
+### Four things the story got wrong before the product did
+
+Worth recording, because a story pass fails noisily and most of it is the test's fault:
+
+- The stand-down is **two steps on purpose** — the second is *"the only place the operator gets
+  to say anything in their own words"* — and my first attempt stopped after the first
+- The hold-to-wipe control **relabels itself** to *"Keep holding…"*, so a name-based locator
+  stops matching exactly when the release is needed
+- It also **completes itself** after 800ms and navigates away, so there is no release to
+  dispatch at all — waiting for the navigation *is* waiting for the wipe
+- And I mistook a working flow for a broken one twice before reading what the screen does
+
+Each of those is the product being deliberate and the test being naive. The rule that a story
+may only use controls a person can reach is what surfaced them — a test that reached past the
+UI would have passed while the operator could not get there.
