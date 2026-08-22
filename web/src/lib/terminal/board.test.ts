@@ -82,6 +82,15 @@ beforeEach(async () => {
   board.start();
 });
 
+/*
+ * These process tens of thousands of real events, which takes seconds rather than
+ * milliseconds — that is the point of them, and it is not a cost worth optimising away.
+ *
+ * With vitest's 5s default they sat close enough to the limit that a **busy machine failed
+ * them**, which is the worst place for a flaky test to live: they are the two anti-flooding
+ * properties, so an intermittent red trains somebody to re-run rather than to look, and a
+ * shared CI runner is exactly where it fires [`audit-tests.md` 9.S].
+ */
 describe('a Distress arriving after a flood of routine traffic', () => {
   it('is not buried underneath it', () => {
     // `20911` is a separate kind precisely so a client can prioritise it independently of
@@ -123,7 +132,7 @@ describe('a Distress arriving after a flood of routine traffic', () => {
     expect(board.distress).toHaveLength(1);
     expect(board.routineDropped).toBe(false);
   });
-});
+}, { timeout: 30_000 });
 
 describe('a watch whose publishes do not land', () => {
   it('does not report standing down when the world still sees it on station', async () => {

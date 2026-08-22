@@ -39,7 +39,7 @@ Each cell is a pass. `—` not started, `✓` done, and a note when it found som
 | **5** Written-down properties | PQC, declined, battery, RTL, watch-state v4 | **✓** | **✓** | **✓** |
 | **6** Knowledge gets in | Corrections, merge, needs-checking, notes, promotion | **✓** | **✓** | **✓** |
 | **7** Standing | Credentials, claims, revocation, the watch gate | **✓** | **✓** | **✓** |
-| **9** No single point of failure | Backup and restore, capability sentence, funding | **✓** | **✓** | — |
+| **9** No single point of failure | Backup and restore, capability sentence, funding | **✓** | **✓** | **✓** |
 
 Milestone 8 has no row for the same reason as last time — it is unbuilt apart from 8.1, which
 was audited as a twenty-eighth pass at the end of `audit.md`.
@@ -1122,3 +1122,51 @@ label rather than a consequence — plus dropping the thin-roster clause fails t
 and leaves the other two green.
 
 **Counts:** 422 core, 367 web, 207 watchtower, 51 seeder, 223 browser (was 218).
+
+
+## 9.S — Milestone 9, the story
+
+**The phone that went in the river.** On a network where nobody has an institution behind them,
+the single point of failure is usually a phone. There is no account, no server holding a copy,
+and nobody who can give an identity back.
+
+The existing tests prove the blob round-trips and assert on `localStorage`.
+[`web/e2e/story-new-phone.spec.ts`](../web/e2e/story-new-phone.spec.ts) asks the question a
+person actually has — **am I myself again?** — on a genuinely blank second device:
+
+- **The standing she built comes back, by name.** Owl vouches, Wren claims it, Wren's phone is
+  gone, and on the new one the endorsement is there and still says *from Owl*. Standing cannot
+  be reissued — the endorser cannot see whether you ever claimed theirs — so if it does not
+  survive a lost phone, what an operator has is a decade lost to a dropped handset
+- **And so does the watch.** Same address, same key, and founding came with it. A squad with no
+  box keeps the watch's identity on somebody's phone; losing that phone must not be the watch
+  ending, which would strand everybody signed on under it
+- **And tonight does not come back with her.** She was out when the backup was made, and on the
+  new phone she is not
+
+### The layering again, and what it cost to see
+
+The third test fails only when **both** halves of the tier boundary are broken. A seal that
+carries the wipeable tier is harmless on its own, because restore writes into `accruing`, where
+nothing reads a patrol — so the end-to-end story stays green while the module's own first
+line, *"the accruing tier and nothing else"*, is false.
+
+And **nothing pinned the seal side.** The browser test named *carries the decade and not
+tonight* asserts that the screen *says* so and never checks it. A unit test now seals with a
+populated wipeable tier and reads the kit back: this is the second time in three passes that
+the isolated check had to be added because an end-to-end one could not see which layer saved
+it.
+
+### A flaky test in the worst possible place
+
+Running the browser suite alongside `npm run verify` failed two web tests that pass every time
+on an idle machine: *does not fill the phone* and *is not buried underneath it*. They process
+tens of thousands of real events, take 2.5–3.5s, and sat close enough to vitest's 5s default
+that contention tipped them over.
+
+Those are the two anti-flooding properties. An intermittent red there trains somebody to
+re-run rather than to look, and a shared CI runner is exactly where it fires. Given an explicit
+30s budget with the reason written down, rather than made cheaper — the cost is the point of
+them.
+
+**Counts:** 422 core, 368 web (was 367), 207 watchtower, 51 seeder, 226 browser (was 223).

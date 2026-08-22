@@ -56,6 +56,15 @@ beforeEach(async () => {
   corrections.start([RECORD, 'other-record']);
 });
 
+/*
+ * These process tens of thousands of real events, which takes seconds rather than
+ * milliseconds — that is the point of them, and it is not a cost worth optimising away.
+ *
+ * With vitest's 5s default they sat close enough to the limit that a **busy machine failed
+ * them**, which is the worst place for a flaky test to live: they are the two anti-flooding
+ * properties, so an intermittent red trains somebody to re-run rather than to look, and a
+ * shared CI runner is exactly where it fires [`audit-tests.md` 9.S].
+ */
 describe('a flood of corrections from strangers', () => {
   it('does not fill the phone', () => {
     // Twenty thousand is about 11 MB, past a typical quota — and a full phone stops saving,
@@ -117,7 +126,7 @@ describe('a flood of corrections from strangers', () => {
     expect(corrections.about(RECORD)).toHaveLength(3);
     expect(corrections.partial).toBe(false);
   });
-});
+}, { timeout: 30_000 });
 
 describe('a correction made where there is no signal', () => {
   /** Relays that refuse everything, which is a doorway in a basement. */

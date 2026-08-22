@@ -6,7 +6,7 @@
  */
 
 import { describe, expect, it, beforeEach } from 'vitest';
-import { sealBackup } from '@navcom/core';
+import { openBackup, sealBackup } from '@navcom/core';
 import { RestoreError, lastMade, makeBackup, restore } from './backup';
 import { get, set } from './storage';
 
@@ -169,5 +169,33 @@ describe('a backup that would hold nothing', () => {
       removeItem: (k: string) => void store.delete(k)
     };
     expect(restore(PASS, blob).keys).toBeGreaterThan(0);
+  });
+});
+
+
+describe('what a backup is allowed to carry', () => {
+  it('seals the decade and not tonight', () => {
+    /*
+     * The module's first line — *"the accruing tier and nothing else"* — and **nothing held
+     * it**. A backup carrying the wipeable tier carries the thing a panic wipe destroys, so
+     * restoring one would undo a wipe somebody meant, on the night they meant it.
+     *
+     * The end-to-end story cannot catch this alone: the property is defended twice, and
+     * restore writing only into `accruing` hides a seal that carries too much. This is the
+     * half that has to be checked where it can be isolated.
+     */
+    set('accruing', 'secret', 'a'.repeat(63) + '1');
+    set('accruing', 'callsign', 'Wren');
+    set('wipeable', 'signon', { area: 'Downtown', since: 1 });
+    set('wipeable', 'notes', { 'st-louis-x': 'side door after 9' });
+
+    const kit = openBackup<{ accruing: Record<string, unknown> }>(PASS, makeBackup(PASS));
+
+    expect(kit.accruing['callsign']).toBe('Wren');
+    expect(kit.accruing['signon']).toBeUndefined();
+    expect(kit.accruing['notes']).toBeUndefined();
+    // And nowhere in the blob under any other name.
+    expect(JSON.stringify(kit)).not.toContain('Downtown');
+    expect(JSON.stringify(kit)).not.toContain('side door');
   });
 });
