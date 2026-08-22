@@ -38,7 +38,7 @@ Each cell is a pass. `—` not started, `✓` done, and a note when it found som
 | **4** Squad with no box | Watch mode, group sealing, board, handover, watch key | **✓** | **✓** | **✓** |
 | **5** Written-down properties | PQC, declined, battery, RTL, watch-state v4 | **✓** | **✓** | **✓** |
 | **6** Knowledge gets in | Corrections, merge, needs-checking, notes, promotion | **✓** | **✓** | **✓** |
-| **7** Standing | Credentials, claims, revocation, the watch gate | — | — | — |
+| **7** Standing | Credentials, claims, revocation, the watch gate | **✓** | — | — |
 | **9** No single point of failure | Backup and restore, capability sentence, funding | — | — | — |
 
 Milestone 8 has no row for the same reason as last time — it is unbuilt apart from 8.1, which
@@ -905,3 +905,53 @@ That was the case worth spending a test on, and it was previously covered by not
 tested the *unsent* queue, which is the other direction entirely.
 
 **Counts:** 416 core, 367 web, 207 watchtower, 206 browser.
+
+
+## 7.U — Milestone 7, unit tests
+
+Standing is the one thing here an operator builds over years, and `can-take-watch` is the gate
+on holding a board. Twelve mutations against `endorsement.ts` and the terminal's `standing.ts`.
+**Nine caught, three survived — and all three survivors were on the reading side.**
+
+- **An unsigned revocation strips standing.** The severe one. A credential is handed over in
+  the open, so its endorser's key and its id are both known to anybody who sees it, and wearing
+  a key costs nothing — you write the pubkey you want. The signature is the only thing a
+  stranger cannot produce, and nothing tested that it was checked
+- **A scope read off an unlisted string.** `SCOPES` is closed because *"an endorser explaining
+  why somebody is credible is how an operator's history leaks."* The builder refuses free text;
+  the reader accepted it, and a forged credential never goes near a builder
+- **An unsigned credential can be claimed.** Bounded — the pair reads as null later anyway —
+  but the guard exists so it fails while somebody is being *handed* the thing and can still ask
+  about it, rather than silently when they present it
+
+Three tests added under *what arrives from somebody who did not use this code*, and all three
+now kill their mutation. The shape is the one the date checks in this same file already
+learned: **enforced on the way out, unchecked on the way in.**
+
+### The trap that made two of those tests pass while proving nothing
+
+Both signature tests failed on first run against *correct* code, and the reason is worth more
+than the tests.
+
+`finalizeEvent` stamps a `Symbol(verified)` on the object it returns, and **object spread
+copies symbol keys.** So `{ ...signed, content: 'tampered' }` is an event with somebody else's
+content that `verifyEvent` returns **true** for — it never looks at the signature again.
+
+Not a hole in the product: everything hostile arrives over a relay as text, JSON has no
+symbols, and nothing in `src/` spreads a signed event back into a verifier (checked). It is a
+hole in *tests*, which is worse in one specific way — **it makes a test of a missing check
+pass.** Every forged fixture now goes through `overRelay`, and the reason is written at the
+helper rather than left for the next person to rediscover by watching a good test go green.
+
+### And the check that could not report anything
+
+`npm run verify` for core runs `tsc --noEmit`, CI runs verify, and **it has been failing on
+main** — duplicate `import` statements across three test files, tolerated by vitest's transform
+and rejected by TypeScript. One of them I introduced in **5.U**, in this grid, and did not see
+because I ran `npm test` rather than the project's own verify.
+
+A check that is already red cannot report a new failure, and it proved that immediately: a dead
+helper field I wrote ten minutes earlier referenced a name not in scope, typechecked never, and
+nothing said so. Deduped; `npm run verify` at the repository root is green.
+
+**Counts:** 419 core (was 416), 367 web, 207 watchtower, 206 browser.

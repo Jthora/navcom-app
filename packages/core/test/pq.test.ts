@@ -19,7 +19,6 @@ import { sha256 } from '@noble/hashes/sha2';
 import { concatBytes, hexToBytes } from '@noble/hashes/utils';
 import { nip44 } from 'nostr-tools';
 import { describe, expect, it } from 'vitest';
-import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import {
   buildDistress,
   buildSignal,
@@ -27,7 +26,6 @@ import {
   buildKeyBundle,
   coverOf,
   COVER_NOTE,
-  kemKeypair,
   kemPublicFromHex,
   kemPublicHex,
   openFromGroup,

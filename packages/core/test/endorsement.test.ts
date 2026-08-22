@@ -30,6 +30,20 @@ const ravenPub = getPublicKey(raven);
 const owl = generateSecretKey();
 
 const T = 1_755_300_000;
+/**
+ * Sends an event the way an attacker has to send one: as JSON.
+ *
+ * **Every forged or tampered fixture in this file must go through here, and a test that skips
+ * it passes without testing anything.** `finalizeEvent` stamps a `Symbol(verified)` on the
+ * object it returns, and object spread copies symbol keys — so `{ ...signed, content: 'x' }`
+ * is an event with somebody else's content that `verifyEvent` returns **true** for, because
+ * it never looks at the signature again.
+ *
+ * JSON has no symbols, so the round trip strips the mark and the signature is actually
+ * checked. That is also why the caching is not a hole in the product: everything hostile
+ * arrives over a relay as text. It is a hole in *tests*, which is worse in one specific way —
+ * it makes a test of a missing check pass.
+ */
 const overRelay = (e: Event): Event => JSON.parse(JSON.stringify(e)) as Event;
 const cred = (over = {}) =>
   writeCredential(wren, { scope: 'can-take-watch', endorser: 'Wren', at: '2026-08-19', ...over }, T);
@@ -194,5 +208,89 @@ describe('an endorsement dated in the future', () => {
     // A day of tolerance for timezones, and no more.
     expect(ageInDays('2026-08-22', now)).toBe(-1);
     expect(Number.isFinite(ageInDays('2026-09-30', now))).toBe(false);
+  });
+});
+
+
+/**
+ * Everything above proves the builders refuse bad input. **A hostile client never touches a
+ * builder** — it hand-rolls the event and hands it over, so every rule has to hold on the way
+ * in as well as on the way out. The date checks already learned this; these are the three
+ * places that had not.
+ */
+describe('what arrives from somebody who did not use this code', () => {
+  const endorser = generateSecretKey();
+  const endorserPub = getPublicKey(endorser);
+  const holder = generateSecretKey();
+  const stranger = generateSecretKey();
+
+  const pair = () => {
+    const credential = writeCredential(endorser, { scope: 'can-take-watch', endorser: 'Wren', at: '2026-08-19' }, T);
+    return { credential, claim: claimCredential(holder, credential, T + 1) };
+  };
+
+  it('cannot strip standing with a revocation nobody signed', () => {
+    /*
+     * The attack this is the whole defence against.
+     *
+     * A credential is handed over in the open, so its endorser's key and its id are both
+     * known to anybody who sees it. Wearing that key costs nothing — you write the pubkey you
+     * want. The **signature** is the only thing a stranger cannot produce, and if it goes
+     * unchecked then `can-take-watch` can be taken off anybody by anybody, which is the gate
+     * on holding a board.
+     */
+    const { credential, claim } = pair();
+    const endorsement = readEndorsement(credential, claim)!;
+    expect(endorsement).not.toBeNull();
+
+    const real = revoke(endorser, credential.id, T + 2);
+    expect(isRevokedBy(endorsement, real)).toBe(true);
+
+    // The stranger signs their own event and then puts the endorser's name on the envelope.
+    const worn = overRelay({ ...revoke(stranger, credential.id, T + 2), pubkey: endorserPub } as Event);
+    expect(worn.pubkey).toBe(endorsement.endorserKey);
+    expect(isRevokedBy(endorsement, worn)).toBe(false);
+
+    // And a real revocation with its content tampered with afterwards.
+    const tampered = overRelay({ ...real, tags: [['d', credential.id], ['note', 'edited after signing']] } as Event);
+    expect(isRevokedBy(endorsement, tampered)).toBe(false);
+  });
+
+  it('cannot say anything it likes about somebody by inventing a scope', () => {
+    /*
+     * `SCOPES` is a closed list because *"an endorser explaining why somebody is credible is
+     * how an operator's history leaks — and the person with the most valuable knowledge is
+     * usually the one with the most to lose from having it described."*
+     *
+     * The builder refuses free text. A forged credential goes nowhere near the builder, so the
+     * reader has to refuse it too, or the closed list is a suggestion.
+     */
+    const forged = finalizeEvent({
+      kind: KIND_CREDENTIAL,
+      created_at: T,
+      tags: [],
+      content: JSON.stringify({
+        scope: 'was arrested at the Broadway protest in 2019 and held up fine',
+        endorser: 'Wren',
+        at: '2026-08-19'
+      })
+    }, endorser);
+    const claim = claimCredential(holder, forged, T + 1);
+
+    // Properly signed, by a real endorser, and still unreadable — the scope is the reason.
+    expect(forged.pubkey).toBe(endorserPub);
+    expect(readEndorsement(forged, claim)).toBeNull();
+  });
+
+  it('cannot be claimed if nobody actually signed it', () => {
+    // Claiming a forgery produces a pair that reads as null anyway, so this guard is not what
+    // stands between an attacker and standing. It is worth keeping and worth testing for a
+    // different reason: it fails at the moment somebody is handed the thing, where a person
+    // can still ask about it, rather than silently at the moment they present it to somebody.
+    const credential = writeCredential(endorser, { scope: 'medic', endorser: 'Wren', at: '2026-08-19' }, T);
+    const edited = overRelay({ ...credential, content: JSON.stringify({ scope: 'can-take-watch', endorser: 'Wren', at: '2026-08-19' }) } as Event);
+
+    expect(() => claimCredential(holder, edited, T + 1)).toThrow(EndorsementError);
+    expect(() => claimCredential(holder, edited, T + 1)).toThrow(/not signed/i);
   });
 });

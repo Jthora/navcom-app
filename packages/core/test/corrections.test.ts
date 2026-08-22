@@ -12,9 +12,8 @@
 
 import { KIND_CORRECTION } from '../src/events/kinds';
 import { finalizeEvent, generateSecretKey } from 'nostr-tools/pure';
-import type { ResourceRecord } from '../src/directory/types';
 import { describe, expect, it } from 'vitest';
-import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
+import { getPublicKey } from 'nostr-tools/pure';
 import type { Event } from 'nostr-tools/core';
 import {
   buildCorrection,

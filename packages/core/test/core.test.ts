@@ -5,7 +5,6 @@ import { newSecretKey, publicKeyOf, secretFromHex, secretToHex } from '../src/cr
 import { open, seal } from '../src/crypto/envelope';
 import { openFromGroup, watchtowerAt } from '../src/crypto/group';
 import { WATCH_STATE_VERSION, buildWatchStateEvent, capabilitySentence, darkState, pageableNow, publishableWatchState, readWatchState, readWatchStateAt } from '../src/events/watch-state';
-import { readWatchStateAt } from '../src/events/watch-state';
 import { appendEntry, asCompleteLog, emptyLog, entriesAbout, verifyChain, type LogOutcome } from '../src/log';
 import { sendDistressUntilAcknowledged } from '../src/transport';
 import { finalizeEvent } from 'nostr-tools/pure';
