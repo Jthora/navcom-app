@@ -31,7 +31,7 @@ Each cell is a pass. `—` not started, `✓` done, and a note when it found som
 
 | Milestone | Surface | U | I | S |
 |---|---|---|---|---|
-| **0** Prove what is built | Browser harness, service worker, offline, seeding, the verification layer itself | **✓** | — | — |
+| **0** Prove what is built | Browser harness, service worker, offline, seeding, the verification layer itself | **✓** | **✓** | — |
 | **1** One operator alone | Display rules, patrol record, contact, wipe, seeder | — | — | — |
 | **2** One watch staffed | Executor, pager, drills, web push, on-call | — | — | — |
 | **3** Two who met once | Peers, presence, cards, invites, public presence, buddy | — | — | — |
@@ -133,3 +133,47 @@ mutations rather than by assuming.
 named in a test — mutation showed the first is covered indirectly, and the other two need
 hand-written mutations rather than a string swap. They are the first thing to look at in a
 later pass rather than something to claim here.
+
+
+## 0.I — Milestone 0, interface tests
+
+**The harness could replay traffic but could not answer any.** A response references the id of
+the event the app just published, and no canned event can know that id in advance — so every
+`relayEvents` test covered *receiving* and none covered *ask, then be told*, which is the shape
+of most of what this product does. The socket now records what was published and exposes
+`__navcomDeliver`, so a test signs the reply **in Node, where the keys are**, and pushes it
+into the open subscription. No crypto in the page.
+
+**Two more harness faults found on the way there, both silent:**
+
+- **An ordinary publish was never acknowledged.** Only the *refusal* path sent an `OK`, so
+  anything awaiting its own publish sat until the test timed out — and the failure read as the
+  screen being broken rather than the harness not answering
+- **`relayEvents: []` fell through to the dead socket.** A test meaning *"a relay that answers,
+  with nothing stored yet"* silently got *"no signal at all"*
+
+That is now **five** harness faults in this session — the port collision, the test that passed
+either way, the dead socket, and these two — every one of which produces a **wrong result
+rather than an error**. The harness is the thing that decides whether any other finding is
+true, and it has been the least reliable component in the project.
+
+### The screen this project calls the product had never been opened
+
+Eight routes are never opened by a browser test. Most are the public site and the docs. One is
+**`/terminal/query/`** — and `CLAUDE.md` says of it: *"Query goes to the watch. Someone with
+both hands free does the lookup. **That is the product.**"*
+
+It is also where two invariants are rendered and nowhere else:
+
+- **An agent is never presented as a human** [invariant 5]. The badge that says so had no test
+- **An answer with no provenance renders as unverified, not as fact** — *"Call first."* Also
+  untested
+
+Both are now driven end to end: the operator types a question, the app publishes it, the watch
+answers, and the screen renders it. Removing either claim fails the suite, checked rather than
+assumed.
+
+**Still uncovered, named rather than glossed:** `/`, `/directory/`, `/status/`, `/docs/` and
+`/terminal/log/`. The first four are the zero-JavaScript public site, which the budget check
+already guards structurally; `/terminal/log/` is the accountability log and is the one worth a
+later pass.

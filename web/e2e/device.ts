@@ -113,6 +113,7 @@ export async function seedDevice(page: Page, seed: Seed = {}): Promise<void> {
       constructor(url: string) {
         super();
         this.url = url;
+        ReplayingSocket.live.add(this);
         setTimeout(() => {
           this.readyState = 1;
           const open = new Event('open');
@@ -121,6 +122,10 @@ export async function seedDevice(page: Page, seed: Seed = {}): Promise<void> {
         }, 0);
       }
 
+      /** Pushes an event into every open subscription. Used by `__navcomDeliver`. */
+      static readonly live = new Set<ReplayingSocket>();
+      private subs = new Set<string>();
+
       send(raw: string): void {
         let message: unknown[];
         try {
@@ -128,13 +133,40 @@ export async function seedDevice(page: Page, seed: Seed = {}): Promise<void> {
         } catch {
           return;
         }
-        if (message[0] === 'EVENT' && s.refusePublish) {
+        if (message[0] === 'EVENT') {
+          /*
+           * A publish is answered either way.
+           *
+           * Only the refusal was answered, so an ordinary publish got **no `OK` at all** —
+           * which means every test using this socket covered *receiving* and none covered a
+           * successful *send*. Anything that awaits its own publish before showing a result
+           * would sit there until the test timed out, and the failure would look like the
+           * screen being broken.
+           */
           const event = message[1] as { id?: string };
-          this.deliver(JSON.stringify(['OK', event.id ?? '', false, 'blocked: no']));
+          /*
+           * Recorded so a test can answer it.
+           *
+           * A response has to reference the id of the event the app just published, and no
+           * canned event can know that id in advance — so this socket could replay traffic
+           * but never **answer** any. That rules out every journey shaped *ask, then be
+           * told*, which is most of what this product does.
+           *
+           * The test reads what was published, builds a properly signed reply in Node where
+           * the keys are, and pushes it back through `__navcomDeliver`. No crypto in here.
+           */
+          const w = globalThis as unknown as { __navcomPublished: unknown[] };
+          (w.__navcomPublished ??= []).push(event);
+
+          const accepted = !s.refusePublish;
+          this.deliver(
+            JSON.stringify(['OK', event.id ?? '', accepted, accepted ? '' : 'blocked: no'])
+          );
           return;
         }
         if (message[0] !== 'REQ') return;
         const subId = message[1] as string;
+        this.subs.add(subId);
         const filters = message.slice(2) as Record<string, unknown>[];
 
         const matches = (event: Record<string, unknown>) =>
@@ -167,11 +199,31 @@ export async function seedDevice(page: Page, seed: Seed = {}): Promise<void> {
 
       close(): void {
         this.readyState = 3;
+        ReplayingSocket.live.delete(this);
         const closed = new Event('close');
         this.onclose?.(closed);
         this.dispatchEvent(closed);
       }
     }
+
+    /**
+     * Hands an event to whatever is currently subscribed.
+     *
+     * The other half of recording publishes: a test signs a reply in Node and pushes it in
+     * here, so *ask and be answered* becomes testable without putting keys in the page.
+     */
+    (globalThis as unknown as { __navcomDeliver: (e: unknown) => number }).__navcomDeliver = (
+      event: unknown
+    ) => {
+      let delivered = 0;
+      for (const socket of ReplayingSocket.live) {
+        for (const subId of socket['subs'] as Set<string>) {
+          socket['deliver'](JSON.stringify(['EVENT', subId, event]));
+          delivered++;
+        }
+      }
+      return delivered;
+    };
 
     class DeadSocket extends EventTarget {
       static readonly CONNECTING = 0;
@@ -195,9 +247,10 @@ export async function seedDevice(page: Page, seed: Seed = {}): Promise<void> {
       close(): void {}
     }
     (globalThis as unknown as { WebSocket: unknown }).WebSocket =
-      (s.relayEvents && s.relayEvents.length > 0) || s.refusePublish
-        ? ReplayingSocket
-        : DeadSocket;
+      // Presence of the key is the intent, not its length. `relayEvents: []` used to fall
+      // through to the dead socket, so a test that meant "a relay that answers, with nothing
+      // stored yet" silently got "no signal at all" — and the failure looked like the screen.
+      s.relayEvents !== undefined || s.refusePublish ? ReplayingSocket : DeadSocket;
 
     // Already set up by an earlier navigation in this test. Leave it alone.
     if (localStorage.getItem('navcom.seeded') === '1') return;
@@ -227,6 +280,37 @@ export async function seedDevice(page: Page, seed: Seed = {}): Promise<void> {
     localStorage.setItem('navcom.accruing', JSON.stringify(accruing));
     localStorage.setItem('navcom.wipeable', JSON.stringify(wipeable));
   }, { ...seed, secret: TEST_SECRET });
+}
+
+/**
+ * Waits for the app to publish a signal, then answers it.
+ *
+ * The reply is built and signed **in Node**, where the keys are, and pushed into the page's
+ * open subscription. That is the only way *ask, then be told* becomes testable: a response
+ * must reference the id of the event the app just published, and no canned event can know
+ * that id before the app exists.
+ */
+export async function answerNextSignal(
+  page: Page,
+  reply: (published: { id: string; kind: number; pubkey: string; created_at: number }) => unknown
+): Promise<void> {
+  const published = await page.waitForFunction(
+    () => {
+      const w = window as unknown as { __navcomPublished?: { kind: number }[] };
+      const list = w.__navcomPublished ?? [];
+      return list.find((e) => e.kind === 20910 || e.kind === 20911) ?? null;
+    },
+    undefined,
+    { timeout: 10_000 }
+  );
+  const signal = (await published.jsonValue()) as {
+    id: string; kind: number; pubkey: string; created_at: number;
+  };
+  const event = reply(signal);
+  await page.evaluate(
+    (e) => (window as unknown as { __navcomDeliver: (x: unknown) => number }).__navcomDeliver(e),
+    event
+  );
 }
 
 /**
