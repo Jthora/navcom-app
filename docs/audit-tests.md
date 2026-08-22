@@ -37,7 +37,7 @@ Each cell is a pass. `—` not started, `✓` done, and a note when it found som
 | **3** Two who met once | Peers, presence, cards, invites, public presence, buddy | **✓** | **✓** | **✓** |
 | **4** Squad with no box | Watch mode, group sealing, board, handover, watch key | **✓** | **✓** | **✓** |
 | **5** Written-down properties | PQC, declined, battery, RTL, watch-state v4 | **✓** | **✓** | **✓** |
-| **6** Knowledge gets in | Corrections, merge, needs-checking, notes, promotion | **✓** | — | — |
+| **6** Knowledge gets in | Corrections, merge, needs-checking, notes, promotion | **✓** | **✓** | — |
 | **7** Standing | Credentials, claims, revocation, the watch gate | — | — | — |
 | **9** No single point of failure | Backup and restore, capability sentence, funding | — | — | — |
 
@@ -825,3 +825,44 @@ in production.
 Removed, and pinned: a read correction now has to carry **exactly** the keys the merge
 consumes and no others, verified by adding a key and watching it fail. A cast in a fixture is
 a place where the wire and the test can quietly disagree, and this one now cannot.
+
+
+## 6.I — Milestone 6, interface tests
+
+In **6.E** I seeded the unsent state directly, because driving the correction form by guessing
+selectors kept timing out. That is a confession, not a method: the form had never once been
+operated end to end by anything but a person. This pass read the screen and drove it.
+
+Six tests in [`web/e2e/correcting.spec.ts`](../web/e2e/correcting.spec.ts), covering the walk a
+volunteer actually takes — open a region, open a group, open a record, report a problem, pick
+the field, type the value, send — plus backing out, flagging closed, and a private note.
+
+### The two selectors that failed were the finding
+
+Both failures were mine guessing at the DOM, and both times the DOM was right:
+
+- I looked for a button named `hours`. The field buttons render through `FIELD_LABELS`, so the
+  control on screen says **"Open"**. The page never shows a raw field name to anybody — the
+  same rule as *"the page never shows a snake_case token"*, held one layer further out than
+  I expected it to be
+- I asserted the operator's callsign appeared in `[data-corrected]`. It does not, and should
+  not: that block says *the record carries corrections at all*. The name lives on the field,
+  in `[data-said-by]` — **provenance by name, attached to the specific claim**, which is the
+  invariant working rather than failing
+
+Both are the shape from the first grid seen from the other side. There the finding was a rule
+argued in prose and enforced by nothing; here the rule was enforced *better* than my test
+assumed, and the test was the thing out of date.
+
+### What the tests hold down
+
+`hours` is volatile, so the corrected value has to come back through the display rules rather
+than being pasted onto the record. The assertion is that after sending, the field shows the
+new value **and** the operator's callsign **and** the method — `Wren, in person` — because a
+correction with no name on it is the merge quietly becoming an edit.
+
+Verified by deleting the `[data-said-by]` element and rebuilding: the run fails on exactly one
+test, the attribution one, and the other five still pass. A correction that silently merges is
+now a build failure.
+
+**Counts:** 416 core, 367 web, 207 watchtower, 203 browser (was 197).
