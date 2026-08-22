@@ -37,7 +37,7 @@ Each cell is a pass. `—` not started, `✓` done, and a note when it found som
 | **3** Two who met once | Peers, presence, cards, invites, public presence, buddy | **✓** | **✓** | **✓** |
 | **4** Squad with no box | Watch mode, group sealing, board, handover, watch key | **✓** | **✓** | **✓** |
 | **5** Written-down properties | PQC, declined, battery, RTL, watch-state v4 | **✓** | **✓** | **✓** |
-| **6** Knowledge gets in | Corrections, merge, needs-checking, notes, promotion | — | — | — |
+| **6** Knowledge gets in | Corrections, merge, needs-checking, notes, promotion | **✓** | — | — |
 | **7** Standing | Credentials, claims, revocation, the watch gate | — | — | — |
 | **9** No single point of failure | Backup and restore, capability sentence, funding | — | — | — |
 
@@ -788,3 +788,40 @@ down where the next person will meet it.
 
 **Method note.** I announced this pass as "5.X" in the previous summary. This grid has no X
 lens — it is U, I and S. The pass done here is 5.S, and the grid is unchanged.
+
+
+## 6.U — Milestone 6, unit tests
+
+**This is the honest empty pass, and it is worth as much as the others.**
+
+Twelve mutations across every rule that decides whether somebody walks across a city, and
+**all twelve were caught**:
+
+- A website scrape ranking as high as standing at a door; a phone call ranking as high; an
+  unknown method treated as trustworthy
+- A flagged record no longer suspect; age no longer making anything stale; an out-of-season
+  check counting as current
+- **A correction's flag making the base record suspect** — the one with a stated attack behind
+  it: *"one hostile operator could make any record unusable for everybody, which is deletion
+  wearing a different hat"*
+- The ranking table flattened so nothing outranks anything
+- Promotion keeping an author's older correction, or collapsing two authors into one
+- `needsChecking` no longer asking about blanks, or returning everything rather than a few
+
+The rules that matter most in this project are the best-proven code in it, which is the right
+place for the effort to have gone.
+
+### One thing found, and it was mine
+
+Rule 8 says prefer a test against something the product can build, and **where a fixture and
+the real builder disagree, the fixture is the bug.** The merge is exercised mostly with
+hand-written objects — fine, and fast — and my own fixture from 6.X carried a `reports: []`
+key that `readCorrection` never produces, hidden by an `as never` cast.
+
+Harmless today. It is also exactly how a merge ends up proven against a shape no relay can
+deliver, which is the failure that let 2.X's ack path pass every test while being unreachable
+in production.
+
+Removed, and pinned: a read correction now has to carry **exactly** the keys the merge
+consumes and no others, verified by adding a key and watching it fail. A cast in a fixture is
+a place where the wire and the test can quietly disagree, and this one now cannot.

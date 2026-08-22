@@ -12,6 +12,7 @@
 
 import { KIND_CORRECTION } from '../src/events/kinds';
 import { finalizeEvent, generateSecretKey } from 'nostr-tools/pure';
+import type { ResourceRecord } from '../src/directory/types';
 import { describe, expect, it } from 'vitest';
 import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import type { Event } from 'nostr-tools/core';
@@ -307,7 +308,14 @@ describe('two people who disagree, with nothing to choose between them', () => {
   } as unknown as ResourceRecord;
 
   const said = (by: string, hours: string, method = 'in_person', date = '2026-08-20') =>
-    ({ record: 'r1', by, verified_by: by, method, last_verified: date, fields: { hours }, reports: [] }) as never;
+    /*
+     * Exactly the shape `readCorrection` returns — no more.
+     *
+     * The first version of this carried a `reports: []` the wire never delivers, hidden by
+     * the cast. A fixture that is richer than the thing it stands in for is how a merge ends
+     * up proven against a shape the product cannot build [rule 8].
+     */
+    ({ record: 'r1', by, verified_by: by, method, last_verified: date, fields: { hours } }) as never;
 
   it('gives both devices the same answer, whatever order the relays used', () => {
     // Ranking settles almost everything; it could not settle an exact tie, and there the
@@ -386,5 +394,44 @@ describe('a correction from a client that does not follow the rules', () => {
     expect(readCorrection(hostile({ hours: 'x'.repeat(5000) }))).toBeNull();
     expect(readCorrection(hostile({ hours: '24/7' }, { method: 'telepathy' }))).toBeNull();
     expect(readCorrection(hostile({ hours: '24/7' }, { last_verified: 'yesterday' }))).toBeNull();
+  });
+});
+
+describe('the merge is fed what the wire actually delivers', () => {
+  /**
+   * Rule 8 of this audit: prefer a test against something the product can build, and where a
+   * fixture and the real builder disagree, **the fixture is the bug.**
+   *
+   * The merge is exercised mostly with hand-written objects, which is fine and fast — as long
+   * as they cannot drift into a shape no relay could produce. This pins the two together.
+   */
+  it('a read correction carries exactly the keys the merge consumes, and no others', () => {
+    const secret = generateSecretKey();
+    const event = buildCorrection(secret, {
+      record: 'r1', verified_by: 'Wren', method: 'in_person',
+      last_verified: '2026-08-20', fields: { hours: '24/7' }
+    }, 1_800_000_000);
+
+    const read = readCorrection(event);
+    expect(read).not.toBeNull();
+    expect(Object.keys(read!).sort()).toEqual(
+      ['by', 'fields', 'last_verified', 'method', 'record', 'verified_by'].sort()
+    );
+  });
+
+  it('and merging that exact object behaves the same as merging a fixture', () => {
+    const now = new Date('2026-08-21T12:00:00Z');
+    const base = {
+      id: 'r1', name: 'Shelter', type: 'shelter', region: 'st-louis',
+      hours: 'Mon-Fri 9-5', last_verified: '2026-03-01', verified_by: 'scrape', method: 'website'
+    } as unknown as ResourceRecord;
+
+    const secret = generateSecretKey();
+    const read = readCorrection(buildCorrection(secret, {
+      record: 'r1', verified_by: 'Wren', method: 'in_person',
+      last_verified: '2026-08-20', fields: { hours: '24/7' }
+    }, 1_800_000_000))!;
+
+    expect(mergeCorrections(base, [read], now).record.hours).toBe('24/7');
   });
 });
