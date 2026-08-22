@@ -36,7 +36,7 @@ Each cell is a pass. `—` not started, `✓` done, and a note when it found som
 | **2** One watch staffed | Executor, pager, drills, web push, on-call | **✓** | **✓** | **✓** |
 | **3** Two who met once | Peers, presence, cards, invites, public presence, buddy | **✓** | **✓** | **✓** |
 | **4** Squad with no box | Watch mode, group sealing, board, handover, watch key | **✓** | **✓** | **✓** |
-| **5** Written-down properties | PQC, declined, battery, RTL, watch-state v4 | **✓** | **✓** | — |
+| **5** Written-down properties | PQC, declined, battery, RTL, watch-state v4 | **✓** | **✓** | **✓** |
 | **6** Knowledge gets in | Corrections, merge, needs-checking, notes, promotion | — | — | — |
 | **7** Standing | Credentials, claims, revocation, the watch gate | — | — | — |
 | **9** No single point of failure | Backup and restore, capability sentence, funding | — | — | — |
@@ -755,3 +755,36 @@ with a deliberately 900px-wide element it is 515. The check works; my mutations 
 
 That is a better technique than another guess, and worth keeping: when a mutation comes back
 missed, the first question is whether it changed anything at all.
+
+
+## 5.S — Milestone 5, story
+
+**Asking for help and being told nobody is coming.**
+
+The Quartermaster needs a second pair of hands. What this milestone insists on is that a watch
+with nobody to send **says so in as many words**, because *"an operator who asked for help, got
+an acknowledgement and waited is worse off than one who was told plainly."* Both halves — the
+board's control and the operator's screen — were covered separately [4.I, 5.E]. **The sentence
+travelling from one phone to the other was not.**
+
+Now walked: the operator asks, the relay carries it to whoever is holding the board, Raven has
+nobody to send and uses the control built for exactly that, and the answer comes back as
+*"Nobody is coming"* — **with no acknowledgement anywhere on the screen**, which is the part
+that matters. Verified by rendering a decline as an ordinary acknowledgement, which fails.
+
+The other half is asserted too: the operator is told **before they ask** that this can happen.
+Somebody deciding whether to ask should know the honest answer is available.
+
+### The harness could not model a squad
+
+Signals are sealed to the **holders** — one operator key per phone — rather than to the watch
+key, which is what lets a member be removed without re-provisioning everybody. `seedDevice`
+could configure a Watchtower's pubkey and relays and **not its holders**, so every configured
+operator in every test was talking to a *box*.
+
+The assist reached the relay and the board could not read it, which is exactly right and looked
+like a bug for a few minutes. The harness models a squad now, and the distinction is written
+down where the next person will meet it.
+
+**Method note.** I announced this pass as "5.X" in the previous summary. This grid has no X
+lens — it is U, I and S. The pass done here is 5.S, and the grid is unchanged.

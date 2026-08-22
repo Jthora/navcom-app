@@ -22,8 +22,15 @@ export const TEST_SECRET = 'a'.repeat(63) + '1';
 interface Seed {
   /** Give the device an identity. Without one, the app is at "start here". */
   callsign?: string;
-  /** Configure a Watchtower. Most tests deliberately do NOT, because most operators have none. */
-  watchtower?: { pubkey: string; relays: string[] };
+  /**
+   * Configure a Watchtower.
+   *
+   * Most tests deliberately do NOT, because most operators have none. `holders` is what makes
+   * it a **squad** rather than a box: a box is its own holder and signals are sealed to the
+   * watch key, while a squad lists one operator key per phone and signals are sealed to those
+   * — which is what lets a member be removed without re-provisioning everyone.
+   */
+  watchtower?: { pubkey: string; relays: string[]; holders?: string[] };
   /** Somebody to call. */
   contact?: { label: string; number: string };
   /** People paired with, keyed by pubkey. */
@@ -286,6 +293,7 @@ export async function seedDevice(page: Page, seed: Seed = {}): Promise<void> {
     if (s.watchtower) {
       accruing['watchtower'] = s.watchtower.pubkey;
       accruing['relays'] = s.watchtower.relays;
+      if (s.watchtower.holders) accruing['watch_holders'] = s.watchtower.holders;
     }
     if (s.watchSecret) {
       accruing['watch_secret'] = s.watchSecret;
