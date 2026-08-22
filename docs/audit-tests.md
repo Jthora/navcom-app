@@ -39,7 +39,7 @@ Each cell is a pass. `—` not started, `✓` done, and a note when it found som
 | **5** Written-down properties | PQC, declined, battery, RTL, watch-state v4 | **✓** | **✓** | **✓** |
 | **6** Knowledge gets in | Corrections, merge, needs-checking, notes, promotion | **✓** | **✓** | **✓** |
 | **7** Standing | Credentials, claims, revocation, the watch gate | **✓** | **✓** | **✓** |
-| **9** No single point of failure | Backup and restore, capability sentence, funding | **✓** | — | — |
+| **9** No single point of failure | Backup and restore, capability sentence, funding | **✓** | **✓** | — |
 
 Milestone 8 has no row for the same reason as last time — it is unbuilt apart from 8.1, which
 was audited as a twenty-eighth pass at the end of `audit.md`.
@@ -1089,3 +1089,36 @@ from an untested rule and harder to see, because the file reads as covered.
 All four now kill their mutation.
 
 **Counts:** 422 core (was 419), 367 web, 207 watchtower, 51 seeder, 218 browser.
+
+
+## 9.I — Milestone 9, interface tests
+
+The backup screen and the funding screen both had browser coverage already. **The capability
+receipt had none** — `capabilitySentence` is rendered on the status screen, on sign-on, and
+stored as `toldAtSignOn`, and not one browser test had ever read it off a screen.
+
+That is the sentence CLAUDE.md calls the one screen that must work when everything else is
+down, and it is the whole mechanism behind invariant 4.
+
+[`web/e2e/capability-receipt.spec.ts`](../web/e2e/capability-receipt.spec.ts) — five tests,
+each putting a device under a watch that is actually publishing a state and reading what the
+operator is shown:
+
+- One person on call reads *"one person, so if they miss it the ladder ends there"* — 9.3, and
+  the situation this project is actually in
+- A named human at a console with an empty roster does **not** read as staffed. The state that
+  looks strongest saying the weakest fact behind it
+- Dark carries both halves: `Distress` will page nobody, **and** the terminal still works
+  offline. Without the second half it reads as the app being broken, and *"the default is
+  Alone, and it is not a degraded state"*
+- It is on the **sign-on** screen, before anything is committed to — reading it afterwards is
+  reading it too late, because the decision it informs is whether to go out at all
+- And the roster named to the operator is **not** in anything the device publishes. The
+  receipt rides on a sentence rather than becoming a field precisely so that naming who is
+  reachable does not hand an adversary the one name worth targeting
+
+Sensitivity measured: softening Dark to *"No watch is on station right now"* — true, and a
+label rather than a consequence — plus dropping the thin-roster clause fails three of the five,
+and leaves the other two green.
+
+**Counts:** 422 core, 367 web, 207 watchtower, 51 seeder, 223 browser (was 218).
