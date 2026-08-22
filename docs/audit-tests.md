@@ -33,7 +33,7 @@ Each cell is a pass. `—` not started, `✓` done, and a note when it found som
 |---|---|---|---|---|
 | **0** Prove what is built | Browser harness, service worker, offline, seeding, the verification layer itself | **✓** | **✓** | **✓** |
 | **1** One operator alone | Display rules, patrol record, contact, wipe, seeder | **✓** | **✓** | **✓** |
-| **2** One watch staffed | Executor, pager, drills, web push, on-call | — | — | — |
+| **2** One watch staffed | Executor, pager, drills, web push, on-call | **✓** | — | — |
 | **3** Two who met once | Peers, presence, cards, invites, public presence, buddy | — | — | — |
 | **4** Squad with no box | Watch mode, group sealing, board, handover, watch key | — | — | — |
 | **5** Written-down properties | PQC, declined, battery, RTL, watch-state v4 | — | — | — |
@@ -345,3 +345,40 @@ Worth recording, because a story pass fails noisily and most of it is the test's
 Each of those is the product being deliberate and the test being naive. The rule that a story
 may only use controls a person can reach is what surfaced them — a test that reached past the
 UI would have passed while the operator could not get there.
+
+
+## 2.U — Milestone 2, unit tests
+
+The escalation spec lists nine numbered failure modes and says they are *"not optional — these
+are the point of the spec."* Only three are named in a test, so each was mutated instead.
+
+**Eight of the nine are genuinely proven.** Modes 1, 2, 3, 5 and 7 in the ladder; 8 and 9 from
+2.R. Mode 4 — the one the spec says is *"the client's job, and the only part of the ladder the
+node cannot report on"* — is proven in all three of its halves: the device concludes nobody is
+coming, it says so **once**, and saying it **does not stop the retrying**. That last one
+matters most and is the easiest to break by accident.
+
+**Mode 6 is the finding, and it is a different shape from the rest.**
+
+*"Agent degraded → escalation MUST still fire; it is the one path that cannot depend on agent
+health."* `CLAUDE.md` calls the separation **non-negotiable**. The core state machine's half is
+tested — `startLadder` takes one argument and a Ladder has no agent-shaped field — and that is
+the right test for pure logic.
+
+But the separation that matters is the **process**, and the executor's claim about itself —
+*"Nothing here calls the agent, waits on it, or reads its health. There is no seam"* — was
+enforced by nothing at all.
+
+**A dependency that does not exist cannot be caught by a behavioural test**, because there is
+no behaviour to observe until somebody adds one. So it is now asserted structurally: nothing
+under `src/escalation/` may import from `daemon/`, import anything agent-shaped, or read
+`agent_health` by any name. Verified by adding the plausible import somebody would actually
+write — `import type { WatchtowerDaemon } from "../daemon/watchtower.js"` — which fails it.
+
+The suite also asserts it **found files to check**, because a structural test that silently
+matches an empty set is the worst kind of green.
+
+**Method note.** Two of the mutations in this pass needed core rebuilt between runs, since
+watchtower resolves `@navcom/core` to `dist/`. That is the third time that has mattered in this
+project, and the mutation harness now rebuilds between attempts rather than trusting the last
+build.
