@@ -48,3 +48,50 @@ describe('joining a watch on a device that already holds one', () => {
     expect(() => joinWatch('d'.repeat(63) + '4')).not.toThrow();
   });
 });
+
+describe("the watch key is the watch's identity", () => {
+  it('is never replaced by founding a second time', () => {
+    // Its own words: "replacing a live watch's identity would silently strand every operator
+    // configured against the old address." 4.X added the same guard to `joinWatch` and tested
+    // that one; the original here had no test.
+    const first = createWatch();
+    expect(createWatch()).toEqual(first);
+    expect(watchKey()).toEqual(first);
+  });
+
+  it('records that this device founded it, which is how the gate opens at all', () => {
+    // The genesis route. `can take watch` gates who may hold a board, and gating on it alone
+    // bricks a new squad: nobody has standing, so nobody can take the watch, so the watch is
+    // unusable. Founding needs nobody's permission because there is nobody to ask.
+    createWatch();
+    expect(foundedHere()).toBe(true);
+  });
+
+  it('does not treat a key somebody handed you as founding', () => {
+    joinWatch('d'.repeat(63) + '4');
+    expect(foundedHere()).toBe(false);
+  });
+
+  it('forgets that it founded once the watch is given up', () => {
+    // Otherwise an operator who gives up their own watch and joins somebody else's would
+    // still walk through the gate as a founder of a watch that is not theirs.
+    createWatch();
+    leaveWatch();
+    expect(foundedHere()).toBe(false);
+
+    joinWatch('d'.repeat(63) + '4');
+    expect(foundedHere()).toBe(false);
+  });
+
+  it('reads a damaged key as no watch rather than refusing to start', () => {
+    // Same call the corrupt-storage path makes everywhere else: a terminal that will not
+    // start is worse than one that says it holds no watch.
+    createWatch();
+    localStorage.setItem(
+      'navcom.accruing',
+      JSON.stringify({ watch_secret: 'not-a-key', watch_founded: true })
+    );
+    expect(() => watchKey()).not.toThrow();
+    expect(watchKey()).toBeNull();
+  });
+});

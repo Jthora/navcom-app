@@ -7,6 +7,8 @@
  * from watching.
  */
 
+import { newSecretKey } from '../src/crypto/keys';
+import { publicKeyOf } from '../src/crypto/keys';
 import { describe, expect, it } from 'vitest';
 import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import { GroupSealError, openFromGroup, sealToGroup } from '../src/index.js';
@@ -129,5 +131,51 @@ describe('what it refuses', () => {
     const sealed = JSON.parse(sealToGroup(wren, squadPubs, payload)) as { c: string };
     sealed.c = sealed.c.slice(0, -4) + 'AAAA';
     expect(() => openFromGroup(squad[0]!, wrenPub, JSON.stringify(sealed))).toThrow();
+  });
+});
+
+describe('each message carries its own content key', () => {
+  /**
+   * The mechanism behind the one property a squad actually needs.
+   *
+   * `watch-key.ts` states it plainly: removing somebody from the holder list *"stops them
+   * reading new signals"*. That only holds if every message has its own content key — reuse
+   * one, and anybody who ever learned it reads everything sent afterwards, membership list or
+   * not.
+   *
+   * Asserted by **mixing two envelopes**: one message's wrapped keys must not open another
+   * message's content. Comparing ciphertexts would prove nothing, since NIP-44 uses a fresh
+   * nonce either way.
+   */
+  const sender = newSecretKey();
+  const holder = newSecretKey();
+  const holderPub = publicKeyOf(holder);
+
+  it("so one message's key cannot open another message", () => {
+    const first = JSON.parse(sealToGroup(sender, [holderPub], { text: 'first' })) as Record<string, unknown>;
+    const second = JSON.parse(sealToGroup(sender, [holderPub], { text: 'second' })) as Record<string, unknown>;
+
+    // The second message's wraps over the first message's content.
+    const mixed = JSON.stringify({ ...first, k: second['k'] });
+    expect(() => openFromGroup(holder, publicKeyOf(sender), mixed)).toThrow();
+  });
+
+  it('and each envelope still opens on its own', () => {
+    const a = sealToGroup(sender, [holderPub], { text: 'first' });
+    const b = sealToGroup(sender, [holderPub], { text: 'second' });
+    expect(openFromGroup(holder, publicKeyOf(sender), a)).toEqual({ text: 'first' });
+    expect(openFromGroup(holder, publicKeyOf(sender), b)).toEqual({ text: 'second' });
+  });
+
+  it('and somebody dropped from the holders cannot read what comes next', () => {
+    // The property in the form a squad experiences it.
+    const removed = newSecretKey();
+    const stillIn = newSecretKey();
+    const before = sealToGroup(sender, [publicKeyOf(removed), publicKeyOf(stillIn)], { text: 'before' });
+    expect(openFromGroup(removed, publicKeyOf(sender), before)).toEqual({ text: 'before' });
+
+    const after = sealToGroup(sender, [publicKeyOf(stillIn)], { text: 'after' });
+    expect(openFromGroup(stillIn, publicKeyOf(sender), after)).toEqual({ text: 'after' });
+    expect(() => openFromGroup(removed, publicKeyOf(sender), after)).toThrow();
   });
 });

@@ -35,7 +35,7 @@ Each cell is a pass. `—` not started, `✓` done, and a note when it found som
 | **1** One operator alone | Display rules, patrol record, contact, wipe, seeder | **✓** | **✓** | **✓** |
 | **2** One watch staffed | Executor, pager, drills, web push, on-call | **✓** | **✓** | **✓** |
 | **3** Two who met once | Peers, presence, cards, invites, public presence, buddy | **✓** | **✓** | **✓** |
-| **4** Squad with no box | Watch mode, group sealing, board, handover, watch key | — | — | — |
+| **4** Squad with no box | Watch mode, group sealing, board, handover, watch key | **✓** | — | — |
 | **5** Written-down properties | PQC, declined, battery, RTL, watch-state v4 | — | — | — |
 | **6** Knowledge gets in | Corrections, merge, needs-checking, notes, promotion | — | — | — |
 | **7** Standing | Credentials, claims, revocation, the watch gate | — | — | — |
@@ -569,3 +569,38 @@ tears the subscription down and takes the heartbeat with it. That is not a harne
 true of a real phone, where a heartbeat that arrives while the app is closed is simply gone.
 **Nothing stores presence, by design**, and the test had to be written the way the product
 actually behaves rather than the way it was convenient to drive.
+
+
+## 4.U — Milestone 4, unit tests
+
+**The mechanism behind the one property a squad needs had no test.** `watch-key.ts` states it
+plainly: removing somebody from the holder list *"stops them reading new signals"*. That only
+holds if **every message has its own content key** — reuse one, and anybody who ever learned it
+reads everything sent afterwards, membership list or not.
+
+The content key could be replaced with the sender's own secret and nothing noticed. Proved now
+by **mixing two envelopes**: one message's wrapped keys must not open another message's
+content. Comparing ciphertexts would have proved nothing, since NIP-44 uses a fresh nonce
+either way — the test had to attack the property rather than observe a side effect of it. The
+squad's version of the same property is asserted alongside: somebody dropped from the holders
+can still read what was sent before and cannot read what comes after.
+
+**Three other membership attacks are already proven** — labelling wraps with who they are for,
+leaving the payload unencrypted, and sealing to nobody.
+
+### Four unproven guards on the watch's identity
+
+- **`createWatch` could overwrite a live watch.** Its own docstring says why that must never
+  happen — *"replacing a live watch's identity would silently strand every operator configured
+  against the old address"* — and 4.X added the same guard to `joinWatch` **and tested that
+  one**, while the original here was never covered. A guard copied without its test
+- **Founding could stop recording that it founded**, which is the genesis route for the watch
+  gate. Without it a new squad is bricked: nobody has standing, so nobody can take the watch,
+  so the watch is unusable
+- **Leaving could keep the founded flag**, so an operator who gave up their own watch and
+  joined somebody else's would walk through the gate as founder of a watch that is not theirs
+- **A damaged key could throw instead of reading as no watch**, refusing to start the terminal
+
+**No product bug in any of them.** The code was right; the proof was missing — and three of the
+four are cases where the failure is a squad that cannot operate rather than a screen that looks
+wrong.
