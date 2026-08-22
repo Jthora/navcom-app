@@ -10,6 +10,15 @@
     <a class="brand" href="/">NavCom</a>
     <nav>
       <a href="/directory/">Directory</a>
+      <!--
+        The application itself, which was reachable only by typing the path.
+
+        CLAUDE.md's position on this surface is "try instantly, no install, fully capable" —
+        and nothing on the public site linked to it, so the front door offered a directory and
+        a pile of documentation about a product that appeared not to exist. It is the same
+        rule as everywhere else here: a mechanism nobody can reach is not built.
+      -->
+      <a href="/terminal/">Terminal</a>
       <a href="/status/">Status</a>
       <a href="/docs/contributing/">Contribute</a><a href="/docs/">Docs</a>
     </nav>
