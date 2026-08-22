@@ -34,7 +34,7 @@ Each cell is a pass. `—` not started, `✓` done, and a note when it found som
 | **0** Prove what is built | Browser harness, service worker, offline, seeding, the verification layer itself | **✓** | **✓** | **✓** |
 | **1** One operator alone | Display rules, patrol record, contact, wipe, seeder | **✓** | **✓** | **✓** |
 | **2** One watch staffed | Executor, pager, drills, web push, on-call | **✓** | **✓** | **✓** |
-| **3** Two who met once | Peers, presence, cards, invites, public presence, buddy | **✓** | — | — |
+| **3** Two who met once | Peers, presence, cards, invites, public presence, buddy | **✓** | **✓** | — |
 | **4** Squad with no box | Watch mode, group sealing, board, handover, watch key | — | — | — |
 | **5** Written-down properties | PQC, declined, battery, RTL, watch-state v4 | — | — | — |
 | **6** Knowledge gets in | Corrections, merge, needs-checking, notes, promotion | — | — | — |
@@ -502,3 +502,31 @@ than assumed.
 **One detail worth keeping.** `MyCard` has no `callsign` field at all — the name comes from the
 identity, *"rather than a second public name that could drift from the one peers already
 know."* My first fixtures invented one, and the type refused them. The type was right.
+
+
+## 3.I — Milestone 3, interface tests
+
+**The peer block on Status had never been rendered from a real event.** Four claims live there
+and nowhere else, and each is a rule this project argues for in its own comments:
+
+- **Silence is named, not hidden.** A peer nobody has heard from is listed by name, because
+  *"leaving them off would read as 'not out', which is a claim nobody made"* [invariant 3]
+- ***"Nothing heard is not the same as home."*** Said out loud, next to the names
+- **Overdue is a nudge**, and nothing escalates from it — *"no page, no ladder, no contact.
+  People are late for ordinary reasons far more often than dangerous ones"*
+- **Who is watching you is only what somebody said**, never inferred from you watching them:
+  *"two people can each assume the other is keeping an eye out, and assuming symmetry nobody
+  agreed to is exactly how somebody ends up watched by nobody"*
+
+All five now driven from sealed presence events a peer actually sent. The two that matter most
+are verified in both directions: hiding quiet peers fails the suite, and inferring *watching*
+from a peer merely being out fails it too.
+
+That second mutation is worth naming, because it is the plausible one. *"They are out, so
+presumably they are keeping an eye out"* is the exact inference a reasonable developer would
+make while tidying this code, and it produces a screen that tells two people they are watched
+when nobody is.
+
+**Nothing found in the buddy controls**, which are already driven end to end — *Watch for
+them* and *Stop watching*, both clicked in an existing browser test. 3.U proved the logic; the
+interface for it was already covered, which is the answer this lens hopes for.
