@@ -35,7 +35,7 @@ Each cell is a pass. `—` not started, `✓` done, and a note when it found som
 | **1** One operator alone | Display rules, patrol record, contact, wipe, seeder | **✓** | **✓** | **✓** |
 | **2** One watch staffed | Executor, pager, drills, web push, on-call | **✓** | **✓** | **✓** |
 | **3** Two who met once | Peers, presence, cards, invites, public presence, buddy | **✓** | **✓** | **✓** |
-| **4** Squad with no box | Watch mode, group sealing, board, handover, watch key | **✓** | **✓** | — |
+| **4** Squad with no box | Watch mode, group sealing, board, handover, watch key | **✓** | **✓** | **✓** |
 | **5** Written-down properties | PQC, declined, battery, RTL, watch-state v4 | — | — | — |
 | **6** Knowledge gets in | Corrections, merge, needs-checking, notes, promotion | — | — | — |
 | **7** Standing | Credentials, claims, revocation, the watch gate | — | — | — |
@@ -633,3 +633,43 @@ Two rules asserted alongside, because they are what make an answer trustworthy:
 **Nothing found in the rest of the surface.** The gate, the handover confirmation and the
 address are already driven, and that is the honest answer for a milestone whose interface has
 had three passes over it in the first grid.
+
+
+## 4.S — Milestone 4, story
+
+**A handover left the watch reading Dark while somebody was holding it.**
+
+A squad shares one watch key, and watch state is a **replaceable** event — so any holder can
+overwrite it. Walk the ordinary handover and the hole appears immediately: Wren takes the
+watch, Raven takes it over mid-shift, Wren stands down, **and Wren's Dark replaces Raven's
+`station`.**
+
+An operator signing on in that window is told nobody is watching when somebody is. It is
+invariant 4's mirror image, and while it errs toward the safer belief, it is still the watch
+lying about itself — and it silently breaks the thing the squad is providing. Raven's heartbeat
+corrects it **up to two minutes later**.
+
+Each device was behaving correctly on its own. Wren really did stand down; Raven really is on
+station. Nothing is wrong with either half, which is why nothing found this until two phones
+were driven at once.
+
+### The fix needed something the board did not have
+
+*Only whoever is currently advertised may publish Dark.* Standing down is always honoured
+locally — what is conditional is **speaking for the watch**, and somebody who has already
+handed over does not.
+
+The first attempt at that guard did nothing, and the reason is its own finding: **a holder's
+device never watched its own watch.** `watch.svelte` follows the *configured* Watchtower, and a
+squad member holds a key rather than a config — so nothing on that phone knew what the world
+was being told about it. The board now reads its own watch state from the relays it is already
+connected to, which costs one extra filter rather than a connection.
+
+**The other half is asserted too**, because a fix here could easily go too far: standing down
+with nobody taking over still publishes Dark. Going quiet would leave a stale claim that a
+human is here, which is the entire reason `standDown` exists.
+
+**And one thing confirmed rather than changed:** the incoming holder starts from an empty
+board. That is deliberate and stated — *"nobody hands a board over, because nobody holds
+anybody else's picture… the way it fills is that operators say they are out again"* — so the
+test pins it rather than treating an empty board as a bug.

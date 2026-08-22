@@ -33,13 +33,14 @@
 import { finalizeEvent } from 'nostr-tools/pure';
 import type { Event } from 'nostr-tools/core';
 import {
+  KIND_DISTRESS,
+  KIND_SIGNAL,
+  KIND_WATCH_STATE,
   buildResponse,
   buildWatchStateEvent,
   darkState,
   declineIsValid,
   isOverdue,
-  KIND_DISTRESS,
-  KIND_SIGNAL,
   openFromGroup,
   readTag,
   type BoardEntry,
@@ -85,6 +86,18 @@ let unannounced = $state(false);
 /** Still advertised as staffed, because standing down never reached a relay. */
 let stillAdvertised = $state(false);
 let darkRetry: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * Who this watch is currently advertising as its holder.
+ *
+ * A holder's device did not watch its **own** watch: `watch.svelte` follows the *configured*
+ * Watchtower, and a squad member holds a key rather than a config, so nothing on this device
+ * knew what the world was being told about it.
+ *
+ * That is what made the handover hole invisible from here. Read from the same relays the
+ * board already uses, so it costs one filter rather than a connection.
+ */
+let advertised = $state<{ state: string; holder: string | null } | null>(null);
 
 /**
  * The timestamp of the last sign-on or stand-down applied for each operator.
@@ -215,9 +228,22 @@ export const board = {
     closer?.close();
     closer = pool().subscribeMany(
       urls,
-      { kinds: [KIND_SIGNAL, KIND_DISTRESS], '#p': [address] },
+      [
+        { kinds: [KIND_SIGNAL, KIND_DISTRESS], '#p': [address] },
+        // This watch's own published state, so a holder can tell whether they are still the
+        // one the world is being told about.
+        { kinds: [KIND_WATCH_STATE], authors: [address] }
+      ] as never,
       {
         onevent: (event: Event) => {
+          if (event.kind === KIND_WATCH_STATE) {
+            try {
+              advertised = JSON.parse(event.content) as { state: string; holder: string | null };
+            } catch {
+              advertised = null;
+            }
+            return;
+          }
           const read = readSignal(event);
           if (!read) return;
           const type = (event.kind === KIND_DISTRESS
@@ -278,6 +304,24 @@ export const board = {
     if (beat) clearInterval(beat);
     beat = null;
     if (!secret || urls.length === 0) return;
+
+    /*
+     * Only whoever is currently advertised may publish Dark.
+     *
+     * A squad shares one watch key and watch state is **replaceable**, so any holder can
+     * overwrite it. In a handover that is a hole: Wren takes the watch, Raven takes it over
+     * mid-shift, Wren stands down — and Wren's Dark replaces Raven's `station`. **The watch
+     * reads Dark while Raven is holding it**, and an operator signing on is told nobody is
+     * watching when somebody is. Raven's heartbeat corrects it up to two minutes later.
+     *
+     * Standing down is always honoured locally. What is conditional is *speaking for the
+     * watch*, and somebody who has already handed over does not.
+     */
+    const mine = loadIdentity()?.callsign;
+    if (advertised?.state === 'station' && advertised.holder && mine && advertised.holder !== mine) {
+      console.info('[watch] handed over to ' + advertised.holder + ' — not publishing Dark over them');
+      return;
+    }
 
     /*
      * Whether Dark actually landed.
