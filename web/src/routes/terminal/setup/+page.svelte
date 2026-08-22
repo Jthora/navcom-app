@@ -139,7 +139,19 @@
         rather than an oversight.
       </p>
       <input id="callsign" bind:value={callsign} autocomplete="off" spellcheck="false" />
-      <button type="submit">Generate keypair</button>
+      <!--
+    Inert until there is something to submit.
+
+    A prerendered page is tappable before it hydrates, and a `<form>` tapped in that window
+    does a native GET: the page reloads and what was just typed is **gone**. The peers screen
+    already learned this and fixed it there; the same defect was still on all three forms
+    here — including the callsign, which is the first thing every operator types.
+
+    `disabled` rather than a plain button, because it also blocks implicit submission: with
+    the default button disabled, Enter on the phone keyboard does not submit either. Query,
+    Resupply and Sign-on already render this way.
+  -->
+  <button type="submit" disabled={!callsign.trim()}>Generate keypair</button>
     </form>
   {/if}
 </section>
@@ -166,7 +178,7 @@
     <input id="clabel" bind:value={contactLabel} autocomplete="off" placeholder="Sam" />
     <label for="cnumber">Number</label>
     <input id="cnumber" bind:value={contactNumber} type="tel" autocomplete="off" placeholder="+1 555 0100" />
-    <button type="submit">{contact ? 'Update' : 'Save'}</button>
+    <button type="submit" disabled={!contactLabel.trim() || !contactNumber.trim()}>{contact ? 'Update' : 'Save'}</button>
   </form>
   {#if contact}
     <p class="done">
@@ -212,7 +224,7 @@
       you send</strong>, on watch or off. It comes from the same person who gave you the
       pubkey; nothing discovers it.
     </p>
-    <button type="submit">{configured ? 'Update' : 'Connect'}</button>
+    <button type="submit" disabled={!pubkey.trim()}>{configured ? 'Update' : 'Connect'}</button>
   </form>
   {#if configured}<p class="done">Saved. <a href="/terminal/">Back to status</a></p>{/if}
 </section>

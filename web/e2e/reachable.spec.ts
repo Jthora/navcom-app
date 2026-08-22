@@ -20,7 +20,15 @@ test.describe('setup', () => {
     await open(page, '/terminal/setup/');
 
     await expect(page.locator('#callsign')).toBeVisible();
-    await expect(page.getByRole('button', { name: /generate keypair/i })).toBeEnabled();
+
+    // Inert until there is a callsign, which is what `makeIdentity` requires anyway — it
+    // refuses an empty one with an error. Disabled removes a tap whose only outcome is that
+    // error, and makes the form inert before hydration, where a native submit used to reload
+    // the page and throw away what was typed.
+    const generate = page.getByRole('button', { name: /generate keypair/i });
+    await expect(generate).toBeDisabled();
+    await page.locator('#callsign').fill('Wren');
+    await expect(generate).toBeEnabled();
 
     // The watch section must read as optional. An operator who knows nobody is the common
     // case, and telling them setup is unfinished is telling them the app is broken.

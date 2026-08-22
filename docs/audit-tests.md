@@ -32,7 +32,7 @@ Each cell is a pass. `—` not started, `✓` done, and a note when it found som
 | Milestone | Surface | U | I | S |
 |---|---|---|---|---|
 | **0** Prove what is built | Browser harness, service worker, offline, seeding, the verification layer itself | **✓** | **✓** | **✓** |
-| **1** One operator alone | Display rules, patrol record, contact, wipe, seeder | **✓** | — | — |
+| **1** One operator alone | Display rules, patrol record, contact, wipe, seeder | **✓** | **✓** | — |
 | **2** One watch staffed | Executor, pager, drills, web push, on-call | — | — | — |
 | **3** Two who met once | Peers, presence, cards, invites, public presence, buddy | — | — | — |
 | **4** Squad with no box | Watch mode, group sealing, board, handover, watch key | — | — | — |
@@ -265,3 +265,40 @@ id are each caught by an existing test.
 aged past what it tolerates while this pass ran. That is the verification layer catching
 exactly the hazard it exists for, and it is worth recording as working rather than only
 recording the things that were not.
+
+
+## 1.I — Milestone 1, interface tests
+
+**A tap before hydration threw away what the operator had just typed — on four forms,
+including the callsign.**
+
+Every terminal screen is prerendered, so it is on the glass and tappable before its JavaScript
+arrives. The peers screen already learned exactly what a `<form>` does in that window and
+wrote it down: *"a native GET submit: the page reloads and the code the operator just typed is
+gone. A plain button does nothing at all until it works, and a tap that does nothing is
+recoverable in a way that a tap that clears the field is not."*
+
+It was fixed **there and nowhere else.** Reading the built HTML rather than the source: three
+submit buttons on `setup` and one on `assist` render with no `disabled` attribute at all. With
+JavaScript off, tapping `setup` navigated and came back with the callsign field **empty** —
+the first thing every operator does, silently undone.
+
+**The privacy half is better than it looked, and worth stating precisely.** The fields carry no
+`name` attribute, so nothing was serialised into the query string: the URL became
+`/terminal/assist/?` with nothing after it. Free text about somebody's situation did **not**
+reach the URL bar or history. The defect is lost input, not a leak — and I checked rather than
+assuming the worse version.
+
+Fixed with `disabled` bound to the required field, matching what `query`, `resupply` and
+`sign-on` already render. That choice does a second thing a plain button would not: with the
+default button disabled, **implicit submission is blocked too**, so Enter on a phone keyboard
+does not submit either.
+
+Now asserted as a property rather than four examples — *nothing that submits a form is enabled
+before anything is bound to it* — so a fifth form added later is covered without anybody
+remembering this pass.
+
+**One existing test had encoded the old behaviour** and was updated rather than deleted: it
+asserted the Generate keypair button was enabled on arrival. `makeIdentity` refuses an empty
+callsign with an error anyway, so disabling it removes a tap whose only possible outcome was
+that error. Same shape as the phone-number contract corrected in 1.R.

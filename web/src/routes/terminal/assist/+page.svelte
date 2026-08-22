@@ -108,7 +108,11 @@
     <p class="ok" data-acked>Acknowledged by the watch.</p>
   {/if}
 
-  <button type="submit" disabled={operator.busy}>
+  <!--
+      Also inert before hydration: `operator.busy` is false on a prerendered page, so this
+      was tappable and did a native GET. See the setup screen for the whole reasoning.
+    -->
+    <button type="submit" disabled={operator.busy || !text.trim()}>
     {operator.busy ? 'Sending…' : urgency === 'now' ? 'Assist — now' : 'Assist — soon'}
   </button>
 </form>
