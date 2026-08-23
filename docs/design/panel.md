@@ -381,12 +381,51 @@ working against the display rules.
 - **Friction creep.** Ceremony belongs to two acts. Every additional one is a tax on somebody
   standing in the cold
 
+## P9, decided: when low signature is the default
+
+Neither *always on* nor *always off* survives contact with who opens this, and the tempting
+escape is closed by the terminal's own commitments.
+
+**Not on a timer.** `tokens.css` gives the terminal a single visual world *"because a terminal
+that changed appearance with the phone's theme would be a terminal you could not learn by
+muscle memory."* A screen that redecorates on a clock — one this app already has a documented
+Dark reason for distrusting — is worse than either fixed default. Ambient sensing is not
+reliably available, and inferring where an operator is standing is the guessing invariant 3
+forbids.
+
+**The failure modes are asymmetric, and that sets the direction.**
+
+| Default | If it is wrong | Cost | Do they see it? |
+|---|---|---|---|
+| **Off** | A bright phone on a dark street | Night vision gone; brightest object for a hundred metres | **No** — and they may never find the control |
+| **On** | A dim amber screen indoors | A moment of "is this broken" | **Yes** — one tap, and the control says *Document* |
+
+This project picks the safe answer over the true one everywhere else. It should here.
+
+**But not from the first screen.** A newcomer must never meet something that reads as degraded
+— the whole Alone position — so always-on fails a different test than always-off does.
+
+**So the default follows the one thing the operator has declared: a callsign.** Somebody who
+only wants the directory never needs one, and the terminal's directory works without it.
+Choosing a callsign is a deliberate statement of *I intend to work as an operator*, and
+operators work outdoors at night. That is not a guess about the world; it is honouring
+something a person said.
+
+Two refinements matter more than the default:
+
+- **`prefers-contrast: more` outranks it.** Somebody who asked their whole device for more
+  contrast has already answered this, and dimming them would override a stated need with a
+  default. It is the one signal here that is neither inference nor proxy
+- **It is explained where it happens.** The setup screen says it at the moment it changes. An
+  operator who finds a dim screen and no explanation reasonably concludes the app is broken,
+  which is the failure the Alone position exists to avoid
+
+
 ## Decisions needed from a human
 
 1. **Typography** — system stack, one subset variable font, or condensed-only. Default is
    system stack
-2. **Low signature default** — on by default for everyone, or opt-in? Argument for default-on
-   is that the audience is definitionally outdoors at night; argument against is that first
-   contact happens on a couch
+2. ~~**Low signature default**~~ — **decided: on once there is a callsign, not before.** See
+   below
 3. **Legend placement** — one screen that teaches the vocabulary, and where it lives without
    becoming onboarding, which is banned

@@ -99,3 +99,64 @@
     animation: none !important; transition: none !important;
   }
 }
+
+/*
+ * ── Low signature ────────────────────────────────────────────────────────────
+ *
+ * No white anywhere, luminance at the floor, amber-dominant. See `signature.ts` for why: dark
+ * adaptation is preserved by long-wavelength light, and a bright phone on a dark street makes
+ * the person holding it the brightest object for a hundred metres.
+ *
+ * State is carried by **brightness and wording rather than hue** here — bright amber for good,
+ * mid for warning, dim for cold — with red reserved for the alarm channel, which is the one
+ * hue that both preserves dark adaptation and must never be mistaken for anything else.
+ *
+ * Contrast against the true black ground: ink 6.8:1, muted 4.6:1, faint 3.0:1. The faint tone
+ * is used for uppercase labels only, never for reading.
+ */
+:root[data-signature='low'] .terminal {
+  --t-ground: #000000;
+  --t-raised: #0A0704;
+  --t-sunk: #000000;
+  --t-ink: #C98A2E;
+  --t-muted: #A0701F;
+  --t-faint: #7A5518;
+  --t-line: #2A1D08;
+  --t-line-strong: #4A340C;
+
+  /* Brightness, not hue. The words in the readout are what say which state this is. */
+  --t-station: #D9932E;
+  --t-oncall: #A0701F;
+  --t-auto: #8A5F1E;
+  --t-dark: #7A5518;
+
+  /* The one exception, and the reason it is the exception. */
+  --t-alarm: #C0392B;
+}
+
+/*
+ * The control itself. Small, recessed, and on every screen — a mode you can only reach from
+ * one page is a mode nobody uses at 2am.
+ */
+.terminal .signature {
+  position: fixed;
+  inset-block-end: 0.5rem;
+  inset-inline-end: 0.5rem;
+  z-index: 5;
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  padding: 0 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--t-faint);
+  background: var(--t-ground);
+  border: 1px solid var(--t-line);
+  border-radius: 2px;
+  opacity: 0.75;
+}
+.terminal .signature:active { opacity: 1; }
+/* So the last thing on any screen is never underneath it. */
+.terminal { padding-block-end: 4rem; }

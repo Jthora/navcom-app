@@ -12,7 +12,9 @@
   import '$lib/terminal/screen.css';
   import '$lib/terminal/panel.css';
   import { saving } from '$lib/terminal/saving.svelte';
+  import { apply, setSignature, signature } from '$lib/terminal/signature';
   let { children } = $props();
+  let sig = $state<'low' | 'document'>('document');
 
   /**
    * Marks the terminal as interactive.
@@ -34,6 +36,12 @@
      * It lives here rather than on each screen because every screen writes and none of them
      * checked — the failure is silent by construction, so the report cannot be opt-in.
      */
+    /*
+     * Applied before anything else on mount, so a device set to low signature never shows a
+     * frame at full brightness. On a dark street that flash is the whole thing it avoids.
+     */
+    sig = signature();
+    apply(sig);
     saving.start();
     document.documentElement.dataset.hydrated = 'true';
     return () => saving.stop();
@@ -53,6 +61,21 @@
     <p class="saving-failed" role="status" data-storage-full>{saving.failure}</p>
   {/if}
   {@render children()}
+
+  <!--
+    On every screen, because a mode you can only reach from one page is a mode nobody finds at
+    2am — and because reading a directory record properly is a different job from watching a
+    board, so getting back to document mode has to be one tap from wherever you are.
+  -->
+  <button
+    class="signature"
+    data-signature-toggle
+    aria-pressed={sig === 'low'}
+    onclick={() => {
+      sig = sig === 'low' ? 'document' : 'low';
+      setSignature(sig);
+    }}
+  >{sig === 'low' ? 'Document' : 'Low signature'}</button>
 </div>
 
 <style>

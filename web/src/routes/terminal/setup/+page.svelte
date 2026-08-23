@@ -97,6 +97,20 @@
       nothing anyone could revoke. <strong>There is also no recovery.</strong> Lose this
       device and you lose this identity.
     </p>
+    <!--
+      Said at the moment it happens, and only here.
+
+      Taking a callsign is what flips the terminal to low signature by default, so this is the
+      one place where the change can be explained rather than discovered. An operator who finds
+      a dim amber screen and no explanation reasonably concludes the app is broken — which is
+      the same failure the Alone state exists to avoid.
+    -->
+    <p class="note" data-signature-explained>
+      <strong>The terminal is dim and amber now.</strong> That is deliberate: it keeps your
+      night vision, and it stops your phone lighting you up on a dark street.
+      <strong>Document mode is one tap away</strong> — the control is on every screen, and it
+      stays wherever you leave it.
+    </p>
   {:else}
     <form onsubmit={makeIdentity}>
       <label for="callsign">Callsign</label>
