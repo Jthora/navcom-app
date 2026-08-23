@@ -15,6 +15,17 @@ export default defineConfig({
   fullyParallel: true,
 
   /**
+   * The real-relay check is not part of a run.
+   *
+   * It starts a NIP-01 relay on this machine and drives two browser contexts through it, to
+   * close the one gap `verification.md` says nothing covers. It is slower than everything
+   * else here and it is a *check* rather than a test — `npm run test:relay`.
+   *
+   * Excluded by name rather than by directory so it still lives beside what it is about.
+   */
+  testIgnore: ['**/real-relay.spec.ts'],
+
+  /**
    * **No retries, anywhere.**
    *
    * A retry turns a flaky test into a passing one and hides the flake. If something here is

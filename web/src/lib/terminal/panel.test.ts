@@ -168,3 +168,35 @@ describe('the panel stylesheet cannot collide with a screen', () => {
     for (const f of frames) expect(f, f).toMatch(/^nc-/);
   });
 });
+
+describe('the panel stylesheet against the device floor', () => {
+  /*
+   * The floor is a prepaid Android 8, and the browser on one is not necessarily current.
+   *
+   * `color-mix()` is Chrome 111 and Safari 16.2. A browser that does not understand it drops
+   * the declaration — and the first use of it here was the background of the **one lit
+   * action**, which with `border: 0` left the primary control rendering as bare text with no
+   * button. Found by reading the built CSS, not by any test, which is why there is one now.
+   */
+  const css = readFileSync(new URL('./panel.css', import.meta.url), 'utf8').replace(
+    /\/\*[\s\S]*?\*\//g,
+    ''
+  );
+
+  it('gives every modern colour function a plain fallback first', () => {
+    const missing: string[] = [];
+    for (const rule of css.split('}')) {
+      for (const line of rule.split(';')) {
+        if (!line.includes('color-mix')) continue;
+        const prop = line.split(':')[0].trim();
+        // The same property must be set earlier in the same rule, without the modern function.
+        const earlier = rule.slice(0, rule.indexOf(line));
+        const has = new RegExp(`(^|;)\\s*${prop}\\s*:[^;]*$`, 'm').test(earlier)
+          || earlier.includes(`${prop}:`)
+          || earlier.includes(`${prop} :`);
+        if (!has) missing.push(`${prop} in "${rule.split('{')[0].trim().slice(0, 40)}"`);
+      }
+    }
+    expect(missing, `no fallback before: ${missing.join(', ')}`).toEqual([]);
+  });
+});

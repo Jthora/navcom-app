@@ -58,8 +58,26 @@ interface Seed {
    */
   accruing?: Record<string, unknown>;
   relayEvents?: unknown[];
+  /**
+   * This device's own key, as 64 hex.
+   *
+   * Defaults to `TEST_SECRET` so failures stay reproducible. It was previously *forced* to it,
+   * which meant two seeded contexts were the same operator wearing two callsigns — fine while
+   * every peer test used a stubbed relay that never checked a signature, and wrong the moment
+   * one spoke to a relay that did.
+   */
+  secret?: string;
   /** Internal, set by `blankDevice`: stub the network and write nothing. */
   __noStorage?: boolean;
+  /**
+   * Internal, set by `liveDevice`: seed storage and **leave the socket alone**.
+   *
+   * The stub above is the right default and the reasoning for it stands. This is the one
+   * exception: a check that a client can speak to an actual relay cannot be run against a
+   * fake one, and the relay in question is started on this machine rather than borrowed from
+   * a stranger. See `relay-server.ts`.
+   */
+  __liveSocket?: boolean;
   /**
    * Accept subscriptions but refuse everything published.
    *
@@ -272,9 +290,11 @@ export async function seedDevice(page: Page, seed: Seed = {}): Promise<void> {
       // Presence of the key is the intent, not its length. `relayEvents: []` used to fall
       // through to the dead socket, so a test that meant "a relay that answers, with nothing
       // stored yet" silently got "no signal at all" — and the failure looked like the screen.
-      s.relayEvents !== undefined || s.refusePublish || s.__noStorage
-        ? ReplayingSocket
-        : DeadSocket;
+      s.__liveSocket
+        ? (globalThis as unknown as { WebSocket: unknown }).WebSocket
+        : s.relayEvents !== undefined || s.refusePublish || s.__noStorage
+          ? ReplayingSocket
+          : DeadSocket;
 
     // A first run: stub the network and write nothing at all.
     if (s.__noStorage) return;
@@ -307,7 +327,7 @@ export async function seedDevice(page: Page, seed: Seed = {}): Promise<void> {
 
     localStorage.setItem('navcom.accruing', JSON.stringify(accruing));
     localStorage.setItem('navcom.wipeable', JSON.stringify(wipeable));
-  }, { ...seed, secret: TEST_SECRET });
+  }, { ...seed, secret: seed.secret ?? TEST_SECRET });
 }
 
 /**
@@ -448,4 +468,23 @@ export async function holdUntil(page: Page, selector: string, ms = 1500): Promis
   await handle.dispatchEvent('pointerup').catch(() => {
     // Gone because it fired and the screen moved on. That is the success case.
   });
+}
+
+/**
+ * A device on a real socket, pointed at a relay running on this machine.
+ *
+ * Everything else in this file deliberately never opens one. This is the exception, and it
+ * exists because `verification.md` lists *"peer presence has never crossed a real relay"* under
+ * what nothing covers — a gap no amount of stubbing can close, by definition.
+ */
+export async function liveDevice(
+  page: Page,
+  relayUrl: string,
+  seed: Seed & { secret?: string } = {}
+): Promise<void> {
+  await seedDevice(page, {
+    ...seed,
+    accruing: { ...(seed.accruing ?? {}), relays_own: [relayUrl] },
+    __liveSocket: true
+  } as Seed);
 }

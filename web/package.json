@@ -18,7 +18,8 @@
     "test:browser": "node scripts/browser-tests.mjs",
     "test:watch": "vitest",
     "verify": "npm run check && npm run check:data && npm run build && npm run test && npm run test:browser && npm run budget",
-    "verify:deploy": "npm run check && npm run check:data && npm run build && npm run test && npm run budget"
+    "verify:deploy": "npm run check && npm run check:data && npm run build && npm run test && npm run budget",
+    "test:relay": "playwright test real-relay.spec.ts --config playwright.relay.config.ts"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",

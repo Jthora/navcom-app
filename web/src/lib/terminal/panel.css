@@ -170,6 +170,15 @@
   min-height: 3.5rem;
   border: 0;
   border-radius: 0;
+  /*
+   * Plain first, `color-mix` second.
+   *
+   * `color-mix()` is Chrome 111 and Safari 16.2. The device floor here is a prepaid Android 8,
+   * and a browser that does not understand the second declaration drops it — which, with
+   * `border: 0`, left **the one lit action rendering as bare text with no button**. The
+   * cascade does the work: old browsers keep the fallback, new ones take the mix.
+   */
+  background: rgba(233, 165, 68, 0.08);
   background: color-mix(in srgb, var(--t-oncall) 8%, transparent);
   color: var(--t-oncall);
   font-family: var(--font-mono);
@@ -181,6 +190,7 @@
   overflow: hidden;
 }
 .terminal .nc-act[data-tone='alarm'] {
+  background: rgba(210, 80, 58, 0.09);
   background: color-mix(in srgb, var(--t-alarm) 9%, transparent);
   color: var(--t-alarm);
 }
@@ -190,7 +200,8 @@
   inset: 0;
   transform-origin: left center; /* physical on purpose: a bar drains the way it was drawn */
   transform: scaleX(var(--fill, 0));
-  background: color-mix(in srgb, currentColor 18%, transparent);
+  background: currentColor;
+  opacity: 0.18;
   pointer-events: none;
 }
 .terminal .nc-act-label { position: relative; }
@@ -323,6 +334,7 @@
   font-variant-numeric: tabular-nums;
 }
 .terminal .nc-floor-row[data-status='overdue'] {
+  border-color: var(--t-line-strong);
   border-color: color-mix(in srgb, var(--t-oncall) 45%, var(--t-line));
 }
 .terminal .nc-floor-row[data-status='overdue'] .nc-floor-mark,

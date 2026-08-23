@@ -238,8 +238,17 @@ matters. The folding needs the manifest to fold into.
 Said plainly, because a verification page that overstates itself would be the joke writing
 itself:
 
-- **Two devices on one relay.** Peer presence has never crossed a real relay, and one
-  browser context cannot test two operators meaningfully
+- **Two devices on one relay.** ~~Peer presence has never crossed a real relay~~ — **partly
+  closed.** `npm run test:relay` starts a NIP-01 relay on this machine and runs two browser
+  contexts through it on real sockets: a `REQ` the client composed, `EVENT` frames it signed,
+  and presence arriving at a subscription the second device opened before the first had
+  anything to send. It also asserts that nothing readable about the operator is sitting in the
+  relay's memory afterwards, which every other test could only assert against a stub that never
+  had the chance to leak.
+
+  What is still open is the half that needs a body: **two phones, two networks, a relay
+  somebody else runs.** Public relays differ in filter handling, rate limits and retention.
+  Build order `0.2` stands
 - **The daemon and the executor together.** Both subscribe to `20911`; that they do not
   confuse a client is reasoned, not observed
 - **Carrying it for a night.** Nothing here finds text that is too long to read in the cold,
