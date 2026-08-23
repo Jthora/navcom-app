@@ -8,7 +8,8 @@
    */
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { capabilitySentence } from '@navcom/core';
+  import { capabilitySentence, pageableNow } from '@navcom/core';
+  import { Panel, Slot, Readout, Why } from '$lib/components/panel';
   import { watch } from '$lib/terminal/watch.svelte';
   import { operator } from '$lib/terminal/session.svelte';
   import { precision, setPrecision, type Precision } from '$lib/terminal/position.svelte';
@@ -31,6 +32,22 @@
     await operator.signOn(area.trim(), hours, routine);
     if (operator.session) goto('/terminal/');
   }
+
+  /*
+   * The receipt, read exactly as the status screen reads it [docs/design/panel.md P3].
+   *
+   * `pageableNow` is the core's own rule for who can actually be raised, so neither screen
+   * reimplements "reachable" and then drifts from the other.
+   */
+  const nowS = $derived(Math.floor(Date.now() / 1000));
+  const reachable = $derived(pageableNow(watch.state.oncall, nowS).map((o) => o.author.callsign));
+  const watchRead = $derived(
+    watch.state.state === 'dark'
+      ? { value: 'Dark', tone: 'cold' as const, sub: null }
+      : watch.state.state === 'station'
+        ? { value: 'On station', tone: 'good' as const, sub: watch.state.holder }
+        : { value: 'Automated', tone: 'warn' as const, sub: 'agent · not a human' }
+  );
 </script>
 
 <svelte:head>
@@ -43,11 +60,38 @@
   <h1>Sign on</h1>
 </header>
 
-<!-- What you are signing on to, said before you sign on, not after. -->
-<section class="told" data-told>
-  <h2>What is behind you</h2>
-  <p>{capabilitySentence(watch.state, Math.floor(Date.now() / 1000))}</p>
-</section>
+<!--
+  What you are signing on to, said before you sign on, not after — and read the same way it is
+  read on the status screen, because two renderings of one fact is how the two drift apart.
+-->
+<div data-told>
+  <Panel label="What is behind you">
+    <Slot k="Watch">
+      <Readout value={watchRead.value} tone={watchRead.tone} sub={watchRead.sub} />
+    </Slot>
+    <Slot k="Distress">
+      {#if reachable.length === 0}
+        <Readout value="No addressee" tone="warn" sub="pages nobody, and says so" />
+      {:else}
+        <Readout value="Pages on-call" tone="neutral" />
+      {/if}
+    </Slot>
+    {#if reachable.length > 0}
+      <Slot k="On call">
+        <Readout
+          value={reachable.join(', ')}
+          tone="neutral"
+          sub={reachable.length === 1 ? 'sole — ladder ends here' : null}
+        />
+      </Slot>
+    {:else}
+      <Slot k="On call" />
+    {/if}
+    <Why open={watch.state.state === 'dark'}>
+      <p>{capabilitySentence(watch.state, nowS)}</p>
+    </Why>
+  </Panel>
+</div>
 
 {#if watch.state.state === 'dark'}
   <section>
@@ -118,6 +162,4 @@
 </form>
 
 <style>
-  .told { border-inline-start: 3px solid var(--t-line-strong); padding-inline-start: .9rem; }
-  .told p { font-size: 1.05rem; color: var(--t-ink); }
 </style>

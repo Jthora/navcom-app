@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { capabilitySentence, pageableNow } from '@navcom/core';
-  import { Slot, Readout, Why, Action, Board } from '$lib/components/panel';
+  import { Panel, Slot, Readout, Why, Action, Board } from '$lib/components/panel';
   import { watch } from '$lib/terminal/watch.svelte';
   import { operator } from '$lib/terminal/session.svelte';
   import { presence } from '$lib/terminal/presence.svelte';
@@ -228,13 +228,23 @@
   stops reading. Rule 5: one lit action. Rule 3: every sentence that used to be on this screen
   is still here, word for word, behind `Why`.
 -->
-<section class="nc-panel" data-state={s.state} data-post={post.id}>
-  <header class="nc-panel-head">
-    <span>Status</span>
-    <span class="nc-panel-post" data-post-label>{post.label}</span>
-  </header>
+<Panel label="Status" post={post.label} data-state={s.state} data-post={post.id}>
+  <!-- Rule 5. One lit action, and it is the thing this post actually does. -->
+  {#snippet action()}
+    {#if !identity}
+      <Action label="Choose a callsign" tone="warn" href="/terminal/setup/" />
+    {:else if session}
+      <Action
+        label={operator.busy ? '…' : 'Check in'}
+        tone="warn"
+        disabled={operator.busy}
+        onfire={() => operator.routine()}
+      />
+    {:else}
+      <Action label="Sign on" tone="warn" href="/terminal/sign-on/" />
+    {/if}
+  {/snippet}
 
-  <div class="nc-panel-slots">
     <div data-capability>
       <Slot k="Watch">
         <Readout value={watchRead.value} tone={watchRead.tone} sub={watchRead.sub} />
@@ -455,30 +465,13 @@
       </Why>
     {/if}
 
-    {#if operator.error}
-      <Slot k="Last action">
-        <Readout value="Failed" tone="alarm" />
-        <Why summary="What went wrong"><p class="error">{operator.error}</p></Why>
-      </Slot>
-    {/if}
-  </div>
-
-  <!-- Rule 5. One lit action, and it is the thing this post actually does. -->
-  <div class="nc-panel-act">
-    {#if !identity}
-      <Action label="Choose a callsign" tone="warn" href="/terminal/setup/" />
-    {:else if session}
-      <Action
-        label={operator.busy ? '…' : 'Check in'}
-        tone="warn"
-        disabled={operator.busy}
-        onfire={() => operator.routine()}
-      />
-    {:else}
-      <Action label="Sign on" tone="warn" href="/terminal/sign-on/" />
-    {/if}
-  </div>
-</section>
+  {#if operator.error}
+    <Slot k="Last action">
+      <Readout value="Failed" tone="alarm" />
+      <Why summary="What went wrong"><p class="error">{operator.error}</p></Why>
+    </Slot>
+  {/if}
+</Panel>
 
 <!--
   Distress is not the lit action and it is not on the rail.

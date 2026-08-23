@@ -190,6 +190,16 @@ Tokens extended, `panel.css` written, the nine components built with their own t
 **Gate:** `Panel`, `Slot`, `Readout` and `Why` exist and are used by at least one real screen.
 A component nobody uses is not built — see [`verification.md`](../verification.md).
 
+> **The gate lapsed in P1, and was not noticed until P3.** Converting the status screen, I
+> hand-rolled `<section class="nc-panel">` instead of using `Panel`, because the screen needed
+> `data-*` markers the component did not forward. `Panel` then sat in the tree, imported by
+> nothing, while the build order recorded its gate as met.
+>
+> It is the exact failure this gate exists to catch, and passing a gate once does not keep it
+> passed. `Panel` now spreads `...rest` so a screen can mark it, and renders its label as an
+> `<h2>` — a screen made entirely of panels with no headings is one a screen reader cannot
+> navigate. Both status and watch use it.
+
 ### P1 — The shell · STATION + NIGHTHAND
 
 `terminal/+layout.svelte` gains the fixed panel header. `/terminal/` becomes the three-post

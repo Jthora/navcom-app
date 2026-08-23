@@ -17,6 +17,7 @@
   import { board, type Waiting } from '$lib/terminal/board.svelte';
   import { createWatch, foundedHere, joinWatch, leaveWatch, watchPubkey, watchSecretHex, WatchKeyError } from '$lib/terminal/watch-key';
   import { endorsersFor } from '$lib/terminal/standing';
+  import { Panel, Slot, Readout, Why, Heartbeat, Action } from '$lib/components/panel';
   import { loadIdentity } from '$lib/terminal/identity';
   import { loadConfig } from '$lib/terminal/config';
 
@@ -122,42 +123,51 @@
 </header>
 
 <section>
+  <!--
+    Two sentences stay on the glass and the rest goes one tap down [docs/design/panel.md P3].
+
+    Not by length. **"This app does not watch anybody. You do."** is the whole thesis of the
+    screen and everything below it looks like a monitor, so it cannot be behind anything. And a
+    `Distress` not being closed by an acknowledgement is a thing that will not happen unless
+    somebody acts — which is the one class of prose this doctrine never hides.
+  -->
+  <p><strong>This app does not watch anybody. You do.</strong></p>
   <p>
-    Taking watch means <strong>you are the person answering tonight</strong>. Operators who
-    sign on will see your callsign and go out believing somebody is reading what they send.
-  </p>
-  <p class="cost">
-    <!--
-      4.3, and the reason this screen exists as text before it exists as a board. Everything
-      below LOOKS like a monitor and is not one.
-    -->
-    <strong>This app does not watch anybody. You do.</strong> Nothing here runs in the
-    background, nothing wakes you, and a phone in your pocket with the screen dark is not
-    reading a board. It shows you what you took on — <strong>keeping it means looking</strong>.
-  </p>
-  <p class="cost">
-    Somebody past their time is <strong>marked, and nothing else happens</strong>. No page,
-    no ladder, no contact. People are late for ordinary reasons far more often than
-    dangerous ones, and an alarm that cries wolf destroys the one mechanism where failure
-    means somebody is hurt.
-  </p>
-  <p class="cost">
-    <!--
-      Before the board exists on screen, because it governs how to read the board and
-      because somebody deciding whether to take a watch needs to know what it does not tell
-      them. Seventh time this session a claim sat behind a conditional the prerendered page
-      cannot reach; the manifest caught this one the moment it was written.
-    -->
-    <strong>An empty board is not the same as nobody being out.</strong> It shows what this
-    phone has heard, which after a handover is less than what is true — operators already
-    out re-announce themselves a minute or two after their phones notice the watch changed
-    hands. Nobody hands you a board, because nobody holds anybody else's picture.
-  </p>
-  <p class="cost">
     <strong>A <code>Distress</code> is not closed by answering it.</strong> Acknowledging
     tells the operator a person is awake. It stays on this board until a human has actually
     ended it, and there is no button here that clears one.
   </p>
+  <Why summary="What taking the watch means">
+    <p>
+      Taking watch means <strong>you are the person answering tonight</strong>. Operators who
+      sign on will see your callsign and go out believing somebody is reading what they send.
+    </p>
+    <p class="cost">
+      <!--
+        4.3, and the reason this screen exists as text before it exists as a board. Everything
+        below LOOKS like a monitor and is not one.
+      -->
+      Nothing here runs in the background, nothing wakes you, and a phone in your pocket with
+      the screen dark is not reading a board. It shows you what you took on —
+      <strong>keeping it means looking</strong>.
+    </p>
+    <p class="cost">
+      Somebody past their time is <strong>marked, and nothing else happens</strong>. No page,
+      no ladder, no contact. People are late for ordinary reasons far more often than
+      dangerous ones, and an alarm that cries wolf destroys the one mechanism where failure
+      means somebody is hurt.
+    </p>
+    <p class="cost">
+      <!--
+        Governs how to read the board, and somebody deciding whether to take a watch needs to
+        know what it does not tell them.
+      -->
+      <strong>An empty board is not the same as nobody being out.</strong> It shows what this
+      phone has heard, which after a handover is less than what is true — operators already
+      out re-announce themselves a minute or two after their phones notice the watch changed
+      hands. Nobody hands you a board, because nobody holds anybody else's picture.
+    </p>
+  </Why>
 </section>
 
 {#if !callsign}
@@ -189,89 +199,140 @@
     <button onclick={join}>Join</button>
   </section>
 {:else}
-  <section class="act">
-    <h2>{board.onStation ? 'On station' : 'Off watch'}</h2>
-    {#if board.onStation}
-      <p class="cost">
-        You are published as the watch, under <strong>{callsign}</strong>. Standing down
-        says so — it publishes Dark rather than going quiet, so nobody is left reading a
-        stale claim that a human is here.
-      </p>
-      {#if board.unannounced}
-        <!--
-          Being on station is a claim made to other people. Nothing was published, so this
-          operator is covering nobody and would not otherwise find out.
-        -->
-        <p class="error" data-unannounced>
-          Nothing has reached a relay, so nobody can see this watch. Operators signing on now
-          will read Dark. It will keep trying.
-        </p>
+  <!-- The state IS the heading here, which is what the section was titled before. -->
+  <Panel label={board.onStation ? 'On station' : 'Off watch'} data-watch-post>
+    {#snippet action()}
+      {#if board.onStation}
+        <Action label="Stand down" tone="warn" onfire={() => board.standDown()} />
+      {:else if qualified}
+        <Action label="Take the watch" tone="warn" onfire={() => board.takeWatch()} />
       {/if}
-      <button onclick={() => board.standDown()}>Stand down</button>
-    {:else}
-      {#if board.stillAdvertised}
-        <!--
-          The worse direction, and the one standDown exists to prevent: watch state is
-          replaceable, so a Dark that never landed leaves the previous state on the relay and
-          everybody goes on believing a human is here.
-        -->
-        <p class="error" data-still-advertised>
-          You are still published as the watch. Standing down did not reach a relay, so
-          operators are reading a claim that somebody is here. It will keep trying — stay on
-          signal until this clears.
-        </p>
-      {:else}
-        <p class="cost">
-          Nobody is published as watching. Operators signing on now will read Dark, which is
-          a supported state and an honest one.
-        </p>
-      {/if}
-      {#if qualified}
-        {#if founded}
-          <p class="cost">
-            You started this watch, so it is yours to hold. Anybody you hand the key to will
-            need somebody who already holds it to say they can.
-          </p>
-        {:else}
-          <p class="cost" data-vouchers>
-            <strong>{vouchers.map((v) => v.endorser).join(', ')}</strong>
-            {vouchers.length === 1 ? 'says' : 'say'} you can take a watch.
+    {/snippet}
+
+      {#if board.onStation}
+        <Slot k="Holder"><Readout value={callsign} tone="good" sub="published as the watch" /></Slot>
+        <Slot k="Published">
+          {#if board.unannounced}
             <!--
-              7.4. The claim and its limit in one breath, the same discipline as the
-              capability receipt. Three endorsers is not a promise about tonight.
+              Being on station is a claim made to other people. Nothing was published, so this
+              operator is covering nobody and would not otherwise find out.
             -->
-            That is somebody's word about how you have worked before — <strong>it is not a
-            promise that you will stay awake tonight</strong>. Only you can make that one.
+            <span class="error"><Heartbeat label="Not reaching a relay" /></span>
+          {:else}
+            <Readout value="Yes" tone="good" />
+          {/if}
+        </Slot>
+        {#if board.unannounced}
+          <!-- The marker stays on the sentence it names: a state that will not resolve unless
+               the operator stays on signal is not something to put behind a tap. -->
+          <p class="error" data-unannounced>
+            Nothing has reached a relay, so nobody can see this watch. Operators signing on now
+            will read Dark. It will keep trying.
           </p>
         {/if}
-        <button onclick={() => board.takeWatch()}>Take the watch</button>
+        <Why summary="What standing down does">
+          <p class="cost">
+            You are published as the watch, under <strong>{callsign}</strong>. Standing down
+            says so — it publishes Dark rather than going quiet, so nobody is left reading a
+            stale claim that a human is here.
+          </p>
+        </Why>
       {:else}
-        <p class="cost" data-ungated>
-          <strong>Nobody has said you can take a watch.</strong> Holding a board means
-          operators go out believing a named human is reading what they send, so it is not
-          something to take on your own say-so when the watch is somebody else's.
-        </p>
-        <p class="cost">
-          Ask somebody who already holds this watch for a <code>can take watch</code>
-          credential, and claim it on <a href="/terminal/standing/">your standing</a>. If you
-          are starting your own watch instead, that needs nobody's permission.
-        </p>
-      {/if}
+        <Slot k="Published">
+          {#if board.stillAdvertised}
+            <Readout value="Still advertised" tone="alarm" sub="operators read you as here" />
+          {:else}
+            <Readout value="Nobody" tone="cold" sub="operators signing on read Dark" />
+          {/if}
+        </Slot>
+        {#if board.stillAdvertised}
+          <!--
+            The worse direction, and the one standDown exists to prevent: watch state is
+            replaceable, so a Dark that never landed leaves the previous state on the relay and
+            everybody goes on believing a human is here.
+
+            One of the two states permitted the alarm channel: a watch that is lying about
+            itself. It stays visible, because it is a thing that will not resolve unless the
+            operator stays on signal.
+          -->
+          <p class="error" data-still-advertised>
+            You are still published as the watch. Standing down did not reach a relay, so
+            operators are reading a claim that somebody is here. It will keep trying — stay on
+            signal until this clears.
+          </p>
+        {:else}
+          <Why summary="What Dark means for them">
+            <p class="cost">
+              Nobody is published as watching. Operators signing on now will read Dark, which is
+              a supported state and an honest one.
+            </p>
+          </Why>
+        {/if}
+
+        <Slot k="Gate">
+          {#if founded}
+            <Readout value="Founded here" tone="good" sub="you started this watch — yours to hold" />
+          {:else if vouchers.length > 0}
+            <!--
+              7.4, and the reason the limit is in the same readout rather than one tap down:
+              **the claim and its limit in one breath.** Splitting them put somebody's word on
+              the glass and the caveat behind a disclosure, which is the half that matters.
+            -->
+            <span data-vouchers>
+              <Readout
+                value={vouchers.map((v) => v.endorser).join(', ')}
+                tone="good"
+                sub="{vouchers.length === 1 ? 'says' : 'say'} you can take a watch — it is not a promise that you will stay awake tonight"
+              />
+            </span>
+          {:else}
+            <span data-ungated><Readout value="Not vouched" tone="warn" /></span>
+          {/if}
+        </Slot>
+
+        {#if qualified}
+          <Why summary="What that is, and is not">
+            {#if founded}
+              <p class="cost">
+                Anybody you hand the key to will need somebody who already holds it to say they
+                can.
+              </p>
+            {:else}
+              <p class="cost">
+                That is somebody's word about how you have worked before. Only you can make the
+                promise about tonight.
+              </p>
+            {/if}
+          </Why>
+        {:else}
+          <!-- A refusal and its route stay visible: this tells the operator what to do. -->
+          <p class="cost">
+            <strong>Nobody has said you can take a watch.</strong> Holding a board means
+            operators go out believing a named human is reading what they send, so it is not
+            something to take on your own say-so when the watch is somebody else's.
+          </p>
+          <p class="cost">
+            Ask somebody who already holds this watch for a <code>can take watch</code>
+            credential, and claim it on <a href="/terminal/standing/">your standing</a>. If you
+            are starting your own watch instead, that needs nobody's permission.
+          </p>
+        {/if}
     {/if}
-  </section>
+  </Panel>
 
   <section class="act">
     <h2>The address</h2>
     <p class="blocks">{#each blocks as b, i (i)}<span>{b}</span>{/each}</p>
-    <p class="cost">
-      What operators put in their own setup, along with your relays. Handed over by a
-      person; nothing here publishes it.
-    </p>
-    {#if !configured}
+    <Why summary="What this is for">
       <p class="cost">
-        <strong>Your own terminal is not pointed at any watch.</strong> That is fine — you
-        can hold a watch without being under one.
+        What operators put in their own setup, along with your relays. Handed over by a
+        person; nothing here publishes it.
       </p>
+    </Why>
+    {#if !configured}
+      <Slot k="Your terminal">
+        <Readout value="Under no watch" tone="cold" sub="you can hold one without being under one" />
+      </Slot>
     {/if}
   </section>
 
@@ -298,14 +359,19 @@
   <section>
     <h2>Who is out</h2>
     {#if board.entries.length === 0}
-      <p class="cost">
-        Nobody has signed on <em>that this phone has heard</em>. The board is built from
-        signals this device received; it is not a history, and nothing stores one.
-      </p>
-      <p class="cost">
-        If you have just taken over, operators already out re-announce themselves within a
-        minute or two of their phones noticing the watch changed hands.
-      </p>
+      <Slot k="Board">
+        <span data-empty-board><Readout value="No contact" tone="cold" sub="nothing heard by this phone" /></span>
+      </Slot>
+      <Why summary="What that does and does not mean">
+        <p class="cost">
+          Nobody has signed on <em>that this phone has heard</em>. The board is built from
+          signals this device received; it is not a history, and nothing stores one.
+        </p>
+        <p class="cost">
+          If you have just taken over, operators already out re-announce themselves within a
+          minute or two of their phones noticing the watch changed hands.
+        </p>
+      </Why>
     {:else}
       <ul class="board">
         {#each board.entries as e (e.operator)}
@@ -329,10 +395,12 @@
             {#if answering === w.id}
               <label for="a-{w.id}">Your answer</label>
               <textarea id="a-{w.id}" bind:value={text} rows="3"></textarea>
-              <p class="cost">
-                Goes to them and nobody else. It is sent as a person's answer, never as a
-                looked-up one — say what you know and say what you do not.
-              </p>
+              <Why summary="Where this goes">
+                <p class="cost">
+                  Goes to them and nobody else. It is sent as a person's answer, never as a
+                  looked-up one — say what you know and say what you do not.
+                </p>
+              </Why>
               <div class="row">
                 <button onclick={() => send(w.id)} disabled={busy}>Send</button>
                 <button onclick={() => (answering = null)}>Cancel</button>
@@ -399,7 +467,7 @@
       </p>
     {/if}
     {#if board.waiting.length === 0}
-      <p class="cost">Nothing waiting.</p>
+      <Slot k="Waiting"><Readout value="Nothing waiting" tone="cold" /></Slot>
     {:else}
       <ul class="board asks">
         {#each board.waiting as w (w.id)}{@render ask(w)}{/each}
@@ -415,7 +483,7 @@
       so by where it puts it, not only in words.
     -->
     {#if board.restock.length === 0}
-      <p class="cost">Nothing has run out.</p>
+      <Slot k="Restock"><Readout value="Nothing has run out" tone="cold" /></Slot>
     {:else}
       <ul class="board asks">
         {#each board.restock as w (w.id)}
@@ -425,10 +493,12 @@
           </li>
         {/each}
       </ul>
-      <p class="cost">
-        Nobody is waiting on these. They are here so whoever keeps the stash knows what to
-        buy — <strong>there is no count of what anyone handed out</strong>, here or anywhere.
-      </p>
+      <Why summary="Why these are last">
+        <p class="cost">
+          Nobody is waiting on these. They are here so whoever keeps the stash knows what to
+          buy — <strong>there is no count of what anyone handed out</strong>, here or anywhere.
+        </p>
+      </Why>
     {/if}
   </section>
 
