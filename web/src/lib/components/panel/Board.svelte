@@ -24,6 +24,11 @@
     callsign: string;
     area: string;
     status: string;
+    /**
+     * What the right-hand column says, when the status word alone is not the sentence a
+     * person needs. "is past the time they gave" is a nudge; "overdue" is a verdict.
+     */
+    note?: string | null;
     /** Seconds since this device last heard from them. */
     since?: number | null;
   }
@@ -47,7 +52,7 @@
           <span class="nc-floor-name">{e.callsign}</span>
           <span class="nc-floor-where">{e.area}</span>
         </span>
-        <span class="nc-floor-when">{e.status}</span>
+        <span class="nc-floor-when">{e.note ?? e.status}</span>
       </div>
     {/each}
   </div>

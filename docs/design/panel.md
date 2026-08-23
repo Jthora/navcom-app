@@ -202,6 +202,21 @@ The default is Alone and it is not a degraded state.
 **Gate:** status renders in all three posts with no `<p>` outside a `Why`, and the 15 controls
 are down to one lit plus a rail.
 
+> **Done.** Posts are **No callsign · Ready · Out**. Holding the watch is not a post here
+> because this screen does not know about the watch key — it is the watch screen's state, and
+> inventing it would be worse than naming what exists. Measured at 390×727: zero `<p>` outside
+> a `Why` in every post, **21–33 words** read without opening anything, and the per-page
+> stylesheet down from 38 rules to 3.
+>
+> **`Why` gained an `open` prop, and that is a correction to this doctrine rather than an
+> exception to it.** Rule 3 puts the reason one layer down; it does not say the reason may be
+> hidden when the reason *is* the message. An operator with no watch must be told plainly that
+> this is a normal way to work — the story test calls it *"the sentence this project cares most
+> about getting right for her"* — and a tap is enough to lose it for exactly the person who
+> needed it. The same holds for being shown Dark without being told why, a failure this project
+> has already fixed once. Terse is the default; it is not the rule when brevity costs somebody
+> the point.
+
 ### P2 — WHY everywhere
 
 Every prose block on every terminal screen moves inside a `Why`, verbatim. **No rewording in

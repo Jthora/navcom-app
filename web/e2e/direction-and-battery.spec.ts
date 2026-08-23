@@ -78,7 +78,9 @@ test.describe('a phone that is about to die', () => {
     await page.getByRole('button').last().click();
     await page.waitForURL('**/terminal/');
 
-    const warning = page.locator('p.battery');
+    // The battery reading moved into a slot when the status screen became a panel [P1]. The
+    // marker follows it; both facts below are asserted exactly as before.
+    const warning = page.locator('[data-battery]');
     await expect(warning).toBeVisible({ timeout: 10_000 });
     await expect(warning).toContainText('9%');
     await expect(warning).toContainText(/when it dies you stop sending/i);

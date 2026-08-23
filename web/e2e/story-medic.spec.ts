@@ -43,7 +43,7 @@ test.describe('a night, with no watch', () => {
     await page.waitForURL('**/terminal/');
     await page.getByRole('button', { name: /stand down/i }).click();
     await page.locator('#note').fill('quiet night, two handouts at the underpass');
-    await page.locator('button.primary').click();
+    await page.getByRole('button', { name: /i'm home/i }).click();
     await page.waitForTimeout(500);
 
     await open(page, '/terminal/patrols/');
@@ -64,7 +64,7 @@ test.describe('a night, with no watch', () => {
     await page.waitForURL('**/terminal/');
     await page.getByRole('button', { name: /stand down/i }).click();
     await page.locator('#note').fill('quiet night');
-    await page.locator('button.primary').click();
+    await page.getByRole('button', { name: /i'm home/i }).click();
     await page.waitForTimeout(400);
 
     await open(page, '/terminal/patrols/');

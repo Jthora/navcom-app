@@ -800,7 +800,7 @@ components against twenty routes**.
 | | Item | Who | Notes |
 |---|---|---|---|
 | P0 | ~~The component layer~~ | **done** | Tokens, `panel.css`, nine components, and the capability receipt converted onto them — the gate was that four of them are used by a real screen. Two findings on the way: `.act` collided with ten existing screens and uppercased a watch key through `innerText`, so every panel class is prefixed and a test holds it; and the new stylesheet broke the RTL invariant, which `rtl.test.ts` caught before it shipped |
-| P1 | **The shell — three posts, one panel** | agent | `/terminal/` opens onto the post you hold. The hard part is *Alone*: fully lit, not greyed-out setup |
+| P1 | ~~The shell — three posts, one panel~~ | **done** | `/terminal/` opens onto the post you hold — **No callsign · Ready · Out**. Measured at 390×727: **zero `<p>` outside a `Why`** in every post, and **21–33 words** read without opening anything, against a 40-word target. Per-page CSS went from 38 rules to 3. The screen is taller than before in the Alone state, deliberately: the Why that explains it opens itself |
 | P2 | **`WHY` everywhere** | agent | Every prose block relocated **verbatim** behind a disclosure. No rewording in this phase, so nothing can be lost in the noise of a rewrite |
 | P3 | **The readouts** | agent | Status, watch, distress, sign-on, standing. Target: under 40 words, one screen tall, every removed word present in a `WHY` |
 | P4 | **Motion that carries state** | agent | Window, Elapsed, Heartbeat, board reorder. `distress: null` means Distress **climbs and never drains** — a bar that empties implies it resolves itself |

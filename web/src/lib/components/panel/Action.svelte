@@ -24,7 +24,8 @@
     hold = 0,
     holdingLabel = 'Keep holding…',
     disabled = false,
-    onfire
+    href = null,
+    onfire = null
   }: {
     label: string;
     tone?: Tone;
@@ -32,7 +33,15 @@
     hold?: number;
     holdingLabel?: string;
     disabled?: boolean;
-    onfire: () => void;
+    /**
+     * Renders a link instead of a button.
+     *
+     * An action that goes somewhere should be a link: it opens in a new tab, it is announced
+     * as a link, and it works before this screen's JavaScript has run — which matters here,
+     * because every terminal screen is prerendered and tappable before it hydrates.
+     */
+    href?: string | null;
+    onfire?: (() => void) | null;
   } = $props();
 
   let fill = $state(0);
@@ -53,7 +62,7 @@
   function press() {
     if (disabled) return;
     if (!hold) {
-      onfire();
+      onfire?.();
       return;
     }
     holding = true;
@@ -67,22 +76,28 @@
     started = null;
     holding = false;
     fill = 0;
-    if (complete) onfire();
+    if (complete) onfire?.();
   }
 </script>
 
-<button
-  class="nc-act"
-  data-act
-  data-tone={tone}
-  data-holding={holding ? 'true' : undefined}
-  {disabled}
-  style="--fill: {fill}"
-  onpointerdown={press}
-  onpointerup={() => hold && release()}
-  onpointerleave={() => hold && release()}
-  onpointercancel={() => hold && release()}
->
-  {#if hold}<span class="nc-act-fill"></span>{/if}
-  <span class="nc-act-label">{holding ? holdingLabel : label}</span>
-</button>
+{#if href}
+  <a class="nc-act" data-act data-tone={tone} {href}>
+    <span class="nc-act-label">{label}</span>
+  </a>
+{:else}
+  <button
+    class="nc-act"
+    data-act
+    data-tone={tone}
+    data-holding={holding ? 'true' : undefined}
+    {disabled}
+    style="--fill: {fill}"
+    onpointerdown={press}
+    onpointerup={() => hold && release()}
+    onpointerleave={() => hold && release()}
+    onpointercancel={() => hold && release()}
+  >
+    {#if hold}<span class="nc-act-fill"></span>{/if}
+    <span class="nc-act-label">{holding ? holdingLabel : label}</span>
+  </button>
+{/if}

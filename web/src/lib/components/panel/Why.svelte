@@ -19,11 +19,12 @@
 
   let {
     summary = 'Why',
+    open = false,
     children
-  }: { summary?: string; children: Snippet } = $props();
+  }: { summary?: string; open?: boolean; children: Snippet } = $props();
 </script>
 
-<details class="nc-why" data-why>
+<details class="nc-why" data-why {open}>
   <summary>{summary}</summary>
   <div class="nc-why-body">{@render children()}</div>
 </details>
