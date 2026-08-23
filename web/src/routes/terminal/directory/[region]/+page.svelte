@@ -23,6 +23,7 @@
   import { AVAILABILITY_FIELDS, FIELD_LABELS, INTAKE_FIELDS, labelValue } from '$lib/directory/load';
   import { displayMerged, mergeCorrections, needsChecking, CORRECTABLE_FIELDS, FIELD_OPTIONS } from '@navcom/core';
   import { corrections } from '$lib/terminal/corrections.svelte';
+  import { Slot, Readout, Why, Heartbeat } from '$lib/components/panel';
   import { clearNote, keepNote, notes } from '$lib/terminal/notes';
   import { onMount } from 'svelte';
 
@@ -158,6 +159,11 @@
     this operator's own directory either way, so without this they have positive evidence it
     worked — which is worse than a silent failure.
   -->
+  <Slot k="Corrections">
+    <Heartbeat
+      label={corrections.unsentCount === 1 ? 'One not sent' : `${corrections.unsentCount} not sent`}
+    />
+  </Slot>
   <p class="cost" data-corrections-unsent>
     {corrections.unsentCount === 1
       ? 'One correction you made has not reached a relay yet'
@@ -183,11 +189,13 @@
   <p>
     This is what this phone is holding, and it works with no signal at all.
   </p>
-  <p class="cost">
-    If a watch is up, <strong><a href="/terminal/query/">ask it instead</a></strong> — somebody
-    with both hands free and a real screen can answer things this list cannot. This is what
-    you have when nobody is watching, and it is worse, on purpose.
-  </p>
+  <Why summary="When to ask a person instead">
+    <p class="cost">
+      If a watch is up, <strong><a href="/terminal/query/">ask it instead</a></strong> — somebody
+      with both hands free and a real screen can answer things this list cannot. This is what
+      you have when nobody is watching, and it is worse, on purpose.
+    </p>
+  </Why>
   <p class="cost">
     <!--
       Tenth time this session a claim landed behind a conditional the prerendered page cannot
@@ -204,22 +212,38 @@
 <!-- A cached copy has two ages, and only one of them is written on the records. -->
 <section class="snapshot" class:old={snapshotDays > 7} data-snapshot-age={snapshotDays}>
   <h2>This copy</h2>
-  <p>
+  <!--
+    A cached copy has two ages and only one of them is written on the records. This is the
+    other one, and it is exactly the shape of fact the display rules already govern: volatile
+    data shows its age, and past the point where the age can be trusted it reads "call first"
+    rather than a number somebody might rely on.
+  -->
+  <Slot k="Refreshed">
     {#if snapshotDays <= 0}
-      Refreshed today.
+      <Readout value="Today" tone="good" />
     {:else if snapshotDays === 1}
-      Refreshed yesterday.
+      <Readout value="Yesterday" tone="good" />
+    {:else if snapshotDays > 7}
+      <Readout value="Call first" tone="warn" sub="{snapshotDays} days ago — on everything" />
     {:else}
-      Refreshed <strong>{snapshotDays} days ago</strong>.
+      <Readout value="{snapshotDays} days ago" tone="neutral" />
     {/if}
-    {#if snapshotDays > 7}
+  </Slot>
+  {#if snapshotDays > 7}
+    <!-- Stays visible: it changes what the reader must do with everything below it. -->
+    <p class="cost">
       Places close and hours change inside a week. <strong>Call first, on everything.</strong>
-    {/if}
-  </p>
+    </p>
+  {/if}
 </section>
 
 {#if data.records.length === 0}
-  <section><p>This device holds no directory for your area yet.</p></section>
+  <!-- Rule 6. Silence is a positive readout, not an empty screen. -->
+  <section>
+    <Slot k="Held">
+      <Readout value="Nothing yet" tone="cold" sub="no directory for this area on this phone" />
+    </Slot>
+  </section>
 {/if}
 
 {#each byType as group (group.type)}
