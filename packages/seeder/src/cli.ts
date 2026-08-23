@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { callsFor, render } from "./callsheet.js";
+import { cmdRecord, parseRecordArgs } from "./record.js";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseDirectoryOrThrow } from "@navcom/core";
@@ -283,7 +285,7 @@ async function everyRegion(only?: string, refresh = false): Promise<void> {
 async function main(): Promise<void> {
   const [command, slug, ...rest] = process.argv.slice(2);
   if (!command || !slug) {
-    console.error("usage: navcom-seed <fetch|build|diff|apply|audit> <region> [--source osm]");
+    console.error("usage: navcom-seed <fetch|build|diff|apply|audit|calls|record> <region> [...]");
     process.exit(2);
   }
   const only = rest.find((a) => a.startsWith("--source="))?.split("=")[1];
@@ -301,6 +303,19 @@ async function main(): Promise<void> {
     case "build": cmdBuild(slug); break;
     case "apply": cmdApply(slug); break;
     case "audit": cmdAudit(slug); break;
+    /*
+     * The two halves of turning a scraped skeleton into a record somebody can act on.
+     *
+     * `calls` prints what to ask and who to ask; `record` writes down what they said, with the
+     * provenance that decides what it is worth. Neither invents a fact — see `callsheet.ts`.
+     */
+    case "calls": {
+      const limit = Number(rest.find((a) => a.startsWith("--limit="))?.split("=")[1] ?? 10);
+      const now = new Date();
+      console.log(render(slug, callsFor(csvPath(slug), now, limit), now));
+      break;
+    }
+    case "record": cmdRecord(csvPath(slug), parseRecordArgs(slug, rest)); break;
     default:
       console.error("Unknown command: " + command);
       process.exit(2);

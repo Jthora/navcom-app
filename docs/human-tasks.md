@@ -173,9 +173,41 @@ takes at 11pm, which is the half the directory exists for and the half no scrape
 
 **Ten records with real intake rules are worth more than a thousand skeletons.**
 
+### It does not need a body outdoors
+
+The confidence rules already rank a phone call: `in_person` is **high**, **`phone` is medium**,
+and `website` — which is what all 479 of these are — is **low**. So this is ten phone calls
+from a chair, not ten visits.
+
+There is a tool for it now, and it generates the *questions*, never the answers:
+
+```bash
+# what to ask, and who to ask, ordered by where an answer helps most
+npm run seed --workspace @navcom/seeder -- calls st-louis --limit=10
+```
+
+It reads the region, asks `needsChecking` which fields are blank on each place, skips anything
+with no phone number, and puts the places somebody *sleeps* first. Each entry comes with the
+questions phrased so you can say them out loud, and the exact command to record what you hear.
+
+```bash
+npm run seed --workspace @navcom/seeder -- record st-louis st-louis-our-ladys-inn \
+  --by Wren --method phone --on 2026-08-23 \
+  --pets "service animals only" --id_required "no ID needed"
+```
+
+It **refuses** an empty value, a method the confidence rules cannot weigh, and a missing
+callsign — because a field nobody would answer must stay blank, and blank renders as *unknown*,
+which is true. It also stamps the provenance when nothing changed, because *"I called and they
+confirmed what we had"* is a real result and the commonest one: it moves a record from low to
+medium and resets its age.
+
+**Nothing in the tool knows a single fact about a single place.** That is deliberate — a
+plausible-sounding `pets: yes` is somebody turned away at 11pm with a dog and nowhere to go.
+
 ### What to do
 
-Pick places you actually know in St. Louis. For each, fill in the fields a website will never
+Pick places you actually know in St. Louis, or work the call sheet in order. For each, fill in the fields a website will never
 tell you truthfully, in `data/regions/st-louis/resources.csv`:
 
 | Field | What it means |
