@@ -298,6 +298,24 @@ invariant 2 forbids. It climbs, with no end mark.
 **Gate:** `prefers-reduced-motion` has a real static equivalent for every moving readout,
 tested — not "animations off".
 
+> **Done, and the gate earned itself.** A window bar carries its quantity in movement; with
+> animation disabled it is painted once and never advances, so on its own it would state the
+> *size* of the window and nothing about how much is left. There is now a branch: the bar for
+> everyone else, and the number — `90s left of 120s` — exactly where the movement is missing.
+> `Heartbeat` differentiates by **shape** rather than motion or colour, a hollow ring while it
+> is trying and a filled dot when it is done, which also fixes it for anybody who cannot
+> separate amber from green.
+>
+> Two things nearly shipped wrong. `animation: nc-drain linear forwards` with an unset duration
+> resolves to `0s` and **fills to its end state**, so a bar that lost its duration rendered a
+> response window as fully run out — a false claim in the direction that makes a watch believe
+> somebody is late. It is gated on `data-run` now, and the painted fraction is the floor.
+>
+> And `test.use({ reducedMotion: 'reduce' })` never reached the page —
+> `matchMedia('(prefers-reduced-motion: reduce)').matches` stayed false — so the whole file
+> would have measured the ordinary branch while claiming to measure the other. It uses
+> `emulateMedia`, and asserts the emulation is on before asserting anything else.
+
 ### P5 — Low signature
 
 No white anywhere, minimum viable luminance, amber-dominant, with document mode one tap away.

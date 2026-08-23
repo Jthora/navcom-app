@@ -13,11 +13,11 @@
    * somebody went out believing something false.
    */
   import { onMount } from 'svelte';
-  import { declineIsValid } from '@navcom/core';
+  import { declineIsValid, RESPONSE_WINDOW } from '@navcom/core';
   import { board, type Waiting } from '$lib/terminal/board.svelte';
   import { createWatch, foundedHere, joinWatch, leaveWatch, watchPubkey, watchSecretHex, WatchKeyError } from '$lib/terminal/watch-key';
   import { endorsersFor } from '$lib/terminal/standing';
-  import { Panel, Slot, Readout, Why, Heartbeat, Action } from '$lib/components/panel';
+  import { Panel, Slot, Readout, Why, Heartbeat, Action, Board, Window, Elapsed } from '$lib/components/panel';
   import { loadIdentity } from '$lib/terminal/identity';
   import { loadConfig } from '$lib/terminal/config';
 
@@ -373,15 +373,12 @@
         </p>
       </Why>
     {:else}
-      <ul class="board">
-        {#each board.entries as e (e.operator)}
-          <li class={e.status}>
-            <span class="name">{e.callsign}</span>
-            <span class="area">{e.area}</span>
-            <span class="badge">{e.status}</span>
-          </li>
-        {/each}
-      </ul>
+      <!--
+        The movement is the event: when somebody crosses their window they rise past the
+        others, and peripheral vision reads that without reading anything. Ordering comes from
+        the board the core already derives, so there is one definition of "overdue".
+      -->
+      <Board entries={board.entries} />
     {/if}
   </section>
 
@@ -392,6 +389,19 @@
               <span class="badge">{w.type}</span>
             </div>
             {#if w.text}<p class="said">{w.text}</p>{/if}
+            <!--
+              A window that is running, or a Distress that is not.
+
+              `RESPONSE_WINDOW.distress` is null: a Distress has no window and does not expire,
+              so it must never get a depleting bar. A bar that empties says the signal resolves
+              itself, and a Distress that appears to resolve itself is the silent failure
+              invariant 2 forbids. It climbs instead, against an end it cannot reach.
+            -->
+            {#if w.type === 'distress'}
+              <Elapsed since={w.at} label="Raised" />
+            {:else if RESPONSE_WINDOW[w.type] !== null}
+              <Window sentAt={w.at} seconds={RESPONSE_WINDOW[w.type] ?? 60} label={w.type} />
+            {/if}
             {#if answering === w.id}
               <label for="a-{w.id}">Your answer</label>
               <textarea id="a-{w.id}" bind:value={text} rows="3"></textarea>
@@ -535,7 +545,6 @@
   .asks li { flex-direction: column; align-items: stretch; gap: .5rem; padding-block: .9rem; }
   .who { display: flex; align-items: center; gap: .7rem; }
   .name { color: var(--t-ink); font-weight: 650; flex: 1; }
-  .area { color: var(--t-faint); font-size: .9rem; }
   .said { margin: 0; color: var(--t-ink); font-size: .95rem; }
   .row { display: flex; gap: .6rem; }
   .badge {
@@ -543,7 +552,6 @@
     font-size: .62rem; letter-spacing: .1em; text-transform: uppercase;
     color: var(--t-faint); border: 1px solid var(--t-line); padding: .1rem .3rem;
   }
-  .board li.overdue .badge { color: var(--t-station); border-color: var(--t-station); }
   .board li.distress .badge { color: var(--t-alarm); border-color: var(--t-alarm); }
   .danger { border-color: var(--t-alarm); color: var(--t-alarm); }
 </style>

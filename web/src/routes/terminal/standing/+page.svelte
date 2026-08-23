@@ -10,6 +10,7 @@
   import { SCOPES, ageInDays, revoke, type Endorsement, type Scope, writeCredential } from '@navcom/core';
   import { StandingError, claim, drop, held, presentable, recordWritten, withdraw, withdrawn, written as writtenCredentials } from '$lib/terminal/standing';
   import { loadIdentity } from '$lib/terminal/identity';
+  import { Readout, Why } from '$lib/components/panel';
 
   let mine = $state<Endorsement[]>([]);
   let callsign = $state<string | null>(null);
@@ -126,37 +127,42 @@
     Signed statements from people who have worked beside you. You hold them, you choose what
     to show, and <strong>nothing here is published or looked up</strong>.
   </p>
-  <p class="cost">
-    <!--
-      The property everything else follows from, stated first because it is what makes the
-      rest safe rather than a feature of it.
-    -->
-    <strong>A credential names nobody.</strong> It says <em>"I vouch for the holder of
-    this"</em> — a scope and a date, and no subject at all. So you can vouch for somebody who
-    has never opened this app, and <strong>no map of who knows whom exists anywhere</strong>,
-    including here.
-  </p>
+  <!--
+    This one stays on the glass: it is what the operator has to *do differently* because a
+    credential names nobody, and the doctrine never hides an instruction.
+  -->
   <p class="cost">
     The cost of that is real: <strong>whoever holds the bytes can take it up.</strong> Hand
     one over in person, or the way you already talk to that person. Nothing here can deliver
     it for you, because this app holds nobody's contact details.
   </p>
-  <p class="cost">
-    <!--
-      Eleventh time a claim landed behind a conditional the prerendered page cannot reach,
-      and it belongs here regardless: no-free-text is a property of the whole model, not of
-      the form where somebody happens to meet it.
-    -->
-    <strong>There is no free text</strong>, only a scope tag — explaining <em>why</em>
-    somebody is credible is how their history leaks, and the person with the most valuable
-    knowledge usually has the most to lose from having it described.
-  </p>
-  <p class="cost">
-    <!-- 7.8, and it is the same trade the setup screen states about the callsign itself. -->
-    Standing attaches to a key, which means <strong>it is pseudonymous, not anonymous</strong>
-    — it links everything you sign. Contributing without a persistent identity is a real
-    choice, and it is the other one.
-  </p>
+  <Why summary="Why it works this way">
+    <p class="cost">
+      <!--
+        The property everything else follows from, stated first because it is what makes the
+        rest safe rather than a feature of it.
+      -->
+      <strong>A credential names nobody.</strong> It says <em>"I vouch for the holder of
+      this"</em> — a scope and a date, and no subject at all. So you can vouch for somebody who
+      has never opened this app, and <strong>no map of who knows whom exists anywhere</strong>,
+      including here.
+    </p>
+    <p class="cost">
+      <!--
+        No-free-text is a property of the whole model, not of the form where somebody happens
+        to meet it.
+      -->
+      <strong>There is no free text</strong>, only a scope tag — explaining <em>why</em>
+      somebody is credible is how their history leaks, and the person with the most valuable
+      knowledge usually has the most to lose from having it described.
+    </p>
+    <p class="cost">
+      <!-- 7.8, and it is the same trade the setup screen states about the callsign itself. -->
+      Standing attaches to a key, which means <strong>it is pseudonymous, not anonymous</strong>
+      — it links everything you sign. Contributing without a persistent identity is a real
+      choice, and it is the other one.
+    </p>
+  </Why>
 </section>
 
 {#if !callsign}
@@ -176,26 +182,30 @@
       <ul class="held">
         {#each mine as e (e.id)}
           <li data-endorsement={e.scope}>
-            <span class="scope">{label(e.scope)}</span>
-            <span class="from">
-                from {e.endorser},
-                {#if Number.isFinite(age(e.at))}
-                  {age(e.at)} days ago
-                {:else}
-                  <!-- Dated in the future or not a real date. Either way it is not an age a
-                       reader can weigh, and saying "0 days ago" would be the freshest
-                       possible answer to the least trustworthy input. -->
-                  <span data-unweighable>dated {e.at}, which is not an age you can weigh</span>
-                {/if}
-              </span>
+            <!--
+              The scope and who vouched, in one readout. Provenance by name is the whole model,
+              and the age travels with it because nothing here expires on a timer — the reader
+              is the one who weighs it.
+            -->
+            {#if Number.isFinite(age(e.at))}
+              <Readout value={label(e.scope)} tone="good" sub="from {e.endorser}, {age(e.at)} days ago" />
+            {:else}
+              <!-- Dated in the future or not a real date. Either way it is not an age a reader
+                   can weigh, and saying "0 days ago" would be the freshest possible answer to
+                   the least trustworthy input. -->
+              <Readout value={label(e.scope)} tone="warn" sub="from {e.endorser}" />
+              <span class="from" data-unweighable>dated {e.at}, which is not an age you can weigh</span>
+            {/if}
             <button class="drop" onclick={() => put(e)}>Put down</button>
           </li>
         {/each}
       </ul>
-      <p class="cost">
-        Ages are shown because they matter — somebody vouched for five years ago is a fact
-        about five years ago. Nothing expires on a timer; whoever wrote one can withdraw it.
-      </p>
+      <Why summary="Why the age is shown">
+        <p class="cost">
+          Ages are shown because they matter — somebody vouched for five years ago is a fact
+          about five years ago. Nothing expires on a timer; whoever wrote one can withdraw it.
+        </p>
+      </Why>
     {/if}
   </section>
 
@@ -299,7 +309,6 @@
     display: flex; align-items: center; gap: .8rem;
     border-bottom: 1px solid var(--t-line); min-height: 3.2rem; flex-wrap: wrap;
   }
-  .scope { color: var(--t-ink); font-weight: 650; }
   .from { color: var(--t-faint); font-size: .88rem; flex: 1; }
   .blob {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .7rem;

@@ -34,10 +34,25 @@
   const w = $derived(windowState(sentAt, seconds, now));
 </script>
 
-<div class="nc-bar" data-kind="window" data-expired={w.expired ? 'true' : undefined}>
+<div
+  class="nc-bar"
+  data-kind="window"
+  data-run={seconds > 0 ? '' : undefined}
+  data-expired={w.expired ? 'true' : undefined}
+>
   <i style="--f: {w.fraction}; animation-duration: {seconds}s; animation-delay: {w.delay}s"></i>
 </div>
 <div class="nc-bar-scale">
   <span>{label}</span>
-  <span>{w.expired ? 'window passed' : `${seconds}s window`}</span>
+  <!--
+    Two renderings of the same quantity, and only one shows at a time.
+
+    The bar is the honest render while it can move: a static number is stale the moment it is
+    painted. With motion disabled it cannot move at all, so the number takes over — stale by a
+    few seconds beats a bar that will never advance. CSS decides, so neither is ever both.
+  -->
+  <span class="nc-bar-window">{w.expired ? 'window passed' : `${seconds}s window`}</span>
+  <span class="nc-bar-left" data-remaining>
+    {w.expired ? 'window passed' : `${w.remaining}s left of ${seconds}s`}
+  </span>
 </div>

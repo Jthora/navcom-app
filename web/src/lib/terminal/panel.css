@@ -218,10 +218,32 @@
   transform: scaleX(var(--f, 0));
   background: var(--t-oncall);
 }
-.terminal .nc-bar[data-kind='window'] > i { animation: nc-drain linear forwards; }
+/*
+ * Gated on `data-run`, which the component sets only when it has a real duration.
+ *
+ * Without the gate, `animation: nc-drain linear forwards` with an unset duration resolves to
+ * 0s and **fills to its end state** — so a bar that lost its duration rendered as a window
+ * fully run out, which is a false claim in the dangerous direction. The painted fraction is
+ * the floor; the animation may only ever continue from it.
+ */
+.terminal .nc-bar[data-kind='window'][data-run] > i { animation: nc-drain linear forwards; }
 .terminal .nc-bar[data-kind='elapsed'] > i { background: var(--t-alarm); }
 
 @keyframes nc-drain { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/*
+ * The reduced-motion branch, and the reason there is one.
+ *
+ * A window bar carries its quantity in movement. With animation disabled it is painted once
+ * and never advances, so it would tell an operator the size of the window and nothing about
+ * how much of it is left. The number is shown instead — the same quantity, in the only form
+ * that survives without motion.
+ */
+.terminal .nc-bar-left { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .terminal .nc-bar-window { display: none; }
+  .terminal .nc-bar-left { display: inline; }
+}
 
 .terminal .nc-bar-scale {
   display: flex;
@@ -246,12 +268,22 @@
   text-transform: uppercase;
   color: var(--t-oncall);
 }
+/*
+ * Settled and unsettled differ in **shape**, not only in motion and colour.
+ *
+ * Under `prefers-reduced-motion` this project disables every animation, so a pulse that was
+ * the only difference would leave "still trying" and "done" identical to exactly the people
+ * who turned motion off — and identical to anybody who cannot separate amber from green.
+ * A hollow ring is still trying; a filled dot is finished.
+ */
 .terminal .nc-beat-dot {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background: currentColor;
+  border: 2px solid currentColor;
+  background: transparent;
 }
+.terminal .nc-beat[data-settled='true'] .nc-beat-dot { background: currentColor; }
 .terminal .nc-beat[data-settled='true'] { color: var(--t-station); }
 .terminal .nc-beat[data-settled='false'] .nc-beat-dot,
 .terminal .nc-beat[data-settled='false'] .nc-beat-label { animation: nc-beat 1.9s ease-in-out infinite; }
