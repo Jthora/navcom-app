@@ -45,14 +45,24 @@ Then read [`docs/research/lore.md`](docs/research/lore.md) before proposing anyt
 Session 1 is **done** — all seven definition-of-done checks pass. The loop is proven: an
 operator signs on, the board sees them, `Query` gets an answer.
 
+The shared core is extracted (`packages/core`), and the Status screen ships with the
+[capability receipt](docs/watch/the-watch.md) as a panel rather than a paragraph.
+
 **Build next, in order:**
 
-1. **Extract the shared core** — signal, crypto and board logic as one library. Before the
-   first client, not after the second
-2. **Field Terminal Status screen** — watch state including Dark, plus the
-   [capability receipt](docs/watch/the-watch.md). The one screen that must work when
-   everything else is down
-3. Remaining Field Terminal screens, once the protocol has stopped moving
+1. **The remaining Field Terminal screens, onto the panel.** Five of twenty are converted —
+   status, watch, sign-on, standing, distress. Doctrine and phases in
+   [`docs/design/panel.md`](docs/design/panel.md); **it is a per-screen judgement, not a
+   sweep** — a blanket pass was tried, measured and withdrawn, because `.cost` in this
+   codebase is a typographic class carrying primary state as often as an aside
+2. **Milestone 8**, once **6.9** has real intake rules in it. The gate is not paperwork: a
+   person-facing path over scraped skeletons turns somebody away at 11pm with nowhere else
+   to be
+3. **Nobody is a single point of failure** — 9.4, 9.6, 9.7, 9.8 are all people rather than
+   code, and **CI has not run since 2026-08-19** (9.9)
+
+**One decision is open:** typography for the panel (P8). System stack ships today at zero
+bytes; a subset face costs 8–25 KB against a script budget at 68%.
 
 Sequence and gates in [`docs/build-order.md`](docs/build-order.md). Surfaces and budgets in
 [`docs/delivery.md`](docs/delivery.md).
