@@ -24,6 +24,20 @@
   --t-auto: #7FA8D9;
   --t-dark: #E27A6A;
 
+  /*
+   * The alarm channel, and nothing else may use it.
+   *
+   * Doctrine rule 7 [docs/design/panel.md]. It belongs to `Distress` and to a watch state
+   * that is lying about itself — a stand-down that never reached a relay while operators
+   * still read you as here. Overdue is `--t-oncall`, rises, and never alarms: alarm fatigue
+   * destroys the one mechanism where failure means somebody is hurt.
+   *
+   * Separate from `--t-dark` on purpose. That one is a *state* colour meaning "no watch", and
+   * it was doing double duty as the warning colour through `--stop`, which is how a sealed
+   * channel stops being sealed.
+   */
+  --t-alarm: #D2503A;
+
   color-scheme: dark;
   background: var(--t-ground);
   color: var(--t-ink);

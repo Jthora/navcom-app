@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { capabilitySentence } from '@navcom/core';
+  import { capabilitySentence, pageableNow } from '@navcom/core';
+  import { Panel, Slot, Readout, Why } from '$lib/components/panel';
   import { watch } from '$lib/terminal/watch.svelte';
   import { operator } from '$lib/terminal/session.svelte';
   import { presence } from '$lib/terminal/presence.svelte';
@@ -15,6 +16,28 @@
   import { offline } from '$lib/terminal/offline.svelte';
 
   const s = $derived(watch.state);
+
+  /*
+   * The capability receipt as a panel rather than a sentence [docs/design/panel.md].
+   *
+   * The sentence is not gone — it is one tap down, word for word, because `DARK` without "it
+   * still works offline" reads as the app being broken and `CALL FIRST` without its reason is
+   * a shorter way to be unhelpful. What changes is that the *state* is now readable at arm's
+   * length, which a twenty-one word disclosure at 2am is not.
+   *
+   * `pageableNow` is the core's own rule for who can actually be raised, so this does not
+   * reimplement "reachable" and then drift from it.
+   */
+  const nowS = $derived(Math.floor(Date.now() / 1000));
+  const reachable = $derived(pageableNow(s.oncall, nowS).map((o) => o.author.callsign));
+  const watchRead = $derived(
+    s.state === 'dark'
+      ? { value: 'Dark', tone: 'cold' as const, sub: null }
+      : s.state === 'station'
+        ? { value: 'On station', tone: 'good' as const, sub: s.holder }
+        // Invariant 5. An agent is always identified as an agent, including here.
+        : { value: 'Automated', tone: 'warn' as const, sub: 'agent · not a human' }
+  );
   let configured = $state(false);
   let identity = $state<ReturnType<typeof loadIdentity>>(null);
   let damaged = $state(false);
@@ -383,10 +406,36 @@
   </section>
 {/if}
 
-<!-- The consequence, not the label. A word like "Automated" is not enough on its own. -->
-<section class="consequence" data-capability>
-  <p>{capabilitySentence(s, Math.floor(Date.now() / 1000))}</p>
-</section>
+<!-- The consequence, not the label. A word like "Automated" is not enough on its own — so the
+     panel carries the consequence in its own slot, and the sentence is one tap down. -->
+<div data-capability>
+  <Panel label="Watch">
+    <Slot k="Watch">
+      <Readout value={watchRead.value} tone={watchRead.tone} sub={watchRead.sub} />
+    </Slot>
+    <Slot k="Distress">
+      {#if reachable.length === 0}
+        <Readout value="No addressee" tone="warn" sub="pages nobody, and says so" />
+      {:else}
+        <Readout value="Pages on-call" tone="neutral" />
+      {/if}
+    </Slot>
+    {#if reachable.length > 0}
+      <Slot k="On call">
+        <Readout
+          value={reachable.join(', ')}
+          tone="neutral"
+          sub={reachable.length === 1 ? 'sole — ladder ends here' : null}
+        />
+      </Slot>
+    {:else}
+      <Slot k="On call" />
+    {/if}
+    <Why>
+      <p>{capabilitySentence(s, nowS)}</p>
+    </Why>
+  </Panel>
+</div>
 
 {#if s.state === 'dark' && configured}
   <section class="offline">
@@ -566,12 +615,6 @@
     font-size: .68rem; letter-spacing: .1em; text-transform: uppercase;
     border: 1px solid var(--t-line-strong); padding: .1rem .35rem; color: var(--t-faint);
   }
-
-  .consequence {
-    border-inline-start: 3px solid var(--t-line-strong);
-    padding-inline-start: .9rem;
-  }
-  .consequence p { margin: 0; font-size: 1.08rem; line-height: 1.5; }
 
   .station { border: 2px solid var(--t-station); background: var(--t-raised); padding: 1rem 1.1rem; }
   .station h2 { color: var(--t-station); }

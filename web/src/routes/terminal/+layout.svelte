@@ -10,6 +10,7 @@
   import { onMount } from 'svelte';
   import '$lib/terminal/tokens.css';
   import '$lib/terminal/screen.css';
+  import '$lib/terminal/panel.css';
   import { saving } from '$lib/terminal/saving.svelte';
   let { children } = $props();
 

@@ -1,0 +1,314 @@
+/*
+ * Panel vocabulary.
+ *
+ * `screen.css` is a document stylesheet: it styles `section p`, `h2`, `.cost`, `.note` — the
+ * furniture of prose, and nothing else. That is why every screen in this application is made
+ * of paragraphs, and it is why the terminal reads as a website regardless of what colour it
+ * is painted. It cannot be themed away.
+ *
+ * This file is the other vocabulary: slot, readout, action, window, heartbeat. Screens move
+ * onto it one at a time. See docs/design/panel.md for the nine rules these express.
+ *
+ * ## Why every class is prefixed
+ *
+ * The first draft of this file used `.panel`, `.slot`, `.act`, `.bar`. **`.act` already exists
+ * on ten screens** — `<section class="act">` is the standard section wrapper — so a stylesheet
+ * meant for one converted block restyled a third of the application, and `text-transform:
+ * uppercase` reached a `<pre>` holding a watch key. `innerText` respects text-transform, so
+ * the key came back uppercase and nineteen browser tests failed at once.
+ *
+ * Generic class names in a shared stylesheet collide with per-screen CSS that has been
+ * accumulating for months. `panel.test.ts` asserts every selector here is prefixed.
+ *
+ * Both stylesheets coexist during the migration on purpose. A screen is either converted or
+ * it is not, and a half-converted screen is worse than either.
+ */
+
+/* ── the panel itself ───────────────────────────────────────────────────── */
+
+.terminal .nc-panel {
+  border: 1px solid var(--t-line);
+  background: var(--t-raised);
+  margin: 0 0 1rem;
+}
+
+.terminal .nc-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--t-line);
+  background: var(--t-sunk);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--t-faint);
+}
+.terminal .nc-panel-post { font-weight: 600; color: var(--t-muted); }
+
+/* ── slots · rule 4, the same fact in the same place every time ─────────── */
+
+.terminal .nc-panel-slots {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.85rem 0.75rem;
+}
+
+.terminal .nc-slot {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr;
+  gap: 0.7rem;
+  align-items: baseline;
+}
+.terminal .nc-slot-k {
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--t-faint);
+}
+
+/* ── readouts · rules 1, 2 and 8 ────────────────────────────────────────── */
+
+.terminal .nc-readout {
+  display: block;
+  /*
+   * No condensed face is loaded — the terminal ships no webfont at all, and the typography
+   * decision is a human's [docs/design/panel.md P8]. Letter-spacing and weight carry the
+   * label register in the meantime, and tabular numerals do the job that matters most: a
+   * column of times and ages that lines up.
+   */
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  color: var(--t-ink);
+  font-variant-numeric: tabular-nums;
+}
+.terminal .nc-readout-sub {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: none;
+  color: var(--t-faint);
+  margin-top: 0.15rem;
+}
+
+.terminal .nc-readout[data-tone='good'] { color: var(--t-station); }
+.terminal .nc-readout[data-tone='warn'] { color: var(--t-oncall); }
+.terminal .nc-readout[data-tone='cold'] { color: var(--t-muted); }
+.terminal .nc-readout[data-tone='alarm'] { color: var(--t-alarm); }
+
+/*
+ * Rule 2, made visible rather than trusted.
+ *
+ * A readout over the word limit marks itself and is struck through in the interface, so a
+ * sentence that has wandered into a slot is obvious to whoever put it there — and a browser
+ * test asserts no screen anywhere renders one. Not a throw: a copy edit must never take a
+ * screen down at 2am.
+ */
+.terminal .nc-readout[data-overlong='true'] {
+  text-decoration: underline wavy var(--t-alarm);
+  text-underline-offset: 4px;
+}
+
+/* ── why · rule 3, the prose survives verbatim one layer down ───────────── */
+
+.terminal .nc-why { margin-top: 0.3rem; }
+.terminal .nc-why > summary {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--t-oncall);
+  cursor: pointer;
+  padding: 0.5rem 0;
+  /* A disclosure is a target on a phone, not a caret. */
+  min-height: 2.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  list-style: none;
+}
+.terminal .nc-why > summary::-webkit-details-marker { display: none; }
+.terminal .nc-why > summary::after { content: '▸'; font-size: 0.7em; }
+.terminal .nc-why[open] > summary::after { content: '▾'; }
+.terminal .nc-why-body {
+  border-inline-start: 2px solid var(--t-line-strong);
+  padding-block: 0.1rem 0.2rem;
+  padding-inline-start: 0.8rem;
+  color: var(--t-muted);
+  font-size: 0.92rem;
+  line-height: 1.6;
+  max-width: 44ch;
+}
+.terminal .nc-why-body p { margin: 0 0 0.6rem; }
+.terminal .nc-why-body p:last-child { margin-bottom: 0; }
+
+/* ── action · rule 5, one lit control ───────────────────────────────────── */
+
+.terminal .nc-panel-act { border-top: 1px solid var(--t-line); }
+.terminal .nc-act {
+  width: 100%;
+  min-height: 3.5rem;
+  border: 0;
+  border-radius: 0;
+  background: color-mix(in srgb, var(--t-oncall) 8%, transparent);
+  color: var(--t-oncall);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  position: relative;
+  overflow: hidden;
+}
+.terminal .nc-act[data-tone='alarm'] {
+  background: color-mix(in srgb, var(--t-alarm) 9%, transparent);
+  color: var(--t-alarm);
+}
+/* The fill for a held action. Transform-only, so it cannot cost a layout. */
+.terminal .nc-act-fill {
+  position: absolute;
+  inset: 0;
+  transform-origin: left center; /* physical on purpose: a bar drains the way it was drawn */
+  transform: scaleX(var(--fill, 0));
+  background: color-mix(in srgb, currentColor 18%, transparent);
+  pointer-events: none;
+}
+.terminal .nc-act-label { position: relative; }
+
+/* ── window and elapsed · motion that carries state ─────────────────────── */
+
+.terminal .nc-bar {
+  height: 5px;
+  background: var(--t-line);
+  overflow: hidden;
+  margin-top: 0.35rem;
+}
+/*
+ * The static fraction is the truth; the animation only continues from it.
+ *
+ * This project disables every animation under `prefers-reduced-motion`, with `!important`.
+ * A bar that became correct only once its keyframe ran would therefore show **zero elapsed**
+ * to exactly the people who turned motion off. So the fraction is painted first, and the
+ * keyframe is seeded with a negative delay to pick it up from there.
+ */
+.terminal .nc-bar > i {
+  display: block;
+  height: 100%;
+  transform-origin: left center; /* physical on purpose: a bar drains the way it was drawn */
+  transform: scaleX(var(--f, 0));
+  background: var(--t-oncall);
+}
+.terminal .nc-bar[data-kind='window'] > i { animation: nc-drain linear forwards; }
+.terminal .nc-bar[data-kind='elapsed'] > i { background: var(--t-alarm); }
+
+@keyframes nc-drain { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+.terminal .nc-bar-scale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--t-faint);
+}
+
+/* ── heartbeat · one language for "unresolved, still trying" ────────────── */
+
+.terminal .nc-beat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--t-oncall);
+}
+.terminal .nc-beat-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.terminal .nc-beat[data-settled='true'] { color: var(--t-station); }
+.terminal .nc-beat[data-settled='false'] .nc-beat-dot,
+.terminal .nc-beat[data-settled='false'] .nc-beat-label { animation: nc-beat 1.9s ease-in-out infinite; }
+
+@keyframes nc-beat { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* ── board · the floor, rows by time ────────────────────────────────────── */
+
+.terminal .nc-floor { display: grid; gap: 0.5rem; }
+.terminal .nc-floor-row {
+  display: grid;
+  grid-template-columns: 3px 1fr auto;
+  gap: 0.8rem;
+  align-items: center;
+  border: 1px solid var(--t-line);
+  background: var(--t-raised);
+  padding: 0.65rem 0.8rem;
+}
+.terminal .nc-floor-mark { align-self: stretch; background: var(--t-line-strong); }
+.terminal .nc-floor-name {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.terminal .nc-floor-where {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--t-faint);
+}
+.terminal .nc-floor-when {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--t-muted);
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+.terminal .nc-floor-row[data-status='overdue'] {
+  border-color: color-mix(in srgb, var(--t-oncall) 45%, var(--t-line));
+}
+.terminal .nc-floor-row[data-status='overdue'] .nc-floor-mark,
+.terminal .nc-floor-row[data-status='distress'] .nc-floor-mark { background: var(--t-oncall); }
+.terminal .nc-floor-row[data-status='overdue'] .nc-floor-name,
+.terminal .nc-floor-row[data-status='overdue'] .nc-floor-when { color: var(--t-oncall); }
+.terminal .nc-floor-row[data-status='distress'] { border-color: var(--t-alarm); }
+.terminal .nc-floor-row[data-status='distress'] .nc-floor-mark { background: var(--t-alarm); }
+.terminal .nc-floor-row[data-status='distress'] .nc-floor-name { color: var(--t-alarm); }
+.terminal .nc-floor-row[data-status='out'] .nc-floor-mark { background: var(--t-station); }
+
+/* ── the rail · rule 5, everything that is not the lit action ───────────── */
+
+.terminal .nc-rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}
+.terminal .nc-rail > a,
+.terminal .nc-rail > button {
+  flex: 1 1 auto;
+  min-height: 2.75rem;
+  min-width: 6rem;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--t-muted);
+  background: transparent;
+  border: 1px solid var(--t-line);
+}

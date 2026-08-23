@@ -799,7 +799,7 @@ components against twenty routes**.
 
 | | Item | Who | Notes |
 |---|---|---|---|
-| P0 | **The component layer** | agent | Tokens, `panel.css`, and nine components. **Gates everything below.** A component nobody uses is not built |
+| P0 | ~~The component layer~~ | **done** | Tokens, `panel.css`, nine components, and the capability receipt converted onto them — the gate was that four of them are used by a real screen. Two findings on the way: `.act` collided with ten existing screens and uppercased a watch key through `innerText`, so every panel class is prefixed and a test holds it; and the new stylesheet broke the RTL invariant, which `rtl.test.ts` caught before it shipped |
 | P1 | **The shell — three posts, one panel** | agent | `/terminal/` opens onto the post you hold. The hard part is *Alone*: fully lit, not greyed-out setup |
 | P2 | **`WHY` everywhere** | agent | Every prose block relocated **verbatim** behind a disclosure. No rewording in this phase, so nothing can be lost in the noise of a rewrite |
 | P3 | **The readouts** | agent | Status, watch, distress, sign-on, standing. Target: under 40 words, one screen tall, every removed word present in a `WHY` |
