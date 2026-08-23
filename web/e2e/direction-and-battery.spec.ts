@@ -75,7 +75,7 @@ test.describe('a phone that is about to die', () => {
      */
     await page.getByRole('link', { name: /sign on/i }).click();
     await page.locator('#area').fill('north riverfront');
-    await page.getByRole('button').last().click();
+    await page.getByRole('button', { name: /^sign on$/i }).click();
     await page.waitForURL('**/terminal/');
 
     // The battery reading moved into a slot when the status screen became a panel [P1]. The
@@ -100,7 +100,7 @@ test.describe('a phone that is about to die', () => {
     await open(page, '/terminal/');
     await page.getByRole('link', { name: /sign on/i }).click();
     await page.locator('#area').fill('north riverfront');
-    await page.getByRole('button').last().click();
+    await page.getByRole('button', { name: /^sign on$/i }).click();
     await page.waitForURL('**/terminal/');
     await expect(page.locator('p.battery')).toHaveCount(0);
   });
@@ -123,7 +123,7 @@ test.describe('a phone that is about to die', () => {
     await open(page, '/terminal/');
     await page.getByRole('link', { name: /sign on/i }).click();
     await page.locator('#area').fill('north riverfront');
-    await page.getByRole('button').last().click();
+    await page.getByRole('button', { name: /^sign on$/i }).click();
     await page.waitForURL('**/terminal/');
 
     await expect(page.locator('p.battery')).toHaveCount(0);
@@ -139,7 +139,7 @@ test.describe('a phone that is about to die', () => {
     await open(page, '/terminal/');
     await page.getByRole('link', { name: /sign on/i }).click();
     await page.locator('#area').fill('north riverfront');
-    await page.getByRole('button').last().click();
+    await page.getByRole('button', { name: /^sign on$/i }).click();
     await page.waitForURL('**/terminal/');
     await expect(page.locator('p.battery')).toHaveCount(0);
   });

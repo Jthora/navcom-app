@@ -89,7 +89,7 @@ test.describe('pairing, standing next to each other', () => {
     // Raven goes out.
     await open(raven, '/terminal/sign-on/');
     await raven.locator('#area').fill('north riverfront');
-    await raven.getByRole('button').last().click();
+    await raven.getByRole('button', { name: /^sign on$/i }).click();
     await raven.waitForURL('**/terminal/');
 
     /*

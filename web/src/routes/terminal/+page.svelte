@@ -10,6 +10,7 @@
   import { pq } from '$lib/terminal/pq.svelte';
   import { loadConfig } from '$lib/terminal/config';
   import { peers } from '$lib/terminal/peers';
+  import { formatDuration } from '$lib/terminal/patrol';
   import * as standing from '$lib/terminal/standing';
   import { loadIdentity } from '$lib/terminal/identity';
   import { corruptTiers } from '$lib/terminal/storage';
@@ -130,11 +131,23 @@
   ]);
   let closing = $state(false);
   let note = $state('');
-  let cameHome = $state<{ at: number; by: string | null } | null>(null);
+  let cameHome = $state<
+    { at: number; by: string | null; started: number | null; area: string | null } | null
+  >(null);
 
   async function home() {
+    /*
+     * The night's line, kept so the close can show it.
+     *
+     * `positioning.md` names this as a thing operators need and the genre almost never shows:
+     * *"coming home and being counted."* Standing down ended a patrol and said the time. What
+     * an operator actually gets out of it is the line in their own record — how long they were
+     * out, where, and whether anybody had them.
+     */
+    const started = session?.at ?? null;
+    const area = session?.area ?? null;
     const by = await operator.standDown(note);
-    cameHome = { at: Date.now(), by: by ?? null };
+    cameHome = { at: Date.now(), by: by ?? null, started, area };
     closing = false;
     note = '';
   }
@@ -536,26 +549,43 @@
       <span class="nc-panel-post">Closed</span>
     </header>
     <div class="nc-panel-slots">
+      <!--
+        The line that was written, shown where it was written.
+
+        `positioning.md` names this as the thing the genre almost never shows and that may
+        matter most: *"coming home and being counted."* Standing down said the time and nothing
+        else. What an operator has afterwards is a record under their own callsign, and this is
+        the moment to show it to them.
+
+        It does **not** claim the record is provable. Inclusion proofs have not shipped —
+        `log.ts` says so — and a receipt that overstated what it was would be the one thing this
+        screen must never be.
+      -->
       <Slot k="Home">
-        {#if cameHome.by}
-          <Readout
-            value={new Date(cameHome.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            tone="good"
-            sub="{cameHome.by} has you home"
-          />
-        {:else}
-          <Readout
-            value={new Date(cameHome.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            tone="good"
-            sub="in your own record"
-          />
-        {/if}
+        <Readout
+          value={new Date(cameHome.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          tone="good"
+          sub={cameHome.by ? `${cameHome.by} has you home` : 'nobody was watching, and it still counts'}
+        />
       </Slot>
-      {#if !cameHome.by}
-        <Why summary="Where it went">
-          <p>It is in <a href="/terminal/patrols/">your record</a>.</p>
-        </Why>
+      {#if cameHome.started !== null}
+        <Slot k="Out for">
+          <Readout
+            value={formatDuration(Math.max(0, Math.floor(cameHome.at / 1000) - cameHome.started))}
+            tone="neutral"
+            sub={cameHome.area ?? null}
+          />
+        </Slot>
       {/if}
+      <Slot k="Written">
+        <Readout value="Your record" tone="neutral" sub="on this phone, under your callsign" />
+      </Slot>
+      <Why summary="Where it went">
+        <p>
+          It is in <a href="/terminal/patrols/">your record</a>, on this device and nowhere
+          else. Nothing about anybody you helped is in it.
+        </p>
+      </Why>
     </div>
   </section>
 {/if}

@@ -8,11 +8,20 @@
    */
   import { onMount } from 'svelte';
   import { SCOPES, ageInDays, revoke, type Endorsement, type Scope, writeCredential } from '@navcom/core';
-  import { StandingError, claim, drop, held, presentable, recordWritten, withdraw, withdrawn, written as writtenCredentials } from '$lib/terminal/standing';
+  import { StandingError, claim, drop, held, recordWritten, withdraw, withdrawn, written as writtenCredentials } from '$lib/terminal/standing';
   import { loadIdentity } from '$lib/terminal/identity';
   import { Readout, Why } from '$lib/components/panel';
 
   let mine = $state<Endorsement[]>([]);
+  /**
+   * The one held up to somebody else, or null.
+   *
+   * Credentials are checked **in person, offline, with no lookup** — that is the whole design,
+   * and it means there is a moment where you hold your phone out to a person standing in front
+   * of you. Every other screen here is laid out for whoever is holding the phone. This one is
+   * not, and `presentable()` existed for it while nothing rendered it.
+   */
+  let showing = $state<Endorsement | null>(null);
   let callsign = $state<string | null>(null);
   let pasted = $state('');
   let error = $state<string | null>(null);
@@ -196,6 +205,7 @@
               <Readout value={label(e.scope)} tone="warn" sub="from {e.endorser}" />
               <span class="from" data-unweighable>dated {e.at}, which is not an age you can weigh</span>
             {/if}
+            <button class="drop" onclick={() => (showing = e)}>Show</button>
             <button class="drop" onclick={() => put(e)}>Put down</button>
           </li>
         {/each}
@@ -300,7 +310,61 @@
   </section>
 {/if}
 
+{#if showing}
+  <!--
+    Held out at arm's length, in the dark, for somebody else to read.
+    
+    Type sized for a second reader at sixty centimetres rather than a thumb at thirty, and on
+    black so it can be read outdoors at night without lighting your own face. It must not look
+    like a badge or an ID card: it is somebody's word, shown — and a credential that resembles
+    official identification is the beginning of exactly the authority this project refuses.
+  -->
+  <section class="present" data-presenting={showing.scope}>
+    <p class="present-scope">{label(showing.scope)}</p>
+    <p class="present-by">vouched by {showing.endorser}</p>
+    <p class="present-age">
+      written {showing.at}{#if Number.isFinite(age(showing.at))} · {age(showing.at)} days ago{/if}
+    </p>
+    <p class="present-check">signatures verified on this device · no network used</p>
+    <button onclick={() => (showing = null)}>Done</button>
+  </section>
+{/if}
+
 <style>
+  /* Not the terminal's ordinary scale: this is read by a second person, at arm's length. */
+  .present {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    background: #000;
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: .55rem;
+    padding: 2rem 1.25rem;
+    text-align: center;
+  }
+  .present-scope {
+    margin: 0;
+    font-size: clamp(2rem, 11vw, 3.2rem);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--t-oncall);
+  }
+  .present-by { margin: .4rem 0 0; font-size: 1.15rem; color: var(--t-ink); letter-spacing: .04em; }
+  .present-age { margin: 0; font-family: var(--font-mono); font-size: .8rem; color: var(--t-faint); }
+  .present-check {
+    margin: 1.2rem 0 1.4rem;
+    font-family: var(--font-mono);
+    font-size: .62rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--t-faint);
+    border-block-start: 1px solid var(--t-line);
+    padding-block-start: .8rem;
+  }
   .act { gap: .6rem; }
   textarea { width: 100%; }
   .row { display: flex; gap: .5rem; flex-wrap: wrap; }

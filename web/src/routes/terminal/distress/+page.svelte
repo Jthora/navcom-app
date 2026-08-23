@@ -13,6 +13,7 @@
    */
   import { onDestroy } from 'svelte';
   import { operator } from '$lib/terminal/session.svelte';
+  import { Slot, Elapsed } from '$lib/components/panel';
   import {
     callLink,
     distressMessage,
@@ -213,16 +214,36 @@
 
 {#if phases.length > 0}
   <section
-    class="live"
+    class="live nc-panel"
     class:acked={!!acknowledged}
     data-distress={acknowledged ? 'acknowledged' : operator.distressRunning ? 'running' : 'stopped'}
   >
-    <h2>{acknowledged ? 'Answered' : operator.distressRunning ? 'Sending' : 'Stopped'}</h2>
-    <ol>
-      {#each phases as p, i (i)}
-        <li class={p.phase}>{describe(p)}</li>
-      {/each}
-    </ol>
+    <header class="nc-panel-head">
+      <h2 class="nc-panel-label">Distress</h2>
+      <span class="nc-panel-post">
+        {acknowledged ? 'Answered' : operator.distressRunning ? 'Sending' : 'Stopped'}
+      </span>
+    </header>
+    <div class="nc-panel-slots">
+      {#if operator.distressRaisedAt !== null}
+        <!--
+          The one readout this screen never had: how long this has been going.
+
+          It climbs and never arrives, because `RESPONSE_WINDOW.distress` is null — a Distress
+          has no window and does not expire. A bar that emptied would say the signal resolves
+          itself, and a Distress that appears to resolve itself is the silent failure
+          invariant 2 exists to forbid. Nothing closes this except a person.
+        -->
+        <Slot k="Running">
+          <Elapsed since={Math.floor(operator.distressRaisedAt / 1000)} label="Raised" />
+        </Slot>
+      {/if}
+      <ol>
+        {#each phases as p, i (i)}
+          <li class={p.phase}>{describe(p)}</li>
+        {/each}
+      </ol>
+    </div>
   </section>
 
   <!--

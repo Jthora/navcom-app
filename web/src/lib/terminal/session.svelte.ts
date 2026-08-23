@@ -54,6 +54,14 @@ let lastResponse = $state<ResponsePayload | null>(null);
 let error = $state<string | null>(null);
 let distressPhases = $state<DistressPhase[]>([]);
 let distressRunning = $state(false);
+/**
+ * When this Distress was raised, in wall-clock milliseconds.
+ *
+ * In memory with the phases, and deliberately **not cleared when the sending stops** — a
+ * Distress that ended without a human is still a thing that ran for eleven minutes, and the
+ * operator standing there is owed that number.
+ */
+let distressRaisedAt = $state<number | null>(null);
 let distressController: AbortController | null = null;
 
 
@@ -169,6 +177,7 @@ export const operator = {
   get distress(): DistressPhase[] { return distressPhases; },
   /** True while the retry loop is alive. It ends on a human, or on the operator. */
   get distressRunning(): boolean { return distressRunning; },
+  get distressRaisedAt(): number | null { return distressRaisedAt; },
 
   /**
    * Going out.
@@ -365,6 +374,7 @@ export const operator = {
     distressPhases = [];
     error = null;
     distressRunning = true;
+    distressRaisedAt = Date.now();
     distressController = new AbortController();
     try {
       await sendDistressUntilAcknowledged(

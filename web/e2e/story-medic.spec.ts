@@ -36,7 +36,7 @@ test.describe('a night, with no watch', () => {
     await page.getByRole('link', { name: /sign on/i }).click();
 
     await page.locator('#area').fill('north riverfront');
-    await page.getByRole('button').last().click();
+    await page.getByRole('button', { name: /^sign on$/i }).click();
 
     // Home again, from the screen she is on. Two steps on purpose: the close of the night is
     // the one place she gets to say anything in her own words.
@@ -60,7 +60,7 @@ test.describe('a night, with no watch', () => {
     // A night first, so there is something to lose.
     await page.getByRole('link', { name: /sign on/i }).click();
     await page.locator('#area').fill('north riverfront');
-    await page.getByRole('button').last().click();
+    await page.getByRole('button', { name: /^sign on$/i }).click();
     await page.waitForURL('**/terminal/');
     await page.getByRole('button', { name: /stand down/i }).click();
     await page.locator('#note').fill('quiet night');
