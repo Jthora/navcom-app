@@ -13,6 +13,7 @@
    */
   import { onDestroy } from 'svelte';
   import { operator } from '$lib/terminal/session.svelte';
+  import { pulse } from '$lib/terminal/haptic';
   import { Slot, Elapsed } from '$lib/components/panel';
   import {
     callLink,
@@ -94,6 +95,7 @@
 
   function press() {
     if (operator.distressRunning) return;
+    pulse('tap');
     holdStart = Date.now();
     frame = requestAnimationFrame(tick);
     doneAt = setTimeout(() => release(true), HOLD_MS);
@@ -106,6 +108,9 @@
     doneAt = null;
     holdStart = null;
     progress = 0;
+    // It is away. Somebody holding a phone in the dark under stress should not have to look
+    // at the screen to learn that the hold took.
+    if (complete) pulse('committed');
     if (complete) operator.raiseDistress(text.trim());
   }
 

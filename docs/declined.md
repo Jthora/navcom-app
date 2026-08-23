@@ -189,6 +189,26 @@ the streaks-and-nudges surface the rules forbid.
 **Cost:** the Newcomer needs somebody, and if nobody is available the software will not
 substitute.
 
+### A pulse when a signal is acknowledged
+
+The design roster proposed it as the haptic pattern most worth building: two pulses in a pocket
+telling an operator their signal landed, without taking their eyes off the street. Silence is
+never a response in this protocol, and today the only way to learn an ack arrived is to look.
+
+**Declined.** It fires on *arrival*, and the field terminal is silent. A vibration on an
+incoming event is an unsolicited interrupt however welcome the news is, and an ack is the
+strongest case anybody will ever make for one — which is exactly why it is the one to refuse.
+The line is what stops the next twenty cases, each with a slightly worse argument.
+
+**Cost:** an operator waiting on an answer has to look at the screen to learn it came. That is
+a real cost and it is smaller than a terminal that has started interrupting people.
+
+**What is built instead:** pulses that confirm a press the operator just made, in the moment
+they made it — including when a held threshold fires, which is the one an operator cannot
+otherwise learn without looking. Input feedback, not notification.
+
+---
+
 ---
 
 ## What is **not** declined, so nobody mistakes this page for a licence

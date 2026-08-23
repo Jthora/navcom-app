@@ -16,6 +16,7 @@
    * it rather than a third being written. A second implementation of a rule is how the two
    * drift apart.
    */
+  import { pulse } from '$lib/terminal/haptic';
   import type { Tone } from '$lib/terminal/panel';
 
   let {
@@ -70,9 +71,12 @@
   function press() {
     if (disabled) return;
     if (!hold) {
+      // Confirmation of the press, in the moment of the press.
+      pulse('tap');
       onfire?.();
       return;
     }
+    pulse('tap');
     holding = true;
     started = Date.now();
     frame = requestAnimationFrame(tick);
@@ -87,6 +91,8 @@
     started = null;
     holding = false;
     fill = 0;
+    // The threshold fired. Told to the hand, so nobody has to look down to know the hold took.
+    if (complete) pulse('committed');
     if (complete) onfire?.();
   }
 </script>
