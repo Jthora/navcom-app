@@ -9,6 +9,7 @@
   import { watch } from '$lib/terminal/watch.svelte';
   import { operator } from '$lib/terminal/session.svelte';
 
+  import { Slot, Readout } from '$lib/components/panel';
   // No watch added and a watch that is down are different situations, and an operator
   // acts differently on each. They must not render as the same sentence.
   let hasWatch = $state(true);
@@ -57,6 +58,7 @@
   </section>
 {:else if watch.state.state === 'dark'}
   <section>
+    <Slot k="Watch"><Readout value="Dark" tone="cold" sub="nobody to ask" /></Slot>
     <p class="error">
       No watch. <strong>Query needs one</strong> — there is nobody to ask, and this
       terminal has nothing cached to fall back on yet.

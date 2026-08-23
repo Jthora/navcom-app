@@ -6,6 +6,7 @@
    * for one of them and should not have to work out that the other is the same thing.
    */
   import { onMount } from 'svelte';
+  import { Slot, Readout } from '$lib/components/panel';
   import { ageInDays, secretToHex } from '@navcom/core';
   import { RestoreError, lastMade, makeBackup, restore, restoreCode } from '$lib/terminal/backup';
   import { loadIdentity } from '$lib/terminal/identity';
@@ -84,16 +85,32 @@
       were — nor that a backup made before they had any standing does not hold it.
     -->
     {#if !made}
-      <p class="cost" data-never-backed-up>
-        <strong>You have not made one on this phone.</strong> Nothing here is uploaded or
-        synced, so right now a lost phone is a lost persona.
-      </p>
+      <!-- The marker names the whole statement, not the readout half of it: what the test
+           is asserting is that the operator was told, and the telling is both parts. -->
+      <div data-never-backed-up>
+        <Slot k="Backup">
+          <Readout value="Never made" tone="warn" sub="a lost phone is a lost persona" />
+        </Slot>
+        <p class="cost">
+          <strong>You have not made one on this phone.</strong> Nothing here is uploaded or
+          synced, so right now a lost phone is a lost persona.
+        </p>
+      </div>
     {:else}
-      <p class="cost" data-backup-age>
+      <div data-backup-age>
+        <Slot k="Backup">
+          <Readout
+            value="{ageInDays(made, new Date())} days ago"
+            tone={ageInDays(made, new Date()) > 60 ? 'warn' : 'good'}
+            sub="anything taken up since is not in it"
+          />
+        </Slot>
+        <p class="cost">
         You last made one <strong>{ageInDays(made, new Date())} days ago</strong>. Anything
-        you have taken up since — people you paired with, standing somebody handed you — is
-        not in it.
-      </p>
+          you have taken up since — people you paired with, standing somebody handed you — is
+          not in it.
+        </p>
+      </div>
     {/if}
   {/if}
 

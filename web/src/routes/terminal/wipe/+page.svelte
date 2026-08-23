@@ -20,6 +20,7 @@
   import { loadIdentity } from '$lib/terminal/identity';
   import { operator } from '$lib/terminal/session.svelte';
 
+  import { Slot, Readout } from '$lib/components/panel';
   const HOLD_MS = 800;
 
   let summary = $state<{ accruing: string[]; wipeable: string[] }>({ accruing: [], wipeable: [] });
@@ -164,6 +165,7 @@
       Burn this device
     </button>
   {:else}
+    <Slot k="Identity"><Readout value="None" tone="cold" sub="nothing here to burn" /></Slot>
     <p class="cost">No identity on this device, so there is nothing to burn.</p>
   {/if}
 </section>

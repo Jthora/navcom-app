@@ -14,6 +14,7 @@
    * wrote is invisible here, and every proof still passes.
    */
   import { onMount } from 'svelte';
+  import { Slot, Readout } from '$lib/components/panel';
   import type { ReviewCheck } from '@navcom/core';
   import { operator } from '$lib/terminal/session.svelte';
   import { watch } from '$lib/terminal/watch.svelte';
@@ -106,7 +107,9 @@
 </button>
 
 {#if watch.state.state === 'dark'}
-  <p class="cost">No watch to ask. Your record is on the node, not on this phone.</p>
+  <Slot k="Log">
+        <Readout value="No watch to ask" tone="cold" sub="your record is on the node, not here" />
+      </Slot>
 {/if}
 
 {#if operator.error}

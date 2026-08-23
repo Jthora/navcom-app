@@ -8,6 +8,7 @@
   import { operator } from '$lib/terminal/session.svelte';
   import { watch } from '$lib/terminal/watch.svelte';
 
+  import { Slot, Readout } from '$lib/components/panel';
   let text = $state('');
   let sent = $state(false);
 
@@ -64,6 +65,7 @@
       nothing here is missing.
     </p>
   {:else if watch.state.state === 'dark'}
+    <Slot k="Watch"><Readout value="Dark" tone="cold" sub="sends anyway, read when one is up" /></Slot>
     <p class="cost">No watch is up. This will send, and it will be read when one is.</p>
   {/if}
 

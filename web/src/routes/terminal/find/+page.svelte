@@ -10,6 +10,7 @@
    * at a table, not something you do with one hand on a patrol.
    */
   import { onMount } from 'svelte';
+  import { Slot, Readout } from '$lib/components/panel';
   import { NOTE_MAX } from '@navcom/core';
   import { board } from '$lib/terminal/public.svelte';
   import { invite } from '$lib/terminal/invites.svelte';
@@ -121,6 +122,9 @@
     {:else if board.entries.length === 0}
       <!-- Said plainly rather than as an error. An empty board in a real metro is the
            ordinary case early on, and it is not a failure of anything. -->
+      <Slot k="Cards">
+        <Readout value="None here" tone="cold" sub="most operators never publish one" />
+      </Slot>
       <p class="cost">
         Nobody has published a card here. That is normal — most operators never do, and it
         says nothing about whether anybody is working this area.
