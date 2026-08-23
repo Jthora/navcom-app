@@ -389,6 +389,31 @@ working against the display rules.
 
 ---
 
+## What conversion actually turns out to be
+
+Eight screens in, audited sentence by sentence, the ratio holds: **roughly one paragraph in ten
+is a convertible aside.** Everything else is load-bearing, and the screens that look worst by
+paragraph count need the least change.
+
+| Screen | Prose | What converted |
+|---|---|---|
+| Distress | 90% | Nothing. Reclassified to P4/P6 — its prose is instruction |
+| Watch | 96% | The 218-word preamble, the state, the empty board |
+| Directory | 21 `<p>` | Three: unsent corrections, snapshot age, empty state |
+| Setup | 17 `<p>` | Two confirmed states and one aside |
+| Peers | 18 `<p>` | Two state readouts. Two `Why` wrappers drafted and reverted |
+
+The reverted pair on `peers` is the clearest case. *"They are told you are doing it"* is a
+consent fact that decides whether somebody takes watching on, and *"ignoring sends nothing"* is
+a thing that will not happen. Both looked like asides and neither is one.
+
+**So the value of converting a screen is almost never in moving text.** It is in the state
+readouts — `CALL FIRST` on a cache older than a week, `NOTHING YET` on an empty directory,
+a `Heartbeat` on a half-finished pairing — and in what the panel makes glanceable. A screen
+whose prose survives intact has still been converted correctly.
+
+---
+
 ## Risks
 
 - **Terse becomes curt-and-wrong.** `CALL FIRST` without its reason is a shorter way to be

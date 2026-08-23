@@ -2,6 +2,7 @@
   import { ConfigError, loadConfig, saveConfig } from '$lib/terminal/config';
   import { ContactError, clearContact, loadContact, saveContact } from '$lib/terminal/contact';
   import { createIdentity, loadIdentity } from '$lib/terminal/identity';
+  import { Slot, Readout, Why } from '$lib/components/panel';
   import { onMount } from 'svelte';
 
   let callsign = $state('');
@@ -88,10 +89,9 @@
 <section>
   <h2>Your callsign — the only step</h2>
   {#if identity}
-    <p class="done">
-      <strong>{identity.callsign}</strong>
-      <span class="key">{identity.pubkey.slice(0, 16)}…</span>
-    </p>
+    <Slot k="Callsign">
+      <Readout value={identity.callsign ?? '—'} tone="good" sub="{identity.pubkey.slice(0, 16)}…" />
+    </Slot>
     <p class="note">
       Generated here. Never transmitted, never registered — there is no account, so there is
       nothing anyone could revoke. <strong>There is also no recovery.</strong> Lose this
@@ -131,17 +131,19 @@
         yours. If you need something genuinely unlinkable, it has to be a separate identity,
         and nothing here can retroactively unlink what this one has already signed.
       </p>
-      <p class="note">
-        <!--
-          Said where the key is generated, because the post-quantum key is derived from it
-          and there is consequently nothing for an operator to create, copy or back up.
-        -->
-        <strong>A second key is derived from it</strong> and published, so messages to you
-        can be sealed against a future quantum computer as well as a present one. If
-        somebody you send to has not published theirs yet, <strong>the message still
-        goes</strong> with ordinary encryption and <strong>Status says so</strong> — nothing
-        is held back, and nothing pretends to cover more than it did.
-      </p>
+      <Why summary="What else is made from it">
+        <p class="note">
+          <!--
+            Said where the key is generated, because the post-quantum key is derived from it
+            and there is consequently nothing for an operator to create, copy or back up.
+          -->
+          <strong>A second key is derived from it</strong> and published, so messages to you
+          can be sealed against a future quantum computer as well as a present one. If
+          somebody you send to has not published theirs yet, <strong>the message still
+          goes</strong> with ordinary encryption and <strong>Status says so</strong> — nothing
+          is held back, and nothing pretends to cover more than it did.
+        </p>
+      </Why>
       <p class="note">
         <!--
           identity.md: "no recovery method means no recovery", stated plainly at persona
@@ -195,11 +197,10 @@
     <button type="submit" disabled={!contactLabel.trim() || !contactNumber.trim()}>{contact ? 'Update' : 'Save'}</button>
   </form>
   {#if contact}
-    <p class="done">
-      <strong>{contact.label}</strong>
-      <span class="key">{contact.number}</span>
-      <button class="forget" type="button" onclick={forgetContact}>Remove</button>
-    </p>
+    <Slot k="Your person">
+      <Readout value={contact.label} tone="good" sub={contact.number ?? null} />
+    </Slot>
+    <button class="forget" type="button" onclick={forgetContact}>Remove</button>
   {/if}
 </section>
 
@@ -272,9 +273,8 @@
     border-color: var(--t-line); color: var(--t-faint);
   }
   .note { font-size: .9rem; color: var(--t-faint); margin: 0 0 .3rem; line-height: 1.5; }
-  .note strong, .done strong { color: var(--t-ink); }
+  .note strong { color: var(--t-ink); }
   .done { color: var(--t-muted); display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; }
-  .key { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .8rem; color: var(--t-faint); }
   .error {
     color: var(--t-dark); border: 2px solid var(--t-dark); padding: .7rem .9rem; margin: 0;
   }

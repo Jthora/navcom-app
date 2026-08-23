@@ -7,6 +7,7 @@
    * absence is the feature.
    */
   import { onMount } from 'svelte';
+  import { Slot, Readout, Heartbeat } from '$lib/components/panel';
   import { page } from '$app/state';
   import { PairError, pair, peers, setBuddy, unpair, type Peer } from '$lib/terminal/peers';
   import { loadIdentity } from '$lib/terminal/identity';
@@ -217,6 +218,9 @@
         for. Said plainly, because the operator is the only one who can tell a flood from a
         busy week, and because the invite they were expecting may be the one being refused.
       -->
+      <Slot k="Requests">
+        <Readout value="Turning away" tone="warn" sub="more arriving than this will hold" />
+      </Slot>
       <p class="over" data-invites-flooded>
         More pairing requests are arriving than this will hold, so new ones are being
         turned away. If you were expecting one, clear these and ask them to send it again.
@@ -226,6 +230,9 @@
       </button>
     {/if}
     {#if halfPaired}
+      <Slot k="Pairing">
+        <Heartbeat label="Half done" />
+      </Slot>
       <p class="over" data-half-paired>
         You have {halfPaired}, but they do not have you — your reply did not reach a relay.
         Tap Accept again when you have signal, or they will not see your patrols.
