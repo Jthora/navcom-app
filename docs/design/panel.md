@@ -217,13 +217,55 @@ are down to one lit plus a rail.
 > has already fixed once. Terse is the default; it is not the rule when brevity costs somebody
 > the point.
 
-### P2 — WHY everywhere
+### P2 — WHY everywhere · **withdrawn, and here is why**
 
-Every prose block on every terminal screen moves inside a `Why`, verbatim. **No rewording in
-this phase** — it is purely relocation, so the diff is reviewable and nothing can be lost in
-the noise of a rewrite.
+The plan was to move every prose block on every terminal screen inside a `Why`, verbatim, as a
+purely mechanical phase. **It was attempted, measured, and abandoned on evidence.**
 
-**Gate:** the 9 test files still pass unedited.
+The transform ran across 18 screens and produced **96 disclosures**, keyed on `.cost` and
+`.note` — the classes that look like explanatory asides. Then the suite ran: **31 browser tests
+went red, every one of them asserting that a now-hidden sentence must be visible.**
+
+The reason is in one line of `screen.css`:
+
+```css
+.terminal .cost { color: var(--t-faint); font-size: .93rem; }
+```
+
+**`.cost` is a typographic class, not a semantic one.** It means *muted, slightly smaller*, and
+this codebase uses it for genuine asides, for primary state (`<p class="cost"
+data-never-backed-up>` — "You have not made one on this phone"), for unsent-and-retrying errors,
+and for instructions. Nothing distinguishes them in the markup, so nothing mechanical can
+separate what may be hidden from what may not.
+
+That is not a flaw in the screens. It follows from the house style this project is built on —
+*the claim and its limit in one breath* — which puts the load-bearing sentence and the aside in
+the same paragraph class on purpose.
+
+**A separate pass before the readouts also found six disclosures that had swallowed an
+instruction**, including the Distress screen's *"You have to press send — a web app cannot do
+that for you."* Behind a tap, that one lets an operator believe help was summoned when it was
+not.
+
+#### What replaces it
+
+Prose relocation is **not a phase**. It is a per-screen judgement, made in P3 alongside the
+readouts, with three outcomes per sentence:
+
+| The sentence is | Where it goes |
+|---|---|
+| **State** — what is true right now | A readout, in a slot |
+| **An instruction**, or a thing that will not happen unless you act | Visible prose, unwrapped |
+| **A genuine aside** — the reason behind a state | `Why`, closed |
+
+And the rule the six near-misses produced, which is P1's lesson generalised:
+
+> **Prose that tells the operator to do something, or that a thing they expect to happen will
+> not happen, stays visible.** Terse is the default. It is not the rule when brevity costs
+> somebody the point.
+
+The transform itself is kept — it is useful for finding candidates — but it proposes rather
+than decides.
 
 ### P3 — The readouts
 
