@@ -75,13 +75,20 @@
    */
   const nobodyAnswering = $derived(phases.some((p) => p.phase === 'nobody-answering'));
 
+  /*
+   * The fill is animation; the firing is a timer.
+   *
+   * Driving completion from `requestAnimationFrame` means the act only happens if frames are
+   * delivered — and rAF is throttled hard, or paused outright, in a backgrounded or
+   * power-saving page. **A hold that needs animation frames to complete can fail on a phone in
+   * low power mode**, which is the phone this is written for. Found when a handover test
+   * failed only under parallel load; it is not a test problem.
+   */
+  let doneAt: ReturnType<typeof setTimeout> | null = null;
+
   function tick() {
     if (holdStart === null) return;
     progress = Math.min((Date.now() - holdStart) / HOLD_MS, 1);
-    if (progress >= 1) {
-      release(true);
-      return;
-    }
     frame = requestAnimationFrame(tick);
   }
 
@@ -89,11 +96,14 @@
     if (operator.distressRunning) return;
     holdStart = Date.now();
     frame = requestAnimationFrame(tick);
+    doneAt = setTimeout(() => release(true), HOLD_MS);
   }
 
   function release(complete = false) {
     if (frame !== null) cancelAnimationFrame(frame);
+    if (doneAt !== null) clearTimeout(doneAt);
     frame = null;
+    doneAt = null;
     holdStart = null;
     progress = 0;
     if (complete) operator.raiseDistress(text.trim());

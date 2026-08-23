@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { seedDevice, open } from './device';
+import { seedDevice, open, holdUntil } from './device';
 
 /**
  * The two moments this product is for, and the one screen laid out for somebody else.
@@ -101,5 +101,91 @@ test.describe('presenting a credential', () => {
     await expect(shown).toBeVisible();
     await expect(shown.locator('img')).toHaveCount(0);
     await expect(shown).not.toContainText(/expires|valid until|issued by|licence|license|badge|id no/i);
+  });
+});
+
+test.describe('taking the watch', () => {
+  test('reads back what you are taking on, before the control that commits you', async ({ page }) => {
+    /*
+     * A bridge handover is a read-back: the oncoming watch states the conditions before
+     * accepting them. What you are taking on is who this phone has heard and by whose word you
+     * may hold it, and both are above the control rather than after it.
+     */
+    await seedDevice(page, { callsign: 'Wren', relayEvents: [] });
+    await open(page, '/terminal/watch/');
+    await page.getByRole('button', { name: /start a watch on this phone/i }).click();
+
+    const taking = page.locator('[data-slot="taking-on"]');
+    await expect(taking).toBeVisible();
+    // Rule 6 — silence is a readout, and an empty board is not the same as nobody being out.
+    await expect(taking).toContainText(/no contact/i);
+    await expect(taking).toContainText(/nothing heard by this phone/i);
+
+    await expect(page.locator('[data-slot="gate"]')).toContainText(/founded here/i);
+  });
+
+  test('is a threshold, not a tap', async ({ page }) => {
+    /*
+     * Operators go out believing a named human is reading what they send. That must not begin
+     * with a pocket press — the same reason the wipe screen has held its control from the
+     * start.
+     */
+    await seedDevice(page, { callsign: 'Wren', relayEvents: [] });
+    await open(page, '/terminal/watch/');
+    await page.getByRole('button', { name: /start a watch on this phone/i }).click();
+
+    const take = page.getByRole('button', { name: /take the watch/i });
+    await expect(take).toBeVisible();
+
+    // A tap does nothing at all.
+    await take.click();
+    await expect(page.getByRole('button', { name: /stand down/i })).toHaveCount(0);
+
+    // Holding it does.
+    await holdUntil(page, 'button:has-text("take the watch")');
+    await expect(page.getByRole('button', { name: /stand down/i })).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('and Distress is never behind a sequence, not for one second', async ({ page }) => {
+    /*
+     * The gate's hard rule. Ceremony belongs to two acts, and needing help is not one of them:
+     * a Distress control is reachable and armed the instant the screen is, in every state.
+     */
+    await seedDevice(page, { callsign: 'Wren' });
+    await open(page, '/terminal/');
+    await expect(page.getByRole('link', { name: /^distress$/i })).toBeEnabled();
+
+    await open(page, '/terminal/distress/');
+    // The raise itself is held — deliberately, so a pocket cannot fire it — but nothing gates
+    // reaching it, and the control is on the glass immediately.
+    await expect(page.locator('button.raise')).toBeVisible();
+    await expect(page.locator('button.raise')).toBeEnabled();
+  });
+});
+
+test.describe('a threshold on a phone that is not painting', () => {
+  test('still fires when no animation frames are delivered', async ({ page }) => {
+    /*
+     * The bug this pins, found because a handover test failed only under parallel load.
+     *
+     * All three holds in this application — Distress, wipe, and taking the watch — completed
+     * from inside a `requestAnimationFrame` loop. rAF is throttled hard, and paused outright,
+     * in a backgrounded or power-saving page. **A hold that needs frames to complete can fail
+     * on a phone in low power mode**, which is the phone this is written for, and the control
+     * it would fail on first is the one somebody holds when they are in trouble.
+     *
+     * rAF is stubbed dead here, so nothing paints and the fill never moves. The act must still
+     * happen: the deadline is a timer that does not care whether anything was drawn.
+     */
+    await seedDevice(page, { callsign: 'Wren', relayEvents: [] });
+    await page.addInitScript(() => {
+      // Never calls back. Exactly what a throttled page does.
+      window.requestAnimationFrame = (() => 1) as typeof window.requestAnimationFrame;
+    });
+    await open(page, '/terminal/watch/');
+    await page.getByRole('button', { name: /start a watch on this phone/i }).click();
+
+    await holdUntil(page, 'button:has-text("take the watch")');
+    await expect(page.getByRole('button', { name: /stand down/i })).toBeVisible({ timeout: 10_000 });
   });
 });

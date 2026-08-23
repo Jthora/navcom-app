@@ -47,15 +47,23 @@
   let fill = $state(0);
   let holding = $state(false);
   let frame: number | null = null;
+  let done: ReturnType<typeof setTimeout> | null = null;
   let started: number | null = null;
 
+  /*
+   * The fill is animation; the firing is a timer. They are separate on purpose.
+   *
+   * Driving completion from `requestAnimationFrame` means the act only happens if frames are
+   * delivered — and rAF is throttled hard, or paused outright, in a backgrounded or
+   * power-saving page. A threshold that needs animation frames to complete is one that can
+   * fail on a phone in low power mode, which is the phone this is written for.
+   *
+   * So the deadline is a `setTimeout` that does not care whether anything was painted, and the
+   * frame loop only moves the bar.
+   */
   function tick() {
     if (started === null) return;
     fill = Math.min(1, (Date.now() - started) / hold);
-    if (fill >= 1) {
-      release(true);
-      return;
-    }
     frame = requestAnimationFrame(tick);
   }
 
@@ -68,11 +76,14 @@
     holding = true;
     started = Date.now();
     frame = requestAnimationFrame(tick);
+    done = setTimeout(() => release(true), hold);
   }
 
   function release(complete = false) {
     if (frame !== null) cancelAnimationFrame(frame);
+    if (done !== null) clearTimeout(done);
     frame = null;
+    done = null;
     started = null;
     holding = false;
     fill = 0;

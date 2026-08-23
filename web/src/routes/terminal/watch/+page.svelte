@@ -205,7 +205,13 @@
       {#if board.onStation}
         <Action label="Stand down" tone="warn" onfire={() => board.standDown()} />
       {:else if qualified}
-        <Action label="Take the watch" tone="warn" onfire={() => board.takeWatch()} />
+        <Action
+          label="Hold to take the watch"
+          holdingLabel="Keep holding…"
+          hold={1200}
+          tone="warn"
+          onfire={() => board.takeWatch()}
+        />
       {/if}
     {/snippet}
 
@@ -269,6 +275,28 @@
           </Why>
         {/if}
 
+        <!--
+          The read-back, before the threshold.
+
+          A bridge handover is a read-back: the oncoming watch states the conditions before
+          accepting them. What you are taking on is who this phone has heard and by whose word
+          you may hold it, so both are on the screen above the control that commits you.
+
+          The roster proposed *arming* the control after a staged reveal. Rejected: a delay
+          that exists only to make an act feel weighty is ceremony with no mechanism under it,
+          and the hold below is already a real threshold you can abandon by letting go.
+        -->
+        <Slot k="Taking on">
+          {#if board.entries.length === 0}
+            <Readout value="No contact" tone="cold" sub="nothing heard by this phone yet" />
+          {:else}
+            <Readout
+              value={board.entries.map((e) => e.callsign).join(', ')}
+              tone="neutral"
+              sub="out now, that this phone has heard"
+            />
+          {/if}
+        </Slot>
         <Slot k="Gate">
           {#if founded}
             <Readout value="Founded here" tone="good" sub="you started this watch — yours to hold" />

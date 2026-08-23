@@ -36,10 +36,16 @@
     return () => { if (frame !== null) cancelAnimationFrame(frame); };
   });
 
+  /*
+   * The fill is animation; the firing is a timer. `requestAnimationFrame` is throttled hard,
+   * or paused outright, in a backgrounded or power-saving page — so a hold driven by frames
+   * can fail to complete on exactly the phone this is written for.
+   */
+  let doneAt: ReturnType<typeof setTimeout> | null = null;
+
   function tick() {
     if (start === null) return;
     progress = Math.min((Date.now() - start) / HOLD_MS, 1);
-    if (progress >= 1) { release(true); return; }
     frame = requestAnimationFrame(tick);
   }
 
@@ -47,10 +53,13 @@
     holding = true;
     start = Date.now();
     frame = requestAnimationFrame(tick);
+    doneAt = setTimeout(() => release(true), HOLD_MS);
   }
 
   function release(complete = false) {
     if (frame !== null) cancelAnimationFrame(frame);
+    if (doneAt !== null) clearTimeout(doneAt);
+    doneAt = null;
     frame = null;
     start = null;
     holding = false;

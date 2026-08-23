@@ -1,5 +1,5 @@
 import { expect, test, type Browser, type Page } from '@playwright/test';
-import { seedDevice, open, deliver } from './device';
+import { seedDevice, open, deliver , holdUntil } from './device';
 
 /**
  * **A squad hands the board over mid-shift.**
@@ -47,11 +47,11 @@ test.describe('handing the board over', () => {
     const raven = await holder(browser, 'Raven');
 
     await open(wren, '/terminal/watch/');
-    await wren.getByRole('button', { name: /take the watch/i }).click();
+    await holdUntil(wren, 'button:has-text("take the watch")');
     await wren.waitForTimeout(400);
 
     await open(raven, '/terminal/watch/');
-    await raven.getByRole('button', { name: /take the watch/i }).click();
+    await holdUntil(raven, 'button:has-text("take the watch")');
     await raven.waitForTimeout(400);
 
     // Wren learns, as her phone would from the relay, that Raven now holds it.
@@ -78,7 +78,7 @@ test.describe('handing the board over', () => {
     const wren = await holder(browser, 'Wren');
 
     await open(wren, '/terminal/watch/');
-    await wren.getByRole('button', { name: /take the watch/i }).click();
+    await holdUntil(wren, 'button:has-text("take the watch")');
     await wren.waitForTimeout(400);
     await wren.getByRole('button', { name: /stand down/i }).click();
     await wren.waitForTimeout(800);
@@ -96,10 +96,10 @@ test.describe('handing the board over', () => {
     const raven = await holder(browser, 'Raven');
 
     await open(wren, '/terminal/watch/');
-    await wren.getByRole('button', { name: /take the watch/i }).click();
+    await holdUntil(wren, 'button:has-text("take the watch")');
 
     await open(raven, '/terminal/watch/');
-    await raven.getByRole('button', { name: /take the watch/i }).click();
+    await holdUntil(raven, 'button:has-text("take the watch")');
     await raven.waitForTimeout(400);
 
     await expect(raven.getByText(/nothing waiting/i)).toBeVisible();

@@ -335,6 +335,26 @@ for the *other person* to read at arm's length), `Ladder` (escalation walking it
 **Gate:** no ceremony outside taking the watch and standing down. A `Distress` control is never
 gated behind a sequence, not for one second.
 
+> **Done, and one concept was rejected while building it.** The roster proposed the read-back
+> *arming* the control after a staged reveal. That is ceremony with no mechanism under it — a
+> delay whose only job is to make an act feel weighty — and gating on animation would have left
+> the control dead under `prefers-reduced-motion`. What shipped is a read-back that is simply
+> there, above a hold you can abandon by letting go.
+>
+> **`Inked` claims less than the concept did.** It was written as the night's line *"sealed
+> into the hash chain with an inclusion proof."* Inclusion proofs have not shipped — `log.ts`
+> says an operator reading the log is trusting the watch's account — so the close of the night
+> shows how long, where, and *"nobody was watching, and it still counts"*, and claims nothing
+> about provability.
+>
+> **And it found a real defect.** All three hold controls — Distress, wipe, take the watch —
+> completed from inside a `requestAnimationFrame` loop. rAF is throttled hard, and paused
+> outright, in a backgrounded or power-saving page, so **a hold that needs frames to complete
+> can fail on a phone in low power mode** — the phone this is written for, and the control it
+> would fail on first is the one somebody holds when they are in trouble. The fill is animation
+> now; the firing is a timer that does not care whether anything was painted. Surfaced by a test
+> that failed only under parallel load, which had every marker of a flake and was not one.
+
 ### P7 — Haptic
 
 Three patterns: sent, acknowledged, distress armed. There is currently not one `vibrate` call

@@ -428,3 +428,24 @@ export async function serviceWorkerReady(page: Page): Promise<void> {
     }
   });
 }
+
+/**
+ * Presses and holds a threshold control until it fires.
+ *
+ * `click()` dispatches pointerdown and pointerup back to back, so a control that only acts
+ * after a real hold never acts — the test sees a button that does nothing and reads like a
+ * broken screen. The audit has already lost time to this twice.
+ *
+ * The release is deliberate rather than assumed: a hold control commonly relabels or is
+ * replaced the moment it completes, so `pointerup` is sent to the *element handle* captured
+ * before the press rather than to a locator that may no longer resolve.
+ */
+export async function holdUntil(page: Page, selector: string, ms = 1500): Promise<void> {
+  const handle = await page.locator(selector).elementHandle();
+  if (!handle) throw new Error(`no control matched ${selector}`);
+  await handle.dispatchEvent('pointerdown');
+  await page.waitForTimeout(ms);
+  await handle.dispatchEvent('pointerup').catch(() => {
+    // Gone because it fired and the screen moved on. That is the success case.
+  });
+}

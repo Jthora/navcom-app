@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { readDevice, seedDevice, serviceWorkerReady, open, TEST_SECRET } from './device';
+import { readDevice, seedDevice, serviceWorkerReady, open, TEST_SECRET , holdUntil } from './device';
 
 /**
  * Every control an operator is told about is on the screen and operable.
@@ -1106,7 +1106,7 @@ test.describe('a watch that cannot reach a relay', () => {
     await seedDevice(page, { callsign: 'Wren', watchSecret, refusePublish: true });
     await open(page, '/terminal/watch/');
 
-    await page.getByRole('button', { name: /take the watch/i }).click();
+    await holdUntil(page, 'button:has-text("take the watch")');
 
     const warning = page.locator('[data-unannounced]');
     await expect(warning).toBeVisible({ timeout: 10_000 });
