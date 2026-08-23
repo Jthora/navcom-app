@@ -244,3 +244,21 @@
     .verify div { grid-template-columns: 1fr; gap: 0; }
   }
 </style>
+
+  <!--
+    The moment somebody knows a listing is wrong is the moment they are looking at it, and this
+    page offered them nothing. The mechanism exists and is tested; what was missing was the ask.
+  -->
+  <section class="notice" data-correct-this>
+    <p>
+      <strong>Do you know this place?</strong> If any of this is wrong — especially who they
+      take, or what happens to somebody with no ID — the fastest fix is the
+      <a href="/terminal/directory/{data.region?.slug ?? ''}/">field terminal</a>: pick a
+      callsign, find this listing, tap <strong>report a problem</strong>. No account, and it
+      works with no signal.
+    </p>
+    <p class="quiet">
+      Your correction is <strong>added</strong> under your callsign — it cannot delete this
+      listing or overrule anybody, and nobody has to approve it.
+    </p>
+  </section>

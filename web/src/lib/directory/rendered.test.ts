@@ -603,3 +603,37 @@ describe('the field terminal', () => {
     expect(existsSync(join(BUILD, 'apple-touch-icon.png'))).toBe(true);
   });
 });
+
+describe('the one page with public reach, and the ask it makes', () => {
+  /*
+   * Cold start is the project's real problem — 477 of 479 records are scraped skeletons — and
+   * the public directory is the only surface with reach: ungated, indexable, no install.
+   *
+   * It was telling everybody the easy path did not exist. The terminal's one-tap correction had
+   * shipped and is covered by three test files, including a two-device story, while the index
+   * still read *"that does not exist yet"*. These pin the ask so it cannot rot back.
+   */
+  it('points a record page at the path that actually exists', () => {
+    const page = pages.find((p) => p.path.includes('/directory/st-louis-'));
+    expect(page, 'a record page to check').toBeTruthy();
+    const html = page!.raw;
+    expect(html).toMatch(/do you know this place/i);
+    expect(html).toMatch(/report a problem/i);
+    expect(html).toMatch(/href="\/terminal\/directory\//);
+  });
+
+  it('and says what a correction can and cannot do, before somebody makes one', () => {
+    // The same sentence the terminal shows before its own report control. Somebody deciding
+    // whether to bother is owed it here too: added, never a deletion, nobody approves it.
+    const page = pages.find((p) => p.path.includes('/directory/st-louis-'));
+    const html = page!.raw;
+    expect(html).toMatch(/cannot delete this\s+listing|cannot delete this listing/i);
+    expect(html).toMatch(/nobody has to approve it/i);
+  });
+
+  it('and no longer claims the terminal correction is unbuilt', () => {
+    const index = pages.find((p) => p.path.endsWith('directory/index.html'));
+    expect(index, 'the directory index').toBeTruthy();
+    expect(index!.raw).not.toMatch(/does not exist yet/i);
+  });
+});
