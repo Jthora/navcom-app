@@ -783,6 +783,41 @@ fails us, or when there is a second person to run it.
 
 ---
 
+## The panel — how the terminal gets its interface
+
+**Not a milestone.** It cuts across all of them: every screen milestones 1–9 produced is a
+document with buttons in it, and this is how they become an instrument. It is also not new
+work — it is how build items 2 and 3 in [`../CLAUDE.md`](../CLAUDE.md) get done.
+
+Doctrine, phases, gates and the measured diagnosis: [`design/panel.md`](design/panel.md).
+
+Measured in Chromium at 390×727 against the built artifact: the watch screen is **96% prose**,
+status is 81% across **15 controls**, and Distress — the screen somebody opens when they are
+in trouble — is **90% prose**. The cause is structural rather than visual: `screen.css` is 66
+lines of paragraph furniture, so every screen writes paragraphs, and there are **two shared
+components against twenty routes**.
+
+| | Item | Who | Notes |
+|---|---|---|---|
+| P0 | **The component layer** | agent | Tokens, `panel.css`, and nine components. **Gates everything below.** A component nobody uses is not built |
+| P1 | **The shell — three posts, one panel** | agent | `/terminal/` opens onto the post you hold. The hard part is *Alone*: fully lit, not greyed-out setup |
+| P2 | **`WHY` everywhere** | agent | Every prose block relocated **verbatim** behind a disclosure. No rewording in this phase, so nothing can be lost in the noise of a rewrite |
+| P3 | **The readouts** | agent | Status, watch, distress, sign-on, standing. Target: under 40 words, one screen tall, every removed word present in a `WHY` |
+| P4 | **Motion that carries state** | agent | Window, Elapsed, Heartbeat, board reorder. `distress: null` means Distress **climbs and never drains** — a bar that empties implies it resolves itself |
+| P5 | **Low signature** | agent | No white, minimum luminance, amber-dominant, document mode one tap away. Brightness is a tactical property and nothing in the category solves it |
+| P6 | **The moments** | agent | Handover, Inked, Present, Ladder. Ceremony stays on two acts only |
+| P7 | **Haptic** | agent | Three patterns. Zero `vibrate` calls exist today. Only ever in response to a tap the operator made |
+| P8 | **Typography decision** | **human** | System stack, one subset variable font (~18–25 KB), or condensed-only (~8–12 KB). Default is system stack. See `design/panel.md` |
+| P9 | **Low-signature default** | **human** | On for everyone, or opt-in? The audience is definitionally outdoors at night; first contact is on a couch |
+
+**The migration mechanism.** 9 test files assert on prose this rewrites. Every red test names a
+fact that must survive into the readout or the `WHY` — **made green by preserving the fact,
+never by editing the assertion to match new copy.** A test edited to match new copy is the
+redesign losing information silently, and it is the one outcome here worse than shipping
+nothing.
+
+---
+
 ## Milestone 10 — Off-grid, and the hardware gets funded
 
 **Done when:** a `Distress` reaches somebody with no cell network involved.
