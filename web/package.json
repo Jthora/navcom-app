@@ -16,6 +16,7 @@
     "preview": "vite preview",
     "test": "vitest run --reporter=default --reporter=json --outputFile=.vitest.json",
     "receipt": "node scripts/receipt.mjs",
+    "check:secrets": "node scripts/check-secrets.mjs",
     "car": "node scripts/car.mjs",
     "pin": "node scripts/pin.mjs",
     "announce": "node scripts/announce.mjs",
@@ -23,8 +24,8 @@
     "wellknown": "node scripts/well-known.mjs",
     "test:browser": "node scripts/browser-tests.mjs",
     "test:watch": "vitest",
-    "verify": "npm run check && npm run check:data && npm run build && npm run car && npm run pin && npm run announce && npm run test && npm run test:browser && npm run receipt && npm run wellknown && npm run budget",
-    "verify:deploy": "npm run check && npm run check:data && npm run build && npm run car && npm run pin && npm run announce && npm run test && npm run receipt && npm run wellknown && npm run budget",
+    "verify": "npm run check && npm run check:data && npm run build && npm run car && npm run pin && npm run announce && npm run test && npm run test:browser && npm run receipt && npm run wellknown && npm run budget && npm run check:secrets",
+    "verify:deploy": "npm run check && npm run check:data && npm run build && npm run car && npm run pin && npm run announce && npm run test && npm run receipt && npm run wellknown && npm run budget && npm run check:secrets",
     "test:pin": "node scripts/verify-pin.mjs",
     "test:relay": "playwright test real-relay.spec.ts --config playwright.relay.config.ts"
   },
