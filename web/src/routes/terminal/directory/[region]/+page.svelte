@@ -22,7 +22,7 @@
   } from '$lib/directory';
   import { AVAILABILITY_FIELDS, FIELD_LABELS, INTAKE_FIELDS, labelValue } from '$lib/directory/load';
   import { displayMerged, mergeCorrections, needsChecking, CORRECTABLE_FIELDS, FIELD_OPTIONS,
-    isAddedPlace, withPlaces, PlaceError } from '@navcom/core';
+    isAddedPlace, isSeeded, withPlaces, PlaceError } from '@navcom/core';
   import { corrections } from '$lib/terminal/corrections.svelte';
   import { places } from '$lib/terminal/places.svelte';
   import { Slot, Readout, Why, Heartbeat } from '$lib/components/panel';
@@ -177,6 +177,34 @@
    */
   const shown = $derived(withPlaces(data.records as ResourceRecord[], places.all));
 
+  /** The ways of knowing that count as a person having checked, everywhere in this system. */
+  const HUMAN_METHODS = new Set(['in_person', 'staff_confirmed', 'phone']);
+
+  /**
+   * Whether *anything* in this region has ever been confirmed by a person.
+   *
+   * Answers the question the Academy asked directly in the EIN round: field-level provenance
+   * already exists — a value shows "Wren, phone" beneath it — but nothing said, at the level of
+   * the region, that a reader is looking at zero confirmed places among however many are listed.
+   * Field-level honesty, region-level silence, and the silence was the gap.
+   *
+   * A record counts as confirmed if any of three things is true: it is an operator-added place
+   * (which can only exist via in_person, staff_confirmed or phone — see places.ts), or its own
+   * base method is one of those, or a correction actually written by a person changed one of its
+   * fields. The third case is why this merges corrections rather than reading `record.method`
+   * alone — a scraped record with one in-person correction on `hours` has been touched by a
+   * person, even though the record's own base method never changes to reflect that.
+   */
+  const anyConfirmed = $derived(
+    shown.some((record) => {
+      if (isAddedPlace(record) || !isSeeded(record)) return true;
+      const merged = mergeCorrections(record, corrections.about(record.id), now);
+      return Object.values(merged.sources).some(
+        (source) => source?.correction && HUMAN_METHODS.has(source.correction.method)
+      );
+    })
+  );
+
   const byType = $derived(
     RESOURCE_TYPES.map((type) => ({
       type,
@@ -289,6 +317,23 @@
   <section>
     <Slot k="Held">
       <Readout value="Nothing yet" tone="cold" sub="nobody has put this area in" />
+    </Slot>
+  </section>
+{/if}
+
+{#if shown.length > 0 && !anyConfirmed}
+  <!--
+    The region-level counterpart to the per-field "said-by" line. A reader scrolling this
+    screen sees provenance on every value that has any — and nothing, anywhere on the page,
+    told them that not one of these has any. This is that missing sentence.
+  -->
+  <section>
+    <Slot k="Provenance">
+      <Readout
+        value="Unconfirmed"
+        tone="warn"
+        sub="none of what's below has been checked by a person — every field here came from a website"
+      />
     </Slot>
   </section>
 {/if}
