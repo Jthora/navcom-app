@@ -175,11 +175,25 @@ export const corrections = {
   async submit(
     record: string,
     fields: Correction['fields'],
-    method: Method = 'in_person'
+    method: Method = 'in_person',
+    /**
+     * Flag every field in this correction as weakly backed, despite the method above.
+     *
+     * A single switch rather than a per-field one, because a correction here only ever
+     * asserts one field at a time in practice — see `fix()` in the region page — and a
+     * per-field API for a single-field caller is complexity nobody is using. `flag` is never
+     * included even if somehow passed through, since it is a report about the record rather
+     * than a value with a confidence to caveat.
+     */
+    bridged = false
   ): Promise<void> {
     const urls = relays();
     const callsign = loadIdentity()?.callsign;
     const secret = ensureContactKey();
+
+    const bridgedFields = bridged
+      ? (Object.keys(fields).filter((k) => k !== 'flag') as Correction['bridged'])
+      : undefined;
 
     const correction: Correction = {
       record,
@@ -187,7 +201,8 @@ export const corrections = {
       verified_by: callsign ?? 'anonymous',
       method,
       last_verified: new Date().toISOString().slice(0, 10),
-      fields
+      fields,
+      ...(bridgedFields?.length ? { bridged: bridgedFields } : {})
     };
 
     const event = buildCorrection(secret, correction, Math.floor(Date.now() / 1000));

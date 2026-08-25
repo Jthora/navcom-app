@@ -434,3 +434,191 @@ describe('the merge is fed what the wire actually delivers', () => {
     expect(mergeCorrections(base, [read], now).record.hours).toBe('24/7');
   });
 });
+
+/**
+ * `bridged` — a correction naming which of its own fields are weakly backed.
+ *
+ * Ratified network-wide in the EIN round after Starcom Academy's credential format used the
+ * identical pattern for its own modules. The property worth testing hardest is the one stated
+ * in the doc comment: **it must never change what a correction ranks as.** A bridged field is a
+ * caveat surfaced to a reader, not a discount computed on their behalf — so every test here
+ * that touches confidence asserts the ranking is *unchanged* by the flag, not merely that the
+ * flag round-trips.
+ */
+describe('bridged — a caveat, never a discount', () => {
+  it('round-trips, attached to the field it names', () => {
+    const event = buildCorrection(
+      wren,
+      { ...correction(), fields: { hours: '24/7' }, bridged: ['hours'] },
+      1_800_000_000
+    );
+    const read = readCorrection(overRelay(event));
+    expect(read?.bridged).toEqual(['hours']);
+  });
+
+  it('is absent, not an empty array, when nothing is flagged', () => {
+    // The common case, and it must not cost every ordinary correction a stray `"bridged":[]`
+    // in its signed content — a field nobody uses should not show up in what gets published.
+    const event = buildCorrection(wren, correction(), 1_800_000_000);
+    expect(JSON.parse(event.content).bridged).toBeUndefined();
+    expect(readCorrection(overRelay(event))?.bridged).toBeUndefined();
+  });
+
+  it('refuses a flag on a field this correction does not assert', () => {
+    // The rule stated in the interface doc comment: a caveat on a value nobody claimed is a
+    // claim about nothing, not a stray warning worth keeping.
+    expect(() =>
+      buildCorrection(wren, { ...correction(), fields: { hours: '24/7' }, bridged: ['pets'] }, 1)
+    ).toThrow(CorrectionError);
+  });
+
+  it('refuses the same shape from the wire, where the builder cannot have refused it first', () => {
+    /*
+     * Signed directly rather than built and then tampered with. Mutating an already-signed
+     * event's content invalidates the signature, so a test that did that would pass because
+     * `verifyEvent` rejected it generically — not because this specific check fired, which is
+     * the thing this test exists to prove. Constructed the way a hand-rolled client actually
+     * would: sign what you meant to send, including the mistake.
+     */
+    const event = finalizeEvent(
+      {
+        kind: KIND_CORRECTION,
+        created_at: 1,
+        tags: [['d', 'st-louis-example']],
+        content: JSON.stringify({
+          record: 'st-louis-example',
+          verified_by: 'Wren',
+          method: 'in_person',
+          last_verified: '2026-08-19',
+          fields: { hours: '24/7' },
+          bridged: ['pets'] // a field the fields object never carried
+        })
+      },
+      wren
+    );
+    expect(readCorrection(overRelay(event))).toBeNull();
+  });
+
+  it('refuses a bridged value that is not an array', () => {
+    // A string mostly fails downstream anyway — spread into a Set of characters, it either
+    // outgrows the field count or none of its characters name a real field. Included as the
+    // ordinary malformed-input case, alongside the one below that isolates what only the
+    // array check itself prevents.
+    const event = finalizeEvent(
+      {
+        kind: KIND_CORRECTION,
+        created_at: 1,
+        tags: [['d', 'st-louis-example']],
+        content: JSON.stringify({
+          record: 'st-louis-example',
+          verified_by: 'Wren',
+          method: 'in_person',
+          last_verified: '2026-08-19',
+          fields: { hours: '24/7' },
+          bridged: 'hours'
+        })
+      },
+      wren
+    );
+    expect(readCorrection(overRelay(event))).toBeNull();
+  });
+
+  it('refuses null specifically — the one shape the length and membership checks would let through', () => {
+    /*
+     * `null` is the case that actually needs the explicit `Array.isArray` guard rather than
+     * relying on what runs after it. `new Set(null)` spreads to `[]` per spec rather than
+     * throwing, so a bare length-and-membership check would see zero entries, pass vacuously,
+     * and normalise `bridged: null` into `bridged: []` on the object returned to a caller —
+     * accepting a malformed correction rather than refusing it. Verified by temporarily
+     * removing the guard while writing this test and watching this assertion fail; restored
+     * before committing.
+     */
+    const event = finalizeEvent(
+      {
+        kind: KIND_CORRECTION,
+        created_at: 1,
+        tags: [['d', 'st-louis-example']],
+        content: JSON.stringify({
+          record: 'st-louis-example',
+          verified_by: 'Wren',
+          method: 'in_person',
+          last_verified: '2026-08-19',
+          fields: { hours: '24/7' },
+          bridged: null
+        })
+      },
+      wren
+    );
+    expect(readCorrection(overRelay(event))).toBeNull();
+  });
+
+  it('dedupes on the write path', () => {
+    const event = buildCorrection(
+      wren,
+      { ...correction(), fields: { hours: '24/7' }, bridged: ['hours', 'hours', 'hours'] },
+      1
+    );
+    expect(JSON.parse(event.content).bridged).toEqual(['hours']);
+  });
+
+  it('dedupes on the read path too, for a hand-rolled client that never bothered', () => {
+    /*
+     * `buildCorrection` already dedupes before signing, so its own output can never exercise
+     * this path — a duplicate has to be signed from outside it, the way a client written
+     * against a looser reading of the type could. `finalizeEvent` directly, over content
+     * `buildCorrection` would never produce but a relay would still be asked to serve.
+     */
+    const body = {
+      record: 'st-louis-example',
+      verified_by: 'Wren',
+      method: 'in_person',
+      last_verified: '2026-08-19',
+      fields: { hours: '24/7' },
+      bridged: ['hours', 'hours']
+    };
+    const event = finalizeEvent(
+      { kind: KIND_CORRECTION, created_at: 1, tags: [['d', 'st-louis-example']], content: JSON.stringify(body) },
+      wren
+    );
+    expect(readCorrection(overRelay(event))?.bridged).toEqual(['hours']);
+  });
+
+  it('does not change the confidence a field earns', () => {
+    /*
+     * The property that matters most. A phone call about hours is medium confidence whether or
+     * not it is flagged bridged — flagging it must surface a caveat, never quietly demote it to
+     * `low` on the reader's behalf. Checked by comparing the merge result field-for-field
+     * against an identical correction with no bridged flag at all.
+     */
+    const now = new Date('2026-08-21T00:00:00Z');
+    const record = base();
+
+    const plain = readCorrection(
+      overRelay(buildCorrection(wren, { ...correction(), method: 'phone', fields: { hours: '24/7' } }, 1))
+    )!;
+    const flagged = readCorrection(
+      overRelay(
+        buildCorrection(
+          raven,
+          { ...correction(), method: 'phone', fields: { hours: '24/7' }, bridged: ['hours'] },
+          1
+        )
+      )
+    )!;
+
+    const plainMerge = mergeCorrections(record, [plain], now);
+    const flaggedMerge = mergeCorrections(record, [flagged], now);
+
+    expect(flaggedMerge.sources.hours?.confidence).toBe(plainMerge.sources.hours?.confidence);
+    expect(flaggedMerge.record.hours).toBe(plainMerge.record.hours);
+  });
+
+  it('is not asserted by a correction that never mentioned it', () => {
+    // A record merged from a correction with no bridged field must not read as bridged by
+    // absence-of-evidence — `undefined` is the honest state, not `false`.
+    const now = new Date('2026-08-21T00:00:00Z');
+    const read = readCorrection(overRelay(buildCorrection(wren, correction(), 1)))!;
+    const merged = mergeCorrections(base(), [read], now);
+    expect(merged.sources.hours?.correction?.bridged).toBeUndefined();
+  });
+});

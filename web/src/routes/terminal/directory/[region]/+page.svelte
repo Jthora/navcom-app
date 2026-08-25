@@ -64,6 +64,13 @@
   /** Which field is being corrected, once somebody has picked one. */
   let correcting = $state<ResourceField | null>(null);
   let typed = $state('');
+  /**
+   * Whether the value about to be sent is flagged as weakly backed despite the method used.
+   * The case this exists for: staff confirmed *that the website is right* rather than
+   * reading out the current value themselves — a phone call about a website, not a phone
+   * call about the fact itself.
+   */
+  let bridgedFlag = $state(false);
 
   /** Scribbles, kept on this phone. Reloaded on mount because they are read from storage. */
   let jotted = $state<Record<string, string>>({});
@@ -89,10 +96,11 @@
 
   async function fix(id: string, field: ResourceField, value: string) {
     if (!value.trim()) return;
-    await corrections.submit(id, { [field]: value.trim() });
+    await corrections.submit(id, { [field]: value.trim() }, 'in_person', bridgedFlag);
     reporting = null;
     correcting = null;
     typed = '';
+    bridgedFlag = false;
   }
 
   /**
@@ -421,6 +429,14 @@
                   -->
                   <p class="said-by" data-said-by={field}>
                     {shown.by.verified_by}, {shown.by.method.replace(/_/g, ' ')}
+                    {#if shown.by.bridged?.includes(field)}
+                      <!--
+                        The caveat a correction can carry about itself. Never changes the
+                        confidence this field earned from its method and date -- surfaced
+                        alongside it, for a reader to weigh, not a silent downgrade.
+                      -->
+                      <span class="bridged" data-bridged-caveat={field}>— flagged as uncertain</span>
+                    {/if}
                   </p>
                 {/if}
               {/each}
@@ -501,11 +517,28 @@
                   <strong>Write about the place, not the person.</strong> What the door does —
                   never who was at it, or why.
                 </p>
+                <!--
+                  Ratified network-wide (R4) after Starcom Academy's own credential format used
+                  the same pattern for its modules: a claim can name its own weak backing rather
+                  than a consumer having to guess. This is that, for one field of one correction
+                  -- "they confirmed the website" is not the same claim as "they read me the
+                  current hours", and this is how the difference survives into what gets sent.
+
+                  Offered here and not on the enum-tap path above: most of what an operator
+                  learns at a door is a clean yes/no/enum, and the checkbox would slow the
+                  fast, common case for a caveat that rarely applies to it. Free text is where
+                  somebody is already typing something specific, which is exactly where "and
+                  I'm not fully sure" is worth one more tap.
+                -->
+                <label class="bridged-toggle">
+                  <input type="checkbox" bind:checked={bridgedFlag} data-bridged-toggle />
+                  Not fully sure about this
+                </label>
                 <div class="row">
                   <button class="drop" onclick={() => fix(record.id, correcting!, typed)}>Send</button>
                 </div>
               {/if}
-              <button class="drop" onclick={() => { correcting = null; typed = ''; }}>Back</button>
+              <button class="drop" onclick={() => { correcting = null; typed = ''; bridgedFlag = false; }}>Back</button>
             {:else if reporting === record.id}
               <div class="row">
                 <button class="drop" onclick={() => report(record.id, 'reported_closed')}>Closed</button>
@@ -640,6 +673,13 @@
   .said-by {
     margin: -.2rem 0 .4rem; color: var(--t-station); font-size: .78rem;
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .bridged {
+    color: var(--t-oncall); font-style: italic;
+  }
+  .bridged-toggle {
+    display: flex; align-items: center; gap: .5rem; margin: .5rem 0;
+    font-size: .85rem; color: var(--t-dim);
   }
   .note {
     margin: .4rem 0 0; color: var(--t-ink); font-size: .9rem;

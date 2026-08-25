@@ -77,6 +77,30 @@ export interface Correction {
    * coordinate, a name, or anything about a person onto somebody's screen.
    */
   fields: Partial<Record<ResourceField, string>>;
+  /**
+   * Which of the fields above the author is flagging as weakly backed, despite the method
+   * just stated.
+   *
+   * The name and the shape are deliberate, not invented here: the EIN consensus round ratified
+   * *"a `bridged`-style self-declared-weakness field"* network-wide, after Starcom Academy's
+   * credential format used exactly this pattern to name which of its own modules were still
+   * backed by template content rather than real sourcing. The general version of the idea:
+   * **a claim declares its own weak backing**, rather than a consumer having to guess at it.
+   *
+   * The case this exists for: a phone call is `method: phone`, medium confidence, same as any
+   * other. But *"I called and they confirmed the website's hours"* is not the same claim as
+   * *"I called and they read me the current hours"* — the first is a phone call about a
+   * website, and recording only the stronger-looking method launders a low-confidence value
+   * into a medium one. `bridged` lets the author say so without inventing a fourth method or
+   * a discounted confidence tier: **the ranking this correction earns from `method` and
+   * `last_verified` is unchanged** — `bridged` is a caveat surfaced alongside it, for a reader
+   * to weigh, never a silent downgrade computed on their behalf.
+   *
+   * Every entry must name a field this same correction actually asserts. Flagging a field as
+   * weakly backed while not asserting any value for it is not a caveat, it is a claim about
+   * nothing, and is refused rather than accepted as a stray warning.
+   */
+  bridged?: readonly ResourceField[];
 }
 
 export class CorrectionError extends Error {}
@@ -125,6 +149,16 @@ export function buildCorrection(
     throw new CorrectionError(`A correction says at most ${FIELDS_MAX} things at once.`);
   }
 
+  const assertedFields = new Set(fields.map(([k]) => k));
+  const bridged = [...new Set(correction.bridged ?? [])];
+  for (const field of bridged) {
+    // A caveat on a value this correction does not assert is a claim about nothing — refused
+    // rather than silently accepted as a stray warning nobody can act on.
+    if (!assertedFields.has(field)) {
+      throw new CorrectionError(`"${field}" is flagged as bridged but this correction does not assert it.`);
+    }
+  }
+
   return finalizeEvent(
     {
       kind: KIND_CORRECTION,
@@ -135,7 +169,8 @@ export function buildCorrection(
         verified_by: correction.verified_by.trim(),
         method: correction.method,
         last_verified: correction.last_verified,
-        fields: Object.fromEntries(fields)
+        fields: Object.fromEntries(fields),
+        ...(bridged.length > 0 ? { bridged } : {})
       })
     },
     contactSecret
@@ -179,6 +214,18 @@ export function readCorrection(event: Event): (Correction & { by: string }) | nu
     // every device's bounded store.
     if (Object.keys(c.fields).length === 0) return null;
     if (Object.keys(c.fields).length > FIELDS_MAX) return null;
+
+    if (c.bridged !== undefined) {
+      if (!Array.isArray(c.bridged)) return null;
+      // Deduped, so a hand-rolled client cannot pad the array to buy an oversized event, and
+      // checked against the *asserted* fields — the same rule the builder applies, refused here
+      // for the same reason: a caveat on a value nobody stated is a claim about nothing.
+      const bridged = [...new Set(c.bridged)];
+      if (bridged.length > Object.keys(c.fields).length) return null;
+      if (!bridged.every((f) => typeof f === 'string' && Object.hasOwn(c.fields as object, f))) return null;
+      c.bridged = bridged as ResourceField[];
+    }
+
     // The `d` tag is what a relay indexed; if it disagrees with the payload, one of them is
     // lying and neither is worth guessing about.
     if (event.tags.find((t) => t[0] === 'd')?.[1] !== c.record) return null;
