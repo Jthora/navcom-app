@@ -309,6 +309,44 @@ identifier would otherwise reorder itself per machine.
 Worth generalising: a comment explaining why something is load-bearing is a testable claim,
 and this project has now been wrong about one twice in a day.
 
+## The browser suite cannot tell a regression from a busy afternoon, 2026-08-25
+
+Found while pushing four commits' worth of this session's work, and it earns its own entry
+because the evidence is unusually clean: **the same suite, on two different trees, on the same
+machine, in the same hour.**
+
+`verify` failed with three browser-test timeouts. Every failure was a ~30-second wait, never a
+wrong assertion, and a different test failed on each retry — `story-new-phone` and
+`story-second-holder`, then `standing` twice, then `standing` once more at a different line. That
+shape is not a regression; a regression fails the same thing every time. So the four commits were
+checked out one at a time against a fresh `packages/core` build, and each built independently —
+which ruled out a compile-time break but not a runtime one.
+
+The conclusive test was to stash everything, check out `644604c` — the commit this session
+started from, nothing of this session's work applied — and run the full browser suite there:
+
+| | Failures | Passed |
+|---|---|---|
+| **HEAD**, four new commits | 3 | 266 |
+| **644604c**, none of this session's work | **7** | 249 |
+
+The clean tree failed *more* than the working one, on the same class of timeout, including
+`standing.spec.ts` in both runs. That settles authorship — nothing in this session's work is
+implicated — and it turns up the actual finding: **this suite cannot currently distinguish a
+regression from a loaded machine**, and it has apparently been unable to for a while, since
+`644604c` predates every commit this session made.
+
+The consequence is sharper than it would have been a day ago. CI is declined (see 9.9) and
+`verify:deploy` does not run the browser suite at all, so **nothing exercises these 269 tests
+between deploys except a person choosing to run them.** The tests that flake are the ones
+covering standing, credential handover and restoring a phone — not the least consequential
+corner of the suite.
+
+Not fixed here, because the fix is a real question rather than a quick patch: raise the
+per-test timeout, reduce parallel workers, or accept that this machine cannot run the full suite
+without contention and treat a red run as inconclusive until repeated. Recorded so the next
+person who sees three red browser tests reaches for this entry before reaching for `git bisect`.
+
 ## The part that is not architectural
 
 Several of the nine came from editing files by string replacement against text written from

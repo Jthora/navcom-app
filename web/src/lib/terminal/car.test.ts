@@ -178,12 +178,23 @@ describe('the sidecar describes what the identifier is of', () => {
     expect(records).toBe(479);
   });
 
-  it('packs every file under data/regions, not just the CSVs', async () => {
-    // The region manifests carry country, timezone and languages — the context every row in
-    // the folder inherits. A snapshot of the rows without them is a snapshot that cannot be
-    // read correctly.
-    const { files } = await packDirectory();
-    expect(files.some((f: string) => f.endsWith('region.json'))).toBe(true);
-    expect(files.some((f: string) => f.endsWith('resources.csv'))).toBe(true);
-  });
+  it(
+    'packs every file under data/regions, not just the CSVs',
+    async () => {
+      // The region manifests carry country, timezone and languages — the context every row in
+      // the folder inherits. A snapshot of the rows without them is a snapshot that cannot be
+      // read correctly.
+      //
+      // Given an explicit timeout rather than the vitest default. This packs the whole real
+      // directory through the real encoder — 338 files today — and that measured at ~3.3s on
+      // its own, against a 5000ms default with almost no margin. That is not environmental
+      // noise to blame on a busy machine: it is real work that grows as regions fill in, against
+      // a generic timeout nobody had tuned for it. The number here is set well above what the
+      // directory packs in today, not to the minimum that happens to pass.
+      const { files } = await packDirectory();
+      expect(files.some((f: string) => f.endsWith('region.json'))).toBe(true);
+      expect(files.some((f: string) => f.endsWith('resources.csv'))).toBe(true);
+    },
+    20_000
+  );
 });
