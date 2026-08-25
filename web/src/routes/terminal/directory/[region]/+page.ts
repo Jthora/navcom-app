@@ -14,13 +14,19 @@ import { loadDirectory, loadRegions } from '$lib/directory/load';
 
 export const prerender = true;
 
-/** Every region with records. A region with none has nothing to show offline. */
+/**
+ * Every region, including the ones that ship empty.
+ *
+ * This used to be every region *with records*, on the reasoning that a region with none has
+ * nothing to show offline. That was right until an operator could add a place: thirty-five of
+ * sixty-eight regions hold zero rows, and filtering them out meant the page did not exist, so
+ * the operator with the local knowledge got a 404 instead of somewhere to put it.
+ *
+ * An empty region's page is a few hundred bytes and it is the only place the cold start can
+ * begin. The budget gate still applies per page, and an empty one is the cheapest here.
+ */
 export function entries() {
-  const counts = new Map<string, number>();
-  for (const r of loadDirectory()) {
-    if (r.region) counts.set(r.region, (counts.get(r.region) ?? 0) + 1);
-  }
-  return [...counts.keys()].map((region) => ({ region }));
+  return loadRegions().map((region) => ({ region: region.slug }));
 }
 
 export function load({ params }: { params: { region: string } }) {

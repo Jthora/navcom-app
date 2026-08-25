@@ -21,8 +21,10 @@
     type ResourceType
   } from '$lib/directory';
   import { AVAILABILITY_FIELDS, FIELD_LABELS, INTAKE_FIELDS, labelValue } from '$lib/directory/load';
-  import { displayMerged, mergeCorrections, needsChecking, CORRECTABLE_FIELDS, FIELD_OPTIONS } from '@navcom/core';
+  import { displayMerged, mergeCorrections, needsChecking, CORRECTABLE_FIELDS, FIELD_OPTIONS,
+    isAddedPlace, withPlaces, PlaceError } from '@navcom/core';
   import { corrections } from '$lib/terminal/corrections.svelte';
+  import { places } from '$lib/terminal/places.svelte';
   import { Slot, Readout, Why, Heartbeat } from '$lib/components/panel';
   import { clearNote, keepNote, notes } from '$lib/terminal/notes';
   import { onMount } from 'svelte';
@@ -93,6 +95,36 @@
     typed = '';
   }
 
+  /**
+   * Adding a place the published directory does not have.
+   *
+   * The one path that lets an operator in an empty region do anything at all. Closed by
+   * default and one at a time, like every other control on this screen — it is an errand,
+   * not a form somebody sits down to.
+   */
+  let adding = $state(false);
+  let draft = $state({ name: '', type: 'shelter' as ResourceType, address: '', phone: '', hours: '' });
+  /** How this operator knows. Refused for anything they only read — see `places.ts`. */
+  let how = $state<'in_person' | 'staff_confirmed' | 'phone'>('in_person');
+  /** The schema's own refusal, shown verbatim. Those messages are written for a person. */
+  let addError = $state<string | null>(null);
+  let addBusy = $state(false);
+
+  async function addPlace() {
+    if (addBusy) return;
+    addBusy = true;
+    addError = null;
+    try {
+      await places.add(data.region.slug, { ...draft }, how);
+      draft = { name: '', type: 'shelter', address: '', phone: '', hours: '' };
+      adding = false;
+    } catch (e) {
+      addError = e instanceof PlaceError ? e.message : 'That could not be saved.';
+    } finally {
+      addBusy = false;
+    }
+  }
+
   /** Options for the field being corrected, or null where it is free text. */
   const options = $derived(correcting ? (FIELD_OPTIONS[correcting] ?? null) : null);
 
@@ -103,6 +135,9 @@
     // network would pull places this operator will never go, on a phone counting bytes.
     jotted = notes();
     corrections.start(data.records.map((r: ResourceRecord) => r.id));
+    // By region, not by record id: an area that ships empty has no ids to ask for, which
+    // is the entire reason a place is a separate kind.
+    places.start(data.region.slug);
 
     // Ask to be saved for offline.
     //
@@ -127,13 +162,25 @@
     // here silently makes the rest of this function dead code. That is exactly what
     // happened when corrections were added -- the caching call sat below a return for an
     // afternoon, nothing errored, and the area simply stopped being saved.
-    return () => corrections.stop();
+    return () => {
+      corrections.stop();
+      places.stop();
+    };
   });
+
+  /**
+   * What shipped, plus what operators added.
+   *
+   * `withPlaces` never lets an added row shadow a published one — if a place later ships in
+   * the curated directory under the same derived id, the curated row is the one a person
+   * stood behind.
+   */
+  const shown = $derived(withPlaces(data.records as ResourceRecord[], places.all));
 
   const byType = $derived(
     RESOURCE_TYPES.map((type) => ({
       type,
-      records: data.records.filter((r: ResourceRecord) => r.type === type)
+      records: shown.filter((r: ResourceRecord) => r.type === type)
     })).filter((g) => g.records.length > 0)
   );
 
@@ -237,14 +284,15 @@
   {/if}
 </section>
 
-{#if data.records.length === 0}
+{#if shown.length === 0}
   <!-- Rule 6. Silence is a positive readout, not an empty screen. -->
   <section>
     <Slot k="Held">
-      <Readout value="Nothing yet" tone="cold" sub="no directory for this area on this phone" />
+      <Readout value="Nothing yet" tone="cold" sub="nobody has put this area in" />
     </Slot>
   </section>
 {/if}
+
 
 {#each byType as group (group.type)}
   <section class="group">
@@ -288,6 +336,20 @@
             {/if}
 
             <h3>{record.name}</h3>
+
+            <!--
+              Rule 3, and the reason this kind exists at all. An added place has never been
+              through a maintainer, so the row says so on its face rather than looking like a
+              curated one — the record-level version of the same honesty every field already
+              carries. Who added it and how is right underneath, as provenance always is.
+            -->
+            {#if isAddedPlace(record)}
+              <p class="added" data-added={record.id}>
+                <strong>Added by an operator.</strong> Not in the published directory —
+                {record.verified_by ?? 'anonymous'},
+                {(record.method ?? '').replace(/_/g, ' ')}, {record.last_verified}.
+              </p>
+            {/if}
 
             <!--
               Rule 3 applied to reports, which are NOT properties of the record: a hostile
@@ -426,6 +488,78 @@
   </section>
 {/each}
 
+<!--
+  The only thing an operator in an empty area can do, so it is on the screen whether or not
+  there is anything above it.
+
+  It is not a banner and it is not a prompt. It sits at the bottom, closed, and says what it
+  costs — the same treatment every other contribution control on this screen gets.
+-->
+<section class="add">
+  {#if !adding}
+    <button class="drop" data-add-place onclick={() => { adding = true; addError = null; }}>
+      Add a place that isn't here
+    </button>
+    <p class="cost">
+      Somewhere you have been, or phoned. Not somewhere you read about — that goes to the
+      maintainers, because a place nobody checked can send somebody to a locked door.
+    </p>
+  {:else}
+    <h2>A place that isn't here</h2>
+
+    <label for="pl-name">What is it called</label>
+    <input id="pl-name" bind:value={draft.name} autocomplete="off" enterkeyhint="next" />
+
+    <label for="pl-addr">Where is it</label>
+    <input
+      id="pl-addr"
+      bind:value={draft.address}
+      autocomplete="off"
+      enterkeyhint="next"
+      placeholder="enough to walk to"
+    />
+
+    <label for="pl-type">What is it</label>
+    <select id="pl-type" bind:value={draft.type}>
+      {#each RESOURCE_TYPES as t (t)}
+        <option value={t}>{labelValue(t)}</option>
+      {/each}
+    </select>
+
+    <label for="pl-how">How do you know</label>
+    <select id="pl-how" bind:value={how}>
+      <option value="in_person">I went there</option>
+      <option value="staff_confirmed">Staff told me</option>
+      <option value="phone">I phoned them</option>
+    </select>
+
+    <label for="pl-phone">Phone, if you have it</label>
+    <input id="pl-phone" bind:value={draft.phone} autocomplete="off" inputmode="tel" />
+
+    <label for="pl-hours">Hours, if you saw them</label>
+    <input id="pl-hours" bind:value={draft.hours} autocomplete="off" />
+
+    <!--
+      Rule 5, at the point it matters most. The fields that decide whether somebody gets a
+      bed are deliberately not on this form: nobody can read them off a doorway, and asking
+      for them here would collect a guess with an operator's name attached.
+    -->
+    <p class="limit">
+      Nothing about pets, ID, sobriety, curfew or intake hours. Those come from asking, and
+      they stay <strong>unknown</strong> until somebody does.
+    </p>
+
+    {#if addError}
+      <p class="err" data-add-error>{addError}</p>
+    {/if}
+
+    <button class="drop" data-add-save disabled={addBusy} onclick={addPlace}>
+      {addBusy ? 'Saving…' : 'Add it'}
+    </button>
+    <button class="drop" onclick={() => { adding = false; addError = null; }}>Back</button>
+  {/if}
+</section>
+
 <section class="limit">
   <h2>Why there is no search here</h2>
   <p>
@@ -486,4 +620,32 @@
   }
 
   .limit { border-inline-start: 3px solid var(--t-line-strong); padding-inline-start: .9rem; }
+
+  /*
+    The add path. Deliberately the same weight as the correction controls above it rather
+    than a call to action -- CLAUDE.md bans nudges, and this has to read as one more thing an
+    operator can do, not as the thing the screen wants from them.
+  */
+  .add { border-block-start: 1px solid var(--t-line); padding-block-start: 1.1rem; }
+  .add h2 { font-size: 1rem; margin: 0 0 .8rem; }
+  .add label {
+    display: block; font-size: .8rem; color: var(--t-faint);
+    margin: .8rem 0 .25rem;
+  }
+  .add input, .add select {
+    inline-size: 100%; min-height: 3rem; font: inherit; font-size: 1rem;
+    color: var(--t-ink); background: var(--t-sunk);
+    border: 1px solid var(--t-line-strong); padding: 0 .7rem;
+  }
+  .add .drop { margin-block-start: 1rem; }
+  .add .err {
+    border-inline-start: 3px solid var(--t-alarm); padding-inline-start: .7rem;
+    color: var(--t-ink); font-size: .9rem;
+  }
+
+  /* Loud enough to be read before the fields under it, quiet enough not to be an alarm. */
+  .added {
+    border-inline-start: 2px solid var(--t-oncall); padding-inline-start: .6rem;
+    font-size: .85rem; color: var(--t-dim); margin: .1rem 0 .6rem;
+  }
 </style>

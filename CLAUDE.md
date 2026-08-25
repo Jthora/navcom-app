@@ -48,6 +48,12 @@ operator signs on, the board sees them, `Query` gets an answer.
 The shared core is extracted (`packages/core`), and the Status screen ships with the
 [capability receipt](docs/watch/the-watch.md) as a panel rather than a paragraph.
 
+**The directory can now be seeded from the field.** An operator can add a place the published
+directory does not have (`docs/product/directory-schema.md` §5) — the fix for a cold start
+that otherwise waited on a maintainer with local knowledge nobody has. Every region is
+prerendered now, including the thirty-five that ship empty, because until this they had no
+page at all.
+
 **Build next, in order:**
 
 1. **The remaining Field Terminal screens, onto the panel.** Five of twenty are converted —

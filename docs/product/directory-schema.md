@@ -175,6 +175,43 @@ form is a correction path that never gets used.
 
 Reporting that something is wrong requires one tap and no account.
 
+### Adding a place that isn't listed
+
+Corrections amend a row. **Adding one is a separate act with a separate kind** (`30915`),
+because the failure modes differ: a wrong field sends somebody to the wrong hours, and a
+wrong place sends somebody to an address that is not there.
+
+It exists because the directory could otherwise only be seeded downward. Thirty-five of
+sixty-eight regions ship with zero rows, and until a place could be added from the app those
+regions had no page at all — the person with the local knowledge got a 404 while waiting for
+a maintainer who has never been there. That is the cold-start problem stated as an
+architecture, and it is the one thing here that scales without coordination: one operator
+adding the three places they already know.
+
+**`method` may only be `in_person`, `staff_confirmed` or `phone`.** You may add a place you
+have stood at or spoken to. `website` and `secondhand` are refused, even though the
+confidence rules can rank them everywhere else — a scraped place belongs in the maintainer's
+import path above, where a person reviews it, not on somebody's screen at 11pm.
+
+- **An address is required.** A place without one is a rumour: it cannot be walked to, it
+  cannot be told apart from another place with the same name, and it gives the reader nothing
+  to check
+- **The intake fields of §2 cannot be set at creation.** They are not knowable from a doorway,
+  and a form that invited them would collect a guess with an operator's callsign attached —
+  which the confidence rules would then rank *above* a scraped value. They arrive afterwards,
+  as corrections, from somebody who asked
+- **Identity is derived from the name and address**, never chosen, so two operators adding the
+  same building produce one row and the existing merge rules weigh their claims. Normalisation
+  is NFC, case folding and whitespace collapse, and **strips no character class** — a
+  punctuation-stripping identifier is how a peer project silently merged 北京, Москва and 東京
+  into a single slot
+- **The row says so on its face.** An added place has never been through a maintainer, and
+  renders with its author, method and date above the fields — the record-level version of the
+  provenance every field already carries
+
+A published record always wins on identity: if a place an operator added later ships in the
+curated directory under the same derived id, the curated row is the one a person stood behind.
+
 ### Regions, and seeding a new one
 
 Data is partitioned by region — `data/regions/<slug>/` holds a `resources.csv` and a

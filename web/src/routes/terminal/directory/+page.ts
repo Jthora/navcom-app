@@ -16,11 +16,17 @@ export function load() {
   }
 
   return {
+    /*
+     * Every region, and the empty ones are listed rather than hidden.
+     *
+     * They used to be filtered out, because "a region with nothing in it has nothing to offer
+     * offline, and listing it would promise a fallback that is an empty page." That reasoning
+     * held exactly until an operator could add a place. Now hiding them means the person who
+     * knows a city is the one person who cannot find it, and the count beside each name says
+     * plainly what is there — which is the honest version of the same concern.
+     */
     areas: loadRegions()
       .map((region) => ({ region, records: counts.get(region.slug) ?? 0 }))
-      // A region with nothing in it has nothing to offer offline, and listing it would
-      // promise a fallback that is an empty page.
-      .filter((a) => a.records > 0)
       .sort((a, b) => a.region.name.localeCompare(b.region.name))
   };
 }

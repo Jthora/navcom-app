@@ -533,7 +533,13 @@ describe('the field terminal', () => {
     // why the groups start open. A collapsed-by-default accordion would have shipped this
     // screen with the six display rules unchecked on the surface where a confident wrong
     // answer does the most harm.
-    const dir = screens().find((p) => p.path.includes('/terminal/directory/'))!;
+    //
+    // Named rather than "the first directory page": every region is prerendered now,
+    // including the thirty-five that ship empty so an operator has somewhere to add what they
+    // know. `find` picked one of those and this failed, correctly -- an empty page really
+    // does render no records. The claim being made here is about a populated one.
+    const dir = screens().find((p) => p.path.includes('/terminal/directory/st-louis'))!;
+    expect(dir, 'st-louis is the populated region these rules are checked against').toBeDefined();
     expect(dir.doc.querySelectorAll('[data-record]').length).toBeGreaterThan(0);
     expect(dir.doc.querySelectorAll('[data-display][data-field]').length).toBeGreaterThan(0);
   });

@@ -57,7 +57,12 @@
             {#if offline.areas[region.slug] === 'yes'}
               <span class="carried" data-carried={region.slug}>on this phone</span>
             {/if}
-            <span class="n">{records}</span>
+            <!--
+              Words rather than a bare 0. "Nothing yet" is a state an operator can act on;
+              a zero reads like a broken row, and this is the row the cold start depends on
+              somebody tapping.
+            -->
+            <span class="n" class:empty={records === 0}>{records === 0 ? 'nothing yet' : records}</span>
           </a>
         </li>
       {/each}
@@ -77,6 +82,8 @@
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: .82rem; color: var(--t-faint);
   }
+  /* Not dimmer than the count. An empty area is a place to start, not a disabled row. */
+  .n.empty { font-size: .74rem; letter-spacing: .04em; }
   .carried {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: .68rem; letter-spacing: .08em; text-transform: uppercase;
