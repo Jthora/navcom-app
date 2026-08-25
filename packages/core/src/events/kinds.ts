@@ -39,6 +39,19 @@ export const KIND_KEY_BUNDLE = 10912;
 export const KIND_CORRECTION = 30911;
 
 /**
+ * Addressable. A place the published directory does not have — *"there is a shelter here."*
+ *
+ * Separate from `KIND_CORRECTION` because the failure modes differ: a wrong field sends
+ * somebody to the wrong hours, a wrong place sends them to an address that is not there. It
+ * carries its own validation, and only a method that means somebody went or phoned.
+ *
+ * Keyed on an id derived from the name and address, so two operators adding the same
+ * building produce one row rather than two. Tagged `g` with the region, because a device in
+ * an empty region has no record ids to subscribe by — which is the whole reason it exists.
+ */
+export const KIND_PLACE = 30915;
+
+/**
  * Ephemeral. *"Raven is out tonight."* A name and a region, and nothing else ever.
  *
  * Also signed by the contact key, so it is verifiably the same Raven whose card is up
@@ -72,6 +85,20 @@ export const KIND_CLAIM = 30913;
  * has to be able to find it — and it names only the credential, so it reveals nobody.
  */
 export const KIND_REVOCATION = 30914;
+
+/**
+ * Addressable. *"My directory is now this hash."* — the pointer, never the payload.
+ *
+ * `30078` rather than a number of NavCom's own: NIP-78 is the existing convention for
+ * application-specific replaceable data, so nothing has to be allocated or defended, and any
+ * node can read one with an off-the-shelf library.
+ *
+ * **The only kind here that may cross a private relay.** Everything else NavCom publishes is
+ * about an operator, and a small allowlisted relay is worse for those than a public one — the
+ * protection is the anonymity set, not the sealing. This names no operator and says nothing that
+ * is not already public on the site.
+ */
+export const KIND_ANNOUNCE = 30078;
 
 /** Ephemeral. Signals: on-station, routine, query, assist, stood-down. */
 export const KIND_SIGNAL = 20910;

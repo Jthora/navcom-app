@@ -7,3 +7,4 @@ export * from './export.js';
 export * from './fields.js';
 export * from './region.js';
 export * from './corrections.js';
+export * from './places.js';
