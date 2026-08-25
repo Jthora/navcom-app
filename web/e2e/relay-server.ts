@@ -72,7 +72,19 @@ export interface LocalRelay {
   close(): Promise<void>;
 }
 
-export async function startRelay(): Promise<LocalRelay> {
+export interface RelayOptions {
+  /**
+   * Answer every publish with `OK … false` and this reason.
+   *
+   * Real relays refuse events constantly — rate limits, size caps, kind policy — and a publisher
+   * that only ever meets an accepting relay has never been told no. On a relay with an allowlist
+   * of kinds, being told no is the *expected* answer for anything not on it, so it has to be a
+   * path the caller handles rather than one it discovers in a build log.
+   */
+  refuse?: string;
+}
+
+export async function startRelay(options: RelayOptions = {}): Promise<LocalRelay> {
   const wss = new WebSocketServer({ port: 0, host: '127.0.0.1' });
   const stored: Event[] = [];
   /** Open subscriptions, so a later event reaches a subscriber that asked before it existed. */
@@ -91,6 +103,15 @@ export async function startRelay(): Promise<LocalRelay> {
 
       if (msg[0] === 'EVENT') {
         const event = msg[1] as Event;
+
+        if (options.refuse !== undefined) {
+          // Refused, and told why — which is the half a caller needs and the half a relay is
+          // under no obligation to supply. Tested because the reason is what tells a person
+          // whether to change the payload or the permissions.
+          socket.send(JSON.stringify(['OK', event.id, false, options.refuse]));
+          return;
+        }
+
         stored.push(event);
         // Acknowledged, because a client that awaits its own publish hangs without this —
         // the same omission the stubbed socket was fixed for.
