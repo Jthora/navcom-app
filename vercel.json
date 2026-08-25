@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npm run verify:deploy --workspace navcom-web",
+  "buildCommand": "npm run verify --workspace @navcom/core && npm run verify --workspace @navcom/watchtower && npm run verify --workspace @navcom/seeder && npm run verify:deploy --workspace navcom-web",
   "installCommand": "npm install",
   "outputDirectory": "web/build",
   "framework": null,

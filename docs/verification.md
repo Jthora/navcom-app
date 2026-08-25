@@ -256,6 +256,59 @@ itself:
 - **iPhone.** Chromium is not WebKit, and the two differ most in exactly the places this app
   leans on — service workers, storage eviction, and `BarcodeDetector`
 
+## Two found while building the cold start, 2026-08-23
+
+Both are the same shape as the nine, and neither would have failed a test, because in both
+cases the code was correct and nobody could reach it.
+
+**An empty region had no page.** `entries()` prerendered only regions that already held
+records, and the directory index filtered the empty ones out — both correct decisions when
+the only way to fill a region was a maintainer with a CSV, and both silently fatal the moment
+an operator could add a place from the app. Thirty-five of sixty-eight regions were
+unreachable, so the person with the local knowledge got a 404. *A mechanism nobody can reach
+is not built* now has a fourth instance, and this one was reachable-in-principle by an
+operator who typed the URL, which is what made it easy to miss.
+
+The guard is in `e2e/adding-a-place.spec.ts`, and its **first** test is not about the form —
+it is that Nashville answers at all.
+
+**This laptop cannot run the suite.** Twenty-eight tests across twelve files fail here with
+`crypto.getRandomValues must be defined`, and Playwright refuses to start; the working tree is
+clean and CI pins Node 20 while this machine runs 18.16. So the failures are environmental and
+long-standing, and the consequence is not:
+
+> Four EIN submissions said every claim rested on one laptop. It is worse than that — **the
+> laptop could not execute the suite either.** "1,121 tests" was a true statement about a
+> machine nobody had run them on since the billing lock landed on 2026-08-19.
+
+That is the same defect class the EIN round catalogued in all five projects — a verification
+claim with no live counterparty behind it — sitting in this repository while its artifacts
+described everyone else's. Running under Node 22 gives 395 unit and 269 browser tests green.
+
+Two things follow. Clearing the CI billing lock is not bookkeeping; it is the only environment
+that can currently prove anything. And `.well-known/navcom-health.json` reports
+`"suites": {"ran": "unknown"}` and `"built_on": "local"` rather than omitting the question,
+because a receipt that cannot express *"local, and stale"* is worth nothing.
+
+## A third, from the CAR packer
+
+Smaller than the other two and worth recording because of its direction. The directory packer
+carries a comment explaining that `walk()` sorts because a UnixFS directory's identifier
+depends on the order its entries were added — so an unsorted walk would produce a different
+CID for identical bytes depending on what the filesystem returned.
+
+A test written to *prove* that failed. `ipfs-car` sorts its own entries, so the identifier is
+already stable across enumeration order, and the reason given in the comment was wrong.
+
+**The claim was wrong in prose before it was wrong in a test**, which is the direction almost
+everything in this file has come from. The test was inverted rather than deleted — it now
+asserts the property that is actually true and will notice if a future encoder stops sorting —
+and the comment now says why the sort stays anyway: the *file list* published beside the
+identifier would otherwise reorder itself per machine.
+
+Worth generalising: a comment explaining why something is load-bearing is a testable claim,
+and this project has now been wrong about one twice in a day.
+
 ## The part that is not architectural
 
 Several of the nine came from editing files by string replacement against text written from
