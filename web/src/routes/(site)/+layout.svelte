@@ -7,7 +7,10 @@
 
 <header>
   <div class="bar">
-    <a class="brand" href="/">NavCom</a>
+    <a class="brand" href="/">
+      <span class="brand-mark">NAVCOM</span>
+      <span class="brand-tag">The Watchtower</span>
+    </a>
     <nav>
       <a href="/directory/">Directory</a>
       <!--
@@ -16,7 +19,9 @@
         CLAUDE.md's position on this surface is "try instantly, no install, fully capable" —
         and nothing on the public site linked to it, so the front door offered a directory and
         a pile of documentation about a product that appeared not to exist. It is the same
-        rule as everywhere else here: a mechanism nobody can reach is not built.
+        rule as everywhere else here: a mechanism nobody can reach is not built. It is styled
+        no differently from the other links -- this bar names where things are, it does not
+        rank them, and the homepage below is where the Terminal actually gets its due.
       -->
       <a href="/terminal/">Terminal</a>
       <a href="/status/">Status</a>
@@ -100,7 +105,17 @@
     border: 2px solid var(--accent);
   }
 
-  header { border-bottom: 1px solid var(--line-strong); background: var(--surface); }
+  /*
+   * The header carries the site's whole visual identity in one bar, so it is worth more
+   * than a wordmark and some links. A 3px accent rule along the top is the one place this
+   * static, zero-JS site borrows the terminal's own language without borrowing its budget --
+   * it costs nothing and it is the first thing anyone sees, on every page.
+   */
+  header {
+    border-bottom: 1px solid var(--line-strong);
+    border-top: 3px solid var(--accent);
+    background: var(--surface);
+  }
 
   .bar {
     max-width: 48rem;
@@ -114,15 +129,34 @@
   }
 
   .brand {
-    font-family: var(--font-display);
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--ink);
+    display: flex;
+    align-items: baseline;
+    gap: 0.65rem;
     text-decoration: none;
-    letter-spacing: -0.01em;
+  }
+  .brand-mark {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 1.02rem;
+    letter-spacing: 0.14em;
+    color: var(--ink);
+  }
+  .brand-tag {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--faint);
   }
 
-  nav { display: flex; gap: 1.1rem; font-size: 0.92rem; }
+  nav {
+    display: flex;
+    gap: 1.2rem;
+    font-family: var(--font-mono);
+    font-size: 0.76rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
   nav a { color: var(--muted); text-decoration: none; }
   nav a:hover { color: var(--accent); text-decoration: underline; }
 
