@@ -10,7 +10,7 @@ export function GET() {
   const today = new Date().toISOString().slice(0, 10);
 
   const paths = [
-    // `/` is a redirect [vercel.json], not a page — its destination is listed instead.
+    '/',
     '/terminal/',
     '/about/',
     '/directory/',

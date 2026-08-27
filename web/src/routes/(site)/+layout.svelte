@@ -7,16 +7,16 @@
 
 <header>
   <div class="bar">
-    <a class="brand" href="/terminal/">
+    <a class="brand" href="/">
       <span class="brand-mark">NAVCOM</span>
       <span class="brand-tag">The Watchtower</span>
     </a>
     <nav>
       <a href="/directory/">Directory</a>
       <!--
-        The application itself. `/` redirects straight into it now [vercel.json] — this bar
-        stopped being the only way in, but it still names where things are for anyone already
-        reading a site page, so it stays.
+        The full operator app. The root console at `/` already fuses a live search over this
+        same directory with a link here for anyone who wants to sign on — this bar just names
+        where things are for anyone already reading a site page.
       -->
       <a href="/terminal/">Terminal</a>
       <a href="/status/">Status</a>

@@ -73,8 +73,11 @@ bytes; a subset face costs 8–25 KB against a script budget at 68%.
 Sequence and gates in [`docs/build-order.md`](docs/build-order.md). Surfaces and budgets in
 [`docs/delivery.md`](docs/delivery.md).
 
-`navcom.app` runs in parallel and is ungated — it is live, static, zero-JavaScript, and
-seeded for the St. Louis metro.
+`navcom.app` runs in parallel and is ungated — it is live and seeded for the St. Louis metro.
+The root itself is a small, real console (Nav + Com, fused, ~50 KB of its own script budget)
+that searches the directory instantly and shows the network's actual state, with one link
+into the full Field Terminal; `directory/`, `docs/`, `status/` and `about/` remain static and
+zero-JavaScript.
 
 | | Decision | Status |
 |---|---|---|

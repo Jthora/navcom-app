@@ -205,6 +205,13 @@ Three things that decided the shape:
 - **A budget at 99% forces a crisis rather than a decision**, which is how the last raise
   happened silently. The ratchet fires with room left to think
 
+The root console (`navcom.app/`) carries a third, deliberately much smaller budget: **60 kB**
+JS / **120 kB** page total, gzipped, measured at 49.7/66.8 kB the day it shipped. It is a
+sibling of the terminal, not nested under it, so it never inherits the identity/storage/relay
+stack that gives every terminal screen its floor — and its budget is sized for what it
+actually is: a real search over the directory plus the network's own derived state, not the
+full application.
+
 The public site's budget is unchanged and is not a size: **zero JavaScript**, failing on the
 first byte.
 - **The public directory prerenders and works with JavaScript disabled.** Not purity: it is

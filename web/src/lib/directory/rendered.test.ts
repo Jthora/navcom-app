@@ -243,7 +243,9 @@ describe('the public surface', () => {
     // through <link rel="modulepreload"> plus one inline module, so counting only
     // `script[src]` would pass a page that shipped both.
     for (const { path, doc } of pages) {
-      if (path.includes('/terminal/')) continue;
+      // The root console is the one other deliberate exception — a real search over the real
+      // directory, working with nothing sent anywhere. See `routes/+page.svelte`.
+      if (path.includes('/terminal/') || path.endsWith('/build/index.html')) continue;
       expect(doc.querySelectorAll('script').length, `${path} has a script tag`).toBe(0);
       expect(
         doc.querySelectorAll('link[rel="modulepreload"]').length,

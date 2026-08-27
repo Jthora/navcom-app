@@ -68,10 +68,27 @@ const COLD_MS_PER_KB = 1050 / 100;
 const SURFACES = {
   public: {
     label: 'public site',
-    match: (name) => !name.startsWith('terminal/'),
+    match: (name) => !name.startsWith('terminal/') && name !== 'index.html',
     js: 0,
     warn: 0,
     page: 250 * 1024
+  },
+  /**
+   * The root console. A sibling of the terminal, not nested under it — it never imports the
+   * identity/storage/relay stack that gives every `terminal/*` page its floor, so it carries
+   * its own, much smaller budget rather than inheriting one sized for that stack.
+   *
+   * Re-derived against a real build rather than guessed: measured at 49.7 kB JS / 66.8 kB
+   * page total the day this shipped. `js` leaves ~20% headroom over that; `page` leaves more,
+   * because — unlike a terminal screen — this page's HTML embeds a search index sized to the
+   * whole directory, so its floor grows with real data, not just code.
+   */
+  root: {
+    label: 'root console',
+    match: (name) => name === 'index.html',
+    js: 60 * 1024,
+    warn: 52 * 1024,
+    page: 120 * 1024
   },
   terminal: {
     label: 'field terminal',
