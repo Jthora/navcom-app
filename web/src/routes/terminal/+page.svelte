@@ -290,6 +290,17 @@
             Pick a callsign. It takes one screen, nothing is sent anywhere, and there is no
             account to create — the key is made on this device and never leaves it.
           </p>
+          <p>
+            <!--
+              The Alone layer needs nothing, not even a callsign [CLAUDE.md]. A visitor who only
+              wants to look up a shelter must not be told to enlist first — the rail below this
+              panel only appears once identity exists, so without this line landing here with no
+              callsign yet leaves no visible way to the one thing that needs no commitment at all.
+            -->
+            Only here to look something up? The
+            <a href="/terminal/directory/">cached directory</a> needs no callsign and nothing sent
+            anywhere.
+          </p>
         {/if}
 
         {#if s.state === 'dark' && configured}

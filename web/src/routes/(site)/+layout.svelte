@@ -7,24 +7,20 @@
 
 <header>
   <div class="bar">
-    <a class="brand" href="/">
+    <a class="brand" href="/terminal/">
       <span class="brand-mark">NAVCOM</span>
       <span class="brand-tag">The Watchtower</span>
     </a>
     <nav>
       <a href="/directory/">Directory</a>
       <!--
-        The application itself, which was reachable only by typing the path.
-
-        CLAUDE.md's position on this surface is "try instantly, no install, fully capable" —
-        and nothing on the public site linked to it, so the front door offered a directory and
-        a pile of documentation about a product that appeared not to exist. It is the same
-        rule as everywhere else here: a mechanism nobody can reach is not built. It is styled
-        no differently from the other links -- this bar names where things are, it does not
-        rank them, and the homepage below is where the Terminal actually gets its due.
+        The application itself. `/` redirects straight into it now [vercel.json] — this bar
+        stopped being the only way in, but it still names where things are for anyone already
+        reading a site page, so it stays.
       -->
       <a href="/terminal/">Terminal</a>
       <a href="/status/">Status</a>
+      <a href="/about/">About</a>
       <a href="/docs/contributing/">Contribute</a><a href="/docs/">Docs</a>
     </nav>
   </div>

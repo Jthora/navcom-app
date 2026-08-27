@@ -4,6 +4,13 @@
   "installCommand": "npm install",
   "outputDirectory": "web/build",
   "framework": null,
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/terminal/",
+      "permanent": false
+    }
+  ],
   "headers": [
     {
       "source": "/version.json",

@@ -1,8 +1,8 @@
 <svelte:head>
-  <title>NavCom</title>
+  <title>About · NavCom</title>
   <meta
     name="description"
-    content="A public directory of who will actually take someone tonight — hours, intake rules, and how recently anyone checked."
+    content="What NavCom is, how to read the directory, and what network it is part of."
   />
 </svelte:head>
 
@@ -18,12 +18,6 @@
 
   <div class="actions">
     <a class="cta cta--primary" href="/directory/">Open the directory</a>
-    <!--
-      "I was expecting a command interface, not a website" was the substance of the
-      complaint this page exists to answer. The Terminal is the actual application — CLAUDE.md
-      calls it "fully capable, no install" — and it had no path in from the front door beyond a
-      nav link nobody reads on a first visit. It belongs beside the directory CTA, not below it.
-    -->
     <a class="cta cta--ghost" href="/terminal/">Open the Field Terminal<span aria-hidden="true"> &rarr;</span></a>
   </div>
 
@@ -105,11 +99,6 @@
   }
   section p { max-width: var(--measure); color: var(--muted); }
 
-  /*
-   * Numbered by CSS counter rather than manual "1. 2. 3." — these four rules are a fixed
-   * doctrine, not a bulleted afterthought, and the reader should be able to point at "rule 2"
-   * the way the rest of this project's docs do.
-   */
   .rules {
     display: flex;
     flex-direction: column;
