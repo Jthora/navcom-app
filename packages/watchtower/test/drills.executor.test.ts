@@ -9,12 +9,12 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import type { SimplePool } from "nostr-tools/pool";
 import { generateSecretKey, getPublicKey } from "nostr-tools/pure";
-import { mkdtempSync, readFileSync, rmSync, chmodSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { EscalationExecutor } from "../src/escalation/executor.js";
 import type { EscalationConfig, OnCallEntry } from "../src/escalation/config.js";
-import { writeDrillState } from "../src/escalation/drills.js";
+import * as drills from "../src/escalation/drills.js";
 import type { pageAll } from "../src/escalation/pager.js";
 
 const STANDING = 4_102_444_800;
@@ -28,7 +28,7 @@ function tempState(nextAt: number): string {
   const dir = mkdtempSync(join(tmpdir(), "navcom-drill-"));
   dirs.push(dir);
   const path = join(dir, "drill.json");
-  writeDrillState(path, { last: null, nextAt });
+  drills.writeDrillState(path, { last: null, nextAt });
   return path;
 }
 
@@ -108,14 +108,15 @@ describe("a drill that is due", () => {
     vi.spyOn(console, "error").mockImplementation((m: unknown) => void errors.push(String(m)));
 
     const ex = build(statePath, 1, pager());
-    // Refuse the write, the way a read-only filesystem does. The file's own mode is what
-    // decides an overwrite — a read-only directory still permits writing a file inside it.
-    chmodSync(statePath, 0o400);
-    try {
-      await ex.fireDrill();
-    } finally {
-      chmodSync(statePath, 0o600);
-    }
+    // Forces the write itself to fail, rather than the OS permission bits a real read-only
+    // filesystem would set: a build container commonly runs as root, where chmod 0o400 is
+    // never enforced — root bypasses it — so a deploy running as root would silently skip
+    // the very failure this test exists to prove is handled, and pass for the wrong reason.
+    // This found real Vercel deploys failing on exactly that gap.
+    vi.spyOn(drills, "writeDrillState").mockImplementation(() => {
+      throw new Error("EACCES: permission denied, open 'drill.json'");
+    });
+    await ex.fireDrill();
 
     expect(said.some((m) => m.startsWith("[drill]"))).toBe(true);
     expect(errors.some((m) => /RESULT NOT RECORDED/.test(m))).toBe(true);
