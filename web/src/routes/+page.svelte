@@ -101,75 +101,84 @@
     <h1>NavCom</h1>
   </header>
 
-  <Panel label="Nav" post={nearRegion ? `Near ${nearRegion.name}` : null}>
-    <label for="lookup" class="nc-lookup-label">Where are you, or what do you need</label>
-    <input
-      id="lookup"
-      type="search"
-      bind:value={query}
-      placeholder="a shelter, a clinic, a city…"
-      autocomplete="off"
-    />
-    {#if results.length > 0}
-      <ul class="nc-results">
-        {#each results as r (r.id)}
-          <li>
-            <a href="/terminal/directory/{r.region}/">
-              <span class="nc-results-name">{r.name}</span>
-              <span class="nc-results-meta">{r.type.replace(/_/g, ' ')} · {r.regionName}</span>
-            </a>
-          </li>
-        {/each}
-      </ul>
-    {:else if query.trim()}
-      <p class="nc-results-empty">Nothing matches yet — try a city or a type of place.</p>
-    {/if}
-    <Why summary="What this searches">
-      <p>
-        Every public record this directory holds, searched on this device with nothing sent
-        anywhere. Results open onto the full record — hours, intake rules, and how recently
-        anyone checked.
-      </p>
-    </Why>
-  </Panel>
-
-  <Panel label="Network" post={null}>
-    <Slot k="Coverage">
-      <Readout
-        value="{data.coverage.regionsWithData} of {data.coverage.regionsTotal} areas"
-        tone="neutral"
-        sub="{data.coverage.records} records"
+  <!--
+    Nav and Com, side by side once there is room to show it — the split is the point
+    [docs/positioning.md: "On a ship's bridge, Navigation and Communications are separate
+    stations. NavCom fuses them into one post."]. Stacked below `--bridge-break`, because the
+    device floor this project designs for is a phone, and a bridge that only exists on a wide
+    monitor is not the one this project is actually for.
+  -->
+  <div class="nc-bridge">
+    <Panel label="Nav" post={nearRegion ? `Near ${nearRegion.name}` : null}>
+      <label for="lookup" class="nc-lookup-label">Where are you, or what do you need</label>
+      <input
+        id="lookup"
+        type="search"
+        bind:value={query}
+        placeholder="a shelter, a clinic, a city…"
+        autocomplete="off"
       />
-    </Slot>
-    <Slot k="Freshest">
-      {#if freshestLabel}
-        <Readout value={freshestLabel} tone="neutral" sub="most recent check, anywhere" />
-      {:else}
-        <Readout value="—" tone="cold" sub="nothing verified yet" />
+      {#if results.length > 0}
+        <ul class="nc-results">
+          {#each results as r (r.id)}
+            <li>
+              <a href="/terminal/directory/{r.region}/">
+                <span class="nc-results-name">{r.name}</span>
+                <span class="nc-results-meta">{r.type.replace(/_/g, ' ')} · {r.regionName}</span>
+              </a>
+            </li>
+          {/each}
+        </ul>
+      {:else if query.trim()}
+        <p class="nc-results-empty">Nothing matches yet — try a city or a type of place.</p>
       {/if}
-    </Slot>
-    <Slot k="Build">
-      {#if health}
+      <Why summary="What this searches">
+        <p>
+          Every public record this directory holds, searched on this device with nothing sent
+          anywhere. Results open onto the full record — hours, intake rules, and how recently
+          anyone checked.
+        </p>
+      </Why>
+    </Panel>
+
+    <Panel label="Network" post={null}>
+      <Slot k="Coverage">
         <Readout
-          value={health.commit ? health.commit.slice(0, 7) : 'unknown'}
-          tone={health.clean === false ? 'warn' : 'neutral'}
-          sub={healthSub}
+          value="{data.coverage.regionsWithData} of {data.coverage.regionsTotal} areas"
+          tone="neutral"
+          sub="{data.coverage.records} records"
         />
-      {:else if healthTried}
-        <Readout value="Unreachable" tone="cold" sub="no build receipt found" />
-      {:else}
-        <Readout value="Checking…" tone="cold" />
-      {/if}
-    </Slot>
-    <Why summary="What this is">
-      <p>
-        Regions and records are counted from the same directory anyone can browse — nothing
-        here is asserted twice. The build line is this deploy's own verify-then-ship receipt:
-        the actual commit and test count behind what you are using right now, not a claim
-        about it.
-      </p>
-    </Why>
-  </Panel>
+      </Slot>
+      <Slot k="Freshest">
+        {#if freshestLabel}
+          <Readout value={freshestLabel} tone="neutral" sub="most recent check, anywhere" />
+        {:else}
+          <Readout value="—" tone="cold" sub="nothing verified yet" />
+        {/if}
+      </Slot>
+      <Slot k="Build">
+        {#if health}
+          <Readout
+            value={health.commit ? health.commit.slice(0, 7) : 'unknown'}
+            tone={health.clean === false ? 'warn' : 'neutral'}
+            sub={healthSub}
+          />
+        {:else if healthTried}
+          <Readout value="Unreachable" tone="cold" sub="no build receipt found" />
+        {:else}
+          <Readout value="Checking…" tone="cold" />
+        {/if}
+      </Slot>
+      <Why summary="What this is">
+        <p>
+          Regions and records are counted from the same directory anyone can browse — nothing
+          here is asserted twice. The build line is this deploy's own verify-then-ship receipt:
+          the actual commit and test count behind what you are using right now, not a claim
+          about it.
+        </p>
+      </Why>
+    </Panel>
+  </div>
 
   <a class="nc-act" data-act data-tone="warn" href="/terminal/" data-sveltekit-reload>
     <span class="nc-act-label">Open the Field Terminal</span>
@@ -177,6 +186,34 @@
 </div>
 
 <style>
+  /*
+   * A console, not a phone screen stretched wide. `terminal/+layout.svelte`'s own 30rem
+   * column doesn't apply here — Svelte scopes it to that component — so without this the
+   * root page has no width constraint of its own and stretches edge to edge on a desktop
+   * monitor: the white-margin bug's sibling, an unstructured full-bleed stack rather than an
+   * absence of background.
+   */
+  .terminal {
+    max-width: 68rem;
+    margin: 0 auto;
+    padding-inline: 1.25rem;
+  }
+
+  .nc-bridge {
+    display: grid;
+    gap: 1rem;
+  }
+  /* panel.css's own `.nc-panel { margin: 0 0 1rem }` would double up with the grid gap. */
+  .nc-bridge :global(.nc-panel) {
+    margin-bottom: 0;
+  }
+  @media (min-width: 48rem) {
+    .nc-bridge {
+      grid-template-columns: 1fr 1fr;
+      align-items: start;
+    }
+  }
+
   .nc-lookup-label {
     font-family: var(--font-mono);
     font-size: 0.72rem;
