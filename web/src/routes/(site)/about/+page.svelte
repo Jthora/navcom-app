@@ -7,7 +7,9 @@
 </svelte:head>
 
 <div class="wrap">
-  <p class="eyebrow">The Watchtower</p>
+  <!-- Not "The Watchtower" — that names a specific node's keypair elsewhere in this project
+       (docs/spec/bootstrap.spec.md), not NavCom itself. -->
+  <p class="eyebrow">About</p>
   <h1>Who will actually take someone tonight.</h1>
 
   <p class="lead">

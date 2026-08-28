@@ -48,6 +48,18 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/*
+ * The browser's own default `body` margin (8px in Chrome and Firefox) was never reset here —
+ * `$lib/styles/tokens.css` does it for the site, but this stylesheet, shared by every
+ * `/terminal/*` screen and the root console, never did. Small enough to miss on a phone at
+ * near-full-bleed; a stark white frame around a near-black console on a desktop monitor.
+ * Every screen this stylesheet touches has carried it, unnoticed, until now.
+ */
+body {
+  margin: 0;
+  background: var(--t-ground);
+}
+
 .terminal * { box-sizing: border-box; }
 
 /*

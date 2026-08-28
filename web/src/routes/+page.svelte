@@ -90,9 +90,15 @@
 </svelte:head>
 
 <div class="terminal">
+  <!--
+    Not "The Watchtower" — that term is precise elsewhere in this project (a specific node's
+    keypair, docs/spec/bootstrap.spec.md) and reserving it there is the point: it names a
+    daemon an operator can be pointed at, not a brand. This is the one screen every kind of
+    visitor sees first, including the majority who will never touch a watch at all — the
+    product's own name belongs here unqualified.
+  -->
   <header>
-    <span class="eyebrow">NavCom</span>
-    <h1>The Watchtower</h1>
+    <h1>NavCom</h1>
   </header>
 
   <Panel label="Nav" post={nearRegion ? `Near ${nearRegion.name}` : null}>

@@ -7,9 +7,14 @@
 
 <header>
   <div class="bar">
+    <!--
+      Not "The Watchtower" as a subtitle — that term names a specific node's keypair
+      elsewhere in this project (docs/spec/bootstrap.spec.md), not the product. Conflating
+      the two here was inherited from an earlier draft and repeated forward rather than
+      questioned; the name belongs alone.
+    -->
     <a class="brand" href="/">
       <span class="brand-mark">NAVCOM</span>
-      <span class="brand-tag">The Watchtower</span>
     </a>
     <nav>
       <a href="/directory/">Directory</a>
@@ -136,13 +141,6 @@
     font-size: 1.02rem;
     letter-spacing: 0.14em;
     color: var(--ink);
-  }
-  .brand-tag {
-    font-family: var(--font-mono);
-    font-size: 0.66rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--faint);
   }
 
   nav {
