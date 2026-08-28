@@ -7,7 +7,7 @@
    * absence is the feature.
    */
   import { onMount } from 'svelte';
-  import { Slot, Readout, Heartbeat } from '$lib/components/panel';
+  import { Slot, Readout, Heartbeat, Why } from '$lib/components/panel';
   import { page } from '$app/state';
   import { PairError, pair, peers, setBuddy, unpair, type Peer } from '$lib/terminal/peers';
   import { loadIdentity } from '$lib/terminal/identity';
@@ -200,14 +200,13 @@
   reveals no Watchtower -- but an operator should still know which strangers' machines
   their presence travels through.
 -->
-<section class="relays">
-  <h2>Where this goes</h2>
-  <p class="cost">
+<Why summary="Where this goes">
+  <p>
     Presence travels through {defaults ? 'these public relays, which ship as defaults' : 'the relays you configured'}.
     They carry sealed messages they cannot read, and none of them learns who your peers are.
   </p>
   <p class="blocks">{#each using as r (r)}<span>{r}</span>{/each}</p>
-</section>
+</Why>
 
 {#if invites.waiting.length > 0}
   <section class="act">

@@ -133,10 +133,18 @@
       {#if board.partial}
         <!-- A list that silently stops looks like a complete list. Somebody looking for one
              particular operator would conclude they are not here. -->
-        <p class="cost" data-board-partial>
-          More cards are published here than this can show, so this is part of the board.
-          If you are looking for somebody in particular, ask them for their code directly.
-        </p>
+        <div data-board-partial>
+          <Slot k="Board">
+            <Readout
+              value="Partial"
+              tone="warn"
+              sub="more cards published here than this can show — this is part of the board"
+            />
+          </Slot>
+          <p class="cost">
+            If you are looking for somebody in particular, ask them for their code directly.
+          </p>
+        </div>
       {/if}
       <ul class="board">
         {#each board.entries as e (e.contact)}

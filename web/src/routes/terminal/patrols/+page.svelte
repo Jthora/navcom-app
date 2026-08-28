@@ -15,6 +15,7 @@
     type Patrol
   } from '$lib/terminal/patrol';
   import { operator } from '$lib/terminal/session.svelte';
+  import { Slot, Readout } from '$lib/components/panel';
 
   let list = $state<Patrol[]>([]);
   let keep = $state(false);
@@ -68,7 +69,9 @@
 
 {#if list.length === 0}
   <section>
-    <p>Nothing yet. A patrol lands here when you stand down.</p>
+    <Slot k="Patrols">
+      <Readout value="Nothing yet" tone="cold" sub="lands here when you stand down" />
+    </Slot>
     <p class="cost">
       Your own record, not the watch's. <strong>It stays on this phone</strong> — nothing
       here is sent to a watch, a relay or anybody else — and it works with no signal at all.
@@ -76,7 +79,13 @@
   </section>
 {:else}
   <section class="tally">
-    <p><strong>{list.length}</strong> patrol{list.length === 1 ? '' : 's'} · {formatDuration(total)}</p>
+    <Slot k="Patrols">
+      <Readout
+        value="{list.length} patrol{list.length === 1 ? '' : 's'}"
+        tone="neutral"
+        sub={formatDuration(total)}
+      />
+    </Slot>
   </section>
 
   <section>
@@ -122,6 +131,13 @@
 
 <section class="limit">
   <h2>If this phone is wiped</h2>
+  <Slot k="On panic wipe">
+    <Readout
+      value={keep ? 'Kept' : 'Destroyed'}
+      tone={keep ? 'warn' : 'good'}
+      sub={keep ? 'a seized phone shows a year of them' : 'nothing about your nights survives'}
+    />
+  </Slot>
   <p>
     {#if keep}
       Your patrols <strong>survive a panic wipe</strong>. A year of them survives a bad
@@ -137,7 +153,6 @@
 </section>
 
 <style>
-  .tally p { font-size: 1.15rem; color: var(--t-ink); margin: 0; }
   .patrols { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .9rem; }
   .patrols li {
     display: flex; flex-direction: column; gap: .1rem;
