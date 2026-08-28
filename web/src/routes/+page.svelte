@@ -18,7 +18,24 @@
   import { search } from '$lib/console/search';
   import { locateOnce, nearest } from '$lib/console/position-once';
   import type { ConsoleCentroid } from '$lib/console/types';
-  import { signature, setSignature, apply } from '$lib/terminal/signature';
+  import { get, set } from '$lib/terminal/storage';
+
+  /**
+   * A local, deliberately-not-imported equivalent of $lib/terminal/signature's own
+   * apply()/setSignature() — importing them (even just these two, not `signature()` itself)
+   * still pulled in the full crypto stack, because `apply`'s own default parameter is
+   * `signature()`, and a bundler can't tree-shake a function whose default-argument
+   * expression calls something. Confirmed by measuring: 71.8kB with the import, unchanged
+   * from before the fix that was supposed to remove it. These two lines are all this page
+   * actually needs from that module.
+   */
+  function applySignature(value: 'low' | 'document'): void {
+    document.documentElement.dataset.signature = value;
+  }
+  function setSignature(value: 'low' | 'document'): void {
+    set('accruing', 'signature', value);
+    applySignature(value);
+  }
 
   let { data } = $props();
   let sig = $state<'low' | 'document'>('document');
@@ -62,6 +79,23 @@
   let health = $state<Health | null>(null);
   let healthTried = $state(false);
 
+  /**
+   * Same rule as $lib/terminal/signature's own `signature()`/`defaultSignature()`,
+   * reimplemented rather than imported: that function's fallback path calls `loadIdentity()`,
+   * which pulls in the full crypto stack (~20kB gzipped) just to check whether a secret is
+   * stored — a real, measured budget regression (49.7kB -> 71.6kB) for a check this page only
+   * needs the boolean answer to. A raw storage read of the same field answers "does an
+   * identity exist" without deriving the keypair itself.
+   */
+  function readSignature(): 'low' | 'document' {
+    const stored = get<string>('accruing', 'signature');
+    if (stored === 'low' || stored === 'document') return stored;
+    if (typeof window !== 'undefined' && window.matchMedia?.('(prefers-contrast: more)')?.matches) {
+      return 'document';
+    }
+    return get('accruing', 'secret') ? 'low' : 'document';
+  }
+
   onMount(() => {
     // Same marker `/terminal/*` sets — this page is prerendered then hydrated too, and a
     // test (or a person) that raced the gap rather than waited for it is the failure mode
@@ -71,8 +105,8 @@
     // low signature must never show a frame at full brightness first. This page previously
     // never read the preference at all, so a visitor who set it inside /terminal/ and later
     // landed back on / (the brand link, a bookmark) silently lost it here.
-    sig = signature();
-    apply(sig);
+    sig = readSignature();
+    applySignature(sig);
     void locateOnce().then((fix) => {
       if (fix) nearRegion = nearest(fix, data.centroids);
     });
