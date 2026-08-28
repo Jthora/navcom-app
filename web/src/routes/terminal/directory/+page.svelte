@@ -7,6 +7,7 @@
    */
   import { onMount } from 'svelte';
   import { offline } from '$lib/terminal/offline.svelte';
+  import { Readout, Why } from '$lib/components/panel';
 
   let { data } = $props();
 
@@ -40,10 +41,12 @@
     Open the one you work in. <strong>Opening it is what saves it</strong> — after that it
     is on this phone and works with no signal at all.
   </p>
-  <p class="cost">
-    Only what you open is kept. Carrying every area would fill a cheap phone with places you
-    will never go.
-  </p>
+  <Why summary="Why only some areas">
+    <p>
+      Only what you open is kept. Carrying every area would fill a cheap phone with places
+      you will never go.
+    </p>
+  </Why>
 </section>
 
 {#each byCountry as [country, areas] (country)}
@@ -55,14 +58,17 @@
           <a class="area" href="/terminal/directory/{region.slug}/">
             <span class="name">{region.name}</span>
             {#if offline.areas[region.slug] === 'yes'}
-              <span class="carried" data-carried={region.slug}>on this phone</span>
+              <span data-carried={region.slug}><Readout value="On this phone" tone="good" /></span>
             {/if}
             <!--
               Words rather than a bare 0. "Nothing yet" is a state an operator can act on;
               a zero reads like a broken row, and this is the row the cold start depends on
               somebody tapping.
             -->
-            <span class="n" class:empty={records === 0}>{records === 0 ? 'nothing yet' : records}</span>
+            <Readout
+              value={records === 0 ? 'Nothing yet' : String(records)}
+              tone={records === 0 ? 'cold' : 'neutral'}
+            />
           </a>
         </li>
       {/each}
@@ -78,15 +84,4 @@
     min-height: 3.4rem; text-decoration: none; color: var(--t-ink);
   }
   .name { font-size: 1.02rem; }
-  .n {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: .82rem; color: var(--t-faint);
-  }
-  /* Not dimmer than the count. An empty area is a place to start, not a disabled row. */
-  .n.empty { font-size: .74rem; letter-spacing: .04em; }
-  .carried {
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: .68rem; letter-spacing: .08em; text-transform: uppercase;
-    color: var(--t-station); border: 1px solid var(--t-station); padding: .1rem .3rem;
-  }
 </style>

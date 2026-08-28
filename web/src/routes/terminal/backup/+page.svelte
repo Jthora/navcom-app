@@ -6,7 +6,7 @@
    * for one of them and should not have to work out that the other is the same thing.
    */
   import { onMount } from 'svelte';
-  import { Slot, Readout } from '$lib/components/panel';
+  import { Slot, Readout, Why } from '$lib/components/panel';
   import { ageInDays, secretToHex } from '@navcom/core';
   import { RestoreError, lastMade, makeBackup, restore, restoreCode } from '$lib/terminal/backup';
   import { loadIdentity } from '$lib/terminal/identity';
@@ -114,10 +114,12 @@
     {/if}
   {/if}
 
-  <p>
-    <strong>A backup you can restore is how you move to a new phone.</strong> Same thing,
-    whether you are replacing a handset on purpose or replacing one you dropped.
-  </p>
+  <Why summary="What a backup is for">
+    <p>
+      <strong>A backup you can restore is how you move to a new phone.</strong> Same thing,
+      whether you are replacing a handset on purpose or replacing one you dropped.
+    </p>
+  </Why>
   <p class="cost">
     <!--
       The sentence identity.md requires be stated plainly, and the one an operator has to

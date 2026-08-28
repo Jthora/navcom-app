@@ -241,7 +241,12 @@
     </p>
     <button type="submit" disabled={!pubkey.trim()}>{configured ? 'Update' : 'Connect'}</button>
   </form>
-  {#if configured}<p class="done">Saved. <a href="/terminal/">Back to status</a></p>{/if}
+  {#if configured}
+    <Slot k="Watch config">
+      <Readout value="Saved" tone="good" />
+    </Slot>
+    <p class="done"><a href="/terminal/">Back to status</a></p>
+  {/if}
 </section>
 
 <style>

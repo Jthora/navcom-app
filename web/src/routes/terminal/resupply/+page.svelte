@@ -8,7 +8,7 @@
   import { operator } from '$lib/terminal/session.svelte';
   import { watch } from '$lib/terminal/watch.svelte';
 
-  import { Slot, Readout } from '$lib/components/panel';
+  import { Slot, Readout, Why } from '$lib/components/panel';
   let text = $state('');
   let sent = $state(false);
 
@@ -51,19 +51,23 @@
     <strong>Write about the supply, not the person</strong> — what ran out and what size, not
     who needed it or where they were. Nothing about anybody you helped belongs in this app.
   </p>
-  <p class="cost">
-    This is the least urgent thing you can send. It <strong>pages nobody</strong> and it can
-    wait until you are somewhere warm.
-  </p>
+  <Why summary="How urgent this is">
+    <p>
+      This is the least urgent thing you can send. It <strong>pages nobody</strong> and it
+      can wait until you are somewhere warm.
+    </p>
+  </Why>
 </section>
 
 <form onsubmit={send}>
   {#if !operator.hasWatch}
-    <p class="cost">
-      <strong>Resupply goes to a watch, and you have not added one.</strong> That is the
-      ordinary case for somebody working alone — there is nobody keeping a shared stash, and
-      nothing here is missing.
-    </p>
+    <Slot k="Watch">
+      <Readout
+        value="No watch"
+        tone="cold"
+        sub="Resupply goes to a watch, and you have not added one — the ordinary case for somebody working alone, and nothing here is missing."
+      />
+    </Slot>
   {:else if watch.state.state === 'dark'}
     <Slot k="Watch"><Readout value="Dark" tone="cold" sub="sends anyway, read when one is up" /></Slot>
     <p class="cost">No watch is up. This will send, and it will be read when one is.</p>

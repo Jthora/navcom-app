@@ -51,10 +51,13 @@
 
 {#if !hasWatch}
   <section>
-    <p class="error">
-      <strong>Query goes to a watch</strong>, and you have not added one. There is nobody
-      to ask.
-    </p>
+    <Slot k="Watch">
+      <Readout
+        value="No watch"
+        tone="cold"
+        sub="Query goes to a watch, and you have not added one. There is nobody to ask."
+      />
+    </Slot>
   </section>
 {:else if watch.state.state === 'dark'}
   <section>

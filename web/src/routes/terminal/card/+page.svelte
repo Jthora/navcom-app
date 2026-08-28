@@ -7,6 +7,7 @@
    * explanation nobody read.
    */
   import { onMount } from 'svelte';
+  import { Slot, Readout, Why } from '$lib/components/panel';
   import { DOING_MAX } from '@navcom/core';
   import { contactPubkey, listed, myCard, setListed, withdrawCard, type MyCard } from '$lib/terminal/card';
   import { loadIdentity } from '$lib/terminal/identity';
@@ -80,19 +81,21 @@
     knowing the other first. <strong>You have no card unless you publish one</strong>, and
     the app works exactly the same without it.
   </p>
-  <p class="cost">
-    <!--
-      The claim that makes a card safe to publish, stated before the form rather than after
-      it. It is also the reason the contact key exists at all.
-    -->
-    A card is signed by a <strong>separate key</strong> that is used for nothing else. It
-    cannot be connected to your patrols, your peers or your watch — publishing one tells the
-    network your callsign and your metro, and nothing about how you work.
-  </p>
-  <p class="cost">
-    <strong>A card carries no position.</strong> Not your address, not your neighbourhood,
-    not a coarse pin. There is nowhere in it to put one.
-  </p>
+  <Why summary="What publishing does and doesn't expose">
+    <p>
+      <!--
+        The claim that makes a card safe to publish, stated before the form rather than after
+        it. It is also the reason the contact key exists at all.
+      -->
+      A card is signed by a <strong>separate key</strong> that is used for nothing else. It
+      cannot be connected to your patrols, your peers or your watch — publishing one tells the
+      network your callsign and your metro, and nothing about how you work.
+    </p>
+    <p>
+      <strong>A card carries no position.</strong> Not your address, not your neighbourhood,
+      not a coarse pin. There is nowhere in it to put one.
+    </p>
+  </Why>
   <p class="cost">
     <!-- Reducing exposure is never symmetrical with increasing it. Saying so is the rule. -->
     <strong>Publishing cannot be undone.</strong> Withdrawing throws away the key that signs
@@ -133,9 +136,12 @@
     </button>
 
     {#if published && contact}
+      <Slot k="Card">
+        <Readout value="Published" tone="good" sub="as {callsign}" />
+      </Slot>
       <p class="cost">
-        Published as <strong>{callsign}</strong>. Anybody browsing that area can see it and
-        ask to pair. You decide who to accept, and ignoring somebody sends them nothing.
+        Anybody browsing that area can see it and ask to pair. You decide who to accept, and
+        ignoring somebody sends them nothing.
       </p>
     {/if}
   </section>
@@ -151,11 +157,15 @@
       <button onclick={toggleListed} aria-pressed={showListed}>
         {showListed ? 'Listed while out' : 'Not listed'}
       </button>
-      <p class="cost">
-        {showListed
-          ? 'Your callsign appears on the board while you are signed on.'
-          : 'Nothing is published when you sign on. This is the default.'}
-      </p>
+      <Slot k="On board while out">
+        <Readout
+          value={showListed ? 'Listed' : 'Not listed'}
+          tone={showListed ? 'good' : 'neutral'}
+          sub={showListed
+            ? 'your callsign appears on the board while signed on'
+            : 'nothing published when you sign on — the default'}
+        />
+      </Slot>
     </section>
 
     <section class="act">

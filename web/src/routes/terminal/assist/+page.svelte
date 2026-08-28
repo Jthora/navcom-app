@@ -80,13 +80,14 @@
   </p>
 
   {#if !hasWatch}
-  <section>
-    <p class="error">
-      <strong>Assist goes to a watch</strong>, and you have not added one. There is nobody
-      to ask.
-    </p>
-  </section>
-{:else if watch.state.state === 'dark'}
+    <Slot k="Watch">
+      <Readout
+        value="No watch"
+        tone="cold"
+        sub="Assist goes to a watch, and you have not added one. There is nobody to ask."
+      />
+    </Slot>
+  {:else if watch.state.state === 'dark'}
     <Slot k="Watch"><Readout value="Dark" tone="cold" sub="sends anyway, read when one is up" /></Slot>
     <p class="error">No watch. This will send, and nobody will see it until one is up.</p>
   {/if}
