@@ -72,9 +72,10 @@ test.describe('a night, with no watch', () => {
 
     // Held down, because a wipe is not something a pocket can do by accident.
     await open(page, '/terminal/wipe/');
-    // By class, not by name: the label changes to "Keep holding…" mid-press, so a
-    // name-based locator stops matching exactly when the release is needed.
-    const hold = page.locator('button.danger:not(.burn)');
+    // By attribute, not by name: the label changes to "Keep holding…" mid-press, so a
+    // name-based locator stops matching exactly when the release is needed. The wipe hold
+    // is the only `Action` on this screen — Burn is a plain typed-confirmation button.
+    const hold = page.locator('[data-act]');
     await expect(hold).toContainText(/hold to wipe tonight/i);
     // The hold completes itself after 800ms and goes straight back to an ordinary-looking
     // terminal — no receipt, no confirmation, which is the point. So there is no release to

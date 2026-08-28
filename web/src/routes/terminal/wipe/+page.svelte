@@ -20,52 +20,18 @@
   import { loadIdentity } from '$lib/terminal/identity';
   import { operator } from '$lib/terminal/session.svelte';
 
-  import { Slot, Readout } from '$lib/components/panel';
-  const HOLD_MS = 800;
+  import { Slot, Readout, Action } from '$lib/components/panel';
 
   let summary = $state<{ accruing: string[]; wipeable: string[] }>({ accruing: [], wipeable: [] });
   let callsign = $state<string | null>(null);
   let typed = $state('');
-  let holding = $state(false);
-  let progress = $state(0);
-  let start: number | null = null;
-  let frame: number | null = null;
 
   onMount(() => {
     summary = tierSummary();
     callsign = loadIdentity()?.callsign ?? null;
-    return () => { if (frame !== null) cancelAnimationFrame(frame); };
   });
 
-  /*
-   * The fill is animation; the firing is a timer. `requestAnimationFrame` is throttled hard,
-   * or paused outright, in a backgrounded or power-saving page — so a hold driven by frames
-   * can fail to complete on exactly the phone this is written for.
-   */
-  let doneAt: ReturnType<typeof setTimeout> | null = null;
-
-  function tick() {
-    if (start === null) return;
-    progress = Math.min((Date.now() - start) / HOLD_MS, 1);
-    frame = requestAnimationFrame(tick);
-  }
-
-  function press() {
-    holding = true;
-    start = Date.now();
-    frame = requestAnimationFrame(tick);
-    doneAt = setTimeout(() => release(true), HOLD_MS);
-  }
-
-  function release(complete = false) {
-    if (frame !== null) cancelAnimationFrame(frame);
-    if (doneAt !== null) clearTimeout(doneAt);
-    doneAt = null;
-    frame = null;
-    start = null;
-    holding = false;
-    progress = 0;
-    if (!complete) return;
+  function fireWipe() {
     panicWipe();
     operator.forget();
     // Straight back to an ordinary-looking terminal. No receipt, no confirmation.
@@ -116,16 +82,7 @@
     you would call. You can carry on working straight afterwards — nobody has to
     re-provision you, and your safety net is still there the next night.
   </p>
-  <button
-    class="danger"
-    style="--fill: {progress * 100}%"
-    onpointerdown={press}
-    onpointerup={() => release()}
-    onpointerleave={() => release()}
-    onpointercancel={() => release()}
-  >
-    <span>{holding ? 'Keep holding…' : 'Hold to wipe tonight'}</span>
-  </button>
+  <Action label="Hold to wipe tonight" holdingLabel="Keep holding…" hold={800} tone="alarm" onfire={fireWipe} />
 </section>
 
 <!-- The limits, stated. An operator who believes a wipe is total is worse off than one who
@@ -191,7 +148,6 @@
     content: ''; position: absolute; inset: 0 auto 0 0; width: var(--fill, 0%);
     background: var(--t-dark); opacity: .28;
   }
-  .danger span { position: relative; }
   /* Burn is typed, not held: no fill, and it stays inert until the callsign matches. */
   .burn::before { content: none; }
 

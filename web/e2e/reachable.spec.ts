@@ -235,6 +235,19 @@ test.describe('wipe', () => {
     await page.locator('#confirm').fill('wren');
     await expect(page.getByRole('button', { name: /burn this device/i })).toBeDisabled();
   });
+
+  test('says plainly where a wipe does not reach', async ({ page }) => {
+    // An operator who believes a wipe is total is worse off than one who knows exactly
+    // where it stops — the watch's own board entry, and the accountability log, survive
+    // both a panic wipe and a burn, and the screen must say so before either is used.
+    await seedDevice(page, OUT);
+    await open(page, '/terminal/wipe/');
+
+    await expect(page.getByText(/the watch still has your board entry/i)).toBeVisible();
+    await expect(page.getByText(/the accountability log is outside both tiers/i)).toBeVisible();
+    await expect(page.getByText(/not yours to delete/i)).toBeVisible();
+    await expect(page.getByText(/unlinks it rather than/i)).toBeVisible();
+  });
 });
 
 test.describe('peers', () => {
