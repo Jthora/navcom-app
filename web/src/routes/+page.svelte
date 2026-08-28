@@ -93,6 +93,20 @@
   }
   const freshestLabel = $derived(data.coverage.freshest ? daysAgo(data.coverage.freshest) : null);
 
+  /**
+   * "en" -> "English", via the browser's own `Intl.DisplayNames` — no lookup table to
+   * maintain, and it degrades to the raw code rather than throwing on one it doesn't know.
+   */
+  function languageLabel(codes: string[]): string | null {
+    if (codes.length === 0) return null;
+    try {
+      const names = new Intl.DisplayNames(['en'], { type: 'language' });
+      return codes.map((c) => names.of(c) ?? c).join(', ');
+    } catch {
+      return codes.join(', ');
+    }
+  }
+
   const healthSub = $derived.by(() => {
     if (!health) return null;
     const parts: string[] = [];
@@ -196,7 +210,11 @@
           only, computed in $lib/console/figures.ts.
         -->
         <Slot k="Records">
-          <Readout value="{focusedFigures.records} in {focusedFigures.name}" tone="neutral" />
+          <Readout
+            value="{focusedFigures.records} in {focusedFigures.name}"
+            tone="neutral"
+            sub={languageLabel(focusedFigures.languages)}
+          />
         </Slot>
         <Slot k="Freshest">
           {#if focusedFigures.freshest}

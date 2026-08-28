@@ -34,7 +34,8 @@ export function regionFigures(
 
   const out: Record<string, ConsoleRegionFigures> = {};
   for (const [slug, f] of byRegion) {
-    out[slug] = { region: slug, name: regions.find((rg) => rg.slug === slug)?.name ?? slug, ...f };
+    const region = regions.find((rg) => rg.slug === slug);
+    out[slug] = { region: slug, name: region?.name ?? slug, languages: region?.languages ?? [], ...f };
   }
   return out;
 }

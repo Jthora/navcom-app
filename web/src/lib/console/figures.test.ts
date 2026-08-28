@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { regionFigures } from './figures';
 import type { Region, ResourceRecord } from '@navcom/core';
 
-const region = (slug: string, name: string): Region => ({
-  slug, name, country: 'US', timezone: 'America/Chicago', languages: ['en'], status: 'seeded'
+const region = (slug: string, name: string, languages = ['en']): Region => ({
+  slug, name, country: 'US', timezone: 'America/Chicago', languages, status: 'seeded'
 });
 
 const record = (over: Partial<ResourceRecord>): ResourceRecord => ({
@@ -50,6 +50,13 @@ describe('per-region figures — directory facts only, never a watch/coverage cl
   it('reports no freshest date for a region where nothing has ever been checked', () => {
     const records = [record({ id: '1', region: 'a' })];
     expect(regionFigures(records, regions).a.freshest).toBeNull();
+  });
+
+  it('carries the region\'s own languages, from its manifest, not per-record guessing', () => {
+    const withLangs = [region('a', 'Alpha', ['en', 'es']), region('b', 'Beta')];
+    const figures = regionFigures([record({ region: 'a' }), record({ region: 'b' })], withLangs);
+    expect(figures.a.languages).toEqual(['en', 'es']);
+    expect(figures.b.languages).toEqual(['en']);
   });
 
   it('skips records with no region rather than crashing', () => {

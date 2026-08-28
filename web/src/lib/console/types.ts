@@ -28,4 +28,6 @@ export interface ConsoleRegionFigures {
   confirmedByPerson: number;
   /** ISO date, YYYY-MM-DD, or null if nothing in this region has ever been checked. */
   freshest: string | null;
+  /** ISO 639-1 codes, from the region's own manifest — what its records are written in. */
+  languages: string[];
 }

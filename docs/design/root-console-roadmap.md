@@ -94,15 +94,17 @@ published presence near a searched region, never a Watchtower's coverage. Bigger
 sensitive, and needs its own explicit design pass and sign-off before building — nothing here
 should be read as pre-approval.
 
-## Pass 6 — Formal build-order tracking
+## Pass 6 — Formal build-order tracking — done
 
-Not yet started. The console exists entirely outside `build-order.md`'s tracked "A" track —
-it was reactive work in response to a live complaint, not planned work. Once Pass 3–4 land,
-it should get a real entry there, the same way A1–A6 do, so it stops being invisible to the
-one document whose job is tracking trajectory.
+`docs/build-order.md` now carries a B1–B7 table for the console, the same shape as the site's
+own A1–A6 — B1–B5 done, B6 (this pass) marked partial for the same reason it's partial here,
+B7 not started. It stops being invisible to the one document whose job is tracking
+trajectory.
 
-## Pass 7 — Multi-language
+## Pass 7 — Multi-language — done
 
-Not yet started. `Region.languages` already exists (`packages/core/src/directory/region.ts`)
-and the console doesn't use it at all. A low-friction locale hint on search or results is a
-plausible, low-risk extension once the higher-priority passes above are done.
+`ConsoleRegionFigures` now carries `languages` straight from the region's own manifest, and
+the focused region's "Records" slot shows it as a sub-line — "English, Spanish" rather than
+raw ISO codes, via the browser's own `Intl.DisplayNames` (no lookup table to maintain, and a
+code it doesn't recognise degrades honestly to the raw code rather than guessing — confirmed
+live: Navajo's `nv` doesn't resolve in this engine's data and falls back exactly as designed).
