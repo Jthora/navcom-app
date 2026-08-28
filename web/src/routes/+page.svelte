@@ -30,6 +30,27 @@
   );
   const results = $derived(query.trim() ? typed : defaultResults);
 
+  /** For when geolocation is denied or absent and nothing has been typed yet. */
+  let manualRegion = $state('');
+  const regionOptions = $derived(
+    Object.values(data.regionFigures).sort((a, b) => a.name.localeCompare(b.name))
+  );
+
+  /**
+   * The one thing Nav and Com actually share — searching or being placed somewhere changes
+   * what Com reports, in the same glance. Priority: a live search result names the most
+   * specific intent; a manual pick is deliberate; geolocation is the passive default.
+   */
+  const focusedRegionSlug = $derived.by(() => {
+    if (query.trim() && typed.length > 0) return typed[0].region;
+    if (manualRegion) return manualRegion;
+    if (nearRegion) return nearRegion.region;
+    return null;
+  });
+  const focusedFigures = $derived(
+    focusedRegionSlug ? (data.regionFigures[focusedRegionSlug] ?? null) : null
+  );
+
   interface Health {
     commit: string | null;
     clean: boolean | null;
@@ -132,6 +153,17 @@
       {:else if query.trim()}
         <p class="nc-results-empty">Nothing matches yet — try a city or a type of place.</p>
       {/if}
+      {#if !query.trim()}
+        <div class="nc-manual">
+          <label for="region-pick">No signal, or geolocation said no? Pick a region</label>
+          <select id="region-pick" bind:value={manualRegion}>
+            <option value="">Not now</option>
+            {#each regionOptions as r (r.region)}
+              <option value={r.region}>{r.name}</option>
+            {/each}
+          </select>
+        </div>
+      {/if}
       <Why summary="What this searches">
         <p>
           Every public record this directory holds, searched on this device with nothing sent
@@ -141,21 +173,82 @@
       </Why>
     </Panel>
 
-    <Panel label="Network" post={null}>
-      <Slot k="Coverage">
-        <Readout
-          value="{data.coverage.regionsWithData} of {data.coverage.regionsTotal} areas"
-          tone="neutral"
-          sub="{data.coverage.records} records"
-        />
-      </Slot>
-      <Slot k="Freshest">
-        {#if freshestLabel}
-          <Readout value={freshestLabel} tone="neutral" sub="most recent check, anywhere" />
-        {:else}
-          <Readout value="—" tone="cold" sub="nothing verified yet" />
-        {/if}
-      </Slot>
+    <Panel label="Network" post={focusedFigures ? focusedFigures.name : null}>
+      {#if focusedFigures}
+        <!--
+          The fusion: what you did in Nav (searched, or were placed somewhere) changes what
+          Com reports, in the same glance — this region's own figures, not the network-wide
+          ones. Never a watch/coverage claim [docs/spec/bootstrap.spec.md] — directory facts
+          only, computed in $lib/console/figures.ts.
+        -->
+        <Slot k="Records">
+          <Readout value="{focusedFigures.records} in {focusedFigures.name}" tone="neutral" />
+        </Slot>
+        <Slot k="Freshest">
+          {#if focusedFigures.freshest}
+            <Readout value={daysAgo(focusedFigures.freshest)} tone="neutral" sub="most recent check here" />
+          {:else}
+            <Readout value="—" tone="cold" sub="nothing verified here yet" />
+          {/if}
+        </Slot>
+        <Slot k="Verify">
+          {#if focusedFigures.confirmedByPerson > 0}
+            <Readout
+              value="{focusedFigures.confirmedByPerson} confirmed by a person"
+              tone="good"
+              sub="of {focusedFigures.records} total"
+            />
+          {:else}
+            <Readout value="Nothing confirmed yet" tone="warn" sub="all of it is unverified" />
+          {/if}
+        </Slot>
+        <Why summary="Help verify {focusedFigures.name}">
+          <p>
+            Do you know this area? If anything is wrong — especially who they take, or what
+            happens to somebody with no ID — the fastest fix is the
+            <a href="/terminal/directory/{focusedRegionSlug}/">field terminal</a>: pick a
+            callsign, find the listing, tap report a problem. No account, and it works with
+            no signal.
+          </p>
+          <p>
+            Your correction is <strong>added</strong> under your callsign, or anonymously if
+            you have not picked one — it cannot delete a listing or overrule anybody, and
+            nobody has to approve it.
+          </p>
+        </Why>
+        <Slot k="Holding watch">
+          <Readout value="Not claimed here" tone="cold" />
+        </Slot>
+        <Why summary="What that would mean">
+          <p>
+            Nobody is asserted to be watching {focusedFigures.name} — nothing here discovers a
+            Watchtower, by design: a list of Watchtowers is a list of where operators are.
+            Holding watch, generally, means answering Query, Assist and Distress for operators
+            working an area, backed by a capability receipt that states plainly what that
+            promises — <em>"2 on-call, both SMS-reachable"</em> or
+            <em>"0 on-call, Distress pages nobody and says so."</em>
+          </p>
+          <p>
+            If somebody hands you a Watchtower, or you want to start one,
+            <a href="/terminal/setup/">setup</a> is one screen and nothing is required first.
+          </p>
+        </Why>
+      {:else}
+        <Slot k="Coverage">
+          <Readout
+            value="{data.coverage.regionsWithData} of {data.coverage.regionsTotal} areas"
+            tone="neutral"
+            sub="{data.coverage.records} records"
+          />
+        </Slot>
+        <Slot k="Freshest">
+          {#if freshestLabel}
+            <Readout value={freshestLabel} tone="neutral" sub="most recent check, anywhere" />
+          {:else}
+            <Readout value="—" tone="cold" sub="nothing verified yet" />
+          {/if}
+        </Slot>
+      {/if}
       <Slot k="Build">
         {#if health}
           <Readout
@@ -253,6 +346,19 @@
   .nc-results-empty {
     color: var(--t-faint);
     font-size: 0.9rem;
+  }
+
+  .nc-manual {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .nc-manual label {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--t-faint);
   }
 
   .nc-act {

@@ -286,9 +286,9 @@
       reason: what a report can and cannot do is read before somebody makes one, not after.
     -->
     <strong>You can report a problem with any listing below.</strong> It goes out under your
-    callsign and <strong>adds</strong> what you saw — it cannot delete this listing or
-    overrule anybody, and nobody has to approve it. Reporting is meant to be easier than
-    fixing.
+    callsign, or anonymously if you have not picked one, and <strong>adds</strong> what you
+    saw — it cannot delete this listing or overrule anybody, and nobody has to approve it.
+    Reporting is meant to be easier than fixing.
   </p>
 </section>
 
@@ -552,7 +552,7 @@
                   </button>
                 {/each}
               </div>
-              <p class="cost">Goes out under your callsign.</p>
+              <p class="cost">Goes out under your callsign, or anonymously if you have not picked one.</p>
               <button class="drop" onclick={() => (reporting = null)}>Cancel</button>
             {:else}
               <button class="drop" onclick={() => { reporting = record.id; correcting = null; }}>

@@ -258,7 +258,7 @@
       works with no signal.
     </p>
     <p class="quiet">
-      Your correction is <strong>added</strong> under your callsign — it cannot delete this
-      listing or overrule anybody, and nobody has to approve it.
+      Your correction is <strong>added</strong> under your callsign, or anonymously if you skip
+      that step — it cannot delete this listing or overrule anybody, and nobody has to approve it.
     </p>
   </section>

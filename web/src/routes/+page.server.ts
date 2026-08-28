@@ -14,9 +14,14 @@
  *   rather than hand-curated: 467 of 479 records already carry real `lat`/`lon`, so nothing
  *   new needs sourcing or maintaining. Only regions that actually have a geotagged record are
  *   included — an empty seeded region should never win "nearest".
+ * - Per-region figures, precomputed for every region and looked up client-side by whichever
+ *   one search or geolocation resolves to — same pattern as the centroids. `confirmedByPerson`
+ *   reuses `isSeeded()`, matching `BROADCAST.measure`'s own published definition
+ *   (`packages/core/src/refusals.ts`) rather than a second, invented metric.
  */
 
 import { loadDirectory, loadRegions, regionOf } from '$lib/directory/load';
+import { regionFigures } from '$lib/console/figures';
 import type { ConsoleIndexEntry, ConsoleCentroid } from '$lib/console/types';
 
 export const prerender = true;
@@ -66,6 +71,7 @@ export function load() {
       regionsTotal: regions.length,
       freshest
     },
-    centroids
+    centroids,
+    regionFigures: regionFigures(records, regions)
   };
 }
