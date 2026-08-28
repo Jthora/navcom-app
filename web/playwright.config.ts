@@ -54,6 +54,22 @@ export default defineConfig({
        */
       name: 'phone',
       use: { ...devices['Pixel 5'] }
+    },
+    {
+      /**
+       * The one deliberate exception to "phone, not desktop."
+       *
+       * The root console (`routes/+page.svelte`) is not the Field Terminal — it is the one
+       * screen this project explicitly expects a desktop visitor to see first, and its
+       * side-by-side Nav/Com bridge only exists above a 48rem breakpoint. The phone project
+       * alone would never render it, and the white-margin bug this console shipped with was
+       * only ever visible on a desktop monitor in the first place — scoped by `testMatch`
+       * rather than applied everywhere, so this stays the one named exception, not a second
+       * default.
+       */
+      name: 'desktop',
+      testMatch: /root-console\.spec\.ts/,
+      use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 900 } }
     }
   ],
 

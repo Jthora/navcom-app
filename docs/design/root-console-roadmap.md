@@ -48,21 +48,40 @@ schema.md` names anonymous contribution as a first-class, designed-in choice. Th
 three pages said "goes out under your callsign" as though that were required. Corrected to
 say what's actually true either way.
 
-## Pass 3 — Accessibility and resilience audit
+## Pass 4 — Real visual verification infrastructure — done
 
-Not yet started. Needed: contrast check in both signature modes (default and low-signature),
-a keyboard-only walkthrough of search → result → correction flow, a screen-reader pass on the
-Network panel's region-reactive Slots — content that changes after typing needs an `aria-
-live` decision, not silence.
+Node 22.23.2 was already installed via `nvm` on this machine the whole time — just not the
+shell default (`node --version` gave 18.16.0). `nvm exec 22.23.2 npx playwright test` runs
+clean, browsers were already cached. No system change, no new install, no default touched.
 
-## Pass 4 — Real visual verification infrastructure
+This immediately found a real bug static inspection never could: the white-margin fix from
+Pass 1 was incomplete. `body { background: var(--t-ground) }` compiled correctly and *looked*
+fixed in every grep — but `--t-ground` was declared inside `.terminal`, which is `body`'s
+**descendant**, not its ancestor, so the variable was out of scope on `body` and silently
+resolved to nothing. Moved the token's declaration (default and low-signature override both)
+to `:root`, where both `body` and `.terminal` can actually see it. A new spec,
+`e2e/root-console.spec.ts`, runs against a real `desktop` Playwright project (added to
+`playwright.config.ts`, scoped to this one file — the console is the one screen meant to be
+seen on a desktop monitor first, unlike everything else here) and pins this regression, the
+bridge's actual side-by-side rendering, and the fusion mechanism end to end.
 
-Not yet started. Every check across Pass 1 and Pass 2 was structural — grep the built HTML,
-because this machine's Node 18.16.0 is below Playwright's minimum (20+) and no headless-
-browser screenshot was possible. That's a real gap in confidence, not a cosmetic one: a
-layout can be structurally correct and still look wrong, and nothing this session could catch
-that class of bug. Fixing the Node version (or finding another screenshot path) is
-infrastructure that pays for every future pass, not just this one.
+Real screenshots taken for the first time this session confirmed the fix and the bridge
+layout visually, not just structurally — and confirmed the fusion (Pass 2) actually looks
+right when a region is picked, not just that the right elements exist in the DOM.
+
+## Pass 3 — Accessibility and resilience audit — partly done
+
+Done, with real Playwright rather than reasoning about it: a keyboard-only tab walkthrough
+(`input#lookup → select#region-pick → two Why summaries → the Field Terminal link`, in a
+clean, logical order with nothing unreachable or trapped). Also added `aria-live="polite"` to
+the Network panel, since Pass 2 made its content change when a region is picked and nothing
+told a screen-reader user that had happened.
+
+Still open: a contrast check in low-signature mode specifically (default mode's contrast was
+inherited from the existing terminal tokens, already measured elsewhere in this project;
+low-signature's amber-on-black hasn't been checked against this specific page), and a full
+screen-reader-software pass (VoiceOver/NVDA), which needs a real assistive-tech session, not
+just Playwright's accessibility tree.
 
 ## Pass 5 — Operator self-published presence
 

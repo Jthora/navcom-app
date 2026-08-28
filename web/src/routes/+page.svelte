@@ -61,6 +61,10 @@
   let healthTried = $state(false);
 
   onMount(() => {
+    // Same marker `/terminal/*` sets — this page is prerendered then hydrated too, and a
+    // test (or a person) that raced the gap rather than waited for it is the failure mode
+    // that convention exists to prevent (see e2e/device.ts's `open()`).
+    document.documentElement.dataset.hydrated = 'true';
     void locateOnce().then((fix) => {
       if (fix) nearRegion = nearest(fix, data.centroids);
     });
@@ -173,7 +177,17 @@
       </Why>
     </Panel>
 
-    <Panel label="Network" post={focusedFigures ? focusedFigures.name : null}>
+    <!--
+      aria-live: this panel's content changes when a region is picked (the fusion this page
+      exists for), and a screen-reader user picking one from the select below would otherwise
+      never hear that anything happened. `polite` rather than `assertive` — it's a state
+      update, not an alert.
+    -->
+    <Panel
+      label="Network"
+      post={focusedFigures ? focusedFigures.name : null}
+      aria-live="polite"
+    >
       {#if focusedFigures}
         <!--
           The fusion: what you did in Nav (searched, or were placed somewhere) changes what

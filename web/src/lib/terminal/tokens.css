@@ -8,8 +8,20 @@
  * It commits to a single visual world deliberately: a terminal that changed appearance with
  * the phone's theme would be a terminal you could not learn by muscle memory.
  */
-.terminal {
+/*
+ * Declared on `:root`, not `.terminal`, and only this one token — `body`'s own background
+ * (below) needs it, and `body` is `.terminal`'s ANCESTOR in the DOM, not its descendant.
+ * `var(--t-ground)` on `body` while the declaration lived inside `.terminal` resolved to
+ * nothing at all: not a wrong colour, no colour, silently — exactly the gap the white-margin
+ * fix below thought it had closed, and hadn't. A real browser caught it; grepping the
+ * compiled CSS for the rule's presence could not have, because the rule was syntactically
+ * fine and semantically inert.
+ */
+:root {
   --t-ground: #0B0E12;
+}
+
+.terminal {
   --t-raised: #141920;
   --t-sunk: #05070A;
   --t-ink: #F2F5F8;
@@ -126,8 +138,11 @@ body {
  * Contrast against the true black ground: ink 6.8:1, muted 4.6:1, faint 3.0:1. The faint tone
  * is used for uppercase labels only, never for reading.
  */
-:root[data-signature='low'] .terminal {
+:root[data-signature='low'] {
   --t-ground: #000000;
+}
+
+:root[data-signature='low'] .terminal {
   --t-raised: #0A0704;
   --t-sunk: #000000;
   --t-ink: #C98A2E;
