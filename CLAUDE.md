@@ -56,11 +56,14 @@ page at all.
 
 **Build next, in order:**
 
-1. **The remaining Field Terminal screens, onto the panel.** Five of twenty are converted —
-   status, watch, sign-on, standing, distress. Doctrine and phases in
-   [`docs/design/panel.md`](docs/design/panel.md); **it is a per-screen judgement, not a
-   sweep** — a blanket pass was tried, measured and withdrawn, because `.cost` in this
-   codebase is a typographic class carrying primary state as often as an aside
+1. **The directory region-detail screen's remaining prose.** Nineteen of twenty Field
+   Terminal screens are converted; `terminal/directory/[region]/` (736 lines) only got its
+   one isolated, zero-risk section — the per-record loop, add-a-place form and corrections
+   banners are real, separate, future work, deliberately not attempted in one pass. Doctrine
+   and phases in [`docs/design/panel.md`](docs/design/panel.md); **it is a per-screen
+   judgement, not a sweep** — a blanket pass was tried, measured and withdrawn, because
+   `.cost` in this codebase is a typographic class carrying primary state as often as an
+   aside
 2. **Milestone 8**, once **6.9** has real intake rules in it. The gate is not paperwork: a
    person-facing path over scraped skeletons turns somebody away at 11pm with nowhere else
    to be
