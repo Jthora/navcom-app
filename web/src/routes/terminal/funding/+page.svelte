@@ -7,6 +7,7 @@
    */
   import { onMount } from 'svelte';
   import { address, FundingError, setAddress, setSquadAddress, squadAddress } from '$lib/terminal/funding';
+  import { Slot, Readout } from '$lib/components/panel';
 
   let mine = $state('');
   let squad = $state('');
@@ -103,7 +104,11 @@
   </p>
 
   {#if error}<p class="error">{error}</p>{/if}
-  {#if saved}<p class="ok" data-saved>Saved. Clear a field to remove it.</p>{/if}
+  {#if saved}
+    <div data-saved>
+      <Slot k="Support"><Readout value="Saved" tone="good" sub="clear a field to remove it" /></Slot>
+    </div>
+  {/if}
   <button onclick={keep}>Save</button>
 </section>
 
@@ -113,5 +118,4 @@
   .picture { margin: 0; padding-inline-start: 1.1rem; color: var(--t-muted); }
   .picture li { margin-block-end: .7rem; }
   .picture strong { color: var(--t-ink); }
-  .ok { color: var(--t-station); margin: 0; }
 </style>

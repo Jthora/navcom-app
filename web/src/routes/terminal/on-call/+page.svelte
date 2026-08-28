@@ -9,6 +9,7 @@
   import {
     canBePaged, isRegistered, PagingError, registerForPaging, stopPaging, type Registration
   } from '$lib/terminal/paging';
+  import { Slot, Readout } from '$lib/components/panel';
 
   let supported = $state(false);
   let registered = $state(false);
@@ -95,6 +96,9 @@
 {#if !supported}
   <section class="act">
     <h2>This device cannot be woken</h2>
+    <Slot k="Paging">
+      <Readout value="Not supported here" tone="cold" sub="not being on-call is a legitimate choice" />
+    </Slot>
     <p class="cost">
       Nothing is wrong. On an iPhone, notifications only work once NavCom is on the Home
       Screen — <strong>Share, then Add to Home Screen</strong>, then open it from there.
@@ -105,6 +109,9 @@
 {:else if registered}
   <section class="act">
     <h2>This device can be woken</h2>
+    <Slot k="Paging">
+      <Readout value="Registered" tone="good" sub={handover ? 'hand this to whoever runs the executor' : 'already registered on this device'} />
+    </Slot>
     {#if handover}
       <p class="cost">
         Hand this to whoever runs the escalation executor. It is what lets them reach you and
@@ -123,6 +130,9 @@
 {:else}
   <section class="act">
     <h2>Register this device</h2>
+    <Slot k="Paging">
+      <Readout value="Not registered" tone="neutral" sub="needs a sender key from whoever runs the executor" />
+    </Slot>
     <p class="cost">
       You need the <strong>sender key</strong> from whoever runs the escalation executor.
       They generate it once with <code>navcom-push --keys</code> and hand it over in person,
