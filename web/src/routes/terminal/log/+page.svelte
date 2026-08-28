@@ -72,11 +72,13 @@
     The watch writes down what it does. This asks for the part that concerns you — actions,
     never where you were or what you asked.
   </p>
-  <p class="cost">
-    This device has seen <strong>{roots}</strong> published
-    commitment{roots === 1 ? '' : 's'} to that log. Checking your entries against one of
-    them is the only version of this that means anything.
-  </p>
+  <Slot k="Commitments seen">
+    <Readout
+      value="{roots} published"
+      tone={roots === 0 ? 'cold' : 'neutral'}
+      sub="checking against one of them is the only version of this that means anything"
+    />
+  </Slot>
 </section>
 
 <!--
@@ -108,8 +110,8 @@
 
 {#if watch.state.state === 'dark'}
   <Slot k="Log">
-        <Readout value="No watch to ask" tone="cold" sub="your record is on the node, not here" />
-      </Slot>
+    <Readout value="No watch to ask" tone="cold" sub="your record is on the node, not here" />
+  </Slot>
 {/if}
 
 {#if operator.error}
