@@ -76,6 +76,14 @@ functions — the deploy runs `npm run verify`, so a build that breaks a display
 bundle budget cannot ship. Web Analytics and Speed Insights stay off: both inject a script,
 which would break the zero-JavaScript property and H8.
 
+**Root console added, 2026-08-27 — the "zero JavaScript delivered" line above no longer
+covers the whole site.** `navcom.app/` itself is now a real, interactive page: a search
+over the directory plus the network's own derived state, working with no setup and no
+account. It carries its own small budget (60 kB JS / 120 kB page, measured, see
+[`delivery.md`](delivery.md)) rather than the site's zero-byte one. `directory/`, `docs/`,
+`status/` and `about/` are untouched and still measure exactly as above — the split is
+enforced by `web/scripts/budget.mjs`, not just claimed here.
+
 **Data is partitioned by region** — `data/regions/<slug>/` with a manifest carrying country,
 IANA timezone, languages and whether anyone has checked it. Done while there was one region,
 because it is cheap now and painful once several people are editing one file.
