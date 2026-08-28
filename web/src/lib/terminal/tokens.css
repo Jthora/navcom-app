@@ -26,7 +26,16 @@
   --t-sunk: #05070A;
   --t-ink: #F2F5F8;
   --t-muted: #9BA5B2;
-  --t-faint: #6E7885;
+  /*
+   * Was #6E7885 — 3.94:1 against --t-raised, below WCAG AA's 4.5:1 for text at any size.
+   * The first automated accessibility pass ever run against this codebase (axe-core, this
+   * session) found it on every screen using a Slot key, a Readout sub-line, or a Panel
+   * label — this token, not any one screen, was the actual defect. Raised just enough to
+   * clear 4.5:1 against every background it actually sits on (raised/sunk/ground); still
+   * the dimmest tier, still clearly below --t-muted. See the low-signature block for the
+   * same fix in that mode.
+   */
+  --t-faint: #78828F;
   --t-line: #232B35;
   --t-line-strong: #38424F;
 
@@ -135,8 +144,12 @@ body {
  * mid for warning, dim for cold — with red reserved for the alarm channel, which is the one
  * hue that both preserves dark adaptation and must never be mistaken for anything else.
  *
- * Contrast against the true black ground: ink 6.8:1, muted 4.6:1, faint 3.0:1. The faint tone
- * is used for uppercase labels only, never for reading.
+ * Contrast against the true black ground: ink 6.8:1, muted 4.6:1, faint 4.5:1 (raised from
+ * 3.0:1 — axe-core's first-ever pass against this codebase found it failing WCAG AA on every
+ * Slot key, Readout sub-line and Panel label; a "labels only" carve-out isn't one WCAG makes).
+ * Still the dimmest tier, deliberately close to --t-muted now — the gap that matters for
+ * reading a state at a glance is brightness between the state-tone colours below, not between
+ * these three generic text-emphasis levels.
  */
 :root[data-signature='low'] {
   --t-ground: #000000;
@@ -147,7 +160,7 @@ body {
   --t-sunk: #000000;
   --t-ink: #C98A2E;
   --t-muted: #A0701F;
-  --t-faint: #7A5518;
+  --t-faint: #967134;
   --t-line: #2A1D08;
   --t-line-strong: #4A340C;
 
@@ -164,6 +177,14 @@ body {
 /*
  * The control itself. Small, recessed, and on every screen — a mode you can only reach from
  * one page is a mode nobody uses at 2am.
+ *
+ * "Recessed" was `opacity: 0.75` at rest, `1` on press. Axe-core found it failing WCAG AA —
+ * opacity dims the rendered text toward the background behind it, and at the contrast
+ * `--t-faint` already sits at, even 0.75 pushed the *effective* ratio well under 4.5:1; only
+ * ~0.94+ would have cleared it, which is no longer meaningfully recessed. Position (fixed,
+ * tucked in a corner), size (small) and tone (the dimmest text colour) already say "not the
+ * main control" without needing transparency on top — so this drops opacity rather than
+ * tune it to a number that stopped doing its job.
  */
 .terminal .signature {
   position: fixed;
@@ -182,8 +203,7 @@ body {
   background: var(--t-ground);
   border: 1px solid var(--t-line);
   border-radius: 2px;
-  opacity: 0.75;
 }
-.terminal .signature:active { opacity: 1; }
+.terminal .signature:active { border-color: var(--t-line-strong); }
 /* So the last thing on any screen is never underneath it. */
 .terminal { padding-block-end: 4rem; }

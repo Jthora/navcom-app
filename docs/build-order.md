@@ -94,7 +94,7 @@ in response to a live complaint, not planned work:
 | B3 | Nav/Com split-screen bridge, side by side at 48rem+, stacked below it | **done** |
 | B4 | The fusion — Com's figures react to whichever region Nav is looking at, never a Watchtower/coverage claim (`bootstrap.spec.md`'s refusal holds) | **done** |
 | B5 | Real Playwright verification (`e2e/root-console.spec.ts`, a `desktop` project) — found and fixed a real CSS scoping bug static checks could not | **done** |
-| B6 | Accessibility audit — keyboard walkthrough and `aria-live` done; low-signature contrast and a real screen-reader pass still open | **partial** |
+| B6 | Accessibility audit — `axe-core` wired in (this app's first automated pass ever), found and fixed real WCAG AA failures affecting all 20 terminal screens (`--t-faint` contrast, missing `<main>` landmarks, the signature toggle's opacity); real screen-reader-software pass still open | **done** |
 | B7 | `Region.languages` locale hint, via `Intl.DisplayNames` | **done** |
 | B8 | Operator self-published presence | **not started, needs its own sign-off** — see [`design/root-console-roadmap.md`](design/root-console-roadmap.md) Pass 5 |
 

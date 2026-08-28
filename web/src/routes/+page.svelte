@@ -18,8 +18,10 @@
   import { search } from '$lib/console/search';
   import { locateOnce, nearest } from '$lib/console/position-once';
   import type { ConsoleCentroid } from '$lib/console/types';
+  import { signature, setSignature, apply } from '$lib/terminal/signature';
 
   let { data } = $props();
+  let sig = $state<'low' | 'document'>('document');
 
   let query = $state('');
   const typed = $derived(search(data.index, query));
@@ -65,6 +67,12 @@
     // test (or a person) that raced the gap rather than waited for it is the failure mode
     // that convention exists to prevent (see e2e/device.ts's `open()`).
     document.documentElement.dataset.hydrated = 'true';
+    // Applied before anything else, same as the terminal layout — a device already set to
+    // low signature must never show a frame at full brightness first. This page previously
+    // never read the preference at all, so a visitor who set it inside /terminal/ and later
+    // landed back on / (the brand link, a bookmark) silently lost it here.
+    sig = signature();
+    apply(sig);
     void locateOnce().then((fix) => {
       if (fix) nearRegion = nearest(fix, data.centroids);
     });
@@ -140,6 +148,10 @@
     <h1>NavCom</h1>
   </header>
 
+  <!-- A first automated accessibility pass (axe-core, this session) found this content sitting
+       outside any landmark region — true of every terminal screen too, fixed there the same
+       way. `<main>` is the minimal fix, not a redesign. -->
+  <main>
   <!--
     Nav and Com, side by side once there is room to show it — the split is the point
     [docs/positioning.md: "On a ship's bridge, Navigation and Communications are separate
@@ -308,6 +320,22 @@
   <a class="nc-act" data-act data-tone="warn" href="/terminal/" data-sveltekit-reload>
     <span class="nc-act-label">Open the Field Terminal</span>
   </a>
+
+  <!--
+    Reachable from every screen, not just one [signature.spec.ts already asserts this for the
+    terminal] — this page is another screen of the same app now, not a separate site, so the
+    same rule applies here.
+  -->
+  <button
+    class="signature"
+    data-signature-toggle
+    aria-pressed={sig === 'low'}
+    onclick={() => {
+      sig = sig === 'low' ? 'document' : 'low';
+      setSignature(sig);
+    }}
+  >{sig === 'low' ? 'Document' : 'Low signature'}</button>
+  </main>
 </div>
 
 <style>

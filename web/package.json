@@ -30,6 +30,7 @@
     "test:relay": "playwright test real-relay.spec.ts --config playwright.relay.config.ts"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.62.1",
     "@sveltejs/adapter-static": "^3.0.6",
     "@sveltejs/kit": "^2.8.0",

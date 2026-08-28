@@ -57,25 +57,33 @@
 </svelte:head>
 
 <div class="terminal">
-  {#if saving.failure}
-    <p class="saving-failed" role="status" data-storage-full>{saving.failure}</p>
-  {/if}
-  {@render children()}
-
   <!--
-    On every screen, because a mode you can only reach from one page is a mode nobody finds at
-    2am — and because reading a directory record properly is a different job from watching a
-    board, so getting back to document mode has to be one tap from wherever you are.
+    A first automated accessibility pass (axe-core) against this app, run this session,
+    found every screen's content sitting outside any landmark region — nothing here was ever
+    checked this way before. `<main>` is the minimal fix, not a redesign.
   -->
-  <button
-    class="signature"
-    data-signature-toggle
-    aria-pressed={sig === 'low'}
-    onclick={() => {
-      sig = sig === 'low' ? 'document' : 'low';
-      setSignature(sig);
-    }}
-  >{sig === 'low' ? 'Document' : 'Low signature'}</button>
+  <main>
+    {#if saving.failure}
+      <p class="saving-failed" role="status" data-storage-full>{saving.failure}</p>
+    {/if}
+    {@render children()}
+
+    <!--
+      On every screen, because a mode you can only reach from one page is a mode nobody finds
+      at 2am — and because reading a directory record properly is a different job from
+      watching a board, so getting back to document mode has to be one tap from wherever you
+      are.
+    -->
+    <button
+      class="signature"
+      data-signature-toggle
+      aria-pressed={sig === 'low'}
+      onclick={() => {
+        sig = sig === 'low' ? 'document' : 'low';
+        setSignature(sig);
+      }}
+    >{sig === 'low' ? 'Document' : 'Low signature'}</button>
+  </main>
 </div>
 
 <style>
@@ -92,11 +100,16 @@
   }
 
   .terminal {
-    display: flex;
-    flex-direction: column;
     padding: 1.1rem 1.1rem 2rem;
     max-width: 30rem;
     margin: 0 auto;
+  }
+
+  /* The flex/gap arrangement moved here with the new `<main>` wrapper — `.terminal` now
+     sizes and centers the column, `main` arranges what's actually in it. Same result. */
+  .terminal main {
+    display: flex;
+    flex-direction: column;
     gap: 1.4rem;
   }
 </style>

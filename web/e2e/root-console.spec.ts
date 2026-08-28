@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { blankDevice, open } from './device';
+import AxeBuilder from '@axe-core/playwright';
+import { blankDevice, open, seedDevice } from './device';
 
 /**
  * The root console, driven for real.
@@ -127,5 +128,40 @@ test.describe('desktop-only: the split-screen bridge and the white-margin regres
     const bodyBg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
     expect(bodyBg).not.toBe('rgba(0, 0, 0, 0)');
     expect(bodyBg).not.toMatch(/255, 255, 255/);
+  });
+});
+
+test.describe('accessibility — automated, both signature modes', () => {
+  test('no axe violations in the default (document) signature', async ({ page }) => {
+    await blankDevice(page);
+    await open(page, '/');
+    await page.locator('#region-pick').selectOption({ index: 1 }); // exercise the focused-region markup too
+
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations, JSON.stringify(results.violations, null, 2)).toEqual([]);
+  });
+
+  test('no axe violations in low signature — the mode this page never used to apply at all', async ({ page }) => {
+    // Seeded rather than clicked: proves the *inherited* preference applies correctly, which
+    // is the actual bug this test guards — this page used to never read it at all.
+    await seedDevice(page, { accruing: { signature: 'low' } });
+    await open(page, '/');
+    await expect(page.locator('html')).toHaveAttribute('data-signature', 'low');
+    await page.locator('#region-pick').selectOption({ index: 1 });
+
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations, JSON.stringify(results.violations, null, 2)).toEqual([]);
+  });
+
+  test('the signature toggle is reachable from this screen too, not just the terminal', async ({ page }) => {
+    await blankDevice(page);
+    await open(page, '/');
+    const toggle = page.locator('[data-signature-toggle]');
+    await expect(toggle).toBeVisible();
+    await expect(toggle).toHaveText(/low signature/i);
+
+    await toggle.click();
+    await expect(page.locator('html')).toHaveAttribute('data-signature', 'low');
+    await expect(toggle).toHaveText(/document/i);
   });
 });

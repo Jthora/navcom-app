@@ -69,19 +69,41 @@ Real screenshots taken for the first time this session confirmed the fix and the
 layout visually, not just structurally — and confirmed the fusion (Pass 2) actually looks
 right when a region is picked, not just that the right elements exist in the DOM.
 
-## Pass 3 — Accessibility and resilience audit — partly done
+## Pass 3 — Accessibility and resilience audit — done
 
-Done, with real Playwright rather than reasoning about it: a keyboard-only tab walkthrough
-(`input#lookup → select#region-pick → two Why summaries → the Field Terminal link`, in a
-clean, logical order with nothing unreachable or trapped). Also added `aria-live="polite"` to
-the Network panel, since Pass 2 made its content change when a region is picked and nothing
-told a screen-reader user that had happened.
+A keyboard-only tab walkthrough came back clean (`input#lookup → select#region-pick → two Why
+summaries → the Field Terminal link`, nothing trapped or unreachable). `aria-live="polite"`
+added to the Network panel, since Pass 2 made its content change on a region pick with nothing
+announcing it.
 
-Still open: a contrast check in low-signature mode specifically (default mode's contrast was
-inherited from the existing terminal tokens, already measured elsewhere in this project;
-low-signature's amber-on-black hasn't been checked against this specific page), and a full
-screen-reader-software pass (VoiceOver/NVDA), which needs a real assistive-tech session, not
-just Playwright's accessibility tree.
+Then `@axe-core/playwright` got wired in — the **first automated accessibility pass this
+codebase has ever had** — and it found real, systemic defects, not edge cases:
+
+- **Every screen's content sat outside any landmark region.** `terminal/+layout.svelte` had no
+  `<main>`, and neither did this page. Fixed at the shared layout (benefits all 20 terminal
+  screens, not just this one) and here.
+- **`--t-faint` failed WCAG AA everywhere it was used as actual text** — every `Slot` key,
+  every `Readout` sub-line, every `Panel` label, in both signature modes. `tokens.css`'s own
+  comment had called it "for labels only, never for reading," but WCAG doesn't carve out an
+  exception for label text — this affected the five already-shipped panel-doctrine screens
+  too, not just tonight's work. Raised via computed WCAG contrast math (not guessed) to the
+  minimum that clears 4.5:1 against every background it actually sits on, in both modes,
+  while keeping it the dimmest tier below `--t-muted`.
+- **The signature toggle's resting `opacity: 0.75` failed contrast on its own**, independent
+  of the token fix — dimming via opacity washes out effective text contrast, and the button
+  would have needed ~0.94+ to clear AA, which stops being meaningfully "recessed." Removed the
+  opacity; position, size and tone already carry that intent without it.
+- **This page never read the signature preference at all** — a real gap, not an axe finding:
+  an operator who set low signature inside `/terminal/` and later landed back on `/` silently
+  lost it, because only `terminal/+layout.svelte`'s `onMount` ever applied it. Wired in here
+  too, plus the same reachable-everywhere toggle button.
+
+Full suite re-verified after each fix: 456/456 unit tests, 296/296 e2e (including the new
+axe checks passing clean in both signature modes), nothing regressed by touching shared
+layout/token files.
+
+Still open: a full screen-reader-*software* pass (VoiceOver/NVDA) — Playwright's accessibility
+tree and axe-core catch a great deal, but not everything a real assistive-tech session would.
 
 ## Pass 5 — Operator self-published presence
 
