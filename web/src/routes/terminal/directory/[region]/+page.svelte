@@ -638,15 +638,14 @@
   {/if}
 </section>
 
-<section class="limit">
-  <h2>Why there is no search here</h2>
+<Why summary="Why there is no search here">
   <p>
     <strong>Query goes to the watch.</strong> Someone with both hands free does the lookup,
     can ask a follow-up, and can be wrong out loud. Searching a list one-handed in the cold
     is the problem the watch exists to solve — so this stays something to browse when there
     is nobody to ask, and not a substitute for asking.
   </p>
-</section>
+</Why>
 
 <style>
   .snapshot { border-inline-start: 3px solid var(--t-line-strong); padding-inline-start: .9rem; }
