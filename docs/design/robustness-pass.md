@@ -70,8 +70,47 @@ respectively, neither on a path where a gap reaches someone in the cold.
 
 | | Area | State |
 |---|---|---|
-| 1 | Escalation ladder + accountability log | **in progress** |
+| 1 | Escalation ladder + accountability log | **done — 6 real gaps found, 5 fixed, 1 deliberately not built yet** |
 | 2 | Crypto + transport (`packages/core/crypto`, `transport.ts`) | queued |
 | 3 | Daemon board + directory/corrections | queued |
 | 4 | Terminal storage tiers + UI error surfacing | queued |
 | 5 | Root console + seeder | queued |
+
+### 1 — what was found, and what happened to each finding
+
+Audited against real tests and traced code, not speculation — the same standard
+`verification.md` already holds this project to. What came back solid: all seven numbered
+failure modes (`escalation.spec.md`), the publish-failure distinction, the paging budget
+under a real flood, and the Merkle/inclusion-proof code. What didn't:
+
+- **The daemon permanently claimed every Distress was unescalated**, even after the executor
+  paged someone and they acknowledged in seconds — a comment from before the ladder existed
+  ("nothing is attempted and the log says exactly that") had outlived the thing it described.
+  **Fixed**, and it's the one that needed a real decision rather than a patch: the executor
+  now keeps its own accountability log — a separate file, separate chain, `shared/
+  accountability.ts` — since it can't share the daemon's chain without either process
+  depending on the other, and can't claim an outcome through a process that doesn't know it.
+  **Named limitation, not silently left**: an operator's `log-review` today still sees only
+  the daemon's log. Merging the two is real, separate, future work.
+- **A torn log line crashed the log's own recovery path** instead of degrading like a
+  detected tamper. **Fixed** — treated exactly like a truncated tail.
+- **An in-memory entry was added before its durable write was confirmed** — a disk-full
+  error left memory and disk permanently diverged, misfiling a transient I/O failure as
+  tampering on the next restart. **Fixed** — memory now updates only after the fsync
+  succeeds.
+- **The executor never checked that an incoming Distress was addressed to it** — only the
+  signature was verified. **Fixed** — one addressing check, matching the "defence in depth"
+  posture `transport.ts` already uses elsewhere.
+- **A fast client clock silently dropped real, on-time acknowledgements** — the outbound
+  relay filter was built from the client's own clock. **Fixed** — the `#e` tag already
+  narrows to exactly one signal's responses, so the clock-derived filter was never
+  load-bearing for correctness and could just be dropped.
+- **`sendDistress`/`sendSignal` bypassed the payload size cap** that exists in `limits.ts` —
+  the real send path never called the check, only the unused builder functions did.
+  **Fixed** — the real path now calls it too.
+- **Idempotency is per-process, not system-wide.** Not a bug: matches the current
+  one-executor-per-watch design, and redundant executors are already tracked as deferred
+  work in `build-order.md`. No action.
+
+All fixes verified against real tests (`packages/core`: 506, `packages/watchtower`: 212),
+the full web build, and the web unit suite (456) — nothing regressed.

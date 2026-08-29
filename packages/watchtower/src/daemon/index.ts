@@ -2,7 +2,7 @@
 import { loadDaemonConfig } from "./config.js";
 import { loadOrCreateKeypair } from "../shared/identity.js";
 import { WatchtowerDaemon } from "./watchtower.js";
-import { AccountabilityLog } from "./accountability.js";
+import { AccountabilityLog } from "../shared/accountability.js";
 
 // Found in review: nothing guarded against a truly unexpected error
 // outside the known try/catch paths inside WatchtowerDaemon. Node's own

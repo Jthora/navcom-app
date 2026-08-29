@@ -19,6 +19,11 @@ import { pageAll } from "./pager.js";
 import { due, readDrillState, runDrill, schedule, writeDrillState, type DrillState } from "./drills.js";
 import type { EscalationConfig } from "./config.js";
 import { pageBudget, type PageBudget } from "./budget.js";
+// A source import, not a runtime dependency: `AccountabilityLog` is a self-contained class
+// with no reference to the daemon process. The executor still opens and writes its own
+// instance, on its own schedule, from its own config -- nothing here waits on the daemon
+// or reads its health, which is the actual rule this file exists to hold.
+import { AccountabilityLog } from "../shared/accountability.js";
 
 /**
  * The escalation executor.
@@ -79,6 +84,13 @@ export class EscalationExecutor {
   private drilling = false;
   private sweepHandle: ReturnType<typeof setInterval> | undefined;
   private subCloser: { close: (reason?: string) => void } | undefined;
+  /**
+   * The executor's own accountability log -- separate from the daemon's, and the only
+   * place a Distress's real outcome (paged, acknowledged by whom, or exhausted) is
+   * durably recorded. See `EscalationConfig.log`'s doc comment for why it is a second
+   * file rather than the daemon's.
+   */
+  private accountability: AccountabilityLog | null = null;
 
   constructor(opts: ExecutorOptions) {
     installNodeWebSocket();
@@ -96,6 +108,20 @@ export class EscalationExecutor {
       this.drills =
         readDrillState(this.drillStatePath) ??
         schedule(null, now(), this.config.escalation.drillWindowDays);
+    }
+    // An accountability problem must never become an availability one -- same rule the
+    // daemon holds for its own log. A ladder still runs and still pages correctly even if
+    // its own record of having done so cannot be opened.
+    try {
+      const opened = AccountabilityLog.open(this.config.log.path, this.config.log.retentionDays);
+      this.accountability = opened.log;
+      if (!opened.check.intact) {
+        console.error(
+          `[escalation-log] CHAIN BROKEN at entry ${opened.check.brokenAt}: ${opened.check.reason}`,
+        );
+      }
+    } catch (err: unknown) {
+      console.error(`[escalation-log] could not open -- outcomes will not be recorded: ${String(err)}`);
     }
   }
 
@@ -142,12 +168,39 @@ export class EscalationExecutor {
       content: sealResponse(this.secretKey, ladder.operator, payload),
     });
 
+    // The one durable record of what actually happened, written before the publish
+    // attempt rather than after: telling the operator and recording the outcome are
+    // independent, and a relay that rejects the publish must not also cost the durable
+    // record. report() runs exactly once per real transition [C42] -- including the
+    // transition into a terminal state -- so this cannot be forgotten by a future branch
+    // the way the daemon's own unconditional claim was.
+    if (ladder.state === "acknowledged" || ladder.state === "exhausted") {
+      this.recordOutcome(ladder);
+    }
+
     console.log(`[ladder] ${distressId.slice(0, 8)} ${ladder.state}: ${payload.text}`);
     const results = await Promise.allSettled(this.pool.publish(this.config.relays.urls, event));
     if (results.every((r) => r.status === "rejected")) {
       // The operator cannot be told. Loud, because invariant 2 is failing right here and
       // there is nothing further this process can do about it.
       console.error(`[ladder] COULD NOT REPORT ${ladder.state} TO OPERATOR -- no relay accepted`);
+    }
+  }
+
+  private recordOutcome(ladder: Ladder): void {
+    if (!this.accountability) return;
+    try {
+      this.accountability.record({
+        at: now(),
+        actor: { kind: "node", callsign: "escalation", pubkey: this.pubkey },
+        action: "escalated",
+        subject: { kind: "human", pubkey: ladder.operator },
+        outcome: ladder.state === "acknowledged" ? "escalation-reached-human" : "escalation-reached-nobody",
+      });
+    } catch (err: unknown) {
+      console.error(
+        `[escalation-log] FAILED TO RECORD outcome for ${ladder.distressId.slice(0, 8)}: ${String(err)}`,
+      );
     }
   }
 
@@ -275,6 +328,15 @@ export class EscalationExecutor {
       {
         onevent: (event: Event) => {
           if (!verifyEvent(event)) return;
+          // The relay's own `#p` filter is not re-checked by anything downstream --
+          // signature validity says who sent it, not who it was sent to. A relay that
+          // mis-honors its own filter, or forwards from one that does, could otherwise
+          // deliver a validly-signed Distress addressed to a *different* Watchtower and
+          // have it open a ladder and page this roster.
+          if (!event.tags.some((t) => t[0] === "p" && t[1] === this.pubkey)) {
+            console.warn(`[executor] ${event.id.slice(0, 8)} not addressed to this watch -- ignored`);
+            return;
+          }
 
           const task =
             event.kind === KIND_DISTRESS

@@ -11,7 +11,7 @@ import type { SimplePool } from "nostr-tools/pool";
 import { generateSecretKey, getPublicKey } from "nostr-tools/pure";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { EscalationExecutor } from "../src/escalation/executor.js";
 import type { EscalationConfig, OnCallEntry } from "../src/escalation/config.js";
 import * as drills from "../src/escalation/drills.js";
@@ -42,6 +42,7 @@ function config(statePath: string, ackSeconds: number, oncall: OnCallEntry[]): E
       maxPagesPerWindow: 20, pageBudgetWindowSeconds: 3_600, ladderRetentionSeconds: 3_600,
       oncall,
     },
+    log: { path: join(dirname(statePath), "escalation-log.jsonl"), retentionDays: 90 },
   };
 }
 

@@ -17,6 +17,18 @@ privkey_path = "/var/lib/navcom/watchtower.key"
 # Its own subscription. This is what makes the separation structural.
 urls = ["wss://relay.damus.io", "wss://nos.lol"]
 
+[log]
+# Where THIS process records what actually happened to each Distress -- paged, acknowledged
+# by whom, or exhausted. Its own file and its own chain, deliberately separate from the
+# daemon's accountability log: the daemon does not run the ladder and does not know the
+# outcome, so it cannot record one truthfully. Two processes appending to one chain is a
+# correctness problem of its own; a second file sidesteps it.
+#
+# Not yet surfaced through the daemon's log-review response -- an operator reviewing their
+# record today sees the daemon's log only. Merging the two is real, separate, future work.
+path = "/var/lib/navcom/escalation-log.jsonl"
+retention_days = 90
+
 [escalation]
 # How long to wait for an on-call human before moving on. Configurable; the spec's default
 # is 300. Shortening it does not make help arrive sooner -- it only reaches "nobody is

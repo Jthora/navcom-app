@@ -17,7 +17,7 @@ import type {
 import { validateOnStationPayload, ValidationError } from "../shared/validate.js";
 import { isAuthorizedOperator } from "./authorization.js";
 import { Board } from "./board.js";
-import { AccountabilityLog } from "./accountability.js";
+import { AccountabilityLog } from "../shared/accountability.js";
 import type { DaemonConfig } from "./config.js";
 import { answerQuery } from "./query.js";
 
@@ -422,11 +422,12 @@ export class WatchtowerDaemon {
     this.board.distress(event.pubkey, now());
     const callsign = this.board.get(event.pubkey)?.callsign;
 
-    // The ladder does not exist yet, so nothing is attempted and the log says exactly that.
-    // NOT "reached nobody" -- that would claim an attempt. Invariant 2 says Distress
-    // terminates in a human or tells the operator it could not; this records which.
-    this.note("escalated", event.pubkey, "escalation-not-attempted", callsign);
-
+    // The real escalation outcome is recorded by the executor -- a separate process that
+    // actually runs the ladder, and the only party that knows whether it reached a human.
+    // This daemon does not, so it does not claim one: writing "escalation-not-attempted"
+    // here regardless of the true outcome (as this used to, from before the ladder
+    // existed) is exactly the confident wrong answer the accountability log exists to
+    // prevent. See `shared/accountability.ts`'s own doc comment and the executor's log.
     const response: ResponsePayload = {
       type: "ack",
       responder: { kind: "agent", callsign: this.agentName },

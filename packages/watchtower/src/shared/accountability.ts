@@ -30,6 +30,12 @@ import {
  * returns, because a watch that crashes having "recorded" an escalation it never wrote to
  * disk is exactly the account nobody can check afterwards. At this volume -- a handful of
  * entries per operator per night -- the cost is irrelevant.
+ *
+ * **Lives in `shared/`, not `daemon/`, on purpose.** Both the daemon and the escalation
+ * executor open their own instance of this class, pointed at their own separate file --
+ * the executor cannot import from `daemon/` at all [`separation.test.ts`], and duplicating
+ * this class into `escalation/` instead would be the "two implementations of one behaviour"
+ * mistake this project has already paid for once (`packages/watchtower/README.md`).
  */
 
 /**
@@ -60,6 +66,32 @@ interface Meta {
 }
 
 const EMPTY_META: Meta = { startsAt: null, breaks: [] };
+
+/**
+ * Reads the file line by line, stopping at the first line that will not parse.
+ *
+ * A raw `JSON.parse` over every line used to throw straight out of `open()` on a torn
+ * write -- a crash mid-`writeSync` for the last line, the one failure mode fsync-per-entry
+ * exists to guard against -- which meant the log never opened at all, on every restart,
+ * forever. A fully-dropped or fully-edited line is a `verifyChain` finding; a line that is
+ * present but unparseable needs to become one too, not an uncaught exception.
+ */
+function readEntries(path: string): { entries: CompleteLog; corruptLine: number | null } {
+  if (!existsSync(path)) return { entries: emptyLog(), corruptLine: null };
+  const lines = readFileSync(path, "utf8")
+    .split("\n")
+    .filter((line) => line.trim() !== "");
+
+  const parsed: LogEntry[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    try {
+      parsed.push(JSON.parse(lines[i]!) as LogEntry);
+    } catch {
+      return { entries: asCompleteLog(parsed), corruptLine: i };
+    }
+  }
+  return { entries: asCompleteLog(parsed), corruptLine: null };
+}
 
 export interface OpenResult {
   log: AccountabilityLog;
@@ -98,20 +130,25 @@ export class AccountabilityLog {
   static open(path: string, retentionDays: number): OpenResult {
     mkdirSync(dirname(path), { recursive: true });
 
-    const entries = existsSync(path)
-      ? asCompleteLog(
-          readFileSync(path, "utf8")
-            .split("\n")
-            .filter((line) => line.trim() !== "")
-            .map((line) => JSON.parse(line) as LogEntry),
-        )
-      : emptyLog();
-
     const meta: Meta = existsSync(`${path}.meta.json`)
       ? { ...EMPTY_META, ...(JSON.parse(readFileSync(`${path}.meta.json`, "utf8")) as Partial<Meta>) }
       : { ...EMPTY_META };
 
-    const check = verifyChain(entries, { startsAt: meta.startsAt });
+    const { entries, corruptLine } = readEntries(path);
+    let check = verifyChain(entries, { startsAt: meta.startsAt });
+    // A line that fails to parse is treated exactly like a truncated tail, because that is
+    // what fsync-per-entry makes it: only the very last write can ever be torn by a real
+    // crash, and everything after an unreadable line cannot be trusted regardless. A chain
+    // that verifies clean up to a point it silently stopped reading is not intact -- it is
+    // unread, and reporting it as intact would hide the loss entirely.
+    if (corruptLine !== null && check.intact) {
+      check = {
+        intact: false,
+        brokenAt: entries.length,
+        reason: `line ${corruptLine} could not be parsed as an entry -- log truncated there`,
+      };
+    }
+
     const log = new AccountabilityLog(path, retentionDays, entries, meta);
 
     if (!check.intact) {
@@ -135,14 +172,21 @@ export class AccountabilityLog {
 
   /** Appends, and does not return until the bytes are on the platter. */
   record(entry: NewEntry): LogEntry {
-    this.entries = appendEntry(this.entries, entry);
-    const written = this.entries.at(-1);
+    const next = appendEntry(this.entries, entry);
+    const written = next.at(-1);
     // appendEntry always adds exactly one; this is here so a future change that stops doing
     // so fails at the write rather than persisting `undefined` into the chain.
     if (!written) throw new Error("appendEntry returned an empty log");
     const fd = this.open();
     writeSync(fd, `${JSON.stringify(written)}\n`);
     fsyncSync(fd);
+    // Only committed to memory once it is durably on disk. This used to run first: a
+    // write or fsync failure above (a full disk, say) still throws, but `this.entries`
+    // already held the phantom entry -- permanently, since the next successful record()
+    // chains from a hash that was never written, leaving `root()`/`about()` reporting an
+    // entry that does not exist and the on-disk file with a real gap that reads as
+    // tampering on the next restart.
+    this.entries = next;
     return written;
   }
 

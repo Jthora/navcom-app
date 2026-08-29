@@ -62,6 +62,22 @@ export interface EscalationConfig {
     ladderRetentionSeconds: number;
     oncall: OnCallEntry[];
   };
+  /**
+   * Where the executor records what actually happened to each Distress -- paged,
+   * acknowledged by whom, or exhausted.
+   *
+   * Its own file and its own chain, deliberately. The daemon's accountability log cannot
+   * record this: it does not run the ladder and does not know the outcome, and a stale
+   * claim written regardless (the daemon used to write "escalation-not-attempted" for
+   * every Distress, forever, once the ladder existed) is exactly the confident wrong
+   * answer this system exists to prevent. Two processes appending to one chain is a
+   * correctness problem of its own; a second file sidesteps it rather than solving it.
+   *
+   * Not yet surfaced through the daemon's `log-review` response -- an operator reviewing
+   * their own record today sees the daemon's log only. Merging the two is real, separate,
+   * future work.
+   */
+  log: { path: string; retentionDays: number };
 }
 
 const DEFAULTS = {
@@ -74,6 +90,7 @@ const DEFAULTS = {
   maxPagesPerWindow: 20, pageBudgetWindowSeconds: 3_600,
   /* An hour after it finishes, so a late duplicate still finds it. */
   ladderRetentionSeconds: 3_600,
+  logPath: "/var/lib/navcom/escalation-log.jsonl", logRetentionDays: 90,
 };
 const CHANNELS = ["sms", "voice", "push", "console-open"] as const;
 const PUBKEY = /^[0-9a-f]{64}$/i;
@@ -178,6 +195,7 @@ export function loadEscalationConfig(path: string): EscalationConfig {
       ladder_retention_seconds?: number;
       oncall?: unknown;
     };
+    log?: { path?: string; retention_days?: number };
   };
 
   const privkeyPath = raw.identity?.privkey_path;
@@ -203,6 +221,10 @@ export function loadEscalationConfig(path: string): EscalationConfig {
       pageBudgetWindowSeconds: positiveNumber(raw.escalation?.page_budget_window_seconds, "page_budget_window_seconds", DEFAULTS.pageBudgetWindowSeconds, path),
       ladderRetentionSeconds: positiveNumber(raw.escalation?.ladder_retention_seconds, "ladder_retention_seconds", DEFAULTS.ladderRetentionSeconds, path),
       oncall: parseOnCall(raw.escalation?.oncall, path),
+    },
+    log: {
+      path: raw.log?.path ?? DEFAULTS.logPath,
+      retentionDays: positiveNumber(raw.log?.retention_days, "retention_days", DEFAULTS.logRetentionDays, path),
     },
   };
 }

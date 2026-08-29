@@ -15,7 +15,7 @@ import { open } from './crypto/envelope.js';
 import { sealToGroup, type WatchtowerAddress } from './crypto/group.js';
 import type { SecretKey } from './crypto/keys.js';
 import { KIND_DISTRESS, KIND_RESPONSE, KIND_SIGNAL, type SignalType } from './events/kinds.js';
-import type { DistressPayload, SignalPayload } from './events/signal.js';
+import { checkedText, type DistressPayload, type SignalPayload } from './events/signal.js';
 import type { ResponsePayload } from './events/response.js';
 
 export class PublishError extends Error {}
@@ -40,6 +40,10 @@ export async function sendSignal(
   type: SignalType,
   payload: SignalPayload
 ): Promise<Event> {
+  // Enforced here, not only in buildSignal/buildDistress: this is the path every real
+  // sender actually uses (the terminal and the CLI both call this, not the builders), and
+  // an unchecked path is a cap that only exists in the tests that exercise it.
+  checkedText(payload);
   const event = finalizeEvent(
     {
       kind: KIND_SIGNAL,
@@ -62,6 +66,7 @@ export async function sendDistress(
   watchtower: WatchtowerAddress,
   payload: DistressPayload
 ): Promise<Event> {
+  checkedText(payload);
   const event = finalizeEvent(
     {
       kind: KIND_DISTRESS,
@@ -117,9 +122,13 @@ export function waitForResponse(
           kinds: [KIND_RESPONSE],
           authors: [watchtower],
           '#p': [ourPubkey],
-          '#e': [sent.id],
-          // Nothing older than the signal can be an answer to it.
-          since: sent.created_at - 1
+          '#e': [sent.id]
+          // No `since`. It would have to be derived from this device's own clock, and a
+          // fast client clock silently filters out a real, on-time response server-side
+          // before the client ever sees it — a false "nobody answered" when somebody did.
+          // The `#e` tag already narrows to exactly the responses to this one signal, so
+          // `since` was never load-bearing for correctness: nothing could reference this
+          // event's id before it existed.
         },
         {
           onevent(event) {

@@ -78,6 +78,34 @@ describe("sendSignal / sendDistress publish-failure reporting (found in review)"
   });
 });
 
+describe("sendSignal / sendDistress payload limits (found in robustness audit)", () => {
+  // limits.ts exists because a relay, a fork, or a restored backup can hand a client any
+  // payload it likes — but buildSignal/buildDistress, the functions that actually call
+  // checkedText, are not on the real send path. The terminal and the CLI both call
+  // sendSignal/sendDistress directly, so the cap only ever ran in the tests that exercise
+  // the unused builders.
+
+  it("sendDistress refuses text over the cap rather than publishing it unbounded", async () => {
+    const secretKey = generateSecretKey();
+    const watchtower = watchtowerAt(getPublicKey(generateSecretKey()));
+    const pool = fakePool({ publish: () => [Promise.resolve("ok")] });
+
+    await expect(
+      sendDistress(pool, RELAYS, secretKey, watchtower, { position: null, area: null, text: "x".repeat(2001) }),
+    ).rejects.toThrow(/Keep it to 2000 characters/);
+  });
+
+  it("sendSignal refuses an oversized area the same way", async () => {
+    const secretKey = generateSecretKey();
+    const watchtower = watchtowerAt(getPublicKey(generateSecretKey()));
+    const pool = fakePool({ publish: () => [Promise.resolve("ok")] });
+
+    await expect(
+      sendSignal(pool, RELAYS, secretKey, watchtower, "query", { text: "shelter?", area: "x".repeat(121) }),
+    ).rejects.toThrow(/An area is 120 characters or fewer/);
+  });
+});
+
 describe("waitForResponse (found in review)", () => {
   it("resolves with the decrypted response payload on a matching event", async () => {
     const clientSecretKey = generateSecretKey();
@@ -112,6 +140,61 @@ describe("waitForResponse (found in review)", () => {
       watchtowerSecretKey,
     );
     capturedOnEvent?.(fakeEvent);
+
+    await expect(promise).resolves.toEqual(responsePayload);
+  });
+
+  it("a fast client clock does not cause a real, on-time response to be filtered out (found in robustness audit)", async () => {
+    // `since` used to be derived from the client's own possibly-skewed created_at. A relay
+    // enforces `since` against real time, so a fast client clock made the relay drop a
+    // real, correctly-signed, on-time response before the client's subscription ever saw
+    // it -- a false "nobody answered" when somebody did, seconds later. The other tests in
+    // this file never exercise real filter enforcement (their mocks call onevent
+    // unconditionally); this one does, so a regression here would fail loudly again.
+    const clientSecretKey = generateSecretKey();
+    const clientPubkey = getPublicKey(clientSecretKey);
+    const watchtowerSecretKey = generateSecretKey();
+    const watchtowerPubkey = getPublicKey(watchtowerSecretKey);
+    const watchtower = watchtowerAt(watchtowerPubkey);
+
+    const responsePayload: ResponsePayload = {
+      type: "ack",
+      responder: { kind: "agent", callsign: "Mecha Jono" },
+      text: null,
+      provenance: null,
+    };
+    const content = seal(watchtowerSecretKey, clientPubkey, responsePayload);
+
+    const trueNow = Math.floor(Date.now() / 1000);
+    // This client's clock is 10 minutes fast.
+    const sentEvent = {
+      id: "abc123",
+      created_at: trueNow + 600,
+    } as unknown as Parameters<typeof waitForResponse>[5];
+
+    let deliver: ((event: Event) => void) | undefined;
+    const pool = fakePool({
+      subscribeMany: (_relays, filter, params) => {
+        const since = (filter as { since?: number }).since;
+        // A relay honestly enforcing its own filter, unlike this file's other mocks.
+        deliver = (event: Event) => {
+          if (since !== undefined && event.created_at < since) return;
+          params.onevent(event);
+        };
+        return { close: () => {} };
+      },
+    });
+
+    const promise = waitForResponse(pool, RELAYS, clientSecretKey, clientPubkey, watchtower.pubkey, sentEvent, 5000);
+
+    // The real watchtower, with a correct clock, answers two real seconds later -- well
+    // before this client's own (skewed) sent.created_at.
+    const { finalizeEvent } = await import("nostr-tools/pure");
+    const fakeEvent = finalizeEvent(
+      { kind: KIND_RESPONSE, tags: [["p", clientPubkey], ["e", "abc123"]], content, created_at: trueNow + 2 },
+      watchtowerSecretKey,
+    );
+    deliver?.(fakeEvent);
 
     await expect(promise).resolves.toEqual(responsePayload);
   });

@@ -153,7 +153,7 @@ export class SignalError extends Error {}
  * At the boundary rather than on the input, because a `maxlength` stops only the operator
  * who typed it — not a relay, a fork, or a restored backup.
  */
-function checkedText(payload: SignalPayload | DistressPayload): void {
+export function checkedText(payload: SignalPayload | DistressPayload): void {
   const text = (payload as { text?: unknown }).text;
   if (text !== undefined && text !== null && !withinLimit(text, TEXT_MAX)) {
     throw new SignalError(`Keep it to ${TEXT_MAX} characters.`);

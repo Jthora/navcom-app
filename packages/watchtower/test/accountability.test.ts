@@ -10,7 +10,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync, appendFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { AccountabilityLog } from "../src/daemon/accountability.js";
+import { AccountabilityLog } from "../src/shared/accountability.js";
 import type { LogOutcome } from "@navcom/core";
 
 const DAY = 86_400;
@@ -112,6 +112,26 @@ describe("a log that has been edited", () => {
     writeFileSync(path, [lines[0]!, lines[2]!].join("\n") + "\n");
 
     expect(open().check.intact).toBe(false);
+  });
+
+  it("treats a torn last line as a truncated tail rather than crashing open() (found in robustness audit)", () => {
+    // The one write failure fsync-per-entry actually guards against: a crash mid-writeSync
+    // for the *last* line. A raw JSON.parse over every line used to throw straight out of
+    // open() here, which meant the log never opened at all -- on every restart, forever --
+    // instead of degrading like every other corruption case in this file does.
+    const a = open();
+    a.log.record(entry(1000, wren));
+    a.log.record(entry(1001, wren));
+    a.log.close();
+    appendFileSync(path, '{"at":1002,"actor":{"kind":"agent"');
+
+    expect(() => open()).not.toThrow();
+    const { log, check } = open();
+    expect(check.intact).toBe(false);
+    expect(check.reason).toMatch(/could not be parsed/);
+    // The two entries that did land are still readable -- availability is not the thing
+    // to lose, same as every other corruption case here.
+    expect(log.status().entries).toBe(2);
   });
 });
 

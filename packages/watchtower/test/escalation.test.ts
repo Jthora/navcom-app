@@ -14,6 +14,7 @@ import type { Event } from "nostr-tools/core";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { AccountabilityLog } from "../src/shared/accountability.js";
 import type { ResponsePayload } from "@navcom/core";
 import { EscalationExecutor } from "../src/escalation/executor.js";
 import type { EscalationConfig, OnCallEntry } from "../src/escalation/config.js";
@@ -34,6 +35,14 @@ function onCallEntry(callsign: string, pubkey?: string, channel: OnCallEntry["de
   };
 }
 
+const logDirs: string[] = [];
+/** A fresh temp dir per config, so one test's accountability entries never leak into another's. */
+function tempLogPath(): string {
+  const dir = mkdtempSync(join(tmpdir(), "navcom-escalation-log-"));
+  logDirs.push(dir);
+  return join(dir, "escalation-log.jsonl");
+}
+
 function fakeConfig(oncall: OnCallEntry[] = [], over: Partial<EscalationConfig["escalation"]> = {}): EscalationConfig {
   return {
     identity: { privkeyPath: "/dev/null" },
@@ -45,6 +54,7 @@ function fakeConfig(oncall: OnCallEntry[] = [], over: Partial<EscalationConfig["
       oncall,
       ...over,
     },
+    log: { path: tempLogPath(), retentionDays: 90 },
   };
 }
 
@@ -78,10 +88,11 @@ function build(
   const secretKey = generateSecretKey();
   const pubkey = getPublicKey(secretKey);
   const { pool, published, deliver } = fakePool();
-  const executor = new EscalationExecutor({ config: fakeConfig(oncall, over), secretKey, pubkey, pool, page });
+  const config = fakeConfig(oncall, over);
+  const executor = new EscalationExecutor({ config, secretKey, pubkey, pool, page });
   executors.push(executor);
   executor.start();
-  return { executor, pubkey, published, deliver, page };
+  return { executor, pubkey, published, deliver, page, logPath: config.log.path };
 }
 
 function distressFrom(operator: Uint8Array, watchtower: string): Event {
@@ -122,6 +133,7 @@ async function reports(published: Event[], operator: Uint8Array, watchtower: str
 afterEach(async () => {
   await Promise.all(executors.map((e) => e.stop()));
   executors = [];
+  for (const dir of logDirs.splice(0)) rmSync(dir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });
 
@@ -264,6 +276,63 @@ describe("acknowledgement", () => {
     await new Promise((r) => setTimeout(r, 50));
     // No crash, no ladder invented.
     expect(true).toBe(true);
+  });
+});
+
+describe("the executor's own accountability log (found in robustness audit)", () => {
+  // The daemon cannot record these outcomes -- it does not run the ladder and does not
+  // know them. This is the one place they are durably recorded, immediately, by the
+  // process that actually knows.
+
+  it("records escalation-reached-human once a real ack lands", async () => {
+    const operator = generateSecretKey();
+    const operatorPubkey = getPublicKey(operator);
+    const responder = generateSecretKey();
+    const wren = onCallEntry("Wren", getPublicKey(responder));
+    const { executor, pubkey, published, deliver, logPath } = build([wren]);
+
+    const distress = distressFrom(operator, pubkey);
+    deliver(distress);
+    await vi.waitFor(() => expect(published.length).toBeGreaterThan(0));
+    deliver(ackFrom(responder, pubkey, distress.id));
+    await vi.waitFor(() => expect(executor.ladders.get(distress.id)?.state).toBe("acknowledged"));
+
+    const { log } = AccountabilityLog.open(logPath, 90);
+    const entries = log.about(operatorPubkey);
+    expect(entries.map((e) => e.outcome)).toContain("escalation-reached-human");
+  });
+
+  it("records escalation-reached-nobody when the ladder is exhausted with an empty roster", async () => {
+    const operator = generateSecretKey();
+    const operatorPubkey = getPublicKey(operator);
+    const { pubkey, published, deliver, logPath } = build([]);
+
+    deliver(distressFrom(operator, pubkey));
+    await vi.waitFor(() => expect(published.length).toBeGreaterThan(0));
+
+    const { log } = AccountabilityLog.open(logPath, 90);
+    const entries = log.about(operatorPubkey);
+    expect(entries.map((e) => e.outcome)).toContain("escalation-reached-nobody");
+  });
+
+  it("does not open a ladder or record anything for a Distress addressed to a different watch", async () => {
+    // Found in robustness audit: only the signature was checked, never the `p` tag. A
+    // relay that mis-honors its own `#p` filter could otherwise deliver a validly-signed
+    // Distress meant for a different Watchtower entirely, and it would page this roster.
+    const operator = generateSecretKey();
+    const someoneElsesWatch = getPublicKey(generateSecretKey());
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { executor, published, deliver, logPath } = build([onCallEntry("Wren")]);
+
+    deliver(distressFrom(operator, someoneElsesWatch));
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(published).toHaveLength(0);
+    expect(executor.ladders.all()).toHaveLength(0);
+    expect(warn.mock.calls.flat().join(" ")).toMatch(/not addressed to this watch/);
+
+    const { log } = AccountabilityLog.open(logPath, 90);
+    expect(log.all()).toHaveLength(0);
   });
 });
 

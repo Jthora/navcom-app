@@ -12,7 +12,7 @@ import { KIND_SIGNAL, KIND_DISTRESS, KIND_RESPONSE, KIND_WATCH_STATE } from "../
 import type { ResponsePayload, WatchStatePayload } from "../src/shared/payloads.js";
 import * as authorization from "../src/daemon/authorization.js";
 import * as query from "../src/daemon/query.js";
-import { AccountabilityLog } from "../src/daemon/accountability.js";
+import { AccountabilityLog } from "../src/shared/accountability.js";
 import { verifyInclusion } from "@navcom/core";
 
 /**
@@ -200,9 +200,13 @@ describe("what the watch writes down", () => {
     expect(outcomes(operatorPubkey)).toContain("marked-overdue/marked-overdue");
   });
 
-  it("records that no escalation was attempted on a Distress", async () => {
-    // NOT "reached nobody" -- that would claim an attempt was made. The ladder does not
-    // exist, and this entry should read badly until it does.
+  it("does not claim an escalation outcome it cannot know (found in robustness audit)", async () => {
+    // The daemon receives the 20911 but does not run the ladder -- a separate process, the
+    // executor, does that and is the only party that knows the true outcome. This used to
+    // write "escalation-not-attempted" here unconditionally, from before the ladder
+    // existed; left in place after the ladder shipped, it permanently misrepresented every
+    // Distress as unescalated even after a human acknowledged in seconds. See
+    // shared/accountability.ts and the executor's own log.
     const { pubkey, deliver, publishedEvents } = await started({}, [], opened);
     const operator = generateSecretKey();
     const operatorPubkey = getPublicKey(operator);
@@ -210,7 +214,7 @@ describe("what the watch writes down", () => {
     deliver(distressEvent(operator, pubkey, "help"));
     await waitForResponse(publishedEvents);
 
-    expect(outcomes(operatorPubkey)).toContain("escalated/escalation-not-attempted");
+    expect(outcomes(operatorPubkey)).not.toContain("escalated/escalation-not-attempted");
     expect(outcomes(operatorPubkey)).not.toContain("escalated/escalation-reached-nobody");
   });
 
