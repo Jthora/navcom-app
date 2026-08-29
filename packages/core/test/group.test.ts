@@ -47,6 +47,22 @@ describe('who can read it', () => {
     // The silent version of this failure is an unanswered Distress.
     expect(() => sealToGroup(wren, [], payload)).toThrow(GroupSealError);
   });
+
+  it('dedupes a repeated holder rather than refusing or double-wrapping (found in robustness audit)', () => {
+    // A repeated entry is far more likely a pasted list with an accident in it than an
+    // attack, and this must never refuse to send over something this cheap to fix. A
+    // duplicate wrap would also inflate the relay-visible wrap count a hostile relay can
+    // already use to guess how many people hold a watch.
+    const sealed = sealToGroup(wren, [squadPubs[0]!, squadPubs[0]!, squadPubs[1]!], payload);
+    expect(JSON.parse(sealed).k).toHaveLength(2);
+    expect(openFromGroup(squad[0]!, wrenPub, sealed)).toEqual(payload);
+    expect(openFromGroup(squad[1]!, wrenPub, sealed)).toEqual(payload);
+  });
+
+  it('refuses an unreasonably large holder list', () => {
+    const many = Array.from({ length: 33 }, () => getPublicKey(generateSecretKey()));
+    expect(() => sealToGroup(wren, many, payload)).toThrow(GroupSealError);
+  });
 });
 
 describe('membership is not retroactive', () => {

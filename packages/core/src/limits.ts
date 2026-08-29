@@ -68,6 +68,16 @@ export const VALUE_MAX = 200;
  */
 export const FIELDS_MAX = 12;
 
+/**
+ * How many holders a sealed message can be wrapped for.
+ *
+ * A box has one; a squad with no box is described everywhere else in this project as a
+ * handful of phones. Found missing by audit — every other list-shaped input here has a cap,
+ * and the holder list, which rides on every signal a squad sends, did not. Generous over any
+ * real squad, hostile to a relay learning group size from an unbounded wrap count.
+ */
+export const HOLDERS_MAX = 32;
+
 /** Trimmed, and within its cap. The check every boundary makes. */
 export const withinLimit = (value: unknown, max: number): value is string =>
   typeof value === 'string' && value.trim().length > 0 && value.length <= max;

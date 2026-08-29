@@ -130,10 +130,10 @@ export const pq = {
       { kinds: [KIND_KEY_BUNDLE], authors: wanted },
       {
         onevent: (event: Event) => {
-          // Checked against the pubkey we already hold, so a relay answering with a key it
+          // Checked against the pubkeys we already hold, so a relay answering with a key it
           // generated is refused rather than cached.
-          const bundle = readKeyBundle(event, event.pubkey);
-          if (!bundle || !wanted.includes(bundle.pubkey)) return;
+          const bundle = readKeyBundle(event, wanted);
+          if (!bundle) return;
           if (known[bundle.pubkey] === bundle.kem) return;
           known = { ...known, [bundle.pubkey]: bundle.kem };
           set('accruing', FIELD, known);

@@ -1,6 +1,7 @@
 import { nip44 } from 'nostr-tools';
 import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
+import { HOLDERS_MAX } from '../limits.js';
 import type { SecretKey } from './keys.js';
 import { hybridOpen, hybridSeal, kemPublicFromHex, type Cover } from './pq.js';
 
@@ -151,11 +152,21 @@ export function sealToGroup(
     throw new GroupSealError('Nobody to seal to — a message no one can read is not a message.');
   }
 
+  // Deduped rather than refused: a repeated entry is far more likely a pasted list with an
+  // accidental repeat than an attack, and a Distress is the one message this must never
+  // refuse to send over something this cheap to fix. A duplicate wrap would cost nothing to
+  // the sender or reader but would inflate the relay-visible wrap count a hostile relay can
+  // already use to guess how many people hold a watch.
+  const holders = [...new Set(recipients)];
+  if (holders.length > HOLDERS_MAX) {
+    throw new GroupSealError(`Too many holders (${holders.length}, max ${HOLDERS_MAX}).`);
+  }
+
   const contentSecret = generateSecretKey();
   const envelope: Envelope = {
     v: V,
     c: nip44.encrypt(JSON.stringify(payload), contentKeyFor(contentSecret)),
-    k: recipients.map((to) => {
+    k: holders.map((to) => {
       const theirKem = kem[to];
       if (!theirKem) {
         return `c:${nip44.encrypt(bytesToHex(contentSecret), nip44.getConversationKey(secret, to))}`;

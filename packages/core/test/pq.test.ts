@@ -70,14 +70,29 @@ describe('the KEM keypair', () => {
 
 describe('a published bundle', () => {
   it('is readable by somebody who already holds the pubkey', () => {
-    const read = readKeyBundle(buildKeyBundle(wren, 1_755_300_000), wrenPub);
+    const read = readKeyBundle(buildKeyBundle(wren, 1_755_300_000), [wrenPub]);
     expect(read?.kem).toBe(kemPublicHex(wren));
   });
 
   it('is refused when it is not from who we asked about', () => {
     // The one thing this event has to be proof against: a relay answering a question
     // nobody asked, with a key it generated.
-    expect(readKeyBundle(buildKeyBundle(raven, 1_755_300_000), wrenPub)).toBeNull();
+    expect(readKeyBundle(buildKeyBundle(raven, 1_755_300_000), [wrenPub])).toBeNull();
+  });
+
+  it('is readable when it is from any of several people asked about at once (found in robustness audit)', () => {
+    // The real caller subscribes for a list of people at once (a peer, a watch, anyone a
+    // published card lets ask) and must accept a bundle from any of them -- not just the
+    // first. A single-value `expect` here once made the check a tautology at the call site
+    // instead of a real membership test.
+    const askingAbout = [wrenPub, ravenPub];
+    expect(readKeyBundle(buildKeyBundle(wren, 1_755_300_000), askingAbout)?.pubkey).toBe(wrenPub);
+    expect(readKeyBundle(buildKeyBundle(raven, 1_755_300_000), askingAbout)?.pubkey).toBe(ravenPub);
+  });
+
+  it('is refused when it is from nobody on a multi-person list', () => {
+    const stranger = generateSecretKey();
+    expect(readKeyBundle(buildKeyBundle(stranger, 1_755_300_000), [wrenPub, ravenPub])).toBeNull();
   });
 
   it('is refused when the signature does not hold', () => {
@@ -85,14 +100,14 @@ describe('a published bundle', () => {
     const forged = JSON.parse(
       JSON.stringify({ ...event, content: JSON.stringify({ kem: kemPublicHex(raven) }) })
     ) as typeof event;
-    expect(readKeyBundle(forged, wrenPub)).toBeNull();
+    expect(readKeyBundle(forged, [wrenPub])).toBeNull();
   });
 
   it('is refused when the key inside is not a key', () => {
     const event = buildKeyBundle(wren, 1_755_300_000);
     for (const junk of ['', 'ab', '{}']) {
       const bad = JSON.parse(JSON.stringify({ ...event, content: JSON.stringify({ kem: junk }) }));
-      expect(readKeyBundle(bad as typeof event, wrenPub)).toBeNull();
+      expect(readKeyBundle(bad as typeof event, [wrenPub])).toBeNull();
     }
   });
 });

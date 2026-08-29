@@ -67,10 +67,18 @@ export function buildKeyBundle(secret: SecretKey, createdAt: number): Event {
  * pubkey you already hold — from pairing, from a watch address, from an invite. Accepting a
  * bundle without checking who it is for would let a relay answer a question nobody asked,
  * which is the one thing this event has to be proof against.
+ *
+ * A list rather than one pubkey, because the one real caller subscribes for several people
+ * at once (a peer, a watch, anyone a published card lets ask) and needs to accept a bundle
+ * from any of them. A single-value `expect` here once made that check a tautology at the
+ * call site — `readKeyBundle(event, event.pubkey)` always passes — with the real gate
+ * living one line further down instead. Found in a robustness audit; not exploitable as
+ * written (a relay cannot forge `event.pubkey`), but a landmine: this docstring's own claim
+ * that this function is "proof against" an unasked answer was false until this changed.
  */
-export function readKeyBundle(event: Event, expect: string): KeyBundle | null {
+export function readKeyBundle(event: Event, expect: readonly string[]): KeyBundle | null {
   if (event.kind !== KIND_KEY_BUNDLE) return null;
-  if (event.pubkey !== expect) return null;
+  if (!expect.includes(event.pubkey)) return null;
   if (!verifyEvent(event)) return null;
 
   try {

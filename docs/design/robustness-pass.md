@@ -71,10 +71,48 @@ respectively, neither on a path where a gap reaches someone in the cold.
 | | Area | State |
 |---|---|---|
 | 1 | Escalation ladder + accountability log | **done — 6 real gaps found, 5 fixed, 1 deliberately not built yet** |
-| 2 | Crypto + transport (`packages/core/crypto`, `transport.ts`) | queued |
+| 2 | Crypto + transport (`packages/core/crypto`, `transport.ts`) | **done — 3 minor gaps found, 2 fixed, 1 declined** |
 | 3 | Daemon board + directory/corrections | queued |
 | 4 | Terminal storage tiers + UI error surfacing | queued |
 | 5 | Root console + seeder | queued |
+
+### 2 — what was found, and what happened to each finding
+
+Much cleaner than area 1. Confirmed solid, not just apparently working: decrypt-time
+robustness against truncated/malformed/adversarial ciphertext at both the classical and
+hybrid layers (fails fast, never hangs, never returns unauthenticated plaintext), one
+corrupted wrap in a group envelope doesn't take down the others, degenerate secret keys
+fail loudly rather than producing a valid-looking wrong key, and the PQ downgrade path is
+genuinely surfaced to the operator rather than silent.
+
+What wasn't clean:
+
+- **`readKeyBundle`'s anti-spoofing check was a tautology at its only real call site** —
+  `readKeyBundle(event, event.pubkey)` checks an event against itself, always true. Not
+  currently exploitable (a relay can't forge `event.pubkey`, and the real gate was a
+  separate `wanted.includes()` check one line later at the call site) but a landmine: a
+  future simplification trusting the function's own docstring could have deleted that
+  second check as "redundant." **Fixed** — `readKeyBundle` now takes the list of
+  acceptable pubkeys directly (`expect: readonly string[]`) and does the real check
+  itself, matching what its docstring already claimed it did.
+- **No cap or dedup on a sealed message's holder list** — every other list-shaped input in
+  `limits.ts` has one; this didn't. A duplicate holder cost nothing to an attacker but
+  inflated the relay-visible wrap count a hostile relay can already use to guess squad
+  size. **Fixed** — `sealToGroup` now dedupes and caps at `HOLDERS_MAX` (32, generous over
+  any real squad).
+- **Hybrid wrap-opening recomputes a full ML-KEM keygen and EC exchange per wrap tried**,
+  unlike the classical branch, which explicitly caches both. Measured at ~168ms for a
+  30-holder group. **Declined, not fixed** — squads here are a handful of phones by
+  design, the holder list is locally configured rather than attacker-injected, and the new
+  `HOLDERS_MAX` cap already bounds the worst case. Fixing it properly means adding an
+  optional-precomputed-keypair parameter to `hybridOpen`'s public signature for a
+  performance concern with no live impact — not worth the added surface on the crypto
+  boundary.
+
+Verified against real workspace `verify` scripts this time, not just `vitest run` (a
+lesson from the previous commit's failed deploy): `@navcom/core` 510 tests, `@navcom/
+watchtower` 212, `web`'s full `verify:deploy` including the real `tsc --noEmit`, 456 unit
+tests, and the budget check, end to end.
 
 ### 1 — what was found, and what happened to each finding
 

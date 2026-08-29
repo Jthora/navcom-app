@@ -109,7 +109,7 @@ const KINDS: { name: string; event: () => unknown; read: (e: never) => unknown }
   {
     name: 'key bundle',
     event: () => buildKeyBundle(AUTHOR, NOW),
-    read: ((e: never) => readKeyBundle(e, publicKeyOf(AUTHOR))) as never
+    read: ((e: never) => readKeyBundle(e, [publicKeyOf(AUTHOR)])) as never
   }
 ];
 
