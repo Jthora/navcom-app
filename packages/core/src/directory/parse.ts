@@ -10,6 +10,7 @@ import {
   PETS, REPORTS_TO, RESOURCE_TYPES, SEASONAL, SEX_OFFENDER_OK, SOBRIETY
 } from './types.js';
 import type { ResourceRecord } from './types.js';
+import { isValidIsoDate } from './iso-date.js';
 
 export interface ParseIssue {
   row: number;
@@ -104,8 +105,8 @@ function dateOf(
 ): string | undefined {
   if (blank(raw)) return undefined;
   const v = raw!.trim();
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) {
-    issues.push({ row: rowNo, column, message: `"${v}" is not a YYYY-MM-DD date` });
+  if (!isValidIsoDate(v)) {
+    issues.push({ row: rowNo, column, message: `"${v}" is not a real YYYY-MM-DD date` });
     return undefined;
   }
   return v;

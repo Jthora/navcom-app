@@ -7,6 +7,7 @@ import { displayField, type FieldDisplay } from './display.js';
 import { CALLSIGN_MAX, FIELDS_MAX, VALUE_MAX, withinLimit } from '../limits.js';
 import type { Confidence, Method, ResourceField, ResourceRecord } from './types.js';
 import { FIELD_CLASS } from './volatility.js';
+import { isValidIsoDate } from './iso-date.js';
 
 /**
  * What an operator learned, on the way back from the block they learned it on.
@@ -105,7 +106,6 @@ export interface Correction {
 
 export class CorrectionError extends Error {}
 
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const METHODS: readonly string[] = ['in_person', 'phone', 'staff_confirmed', 'secondhand', 'website'];
 
 /**
@@ -129,8 +129,8 @@ export function buildCorrection(
     throw new CorrectionError(`A correction needs a callsign of ${CALLSIGN_MAX} characters or fewer, or \`anonymous\`.`);
   }
   if (!METHODS.includes(correction.method)) throw new CorrectionError('Unknown method.');
-  if (!ISO_DATE.test(correction.last_verified)) {
-    throw new CorrectionError('last_verified must be YYYY-MM-DD.');
+  if (!isValidIsoDate(correction.last_verified)) {
+    throw new CorrectionError('last_verified must be a real YYYY-MM-DD date.');
   }
 
   const fields = Object.entries(correction.fields).filter(([k, v]) => {
@@ -187,7 +187,7 @@ export function readCorrection(event: Event): (Correction & { by: string }) | nu
     if (typeof c.record !== 'string' || !c.record) return null;
     if (!withinLimit(c.verified_by, CALLSIGN_MAX)) return null;
     if (typeof c.method !== 'string' || !METHODS.includes(c.method)) return null;
-    if (typeof c.last_verified !== 'string' || !ISO_DATE.test(c.last_verified)) return null;
+    if (typeof c.last_verified !== 'string' || !isValidIsoDate(c.last_verified)) return null;
     if (!c.fields || typeof c.fields !== 'object' || Array.isArray(c.fields)) return null;
 
     for (const [k, v] of Object.entries(c.fields)) {
@@ -292,8 +292,18 @@ export function mergeCorrections(
    * real answer here — **the field carries its provenance**, so they see who said it and
    * when, and can weigh two names the way this system asks them to everywhere else.
    */
+  // Shape-checked here, not just typed: relay delivery and an operator's own submit() both
+  // go through readCorrection() first, but a cache loaded straight from storage does not
+  // [found in robustness audit] -- an entry written by an older schema, or otherwise not
+  // actually shaped like a Correction, would otherwise throw reading `.fields.flag` a few
+  // lines down and could take down a whole page's render over one bad cached row. Excluded
+  // like any other correction that never existed, not surfaced as an error: there is nobody
+  // to tell and nothing actionable to tell them.
   const mine = corrections
-    .filter((c) => c.record === base.id)
+    .filter(
+      (c): c is Correction & { by: string } =>
+        !!c && typeof c === 'object' && c.record === base.id && !!c.fields && typeof c.fields === 'object'
+    )
     .slice()
     .sort((a, b) => (a.by < b.by ? -1 : a.by > b.by ? 1 : 0));
   const record = { ...base };

@@ -86,24 +86,43 @@ export class Board {
     return entry;
   }
 
-  /** routine check-in: refresh last_contact, advance routine_due using the entry's own stored cadence, clear overdue if it was routine-caused. Does not clear distress -- see onStation()'s comment. */
-  routine(operator: string, now: number): BoardEntry | null {
+  /**
+   * routine check-in: refresh last_contact, advance routine_due using the entry's own
+   * stored cadence, clear overdue if it was routine-caused. Does not clear distress -- see
+   * onStation()'s comment.
+   *
+   * `overdueGraceSeconds` is required, not optional, since 2026-08-29: this used to clear
+   * "overdue" unconditionally on any contact, without checking *why* the entry was overdue.
+   * An operator overdue on total expected duration (not a missed routine check-in) who kept
+   * sending routine pings had the flag cleared every time and re-set on the very next sweep
+   * -- the same continuing condition logged as a fresh transition, over and over, in the
+   * accountability log a human reviews on a cadence.
+   */
+  routine(operator: string, now: number, overdueGraceSeconds: number): BoardEntry | null {
     const entry = this.entries.get(operator);
     if (!entry) return null;
     entry.lastContact = now;
     entry.routineDue =
       entry.routineIntervalSeconds !== null ? now + entry.routineIntervalSeconds : null;
-    if (entry.status === "overdue") entry.status = "active";
+    if (entry.status === "overdue" && now <= entry.expectedUntil + overdueGraceSeconds) {
+      entry.status = "active";
+    }
     this.log(`~ ${this.shortId(operator)} routine last_contact=${new Date(now * 1000).toISOString()}`);
     return entry;
   }
 
-  /** any non-routine signal from a known operator (query, assist) still counts as contact. Does not clear distress. */
-  touch(operator: string, now: number): BoardEntry | null {
+  /**
+   * any non-routine signal from a known operator (query, assist) still counts as contact.
+   * Does not clear distress. Same `overdueGraceSeconds` guard as routine() and for the same
+   * reason -- see its comment.
+   */
+  touch(operator: string, now: number, overdueGraceSeconds: number): BoardEntry | null {
     const entry = this.entries.get(operator);
     if (!entry) return null;
     entry.lastContact = now;
-    if (entry.status === "overdue") entry.status = "active";
+    if (entry.status === "overdue" && now <= entry.expectedUntil + overdueGraceSeconds) {
+      entry.status = "active";
+    }
     return entry;
   }
 
@@ -140,11 +159,27 @@ export class Board {
     return entry;
   }
 
-  /** Stand-down: acknowledged, entry REMOVED -- not a status it rests in. */
+  /**
+   * Stand-down: acknowledged, entry REMOVED -- not a status it rests in.
+   *
+   * Except out of distress. Found by robustness audit: this used to delete unconditionally,
+   * the one mutating path here with no such guard -- onStation() already refuses to let an
+   * unrelated signal silently clear distress, and sweep()'s hard-expiry protects it from
+   * being dropped by age, but a stood-down signal (self-sent, mis-tapped, or coerced) could
+   * erase the board's only visible record of it while the real ladder, gated separately by
+   * `distress-ack`, kept paging in the background. A human in Watched mode reading the board
+   * would see nothing wrong.
+   */
   standDown(operator: string): boolean {
-    const removed = this.entries.delete(operator);
-    if (removed) this.log(`- ${this.shortId(operator)} stood-down`);
-    return removed;
+    const entry = this.entries.get(operator);
+    if (!entry) return false;
+    if (entry.status === "distress") {
+      this.log(`x ${this.shortId(operator)} stood-down refused -- in distress`);
+      return false;
+    }
+    this.entries.delete(operator);
+    this.log(`- ${this.shortId(operator)} stood-down`);
+    return true;
   }
 
   get(operator: string): BoardEntry | undefined {

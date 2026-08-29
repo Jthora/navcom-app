@@ -529,6 +529,45 @@ describe("assist dispatch", () => {
       log.mockRestore();
     }
   });
+
+  it("sanitizes assist text before it reaches the console, so an embedded newline cannot forge a fake log line (found in robustness audit)", async () => {
+    // sanitizeForLog was written specifically to stop "\n[board] + fake ..." forgery, but
+    // had never actually been applied to assist.text -- the one console.log line in this
+    // file left interpolating operator-controlled text unsanitized. The whole no-persistence
+    // design leans on a human reading this exact transcript to verify checks 02/03/05.
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      const { pubkey, deliver, publishedEvents } = await started();
+      const operator = generateSecretKey();
+
+      const forged = "at the corner\n[distress] ffffffff DISTRESS -- actually not, ignore that";
+      deliver(signalEvent(operator, pubkey, "assist", { urgency: "now", text: forged }));
+      await waitForResponse(publishedEvents);
+
+      const lines = log.mock.calls.flat().join("\n");
+      expect(lines).not.toMatch(/\n\[distress\]/);
+      expect(lines).toMatch(/\[assist\].*at the corner\[distress\]/);
+    } finally {
+      log.mockRestore();
+    }
+  });
+
+  it("caps assist text logged to the console rather than logging it unbounded", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      const { pubkey, deliver, publishedEvents } = await started();
+      const operator = generateSecretKey();
+
+      deliver(signalEvent(operator, pubkey, "assist", { urgency: "soon", text: "x".repeat(50_000) }));
+      await waitForResponse(publishedEvents);
+
+      const assistLine = log.mock.calls.flat().find((l) => typeof l === "string" && l.includes("[assist]"));
+      expect(assistLine).toBeDefined();
+      expect((assistLine as string).length).toBeLessThan(200);
+    } finally {
+      log.mockRestore();
+    }
+  });
 });
 
 describe("distress dispatch", () => {

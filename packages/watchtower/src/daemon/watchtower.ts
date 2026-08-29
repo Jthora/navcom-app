@@ -14,7 +14,7 @@ import type {
   SignalType,
   WatchStatePayload,
 } from "../shared/payloads.js";
-import { validateOnStationPayload, ValidationError } from "../shared/validate.js";
+import { sanitizeForLog, validateOnStationPayload, ValidationError } from "../shared/validate.js";
 import { isAuthorizedOperator } from "./authorization.js";
 import { Board } from "./board.js";
 import { AccountabilityLog } from "../shared/accountability.js";
@@ -313,12 +313,12 @@ export class WatchtowerDaemon {
           break;
         }
         case "routine": {
-          this.board.routine(event.pubkey, now());
+          this.board.routine(event.pubkey, now(), this.config.watch.overdueGrace);
           response = this.ack();
           break;
         }
         case "query": {
-          this.board.touch(event.pubkey, now());
+          this.board.touch(event.pubkey, now(), this.config.watch.overdueGrace);
           response = await withTimeout(
             answerQuery(payload as QueryPayload, this.agentName),
             this.config.watch.queryTimeoutSeconds * 1000,
@@ -327,7 +327,7 @@ export class WatchtowerDaemon {
           break;
         }
         case "assist": {
-          this.board.touch(event.pubkey, now());
+          this.board.touch(event.pubkey, now(), this.config.watch.overdueGrace);
           // Urgency is the whole point of an assist and must reach whoever holds watch.
           // "soon" and "now" ask for different responses, and an ack that swallows the
           // difference makes them look identical on the board.
@@ -338,10 +338,20 @@ export class WatchtowerDaemon {
           // one field that says how long someone has.
           const urgency =
             assist.urgency === "now" ? "NOW" : assist.urgency === "soon" ? "soon" : "UNSTATED";
+          // sanitizeForLog on both fields: found in robustness audit that this line was
+          // the one console.log left interpolating operator-controlled text unsanitized --
+          // an assist.text containing an embedded newline and a forged "[distress] ..."
+          // line was indistinguishable from a real one, undermining the manual, human-read
+          // console verification the whole no-persistence design leans on. Its own maxLen
+          // (64, the same bound every other board log line uses) is what caps the length
+          // here too -- a separate slice first would just be redundant with it.
+          const callsignForLog = entry?.callsign
+            ? sanitizeForLog(entry.callsign)
+            : event.pubkey.slice(0, 8);
           console.log(
-            `[assist] ${entry?.callsign ?? event.pubkey.slice(0, 8)} ` +
+            `[assist] ${callsignForLog} ` +
               `urgency=${urgency}` +
-              (assist.text ? ` — ${assist.text}` : ""),
+              (assist.text ? ` — ${sanitizeForLog(assist.text)}` : ""),
           );
           response = this.ack();
           break;

@@ -24,10 +24,22 @@
  * business logic, not after.
  */
 import type { OnStationPayload, Position } from "./events/signal.js";
+import { AREA_MAX, CALLSIGN_MAX } from "./limits.js";
 
 export class ValidationError extends Error {}
 
 const HEX64 = /^[0-9a-f]{64}$/;
+
+/**
+ * An upper bound on a self-declared duration, in seconds. 30 days.
+ *
+ * Found by robustness audit alongside the original NaN bug this file exists to prevent:
+ * an absurdly large but finite `expected_duration` (1e13, say) passes every check above and
+ * still overflows `new Date()` inside `Board.onStation()` -- the same crash this module was
+ * written to close, just a different magnitude class. No real patrol or check-in interval
+ * is anywhere near this generous.
+ */
+const MAX_DURATION_SECONDS = 30 * 24 * 60 * 60;
 
 export function isValidHexPubkey(value: unknown): value is string {
   return typeof value === "string" && HEX64.test(value);
@@ -85,11 +97,25 @@ export function validateOnStationPayload(payload: unknown): OnStationPayload {
   if (!isNonEmptyString(p.area)) {
     throw new ValidationError("on-station payload: area must be a non-empty string");
   }
-  if (!isFiniteNumber(p.expected_duration) || p.expected_duration <= 0) {
-    throw new ValidationError("on-station payload: expected_duration must be a positive number");
+  if (p.area.length > AREA_MAX) {
+    throw new ValidationError(`on-station payload: area is longer than ${AREA_MAX} characters`);
   }
-  if (p.routine_interval !== null && (!isFiniteNumber(p.routine_interval) || p.routine_interval <= 0)) {
-    throw new ValidationError("on-station payload: routine_interval must be a positive number or null");
+  if (
+    !isFiniteNumber(p.expected_duration) ||
+    p.expected_duration <= 0 ||
+    p.expected_duration > MAX_DURATION_SECONDS
+  ) {
+    throw new ValidationError(
+      `on-station payload: expected_duration must be a positive number, at most ${MAX_DURATION_SECONDS}s`,
+    );
+  }
+  if (
+    p.routine_interval !== null &&
+    (!isFiniteNumber(p.routine_interval) || p.routine_interval <= 0 || p.routine_interval > MAX_DURATION_SECONDS)
+  ) {
+    throw new ValidationError(
+      `on-station payload: routine_interval must be a positive number at most ${MAX_DURATION_SECONDS}s, or null`,
+    );
   }
   if (typeof p.share_position !== "boolean") {
     throw new ValidationError("on-station payload: share_position must be a boolean");
@@ -99,6 +125,9 @@ export function validateOnStationPayload(payload: unknown): OnStationPayload {
   }
   if (p.callsign !== undefined && typeof p.callsign !== "string") {
     throw new ValidationError("on-station payload: callsign must be a string if present");
+  }
+  if (typeof p.callsign === "string" && p.callsign.length > CALLSIGN_MAX) {
+    throw new ValidationError(`on-station payload: callsign is longer than ${CALLSIGN_MAX} characters`);
   }
 
   return {

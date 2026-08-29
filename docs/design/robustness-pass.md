@@ -72,9 +72,64 @@ respectively, neither on a path where a gap reaches someone in the cold.
 |---|---|---|
 | 1 | Escalation ladder + accountability log | **done — 6 real gaps found, 5 fixed, 1 deliberately not built yet** |
 | 2 | Crypto + transport (`packages/core/crypto`, `transport.ts`) | **done — 3 minor gaps found, 2 fixed, 1 declined** |
-| 3 | Daemon board + directory/corrections | queued |
+| 3 | Daemon board + directory/corrections | **done — 6 real gaps found and fixed, 2 lower-risk edge cases noted, not fixed** |
 | 4 | Terminal storage tiers + UI error surfacing | queued |
 | 5 | Root console + seeder | queued |
+
+### 3 — what was found, and what happened to each finding
+
+The busiest tranche so far — six real, independently-verified gaps, all fixed. Confirmed
+solid: `board.distress()` on an unknown operator, the staleness margin's exact boundary,
+future-dated record/correction handling, deterministic merge tie-breaking, correction/place
+flood handling, and the client storage layer's own corruption handling — all real discipline,
+not just apparently working. `answerQuery` having no directory connection at all is not a
+gap; it's an explicit, already-tracked stub (Milestone 8 gated on 6.9).
+
+What wasn't clean:
+
+- **The on-station receive path had no length cap on `area`/`callsign`**, the same class of
+  bug area 1 found in `transport.ts`: the cap exists in `limits.ts` and is enforced on the
+  compose side, never on receive. **Fixed** — `validateOnStationPayload` now checks both.
+- **`assist.text` reached the human-read console with no `sanitizeForLog`** — a real
+  log-injection hole in the one mechanism this daemon's whole no-persistence design leans
+  on (a human reading stdout to verify checks 02/03/05). An embedded newline plus a forged
+  `"[distress] ..."` line was indistinguishable from a real one. **Fixed.**
+- **`Board.standDown()` unconditionally deleted an entry**, including one in distress — the
+  one mutating path with no such guard, unlike `onStation()` and `sweep()`'s hard-expiry.
+  A stood-down signal (self-sent, mis-tapped, or coerced) could erase the board's only
+  visible record of a distress while the real ladder — gated separately by `distress-ack` —
+  kept paging in the background. **Fixed.**
+- **`routine()`/`touch()` cleared "overdue" regardless of which clock caused it** — an
+  operator overdue on total duration who kept checking in had the flag cleared and
+  immediately re-set by the next sweep, logging the same continuing condition as a fresh
+  transition every sweep tick. **Fixed** — both now only clear overdue if the expected-
+  duration clock has not also run out.
+- **`expected_duration`/`routine_interval` had no upper bound**, and the board recorded the
+  entry before the line that could throw on an extreme value — the same root cause as the
+  original NaN bug this file was written to prevent, a different magnitude class. The
+  operator was told "internal error" while actually on the board, permanently active.
+  **Fixed** — a 30-day upper bound, checked before the entry is ever recorded.
+- **A calendar-invalid but shape-valid date (`"2023-02-29"`, `"2024-04-31"`) silently
+  rolled over to the following day** at three independent, duplicated regex sites (CSV
+  parsing, corrections, places). **Fixed** — consolidated into one shared
+  `isValidIsoDate()` that round-trips the parsed date, closing the bug in one place instead
+  of three separately.
+
+Also fixed, flagged in the audit as more serious than its "edge case" label suggested:
+**the client-side correction cache trusted whatever `localStorage` held with no
+re-validation**, unlike every other entry point. A cache entry shaped like an older schema
+threw reading `.fields.flag` deep inside `mergeCorrections`, and since it's called inline in
+a Svelte `{#each}`, one bad cached row could take down a whole region page's render. **Fixed**
+— a malformed entry is now excluded like a correction that never existed, not thrown on.
+
+Noted, not fixed — genuinely lower risk: no cross-tab `localStorage` sync (a repo-wide
+property, and the device floor — one prepaid phone — makes multi-tab unlikely); orphaned
+corrections for a renamed/removed record sit inertly in the already-bounded client cache
+forever (self-limiting, not a live risk).
+
+Verified against every workspace's real `verify`/`verify:deploy` script: `@navcom/core` 519
+tests, `@navcom/watchtower` 221, `@navcom/seeder` 51, `web`'s full pipeline with 456 unit
+tests — all clean.
 
 ### 2 — what was found, and what happened to each finding
 

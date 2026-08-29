@@ -6,6 +6,7 @@ import type { SecretKey } from '../crypto/keys.js';
 import { KIND_PLACE } from '../events/kinds.js';
 import { CALLSIGN_MAX, VALUE_MAX, withinLimit } from '../limits.js';
 import { RESOURCE_TYPES, type Method, type ResourceRecord, type ResourceType } from './types.js';
+import { isValidIsoDate } from './iso-date.js';
 
 /**
  * A place the published directory does not have.
@@ -85,7 +86,6 @@ export interface Place {
 
 export class PlaceError extends Error {}
 
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const REGION = /^[a-z0-9-]+$/;
 const NAME_MAX = 120;
 const ADDRESS_MAX = 200;
@@ -154,7 +154,7 @@ function checkPlace(place: Place): void {
       'A place can only be added by somebody who went there, was told by staff, or phoned it. Something read on a website goes to the maintainers, not onto a screen at 11pm.'
     );
   }
-  if (!ISO_DATE.test(place.last_verified)) throw new PlaceError('last_verified must be YYYY-MM-DD.');
+  if (!isValidIsoDate(place.last_verified)) throw new PlaceError('last_verified must be a real YYYY-MM-DD date.');
 
   for (const [k, v] of Object.entries(place.fields ?? {})) {
     if (!(PLACE_EXTRAS as readonly string[]).includes(k)) {

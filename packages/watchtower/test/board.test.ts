@@ -56,49 +56,103 @@ describe("Board", () => {
     expect(board.standDown(OP_A)).toBe(false);
   });
 
+  it("stood-down refuses to remove an entry currently in distress (found in robustness audit)", () => {
+    // Mirrors onStation()'s own guard: distress is always a deliberate act to ENTER, and
+    // clearing it -- silently or otherwise -- deserves the same deliberateness. Before this,
+    // a stood-down signal (self-sent, mis-tapped, or coerced) erased the board's only
+    // visible record of the distress while the real ladder, gated separately by
+    // distress-ack, kept paging in the background.
+    const board = new Board();
+    board.onStation({
+      operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 7200,
+      routineIntervalSeconds: null, position: null, now: 0,
+    });
+    board.distress(OP_A, 10);
+    const removed = board.standDown(OP_A);
+    expect(removed).toBe(false);
+    expect(board.get(OP_A)?.status).toBe("distress");
+    expect(board.size).toBe(1);
+  });
+
   it("routine check-in refreshes last_contact and advances routine_due using the entry's own cadence", () => {
     const board = new Board();
     board.onStation({
       operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 7200,
       routineIntervalSeconds: 1800, position: null, now: 0,
     });
-    board.routine(OP_A, 1800);
+    board.routine(OP_A, 1800, 1800);
     const entry = board.get(OP_A);
     expect(entry?.lastContact).toBe(1800);
     expect(entry?.routineDue).toBe(1800 + 1800);
   });
 
-  it("routine check-in clears an overdue status", () => {
+  it("routine check-in clears an overdue status caused by a missed routine ping", () => {
+    const board = new Board();
+    // A long patrol with a short check-in cadence, so only the routine clock -- never the
+    // expected-duration clock -- can be why this entry goes overdue.
+    board.onStation({
+      operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 100_000,
+      routineIntervalSeconds: 500, position: null, now: 0,
+    });
+    board.sweep(500 + 1800 + 1, 1800, 14400); // past routine grace, nowhere near duration
+    expect(board.get(OP_A)?.status).toBe("overdue");
+
+    board.routine(OP_A, 500 + 1800 + 1, 1800);
+    expect(board.get(OP_A)?.status).toBe("active");
+  });
+
+  it("routine check-in does NOT clear an overdue status still caused by the expected duration having passed (found in robustness audit)", () => {
+    // The bug: a routine ping resets the check-in clock but not expectedUntil. Clearing
+    // "overdue" unconditionally here meant the very next sweep saw the same still-true
+    // pastExpectedGrace condition and re-flagged it as a fresh transition -- the same
+    // continuing lateness logged as a new marked-overdue entry every sweep tick.
     const board = new Board();
     board.onStation({
       operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 100,
       routineIntervalSeconds: null, position: null, now: 0,
     });
-    board.sweep(100 + 1800 + 1, 1800, 14400); // past overdue grace
+    board.sweep(100 + 1800 + 1, 1800, 14400); // past overdue grace on duration alone
     expect(board.get(OP_A)?.status).toBe("overdue");
 
-    board.routine(OP_A, 100 + 1800 + 1);
-    expect(board.get(OP_A)?.status).toBe("active");
+    board.routine(OP_A, 100 + 1800 + 1, 1800);
+    // Still overdue: expectedUntil (100) + grace (1800) has not caught up with now.
+    expect(board.get(OP_A)?.status).toBe("overdue");
   });
 
   it("touch() refreshes contact and clears overdue without touching routine_due", () => {
     const board = new Board();
+    // A long patrol with a short check-in cadence, so only the routine clock can be why
+    // this entry goes overdue -- see the equivalent routine() tests above for why that
+    // matters to this assertion.
     board.onStation({
-      operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 100,
+      operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 100_000,
       routineIntervalSeconds: 500, position: null, now: 0,
     });
-    board.sweep(100 + 1800 + 1, 1800, 14400);
+    board.sweep(500 + 1800 + 1, 1800, 14400);
     expect(board.get(OP_A)?.status).toBe("overdue");
 
-    board.touch(OP_A, 100 + 1800 + 1);
+    board.touch(OP_A, 500 + 1800 + 1, 1800);
     const entry = board.get(OP_A);
     expect(entry?.status).toBe("active");
     expect(entry?.routineDue).toBe(500); // unchanged by touch()
   });
 
+  it("touch() does NOT clear an overdue status still caused by the expected duration having passed", () => {
+    const board = new Board();
+    board.onStation({
+      operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 100,
+      routineIntervalSeconds: null, position: null, now: 0,
+    });
+    board.sweep(100 + 1800 + 1, 1800, 14400);
+    expect(board.get(OP_A)?.status).toBe("overdue");
+
+    board.touch(OP_A, 100 + 1800 + 1, 1800);
+    expect(board.get(OP_A)?.status).toBe("overdue");
+  });
+
   it("touch() on an unknown operator returns null, does not create an entry", () => {
     const board = new Board();
-    expect(board.touch(OP_A, 0)).toBeNull();
+    expect(board.touch(OP_A, 0, 1800)).toBeNull();
     expect(board.size).toBe(0);
   });
 
@@ -244,7 +298,7 @@ describe("Board", () => {
         routineIntervalSeconds: 50, position: null, now: 0,
       });
       board.distress(OP_A, 10);
-      board.routine(OP_A, 20);
+      board.routine(OP_A, 20, 1800);
       expect(board.get(OP_A)?.status).toBe("distress");
     });
 
@@ -255,7 +309,7 @@ describe("Board", () => {
         routineIntervalSeconds: null, position: null, now: 0,
       });
       board.distress(OP_A, 10);
-      board.touch(OP_A, 20);
+      board.touch(OP_A, 20, 1800);
       expect(board.get(OP_A)?.status).toBe("distress");
     });
   });
@@ -334,14 +388,16 @@ describe("Board", () => {
 
     it("drops back to zero once the overdue entry checks back in", () => {
       const board = new Board();
+      // Routine-caused, not duration-caused -- see the board.touch() tests above for why
+      // that distinction matters to whether checking in can actually clear it.
       board.onStation({
-        operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 100,
-        routineIntervalSeconds: null, position: null, now: 0,
+        operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 100_000,
+        routineIntervalSeconds: 500, position: null, now: 0,
       });
-      board.sweep(100 + 1800 + 1, 1800, 14400);
+      board.sweep(500 + 1800 + 1, 1800, 14400);
       expect(board.overdueCount).toBe(1);
 
-      board.touch(OP_A, 100 + 1800 + 2);
+      board.touch(OP_A, 500 + 1800 + 2, 1800);
       expect(board.overdueCount).toBe(0);
     });
   });

@@ -146,4 +146,32 @@ describe("validateOnStationPayload", () => {
   it("rejects non-string callsign when present", () => {
     expect(() => validateOnStationPayload({ ...valid, callsign: 12345 })).toThrow(/callsign/);
   });
+
+  // Found in robustness audit: the compose-side cap (checkedText/limits.ts) never ran on
+  // this receive path, so a crafted payload could carry an area/callsign of any length
+  // straight onto a live board entry -- exactly the "make somebody else's screen
+  // unusable" attack limits.ts's own docstring names.
+  it("rejects an area longer than AREA_MAX (found in robustness audit)", () => {
+    expect(() => validateOnStationPayload({ ...valid, area: "x".repeat(121) })).toThrow(/area/);
+  });
+
+  it("rejects a callsign longer than CALLSIGN_MAX (found in robustness audit)", () => {
+    expect(() => validateOnStationPayload({ ...valid, callsign: "x".repeat(49) })).toThrow(/callsign/);
+  });
+
+  it("rejects an absurdly large expected_duration rather than letting it overflow Date() downstream (found in robustness audit)", () => {
+    // Same root cause and fix site as the original NaN bug this file exists to prevent, a
+    // different magnitude class: a finite but huge value passed every check here and still
+    // overflowed `new Date()` inside Board.onStation(), after the entry was already on the
+    // board.
+    expect(() => validateOnStationPayload({ ...valid, expected_duration: 1e13 })).toThrow(
+      /expected_duration/,
+    );
+  });
+
+  it("rejects an absurdly large routine_interval the same way", () => {
+    expect(() => validateOnStationPayload({ ...valid, routine_interval: 1e13 })).toThrow(
+      /routine_interval/,
+    );
+  });
 });

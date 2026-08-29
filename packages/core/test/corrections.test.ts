@@ -622,3 +622,25 @@ describe('bridged — a caveat, never a discount', () => {
     expect(merged.sources.hours?.correction?.bridged).toBeUndefined();
   });
 });
+
+describe('a corrupted entry in the input list (found in robustness audit)', () => {
+  // Relay delivery and an operator's own submit() both go through readCorrection() first,
+  // but a client-side cache loaded straight from storage does not. An entry written by an
+  // older schema -- or otherwise not actually shaped like a Correction -- used to throw
+  // reading `.fields.flag` a few lines into the merge, which could take down a whole page's
+  // render over one bad cached row.
+  it('is skipped rather than thrown on, when it is missing `fields` entirely', () => {
+    const good = readable(wren, correction());
+    const corrupted = { record: 'st-louis-example', verified_by: 'Owl', method: 'in_person', last_verified: '2026-08-19', by: 'deadbeef' } as unknown as Correction & { by: string };
+    expect(() => mergeCorrections(base(), [corrupted, good], NOW)).not.toThrow();
+    const merged = mergeCorrections(base(), [corrupted, good], NOW);
+    expect(merged.record.hours).toBe('Mon-Sun 20:00-06:00');
+  });
+
+  it('is skipped rather than thrown on, for a null or non-object entry', () => {
+    const good = readable(wren, correction());
+    const withGarbage = [null, 'not a correction', 42, good] as unknown as (Correction & { by: string })[];
+    expect(() => mergeCorrections(base(), withGarbage, NOW)).not.toThrow();
+    expect(mergeCorrections(base(), withGarbage, NOW).record.hours).toBe('Mon-Sun 20:00-06:00');
+  });
+});
