@@ -104,7 +104,8 @@ escalation executor, both keyed to the Watchtower's own privkey — a rented VPS
 as well as hardware at home. Need not run themselves: a relay (the Nodekeeper's job, or the
 public default) and a directory host (the terminal already caches independent of it).
 Whether keeping a station should earn its own visible credit, separate from board time, is
-open — named here, not decided.
+open — named here, not decided. The commitment itself, in full:
+[`watch/stationkeeper.md`](../watch/stationkeeper.md).
 
 **The Nodekeeper** · *RelayNode operator*
 Runs a relay and IPFS node. Never touches the field, never holds watch.
