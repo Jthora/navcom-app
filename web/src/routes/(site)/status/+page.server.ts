@@ -86,7 +86,7 @@ export function load() {
       },
       {
         name: 'Accountability log',
-        built: shipped('packages/watchtower/src/daemon/accountability.ts'),
+        built: shipped('packages/watchtower/src/shared/accountability.ts'),
         note: 'Hash-chained, with inclusion proofs so an operator can check their own entries.'
       },
       {

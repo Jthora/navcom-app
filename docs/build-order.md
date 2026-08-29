@@ -246,7 +246,9 @@ reason for the gate.
 
 ## The accountability log — sprint A done, B/C/D planned
 
-**A — the log is real on the node.** `packages/watchtower/src/daemon/accountability.ts`:
+**A — the log is real on the node.** `packages/watchtower/src/shared/accountability.ts`
+(moved from `daemon/` once the escalation executor needed its own instance — see the
+robustness pass, `design/robustness-pass.md`):
 append-only JSONL, fsynced per entry, chain verified at boot, 90-day retention. Actions are
 written at one site derived from the response actually sent, rather than a call per dispatch
 branch — one branch away from silence is not a property this file can have.

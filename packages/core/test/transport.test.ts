@@ -179,7 +179,7 @@ describe("waitForResponse (found in review)", () => {
         // A relay honestly enforcing its own filter, unlike this file's other mocks.
         deliver = (event: Event) => {
           if (since !== undefined && event.created_at < since) return;
-          params.onevent(event);
+          params.onevent?.(event);
         };
         return { close: () => {} };
       },
