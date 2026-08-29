@@ -370,13 +370,20 @@ export const operator = {
    * the device — an operator who knows nothing is getting through can act on that.
    */
   async raiseDistress(text: string) {
-    const { config, identity } = ctx();
     distressPhases = [];
     error = null;
     distressRunning = true;
     distressRaisedAt = Date.now();
     distressController = new AbortController();
     try {
+      // ctx() moved inside the try: found in robustness audit. It used to run before this
+      // block even started, so its throw (no identity yet, or the ordinary Alone case of
+      // no watch configured) propagated straight out of this async function as an unhandled
+      // rejection -- the caller (distress/+page.svelte) fires this with no await and no
+      // catch, so nothing here ever ran: `error` stayed null, `distressRunning` stayed
+      // false. An operator who felt the hold complete got no signal that nothing was sent,
+      // which is invariant 2 failing in exactly the way it forbids.
+      const { config, identity } = ctx();
       await sendDistressUntilAcknowledged(
         pool(), config.relays, identity.secretKey, identity.pubkey, watchAddress(config),
         // A Distress carries the last known fix where one exists, and the declared area

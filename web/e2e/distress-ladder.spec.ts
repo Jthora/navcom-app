@@ -115,3 +115,19 @@ test.describe('while a Distress is running', () => {
     expect(labels).not.toMatch(/close|resolve|clear|dismiss|cancel distress/i);
   });
 });
+
+test.describe('holding to send with no watch configured (found in robustness audit)', () => {
+  // The ordinary Alone case, not an edge one. raiseDistress() used to build its context
+  // (which throws when no watch is configured) before its own try/catch even started, and
+  // the caller here fires it with no await and no catch -- so the throw became an unhandled
+  // rejection nothing on this screen ever saw. An operator who felt the hold complete was
+  // told nothing, which is invariant 2 failing in exactly the way it forbids.
+  test('says plainly that nothing was sent, rather than showing nothing at all', async ({ page }) => {
+    await seedDevice(page, { callsign: 'Wren' });
+    await open(page, '/terminal/distress/');
+
+    await page.locator('button.raise').dispatchEvent('pointerdown');
+    await expect(page.locator('p.error')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('p.error')).not.toHaveText('');
+  });
+});

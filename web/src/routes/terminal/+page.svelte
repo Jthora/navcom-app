@@ -417,6 +417,10 @@
           <Slot k="Position">
             <Readout value="Refused" tone="warn" sub="check this phone's location permission" />
           </Slot>
+        {:else if position.unavailable}
+          <Slot k="Position">
+            <Readout value="No fix" tone="warn" sub="weak signal or indoors — not a permission problem" />
+          </Slot>
         {/if}
         <Why summary="What you were told at sign-on">
           <p>{session.toldAtSignOn}</p>

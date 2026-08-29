@@ -73,8 +73,65 @@ respectively, neither on a path where a gap reaches someone in the cold.
 | 1 | Escalation ladder + accountability log | **done — 6 real gaps found, 5 fixed, 1 deliberately not built yet** |
 | 2 | Crypto + transport (`packages/core/crypto`, `transport.ts`) | **done — 3 minor gaps found, 2 fixed, 1 declined** |
 | 3 | Daemon board + directory/corrections | **done — 6 real gaps found and fixed, 2 lower-risk edge cases noted, not fixed** |
-| 4 | Terminal storage tiers + UI error surfacing | queued |
+| 4 | Terminal storage tiers + UI error surfacing | **done — 7 real gaps found and fixed, 1 already-acknowledged pattern re-confirmed** |
 | 5 | Root console + seeder | queued |
+
+### 4 — what was found, and what happened to each finding
+
+**The most serious finding of the whole pass.** `Distress` — the single highest-stakes action
+in the app — could fail completely silently:
+
+- **`raiseDistress()` built its context (which throws with no identity, or the ordinary Alone
+  case of no watch configured) *before* its own try/catch started**, and the screen fires it
+  with no `await` and no `.catch`. The throw became an unhandled rejection nothing on the
+  screen ever saw — `operator.error` stayed null, the operator felt the hold complete and was
+  told nothing. Direct violation of invariant 2, on the one path that skipped the `run()`
+  wrapper every other operator action correctly uses. **Fixed** — `ctx()` now runs inside the
+  try block, so the same catch that already handles a failed send catches this too. New e2e
+  coverage: holding to send with no watch configured now shows a real error message.
+
+Five more, all fixed:
+
+- **The shared hold-to-fire component had no unmount cleanup at all.** A hold armed by
+  `press()` is a real `setTimeout`, not tied to the component's lifetime — interrupted by
+  navigation before the threshold, it still fired seconds later. Used for **panic wipe** and
+  **taking over a watch**. The hand-rolled Distress hold had the same gap for its own timer
+  (its `onDestroy` cancelled the animation frame but not the fire timer). **Fixed**, both.
+- **A malformed recovery code reported success while silently failing.** Shape-valid (64 hex
+  characters) is not the same as a usable secp256k1 scalar; the invalid case was written to
+  storage and only failed later, silently, inside `loadIdentity()`'s own catch — the operator
+  was told "Your callsign is back" when it wasn't. **Fixed** — the key is now proven usable
+  before it's written, not after.
+- **A throwing storage-error watcher defeated the one guarantee `storage.ts` exists to
+  provide** — no isolation between watchers, so one bug would break every write for every
+  caller. Latent (today's one subscriber is safe) but real. **Fixed.**
+- **A schema-drifted `seen_roots` entry silently broke the accountability-check path** —
+  the one device-side mechanism that lets an operator catch a rewritten watch history. An
+  unchecked cast from storage reached a throw several calls deep; a real relay library caught
+  it with a bare `console.warn`, so it never crashed, it just stopped working, forever, with
+  nothing surfaced. Same class of bug area 3 fixed in the correction cache. **Fixed** —
+  shape-checked on read, malformed entries dropped rather than trusted.
+- **Geolocation permission-denied and no-fix/timeout were conflated into one flag** — an
+  operator with a genuine weak GPS signal (the situation an outdoor operator is most likely
+  to actually hit) was told to go check a permission that was never the problem. **Fixed** —
+  the two are now reported separately.
+
+One more, fixed defensively though no concrete failing browser path was found: **burn's
+cache-clearing step had no guard**, so a hypothetical rejection would leave a stale
+confirmation screen showing after storage was already irreversibly gone. Wrapped, silently —
+this screen's whole point is to show nothing at all, on success or failure alike.
+
+Cross-tab races on `storage.ts`'s own read-modify-write are the same already-acknowledged
+low-priority class area 3 declined for the correction cache (device floor is one prepaid
+phone) — re-confirmed to apply here identically, not a new finding.
+
+Also confirmed solid: `packages/core/src/backup.ts`'s tamper resistance, `board.svelte.ts`'s
+defensive typing throughout the squad-watch mode, every other operator action's `run()`
+error-wrapping, and `signature.ts`'s guarding beyond the already-fixed bundle-size bug.
+
+Verified: `svelte-check` (586 files, 0 errors), the full `verify:deploy` pipeline (462 unit
+tests, budget within bounds), and the new and existing Playwright coverage for distress,
+reachability, wipe, and watch handover — 77+4 passing.
 
 ### 3 — what was found, and what happened to each finding
 

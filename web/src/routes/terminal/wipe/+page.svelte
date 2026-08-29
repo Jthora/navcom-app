@@ -47,7 +47,15 @@
     // finished.
     destroyPool();
     // Awaited: an operator must not be shown a finished screen while bytes are still there.
-    await burnCaches();
+    // burn() above already ran, synchronously and irreversibly -- a rejection here (found in
+    // robustness audit: no concrete browser path found, but nothing here should assume one
+    // never exists) must not leave a stale confirmation screen showing. No message either
+    // way: this screen's whole point is to show nothing at all, on success or failure alike.
+    try {
+      await burnCaches();
+    } catch {
+      // Deliberately silent. See above.
+    }
     goto('/terminal/');
   }
 </script>

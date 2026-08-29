@@ -9,7 +9,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { LogRoot } from '@navcom/core';
 import { recordRoot, rootAlarms, seenRoots } from './roots';
-import { burn, panicWipe } from './storage';
+import { burn, panicWipe, set } from './storage';
 
 function installLocalStorage() {
   const store = new Map<string, string>();
@@ -31,6 +31,22 @@ describe('custody of the evidence', () => {
   it('keeps what the watch published across reads', () => {
     recordRoot(at(3, 'aaa'));
     recordRoot(at(7, 'bbb'));
+    expect(seenRoots().map((r) => r.size)).toEqual([3, 7]);
+  });
+
+  it('does not throw on a schema-drifted stored value, and treats it as no roots seen (found in robustness audit)', () => {
+    // An entry written by an older schema (or otherwise not shaped like a LogRoot) used to
+    // reach observeRoot()'s own `.at(-1)` and throw, silently breaking the one mechanism
+    // that lets an operator catch a rewritten history -- forever, with nothing surfaced.
+    set('accruing', 'seen_roots', { legacy: true });
+    expect(() => seenRoots()).not.toThrow();
+    expect(seenRoots()).toEqual([]);
+    expect(() => recordRoot(at(3, 'aaa'))).not.toThrow();
+    expect(seenRoots().map((r) => r.size)).toEqual([3]);
+  });
+
+  it('drops only the malformed entries in an otherwise-real array, keeping the rest', () => {
+    set('accruing', 'seen_roots', [at(3, 'aaa'), { root: 'bad' }, at(7, 'bbb')]);
     expect(seenRoots().map((r) => r.size)).toEqual([3, 7]);
   });
 

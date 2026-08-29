@@ -12,7 +12,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   burn, burnCaches, burnConfirmed, clearField, clearStorageError, corruptTiers, get,
-  panicWipe, set, storageError, tierSizes, tierSummary
+  onStorageError, panicWipe, set, storageError, tierSizes, tierSummary
 } from './storage';
 
 /** Enough of the real thing for these assertions; the browser API is tiny here. */
@@ -199,6 +199,22 @@ describe('a device that cannot save', () => {
     installLocalStorage();
     expect(set('accruing', 'callsign', 'Wren')).toBe(true);
     expect(storageError()).toBeNull();
+  });
+
+  it('does not let a throwing watcher break the write for the caller or any other watcher (found in robustness audit)', () => {
+    const seen: (string | null)[] = [];
+    const unsubBad = onStorageError(() => {
+      throw new Error('a watcher with a bug');
+    });
+    const unsubGood = onStorageError((m) => seen.push(m));
+
+    installRefusingStorage();
+    expect(() => set('accruing', 'callsign', 'Wren')).not.toThrow();
+    expect(set('accruing', 'callsign', 'Wren')).toBe(false);
+    expect(seen).toContain(storageError());
+
+    unsubBad();
+    unsubGood();
   });
 });
 

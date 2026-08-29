@@ -16,8 +16,25 @@ import { get, set } from './storage';
 
 const FIELD = 'seen_roots';
 
+function isLogRoot(value: unknown): value is LogRoot {
+  const v = value as Partial<LogRoot> | null;
+  return (
+    !!v &&
+    typeof v === 'object' &&
+    typeof v.root === 'string' &&
+    typeof v.size === 'number' &&
+    typeof v.at === 'number'
+  );
+}
+
 export function seenRoots(): LogRoot[] {
-  return get<LogRoot[]>('accruing', FIELD) ?? [];
+  const raw = get<unknown>('accruing', FIELD);
+  // Shape-checked, not just cast: found in robustness audit that an entry written by an
+  // older schema (or otherwise not actually shaped like a LogRoot) reached observeRoot()'s
+  // own `.at(-1)` and threw -- silently breaking the one mechanism that lets an operator
+  // catch a rewritten history, forever, with nothing surfaced to them or a log reviewer.
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(isLogRoot);
 }
 
 /**

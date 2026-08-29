@@ -79,6 +79,7 @@ export function coarsen(lat: number, lon: number, metres: number): Position {
 let last = $state<Position | null>(null);
 let live = $state(false);
 let denied = $state(false);
+let unavailable = $state(false);
 let watchId: number | null = null;
 
 export const position = {
@@ -92,6 +93,16 @@ export const position = {
   /** True when the operator wanted it and the phone refused. Different from "off". */
   get denied(): boolean {
     return denied;
+  },
+  /**
+   * True when the operator wanted it, permission was granted, and there is simply no fix
+   * yet — poor signal, indoors, or a timeout. Distinct from `denied` since found in
+   * robustness audit: both used to set the same flag, and the screen told an operator with
+   * a genuine GPS problem to go check a permission that was never the issue — the situation
+   * an outdoor operator with a weak fix is most likely to actually hit.
+   */
+  get unavailable(): boolean {
+    return unavailable;
   },
 
   /**
@@ -107,16 +118,20 @@ export const position = {
 
     this.stop();
     denied = false;
+    unavailable = false;
     watchId = navigator.geolocation.watchPosition(
       (fix) => {
         live = true;
         last = coarsen(fix.coords.latitude, fix.coords.longitude, METRES[p]);
       },
-      () => {
+      (error) => {
         // Denied, or no fix. Reported as itself rather than as "off", because an operator
-        // who chose to share and is not sharing should know which of those is true.
-        denied = true;
+        // who chose to share and is not sharing should know which of those is true --
+        // and PERMISSION_DENIED is reported separately from POSITION_UNAVAILABLE/TIMEOUT
+        // (found in robustness audit: these used to be conflated into one flag).
         live = false;
+        if (error.code === error.PERMISSION_DENIED) denied = true;
+        else unavailable = true;
       },
       { enableHighAccuracy: p === 'exact', maximumAge: 30_000, timeout: 60_000 }
     );

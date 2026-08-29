@@ -16,6 +16,7 @@
    * it rather than a third being written. A second implementation of a rule is how the two
    * drift apart.
    */
+  import { onDestroy } from 'svelte';
   import { pulse } from '$lib/terminal/haptic';
   import type { Tone } from '$lib/terminal/panel';
 
@@ -95,6 +96,16 @@
     if (complete) pulse('committed');
     if (complete) onfire?.();
   }
+
+  // Found in robustness audit: this component had no unmount cleanup at all. A hold armed
+  // by press() is a real setTimeout in the global queue, not tied to this component's
+  // lifetime -- navigating away mid-hold (interrupted before the threshold) left it armed,
+  // and it fired seconds later regardless. Used with `hold` for panic wipe and taking over
+  // a watch, where a fire nobody is looking at the screen for is not a small thing.
+  onDestroy(() => {
+    if (frame !== null) cancelAnimationFrame(frame);
+    if (done !== null) clearTimeout(done);
+  });
 </script>
 
 {#if href}

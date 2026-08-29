@@ -116,6 +116,12 @@
 
   onDestroy(() => {
     if (frame !== null) cancelAnimationFrame(frame);
+    // Found in robustness audit: this cleared the animation frame but never doneAt, so a
+    // hold interrupted by navigation before the threshold completed still fired release(true)
+    // seconds later — starting a Distress the operator never actually held for, from a
+    // screen they had already left. Distinct from the rule below: this is a hold that was
+    // abandoned before completing, not a send already underway.
+    if (doneAt !== null) clearTimeout(doneAt);
     // Deliberately does NOT cancel a running Distress. Navigating away is not standing down,
     // and the send outlives this screen.
   });

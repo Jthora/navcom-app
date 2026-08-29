@@ -106,7 +106,17 @@ const watchers = new Set<Watcher>();
 const report = (message: string | null): void => {
   if (message === lastError) return;
   lastError = message;
-  for (const watcher of watchers) watcher(message);
+  // Each watcher isolated: found in robustness audit that a throwing watcher propagated
+  // straight through report() -> write() -> set(), breaking the one guarantee this module
+  // exists to provide for every other caller and watcher. Latent today (the one production
+  // subscriber is simple and safe), but a real hole a second watcher would reopen.
+  for (const watcher of watchers) {
+    try {
+      watcher(message);
+    } catch (err) {
+      console.error('[storage] a storage-error watcher threw:', err);
+    }
+  }
 };
 
 /** Subscribes to write failures. Returns the unsubscribe. */

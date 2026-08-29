@@ -7,7 +7,7 @@
  * would undo a wipe somebody meant.
  */
 
-import { openBackup, sealBackup } from '@navcom/core';
+import { openBackup, publicKeyOf, sealBackup, secretFromHex } from '@navcom/core';
 import { get, set } from './storage';
 
 /** Keys that are this device's business rather than this operator's. */
@@ -173,6 +173,16 @@ export function restoreCode(code: string): void {
   if (!/^[0-9a-f]{64}$/.test(clean)) throw new RestoreError('A recovery code is 64 hexadecimal characters.');
   if (get<string>('accruing', 'secret')) {
     throw new RestoreError('This phone already has an identity. Burn it first if you mean to replace it.');
+  }
+  // Shape-valid is not the same as usable: found in robustness audit that a hex string this
+  // wrong (all zeros, or any other value outside the curve's valid scalar range) passed the
+  // regex above, was written to storage, and only failed later, silently, inside
+  // loadIdentity()'s own catch -- the screen said "Your callsign is back" to an operator who
+  // had no callsign at all.
+  try {
+    publicKeyOf(secretFromHex(clean));
+  } catch {
+    throw new RestoreError('That is not a usable recovery code — check it was copied in full.');
   }
   set('accruing', 'secret', clean);
 }

@@ -7,8 +7,9 @@
 
 import { describe, expect, it, beforeEach } from 'vitest';
 import { openBackup, sealBackup } from '@navcom/core';
-import { RestoreError, lastMade, makeBackup, restore } from './backup';
+import { RestoreError, lastMade, makeBackup, restore, restoreCode } from './backup';
 import { get, set } from './storage';
+import { loadIdentity } from './identity';
 
 const PASS = 'correct horse battery staple';
 
@@ -197,5 +198,24 @@ describe('what a backup is allowed to carry', () => {
     // And nowhere in the blob under any other name.
     expect(JSON.stringify(kit)).not.toContain('Downtown');
     expect(JSON.stringify(kit)).not.toContain('side door');
+  });
+});
+
+describe('a bare recovery code (found in robustness audit)', () => {
+  it('restores a real one', () => {
+    restoreCode('a'.repeat(63) + '1');
+    expect(loadIdentity()?.secretKey).toBeDefined();
+  });
+
+  it('refuses a code that is 64 hex characters but not a usable key, rather than writing it and failing silently later', () => {
+    // Shape-valid is not usable: this used to pass the regex, get written to storage, and
+    // only fail later inside loadIdentity()'s own catch -- silently, so the screen told the
+    // operator their callsign was back when it was not.
+    expect(() => restoreCode('0'.repeat(64))).toThrow(RestoreError);
+    expect(loadIdentity()).toBeNull();
+  });
+
+  it('refuses the wrong length', () => {
+    expect(() => restoreCode('ab')).toThrow(RestoreError);
   });
 });
