@@ -68,7 +68,8 @@ page at all.
    person-facing path over scraped skeletons turns somebody away at 11pm with nowhere else
    to be
 3. **Nobody is a single point of failure** — 9.4, 9.6, 9.7, 9.8 are all people rather than
-   code, and **CI has not run since 2026-08-19** (9.9)
+   code. CI itself is closed rather than open: declined on 2026-08-24 rather than left as a
+   permanently-broken dependency (9.9)
 
 **One decision is open:** typography for the panel (P8). System stack ships today at zero
 bytes; a subset face costs 8–25 KB against a script budget at 68%.

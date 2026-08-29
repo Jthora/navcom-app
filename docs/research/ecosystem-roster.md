@@ -88,6 +88,24 @@ cross-checks that make a maintained performance expensive:
 
 ## Ring 5 — Infrastructure
 
+**The Stationkeeper** · *support class, infrastructure*
+Stands up and keeps a box running — the daemon, the keys, the drills, the backups —
+distinct from holding watch. May take very few shifts personally if the box serves a squad
+or Mecha Jono holds most of it; the axis is easy to undercount because standing (7.6)
+currently tracks board time and corrected records, not a station kept alive at 3am.
+[`propagation.md`](../product/propagation.md)'s recruiting pitch — *"you don't have to
+patrol to be useful; someone has to be watching"* — is written for holding the board and
+undersells this axis.
+*"I keep the station running. That's the work, even on the nights I'm not the one
+answering."*
+→ Founding needs nobody's permission — standing up your own box is already the founder case
+(7.2). Must personally control, not necessarily own: the watch state machine and the
+escalation executor, both keyed to the Watchtower's own privkey — a rented VPS satisfies this
+as well as hardware at home. Need not run themselves: a relay (the Nodekeeper's job, or the
+public default) and a directory host (the terminal already caches independent of it).
+Whether keeping a station should earn its own visible credit, separate from board time, is
+open — named here, not decided.
+
 **The Nodekeeper** · *RelayNode operator*
 Runs a relay and IPFS node. Never touches the field, never holds watch.
 *"I want to run a node without being able to read the traffic."*

@@ -46,6 +46,13 @@ has to be watching.*
 An agent covers the nights nobody signs up, so a thin roster is survivable while it
 grows.
 
+**Two different things are being recruited for here, and the pitch above is only the
+first.** Holding the board is one axis. Keeping the box that makes an always-on board
+possible — patched, backed up, drilled, up at 3am — is a second, distinct form of service:
+the **Stationkeeper** ([roster](../research/ecosystem-roster.md)). Someone can do a great
+deal of the second while personally doing very little of the first, and reading the pitch
+above as the whole recruiting story undersells them.
+
 ## Mechanisms
 
 ### 1. Endorsement as invitation — primary

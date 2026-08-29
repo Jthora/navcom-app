@@ -326,10 +326,14 @@ same reason — in an emergency you want everyone.
 This is ranked above decentralising the board on purpose: **a watch going Dark is
 survivable and specified. An escalation that never fires is not.**
 
-## Gated on the Field Terminal
+## Console — superseded, not completed
 
-**Console.** Served from the box over LAN or localhost — see [`delivery.md`](delivery.md)
-for why it cannot be served from navcom.app.
+This page previously gated the Console on being served from the box over LAN or localhost,
+citing `delivery.md` for why it could not be served from `navcom.app`. That gate stopped
+applying before anything met it: `delivery.md`'s 2026-08-19 reversal made holding watch **a
+mode of the same app** rather than a second, separately-served one, and Milestone 4.1 shipped
+it — `/terminal/watch/`, served from `navcom.app` like everything else. Nothing here was
+built LAN-only; the requirement describing that stopped being true.
 
 ## The escalation ladder — built, unproven, and running with nobody on-call
 
@@ -795,12 +799,50 @@ deploy account. All the same person.
 | 9.7 | More than one on-call, and a way to hand it over | **human** | 2.1 gets to one; this gets past one |
 | 9.8 | The log reviewer | **human** | Named in `CLAUDE.md` as a role that *"cannot be the agent or verification is theatre"* |
 | 9.9 | ~~CI is not running at all~~ | **declined** | Not coming back, and recorded as a decision rather than left as a permanently-open task. Forty consecutive runs blocked by a billing lock from 2026-08-19; the workflow was deleted on 2026-08-24 because **a workflow that will never run is a dead dependency**, and a repository that looks continuously verified and is not is worse than one that is openly unverified. **The cost, stated:** no browser suite on deploy, no scheduled run to notice a dependency going bad, and no second machine. **What replaced it:** `vercel.json` runs every workspace's `verify` as its build command, so a deploy that ships is a deploy whose tests passed, and each run writes a receipt published at `/.well-known/navcom-health.json` |
+| 9.10 | **A Stationkeeper onboarding doc** — the commitment, before the setup steps | agent | `propagation.md` already has the recruiting pitch — *"you don't have to patrol to be useful; someone has to be watching"* — but nothing turns that into what keeping a station actually costs: uptime, backups, drills, being woken up. Write the second half, not a competing first half |
 | 10.a | ~~Pin the directory somewhere public~~ | **partly** | The archive and its identifier are computed at build time with no account and published at `/_ipfs/`. **The default is that a node pulls it** — `curl … \| ipfs dag import` — so NavCom holds no credential for anybody's infrastructure, which is the keyless-pager reasoning applied to storage. An opt-in push over Kubo `dag/import` runs when `IPFS_RPC_API_*` is set; its wire format is tested against a real HTTP server, its credential is scrubbed from anything the service echoes back, and a root mismatch is reported rather than reconciled. Every failure is recorded in the receipt and none blocks the deploy. Nothing is held by anybody until a node actually imports it, and the receipt says so |
 | 10.b | The accountability log has a retrieval path | **deferred** | Trigger: *a log exists and a reviewer is named.* `merkle.ts` currently has exactly one consumer in the repository — its own test file. Nothing writes an entry, 9.8 is unfilled, and no night has been carried. Building a pipe for a log nobody produces, for a reviewer who does not exist, is what 6.x's weather-activation was declined for |
 | 10.c | A drill witness | **deferred** | Trigger: *a pager is running and a drill has fired.* Mecha Jono sees a `20911` arrive without reading it, so it can attest to the escalation path in a way NavCom cannot attest about itself. Gated on Milestone 2 |
 | 10.d | Sideloading a region by hash | **deferred** | Trigger: *one operator without a data plan.* Verifying a single region file by raw CID is `sha256` plus thirty lines and fits the budget; full UnixFS in the browser does not. Speculative until somebody is off-grid |
 
 **Mostly not code**, which is the finding rather than an excuse.
+
+### Stationkeeper — naming who runs the box, and what they actually need to
+
+Two things this milestone's items were quietly asking for a name for. **Holding watch** —
+answering `Query`, watching the board — and **keeping a station** — the box itself staying
+patched, backed up, drilled, and up at 3am — are different axes. `propagation.md` already has
+the recruiting pitch for the first: *"you don't have to patrol to be useful; someone has to
+be watching."* It doesn't yet distinguish the second, and undersells whoever mostly does
+that. **Stationkeeper** names it: whoever stands up and maintains a box, whether or not they
+personally hold most of its shifts. Full entry in
+[`research/ecosystem-roster.md`](research/ecosystem-roster.md).
+
+**No new permission mechanism.** Standing up your own box is already the founder case (7.2)
+— nobody needs anyone's endorsement to become one, and no global registry of Stationkeepers
+will exist, for the same reason there is no directory of Watchtowers: each box's sign-on
+allowlist stays local to the people its own Stationkeeper personally knows.
+
+**The minimal deploy is smaller than the reference Jetson, and needs no owned hardware.**
+`console.md`'s four bundled services split cleanly by who has to hold the key:
+
+- **Must stay under the Stationkeeper's own control:** the watch state machine and the
+  escalation executor — both keyed to the Watchtower's own privkey. Control, not ownership: a
+  rented VPS satisfies this exactly as well as a box at home, provided the key never leaves it
+- **Need not run themselves:** a relay (public, the MVP default — or a Nodekeeper's shared
+  RelayNode) and a directory host (the terminal already caches the public directory
+  independent of whichever Watchtower it is paired with)
+
+**Worth reconsidering, not decided:** whether 9.6's restore drill should target this minimal
+path specifically — daemon plus public relays, no box or VPS preference implied — rather than
+the full reference stack, since that is closer to what becoming a Stationkeeper actually
+requires. Left as a question for whoever runs the drill. **9.4's turnkey deploy** — a script
+or image standing up just the minimal piece — is a concrete candidate this always lacked,
+independent of how that question resolves.
+
+**Open, not decided:** whether keeping a station should earn its own visible credit,
+distinct from board time (7.6) and the corrected-record standing model — both currently
+track the first axis, not the second. Named so the gap isn't invisible; not resolved here.
 
 **Deferred — RelayNode.** It was in the first draft as a way to remove strangers from the
 path. It also **adds** a single point of failure to the milestone about removing them: a relay

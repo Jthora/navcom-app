@@ -68,6 +68,15 @@ Reference deployment is a Jetson Orin AGX running:
 
 One node, and the whole system works for a small roster. That's the bootstrap.
 
+**This is the reference deployment, not the minimum one.** Only two of these four need the
+Watchtower's own key, and therefore must run on hardware the **Stationkeeper** — whoever
+keeps a station running, [named in the roster](../research/ecosystem-roster.md) — personally
+controls: the watch state machine and the escalation ladder. A relay can be the public
+default or somebody else's RelayNode; a directory host is a convenience the terminal doesn't
+depend on, since it already caches the public directory on its own. See
+[`../build-order.md`](../build-order.md), Milestone 9, for the split and why it matters as
+more than one person runs a box.
+
 **Local inference matters beyond convenience.** Operator signals, positions and queries
 never leave the box for a third-party model. A cloud agent would put the network's
 operational picture in someone else's datacentre, which fails the privacy posture
@@ -81,3 +90,9 @@ time counts in their record. `can take watch` is an endorsement scope like any o
 This matters more than it sounds: it makes a genuine post for people who can't be in the
 field — through disability, circumstance, distance, or simply being better at a console
 than on a street. The network needs them more than it needs another body on patrol.
+
+**Holding watch and keeping a station are different axes.** This section is about the
+first — whoever is at the console tonight. The Stationkeeper, above, may hold very few
+shifts personally if the box serves others; standing (7.6 in
+[`build-order.md`](../build-order.md)) currently credits the first axis and not the second,
+which is named as an open question there rather than settled here.

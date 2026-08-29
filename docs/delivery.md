@@ -88,6 +88,11 @@ the support-class operator's station** — what "the guy in the chair" physicall
 Oracle in [the roster](research/ecosystem-roster.md) has wanted exactly this from the start:
 board time that counts as service, from someone who cannot be in the field.
 
+**Standing one up is the Stationkeeper's role** ([roster entry](research/ecosystem-roster.md)),
+and it is smaller than the table above implies: only the third row needs the key on hardware
+that Stationkeeper personally controls. A relay and a directory host can be somebody else's —
+see [`build-order.md`](build-order.md), Milestone 9, for the split.
+
 Off-grid is where hardware earns its place again: a LoRa mesh needs a bridge, a web app
 cannot talk to a radio, and a station that already exists is the natural place to put one.
 Deferred until there is hardware to put it in.
