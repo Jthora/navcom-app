@@ -59,10 +59,32 @@ describe('per-region figures — directory facts only, never a watch/coverage cl
     expect(figures.b.languages).toEqual(['en']);
   });
 
-  it('skips records with no region rather than crashing', () => {
+  it('skips records with no region rather than crashing, without dropping the regions themselves', () => {
     const records = [record({ id: '1', region: undefined })];
     expect(() => regionFigures(records, regions)).not.toThrow();
-    expect(Object.keys(regionFigures(records, regions))).toHaveLength(0);
+    // The record itself is attributed to nobody, but region entries still exist -- see the
+    // zero-record tests below for why that distinction is now the whole point.
+    expect(regionFigures(records, regions).a.records).toBe(0);
+    expect(regionFigures(records, regions).b.records).toBe(0);
+  });
+
+  it('gives a region with zero records a real entry rather than omitting it (found in robustness audit)', () => {
+    // This used to be built only from records seen, so a region with none was silently
+    // absent -- which made the root console's manual region picker omit all 35 of the 68
+    // committed regions that have no data yet.
+    const figures = regionFigures([record({ region: 'a' })], regions);
+    expect(figures.b).toBeDefined();
+    expect(figures.b.records).toBe(0);
+    expect(figures.b.confirmedByPerson).toBe(0);
+    expect(figures.b.freshest).toBeNull();
+    expect(figures.b.name).toBe('Beta');
+  });
+
+  it('still surfaces a record naming a region absent from the region list, under its own slug', () => {
+    const records = [record({ id: '1', region: 'unlisted' })];
+    const figures = regionFigures(records, regions);
+    expect(figures.unlisted.records).toBe(1);
+    expect(figures.unlisted.name).toBe('unlisted');
   });
 
   it('carries no field that could read as a watch or coverage claim', () => {

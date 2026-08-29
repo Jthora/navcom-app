@@ -42,7 +42,12 @@ export function locateOnce(): Promise<Fix | null> {
 function metresApart(a: Fix, b: Fix): number {
   const R = 6_371_000;
   const rad = Math.PI / 180;
-  const x = (b.lon - a.lon) * rad * Math.cos(((a.lat + b.lat) / 2) * rad);
+  // Wrapped to [-180, 180): found in robustness audit. A raw longitude difference blows up
+  // crossing the antimeridian -- two points 0.2 degrees apart at +/-179.9 computed as
+  // ~40,000km instead of ~22km. Latent everywhere every current region is (nowhere near the
+  // dateline), not live -- cheap to close regardless.
+  const dLon = ((b.lon - a.lon + 540) % 360) - 180;
+  const x = dLon * rad * Math.cos(((a.lat + b.lat) / 2) * rad);
   const y = (b.lat - a.lat) * rad;
   return Math.hypot(x, y) * R;
 }

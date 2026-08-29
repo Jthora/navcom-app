@@ -13,6 +13,7 @@ import { dedupe, metresApart, nameKey } from "../src/dedupe.js";
 import { COLUMNS, toCsv } from "../src/emit.js";
 import { isHumanVerified, merge } from "../src/merge.js";
 import { mapType, normalise, normalisePhone, seededId } from "../src/normalise.js";
+import { parseRecordArgs } from "../src/record.js";
 import { RESOURCE_TYPES } from "@navcom/core";
 import type { RawRecord, SeededRecord } from "../src/seeded.js";
 import { fromOverpass, overpassQuery } from "../src/sources/osm.js";
@@ -144,8 +145,13 @@ describe("normalising", () => {
     expect(out.lat).toBeUndefined();
   });
 
-  it("refuses a record with no name", () => {
-    expect(() => normalise("st-louis", raw({ name: "  ", category: "shelter" }))).toThrow(/no name/);
+  it("drops a record with no name rather than throwing (found in robustness audit)", () => {
+    // This function's own contract, stated one line above its signature, is "null when the
+    // record cannot be characterised -- the caller drops it and reports why." A throw here
+    // used to mean one bad record from a future second source could kill the whole region's
+    // build instead of being tallied and skipped like every other unusable record in this
+    // file (mapType() already honoured the contract; this did not).
+    expect(normalise("st-louis", raw({ name: "  ", category: "shelter" }))).toBeNull();
   });
 });
 
@@ -199,6 +205,15 @@ describe("deduplication keeps both when unsure", () => {
     const km = metresApart({ lat: 38.627, lon: -90.199 }, { lat: 38.636, lon: -90.199 });
     expect(km).toBeGreaterThan(900);
     expect(km).toBeLessThan(1100);
+  });
+
+  it("does not blow up crossing the antimeridian (found in robustness audit)", () => {
+    // A raw longitude difference here used to compute two points 0.2 degrees apart, on
+    // opposite sides of +/-180, as roughly the earth's circumference apart instead of
+    // ~22km. Latent today -- no current region is near the dateline -- cheap to close.
+    const km = metresApart({ lat: 0, lon: 179.9 }, { lat: 0, lon: -179.9 });
+    expect(km).toBeGreaterThan(20_000);
+    expect(km).toBeLessThan(25_000);
   });
 
   it("ignores the words that appear in half of all charity names", () => {
@@ -453,5 +468,34 @@ describe("the CSV", () => {
     const rows = toCsv([committed({ id: "a", name: 'The "Big" House, Inc.', notes: "line\nbreak" })]);
     expect(rows).toContain('"The ""Big"" House, Inc."');
     expect(rows).toContain('"line\nbreak"');
+  });
+});
+
+describe("recording a call (found in robustness audit: --on had no coverage at all)", () => {
+  const args = ["place-a", "--by", "Wren", "--method", "phone", "--on", "2026-08-19", "--pets", "yes"];
+
+  it("accepts a well-formed call", () => {
+    const parsed = parseRecordArgs("st-louis", args);
+    expect(parsed.on).toBe("2026-08-19");
+    expect(parsed.fields.pets).toBe("yes");
+  });
+
+  it("refuses a calendar-invalid date rather than writing it straight to committed data", () => {
+    // The same bug class as the other three isValidIsoDate call sites, missed here because
+    // this file is outside area 3's scope: a shape-only regex let "2023-02-30" through,
+    // wrote it into the CSV, and only failed later -- at the next build/apply on the
+    // region, or a full site build -- days after a volunteer mistyped it on a call.
+    const bad = ["place-a", "--by", "Wren", "--method", "phone", "--on", "2023-02-30", "--pets", "yes"];
+    expect(() => parseRecordArgs("st-louis", bad)).toThrow(/real YYYY-MM-DD date/);
+  });
+
+  it("refuses a shape-invalid date too", () => {
+    const bad = ["place-a", "--by", "Wren", "--method", "phone", "--on", "08/19/2026", "--pets", "yes"];
+    expect(() => parseRecordArgs("st-louis", bad)).toThrow(/real YYYY-MM-DD date/);
+  });
+
+  it("defaults --on to today when omitted, and today is always valid", () => {
+    const noOn = ["place-a", "--by", "Wren", "--method", "phone", "--pets", "yes"];
+    expect(() => parseRecordArgs("st-louis", noOn)).not.toThrow();
   });
 });

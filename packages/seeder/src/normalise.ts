@@ -140,8 +140,15 @@ function tidy(s: string | undefined): string | undefined {
 
 /** Null when the record cannot be characterised. The caller drops it and reports why. */
 export function normalise(region: string, raw: RawRecord, country = "US"): SeededRecord | null {
+  // Skipped and reported, not thrown: found in robustness audit. This function's own
+  // contract, one line down, is "null when the record cannot be characterised -- the caller
+  // drops it and reports why," and mapType() already honours it. A throw here means one bad
+  // record from a future second source module kills the whole region's build instead of
+  // being tallied and skipped like everything else in this file. Currently unreachable --
+  // the one wired source, osm.ts, already filters a nameless record before it gets here --
+  // which is exactly what makes this a landmine rather than a live bug.
   const name = tidy(raw.name);
-  if (!name) throw new Error(raw.source + ":" + raw.sourceId + " has no name");
+  if (!name) return null;
 
   const type = mapType(raw.category);
   if (!type) return null;

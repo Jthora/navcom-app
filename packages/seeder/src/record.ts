@@ -1,4 +1,5 @@
 import { readFileSync, writeFileSync } from "node:fs";
+import { isValidIsoDate } from "@navcom/core";
 
 /**
  * Writing down what somebody told you on the phone.
@@ -80,7 +81,12 @@ export function parseRecordArgs(slug: string, rest: string[]): RecordArgs {
   }
 
   const on = flags["on"] ?? new Date().toISOString().slice(0, 10);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(on)) throw new Error("--on must be YYYY-MM-DD.");
+  // isValidIsoDate, not a shape-only regex: found in robustness audit as a fourth site with
+  // the same bug the other three (parse.ts, corrections.ts, places.ts) were fixed for --
+  // "2023-02-30" passed a bare regex here, was written straight into committed data, and
+  // only failed later, at the wrong time and the wrong blast radius: the next build/apply
+  // on the region, or a full site build, days after a volunteer mistyped a date on a call.
+  if (!isValidIsoDate(on)) throw new Error("--on must be a real YYYY-MM-DD date.");
 
   const fields: Record<string, string> = {};
   for (const [k, v] of Object.entries(flags)) {

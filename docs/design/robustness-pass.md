@@ -70,11 +70,60 @@ respectively, neither on a path where a gap reaches someone in the cold.
 
 | | Area | State |
 |---|---|---|
-| 1 | Escalation ladder + accountability log | **done — 6 real gaps found, 5 fixed, 1 deliberately not built yet** |
+| 1 | Escalation ladder + accountability log | **done — 6 real gaps found, all fixed** (one fix leaves a named follow-up: log-review doesn't yet merge the executor's own log) |
 | 2 | Crypto + transport (`packages/core/crypto`, `transport.ts`) | **done — 3 minor gaps found, 2 fixed, 1 declined** |
-| 3 | Daemon board + directory/corrections | **done — 6 real gaps found and fixed, 2 lower-risk edge cases noted, not fixed** |
+| 3 | Daemon board + directory/corrections | **done — 7 real gaps found and fixed** (2 additional items checked and confirmed low-risk, not counted as findings) |
 | 4 | Terminal storage tiers + UI error surfacing | **done — 7 real gaps found and fixed, 1 already-acknowledged pattern re-confirmed** |
-| 5 | Root console + seeder | queued |
+| 5 | Root console + seeder | **done — 4 real gaps found and fixed, all low severity as expected of the lowest-stakes area** |
+
+**The pass is complete.** All five areas audited, triaged, and verified. Totals below.
+
+### 5 — what was found, and what happened to each finding
+
+The lowest-stakes area by design, and it came back that way: no serious findings, mostly
+confirmed-solid (per-source fetch isolation in the seeder, `merge.ts`'s human-row protections,
+`dedupe.ts`'s high merge bar, the root console's pole-safe `coarsen()` and non-rejecting
+one-shot geolocation). Four small, genuinely latent-not-live gaps, all fixed:
+
+- **A fourth site with the calendar-invalid-date bug area 3 fixed at three others.**
+  `packages/seeder/src/record.ts`'s `--on` flag used the same shape-only regex, missed
+  because the seeder package was outside area 3's scope. **Fixed** — reuses the same
+  `isValidIsoDate()` — and gained its first-ever test coverage in the process (`record.ts`
+  had none at all, despite its own docstring calling it "the one file in the project where a
+  careless write ends with somebody standing outside a locked door").
+- **`metresApart()` — duplicated in the seeder and the root console — breaks at the
+  antimeridian.** A raw longitude difference computes two points 0.2° apart on opposite
+  sides of ±180° as roughly the earth's circumference instead of ~22km. No current region is
+  near the dateline, so this is latent, not live. **Fixed in both copies** (not consolidated
+  — that non-consolidation was itself a considered decision recorded in the root console
+  roadmap, for one call site's blast radius; this fix respects it).
+- **The root console's region picker silently omitted every region with zero records** —
+  `regionFigures()` was built only from records seen, contradicting its own "computed once...
+  for whichever region resolves to" premise and CLAUDE.md's own stated value that every
+  region should be reachable, seeded or not. **Fixed** — every region now gets a real entry.
+- **A nameless raw record would throw and kill an entire region's build**, instead of being
+  tallied and skipped like every other unusable record in the same file — a landmine, since
+  the one wired source already filters this case before it arrives. **Fixed** — matches the
+  function's own stated contract now.
+
+Verified: seeder 56 tests (up from 51), web's full `verify:deploy` (465 unit tests, budget
+within bounds), watchtower 221 — all clean.
+
+## Totals across all five areas
+
+**27 real, independently-verified findings — 6 + 3 + 7 + 7 + 4 across the five areas above.
+26 fixed, 1 declined** (area 2's hybrid-keygen recompute, with reasoning recorded there).
+A handful of additional items were checked and confirmed low-risk or already-correct along
+the way (idempotency in area 1, cross-tab storage races and orphaned corrections in area 3,
+an already-acknowledged pattern in area 4) — these aren't counted in the 27, since they were
+never gaps to begin with, just questions this pass's own six dimensions asked and answered
+"no."
+
+The single most important finding: `Distress` could fail completely silently (area 4) — now
+fixed and covered by a new e2e test. Every fix in this pass was verified against the real
+`verify`/`verify:deploy` script for every workspace it touched, not just `vitest run`, after
+that distinction itself caused a deploy failure mid-pass (the fix and the lesson are both
+recorded above, area 2).
 
 ### 4 — what was found, and what happened to each finding
 

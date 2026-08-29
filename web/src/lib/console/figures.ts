@@ -32,8 +32,19 @@ export function regionFigures(
     byRegion.set(r.region, f);
   }
 
+  // Every region gets an entry, not just the ones with records: found in robustness audit
+  // that a region with zero rows was silently absent here entirely, contradicting this
+  // function's own "computed once... for whichever region resolves to" premise. Concretely,
+  // it made the root console's manual region picker omit all 35 of the 68 committed regions
+  // that have no data yet -- the same regions CLAUDE.md's own "Current scope" already says
+  // are deliberately prerendered "because until this they had no page at all." Started from
+  // the full region list, not just `byRegion`'s keys, so a zero-record region still gets a
+  // real (zero) entry; any record naming a region absent from that list still surfaces too,
+  // under its own slug, same as before.
   const out: Record<string, ConsoleRegionFigures> = {};
-  for (const [slug, f] of byRegion) {
+  const slugs = new Set([...regions.map((r) => r.slug), ...byRegion.keys()]);
+  for (const slug of slugs) {
+    const f = byRegion.get(slug) ?? { records: 0, confirmedByPerson: 0, freshest: null };
     const region = regions.find((rg) => rg.slug === slug);
     out[slug] = { region: slug, name: region?.name ?? slug, languages: region?.languages ?? [], ...f };
   }
