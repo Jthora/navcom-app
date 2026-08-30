@@ -301,15 +301,26 @@ export const operator = {
    * The check is the point. A response carries entries, proofs and the root they are
    * against — all three from the watch — so verifying them against each other proves
    * nothing. `checkReview` accepts only a root this device saw published itself.
+   *
+   * `escalation` is a second, independent account — the executor's own log, not the
+   * watch's — present only when the watch was configured to know where to find it. It is
+   * checked the same way and just as honestly: this device has never seen that log's
+   * commitment published anywhere, so `checkReview` will correctly say so rather than
+   * quietly treating it as trusted. `null` means nothing to show, not "checked and clean."
    */
-  async reviewLog(): Promise<ReviewCheck | null> {
+  async reviewLog(): Promise<{ own: ReviewCheck; escalation: ReviewCheck | null } | null> {
     const response = await run(() => send('log-review', {}, 20_000));
     if (!response) return null;
     lastResponse = response;
     if (!response.review) return null;
     const identity = loadIdentity();
     if (!identity) return null;
-    return checkReview(response.review, seenRoots(), identity.pubkey);
+    return {
+      own: checkReview(response.review, seenRoots(), identity.pubkey),
+      escalation: response.review.escalation
+        ? checkReview(response.review.escalation, [], identity.pubkey)
+        : null
+    };
   },
 
   /**

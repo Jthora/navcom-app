@@ -61,6 +61,16 @@ export interface DaemonConfig {
      * else, which is what keeps a hung executor from being able to hang the watch.
      */
     drillStatePath: string;
+    /**
+     * Where the escalation executor keeps its own accountability log, if it has one.
+     *
+     * Read-only, same rule as `drillStatePath`: this daemon never writes here and never
+     * depends on the executor being alive to read it. `null` when not configured -- most
+     * deployments today don't set `EscalationConfig.log.path` to anything the daemon also
+     * knows about, and `log-review` degrades to answering from this watch's own log alone,
+     * same as before this field existed.
+     */
+    escalationLogPath: string | null;
   };
 }
 
@@ -104,6 +114,7 @@ interface RawToml {
     path?: string;
     retention_days?: number;
     drill_state_path?: string;
+    escalation_log_path?: string;
   };
 }
 
@@ -200,6 +211,7 @@ export function loadDaemonConfig(path: string): DaemonConfig {
       // string, and a string retention would make every age comparison nonsense.
       retentionDays: positiveNumber(raw.log?.retention_days, "retention_days", DEFAULTS.logRetentionDays, path),
       drillStatePath: raw.log?.drill_state_path ?? DEFAULTS.drillStatePath,
+      escalationLogPath: raw.log?.escalation_log_path ?? null,
     },
   };
 }

@@ -158,3 +158,88 @@ test.describe('checking the watch\'s record of you', () => {
     await expect(page.getByText(/not a glitch/i)).toBeVisible();
   });
 });
+
+test.describe('the escalation executor\'s own account (log-review merge)', () => {
+  test('shows its entries honestly unverified, distinct from the watch\'s own checked record', async ({ page }) => {
+    const { getPublicKey, generateSecretKey } = await import('nostr-tools/pure');
+    const watchSecret = generateSecretKey();
+    const { root, entries } = await reviewFixture();
+
+    // A second, independent log -- same fixture shape, different content, so the two
+    // sections are never confusable as the same data rendered twice.
+    const { emptyLog, appendEntry, merkleRoot, inclusionProof } = await import('@navcom/core');
+    const me = getPublicKey(mine());
+    const escalationLog = appendEntry(emptyLog(), {
+      at: 1_800_000_500,
+      actor: { kind: 'node', callsign: 'escalation' },
+      action: 'escalated',
+      subject: { kind: 'human', pubkey: me },
+      outcome: 'escalation-reached-human'
+    });
+    const escalationRoot = merkleRoot(escalationLog, 0);
+    const escalationEntries = [{ entry: escalationLog[0]!, proof: inclusionProof(escalationLog, 0) }];
+
+    const reply = await replyBuilder(watchSecret, {
+      type: 'log-review',
+      responder: { kind: 'agent', callsign: 'watchtower' },
+      text: null,
+      provenance: null,
+      review: {
+        root,
+        entries,
+        more: false,
+        escalation: { root: escalationRoot, entries: escalationEntries, more: false }
+      }
+    });
+
+    // seen_roots only covers the watch's own root -- never the escalation log's, which is
+    // the whole point: nothing publishes that one anywhere yet.
+    await seedDevice(page, {
+      callsign: 'Wren',
+      watchtower: { pubkey: getPublicKey(watchSecret), relays: ['wss://fake.relay'] },
+      relayEvents: [await up(watchSecret)],
+      accruing: { seen_roots: [root] }
+    });
+    await open(page, '/terminal/log/');
+    await page.getByRole('button', { name: /ask the watch/i }).click();
+    await answerNextSignal(page, reply);
+
+    // The primary record still checks out normally.
+    await expect(page.locator('[data-verdict="verified"]')).toBeVisible({ timeout: 10_000 });
+
+    // The escalation section renders, names itself honestly, and shows its entry.
+    const escalationSection = page.locator('section.escalation');
+    await expect(escalationSection).toBeVisible();
+    await expect(escalationSection).toContainText(/not yet checkable/i);
+    await expect(escalationSection).toContainText(/escalation reached human/i);
+    // And it must not claim the primary section's own not-checked framing -- that one
+    // promises waiting will fix it, and this limit never resolves by waiting.
+    await expect(escalationSection).not.toContainText(/leave it on/i);
+  });
+
+  test('does not render the section at all when no escalation log is configured', async ({ page }) => {
+    const { getPublicKey, generateSecretKey } = await import('nostr-tools/pure');
+    const watchSecret = generateSecretKey();
+    const { root, entries } = await reviewFixture();
+    const reply = await replyBuilder(watchSecret, {
+      type: 'log-review',
+      responder: { kind: 'agent', callsign: 'watchtower' },
+      text: null,
+      provenance: null,
+      review: { root, entries, more: false }
+    });
+
+    await seedDevice(page, {
+      callsign: 'Wren',
+      watchtower: { pubkey: getPublicKey(watchSecret), relays: ['wss://fake.relay'] },
+      relayEvents: [await up(watchSecret)],
+      accruing: { seen_roots: [root] }
+    });
+    await open(page, '/terminal/log/');
+    await page.getByRole('button', { name: /ask the watch/i }).click();
+    await answerNextSignal(page, reply);
+
+    await expect(page.locator('[data-verdict="verified"]')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('section.escalation')).toHaveCount(0);
+  });
+});

@@ -249,6 +249,39 @@ export class WatchtowerDaemon {
     return { type: "ack", responder: { kind: "agent", callsign: this.agentName }, text: null, provenance: null };
   }
 
+  /**
+   * What the escalation executor's own log says about this operator, if this daemon has
+   * been told where to find it. `undefined` when not configured -- most deployments today
+   * don't set this, and log-review degrades to answering from this watch's own log alone,
+   * same as before this existed.
+   *
+   * Opened fresh on every call rather than held, matching `root()`'s own "recomputed on
+   * demand" reasoning: a cached view of tamper-evidence that drifted from the file would be
+   * the single most misleading value here. Read-only and never fatal -- an accountability
+   * problem must not become an availability one, same rule this daemon holds for its own
+   * log, and the executor being down or the file not existing yet must not break
+   * `log-review` for the part this daemon can still answer.
+   *
+   * The review returned here carries no root this device can independently verify yet --
+   * nothing publishes the escalation log's commitment anywhere. Surfacing it unverified is
+   * still real progress over not surfacing it at all, and the terminal says so plainly
+   * rather than implying a check that hasn't happened.
+   */
+  private reviewEscalationLog(
+    pubkey: string,
+    opts: { since?: number; limit?: number },
+  ): ReturnType<AccountabilityLog["reviewFor"]> | undefined {
+    const path = this.config.log.escalationLogPath;
+    if (!path) return undefined;
+    try {
+      const { log } = AccountabilityLog.open(path, this.config.log.retentionDays);
+      return log.reviewFor(pubkey, opts);
+    } catch (err: unknown) {
+      console.error(`[log-review] could not read the escalation log at ${path}: ${String(err)}`);
+      return undefined;
+    }
+  }
+
   private handleOnStation(operatorPubkey: string, rawPayload: unknown): void {
     // Found in review: this used to trust `payload as OnStationPayload`
     // with zero runtime checking -- a malformed expected_duration
@@ -370,15 +403,20 @@ export class WatchtowerDaemon {
             };
             break;
           }
+          const reviewOpts = {
+            ...(typeof req.since === "number" ? { since: req.since } : {}),
+            ...(typeof req.limit === "number" ? { limit: req.limit } : {}),
+          };
+          const escalation = this.reviewEscalationLog(event.pubkey, reviewOpts);
           response = {
             type: "log-review",
             responder: { kind: "agent", callsign: this.agentName },
             text: null,
             provenance: null,
-            review: this.accountability.reviewFor(event.pubkey, {
-              ...(typeof req.since === "number" ? { since: req.since } : {}),
-              ...(typeof req.limit === "number" ? { limit: req.limit } : {}),
-            }),
+            review: {
+              ...this.accountability.reviewFor(event.pubkey, reviewOpts),
+              ...(escalation ? { escalation } : {}),
+            },
           };
           break;
         }

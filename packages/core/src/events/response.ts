@@ -86,6 +86,17 @@ export interface LogReview {
   entries: { entry: LogEntry; proof: InclusionProof }[];
   /** True when the node held more than it sent. Paging exists because relays cap message size. */
   more: boolean;
+  /**
+   * What the escalation executor's own log says, if the daemon has been told where to find
+   * it. Absent when not configured -- most deployments today don't set this.
+   *
+   * A separate chain with its own root, and **this device has no way to independently
+   * verify that root yet**: nothing publishes it anywhere, unlike the primary review's root
+   * (published on `10910`). `checkReview` run against it will honestly report
+   * `root-not-seen` — not a bug, the accurate reflection of what is and isn't checkable
+   * today. Publishing this root too is real, separate, future work.
+   */
+  escalation?: Omit<LogReview, 'escalation'>;
 }
 
 export function buildResponse(

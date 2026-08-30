@@ -20,7 +20,7 @@
   import { watch } from '$lib/terminal/watch.svelte';
   import { seenRoots } from '$lib/terminal/roots';
 
-  let check = $state<ReviewCheck | null>(null);
+  let result = $state<{ own: ReviewCheck; escalation: ReviewCheck | null } | null>(null);
   let asked = $state(false);
   let roots = $state(0);
 
@@ -32,9 +32,11 @@
 
   async function ask() {
     asked = true;
-    check = await operator.reviewLog();
+    result = await operator.reviewLog();
     roots = seenRoots().length;
   }
+
+  const check = $derived(result?.own ?? null);
 
   const notSeen = $derived(
     check?.problems.some((p) => p.kind === 'root-not-seen') ?? false
@@ -169,6 +171,38 @@
     {/if}
   </section>
 
+  {#if result?.escalation}
+    <section class="escalation">
+      <h2>What the escalation executor recorded</h2>
+      <p>
+        A separate account, from a separate process — the one that actually runs the ladder
+        when you signal <code>Distress</code>. <strong>Not yet checkable</strong> the way the
+        record above is: nothing publishes this log's own commitment anywhere, so there is no
+        root this device could have seen. That is a real limit, not a "come back later" —
+        until publishing one exists, what follows is the executor's own word, unproven.
+      </p>
+      <section class="entries">
+        <h3>
+          {result.escalation.entries.length}
+          entr{result.escalation.entries.length === 1 ? 'y' : 'ies'}
+        </h3>
+        {#if result.escalation.entries.length === 0}
+          <p>Nothing recorded about you there either.</p>
+        {:else}
+          <ol>
+            {#each result.escalation.entries as { entry }, i (i)}
+              <li>
+                <span class="at">{when(entry.at)}</span>
+                <span class="what">{WORDING[entry.action] ?? entry.action}</span>
+                <span class="outcome">{entry.outcome.replace(/-/g, ' ')}</span>
+              </li>
+            {/each}
+          </ol>
+        {/if}
+      </section>
+    </section>
+  {/if}
+
 {:else if asked && !operator.busy && !operator.error}
   <section>
     <p>The watch answered, and it keeps no accountability log at all.</p>
@@ -197,4 +231,10 @@
           color: var(--t-dark); }
 
   .limit { border-inline-start: 3px solid var(--t-line-strong); padding-inline-start: .9rem; }
+  .escalation {
+    border: 2px solid var(--t-line-strong); padding: 1rem 1.1rem; display: flex;
+    flex-direction: column; gap: .6rem;
+  }
+  .escalation h2 { font-size: 1rem; }
+  .escalation h3 { font-size: .9rem; color: var(--t-muted); margin: 0; }
 </style>

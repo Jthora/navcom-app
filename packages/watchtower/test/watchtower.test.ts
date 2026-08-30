@@ -22,7 +22,11 @@ import { verifyInclusion } from "@navcom/core";
  * A real, injectable fake SimplePool (see WatchtowerDaemonOptions.pool)
  * makes this possible without a network connection.
  */
-function fakeConfig(overrides: Partial<DaemonConfig["watch"]> = {}, allowedPubkeys: string[] = []): DaemonConfig {
+function fakeConfig(
+  overrides: Partial<DaemonConfig["watch"]> = {},
+  allowedPubkeys: string[] = [],
+  escalationLogPath: string | null = null,
+): DaemonConfig {
   return {
     identity: { privkeyPath: "/dev/null" },
     relays: { urls: ["wss://fake.relay"] },
@@ -38,7 +42,7 @@ function fakeConfig(overrides: Partial<DaemonConfig["watch"]> = {}, allowedPubke
     authorization: { allowedPubkeys },
     // Tests that care about the log inject an AccountabilityLog directly; this path is
     // never opened, so a daemon built from fakeConfig records nothing.
-    log: { path: "/dev/null", retentionDays: 90, drillStatePath: "/dev/null/nope" },
+    log: { path: "/dev/null", retentionDays: 90, drillStatePath: "/dev/null/nope", escalationLogPath },
   };
 }
 
@@ -67,12 +71,13 @@ function buildDaemon(
   configOverrides: Partial<DaemonConfig["watch"]> = {},
   allowedPubkeys: string[] = [],
   log?: AccountabilityLog,
+  escalationLogPath: string | null = null,
 ) {
   const secretKey = generateSecretKey();
   const pubkey = getPublicKey(secretKey);
   const { pool, publishedEvents, deliver } = fakePool();
   const daemon = new WatchtowerDaemon({
-    config: fakeConfig(configOverrides, allowedPubkeys),
+    config: fakeConfig(configOverrides, allowedPubkeys, escalationLogPath),
     secretKey,
     pubkey,
     pool,
@@ -115,8 +120,9 @@ async function started(
   configOverrides: Partial<DaemonConfig["watch"]> = {},
   allowedPubkeys: string[] = [],
   log?: AccountabilityLog,
+  escalationLogPath: string | null = null,
 ) {
-  const ctx = buildDaemon(configOverrides, allowedPubkeys, log);
+  const ctx = buildDaemon(configOverrides, allowedPubkeys, log, escalationLogPath);
   await ctx.daemon.start();
   activeDaemons.push(ctx.daemon);
   return ctx;
@@ -342,6 +348,79 @@ describe("what the watch writes down", () => {
 
     for (const { entry, proof } of review!.entries) {
       expect(verifyInclusion(entry, proof, review!.root)).toBe(true);
+    }
+  });
+
+  it("includes the escalation executor's own log in a review, when configured (log-review merge)", async () => {
+    const a = generateSecretKey();
+    const aPubkey = getPublicKey(a);
+
+    // A separate file, standing in for the executor's own accountability log -- written
+    // directly here, the way the executor itself writes to it, entirely independent of
+    // this daemon's own `opened` log.
+    const escalationDir = mkdtempSync(join(tmpdir(), "navcom-escalation-log-"));
+    const escalationPath = join(escalationDir, "escalation-log.jsonl");
+    const escalationLog = AccountabilityLog.open(escalationPath, 90).log;
+    escalationLog.record({
+      at: 1_000,
+      actor: { kind: "node", callsign: "escalation" },
+      action: "escalated",
+      subject: { kind: "human", pubkey: aPubkey },
+      outcome: "escalation-reached-human",
+    });
+    escalationLog.close();
+
+    try {
+      const { pubkey, deliver, publishedEvents } = await started({}, [], opened, escalationPath);
+      deliver(signalEvent(a, pubkey, "log-review", {}));
+      const responseEvent = await waitForResponse(publishedEvents);
+      const { review } = openResponse<ResponsePayload>(a, pubkey, responseEvent.content);
+
+      expect(review?.escalation).toBeDefined();
+      expect(review!.escalation!.entries.map((e) => e.entry.outcome)).toContain(
+        "escalation-reached-human",
+      );
+      // Structurally sound on its own terms -- this device just has no way to have seen
+      // this root published anywhere yet, which is a client-side concern (checkReview),
+      // not something the wire response itself gets wrong.
+      for (const { entry, proof } of review!.escalation!.entries) {
+        expect(verifyInclusion(entry, proof, review!.escalation!.root)).toBe(true);
+      }
+    } finally {
+      rmSync(escalationDir, { recursive: true, force: true });
+    }
+  });
+
+  it("omits the escalation section entirely when no escalation log is configured", async () => {
+    const { pubkey, deliver, publishedEvents } = await started({}, [], opened);
+    const a = generateSecretKey();
+
+    deliver(signalEvent(a, pubkey, "log-review", {}));
+    const responseEvent = await waitForResponse(publishedEvents);
+    const { review } = openResponse<ResponsePayload>(a, pubkey, responseEvent.content);
+
+    expect(review?.escalation).toBeUndefined();
+  });
+
+  it("degrades gracefully when the configured escalation log path does not exist yet", async () => {
+    // The executor hasn't written anything (or hasn't run at all yet) -- a real, common
+    // state, not an error. AccountabilityLog.open() already handles a missing file as an
+    // empty log; this asserts the daemon passes that through rather than treating it as a
+    // failure and dropping the section.
+    const escalationDir = mkdtempSync(join(tmpdir(), "navcom-escalation-log-unwritten-"));
+    const escalationPath = join(escalationDir, "escalation-log.jsonl");
+    try {
+      const { pubkey, deliver, publishedEvents } = await started({}, [], opened, escalationPath);
+      const a = generateSecretKey();
+
+      deliver(signalEvent(a, pubkey, "log-review", {}));
+      const responseEvent = await waitForResponse(publishedEvents);
+      const { review } = openResponse<ResponsePayload>(a, pubkey, responseEvent.content);
+
+      expect(review?.escalation).toBeDefined();
+      expect(review!.escalation!.entries).toHaveLength(0);
+    } finally {
+      rmSync(escalationDir, { recursive: true, force: true });
     }
   });
 
