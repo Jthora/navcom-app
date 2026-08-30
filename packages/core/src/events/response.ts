@@ -19,6 +19,31 @@ export type ResponseType =
   | 'escalation-status'
   | 'log-review'
   /**
+   * *"You are past the time you gave."*
+   *
+   * The **only** thing a node sends an operator without being asked, and it exists because
+   * `watch-state.spec.md` requires it: on crossing overdue grace the node MUST mark the
+   * entry, make it visible to whoever holds watch, **and attempt contact with the
+   * operator**. The first two shipped; the third logged `contact-not-attempted` for months
+   * with a comment saying it should read badly until it stopped being true.
+   *
+   * **This is not an alarm, and the distinction is the whole design.** It goes to the
+   * operator themselves, never to a third party — nobody else is told, nothing is paged,
+   * no ladder starts, and the same spec paragraph forbids all three [C4, invariant 3].
+   * A watch that could raise somebody else on a missed window would be inferring duress
+   * from silence, which is the one thing this system will never do. Asking the person
+   * *"are you still out?"* is the opposite: it resolves the ambiguity by consulting the
+   * only individual who actually knows.
+   *
+   * It needs no new signal to answer it. `routine` says still out, `stood-down` says home,
+   * and both already clear the overdue. The text points at controls that exist.
+   *
+   * **The terminal must not notify on it.** The field terminal is silent, and
+   * `/terminal/on-call/` states in-product that a `Distress` page is the only notification
+   * NavCom ever sends. This arrives and waits to be looked at, like everything else here.
+   */
+  | 'contact'
+  /**
    * *"Nobody is coming."*
    *
    * An `assist` means **I need someone**, and until this existed a watch could only

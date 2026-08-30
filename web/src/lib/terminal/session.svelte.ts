@@ -30,6 +30,7 @@ import { presence } from './presence.svelte';
 import { kemKeys } from './pq.svelte';
 import { announceListed, beatListed, stopListed } from './public.svelte';
 import { position } from './position.svelte';
+import { overdue } from './overdue.svelte';
 import { pool } from './pool';
 
 export interface SignOn {
@@ -264,7 +265,13 @@ export const operator = {
 
   async routine() {
     const r = await run(() => send('routine', {}));
-    if (r) lastResponse = r;
+    if (r) {
+      lastResponse = r;
+      // This is one of the two things that answer the watch's *"you are past the time you
+      // gave"* -- and it clears the overdue on the board too, so the screen and the board
+      // stop disagreeing. Only cleared on a send that actually landed.
+      overdue.clear();
+    }
   },
 
   async query(text: string) {
@@ -371,6 +378,9 @@ export const operator = {
 
     session = null;
     clearField('wipeable', 'signon');
+    // Home. Whatever the watch said about the window is spent, and it must not still be on
+    // the screen next time this operator signs on.
+    overdue.clear();
     return closedBy;
   },
 

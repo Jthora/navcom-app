@@ -69,6 +69,20 @@ export type LogOutcome =
   | 'marked-overdue'
   | 'contact-made'
   | 'contact-failed'
+  /**
+   * The node sent the operator a nudge and does not know whether it landed.
+   *
+   * Distinct from `contact-made`, which claims the operator was actually reached, and from
+   * `contact-failed`, which claims nothing left the machine. Publishing to a relay is
+   * neither: the event was accepted by somebody's server, and whether a phone ever pulled
+   * it down is unknowable from here.
+   *
+   * The same distinction `transport.ts` draws for `Distress` — *"a signal that never left
+   * the device is a different emergency from one that left and went unanswered"* — and the
+   * reason the honest middle value has to exist rather than be rounded to the flattering
+   * neighbour.
+   */
+  | 'contact-attempted'
   | 'contact-not-attempted'
   | 'escalation-reached-human'
   | 'escalation-reached-nobody'

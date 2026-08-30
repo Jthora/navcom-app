@@ -14,6 +14,16 @@ export interface BoardEntry {
   lastContact: number;
   position: Position | null;
   status: BoardStatus;
+  /**
+   * The `on-station` event id, so an overdue contact can name what it is about.
+   *
+   * **Null for an entry a `Distress` created**, which happens when somebody raises one
+   * without ever having signed on — there is no sign-on to reference, and inventing an id
+   * would put a reference to nothing on the wire. Such an entry cannot go overdue anyway
+   * (`sweep` only touches `active`), so the null is a fact rather than a case to handle
+   * twice.
+   */
+  signalId: string | null;
 }
 
 export interface OnStationParams {
@@ -24,6 +34,18 @@ export interface OnStationParams {
   routineIntervalSeconds: number | null;
   position: Position | null;
   now: number;
+  /**
+   * The `on-station` event this entry came from.
+   *
+   * Kept for one reason: `signals.spec.md` shapes a `20912` as
+   * `[["p", operator], ["e", signal-event-id]]`, so the overdue contact the spec requires
+   * has to name the signal it concerns — and the only signal an overdue is *about* is the
+   * sign-on that declared the window now passed.
+   *
+   * It is an event id and nothing else. It says no more about the operator than the board
+   * entry beside it already does, and it dies with the board.
+   */
+  signalId: string;
 }
 
 /**
@@ -76,6 +98,7 @@ export class Board {
       lastContact: params.now,
       position: params.position,
       status: wasDistress ? "distress" : "active",
+      signalId: params.signalId,
     };
     this.entries.set(params.operator, entry);
     this.log(
@@ -150,6 +173,8 @@ export class Board {
         lastContact: now,
         position: null,
         status: "active",
+        // No sign-on happened, so there is no signal for an overdue contact to reference.
+        signalId: null,
       };
       this.entries.set(operator, entry);
     }

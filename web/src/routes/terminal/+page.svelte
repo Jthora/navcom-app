@@ -8,6 +8,7 @@
   import { position } from '$lib/terminal/position.svelte';
   import { battery } from '$lib/terminal/battery.svelte';
   import { pq } from '$lib/terminal/pq.svelte';
+  import { overdue } from '$lib/terminal/overdue.svelte';
   import { loadConfig } from '$lib/terminal/config';
   import { peers } from '$lib/terminal/peers';
   import { formatDuration } from '$lib/terminal/patrol';
@@ -56,11 +57,16 @@
     // standing screen, because a holder who never opens that screen must still stop relying
     // on an endorsement somebody has taken back — `can take watch` is a gate.
     standing.start();
+    // The watch's *"you are past the time you gave"*. The only thing it sends unasked, and
+    // it arrives silently -- started here because Status is the screen an operator opens,
+    // and a nudge nothing renders is a nudge nobody can reach.
+    overdue.start();
     return () => {
       pq.stop();
       watch.stop();
       presence.stop();
       standing.stop();
+      overdue.stop();
     };
   });
 
@@ -391,7 +397,21 @@
       <div data-station>
         <Slot k="Area"><Readout value={session.area} tone="neutral" /></Slot>
         <Slot k="Check in">
-          {#if remaining !== null && remaining > 0}
+          {#if overdue.flagged}
+            <!--
+              The watch has actually said it, so this stops being the device's own arithmetic
+              and becomes a thing somebody sent. It is the only unasked message NavCom
+              delivers, it made no sound arriving, and it is not an alarm: being late is
+              ordinary, nothing else was told, and nothing escalates [invariant 3].
+            -->
+            <span data-nudged>
+              <Readout
+                value="The watch nudged"
+                tone="warn"
+                sub="check in if you are still out, or stand down"
+              />
+            </span>
+          {:else if remaining !== null && remaining > 0}
             <Readout value="{remaining} min left" tone="good" sub="of what you declared" />
           {:else}
             <Readout value="Past declared" tone="warn" sub="the watch will nudge, nothing more" />

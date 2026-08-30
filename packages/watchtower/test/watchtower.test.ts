@@ -185,10 +185,19 @@ describe("what the watch writes down", () => {
     expect(JSON.stringify(opened.all())).not.toContain("dog");
   });
 
-  it("records that no contact was attempted on an overdue -- the inaction entry", async () => {
-    // agents.md requires inaction to be logged. The spec says the node MUST attempt contact
-    // with an overdue operator; nothing does, because there is no contact mechanism. An
-    // overdue that passed with nothing done is invisible unless something writes it down.
+  it("records the contact it attempted on an overdue, and does not claim it landed", async () => {
+    /*
+     * This test used to assert the opposite, and that was correct at the time.
+     *
+     * `watch-state.spec.md` requires the node to attempt contact with an overdue operator.
+     * It did not, so `agents.md`'s rule that inaction must be logged applied instead, and
+     * this pinned `contact-not-attempted` in place — deliberately, with a comment saying it
+     * should read badly until it stopped being true. It has now stopped being true.
+     *
+     * What replaces it is not `contact-made`. Publishing to a relay is not reaching a
+     * person: the honest claim is that something was sent and its fate is unknown, which is
+     * the same distinction `transport.ts` draws for a Distress that left the device.
+     */
     const { pubkey, deliver, publishedEvents } = await started(
       { overdueGrace: 0, sweepIntervalSeconds: 0.01, hardExpiry: 100000 },
       [],
@@ -201,9 +210,12 @@ describe("what the watch writes down", () => {
     await waitForResponse(publishedEvents);
 
     await vi.waitFor(() => {
-      expect(outcomes(operatorPubkey)).toContain("contacted/contact-not-attempted");
+      expect(outcomes(operatorPubkey)).toContain("contacted/contact-attempted");
     }, { timeout: 5000 });
     expect(outcomes(operatorPubkey)).toContain("marked-overdue/marked-overdue");
+    // The overclaim this outcome exists to avoid.
+    expect(outcomes(operatorPubkey)).not.toContain("contacted/contact-made");
+    expect(outcomes(operatorPubkey)).not.toContain("contacted/contact-not-attempted");
   });
 
   it("does not claim an escalation outcome it cannot know (found in robustness audit)", async () => {
@@ -495,6 +507,7 @@ describe("what an overdue operator costs them, publicly", () => {
       daemon.board.onStation({
         operator: operatorPubkey, callsign: "a-very-identifying-callsign", area: "very-specific-district",
         expectedDurationSeconds: 1, routineIntervalSeconds: null, position: null, now: Math.floor(Date.now() / 1000),
+        signalId: "e".repeat(64),
       });
 
       await vi.advanceTimersByTimeAsync(5000);
@@ -508,6 +521,89 @@ describe("what an overdue operator costs them, publicly", () => {
         // from it, and that is the Doxxer's method.
         expect(e.content).not.toContain("overdue");
       }
+
+      /*
+       * The overdue contact is the one thing that now DOES leave the box on an overdue, so
+       * this test has to cover it or its title promises more than it checks.
+       *
+       * It is addressed to the operator and sealed to them. What an observer gets is the
+       * same `p`/`e` shape every ack has — never the callsign, the area, or the word.
+       */
+      for (const e of publishedEvents.filter((x) => x.kind === KIND_RESPONSE)) {
+        expect(e.content).not.toContain("a-very-identifying-callsign");
+        expect(e.content).not.toContain("very-specific-district");
+        expect(e.content).not.toContain("overdue");
+        expect(JSON.stringify(e.tags)).not.toContain("overdue");
+      }
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe("contacting an overdue operator", () => {
+  /*
+   * `watch-state.spec.md`: on crossing overdue grace the node MUST mark the entry, make it
+   * visible to whoever holds watch, **and attempt contact with the operator**. The third
+   * logged `contact-not-attempted` for months behind a comment saying it should read badly
+   * until it stopped being true.
+   */
+  it("sends the operator a nudge, sealed to them, naming their own sign-on", async () => {
+    vi.useFakeTimers();
+    try {
+      const { daemon, pubkey, publishedEvents } = await started({ overdueGrace: 1, sweepIntervalSeconds: 1 });
+      const operator = generateSecretKey();
+      const operatorPubkey = getPublicKey(operator);
+      const signalId = "e".repeat(64);
+      daemon.board.onStation({
+        operator: operatorPubkey, callsign: "Wren", area: "downtown",
+        expectedDurationSeconds: 1, routineIntervalSeconds: null, position: null,
+        now: Math.floor(Date.now() / 1000), signalId,
+      });
+
+      await vi.advanceTimersByTimeAsync(5000);
+
+      const contacts = publishedEvents
+        .filter((e) => e.kind === KIND_RESPONSE)
+        .map((e) => ({ e, p: openResponse<ResponsePayload>(operator, pubkey, e.content) }))
+        .filter(({ p }) => p.type === "contact");
+
+      expect(contacts.length).toBeGreaterThan(0);
+      const { e, p } = contacts[0]!;
+      // Addressed to the operator and to nobody else, about their own sign-on.
+      expect(e.tags).toContainEqual(["p", operatorPubkey]);
+      expect(e.tags).toContainEqual(["e", signalId]);
+      // Identified as an agent [invariant 5], and flat rather than alarming.
+      expect(p.responder.kind).toBe("agent");
+      expect(p.text).toMatch(/past the time you gave/i);
+      expect(p.text).not.toMatch(/are you (ok|okay|alright)/i);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("never pages, escalates, or tells anybody else", async () => {
+    // The line invariant 3 draws. Contacting the person is consulting the only individual
+    // who knows; raising somebody else on a missed window is inferring duress from silence.
+    vi.useFakeTimers();
+    try {
+      const { daemon, pubkey, publishedEvents } = await started({ overdueGrace: 1, sweepIntervalSeconds: 1 });
+      const operator = generateSecretKey();
+      const operatorPubkey = getPublicKey(operator);
+      daemon.board.onStation({
+        operator: operatorPubkey, callsign: "Wren", area: "downtown",
+        expectedDurationSeconds: 1, routineIntervalSeconds: null, position: null,
+        now: Math.floor(Date.now() / 1000), signalId: "e".repeat(64),
+      });
+
+      await vi.advanceTimersByTimeAsync(5000);
+
+      // Every response published is addressed to the overdue operator themselves. Nothing
+      // goes to a third party, and no distress-shaped event is emitted at all.
+      for (const e of publishedEvents.filter((x) => x.kind === KIND_RESPONSE)) {
+        expect(e.tags.filter((t) => t[0] === "p").map((t) => t[1])).toEqual([operatorPubkey]);
+      }
+      expect(publishedEvents.some((e) => e.kind === KIND_DISTRESS)).toBe(false);
     } finally {
       vi.useRealTimers();
     }

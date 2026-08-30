@@ -16,6 +16,7 @@ describe("Board", () => {
       routineIntervalSeconds: 3600,
       position: null,
       now,
+      signalId: "e".repeat(64),
     });
 
     const entry = board.get(OP_A);
@@ -35,6 +36,7 @@ describe("Board", () => {
     board.onStation({
       operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 7200,
       routineIntervalSeconds: null, position: null, now: 0,
+      signalId: "e".repeat(64),
     });
     expect(board.get(OP_A)?.routineDue).toBeNull();
   });
@@ -44,6 +46,7 @@ describe("Board", () => {
     board.onStation({
       operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 7200,
       routineIntervalSeconds: null, position: null, now: 0,
+      signalId: "e".repeat(64),
     });
     const removed = board.standDown(OP_A);
     expect(removed).toBe(true);
@@ -66,6 +69,7 @@ describe("Board", () => {
     board.onStation({
       operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 7200,
       routineIntervalSeconds: null, position: null, now: 0,
+      signalId: "e".repeat(64),
     });
     board.distress(OP_A, 10);
     const removed = board.standDown(OP_A);
@@ -79,6 +83,7 @@ describe("Board", () => {
     board.onStation({
       operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 7200,
       routineIntervalSeconds: 1800, position: null, now: 0,
+      signalId: "e".repeat(64),
     });
     board.routine(OP_A, 1800, 1800);
     const entry = board.get(OP_A);
@@ -93,6 +98,7 @@ describe("Board", () => {
     board.onStation({
       operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 100_000,
       routineIntervalSeconds: 500, position: null, now: 0,
+      signalId: "e".repeat(64),
     });
     board.sweep(500 + 1800 + 1, 1800, 14400); // past routine grace, nowhere near duration
     expect(board.get(OP_A)?.status).toBe("overdue");
@@ -110,6 +116,7 @@ describe("Board", () => {
     board.onStation({
       operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 100,
       routineIntervalSeconds: null, position: null, now: 0,
+      signalId: "e".repeat(64),
     });
     board.sweep(100 + 1800 + 1, 1800, 14400); // past overdue grace on duration alone
     expect(board.get(OP_A)?.status).toBe("overdue");
@@ -127,6 +134,7 @@ describe("Board", () => {
     board.onStation({
       operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 100_000,
       routineIntervalSeconds: 500, position: null, now: 0,
+      signalId: "e".repeat(64),
     });
     board.sweep(500 + 1800 + 1, 1800, 14400);
     expect(board.get(OP_A)?.status).toBe("overdue");
@@ -142,6 +150,7 @@ describe("Board", () => {
     board.onStation({
       operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 100,
       routineIntervalSeconds: null, position: null, now: 0,
+      signalId: "e".repeat(64),
     });
     board.sweep(100 + 1800 + 1, 1800, 14400);
     expect(board.get(OP_A)?.status).toBe("overdue");
@@ -162,7 +171,8 @@ describe("Board", () => {
       board.onStation({
         operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 100,
         routineIntervalSeconds: null, position: null, now: 0,
-      });
+      signalId: "e".repeat(64),
+    });
 
       board.sweep(100 + 1800 - 1, 1800, 14400); // one second before grace expires
       expect(board.get(OP_A)?.status).toBe("active");
@@ -176,7 +186,8 @@ describe("Board", () => {
       board.onStation({
         operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 100_000,
         routineIntervalSeconds: 3600, position: null, now: 0,
-      });
+      signalId: "e".repeat(64),
+    });
       board.sweep(3600 + 1800 + 1, 1800, 14400);
       expect(board.get(OP_A)?.status).toBe("overdue");
     });
@@ -186,7 +197,8 @@ describe("Board", () => {
       board.onStation({
         operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 100,
         routineIntervalSeconds: null, position: null, now: 0,
-      });
+      signalId: "e".repeat(64),
+    });
       board.sweep(100 + 14400 + 1, 1800, 14400);
       expect(board.get(OP_A)).toBeUndefined();
     });
@@ -196,7 +208,8 @@ describe("Board", () => {
       board.onStation({
         operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 100,
         routineIntervalSeconds: null, position: null, now: 0,
-      });
+      signalId: "e".repeat(64),
+    });
       board.distress(OP_A, 50);
       board.sweep(100 + 14400 + 999_999, 1800, 14400);
       expect(board.get(OP_A)?.status).toBe("distress");
@@ -207,11 +220,13 @@ describe("Board", () => {
       board.onStation({
         operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 100,
         routineIntervalSeconds: null, position: null, now: 0,
-      });
+      signalId: "e".repeat(64),
+    });
       board.onStation({
         operator: OP_B, callsign: "OP-2", area: "d", expectedDurationSeconds: 100_000,
         routineIntervalSeconds: null, position: null, now: 0,
-      });
+      signalId: "e".repeat(64),
+    });
       board.sweep(100 + 1800 + 1, 1800, 14400);
       expect(board.get(OP_A)?.status).toBe("overdue");
       expect(board.get(OP_B)?.status).toBe("active");
@@ -227,6 +242,7 @@ describe("Board", () => {
     board.onStation({
       operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 100,
       routineIntervalSeconds: null, position: { lat: 1, lon: 2, precision_m: 500 }, now: 0,
+      signalId: "e".repeat(64),
     });
     expect(board.get(OP_A)?.position).toEqual({ lat: 1, lon: 2, precision_m: 500 });
   });
@@ -250,7 +266,8 @@ describe("Board", () => {
       board.onStation({
         operator: OP_A, callsign: "OP-1", area: "district-7", expectedDurationSeconds: 7200,
         routineIntervalSeconds: null, position: null, now: 0,
-      });
+      signalId: "e".repeat(64),
+    });
       board.distress(OP_A, 500);
       const entry = board.get(OP_A);
       expect(entry?.status).toBe("distress");
@@ -269,14 +286,16 @@ describe("Board", () => {
       board.onStation({
         operator: OP_A, callsign: "OP-1", area: "district-7", expectedDurationSeconds: 7200,
         routineIntervalSeconds: null, position: null, now: 0,
-      });
+      signalId: "e".repeat(64),
+    });
       board.distress(OP_A, 100);
       expect(board.get(OP_A)?.status).toBe("distress");
 
       board.onStation({
         operator: OP_A, callsign: "OP-1", area: "district-9", expectedDurationSeconds: 3600,
         routineIntervalSeconds: null, position: null, now: 200,
-      });
+      signalId: "e".repeat(64),
+    });
 
       expect(board.get(OP_A)?.status).toBe("distress");
       expect(board.get(OP_A)?.area).toBe("district-9"); // other fields still refresh normally
@@ -287,7 +306,8 @@ describe("Board", () => {
       board.onStation({
         operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 100,
         routineIntervalSeconds: null, position: null, now: 0,
-      });
+      signalId: "e".repeat(64),
+    });
       expect(board.get(OP_A)?.status).toBe("active");
     });
 
@@ -296,7 +316,8 @@ describe("Board", () => {
       board.onStation({
         operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 100,
         routineIntervalSeconds: 50, position: null, now: 0,
-      });
+      signalId: "e".repeat(64),
+    });
       board.distress(OP_A, 10);
       board.routine(OP_A, 20, 1800);
       expect(board.get(OP_A)?.status).toBe("distress");
@@ -307,7 +328,8 @@ describe("Board", () => {
       board.onStation({
         operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 100,
         routineIntervalSeconds: null, position: null, now: 0,
-      });
+      signalId: "e".repeat(64),
+    });
       board.distress(OP_A, 10);
       board.touch(OP_A, 20, 1800);
       expect(board.get(OP_A)?.status).toBe("distress");
@@ -323,7 +345,8 @@ describe("Board", () => {
       board.onStation({
         operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 100_000,
         routineIntervalSeconds: null, position: null, now: 0,
-      });
+      signalId: "e".repeat(64),
+    });
       const onOverdue = vi.fn();
       board.sweep(100, 1800, 14400, onOverdue);
       expect(onOverdue).not.toHaveBeenCalled();
@@ -334,7 +357,8 @@ describe("Board", () => {
       board.onStation({
         operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 100,
         routineIntervalSeconds: null, position: null, now: 0,
-      });
+      signalId: "e".repeat(64),
+    });
       const onOverdue = vi.fn();
       board.sweep(100 + 1800 + 1, 1800, 14400, onOverdue);
       expect(onOverdue).toHaveBeenCalledTimes(1);
@@ -346,7 +370,8 @@ describe("Board", () => {
       board.onStation({
         operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 100,
         routineIntervalSeconds: null, position: null, now: 0,
-      });
+      signalId: "e".repeat(64),
+    });
       const onOverdue = vi.fn();
       board.sweep(100 + 1800 + 1, 1800, 14400, onOverdue);
       board.sweep(100 + 1800 + 2, 1800, 14400, onOverdue);
@@ -358,7 +383,8 @@ describe("Board", () => {
       board.onStation({
         operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 100,
         routineIntervalSeconds: null, position: null, now: 0,
-      });
+      signalId: "e".repeat(64),
+    });
       expect(() => board.sweep(100 + 1800 + 1, 1800, 14400)).not.toThrow();
       expect(board.get(OP_A)?.status).toBe("overdue");
     });
@@ -374,11 +400,13 @@ describe("Board", () => {
       board.onStation({
         operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 100,
         routineIntervalSeconds: null, position: null, now: 0,
-      });
+      signalId: "e".repeat(64),
+    });
       board.onStation({
         operator: OP_B, callsign: "OP-2", area: "d", expectedDurationSeconds: 100_000,
         routineIntervalSeconds: null, position: null, now: 0,
-      });
+      signalId: "e".repeat(64),
+    });
       board.sweep(100 + 1800 + 1, 1800, 14400); // only OP_A goes overdue
       expect(board.overdueCount).toBe(1);
 
@@ -393,7 +421,8 @@ describe("Board", () => {
       board.onStation({
         operator: OP_A, callsign: "OP-1", area: "d", expectedDurationSeconds: 100_000,
         routineIntervalSeconds: 500, position: null, now: 0,
-      });
+      signalId: "e".repeat(64),
+    });
       board.sweep(500 + 1800 + 1, 1800, 14400);
       expect(board.overdueCount).toBe(1);
 

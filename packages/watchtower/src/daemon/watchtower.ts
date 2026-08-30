@@ -16,7 +16,7 @@ import type {
 } from "../shared/payloads.js";
 import { sanitizeForLog, validateOnStationPayload, ValidationError } from "../shared/validate.js";
 import { isAuthorizedOperator } from "./authorization.js";
-import { Board } from "./board.js";
+import { Board, type BoardEntry } from "./board.js";
 import { AccountabilityLog } from "../shared/accountability.js";
 import type { DaemonConfig } from "./config.js";
 import { answerQuery } from "./query.js";
@@ -223,11 +223,12 @@ export class WatchtowerDaemon {
     await Promise.allSettled(this.pool.publish(this.relayUrls, event));
   }
 
+  /** Returns how many relays accepted it — 0 means nothing left this machine. */
   private async publishResponse(
     toPubkey: string,
     inReplyToEventId: string,
     payload: ResponsePayload,
-  ): Promise<void> {
+  ): Promise<number> {
     const content = sealResponse(this.secretKey, toPubkey, payload);
     const event = this.sign({
       kind: KIND_RESPONSE,
@@ -243,10 +244,69 @@ export class WatchtowerDaemon {
     console.log(
       `[respond] -> ${shortId(toPubkey)} type=${payload.type} (${okCount}/${results.length} relays)`,
     );
+    return okCount;
   }
 
   private ack(): ResponsePayload {
     return { type: "ack", responder: { kind: "agent", callsign: this.agentName }, text: null, provenance: null };
+  }
+
+  /**
+   * The third thing `watch-state.spec.md` requires on overdue, and the one that was missing.
+   *
+   * The spec is explicit: mark the entry, make it visible to whoever holds watch, **and
+   * attempt contact with the operator**. The first two shipped; this logged
+   * `contact-not-attempted` for months behind a comment saying it should read badly until
+   * it stopped being true.
+   *
+   * **It goes to the operator and to nobody else.** Not the watch holder, not on-call, not
+   * a pager, not a ladder — the same paragraph that requires this forbids all of those
+   * [C4, invariant 3], because raising somebody *else* on a missed window is inferring
+   * duress from silence. Asking the person is the opposite of inferring: it consults the
+   * only individual who knows, and accepts whatever they say or don't say.
+   *
+   * **Nothing about the overdue is published.** The payload is sealed to the operator and
+   * the tags are the ordinary `p`/`e` every response carries. What an observer can still
+   * see is *timing*: a `20912` to an operator with no signal of theirs just before it is
+   * inferable as this. That is a weak correlation rather than an announcement — the
+   * `overdue_count` this replaces told anyone subscribed, in the clear — and it is the
+   * price of the node being able to reach the operator at all over a relay, which is the
+   * only channel it has (`declined.md` refuses node-held contact details). Named here
+   * rather than left for an audit.
+   *
+   * Failure is recorded, not swallowed. `contact-attempted` says a relay took it and
+   * nothing more; `contact-failed` says nothing left this machine. Neither claims the
+   * operator read it, because neither can know.
+   */
+  private async contactOverdue(entry: BoardEntry): Promise<void> {
+    if (entry.signalId === null) {
+      // An entry a Distress created, with no sign-on behind it. `sweep` only marks `active`
+      // entries overdue so this should be unreachable — logged rather than silently skipped,
+      // because if it ever fires the assumption above has stopped being true.
+      console.error(`[overdue] no signal to reference for ${shortId(entry.operator)}; not contacting`);
+      this.note("contacted", entry.operator, "contact-not-attempted", entry.callsign);
+      return;
+    }
+    const payload: ResponsePayload = {
+      type: "contact",
+      responder: { kind: "agent", callsign: this.agentName },
+      // Deliberately flat. "Are you okay?" invites the reading invariant 3 refuses, and an
+      // operator who is simply late should not be met with alarm for being late.
+      text: "You are past the time you gave. Send a routine check-in if you are still out, or stand down if you are home.",
+      provenance: null,
+    };
+    try {
+      const accepted = await this.publishResponse(entry.operator, entry.signalId, payload);
+      this.note(
+        "contacted",
+        entry.operator,
+        accepted > 0 ? "contact-attempted" : "contact-failed",
+        entry.callsign,
+      );
+    } catch (err: unknown) {
+      console.error(`[overdue] contact failed: ${String(err)}`);
+      this.note("contacted", entry.operator, "contact-failed", entry.callsign);
+    }
   }
 
   /**
@@ -282,7 +342,7 @@ export class WatchtowerDaemon {
     }
   }
 
-  private handleOnStation(operatorPubkey: string, rawPayload: unknown): void {
+  private handleOnStation(operatorPubkey: string, rawPayload: unknown, signalId: string): void {
     // Found in review: this used to trust `payload as OnStationPayload`
     // with zero runtime checking -- a malformed expected_duration
     // (missing/NaN/non-numeric) reached
@@ -310,6 +370,7 @@ export class WatchtowerDaemon {
       routineIntervalSeconds,
       position: payload.share_position ? payload.position : null,
       now: now(),
+      signalId,
     });
   }
 
@@ -341,7 +402,7 @@ export class WatchtowerDaemon {
     try {
       switch (type) {
         case "on-station": {
-          this.handleOnStation(event.pubkey, payload);
+          this.handleOnStation(event.pubkey, payload, event.id);
           response = this.ack();
           break;
         }
@@ -537,11 +598,7 @@ export class WatchtowerDaemon {
       // gone and so is the leak.
       this.board.sweep(now(), this.config.watch.overdueGrace, this.config.watch.hardExpiry, (entry) => {
         this.note("marked-overdue", entry.operator, "marked-overdue", entry.callsign);
-        // agents.md: log inaction. The spec says the node MUST attempt contact with an
-        // overdue operator; nothing here does, because there is no contact mechanism yet.
-        // An overdue that passed with nothing done is invisible unless something writes it
-        // down, and this is that something. It should read badly until it stops being true.
-        this.note("contacted", entry.operator, "contact-not-attempted", entry.callsign);
+        void this.contactOverdue(entry);
         this.publishWatchState().catch((err: unknown) => {
           console.error(`[overdue] notify publish failed: ${String(err)}`);
         });
