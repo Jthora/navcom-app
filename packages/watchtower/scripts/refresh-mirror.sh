@@ -45,7 +45,10 @@ writeFileSync(path, JSON.stringify(p, null, 2) + '\n');
 
 (
   cd "$WORKTREE"
-  git add vendor package.json
+  # -f: the monorepo's own .gitignore has a blanket "dist/" rule, which otherwise silently
+  # drops the one thing this vendoring exists to commit -- found by cloning the result and
+  # checking, not assumed. See git history on this file for the run that shipped without it.
+  git add -f vendor package.json
   git commit -q -m "Vendor @navcom/core so this clone builds standalone
 
 Not published or file:-linked, because this repo has no CI to keep a
@@ -57,6 +60,7 @@ fresh from source and re-vendored on every refresh instead."
 echo "==> Pushing to the mirror (force -- history is unrelated by design, see README)"
 git push git@github.com:Jthora/navcom-watchtower.git watchtower-mirror:main --force
 
+git worktree remove "$WORKTREE" --force
 git branch -D watchtower-mirror >/dev/null
 
 echo "==> Done. Verify with: git clone https://github.com/Jthora/navcom-watchtower.git /tmp/mirror-check && cd /tmp/mirror-check && npm install && npm run verify"
