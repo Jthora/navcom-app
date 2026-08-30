@@ -70,7 +70,7 @@ respectively, neither on a path where a gap reaches someone in the cold.
 
 | | Area | State |
 |---|---|---|
-| 1 | Escalation ladder + accountability log | **done — 6 real gaps found, all fixed** (one fix leaves a named follow-up: log-review doesn't yet merge the executor's own log) |
+| 1 | Escalation ladder + accountability log | **done — 6 real gaps found, all fixed**, including the named follow-up (log-review now merges the executor's own log) |
 | 2 | Crypto + transport (`packages/core/crypto`, `transport.ts`) | **done — 3 minor gaps found, 2 fixed, 1 declined** |
 | 3 | Daemon board + directory/corrections | **done — 7 real gaps found and fixed** (2 additional items checked and confirmed low-risk, not counted as findings) |
 | 4 | Terminal storage tiers + UI error surfacing | **done — 7 real gaps found and fixed, 1 already-acknowledged pattern re-confirmed** |
@@ -289,8 +289,12 @@ under a real flood, and the Merkle/inclusion-proof code. What didn't:
   now keeps its own accountability log — a separate file, separate chain, `shared/
   accountability.ts` — since it can't share the daemon's chain without either process
   depending on the other, and can't claim an outcome through a process that doesn't know it.
-  **Named limitation, not silently left**: an operator's `log-review` today still sees only
-  the daemon's log. Merging the two is real, separate, future work.
+  **Named limitation, since closed**: an operator's `log-review` now merges in the
+  executor's log too, when the daemon is configured with `escalationLogPath` — read
+  directly, matching the `drillStatePath` precedent, with no IPC between the two processes.
+  It renders as its own honestly-unverified section: nothing publishes that log's root
+  anywhere yet, so it can never be `Checked` the way the daemon's own record can, and the
+  screen says so rather than implying a transient "come back later."
 - **A torn log line crashed the log's own recovery path** instead of degrading like a
   detected tamper. **Fixed** — treated exactly like a truncated tail.
 - **An in-memory entry was added before its durable write was confirmed** — a disk-full
