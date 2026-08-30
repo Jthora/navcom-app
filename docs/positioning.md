@@ -31,6 +31,10 @@ The [resource directory](product/directory-schema.md) is readable by anyone on t
 no account and no install. That's deliberate: it is useful to people facing the same night
 who will never be operators.
 
+The community already has hubs of its own — Herocore, RLSH.net, the RLSH Wiki. NavCom
+doesn't replace them; [`community-continuity.md`](product/community-continuity.md) says
+where they are and where to go instead when one has decayed or been taken over.
+
 ## Star and Nav
 
 The architecture is encoded in the names, and it wasn't designed that way on purpose.

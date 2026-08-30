@@ -36,9 +36,10 @@
   <section class="network">
     <h2>What this is part of</h2>
     <p>
-      NavCom is non-institutional dispatch for volunteer patrol networks — someone holds a
-      watch while operators are out, and answers questions from the street so nobody has to
-      search a database one-handed in the cold.
+      NavCom is a watch for volunteer patrol networks — someone holds a board while
+      operators are out, and answers questions from the street so nobody has to search a
+      database one-handed in the cold. Nothing here assigns anyone anywhere; the watch tells
+      you what is happening and never dispatches.
     </p>
     <p>
       This directory is the part that is useful to anyone facing the same night, so it is

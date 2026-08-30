@@ -54,6 +54,13 @@ that otherwise waited on a maintainer with local knowledge nobody has. Every reg
 prerendered now, including the thirty-five that ship empty, because until this they had no
 page at all.
 
+**The community's own infrastructure now has a continuity page** —
+[`docs/product/community-continuity.md`](docs/product/community-continuity.md) — pointing
+to the RLSH community's live hubs and, where one has decayed or been squatted, to the
+Internet Archive's last good copy rather than the live domain. Zero users required, ships as
+content through the existing docs pipeline, and addresses the one threat in this space that
+is observed and ongoing rather than theoretical.
+
 **Build next, in order:**
 
 1. **The directory region-detail screen's remaining prose.** Nineteen of twenty Field
