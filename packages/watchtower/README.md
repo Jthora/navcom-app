@@ -44,5 +44,25 @@ It is now a list of authored declarations, so a count cannot exceed its evidence
 size cannot be assigned to it by accident.
 
 ```sh
-npm run verify --workspace @navcom/watchtower   # typecheck + 128 tests
+npm run verify --workspace @navcom/watchtower   # typecheck + 221 tests
 ```
+
+## A lightweight clone for deploying, not developing
+
+`Jthora/navcom-watchtower` — the repo this package was imported from — is now a **read-only,
+one-way mirror** of this directory, kept so a [Stationkeeper](../../docs/watch/stationkeeper.md)
+can clone just the watchtower without the rest of the monorepo. Nobody commits to it
+directly — doing so would recreate the exact divergence the reconciliation above exists to
+prevent. All real development stays here, type-checked against `@navcom/core` in this
+workspace; the mirror only ever moves downstream of it.
+
+Refreshing it after a change worth publishing (there is no CI to do this automatically):
+
+```sh
+git subtree split --prefix=packages/watchtower -b watchtower-mirror
+git push git@github.com:Jthora/navcom-watchtower.git watchtower-mirror:main --force
+git branch -D watchtower-mirror
+```
+
+The repo's pre-reconciliation history (through `999ef2b`) is preserved as the tag
+`frozen-pre-monorepo-2026-08-18` on that same repo, not lost by the force-push.

@@ -795,7 +795,7 @@ deploy account. All the same person.
 | 9.1 | ~~Identity recovery~~ | **done** | Operator-held backup and a printed recovery code, per [`identity.md`](product/identity.md). *"No recovery method means no recovery"* is now stated **at persona creation**, not after a phone is dropped when it is only a fact about the past. Social recovery remains unbuilt |
 | 9.2 | ~~Move to a new phone~~ | **done** | The same mechanism — a backup you can restore *is* how you move. Carries the accruing tier and **not tonight**, because a backup that carried the wipeable tier would carry the thing a panic wipe destroys |
 | 9.3 | ~~Tell operators what is thin — do not publish it~~ | **done** | Rides on the capability sentence, which already goes to somebody at sign-on and nowhere else. **Names the roster rather than counting it** — a number invites gaming, and the names are already on `10910` anyway. Says when the ladder is one person deep, and when no drill has ever passed. **Found: a human at the console was hiding an empty ladder** — the branch returned before it ever mentioned escalation |
-| 9.4 | **Somebody else can deploy** | **human** | Named for people and infrastructure in the first draft and missed for shipping. One Vercel account is a single point of failure for the artifact everybody reads |
+| 9.4 | **Somebody else can deploy** | **human** | Named for people and infrastructure in the first draft and missed for shipping. One Vercel account is a single point of failure for the artifact everybody reads. **Partly done for the Watchtower half** — see the Stationkeeper section below |
 | 9.5 | ~~The work is paid for~~ | **done** | An address field, never zap infrastructure. **The app stores a string and shows it** — no custody, no keys, no amounts, so a seized phone yields an address rather than a financial trail. No totals anywhere, and the card's field allowlist was widened deliberately rather than casually: the guard that exists to keep a *position* off a public artifact fired, and a payment address is not one |
 | 9.6 | **A restore drill** | **human** | The paging drill proves the pager works. Nothing proves a *second person* can stand a Watchtower up from the docs. **It will probably fail the first time, and that is the finding** |
 | 9.7 | More than one on-call, and a way to hand it over | **human** | 2.1 gets to one; this gets past one |
@@ -838,9 +838,14 @@ allowlist stays local to the people its own Stationkeeper personally knows.
 **Worth reconsidering, not decided:** whether 9.6's restore drill should target this minimal
 path specifically — daemon plus public relays, no box or VPS preference implied — rather than
 the full reference stack, since that is closer to what becoming a Stationkeeper actually
-requires. Left as a question for whoever runs the drill. **9.4's turnkey deploy** — a script
-or image standing up just the minimal piece — is a concrete candidate this always lacked,
-independent of how that question resolves.
+requires. Left as a question for whoever runs the drill.
+
+**9.4, partly.** `Jthora/navcom-watchtower` is now a real lightweight clone of just the
+daemon and CLI — a `git subtree split` mirror of `packages/watchtower`, read-only and
+refreshed from here rather than developed on directly, so a Stationkeeper (or anyone helping
+one get started) never needs the rest of the monorepo. Not the turnkey script or image this
+item still names — that's still real, open work — but it closes the "which repo do I even
+clone" half of "somebody else can deploy."
 
 **Open, not decided:** whether keeping a station should earn its own visible credit,
 distinct from board time (7.6) and the corrected-record standing model — both currently

@@ -72,7 +72,9 @@ know what you're taking on before the recognition model catches up to it.
 
 ---
 
-If this is what you want to take on: `packages/watchtower/README.md` has the current
-`npm run verify --workspace @navcom/watchtower` path, and the example configs
-(`watchtower.example.toml`, `escalation.example.toml`, `pager.example.toml`) are the actual
-starting point today — TOML editing and all, until 9.4 makes it shorter.
+If this is what you want to take on: `Jthora/navcom-watchtower` is a lightweight, real clone
+of just the daemon and CLI — no web app, no docs, no directory data — kept for exactly this.
+It's a read-only mirror, refreshed from this monorepo rather than developed on directly
+(`packages/watchtower/README.md` has why and how), so it's always current. The example
+configs (`watchtower.example.toml`, `escalation.example.toml`, `pager.example.toml`) are the
+actual starting point today — TOML editing and all, until 9.4 makes it shorter.
