@@ -104,6 +104,22 @@ describe('what leaves the phone', () => {
     const out = exportPatrols([night({ note: 'two handouts at the underpass' })], opts);
     expect(out).toContain('two handouts at the underpass');
   });
+
+  it('can leave the notes out', () => {
+    // This option existed in `ExportOptions` and was honoured here from the start, and no
+    // screen ever bound it -- so it silently read as on, and the riskiest free text in the
+    // system had no reachable switch in the one artifact built to be pasted in public.
+    // `reachable.spec.ts` holds the other half: that a person can actually operate it.
+    const out = exportPatrols([night({ note: 'two handouts at the underpass' })], {
+      ...opts,
+      includeNotes: false
+    });
+    expect(out).not.toContain('two handouts at the underpass');
+    // The night itself still has to survive, or the control deletes the record rather than
+    // redacting one field of it.
+    expect(out).toContain('Downtown');
+    expect(out).toContain('1 patrol');
+  });
 });
 
 describe('durations read like a person wrote them', () => {

@@ -5,8 +5,25 @@
  * server knows they exist — which is why no social graph of this network exists to breach,
  * sell or subpoena.
  *
+ * One qualification, because the sentence above was written as an absolute and is not quite
+ * one: watching for withdrawals discloses this operator's endorser set to the relay it asks.
+ * See `start()`, where it is priced.
+ *
  * Accruing tier. Standing is the thing an operator builds over years; a panic wipe takes
  * tonight and must not take that.
+ *
+ * ## Standing survives a new key, for free
+ *
+ * A credential names nobody and a claim is a local signature over its id, so re-binding
+ * every held credential to a new persona is `claimCredential(newSecret, credential, now)`
+ * per stored pair — no network, no endorser's involvement, nobody's permission. That falls
+ * out of the design rather than being built, and it is the answer to *"a lost phone must not
+ * erase years of standing"* for the half a backup does not cover.
+ *
+ * **There is no button for it**, because there is no key-rotation flow to hang it on at all
+ * (`bootstrap.spec.md`: *"There is no key rotation story yet"*). By this project's own rule
+ * that makes it unbuilt — recorded here so that whoever builds rotation knows this half is
+ * already free, rather than designing around a problem that does not exist.
  */
 
 import {
@@ -127,6 +144,27 @@ export async function withdraw(credentialId: string): Promise<boolean> {
  *
  * Filtered to the endorsers whose credentials are actually held, so this asks for the few
  * revocations that could matter rather than every one on the network.
+ *
+ * ## The one place standing is not private, stated rather than implied
+ *
+ * **This filter is a disclosure.** `authors: endorsers` hands the relay the exact set of
+ * pubkeys that vouched for this operator — so a relay operator who logs subscription
+ * filters learns who endorsed you, even though no credential is ever published and no
+ * revocation names a subject.
+ *
+ * It does not reach the network: it is one relay, chosen by this operator, learning one
+ * device's endorser set — not a graph anybody can query, which is the thing
+ * `identity.md` refuses and which remains true. But it is the seam where "indexed nowhere"
+ * stops being literal, and it was undocumented until an audit found it.
+ *
+ * **Why it is not simply widened.** Dropping `authors` and filtering client-side would
+ * close it, at a cost that is not obviously payable: revocations would arrive for the whole
+ * network, unbounded, and the obvious bound — `since` — is the exact mistake
+ * `transport.ts` documents at length, where a fast client clock silently drops real events
+ * server-side. Missing a revocation here means honouring an endorsement its author took
+ * back, and `can-take-watch` is the gate on holding a board. Correctness and this
+ * disclosure pull opposite ways, and picking between them is a decision rather than a
+ * patch — so it is written down here and left open rather than quietly resolved.
  */
 export function start(): void {
   const urls = relays();

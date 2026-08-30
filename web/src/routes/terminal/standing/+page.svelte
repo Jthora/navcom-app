@@ -8,7 +8,7 @@
    */
   import { onMount } from 'svelte';
   import { SCOPES, ageInDays, revoke, type Endorsement, type Scope, writeCredential } from '@navcom/core';
-  import { StandingError, claim, drop, held, recordWritten, withdraw, withdrawn, written as writtenCredentials } from '$lib/terminal/standing';
+  import { StandingError, claim, drop, held, presentable, recordWritten, withdraw, withdrawn, written as writtenCredentials } from '$lib/terminal/standing';
   import { loadIdentity } from '$lib/terminal/identity';
   import { Readout, Why } from '$lib/components/panel';
 
@@ -22,6 +22,20 @@
    * not, and `presentable()` existed for it while nothing rendered it.
    */
   let showing = $state<Endorsement | null>(null);
+  /**
+   * The raw signed pair, while the reader is checking it on their own device.
+   *
+   * The screen above it is **this phone's word**: it says the signatures verified, and the
+   * person reading it at arm's length has no way to tell that from a page that says so
+   * without checking anything. For most handovers that is fine — they are looking at
+   * somebody they just met and weighing whether to believe them, which is the whole design.
+   *
+   * For the handover where it is not fine, this is the way out: the credential and the claim
+   * as they were signed, for the other person to verify with their own copy of the app and
+   * nobody's assurance. `presentable()` existed for exactly this and was called from nowhere.
+   */
+  let handingOver = $state(false);
+  let handedCopied = $state(false);
   let callsign = $state<string | null>(null);
   let pasted = $state('');
   let error = $state<string | null>(null);
@@ -106,6 +120,27 @@
   function put(e: Endorsement) {
     drop(e.id);
     mine = held();
+  }
+
+  /** The signed pair behind the endorsement on screen, or null if it is no longer held. */
+  const heldPair = $derived(
+    showing ? (presentable().find((h) => h.credential.id === showing?.id) ?? null) : null
+  );
+
+  async function copyPair() {
+    if (!heldPair) return;
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(heldPair));
+      handedCopied = true;
+    } catch {
+      handedCopied = false;
+    }
+  }
+
+  function closePresent() {
+    showing = null;
+    handingOver = false;
+    handedCopied = false;
   }
 
   const label = (s: string) => s.replace(/-/g, ' ');
@@ -325,8 +360,23 @@
     <p class="present-age">
       written {showing.at}{#if Number.isFinite(age(showing.at))} · {age(showing.at)} days ago{/if}
     </p>
-    <p class="present-check">signatures verified on this device · no network used</p>
-    <button onclick={() => (showing = null)}>Done</button>
+    <!-- "This phone says so", not "this is verified". The reader cannot tell a page that
+         checked the signatures from one that only claims to, and pretending otherwise is
+         how a credential starts working like an ID card. -->
+    <p class="present-check">this phone checked the signatures · no network used</p>
+    {#if handingOver && heldPair}
+      <p class="present-raw-note">
+        The credential and the claim, as they were signed. Take a copy and check it on your
+        own phone — then none of this is my word.
+      </p>
+      <pre class="present-raw" data-pair>{JSON.stringify(heldPair)}</pre>
+      <button onclick={copyPair}>{handedCopied ? 'Copied' : 'Copy it'}</button>
+    {:else if heldPair}
+      <button class="present-alt" data-hand-over onclick={() => (handingOver = true)}>
+        Let them check it themselves
+      </button>
+    {/if}
+    <button onclick={closePresent}>Done</button>
   </section>
 {/if}
 
@@ -365,6 +415,41 @@
     border-block-start: 1px solid var(--t-line);
     padding-block-start: .8rem;
   }
+  /* Secondary to "Done": the ordinary handover is somebody reading the screen, and this is
+     the way out for the one where that is not enough. It must be findable, not prominent. */
+  .present-alt {
+    min-height: 2.4rem;
+    font-size: .85rem;
+    padding: 0 .9rem;
+    border-color: var(--t-line);
+    color: var(--t-faint);
+  }
+  .present-raw-note {
+    margin: 0;
+    max-width: 26rem;
+    font-size: .85rem;
+    line-height: 1.5;
+    color: var(--t-muted);
+  }
+  /* Read by whoever is copying it, not at arm's length — so it goes back to a normal size
+     and is allowed to scroll rather than pushing the rest of the overlay off screen. */
+  .present-raw {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: .6rem;
+    line-height: 1.4;
+    text-align: start;
+    width: min(100%, 26rem);
+    max-height: 30vh;
+    overflow: auto;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+    background: var(--t-sunk);
+    border: 1px solid var(--t-line);
+    padding: .6rem;
+    margin: 0;
+    color: var(--t-muted);
+  }
+
   .act { gap: .6rem; }
   textarea { width: 100%; }
   .row { display: flex; gap: .5rem; flex-wrap: wrap; }

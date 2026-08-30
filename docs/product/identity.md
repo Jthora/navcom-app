@@ -12,14 +12,24 @@ What exists:
 | | |
 |---|---|
 | **Callsign** | The name they work under |
-| **Emblem** | Their mark |
+| **Emblem** | Their mark. **Designed, not built** — see below |
 | **City / region** | Coarse by default — metro, not neighbourhood |
 | **Active since** | The date they started |
 | **Focus** | Outreach, medic, patrol, logistics, support — multiple allowed |
 
 What does not exist, anywhere in the system: legal name, phone number, email address,
-date of birth, home location, employer, photograph of the operator's face unless they
-deliberately upload one as their emblem.
+date of birth, home location, employer, or any photograph of the operator.
+
+> **The emblem is not built, and that clause used to read as though it were.** It said
+> *"…photograph of the operator's face unless they deliberately upload one as their emblem"*,
+> which describes an upload path that does not exist: an audit found NavCom handles no media
+> anywhere — no file input, no capture-and-store, nothing. There is no way to attach an image
+> to a persona, so the exception described a hole that was never open.
+>
+> Kept in the table because the emblem is a real part of how this community already works,
+> and building it is a live option. But it would be the first media NavCom ever touches, and
+> that is a threshold decision — an image is the one field whose contents nothing can check,
+> and it carries EXIF, faces and backgrounds — not a small addition to a profile screen.
 
 **Callsign and emblem are the operator's real working identity, not a privacy wrapper.**
 People in this community already work under a name and a mark, often for years before
@@ -73,6 +83,11 @@ indexed anywhere.**
 Everything else follows from the model rather than needing its own argument:
 
 - **No central social graph exists.** Nobody, including us, can query *who knows whom*.
+  One honest qualification, found by audit rather than volunteered: a device watching for
+  withdrawals subscribes with `authors: <your endorsers>`, so **the relay it asks can learn
+  who vouched for you**. That is one relay of the operator's choosing seeing one device's
+  endorser set — not a graph anyone can query, so the claim above stands — but it is the
+  seam, and it is priced in `standing.ts`'s `start()` rather than left for the next auditor.
   There is no map of pseudonymous operators' associations to breach, sell, subpoena or leak
 - **Verification is local and offline.** You present your endorsements; my device checks the
   signatures against the endorsing callsigns. Works with no signal

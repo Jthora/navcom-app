@@ -38,8 +38,19 @@ For anything more complicated, send `Query` and let the console do the work.
 **4. Playbook.** De-escalation, first aid, overdose response, cold exposure. Large type,
 no navigation depth, works when you're panicking. One tap from anywhere.
 
-**5. Log.** Field notes as you go — text, photo, timestamp, coarse location. Never about
+**5. Log.** Field notes as you go — text, timestamp, coarse location. Never about
 people being served. Compiles itself into the op record at stand-down.
+
+> This said **"text, photo, timestamp"** until an audit checked. NavCom handles no media at
+> all — no file input, no capture-and-store path, nothing in `static/` but icons — and the
+> spec layer never specified one, so per the rule that
+> [the spec wins](../../CLAUDE.md), the narrative was the bug.
+>
+> It should also stay that way. This field is already, by
+> [`build-order.md`](../build-order.md)'s own account, *"the riskiest free text in the
+> system — written in a hurry, about something that just happened, which is exactly where a
+> line about a person gets written despite every rule."* A camera in that slot is invariant 1
+> with no enforcement surface: an image field is a field, and nothing can check what is in it.
 
 ## What isn't here
 

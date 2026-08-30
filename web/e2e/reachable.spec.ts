@@ -901,6 +901,48 @@ test.describe('patrols', () => {
     await toggle.click();
     await expect(page.getByText(/survive a panic wipe/i)).toBeVisible();
   });
+
+  /**
+   * The export's note switch — the exact failure this whole file exists for.
+   *
+   * `includeNotes` was declared in `ExportOptions` and honoured by `exportPatrols` from the
+   * start, and no screen ever bound it. Every unit test passed, because the logic was right.
+   * It read as permanently on, so the riskiest free text in the system had no reachable
+   * switch in the one artifact built to be pasted somewhere public.
+   */
+  test('the note switch is on the page, off by default, and actually changes what would go', async ({ page }) => {
+    const note = 'two handouts at the underpass';
+    await seedDevice(page, {
+      ...OUT,
+      keepPatrolHistory: true,
+      accruing: {
+        patrols: [
+          { started: 1_800_000_000, ended: 1_800_009_000, area: 'Downtown', note }
+        ]
+      }
+    });
+    await open(page, '/terminal/patrols/');
+
+    await page.getByRole('button', { name: /show what would be shared/i }).click();
+    const shared = page.locator('[data-export]');
+    await expect(shared).toBeVisible();
+
+    // Default: the night is there and the operator's own words are not.
+    await expect(shared).toContainText('Downtown');
+    await expect(shared).not.toContainText(note);
+
+    const notes = page.getByRole('checkbox', { name: /include your notes/i });
+    await expect(notes).toBeVisible();
+    await expect(notes).not.toBeChecked();
+
+    await notes.check();
+    await expect(shared).toContainText(note);
+
+    // And back, so this is a control rather than a one-way door.
+    await notes.uncheck();
+    await expect(shared).not.toContainText(note);
+    await expect(shared).toContainText('Downtown');
+  });
 });
 
 test.describe('a phone that has run out of room', () => {

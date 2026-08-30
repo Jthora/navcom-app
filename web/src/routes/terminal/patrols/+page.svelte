@@ -21,6 +21,20 @@
   let keep = $state(false);
   let callsign = $state<string | null>(null);
   let includeAreas = $state(true);
+  /**
+   * Off by default, unlike areas, and the asymmetry is deliberate.
+   *
+   * An area names a district. A note describes what happened — which is exactly where a line
+   * about a person gets written despite every rule, by the project's own account of this
+   * field. The two mistakes are not symmetric: an operator who wanted their notes in and
+   * finds them missing sees that in the preview below and ticks a box. An operator who
+   * pastes somebody else's situation into a public post cannot take it back.
+   *
+   * This control existed in `ExportOptions` and was honoured by `exportPatrols` from the
+   * start, and no screen ever bound it — so it silently read as on, and the one field that
+   * most needed a switch did not have a reachable one.
+   */
+  let includeNotes = $state(false);
   let showExport = $state(false);
   let copied = $state(false);
 
@@ -31,7 +45,7 @@
   });
 
   const total = $derived(list.reduce((n, p) => n + (p.ended - p.started), 0));
-  const text = $derived(exportPatrols(list, { callsign, includeAreas }));
+  const text = $derived(exportPatrols(list, { callsign, includeAreas, includeNotes }));
 
   function toggleKeep() {
     setKeepHistory(!keep);
@@ -119,6 +133,14 @@
       <input type="checkbox" bind:checked={includeAreas} />
       Include areas
     </label>
+    <label class="opt opt--explained">
+      <input type="checkbox" bind:checked={includeNotes} />
+      Include your notes
+      <span class="why">
+        Off by default. Your notes are the one place here you wrote freely, and the most
+        likely place something about another person ended up.
+      </span>
+    </label>
     <button onclick={() => (showExport = !showExport)}>
       {showExport ? 'Hide' : 'Show what would be shared'}
     </button>
@@ -170,6 +192,18 @@
   .act { gap: .6rem; }
   .opt { display: flex; align-items: center; gap: .6rem; min-height: 2.6rem; color: var(--t-muted); }
   .opt input { width: 1.2rem; height: 1.2rem; min-height: 0; }
+
+  /* The reason sits under the control rather than beside it: on a phone held one-handed
+     the row is already at its width, and a clause wrapping mid-sentence beside a checkbox
+     reads as a second option. */
+  .opt--explained { flex-wrap: wrap; align-items: baseline; min-height: 0; padding-block: .5rem; }
+  .opt--explained .why {
+    flex-basis: 100%;
+    font-size: .8rem;
+    line-height: 1.45;
+    color: var(--t-dim, var(--t-muted));
+    padding-inline-start: 1.8rem;
+  }
   pre {
     background: var(--t-sunk); border: 1px solid var(--t-line-strong); padding: .8rem;
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .8rem;

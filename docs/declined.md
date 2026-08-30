@@ -47,6 +47,49 @@ first half. Someone will read "active" as "fine."
 mistaken for a monitor. That is a wording and layout problem, not a mechanism one, and it is
 the Console's hardest design problem.
 
+#### The best argument against this rule, and why it still loses
+
+External RLSH research proposed a server-side check-in timer that escalates on a missed
+window — the standard lone-worker pattern, and its authors' highest-value feature. It is
+worth writing down why NavCom refuses the one thing every comparable product does.
+
+The strongest form of the argument is not *"it would be useful."* It is
+[C37's neighbour, C38](research/constraints.md): **an operator may waive protections for
+themselves, never for a third party.** Somebody who arms *"treat my missed window as my
+deliberate Distress"*, in advance, knowing exactly what it does, is not having duress
+inferred about them — they are consenting to a rule in advance, which is the same shape as
+every other opt-in here.
+
+**It loses on the rationale, not the consent.** Invariant 3 is not primarily about autonomy;
+it is about alarm fatigue, and the pager is *shared*. A false page spends a finite, common
+resource: the willingness of the person on call to believe the next one. So the waiver does
+reach a third party after all — the operator two nights later whose real Distress arrives at
+a roster that has been woken four hundred times for flat batteries and long dinners. C38
+does not authorise that, and `escalation.spec.md`'s paging budget exists because of it.
+
+Three further things would have to be untrue for this to be reversible, and none of them is:
+
+- `escalation.ts` **cannot start a ladder from anything but a received `20911`**. This is
+  structural, not conventional — the refusal is in the type, so no client can express the
+  invalid case by accident
+- the field terminal is silent, and `/terminal/on-call/` states in-product that a Distress
+  page is *"the only notification NavCom ever sends."* Shipping this makes that sentence
+  false — and *"A pulse when a signal is acknowledged"*, below, declines a far weaker
+  interrupt precisely to hold that line
+- the mechanism the proposal actually wants **already exists without the alarm**: a buddy is
+  told, per recipient, that somebody is watching, and sees them go past the time they gave.
+  What it adds over that is the page, which is the banned part
+
+**Cost, stated plainly:** an operator who is unconscious, restrained, or has had their phone
+taken cannot summon help, and NavCom will not notice. That is the same cost already recorded
+under *"Storing your emergency contact on the node"*, and it is the real one. Somebody will
+be hurt in a way a timer would have caught, and the answer is still that a system which cries
+wolf is not there on the night it matters.
+
+**Reversing this is a decision about an invariant**, taken by a person, recorded in the
+commit that takes it — not an implementation detail, and not something to arrive at by
+building toward it one plausible step at a time.
+
 ### Whether the accountability log is complete
 
 Tampering is closed by chaining. Selective disclosure is closed by inclusion proofs against
@@ -214,6 +257,12 @@ otherwise learn without looking. Input feedback, not notification.
 ## What is **not** declined, so nobody mistakes this page for a licence
 
 Everything in [`build-order.md`](build-order.md) is deferred, not declined — endorsements,
-recovery, propagation, allied interop, the RelayNode, counter-signing, redundant escalation
-executors. They are designed and sequenced. Moving something here requires a decision, and
-that decision should be recorded in the commit that moves it.
+recovery, propagation, the RelayNode, counter-signing, redundant escalation executors. They
+are designed and sequenced. Moving something here requires a decision, and that decision
+should be recorded in the commit that moves it.
+
+**Allied interop used to be on that list, and it was a contradiction with the entry above.**
+This page declined it; this paragraph called it deferred; `constraints.md` C37 states its
+shape as though it were coming. An audit found all three, which is one more reader than it
+should have taken. It is **declined** — the entry above has the argument, and C37 describes
+what would be built *if* it were ever reversed, not a commitment to build it.

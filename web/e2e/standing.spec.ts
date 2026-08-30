@@ -76,6 +76,50 @@ test.describe('taking one up', () => {
     await ash.close();
   });
 
+  test('and holding it up offers the reader a way to check it without trusting this phone', async ({ browser }) => {
+    /*
+     * The presented screen is **this phone's word**.
+     *
+     * It says the signatures verified, and the person reading it at arm's length cannot tell
+     * that from a page which only claims to have checked. For the ordinary handover that is
+     * fine — they are weighing somebody they just met, which is the design. For the one where
+     * it is not, the signed pair has to be gettable, and `presentable()` existed for exactly
+     * that while being called from nowhere.
+     */
+    const wren = await standing(await browser.newPage(), 'Wren');
+    await wren.getByRole('button', { name: WATCH }).click();
+    const blob = await wren.locator('pre.blob').innerText();
+
+    const ash = await standing(await browser.newPage(), 'Ash');
+    await ash.locator('#cred').fill(blob);
+    await ash.getByRole('button', { name: /take it up/i }).click();
+    await ash.locator('[data-endorsement="can-take-watch"]').getByRole('button', { name: /^show$/i }).click();
+
+    const shown = ash.locator('[data-presenting]');
+    await expect(shown).toBeVisible();
+    // It must not tell a second reader that the thing is verified, only who checked it.
+    await expect(shown).toContainText(/this phone checked the signatures/i);
+
+    await shown.locator('[data-hand-over]').click();
+    const pair = shown.locator('[data-pair]');
+    await expect(pair).toBeVisible();
+
+    // What comes out is the real signed pair, not a rendering of it: the credential exactly
+    // as Wren signed it, plus Ash's own claim over its id.
+    const handed = JSON.parse(await pair.innerText()) as {
+      credential: { id: string; sig: string };
+      claim: { tags: string[][]; sig: string };
+    };
+    const original = JSON.parse(blob) as { id: string; sig: string };
+    expect(handed.credential.id).toBe(original.id);
+    expect(handed.credential.sig).toBe(original.sig);
+    expect(handed.claim.sig).toBeTruthy();
+    expect(handed.claim.tags).toContainEqual(['e', original.id]);
+
+    await wren.close();
+    await ash.close();
+  });
+
   test('and a credential dated in the future is shown as unweighable, not as fresh', async ({ page }) => {
     /*
      * Somebody can hand you anything, and the paste box is where anything arrives.
