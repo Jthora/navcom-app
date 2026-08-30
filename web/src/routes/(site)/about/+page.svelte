@@ -1,3 +1,7 @@
+<script lang="ts">
+  import { LIVE, GONE, LIVENESS_WORDING } from '$lib/community';
+</script>
+
 <svelte:head>
   <title>About · NavCom</title>
   <meta
@@ -46,6 +50,40 @@
       public and needs no app. Outreach workers, street medics and mutual aid crews are
       welcome to it on their own terms.
     </p>
+  </section>
+
+  <section class="elsewhere">
+    <h2>Where else RLSH people are</h2>
+    <p>
+      NavCom is not the community's front door and does not want to be. These are, and this
+      list exists to send you to them — not to keep you here.
+    </p>
+    <ul class="sites">
+      {#each LIVE as site (site.url)}
+        <li>
+          <a href={site.url} rel="noopener external">{site.name}</a>
+          <span class="how" data-how={site.how}>{LIVENESS_WORDING[site.how]} · {site.checked}</span>
+          <span class="what">{site.what}</span>
+        </li>
+      {/each}
+    </ul>
+
+    <h3>Gone, but not lost</h3>
+    <p>
+      These have shut down or been taken over by someone else. <strong
+        >The old addresses are printed here, deliberately, without links</strong
+      > — one of them now redirects to a squatter, and a domain somebody else controls is not
+      a safe place to send anyone. The record itself survives at the Internet Archive.
+    </p>
+    <ul class="sites">
+      {#each GONE as site (site.was)}
+        <li>
+          <span class="dead">{site.name} — was {site.was}</span>
+          <span class="what">{site.what}</span>
+          <a href={site.archive} rel="noopener external">Read the archived copy</a>
+        </li>
+      {/each}
+    </ul>
   </section>
 </div>
 
@@ -142,4 +180,48 @@
     background: var(--surface);
   }
   .network h2 { border-bottom: none; padding-bottom: 0; }
+
+  .elsewhere h3 {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 1.4rem 0 0;
+  }
+
+  .sites {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+    max-width: var(--measure);
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .sites li { display: flex; flex-direction: column; gap: 0.2rem; }
+  .sites a { font-weight: 700; align-self: flex-start; }
+  .sites .what { color: var(--muted); }
+
+  /* The provenance line, in the directory's own voice: how we know, and when. */
+  .sites .how {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  /* Weaker evidence must not read the same as a direct check. */
+  .sites .how[data-how='cited'] { opacity: 0.75; }
+
+  /* A dead address is shown so it is recognisable, and styled so it is not mistaken for a
+     destination. Never a link — see community.ts. */
+  .sites .dead {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--muted);
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+  }
 </style>

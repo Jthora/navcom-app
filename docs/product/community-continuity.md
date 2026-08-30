@@ -1,61 +1,80 @@
 # Community Continuity
 
-The RLSH community's own infrastructure is decaying and being squatted **right now**, and
-this page exists because that is fixable at zero users — nobody needs to install anything
-for a link to point somewhere safe instead of somewhere abandoned.
+The RLSH community's own infrastructure decays and gets squatted while nobody is watching,
+and that is fixable at zero users — nobody has to install anything for a link to point
+somewhere safe instead of somewhere taken over.
 
-## The proof, not just the claim
+**The list itself is on [the about page](https://navcom.app/about/), not here.** This page is
+the doctrine behind it. The reader who needs the links is not the reader who needs this.
 
-Checked directly while writing this page (2026-08-30): **`therlsh.forumotion.com` now
-redirects to `therlsh.board-directory.net`** — a domain-squatter pattern, not a
-continuation of the forum. The last good snapshot of the real site is dated 2024-12-14, so
-the takeover is recent. This is not a hypothetical risk description; it is what happened to
-one of the links below, discovered by trying it.
+## The finding, checked rather than asserted
 
-## What NavCom does here, and does not
+While writing this: **`therlsh.forumotion.com` redirects to `therlsh.board-directory.net`** —
+a squatter, not a continuation of the forum. The last good copy of the real site predates the
+takeover by about twenty months. Separately, `superheroesanonymous.org` — the domain a reader
+would *guess* for an organisation that is alive and well at `.com` — has no DNS record at all,
+which makes it available to anyone who wants that name's credibility tomorrow.
 
-**Links, never mirrors.** Every entry below points at the community's own live property, or
-— where that property is gone — at the historical record already held by the Internet
-Archive. NavCom re-hosts nothing and scrapes nothing. Re-hosting a dead property's actual
-content is real, separate, future work, and it stays gated on reaching an original
-maintainer for consent: archiving something abandoned needs nobody's permission, but
-copying it wholesale onto NavCom's own infrastructure is a different act and waits for one.
+Neither of those is a hypothetical. Both were found by trying the links.
 
-**No claim about who is "real."** Being listed here is not a credential and absence is not
-a judgement — the same principle [`attestation.md`](../attestation.md) states everywhere
-else. This page states where things are, not who counts.
+## Why it is data, not a page of prose
 
-## Live — go there, this doesn't compete
+The first version of this was a markdown table with a hand-typed *"checked on"* beside each
+row: a page about link rot, which rots. It shipped three defects that re-reading the sentences
+could never have found — a live entry with no link at all, two archive links left on plaintext
+`http://`, and a liveness note that read as doubt when the evidence was actually strong.
 
-| Property | What it is | How current this is |
-|---|---|---|
-| [Herocore](https://herocore.online) | Forum, patrol log submission, "RLSH 101," a 2026 demographics survey. Already links out to Mastodon, Bluesky, Reddit and Facebook | Checked directly, 2026-08-30 — active, posts Wednesdays and Saturdays |
-| [RLSH.net](https://rlsh.net) | Community hub; wiki archive back to reallifesuperheroes.org; curated links; a Bluesky starter pack | Per community citation — this session's own fetch was blocked (403), not independently re-confirmed |
-| [RLSH Wiki](https://wiki.rlsh.net) | The community's central knowledge base | Per community citation, same caveat — its own maintainers already prune links-page entries that start serving malware or redirecting elsewhere, which is exactly the failure this page exists to route around |
-| [r/RealLifeSuperHeroes](https://www.reddit.com/r/RealLifeSuperHeroes/) | Ongoing discussion | Standard Reddit community; not independently checked for current activity level |
-| Superheroes Anonymous | Founded 2007; homeless outreach focus | Per community citation |
+The list now lives in [`web/src/lib/community.ts`](https://github.com/Jthora/navcom-app/blob/main/web/src/lib/community.ts)
+as typed data, and `community.test.ts` asserts against **the built HTML** what prose cannot:
 
-**Herocore already runs a member map and its own patrol-log forum.** NavCom does not build
-a second one — see the anti-pattern table in `CLAUDE.md` and `propagation.md` §3, which
-already treats exporting *to* Herocore, not competing with it, as the primary growth
-mechanism. The same stance extends to every entry above: complement, never compete.
+- no page on this site links a domain on the blocklist, live or dead
+- every URL is `https`
+- every live entry is actually rendered somewhere a reader can reach — an entry present in
+  the data and absent from the page is not published, which is
+  [`verification.md`](../verification.md)'s rule applied to a link list
+- **no check has been left to go stale in silence.** Past six months the build fails until a
+  person re-verifies the links. That rule fails on its own with no code change, which is the
+  intent: a squatted domain sitting unnoticed for years is the exact failure this exists to
+  prevent, and a comment asking someone to re-check does not prevent it
 
-## Decayed — historical record, never a live link
+## Three rules
 
-| Property | What happened | Where the record actually lives |
-|---|---|---|
-| therlsh.forumotion.com | Confirmed 2026-08-30: now redirects to `therlsh.board-directory.net`, a squatted domain. The forum itself is gone | [Wayback Machine snapshot, 2024-12-14](http://web.archive.org/web/20241214025038/https://therlsh.forumotion.com/) — the last good copy before the takeover |
-| herocoalition.com (Hero Coalition forums) | Community-cited as inactive since roughly 2014; the Internet Archive's own last full crawl is from 2018 — both are given rather than picking one | [Wayback Machine snapshot, 2018-08-08](http://web.archive.org/web/20180808171726/http://herocoalition.com/) |
+**Links, never mirrors.** A live property gets a link and nothing else. No copy, no scrape, no
+re-host. `propagation.md` §3 already sets this for Herocore — NavCom captures the patrol and
+hands the record to where the community already gathers — and it extends to every entry.
 
-Neither row links to the live domain. A squatted or abandoned domain is not a safe thing to
-send anyone to, whatever it currently serves.
+**Archive links, not archived content.** Where a property is gone, the destination is the
+Internet Archive's copy, which already exists and belongs to nobody here. Re-hosting a dead
+forum's actual content on NavCom's own infrastructure is a **different act**: archiving
+something abandoned needs nobody's permission, but republishing it wholesale waits on finding
+an original maintainer and asking. That is real, separate, human work and it is not attempted.
 
-## What this does not do yet
+**No claim about who is real.** Being listed is not a credential and absence is not a
+judgement — the same refusal [`positioning.md`](../positioning.md) makes and the same one
+[`attestation.md`](../attestation.md) derives everywhere else. This says where things are, not
+who counts.
 
-- No re-hosted copy of either dead forum's content on NavCom's own infrastructure — gated
-  on finding and asking an original maintainer, per the consent standard above
-- No monitoring for new takeovers — this page is a snapshot, not a watch, and it will go
-  stale exactly like everything else this project says to distrust without a date on it
-- No coverage of jurisdictions, gear, training or legal-reference content some RLSH
-  research has proposed — those are separate, larger pieces of work and are not implied by
+## How liveness is recorded
+
+Three markers, because collapsing them loses the distinction that got this wrong once:
+
+| | Means |
+|---|---|
+| `fetched` | Asked for the page from here and real content came back |
+| `challenged` | A bot-mitigation challenge answered instead of the page. **The site is up and defended** — this is evidence of life, not doubt |
+| `cited` | Someone else's report, not checked from here. The weakest of the three |
+
+The middle one matters. Reporting a Cloudflare challenge as *"could not confirm"* understates
+what is actually known, and understating is as inaccurate as overstating — invariant 9's
+distinction between *stale* and *unknown*, aimed at a link instead of a shelter. This project
+has already been bitten by the same confusion from the other direction; see the docblock in
+`web/src/lib/version.test.ts`.
+
+## What this does not do
+
+- **No re-hosted copy** of any dead forum's content — gated on maintainer consent, above
+- **No monitoring.** The staleness rule forces a periodic human re-check; it does not watch
+  the domains. Nothing here notices a takeover the day it happens
+- **No coverage of gear, legal reference, training or OPSEC content.** Adjacent RLSH research
+  proposes all four. They are separate, larger pieces of work and none of them is implied by
   this page existing

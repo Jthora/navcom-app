@@ -54,12 +54,12 @@ that otherwise waited on a maintainer with local knowledge nobody has. Every reg
 prerendered now, including the thirty-five that ship empty, because until this they had no
 page at all.
 
-**The community's own infrastructure now has a continuity page** —
-[`docs/product/community-continuity.md`](docs/product/community-continuity.md) — pointing
-to the RLSH community's live hubs and, where one has decayed or been squatted, to the
-Internet Archive's last good copy rather than the live domain. Zero users required, ships as
-content through the existing docs pipeline, and addresses the one threat in this space that
-is observed and ongoing rather than theoretical.
+**The about page now points at the community's own hubs** — and, where one has been shut down
+or taken over, at the Internet Archive's copy rather than the live domain. The list is typed
+data (`web/src/lib/community.ts`) with a **six-month staleness rule the build enforces**, not
+prose: `therlsh.forumotion.com` already redirects to a squatter and `superheroesanonymous.org`
+resolves nowhere, and a page about link rot that rots is worse than none. Doctrine in
+[`docs/product/community-continuity.md`](docs/product/community-continuity.md).
 
 **Build next, in order:**
 

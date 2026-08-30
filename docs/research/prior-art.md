@@ -6,13 +6,18 @@ What exists, what it teaches, and the technical ground NavCom builds on.
 
 ## The outreach space
 
-**[Herocore](https://www.herocore.online/)** — Community hub where members post patrol
+**[Herocore](https://herocore.online)** — Community hub where members post patrol
 logs, plus a map of active and inactive individuals and groups.
 
 *Teaches:* patrol logging is already an established behaviour — we don't have to create
 the habit, only remove the friction. Herocore captures the patrol afterwards, on a
 forum. NavCom captures it as it happens and **exports to Herocore**. Complement, never
 compete.
+
+The live URL for this and every other community property is held once, as data, in
+`web/src/lib/community.ts` — see [`community-continuity.md`](../product/community-continuity.md).
+This page is about what each one *teaches*; that one is about where they are and whether they
+are still there. Two copies of an address is how one of them goes stale.
 
 **[mutualaid.fun](https://mutualaid.fun/)** — Intake, outreach, check-in and distribution
 for mutual aid. Runs on your own devices, works offline, data stays with the people doing
