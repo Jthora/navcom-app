@@ -94,6 +94,26 @@ export const NEVER_LINK = [
  * tight enough to nag is a threshold somebody raises rather than acts on. Six months is
  * long enough to be no burden and short enough that a squatted domain cannot sit here for
  * years — which is the failure this whole file exists to prevent.
+ *
+ * ## Why this is a date and not a live check
+ *
+ * **You will want to replace this with a link checker that actually fetches each URL.**
+ * Don't. Measured while building it, not guessed:
+ *
+ * - `web.archive.org` returns intermittent `503`s under any repeated access — three
+ *   consecutive failures for one of these exact URLs, then a `200`, with nothing changed.
+ * - `rlsh.net` and `wiki.rlsh.net` answer a scripted request with a Cloudflare challenge,
+ *   so a checker reads `403` for two sites that are perfectly healthy.
+ *
+ * A test built on that is flaky, and `playwright.config.ts` states this project's position
+ * on flake in the strongest terms it uses anywhere: *"A retry turns a flaky test into a
+ * passing one and hides the flake."* A green suite that is green because it retried is
+ * worse than no suite.
+ *
+ * What a date-based rule actually buys is the honest half: it cannot tell you a link broke
+ * today, and it guarantees a **person** looks at all of them on a bounded cadence. Detecting
+ * a takeover the day it happens is a different feature, needs infrastructure nobody here
+ * runs, and is named as not-done in `community-continuity.md` rather than half-built.
  */
 export const STALE_AFTER_DAYS = 180;
 

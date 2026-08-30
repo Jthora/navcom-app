@@ -102,6 +102,11 @@ describe('the community list as data', () => {
 
 describe('what actually ships', () => {
   it('links no domain on the blocklist, anywhere on the site', () => {
+    // Matched on the parsed **hostname**, never on the raw string, and that is not a detail.
+    // An archive URL legitimately contains the dead domain in its path —
+    // `web.archive.org/web/<stamp>/https://therlsh.forumotion.com/` — so a substring
+    // blocklist would flag the one link that is actually correct here, and the obvious "fix"
+    // would be to delete the archive links. That is the opposite of the goal.
     for (const { path, href } of hrefs) {
       let host: string;
       try {
@@ -113,6 +118,17 @@ describe('what actually ships', () => {
         expect(host === bad || host.endsWith(`.${bad}`), `${path} links ${href}`).toBe(false);
       }
     }
+  });
+
+  it('does link the archives, which contain a blocklisted domain in their path', () => {
+    // The guard for the rule above: it proves the hostname check is doing real work rather
+    // than passing because nothing on the site happens to mention these domains at all.
+    const archives = hrefs.filter((h) => h.href.startsWith('https://web.archive.org/'));
+    expect(archives.length, 'no archive links shipped — the rule above proves nothing').toBeGreaterThan(0);
+    expect(
+      archives.some((h) => NEVER_LINK.some((bad) => h.href.includes(bad))),
+      'no shipped archive URL contains a blocklisted domain in its path'
+    ).toBe(true);
   });
 
   it('renders every live site as a real link a reader can follow', () => {
