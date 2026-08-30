@@ -65,14 +65,39 @@ describe('every claim has something behind it', () => {
 });
 
 describe('the manifest itself stays honest', () => {
-  it('declares a control for anything with something to operate', () => {
-    // A capability with no control is a page you read. One with a control is a thing you
-    // do, and the browser check only covers the second -- so an undeclared control is a
-    // capability that never gets exercised.
-    const shouldOperate = ['Go out', 'Distress', 'Peers', 'Query', 'Assist'];
-    for (const name of shouldOperate) {
-      const c = CAPABILITIES.find((x) => x.name === name);
-      expect(c?.control, `${name} declares no control`).toBeTruthy();
+  it('says, for every capability, what a person operates or why there is nothing', () => {
+    /*
+     * This used to name five capabilities and check only those.
+     *
+     * A capability with no control is a page you read; one with a control is a thing you do,
+     * and the browser check only exercises the second. So an undeclared control was a
+     * capability nothing ever operated — and nineteen of twenty-four were outside the list.
+     * Nine of them genuinely had nothing declared, including `terminal/wipe/` and
+     * `terminal/patrols/`: the two screens where *a mechanism nobody can reach* has actually
+     * happened, to `panicWipe` and to the patrol export's `includeNotes`.
+     *
+     * A guard whose coverage is a hand-written allow-list only ever covers the failures
+     * somebody already remembered, which is the same shape as the bug it is guarding
+     * against. Requiring an answer from every capability is the fix: silence is no longer
+     * an option, and choosing `readOnly` is a sentence somebody had to write and a reviewer
+     * can disagree with.
+     */
+    for (const c of CAPABILITIES) {
+      const declared = [c.control, c.readOnly].filter(Boolean).length;
+      expect(
+        declared,
+        `${c.name}: set exactly one of control (a selector) or readOnly (why there is nothing)`
+      ).toBe(1);
+    }
+  });
+
+  it('does not let readOnly become the easy way out', () => {
+    // The failure mode of the rule above: a screen with a button, marked readOnly with four
+    // words, to make the check go away. A reason has to be long enough to be a reason.
+    for (const c of CAPABILITIES) {
+      if (!c.readOnly) continue;
+      expect(c.readOnly.length, `${c.name}: readOnly needs a real reason, not a placeholder`)
+        .toBeGreaterThan(60);
     }
   });
 
@@ -87,7 +112,12 @@ describe('the manifest itself stays honest', () => {
     //  - Resupply goes to whoever keeps the shared stash, and somebody patrolling alone has
     //    no quartermaster either — they buy their own socks. The screen says exactly that
     //    rather than reading as incomplete setup
+    //  - What the watch wrote is a fourth, added when its control was finally declared: the
+    //    "Ask the watch" button is disabled while the watch is dark, so the capability needs
+    //    a watch that is actually there. The *screen* still works without one and gives an
+    //    operator alone a true answer — nobody has written anything about you — which is why
+    //    this is the control's requirement rather than the page's
     const needWatch = CAPABILITIES.filter((c) => c.requires.includes('watch')).map((c) => c.name);
-    expect(needWatch.sort()).toEqual(['Assist', 'Query', 'Resupply']);
+    expect(needWatch.sort()).toEqual(['Assist', 'Query', 'Resupply', 'What the watch wrote']);
   });
 });

@@ -182,7 +182,7 @@
       under it, in person — <strong>nothing discovers a watch</strong>, because a list of
       them would be a list of where operators are.
     </p>
-    <button onclick={start}>Start a watch on this phone</button>
+    <button data-start-watch onclick={start}>Start a watch on this phone</button>
   </section>
 
   <section class="act">

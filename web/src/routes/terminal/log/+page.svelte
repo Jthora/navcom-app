@@ -106,7 +106,7 @@
   </p>
 </section>
 
-<button onclick={ask} disabled={operator.busy || watch.state.state === 'dark'}>
+<button data-ask onclick={ask} disabled={operator.busy || watch.state.state === 'dark'}>
   {operator.busy ? 'Asking…' : 'Ask the watch'}
 </button>
 

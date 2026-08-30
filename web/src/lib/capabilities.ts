@@ -34,7 +34,16 @@ export type Requirement =
   /** A configured Watchtower. Most operators have none, and most capabilities need none. */
   | 'watch'
   /** At least one paired peer. */
-  | 'peers';
+  | 'peers'
+  /**
+   * Somebody the operator said they would call.
+   *
+   * Added because "Your person, before the app loads" declared only an identity and its
+   * control is a `tel:`/`sms:` link that exists **only when a contact has been saved** —
+   * so the browser check seeded a device with no contact, found no link, and had been
+   * silently passing for as long as the control went undeclared.
+   */
+  | 'contact';
 
 export interface Capability {
   name: string;
@@ -48,8 +57,28 @@ export interface Capability {
    * mechanism behind it.
    */
   claims: string[];
-  /** A CSS selector for the thing a person operates. Checked in a real browser. */
+  /**
+   * A CSS selector for the thing a person operates. Checked in a real browser.
+   *
+   * **Exactly one of `control` and `readOnly` must be set**, and that is the whole point of
+   * this pair existing. It used to be optional with a hand-written list of five capabilities
+   * that "should operate" — so the other nineteen could quietly have nothing, and nine of
+   * them did. Two of those nine were `terminal/wipe/` and `terminal/patrols/`: the screens
+   * where *a mechanism nobody can reach* has actually happened, twice, to `panicWipe` and
+   * to the patrol export's `includeNotes`.
+   *
+   * A guard whose coverage is an allow-list only ever covers the failures somebody already
+   * remembered. Making the declaration mandatory turns an omission into a sentence somebody
+   * had to write.
+   */
   control?: string;
+  /**
+   * Why this screen has nothing to operate — set instead of `control`, never as well.
+   *
+   * A real answer, not a placeholder. "You read it" is a fact about a page of prose; it is
+   * not a fact about a screen with a button somebody forgot to declare.
+   */
+  readOnly?: string;
   /**
    * How this screen survives losing signal.
    *
@@ -116,6 +145,9 @@ export const CAPABILITIES: Capability[] = [
       'Opening it is what saves it',
       'Only what you open is kept'
     ],
+    // Opening an area is what caches it, so the link IS the mechanism -- not navigation
+    // decoration. A region nobody can open is a region nobody has offline.
+    control: 'a.area',
     requires: []
   },
   {
@@ -130,6 +162,7 @@ export const CAPABILITIES: Capability[] = [
       'cannot delete this listing or overrule anybody',
       'nobody has to approve it'
     ],
+    control: '[data-report]',
     cached: 'on-visit',
     requires: []
   },
@@ -175,7 +208,8 @@ export const CAPABILITIES: Capability[] = [
       // that does not depend on anything arriving.
       'works before the rest of this screen does'
     ],
-    requires: ['identity']
+    control: '[data-contact] a',
+    requires: ['identity', 'contact']
   },
   {
     name: 'Your own patrols',
@@ -184,6 +218,9 @@ export const CAPABILITIES: Capability[] = [
       'It stays on this phone',
       'nothing here is sent to a watch, a relay or anybody else'
     ],
+    // Whether a year of your nights survives a seized phone. Always on the screen, unlike
+    // the export controls, which need a patrol to exist first.
+    control: '[data-keep]',
     requires: ['identity']
   },
   {
@@ -200,6 +237,10 @@ export const CAPABILITIES: Capability[] = [
       'the message still goes',
       'Status says so'
     ],
+    readOnly:
+      'A readout of whether your peers can be sealed against a future quantum computer. ' +
+      'There is nothing to set: coverage follows from whether they have published a key, ' +
+      'and the only action it implies is asking somebody to open the app.',
     requires: []
   },
   {
@@ -265,6 +306,7 @@ export const CAPABILITIES: Capability[] = [
       // handover, and it is silent.
       'An empty board is not the same as nobody being out'
     ],
+    control: '[data-start-watch]',
     requires: ['identity']
   },
   {
@@ -279,6 +321,7 @@ export const CAPABILITIES: Capability[] = [
       'The page carries no detail',
       'tells nobody'
     ],
+    control: '#sender',
     requires: []
   },
   {
@@ -346,6 +389,9 @@ export const CAPABILITIES: Capability[] = [
       'The watch still has your board entry',
       'The accountability log is outside both tiers'
     ],
+    // `panicWipe` is the original instance of a mechanism nobody can reach -- it had no
+    // button for weeks. It is declared here so that can never be true silently again.
+    control: '[data-act]',
     requires: ['identity']
   },
   {
@@ -361,7 +407,12 @@ export const CAPABILITIES: Capability[] = [
       'whether anything is missing',
       'nothing signs yet'
     ],
-    requires: ['identity']
+    control: '[data-ask]',
+    // The button is disabled while the watch is dark, so this needs a watch that is
+    // actually there -- not merely configured. Declared rather than worked around: an
+    // operator with no watch opens this screen to a true answer (nobody has written
+    // anything about you), and the control is the part that needs somebody to ask.
+    requires: ['identity', 'watch']
   },
   {
     name: 'Query',

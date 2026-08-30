@@ -18,21 +18,61 @@ import { seedDevice, open } from './device';
 /** A pubkey shaped correctly and belonging to nobody. */
 const NOBODY = 'b'.repeat(64);
 
-function seedFor(capability: Capability) {
+/**
+ * A watch that is actually on station, signed by a key this test holds.
+ *
+ * `requires: ['watch']` used to seed a Watchtower **address and nothing else**, so every
+ * capability declaring one got a watch that was configured and permanently Dark. That is a
+ * real state and the wrong one to test against: a control gated on the watch being reachable
+ * could never be exercised, and "What the watch wrote" sat undeclared for exactly as long.
+ */
+async function liveWatch() {
+  const { finalizeEvent, generateSecretKey, getPublicKey } = await import('nostr-tools/pure');
+  const { buildWatchStateEvent } = await import('@navcom/core');
+  const secret = generateSecretKey();
+  const now = Math.floor(Date.now() / 1000);
+  const event = finalizeEvent(
+    buildWatchStateEvent(
+      {
+        state: 'station',
+        since: now - 600,
+        holder: 'Watchtower',
+        holder_kind: 'node',
+        oncall: [],
+        agent_health: 'ok',
+        last_drill: null,
+        now
+      } as never,
+      now
+    ),
+    secret
+  );
+  return { pubkey: getPublicKey(secret), event };
+}
+
+async function seedFor(capability: Capability) {
+  const watch = capability.requires.includes('watch') ? await liveWatch() : null;
   return {
     ...(capability.requires.includes('identity') ? { callsign: 'Wren' } : {}),
-    ...(capability.requires.includes('watch')
-      ? { watchtower: { pubkey: NOBODY, relays: ['wss://relay.example'] } }
+    ...(watch
+      ? {
+          watchtower: { pubkey: watch.pubkey, relays: ['wss://relay.example'] },
+          relayEvents: [watch.event]
+        }
       : {}),
     ...(capability.requires.includes('peers')
       ? { peers: [{ pubkey: NOBODY, callsign: 'Raven', since: 0 }] }
+      : {}),
+    // A `tel:`/`sms:` control only exists once somebody has been saved to call.
+    ...(capability.requires.includes('contact')
+      ? { contact: { label: 'Sam', number: '+15550100' } }
       : {})
   };
 }
 
 for (const capability of CAPABILITIES) {
   test(`${capability.name} works with only what it declares`, async ({ page }) => {
-    await seedDevice(page, seedFor(capability));
+    await seedDevice(page, await seedFor(capability));
     await open(page, `/${capability.screen}`);
 
     // The screen renders at all. A capability whose page errors with its declared state is
@@ -40,7 +80,10 @@ for (const capability of CAPABILITIES) {
     await expect(page.locator('h1')).toBeVisible();
 
     if (capability.control) {
-      const control = page.locator(capability.control);
+      // `.first()` because a control can legitimately name a *class* of controls rather than
+      // one element — sixty-seven region links, twenty-one report buttons — and the claim
+      // being checked is that a person has one to operate, not that there is exactly one.
+      const control = page.locator(capability.control).first();
       await expect(control, `${capability.control} is not on ${capability.screen}`).toBeVisible();
       await expect(control, `${capability.control} is not operable`).toBeEnabled();
     }
@@ -71,7 +114,7 @@ test('a capability that declares no watch does not quietly need one', async ({ b
     const context = await browser.newContext();
     const page = await context.newPage();
     try {
-      await seedDevice(page, seedFor(capability));
+      await seedDevice(page, await seedFor(capability));
       await open(page, `/${capability.screen}`);
 
       // Nothing on the page may tell an operator to go and get a Watchtower first.
@@ -80,7 +123,7 @@ test('a capability that declares no watch does not quietly need one', async ({ b
 
       if (capability.control) {
         await expect(
-          page.locator(capability.control),
+          page.locator(capability.control).first(),
           `${capability.name}: ${capability.control} is not operable without a watch`
         ).toBeEnabled();
       }

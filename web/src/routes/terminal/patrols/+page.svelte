@@ -169,7 +169,7 @@
       from tonight. Nothing about your nights survives a phone being taken.
     {/if}
   </p>
-  <button onclick={toggleKeep}>
+  <button data-keep onclick={toggleKeep}>
     {keep ? 'Destroy them on a panic wipe' : 'Keep them through a panic wipe'}
   </button>
 </section>
