@@ -34,13 +34,25 @@ cp packages/core/package.json "$WORKTREE/vendor/navcom-core/package.json"
 
 node --input-type=module -e "
 import { readFileSync, writeFileSync } from 'node:fs';
-const path = '$WORKTREE/package.json';
-const p = JSON.parse(readFileSync(path, 'utf8'));
-p.dependencies['@navcom/core'] = 'file:./vendor/navcom-core';
-delete p.scripts.core;
-delete p.scripts.prebuild;
-delete p.scripts.pretest;
-writeFileSync(path, JSON.stringify(p, null, 2) + '\n');
+
+const wtPath = '$WORKTREE/package.json';
+const wt = JSON.parse(readFileSync(wtPath, 'utf8'));
+wt.dependencies['@navcom/core'] = 'file:./vendor/navcom-core';
+delete wt.scripts.core;
+delete wt.scripts.prebuild;
+delete wt.scripts.pretest;
+writeFileSync(wtPath, JSON.stringify(wt, null, 2) + '\n');
+
+// The vendored copy is prebuilt output, not a buildable package in its own right here --
+// found the hard way: npm runs a nested dependency's own \"prepare\" script during install
+// regardless of whether the parent needs it, and core's tries to run tsc against source
+// and devDependencies this vendoring deliberately does not carry. Scripts and
+// devDependencies stripped so npm never attempts it.
+const corePath = '$WORKTREE/vendor/navcom-core/package.json';
+const core = JSON.parse(readFileSync(corePath, 'utf8'));
+delete core.scripts;
+delete core.devDependencies;
+writeFileSync(corePath, JSON.stringify(core, null, 2) + '\n');
 "
 
 (
