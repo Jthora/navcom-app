@@ -59,10 +59,18 @@ workspace; the mirror only ever moves downstream of it.
 Refreshing it after a change worth publishing (there is no CI to do this automatically):
 
 ```sh
-git subtree split --prefix=packages/watchtower -b watchtower-mirror
-git push git@github.com:Jthora/navcom-watchtower.git watchtower-mirror:main --force
-git branch -D watchtower-mirror
+bash packages/watchtower/scripts/refresh-mirror.sh
 ```
+
+Not a bare `git subtree split` + push — this package's own `@navcom/core` dependency
+(`file:../core`) only resolves inside this monorepo, and a first attempt at documenting this
+as three manual commands produced a mirror that looked right and failed `npm install` in a
+fresh clone. The script vendors a fresh build of `@navcom/core` into the mirror and strips
+its `scripts`/`devDependencies` so npm doesn't try to rebuild it as a nested dependency —
+verified by actually cloning the result and running `npm install && npm run verify && npm
+run build`, not just checked structurally. Re-run that verification after any change to the
+script itself; this exact class of "looks done, isn't" mistake happened twice while writing
+it.
 
 The repo's pre-reconciliation history (through `999ef2b`) is preserved as the tag
 `frozen-pre-monorepo-2026-08-18` on that same repo, not lost by the force-push.
