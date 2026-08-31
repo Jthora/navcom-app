@@ -332,3 +332,108 @@ test.describe('the return leg of every signal, over a real relay', () => {
     await context.close();
   });
 });
+
+test.describe('the rest of the filters, against a relay that honours them', () => {
+  /**
+   * `verification.md` listed ten client subscription filters and noted that eight had never
+   * run against anything that honours a filter. `waitForResponse` was done first because it
+   * is the return leg of every signal. These are the next two by consequence.
+   *
+   * Each is a different filter *shape*, which is the reason to do them rather than assume the
+   * first proved the pattern: `authors` narrows by who wrote it, `#d` by which record it is
+   * about, and a relay that ignored either would look identical to one that agreed.
+   */
+
+  /** Publishes straight to the relay, as a daemon or another operator's phone would. */
+  async function publish(event: unknown) {
+    const { WebSocket } = await import('ws');
+    const socket = new WebSocket(relay.url);
+    await new Promise<void>((resolve, reject) => {
+      socket.once('open', resolve);
+      socket.once('error', reject);
+    });
+    socket.send(JSON.stringify(['EVENT', event]));
+    await new Promise((r) => setTimeout(r, 250));
+    socket.close();
+  }
+
+  test('watch state reaches a terminal that asked for it by author', async ({ browser }: { browser: Browser }) => {
+    /*
+     * `relay.ts` subscribes `{ kinds: [10910], authors: [config.pubkey], limit: 1 }`. If that
+     * `authors` term is wrong the terminal reads **Dark while a watch is on station** — the
+     * operator is told nobody is behind them when somebody is, which is the exact belief
+     * invariant 4 exists to protect.
+     */
+    const { finalizeEvent, generateSecretKey, getPublicKey } = await import('nostr-tools/pure');
+    const { buildWatchStateEvent } = await import('@navcom/core');
+    const secret = generateSecretKey();
+    const now = Math.floor(Date.now() / 1000);
+
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await liveDevice(page, relay.url, {
+      callsign: 'Wren',
+      watchtower: { pubkey: getPublicKey(secret), relays: [relay.url] }
+    });
+    await open(page, '/terminal/');
+    // Dark is the honest starting value, not a placeholder.
+    await expect(page.getByText(/dark/i).first()).toBeVisible();
+
+    await publish(
+      finalizeEvent(
+        buildWatchStateEvent(
+          {
+            state: 'station', since: now - 600, holder: 'Vale', holder_kind: 'human',
+            oncall: [], agent_health: 'ok', last_drill: null, now
+          } as never,
+          now
+        ),
+        secret
+      )
+    );
+
+    await expect(page.getByText(/on station/i).first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText(/vale/i).first()).toBeVisible();
+    await context.close();
+  });
+
+  test('a correction reaches the next operator, matched on the record it is about', async ({ browser }: { browser: Browser }) => {
+    /*
+     * `corrections.svelte.ts` subscribes `{ kinds: [30911], '#d': [...records] }` — the only
+     * `#d` filter in the client. If it is wrong, **what one operator learned at a door never
+     * reaches the next one**, and the directory's whole correction loop is a no-op that looks
+     * like it is working.
+     */
+    const { generateSecretKey } = await import('nostr-tools/pure');
+    const { buildCorrection } = await import('@navcom/core');
+
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await liveDevice(page, relay.url, { callsign: 'Wren' });
+    await open(page, '/terminal/directory/st-louis/');
+    await expect(page.locator('[data-corrected]')).toHaveCount(0);
+
+    // Written by somebody else entirely — this is the case the loop exists for.
+    await publish(
+      buildCorrection(
+        generateSecretKey(),
+        {
+          record: 'st-louis-st-patrick-center',
+          verified_by: 'Raven',
+          method: 'in_person',
+          last_verified: '2026-08-30',
+          fields: { hours: 'closed Sundays' }
+        },
+        Math.floor(Date.now() / 1000)
+      )
+    );
+
+    const corrected = page.locator('[data-corrected]').first();
+    await expect(corrected).toBeVisible({ timeout: 20_000 });
+    await expect(corrected).toContainText(/nothing was removed/i);
+    // Provenance by name, on the face of the corrected field [build-order 7.6]. The summary
+    // line above says a correction exists; this is the part that says whose word it is.
+    await expect(page.getByText(/raven/i).first()).toBeVisible();
+    await context.close();
+  });
+});

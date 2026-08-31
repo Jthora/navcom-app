@@ -269,12 +269,12 @@ itself:
   | | Filter | If it is wrong |
   |---|---|---|
   | ~~`transport.ts` `waitForResponse`~~ | `kinds`, `authors`, `#p`, `#e` | **Done.** All four terms broken one at a time, each breaking a test. `#e` is proven by an *absence* assertion — a response to a different signal must not be read as the answer to this one — and dropping the term makes that test fail, so the absence is examined rather than assumed |
-  | `relay.ts` watch state | `kinds`, `authors`, `limit` | The terminal reads Dark while a watch is on station |
+  | ~~`relay.ts` watch state~~ | `kinds`, `authors`, `limit` | **Done.** `authors` broken and the test failed — a terminal reading Dark while a watch is on station is invariant 4 failing quietly |
   | `board.svelte.ts` | `kinds`, `#p` | Whoever holds the watch does not see a signal arrive |
   | `standing.ts` revocations | `kinds`, `authors` | A withdrawn endorsement goes on opening the watch gate |
   | `invites.svelte.ts` | `kinds`, `#p` | An invite is never seen; declining is silent, so it looks identical to being ignored |
   | `pq.svelte.ts` | `kinds`, `authors` | Post-quantum cover reads as absent when it is not |
-  | `corrections.svelte.ts` | `kinds`, `#d` | A correction somebody made at a door never reaches the next operator |
+  | ~~`corrections.svelte.ts`~~ | `kinds`, `#d` | **Done.** The only `#d` filter in the client; broken and the test failed. Without it the whole correction loop is a no-op that looks like it is working |
   | `places.svelte.ts` | `kinds`, `#g` | A place added from the field is invisible |
 
   Every one of these is *correct as far as anything has checked*, and nothing has checked the
@@ -282,7 +282,9 @@ itself:
   every term and stay green.
 
   **`waitForResponse` was done first** — the return leg of every signal including `Distress`.
-  Seven of the ten remain. They are mechanical now that the pattern exists: publish to the
+  Watch state and corrections followed, chosen by consequence and because each is a distinct
+  filter *shape*: `authors` narrows by who wrote a thing, `#d` by which record it concerns, and
+  a relay ignoring either looks identical to one agreeing. **Five of the ten remain.** They are mechanical now that the pattern exists: publish to the
   local relay from Node, assert the screen, then break each filter term and watch it fail
 - **The daemon and the executor together.** Both subscribe to `20911`; that they do not
   confuse a client is reasoned, not observed
