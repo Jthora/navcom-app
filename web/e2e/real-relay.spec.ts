@@ -113,3 +113,108 @@ test.describe('over a relay that is actually running', () => {
     expect(onTheWire).not.toContain('Raven');
   });
 });
+
+test.describe('the watch reaching an overdue operator, over a real relay', () => {
+  /**
+   * The half of the overdue contact that had never spoken NIP-01.
+   *
+   * `watch-state.spec.md` requires the node to attempt contact with an operator who is past
+   * the window they declared, and until recently it logged `contact-not-attempted` instead.
+   * The daemon half is unit-tested with an injected pool; the terminal half is browser-tested
+   * against `ReplayingSocket` — **which ignores filters entirely**, handing every delivered
+   * event to every open subscription.
+   *
+   * That is the gap. `overdue.svelte.ts` subscribes with
+   * `{ kinds: [20912], authors: [watch], '#p': [me] }`, and against the stub every one of
+   * those three could be wrong and the test would still pass. This relay matches filters
+   * properly, so arriving here means the client composed a `REQ` a real relay agreed with.
+   */
+  let watch: { secret: Uint8Array; pubkey: string };
+
+  test.beforeAll(async () => {
+    const { generateSecretKey, getPublicKey } = await import('nostr-tools/pure');
+    const secret = generateSecretKey();
+    watch = { secret, pubkey: getPublicKey(secret) };
+  });
+
+  /** Publishes straight to the relay, the way a daemon would. No browser involved. */
+  async function publish(event: unknown) {
+    const { WebSocket } = await import('ws');
+    const socket = new WebSocket(relay.url);
+    await new Promise<void>((resolve, reject) => {
+      socket.once('open', resolve);
+      socket.once('error', reject);
+    });
+    socket.send(JSON.stringify(['EVENT', event]));
+    // Give the relay a moment to store and fan out before the socket goes away.
+    await new Promise((r) => setTimeout(r, 250));
+    socket.close();
+  }
+
+  async function contactEvent(text: string) {
+    const { finalizeEvent, getPublicKey } = await import('nostr-tools/pure');
+    const { buildResponse } = await import('@navcom/core');
+    return finalizeEvent(
+      buildResponse(
+        watch.secret,
+        await pubkeyOf(TEST_SECRET),
+        'e'.repeat(64),
+        {
+          type: 'contact',
+          responder: { kind: 'agent', callsign: 'watchtower' },
+          text,
+          provenance: null
+        } as never,
+        Math.floor(Date.now() / 1000)
+      ),
+      watch.secret
+    );
+  }
+
+  test('lands on the operator’s own screen, through a filter the relay agreed with', async ({
+    browser
+  }: {
+    browser: Browser;
+  }) => {
+    const context = await browser.newContext();
+    const wren = await context.newPage();
+
+    await liveDevice(wren, relay.url, {
+      callsign: 'Wren',
+      watchtower: { pubkey: watch.pubkey, relays: [relay.url] }
+    });
+    // Already past the window she declared, so the screen is in the state the nudge answers.
+    const now = Math.floor(Date.now() / 1000);
+    await wren.addInitScript((s) => {
+      localStorage.setItem('navcom.wipeable', JSON.stringify({ signon: s }));
+    }, { at: now - 7200, area: 'north riverfront', expectedUntil: now - 600, toldAtSignOn: 'nobody is on call', routineInterval: null });
+
+    await open(wren, '/terminal/');
+    await expect(wren.locator('[data-nudged]')).toHaveCount(0);
+
+    await publish(await contactEvent('You are past the time you gave.'));
+
+    // Nothing about this was faked: a real socket, a real REQ the client composed, a relay
+    // that would have dropped the event had any of the three filter terms been wrong.
+    await expect(wren.locator('[data-nudged]')).toBeVisible({ timeout: 20_000 });
+    await expect(wren.locator('[data-nudged]')).toContainText(/the watch nudged/i);
+
+    await context.close();
+  });
+
+  test('and the relay holding it learned nothing about her', async () => {
+    /*
+     * The nudge is the one message a node sends unasked, so it is the one most worth
+     * checking for leaks. What an observer may see is a `20912` addressed to a pubkey --
+     * the same shape as every ack. Never the area, never the callsign, never the word.
+     */
+    const contacts = relay.received.filter((e) => e.kind === 20912);
+    expect(contacts.length).toBeGreaterThan(0);
+
+    const onTheWire = JSON.stringify(contacts);
+    expect(onTheWire).not.toContain('north riverfront');
+    expect(onTheWire).not.toContain('Wren');
+    expect(onTheWire).not.toContain('overdue');
+    expect(onTheWire).not.toContain('past the time');
+  });
+});

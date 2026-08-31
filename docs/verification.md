@@ -246,9 +246,41 @@ itself:
   relay's memory afterwards, which every other test could only assert against a stub that never
   had the chance to leak.
 
+  **The watch reaching an overdue operator now runs there too**, and it closes a gap the
+  fake socket could not have found. `ReplayingSocket` hands every delivered event to every
+  open subscription — it ignores filters entirely — so `overdue.svelte.ts`'s
+  `{ kinds, authors, '#p' }` could have been wrong in all three terms and every browser test
+  would still have passed. The local relay matches filters properly, so arriving there means
+  a real relay agreed with the `REQ` the client composed. Each of the three was broken
+  deliberately and each broke the test.
+
+  **A general lesson worth stating, because it applies to every spec in `e2e/`:** a test
+  against the stub proves the app behaves when a relay behaves. It cannot prove the app asked
+  the right question. Anything whose correctness lives in a *filter* rather than in a handler
+  is untested until it runs here.
+
   What is still open is the half that needs a body: **two phones, two networks, a relay
   somebody else runs.** Public relays differ in filter handling, rate limits and retention.
   Build order `0.2` stands
+- **Eight of ten subscription filters.** Following directly from the lesson above, and
+  written out rather than left as a feeling. Two have now run against a filter-honouring
+  relay — peer presence and the overdue contact. These have not:
+
+  | | Filter | If it is wrong |
+  |---|---|---|
+  | `transport.ts` `waitForResponse` | `kinds`, `authors`, `#p`, `#e` | **The highest stakes here.** An operator does not see the answer to their `Query`, their `Assist`, or their `Distress` — and the screen says nobody replied |
+  | `relay.ts` watch state | `kinds`, `authors`, `limit` | The terminal reads Dark while a watch is on station |
+  | `board.svelte.ts` | `kinds`, `#p` | Whoever holds the watch does not see a signal arrive |
+  | `standing.ts` revocations | `kinds`, `authors` | A withdrawn endorsement goes on opening the watch gate |
+  | `invites.svelte.ts` | `kinds`, `#p` | An invite is never seen; declining is silent, so it looks identical to being ignored |
+  | `pq.svelte.ts` | `kinds`, `authors` | Post-quantum cover reads as absent when it is not |
+  | `corrections.svelte.ts` | `kinds`, `#d` | A correction somebody made at a door never reaches the next operator |
+  | `places.svelte.ts` | `kinds`, `#g` | A place added from the field is invisible |
+
+  Every one of these is *correct as far as anything has checked*, and nothing has checked the
+  part that matters. The stub they run against ignores filters, so each could be wrong in
+  every term and stay green. **`waitForResponse` is the one to do first**, because it is the
+  return leg of every signal including `Distress`
 - **The daemon and the executor together.** Both subscribe to `20911`; that they do not
   confuse a client is reasoned, not observed
 - **Carrying it for a night.** Nothing here finds text that is too long to read in the cold,
