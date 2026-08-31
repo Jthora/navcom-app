@@ -31,6 +31,15 @@ The [resource directory](product/directory-schema.md) is readable by anyone on t
 no account and no install. That's deliberate: it is useful to people facing the same night
 who will never be operators.
 
+**The person watching for you doesn't have to be one either**, and that is worth stating
+because the code always allowed it while every screen implied otherwise. Pairing checks
+nothing about who somebody is — there is no roster to check against — so a partner, a
+housemate or a sibling with the app installed can be the one who notices you are late. For
+most operators that is the *only* realistic arrangement: the commonest pair is not two
+people who patrol, it is one who does and one who lives with them. An operator who knows
+nobody else in this world is still not alone, which is the difference between the
+[Paired layer](../CLAUDE.md) being theoretical and being available.
+
 The community already has hubs of its own — Herocore, RLSH.net, the RLSH Wiki — and NavCom
 is not their front door. The about page links to each one and to the archived copy of the
 ones that have been shut down or taken over;

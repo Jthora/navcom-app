@@ -185,6 +185,86 @@ export const GONE: GoneSite[] = [
   }
 ];
 
+/**
+ * Where to get actually qualified, by somebody who is not us.
+ *
+ * ## Why pointers and nothing else
+ *
+ * **NavCom teaches nothing and certifies nobody**, and both halves are deliberate.
+ *
+ * Writing the curriculum is refused: `CONTRIBUTING.md` names "de-escalation, first aid,
+ * overdose response, rights" as the content class where *"confident wrong guidance gets
+ * someone hurt, and reviewing it needs real expertise rather than good intentions"*, and
+ * `declined.md` refuses generated playbook content for the same reason. A first-aid course
+ * written by this project would be the Medic's kill trigger wearing a lesson plan.
+ *
+ * Issuing the credential is refused separately: a badge from a project with
+ * [no institution behind it](../../../docs/positioning.md) is worth less than a card from
+ * the Red Cross, and inventing one would create exactly the authority this project
+ * disclaims. It would also be a rank, and `refusals.ts`'s `no-credential-gate` refuses
+ * those network-wide — *"claims describe, they never gate."*
+ *
+ * What is left is the useful part and it is small: real organisations, named, linked, with
+ * the same staleness rule as everything else here. **Being listed is not an endorsement**
+ * and absence is not a judgement — this says where things are, not which are good.
+ *
+ * The list is deliberately short and deliberately not US-only; a directory covering
+ * sixty-eight metros should not send everybody to one country's Red Cross.
+ */
+export interface Training {
+  name: string;
+  url: string;
+  /** Where it is actually useful. Honest about reach rather than implying worldwide. */
+  where: string;
+  how: Liveness;
+  checked: string;
+}
+
+export const TRAINING: Training[] = [
+  {
+    name: 'American Red Cross',
+    url: 'https://www.redcross.org/take-a-class',
+    where: 'United States',
+    how: 'fetched',
+    checked: '2026-08-30'
+  },
+  {
+    name: 'St John Ambulance',
+    url: 'https://www.sja.org.uk/',
+    where: 'United Kingdom',
+    how: 'fetched',
+    checked: '2026-08-30'
+  },
+  {
+    name: 'St John New Zealand',
+    url: 'https://www.stjohn.org.nz/first-aid/first-aid-courses/',
+    where: 'New Zealand',
+    how: 'fetched',
+    checked: '2026-08-30'
+  },
+  {
+    name: 'Australian Red Cross',
+    url: 'https://www.redcross.org.au/',
+    where: 'Australia',
+    how: 'challenged',
+    checked: '2026-08-30'
+  },
+  {
+    name: 'Stop the Bleed',
+    url: 'https://www.stopthebleed.org/',
+    where: 'International, mostly US-based courses',
+    how: 'fetched',
+    checked: '2026-08-30'
+  },
+  {
+    name: 'Mental Health First Aid',
+    url: 'https://www.mentalhealthfirstaid.org/',
+    where: 'United States, with sister programmes elsewhere',
+    how: 'fetched',
+    checked: '2026-08-30'
+  }
+];
+
 /** How a liveness marker reads to somebody who is not holding this file. */
 export const LIVENESS_WORDING: Record<Liveness, string> = {
   fetched: 'checked directly',

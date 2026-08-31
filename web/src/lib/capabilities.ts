@@ -250,6 +250,11 @@ export const CAPABILITIES: Capability[] = [
       'No watch is involved, no server holds it',
       'Best done face to face',
       'they are not told',
+      // The one that decides whether an operator who knows nobody here has anybody at all.
+      // Pairing never required a peer to be an operator, and every word on the screen said
+      // otherwise -- so the cheapest real safety arrangement in the app was invisible to the
+      // people who most needed it. Held here so it cannot quietly go back to being implied.
+      'They do not have to be an operator',
       // The commitment and its limit together. Watching for somebody is a nudge, and they
       // are told you are doing it -- a private note means somebody can believe they are
       // watched while nobody is.

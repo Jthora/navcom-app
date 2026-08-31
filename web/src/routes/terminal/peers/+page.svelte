@@ -158,6 +158,19 @@
     Somebody you paired with sees when you are out, and you see when they are. No watch is
     involved, no server holds it, and either of you can end it without telling the other.
   </p>
+  <p>
+    <!--
+      The sentence this screen was missing, and the one most likely to matter.
+      Nothing in the code ever required a peer to be an operator — `pair` takes any valid
+      key and a name you choose, and there is no roster to be absent from — but every word
+      here described patrolling, so somebody whose only candidate was their partner had no
+      way to know this was for them. The mechanism shipped; the framing did not.
+    -->
+    <strong>They do not have to be an operator.</strong> A partner, a housemate, a sibling —
+    anyone willing to install this and pick a name. Most people here know nobody else who
+    does this, and the person most likely to notice you did not come home already lives with
+    you.
+  </p>
   <p class="cost">
     <strong>Best done face to face.</strong> A code sent through a messaging app travels
     through whatever carried it — which is fine between people who already talk that way,

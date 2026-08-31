@@ -5,6 +5,15 @@
  * discovery, no suggestion and no ranking — nothing here proposes anybody, because a list
  * of operators who might know each other is the thing this design refuses to build.
  *
+ * **A peer is not necessarily an operator, and that is the point.** `pair` takes any valid
+ * key and a name you choose; nothing checks who they are, because there is no roster to
+ * check against. A partner, a housemate, a sibling with the app installed is a peer, and
+ * for most people here that is the only realistic buddy — the commonest arrangement is not
+ * two operators watching each other, it is one operator and somebody who lives with them.
+ * The code always allowed it and every sentence on the screen described patrolling instead,
+ * which made the cheapest safety arrangement in the app invisible to the people who most
+ * needed it.
+ *
  * Lives in the accruing tier. A peer relationship outlasts a night, and losing one to a
  * panic wipe would mean finding that person again in person to get it back.
  */

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { LIVE, GONE, LIVENESS_WORDING } from '$lib/community';
+  import { LIVE, GONE, TRAINING, LIVENESS_WORDING } from '$lib/community';
 </script>
 
 <svelte:head>
@@ -81,6 +81,25 @@
           <span class="dead">{site.name} — was {site.was}</span>
           <span class="what">{site.what}</span>
           <a href={site.archive} rel="noopener external">Read the archived copy</a>
+        </li>
+      {/each}
+    </ul>
+
+    <h3>Getting actually qualified</h3>
+    <p>
+      <strong>NavCom teaches nothing and certifies nobody.</strong> A first-aid course
+      written here would be guidance nobody qualified had checked, and a badge from a project
+      with no institution behind it is worth less than a card from the Red Cross. So this is
+      a list of other people's courses and nothing more — <strong
+        >being listed is not an endorsement</strong
+      >, and absence is not a judgement.
+    </p>
+    <ul class="sites">
+      {#each TRAINING as t (t.url)}
+        <li>
+          <a href={t.url} rel="noopener external">{t.name}</a>
+          <span class="how" data-how={t.how}>{LIVENESS_WORDING[t.how]} · {t.checked}</span>
+          <span class="what">{t.where}</span>
         </li>
       {/each}
     </ul>
