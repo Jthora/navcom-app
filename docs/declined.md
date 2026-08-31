@@ -19,6 +19,11 @@ else's — or nobody's.**
 ## How to use it
 
 - When you find a gap, ask whether it belongs here **before** it goes to `build-order.md`
+- **Outside research lands here more often than it lands in the build order.** Eighty-five
+  proposals were checked against the code once; most were already built or already refused,
+  and the entries below are what was genuinely new *and* genuinely not ours. The whole
+  reconciliation is in
+  [`research/rlsh-brief-reconciliation.md`](research/rlsh-brief-reconciliation.md)
 - Every entry names the actual problem, never a strawman version of it
 - Every entry names **what declining costs**, because that cost is the honest part
 - Declining is not denying. A real problem stays written here even though we are not solving
@@ -149,6 +154,21 @@ out to be.
 
 ## Things we will not provide
 
+### A 24/7 monitoring centre
+
+Named here because external research files it as *deferred*, and the difference is the whole
+point of this page. Commercial lone-worker systems work because somebody is awake in a room
+somewhere; a peer watching a timer is materially weaker, and saying so is required rather
+than optional.
+
+It is **declined, not deferred**: there is no capacity for it and there is no plan to acquire
+any, so putting it on an obligation list would be a promise nobody can keep. See *Uptime*
+directly below, which is the same refusal at the level of the box.
+
+**Cost:** stated in full under *Whether anyone is safe* — this system improves the
+medium-risk case and does not solve the high-risk one, and nothing here should imply
+otherwise.
+
 ### Uptime
 
 One box, run by one person, for people they know. There is no SLA, no redundancy for the
@@ -222,6 +242,45 @@ underneath, there is no OS keystore, and browser history survives both.
 **Cost:** a phone taken by someone patient and equipped is a phone taken.
 
 **Instead:** say exactly where the boundary is, on the screen that does the wiping.
+
+### A library of protective-gear print files
+
+External RLSH research proposes hosting STL and CAD files for printable armour, with material
+specs, printer settings and cost tiers — strong evidence behind the pain point, and a real
+one: gear is expensive and people fund it by donation.
+
+**Three separate reasons, any one sufficient.** `service-worker.ts` precaches everything in
+`static/` except `.csv`, so a binary dropped there lands on every operator's phone against a
+400MB device floor — the exact thing area pages are deliberately *not* precached to avoid.
+Hosting somebody else's CAD is mirroring, which
+[`community-continuity.md`](product/community-continuity.md) refuses in favour of linking. And
+*"$150 gets you this level of protection"* is a safety claim about equipment nobody here
+tested, which is the Medic's kill trigger wearing different clothes.
+
+**Cost:** the strongest-evidenced pain point in that research gets nothing from us, and it is
+a real one. Somebody will spend money badly for want of a list somebody else could have made.
+
+**Instead:** it is a good project for somebody with a printer, a test rig and no connection to
+this app. Nothing about it needs NavCom, which is the tell.
+
+### Telling you what is findable about your own persona
+
+Proposed as client-side-only, own-persona-only, never persisted — and those three constraints
+are not enough, which is why this is here rather than in the build order.
+
+Learning what is *publicly linkable* to a persona means asking third parties: search engines,
+image search, the platforms themselves. Those queries correlate the operator's IP and timing
+with their own persona **at exactly the services most useful to somebody unmasking them**. The
+tool would create the trail it exists to find, and it would contradict
+[`build-order.md`](build-order.md) 8.6 — *"leave no trace, and say so"* — which is currently
+true.
+
+**Cost:** unmasking is a documented, strongly-evidenced harm here, and an operator who wants
+to audit their own exposure gets no help from us.
+
+**Instead:** the half NavCom can honestly do is state what *this app* emits and why, which is
+partly written already and scattered across `signals.spec.md`, `refusals.ts` and
+`watch-state.spec.md`. Consolidating that is defensible. Auditing the open internet is not.
 
 ### An onboarding flow that replaces a person
 

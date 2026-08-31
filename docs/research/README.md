@@ -12,6 +12,7 @@ Background that informs the design. Useful as input, not as authority.
 | [`ecosystem-roster.md`](./ecosystem-roster.md) | Watch, analysts, agents, infrastructure, outside, adversaries |
 | [`constraints.md`](./constraints.md) | What those stresses demand of any feature |
 | [`prior-art.md`](./prior-art.md) | What already exists, and what it teaches |
+| [`rlsh-brief-reconciliation.md`](./rlsh-brief-reconciliation.md) | An outside brief's ~85 proposals, checked against the code one at a time. **Read before acting on external research** — most of it converged, and the value was the eight defects it found here |
 
 ## How to use the archetypes
 

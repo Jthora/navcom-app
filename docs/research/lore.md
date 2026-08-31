@@ -86,6 +86,47 @@ authority, not better tests.** Everything an agent may not do exists so that mis
 is survivable rather than because we expect it. See
 [`../watch/agents.md`](../watch/agents.md).
 
+## Why the structure is written down, and not merely absent
+
+The rules above make this project unusually explicit about its own power: who may hold the
+watch, what an agent may not do, what a wipe does not reach, what the log cannot prove. That
+reads as bureaucratic until you have the argument for it, which came from outside and is
+worth keeping.
+
+**Jo Freeman, *The Tyranny of Structurelessness* (1970).** There is no such thing as a
+structureless group. Refusing formal structure does not prevent informal structure; it only
+prevents it being *seen*. Power still concentrates — it just becomes unaccountable, because
+its existence is denied. Occupy is the standard demonstration.
+
+The implication is the one a decentralisation enthusiast least wants to hear: **being
+distributed does not make a movement harder to corrupt. It removes the mechanism by which
+corruption could be noticed.** So any structure this system creates has to be explicit and
+visible *precisely so it can be argued with* — which is why `refusals.ts` is a typed module
+published at `/.well-known/navcom-refusals.json` rather than a paragraph somebody has to
+think to open, and why the capability receipt names who is on call before an operator signs
+on rather than after.
+
+**Gary Marx, on infiltration and agents provocateurs.** Movements built on prior relationships
+and cell-like structure resist infiltration; open mass movements with easy joining do not. The
+uncomfortable corollary for anyone building software: *smooth onboarding, discoverability and
+network effects move a movement toward the penetrable shape.* Friction at the boundary — a QR
+scanned in person, a watch key handed over by hand — is not a UX defect to be optimised away.
+
+Two caveats, because neither idea imports cleanly:
+
+- Marx's argument is about **trust**, not transport. NavCom's own published refusal
+  `no-operator-traffic-on-a-private-relay` argues the opposite at the network layer: the
+  protection there is the **anonymity set**, and the same traffic in a small private room
+  tells its operator exactly who is active tonight. Cells for trust; crowds for cover.
+- Small-scale infiltration — one or two patient people — is **not defensible by software**
+  at all, and [`identity.md`](../product/identity.md) already says so. The design goal is
+  blast radius, not immunity: assume it succeeds, and make sure a compromised participant
+  learns little, reaches few, and has no ladder to climb.
+
+Neither name appeared here until an outside brief cited them, though the practice long
+predated the citation. That is worth noticing on its own: this project had the behaviour and
+not the argument, and the argument is what survives an author.
+
 ## The method, for whoever comes next
 
 When a design question comes up, the useful move is usually **not** "how does the market
