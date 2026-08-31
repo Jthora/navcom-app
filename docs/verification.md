@@ -268,7 +268,7 @@ itself:
 
   | | Filter | If it is wrong |
   |---|---|---|
-  | `transport.ts` `waitForResponse` | `kinds`, `authors`, `#p`, `#e` | **The highest stakes here.** An operator does not see the answer to their `Query`, their `Assist`, or their `Distress` — and the screen says nobody replied |
+  | ~~`transport.ts` `waitForResponse`~~ | `kinds`, `authors`, `#p`, `#e` | **Done.** All four terms broken one at a time, each breaking a test. `#e` is proven by an *absence* assertion — a response to a different signal must not be read as the answer to this one — and dropping the term makes that test fail, so the absence is examined rather than assumed |
   | `relay.ts` watch state | `kinds`, `authors`, `limit` | The terminal reads Dark while a watch is on station |
   | `board.svelte.ts` | `kinds`, `#p` | Whoever holds the watch does not see a signal arrive |
   | `standing.ts` revocations | `kinds`, `authors` | A withdrawn endorsement goes on opening the watch gate |
@@ -279,8 +279,11 @@ itself:
 
   Every one of these is *correct as far as anything has checked*, and nothing has checked the
   part that matters. The stub they run against ignores filters, so each could be wrong in
-  every term and stay green. **`waitForResponse` is the one to do first**, because it is the
-  return leg of every signal including `Distress`
+  every term and stay green.
+
+  **`waitForResponse` was done first** — the return leg of every signal including `Distress`.
+  Seven of the ten remain. They are mechanical now that the pattern exists: publish to the
+  local relay from Node, assert the screen, then break each filter term and watch it fail
 - **The daemon and the executor together.** Both subscribe to `20911`; that they do not
   confuse a client is reasoned, not observed
 - **Carrying it for a night.** Nothing here finds text that is too long to read in the cold,

@@ -218,3 +218,117 @@ test.describe('the watch reaching an overdue operator, over a real relay', () =>
     expect(onTheWire).not.toContain('past the time');
   });
 });
+
+test.describe('the return leg of every signal, over a real relay', () => {
+  /**
+   * `waitForResponse`'s filter — the highest-stakes one in the system, and until now the
+   * least tested.
+   *
+   * It is how an operator learns the answer to a `Query`, an `Assist`, and a `Distress`.
+   * Its filter has four terms — `kinds`, `authors`, `#p`, `#e` — and `#e` is the one no
+   * other subscription here uses: it narrows to responses to *this one signal*, which is
+   * what stops an old ack being read as an answer to a new question.
+   *
+   * Against `ReplayingSocket` all four could be wrong and every test would pass, because the
+   * stub hands every delivered event to every open subscription. `verification.md` names
+   * this as the one to do first, because if it is wrong an operator is told nobody replied
+   * when somebody did.
+   */
+  let watch: { secret: Uint8Array; pubkey: string };
+
+  test.beforeAll(async () => {
+    const { generateSecretKey, getPublicKey } = await import('nostr-tools/pure');
+    const secret = generateSecretKey();
+    watch = { secret, pubkey: getPublicKey(secret) };
+  });
+
+  /** Answers the operator's signal the way a daemon would: same relay, real frames. */
+  async function answerNext(text: string, opts: { wrongTarget?: boolean } = {}) {
+    const { finalizeEvent } = await import('nostr-tools/pure');
+    const { buildResponse } = await import('@navcom/core');
+    const { WebSocket } = await import('ws');
+
+    // The signal the terminal actually published, found on the relay rather than guessed.
+    const signal = await expect
+      .poll(
+        () => relay.received.find((e) => e.kind === 20910) ?? null,
+        { timeout: 20_000, message: 'the terminal never published a signal to the relay' }
+      )
+      .not.toBeNull()
+      .then(() => relay.received.find((e) => e.kind === 20910)!);
+
+    const socket = new WebSocket(relay.url);
+    await new Promise<void>((resolve, reject) => {
+      socket.once('open', resolve);
+      socket.once('error', reject);
+    });
+    const event = finalizeEvent(
+      buildResponse(
+        watch.secret,
+        await pubkeyOf(TEST_SECRET),
+        // The whole point of the `#e` term. A response to some other signal must not be
+        // read as the answer to this one.
+        opts.wrongTarget ? 'f'.repeat(64) : signal.id,
+        {
+          type: 'answer',
+          responder: { kind: 'human', callsign: 'Vale' },
+          text,
+          provenance: { record_id: 'st-louis-example', verified: '2026-08-01', method: 'phone' }
+        } as never,
+        Math.floor(Date.now() / 1000)
+      ),
+      watch.secret
+    );
+    socket.send(JSON.stringify(['EVENT', event]));
+    await new Promise((r) => setTimeout(r, 250));
+    socket.close();
+    return signal;
+  }
+
+  async function askSomething(browser: Browser) {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await liveDevice(page, relay.url, {
+      callsign: 'Wren',
+      watchtower: { pubkey: watch.pubkey, relays: [relay.url] }
+    });
+    await open(page, '/terminal/query/');
+    await page.locator('#q').fill('anywhere open past midnight that takes a dog');
+    await page.getByRole('button', { name: /ask/i }).first().click();
+    return { context, page };
+  }
+
+  test('an answer to the operator’s own signal reaches them', async ({ browser }: { browser: Browser }) => {
+    const { context, page } = await askSomething(browser);
+
+    await answerNext('Our Lady’s Inn takes dogs. Ring the bell at the side door.');
+
+    const answer = page.locator('[data-answer]');
+    await expect(answer).toBeVisible({ timeout: 20_000 });
+    await expect(answer).toContainText(/takes dogs/i);
+    // A human answered, and the screen says so — invariant 5 works in both directions.
+    await expect(answer).toContainText(/vale/i);
+    // Provenance present, so it must not render as unverified.
+    await expect(page.locator('[data-provenance="none"]')).toHaveCount(0);
+
+    await context.close();
+  });
+
+  test('and a response to a different signal is not mistaken for it', async ({ browser }: { browser: Browser }) => {
+    /*
+     * The `#e` term, tested by breaking it from the outside rather than by editing the
+     * client. A relay that honours filters will simply not deliver this, which is the
+     * behaviour an operator's safety rests on: the answer they see is the answer to the
+     * question they asked.
+     */
+    const { context, page } = await askSomething(browser);
+
+    await answerNext('this answers something else entirely', { wrongTarget: true });
+
+    // Long enough that a wrong filter would have shown it.
+    await page.waitForTimeout(3_000);
+    await expect(page.locator('[data-answer]')).toHaveCount(0);
+
+    await context.close();
+  });
+});
