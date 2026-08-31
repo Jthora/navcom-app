@@ -1506,3 +1506,78 @@ test.describe('lines jotted at a door', () => {
     await expect(home).toContainText(/panic wipe destroys them/i);
   });
 });
+
+test.describe('what you contributed, as something you can hand over', () => {
+  /**
+   * `propagation.md` §2 and the brief's 2.2 / 5.4 / 7.1 all converge on one artifact: a
+   * readable account of the work, for a grant committee or for somebody sneering that none of
+   * it is real. It is deliberately **not** "export everything" — the accruing tier also holds
+   * peers and endorsements, and a readable file of those is an association graph.
+   */
+  const CORRECTION = {
+    record: 'st-louis-our-ladys-inn',
+    verified_by: 'Wren',
+    method: 'in_person',
+    last_verified: '2026-03-14',
+    fields: { intake_hours: '20:30' },
+    by: 'MINE'
+  };
+  const THEIRS = { ...CORRECTION, record: 'st-louis-not-mine', by: 'c'.repeat(64) };
+
+  /**
+   * Seeds storage the way the app writes it, with this device's own key as the author.
+   *
+   * The pubkey is derived here rather than read from storage: only the secret is persisted,
+   * and `loadIdentity` computes the public half on every call.
+   */
+  async function withWork(page: import('@playwright/test').Page, patrols: unknown[]) {
+    const { getPublicKey } = await import('nostr-tools/pure');
+    const mine = getPublicKey(
+      Uint8Array.from((TEST_SECRET.match(/../g) ?? []).map((b) => parseInt(b, 16)))
+    );
+    await seedDevice(page, OUT);
+    await page.addInitScript(
+      (d) => {
+        const me = JSON.parse(localStorage.getItem('navcom.accruing') ?? '{}');
+        const fix = (c: Record<string, unknown>) => ({ ...c, by: c.by === 'MINE' ? d.mine : c.by });
+        me.corrections = { a: fix(d.correction), b: fix(d.theirs) };
+        me.patrols = d.patrols;
+        localStorage.setItem('navcom.accruing', JSON.stringify(me));
+      },
+      { correction: CORRECTION, theirs: THEIRS, patrols, mine }
+    );
+    await open(page, '/terminal/patrols/');
+    await page.getByRole('button', { name: /show what would be shared/i }).click();
+    return page.locator('[data-export]');
+  }
+
+  test('gathers the corrections this operator actually wrote', async ({ page }) => {
+    /*
+     * This is the test that catches the bug this feature nearly shipped with. `corrections.all`
+     * reads a `$state` that is empty until `start()` runs, and `start()` opens relay
+     * subscriptions -- so on a screen that never calls it, the export rendered perfectly and
+     * said "nothing yet" forever.
+     */
+    const shared = await withWork(page, [{ started: 1_800_000_000, ended: 1_800_012_600, area: 'Downtown' }]);
+    await expect(shared).toBeVisible();
+    await expect(shared).toContainText('st-louis-our-ladys-inn');
+    await expect(shared).toContainText('1 correction');
+  });
+
+  test('and never somebody else’s, even held on the same phone', async ({ page }) => {
+    // A device caches every correction it hears over a relay. Publishing a stranger's work
+    // under your own callsign is both a false claim and a disclosure about somebody who
+    // agreed to nothing.
+    const shared = await withWork(page, [{ started: 1_800_000_000, ended: 1_800_012_600, area: 'Downtown' }]);
+    await expect(shared).not.toContainText('st-louis-not-mine');
+  });
+
+  test('and an operator who only ever corrected records can still show it', async ({ page }) => {
+    // The share section was gated on having recorded a patrol, so the person who fixes
+    // listings from a phone and never logs a night was told they had nothing.
+    const shared = await withWork(page, []);
+    await expect(shared).toBeVisible();
+    await expect(shared).toContainText('st-louis-our-ladys-inn');
+    await expect(shared).toContainText('none recorded');
+  });
+});

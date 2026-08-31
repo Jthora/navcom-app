@@ -7,7 +7,6 @@
    */
   import { onMount } from 'svelte';
   import {
-    exportPatrols,
     formatDuration,
     keepsHistory,
     patrols,
@@ -15,6 +14,10 @@
     type Patrol
   } from '$lib/terminal/patrol';
   import { operator } from '$lib/terminal/session.svelte';
+  import { exportContribution } from '$lib/terminal/contribution';
+  import { storedCorrections } from '$lib/terminal/corrections.svelte';
+  import { storedPlaces } from '$lib/terminal/places.svelte';
+  import { loadIdentity } from '$lib/terminal/identity';
   import { Slot, Readout } from '$lib/components/panel';
 
   let list = $state<Patrol[]>([]);
@@ -35,6 +38,18 @@
    * most needed a switch did not have a reachable one.
    */
   let includeNotes = $state(false);
+  /**
+   * The fields you corrected and the places you added, beside the nights you were out.
+   *
+   * On by default, unlike the notes, and the asymmetry is the same reasoning pointed the
+   * other way: a correction is **already public under this callsign** — it was published to
+   * relays and lands on the face of the record it fixes — so putting it here discloses
+   * nothing new. A note has never left the phone.
+   */
+  let includeContributions = $state(true);
+  let mine = $state<string | null>(null);
+  let myCorrections = $state<ReturnType<typeof storedCorrections>>([]);
+  let myPlaces = $state<ReturnType<typeof storedPlaces>>([]);
   let showExport = $state(false);
   let copied = $state(false);
 
@@ -42,10 +57,36 @@
     list = patrols();
     keep = keepsHistory();
     callsign = operator.callsign;
+    mine = loadIdentity()?.pubkey ?? null;
+    myCorrections = storedCorrections();
+    myPlaces = storedPlaces();
   });
 
   const total = $derived(list.reduce((n, p) => n + (p.ended - p.started), 0));
-  const text = $derived(exportPatrols(list, { callsign, includeAreas, includeNotes }));
+  /**
+   * Whether this operator has done anything at all worth handing over.
+   *
+   * The share section used to be gated on `list.length`, so an operator who had corrected a
+   * dozen records and never recorded a patrol had contributed real work and no way to show
+   * it — the directory's most valuable contributor being told they had nothing.
+   */
+  const hasContributed = $derived(
+    myCorrections.some((c) => c.by === mine) || myPlaces.some((p) => p.by === mine)
+  );
+  const text = $derived(
+    exportContribution({
+      callsign,
+      // No identity means nothing was authored under one, so the filter matches nothing —
+      // which is the correct empty answer rather than an unfiltered one.
+      mine: mine ?? '',
+      patrols: list,
+      corrections: myCorrections,
+      places: myPlaces,
+      includeAreas,
+      includeNotes,
+      includeContributions
+    })
+  );
 
   function toggleKeep() {
     setKeepHistory(!keep);
@@ -81,7 +122,7 @@
   <h1>Your patrols</h1>
 </header>
 
-{#if list.length === 0}
+{#if list.length === 0 && !hasContributed}
   <section>
     <Slot k="Patrols">
       <Readout value="Nothing yet" tone="cold" sub="lands here when you stand down" />
@@ -92,6 +133,7 @@
     </p>
   </section>
 {:else}
+  {#if list.length > 0}
   <section class="tally">
     <Slot k="Patrols">
       <Readout
@@ -118,6 +160,18 @@
       {/each}
     </ol>
   </section>
+  {:else}
+    <!--
+      Corrected records and no nights of your own. A real state: the person who fixes a
+      listing from a phone need never have recorded a patrol, and gating the share section on
+      `list.length` told the directory's most useful contributor they had nothing.
+    -->
+    <section>
+      <Slot k="Patrols">
+        <Readout value="None recorded" tone="cold" sub="your corrections are below" />
+      </Slot>
+    </section>
+  {/if}
 
   <section class="act">
     <h2>Share it</h2>
@@ -139,6 +193,14 @@
       <span class="why">
         Off by default. Your notes are the one place here you wrote freely, and the most
         likely place something about another person ended up.
+      </span>
+    </label>
+    <label class="opt opt--explained">
+      <input type="checkbox" bind:checked={includeContributions} />
+      Include what you corrected and added
+      <span class="why">
+        Already public under your callsign — a correction goes out on a relay and lands on the
+        face of the record it fixes. This is the same work, gathered.
       </span>
     </label>
     <button onclick={() => (showExport = !showExport)}>

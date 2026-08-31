@@ -69,6 +69,11 @@ function persist(): void {
   });
 }
 
+/** Everything this device holds, read straight from storage. See `storedCorrections`. */
+export function storedPlaces(): Stored[] {
+  return Object.values(get<Record<string, Stored>>('accruing', FIELD) ?? {});
+}
+
 export const places = {
   /** Everything this device knows, deduped to one entry per building. */
   get all(): Stored[] {

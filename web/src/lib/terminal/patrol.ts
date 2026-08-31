@@ -126,16 +126,14 @@ export interface ExportOptions {
 }
 
 /**
- * The thing designed to leave the app.
+ * The nights, one line each, with no header and no total.
  *
- * Plain text, because it has to survive being pasted anywhere — a post, a message, a
- * grant application. Nothing in here came from anybody but the operator.
+ * Extracted so the contribution record can carry the same lines without reimplementing the
+ * midnight arithmetic below — which was got wrong once, and which is the kind of thing that
+ * gets got wrong again the moment there are two copies of it.
  */
-export function exportPatrols(list: Patrol[], opts: ExportOptions): string {
+export function patrolLines(list: Patrol[], opts: ExportOptions): { lines: string[]; total: number } {
   const lines: string[] = [];
-  lines.push(opts.callsign ? `Patrol log — ${opts.callsign}` : 'Patrol log');
-  lines.push('');
-
   let total = 0;
   for (const p of [...list].sort((a, b) => a.started - b.started)) {
     const start = new Date(p.started * 1000);
@@ -169,7 +167,22 @@ export function exportPatrols(list: Patrol[], opts: ExportOptions): string {
     if (opts.includeNotes !== false && p.note) lines.push(`  ${p.note}`);
   }
 
-  lines.push('');
-  lines.push(`${list.length} patrol${list.length === 1 ? '' : 's'} · ${formatDuration(total)}`);
-  return lines.join('\n');
+  return { lines, total };
+}
+
+/**
+ * The thing designed to leave the app.
+ *
+ * Plain text, because it has to survive being pasted anywhere — a post, a message, a
+ * grant application. Nothing in here came from anybody but the operator.
+ */
+export function exportPatrols(list: Patrol[], opts: ExportOptions): string {
+  const { lines, total } = patrolLines(list, opts);
+  return [
+    opts.callsign ? `Patrol log — ${opts.callsign}` : 'Patrol log',
+    '',
+    ...lines,
+    '',
+    `${list.length} patrol${list.length === 1 ? '' : 's'} · ${formatDuration(total)}`
+  ].join('\n');
 }

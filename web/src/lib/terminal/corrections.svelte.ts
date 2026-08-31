@@ -96,6 +96,19 @@ let closer: { close(): void } | null = null;
 /** Keyed by author and record: one operator's latest word about a place replaces their last. */
 const keyOf = (c: Stored) => `${c.by}:${c.record}`;
 
+/**
+ * Everything this device holds, read straight from storage.
+ *
+ * `corrections.all` reads the live `$state`, which is empty until `start()` has run — and
+ * `start()` opens relay subscriptions. A screen that only wants to *read* what is already on
+ * the phone must not have to open a socket to do it, and the contribution export nearly
+ * shipped reading `.all` on a screen that never calls `start()`: the feature rendered
+ * correctly and reported "nothing yet" forever.
+ */
+export function storedCorrections(): Stored[] {
+  return Object.values(get<Record<string, Stored>>('accruing', FIELD) ?? {});
+}
+
 export const corrections = {
   /** Everything this device knows, for merging. */
   get all(): Stored[] {
