@@ -17,3 +17,11 @@ playwright-report/
 # Vitest's JSON report, read by scripts/receipt.mjs and deleted once recorded.
 # A stale one is a number a later run could publish as its own.
 .vitest.json
+
+# Vite's compiled copy of vite.config.ts, written next to it when the config is
+# reloaded and left behind when a build is interrupted.
+#
+# Two of these were committed on 2026-08-21 and never noticed, and each carries
+# absolute `file:///Users/…` paths — a build artifact publishing the maintainer's
+# directory layout, in a repository whose entire subject is what leaks.
+vite.config.ts.timestamp-*.mjs
