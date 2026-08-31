@@ -1436,3 +1436,73 @@ test.describe('whether this operator has a backup', () => {
     await expect(page.locator('[data-never-backed-up]')).toHaveCount(0);
   });
 });
+
+test.describe('lines jotted at a door', () => {
+  /**
+   * The warm half of *capture cold, correct warm*.
+   *
+   * `notes.ts` designs the loop explicitly: jot the line standing in the rain, turn it into a
+   * correction somewhere with light and both hands. The cold half shipped. The warm half had
+   * **no prompt at all** — `notes()` was read by exactly one screen, the region page where the
+   * note was written, so an operator had to remember unaided that they had anything waiting.
+   *
+   * This matters past tidiness: a field-captured correction is the only thing that improves
+   * the directory without waiting on a maintainer, and the directory's thin half is what
+   * gates Milestone 8.
+   */
+  const JOTTED = {
+    'st-louis-our-ladys-inn': 'intake shut at 20:30, not 22:00 like the listing says',
+    'st-louis-example-shelter': 'side door only after 9'
+  };
+
+  test('are counted where the operator will see them, not only where they were written', async ({ page }) => {
+    await seedDevice(page, OUT);
+    await page.addInitScript((n) => {
+      const w = JSON.parse(localStorage.getItem('navcom.wipeable') ?? '{}');
+      w.record_notes = n;
+      localStorage.setItem('navcom.wipeable', JSON.stringify(w));
+    }, JOTTED);
+    await open(page, '/terminal/');
+
+    const slot = page.locator('[data-notes-waiting]');
+    await expect(slot).toBeVisible();
+    await expect(slot).toContainText('2 waiting');
+    // A count of your own unfinished errands, never a score. Nothing chases it.
+    await expect(slot).not.toContainText(/streak|keep it up|well done/i);
+  });
+
+  test('and nothing is shown when there are none', async ({ page }) => {
+    // The guard for the rule above: a slot that renders unconditionally would tell every
+    // operator they have work waiting, which is a nag rather than a state.
+    await seedDevice(page, OUT);
+    await open(page, '/terminal/');
+    await expect(page.locator('[data-notes-waiting]')).toHaveCount(0);
+  });
+
+  test('and coming home is where the app actually asks for them', async ({ page }) => {
+    /*
+     * The moment `notes.ts` names. Standing down is the operator arriving somewhere with
+     * light and both hands, and it is deliberately not asked for mid-patrol -- chasing
+     * somebody who is still out would be the app tasking them, which nothing here does.
+     */
+    const now = Math.floor(Date.now() / 1000);
+    await seedDevice(page, OUT);
+    await page.addInitScript(
+      (s) => {
+        localStorage.setItem('navcom.wipeable', JSON.stringify({ signon: s.on, record_notes: s.n }));
+      },
+      { on: { at: now - 3600, area: 'Downtown', expectedUntil: now + 3600, toldAtSignOn: 'nobody is on call', routineInterval: null }, n: JOTTED }
+    );
+    await open(page, '/terminal/');
+
+    await page.getByRole('button', { name: /stand down/i }).click();
+    await page.getByRole('button', { name: /i'm home/i }).click();
+
+    const home = page.locator('[data-came-home]');
+    await expect(home).toBeVisible({ timeout: 15_000 });
+    await expect(home.locator('[data-notes-home]')).toBeVisible();
+    await expect(home.locator('[data-notes-home]')).toContainText('2 notes');
+    // The honest limit, said where it changes what somebody does tonight.
+    await expect(home).toContainText(/panic wipe destroys them/i);
+  });
+});

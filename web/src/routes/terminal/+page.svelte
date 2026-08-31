@@ -12,6 +12,7 @@
   import { loadConfig } from '$lib/terminal/config';
   import { peers } from '$lib/terminal/peers';
   import { formatDuration } from '$lib/terminal/patrol';
+  import { notes } from '$lib/terminal/notes';
   import * as standing from '$lib/terminal/standing';
   import { loadIdentity } from '$lib/terminal/identity';
   import { corruptTiers } from '$lib/terminal/storage';
@@ -43,11 +44,24 @@
   let configured = $state(false);
   let identity = $state<ReturnType<typeof loadIdentity>>(null);
   let damaged = $state(false);
+  /**
+   * Lines jotted at a door that have not become corrections yet.
+   *
+   * `notes.ts` designs this as *capture cold, correct warm* — jot it in the rain, fix it
+   * somewhere with light and both hands. The cold half shipped and the warm half had no
+   * prompt: `notes()` was read by exactly one screen, the region page where the note was
+   * written, so an operator had to remember unaided that they had anything waiting.
+   *
+   * A count, not a nudge. Nothing here chases it, nothing counts a streak, and it goes
+   * away by being acted on rather than by being dismissed.
+   */
+  let waiting = $state(0);
 
   onMount(() => {
     configured = loadConfig() !== null;
     identity = loadIdentity();
     damaged = corruptTiers().length > 0;
+    waiting = Object.keys(notes()).length;
     void offline.checkShell();
     watch.start();
     presence.start();
@@ -480,6 +494,22 @@
       </Slot>
     {/if}
 
+    {#if waiting > 0}
+      <!--
+        The warm half of capture-cold-correct-warm. A place you learned something about is
+        still only a line on this phone until it becomes a correction somebody else can read.
+      -->
+      <Slot k="Field notes">
+        <span data-notes-waiting>
+          <Readout
+            value="{waiting} waiting"
+            tone="cold"
+            sub="jotted, not yet corrections"
+          />
+        </span>
+      </Slot>
+    {/if}
+
     {#if damaged}
       <Slot k="Storage">
         <span data-damaged>
@@ -615,11 +645,46 @@
       <Slot k="Written">
         <Readout value="Your record" tone="neutral" sub="on this phone, under your callsign" />
       </Slot>
+      {#if waiting > 0}
+        <!--
+          The warm half, at the moment `notes.ts` designs it for.
+
+          *"Capture cold, correct warm — jot the line now; turn it into a correction when you
+          are somewhere with light and both hands."* Coming home **is** that moment, and until
+          now nothing said so: the only screen that ever read `notes()` was the region page
+          where the note was written, so the warm half depended on the operator remembering
+          unaided.
+
+          Placed here rather than mid-patrol on purpose. A line you jotted at a door is worth
+          nothing to the next operator until somebody turns it into a correction, and asking
+          for that while somebody is still out would be the app tasking them.
+        -->
+        <Slot k="Learned">
+          <span data-notes-home>
+            <Readout
+              value="{waiting} note{waiting === 1 ? '' : 's'}"
+              tone="warn"
+              sub="only on this phone until you correct the record"
+            />
+          </span>
+        </Slot>
+      {/if}
       <Why summary="Where it went">
         <p>
           It is in <a href="/terminal/patrols/">your record</a>, on this device and nowhere
           else. Nothing about anybody you helped is in it.
         </p>
+        {#if waiting > 0}
+          <p>
+            The {waiting === 1 ? 'line' : 'lines'} you jotted at a door
+            {waiting === 1 ? 'is' : 'are'} still only here. Open
+            <a href="/terminal/directory/">your area</a> and turn
+            {waiting === 1 ? 'it' : 'them'} into a correction, and the next person who stands
+            outside that place reads what you learned. <strong>A panic wipe destroys them</strong>
+            — they live in the tier that exists to be destroyed, which is the right trade for a
+            line written in a hurry and the reason to promote it while you remember.
+          </p>
+        {/if}
       </Why>
     </div>
   </section>
