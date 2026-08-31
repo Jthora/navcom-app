@@ -24,6 +24,7 @@
   import { displayMerged, mergeCorrections, needsChecking, CORRECTABLE_FIELDS, FIELD_OPTIONS,
     isAddedPlace, isSeeded, withPlaces, PlaceError } from '@navcom/core';
   import { corrections } from '$lib/terminal/corrections.svelte';
+  import { locateOnce, metresApart, type Fix } from '$lib/console/position-once';
   import { places } from '$lib/terminal/places.svelte';
   import { Slot, Readout, Why, Heartbeat } from '$lib/components/panel';
   import { clearNote, keepNote, notes } from '$lib/terminal/notes';
@@ -213,10 +214,63 @@
     })
   );
 
+  /**
+   * Nearest first — asked for, never assumed.
+   *
+   * "Which of these is closest" is a real question at a door at 11pm, and it is one of the
+   * few useful things this screen can answer **without waiting on 6.9**: an address is enough
+   * to order by, so it works on the scraped skeletons whose intake rules nobody has filled in
+   * yet.
+   *
+   * Deliberately a control rather than a default. Sorting on arrival would fire a permission
+   * prompt nobody asked for and reorder a list somebody may have learned; both are things
+   * that happen *to* an operator rather than things they do.
+   *
+   * The fix is coarsened to ~500m before it is held and is **never sent anywhere** — no
+   * relay, no watch, no peer. It is discarded when this screen closes.
+   */
+  let here = $state<Fix | null>(null);
+  let locating = $state(false);
+  let located = $state<'idle' | 'ok' | 'refused'>('idle');
+
+  async function sortByDistance() {
+    if (here) {
+      // A second tap puts it back. The list an operator learned is theirs to get back.
+      here = null;
+      located = 'idle';
+      return;
+    }
+    locating = true;
+    const got = await locateOnce();
+    locating = false;
+    here = got;
+    /*
+     * Reported rather than silently ignored, unlike the console's ambient use of the same
+     * helper. There it is a guess nobody asked for and silence is correct; here the operator
+     * tapped a button, and a button that does nothing without saying why is the worst of both.
+     */
+    located = got ? 'ok' : 'refused';
+  }
+
+  /** Records with no coordinates keep their place at the end rather than being hidden. */
+  function nearestFirst(list: ResourceRecord[]): ResourceRecord[] {
+    if (!here) return list;
+    const at = (r: ResourceRecord) =>
+      typeof r.lat === 'number' && typeof r.lon === 'number'
+        ? metresApart(here as Fix, { lat: r.lat, lon: r.lon })
+        : Number.POSITIVE_INFINITY;
+    return [...list].sort((a, b) => at(a) - at(b));
+  }
+
+  /** How many in this region could not be placed, so the ordering does not overclaim. */
+  const unplaceable = $derived(
+    shown.filter((r: ResourceRecord) => typeof r.lat !== 'number' || typeof r.lon !== 'number').length
+  );
+
   const byType = $derived(
     RESOURCE_TYPES.map((type) => ({
       type,
-      records: shown.filter((r: ResourceRecord) => r.type === type)
+      records: nearestFirst(shown.filter((r: ResourceRecord) => r.type === type))
     })).filter((g) => g.records.length > 0)
   );
 
@@ -346,6 +400,31 @@
   </section>
 {/if}
 
+
+<!--
+  Ordering, offered rather than applied. See `sortByDistance` for why this is a tap and not a
+  default. The type grouping is left alone — it is how somebody navigates this list at a door,
+  and sorting *within* each group answers "which of these" without dismantling "which kind".
+-->
+<section class="ordering">
+  <button data-nearest onclick={sortByDistance} disabled={locating}>
+    {#if locating}Finding you…{:else if here}Back to listed order{:else}Nearest first{/if}
+  </button>
+  {#if located === 'refused'}
+    <p class="cost" data-nearest-refused>
+      This phone did not give a location, so the order is unchanged. Nothing was sent
+      anywhere, and nothing about this screen depends on it.
+    </p>
+  {:else if here}
+    <p class="cost" data-nearest-on>
+      Nearest first, worked out on this phone and <strong>sent nowhere</strong>. Rounded to
+      about 500m, so anything closer together than that is in no meaningful order.
+      {#if unplaceable > 0}
+        {unplaceable} of these carry no coordinates and stay at the end of their group.
+      {/if}
+    </p>
+  {/if}
+</section>
 
 {#each byType as group (group.type)}
   <section class="group">

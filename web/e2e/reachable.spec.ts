@@ -1581,3 +1581,107 @@ test.describe('what you contributed, as something you can hand over', () => {
     await expect(shared).toContainText('none recorded');
   });
 });
+
+test.describe('who nudges you when a check-in is missed', () => {
+  /**
+   * A sentence my own change made half-true.
+   *
+   * Sign-on read *"a missed check-in gets you a nudge"*, written when nothing sent one at
+   * all. The watch now does — `watch-state.spec.md` requires the node to attempt contact with
+   * an overdue operator — which made it true for somebody with a watch and left it false for
+   * somebody without. **The operator without a watch is the default case**, and letting them
+   * believe a nudge is coming is invariant 4 at the scale of one person.
+   */
+  test('with no watch, says plainly that nothing will send anything', async ({ page }) => {
+    await seedDevice(page, OUT);
+    await open(page, '/terminal/sign-on/');
+    await expect(page.getByText(/nothing will send you anything/i)).toBeVisible();
+    await expect(page.getByText(/your watch may send you one/i)).toHaveCount(0);
+    // The half true for everybody, and the claim capabilities.ts checks against prerendered
+    // HTML -- so it must not have moved behind the conditional.
+    await expect(page.getByText(/never counts as distress/i)).toBeVisible();
+  });
+
+  test('with a watch, says the nudge is the only thing it ever sends unasked', async ({ page }) => {
+    await seedDevice(page, {
+      ...OUT,
+      watchtower: { pubkey: 'b'.repeat(64), relays: ['wss://relay.example'] }
+    });
+    await open(page, '/terminal/sign-on/');
+    await expect(page.getByText(/only thing it ever sends unasked/i)).toBeVisible();
+    await expect(page.getByText(/nothing will send you anything/i)).toHaveCount(0);
+    await expect(page.getByText(/never counts as distress/i)).toBeVisible();
+  });
+
+});
+
+test.describe('finding which of these is closest', () => {
+  /**
+   * The one useful thing this screen can answer **without waiting on 6.9**.
+   *
+   * An address is enough to order by, so it works on the scraped skeletons whose intake rules
+   * nobody has filled in — which is most of the directory, and the reason Milestone 8 is
+   * gated. Not a map: the device floor is a prepaid Android 8, and `CLAUDE.md` refuses a map
+   * outright. A sort.
+   */
+  const REGION = '/terminal/directory/st-louis/';
+
+  test('is offered as a tap, never applied on arrival', async ({ page }) => {
+    // Sorting on arrival would fire a permission prompt nobody asked for and reorder a list
+    // somebody may have learned. Both are things that happen *to* an operator.
+    await seedDevice(page, OUT);
+    await open(page, REGION);
+    const control = page.locator('[data-nearest]');
+    await expect(control).toBeVisible();
+    await expect(control).toContainText(/nearest first/i);
+    await expect(page.locator('[data-nearest-on]')).toHaveCount(0);
+  });
+
+  test('says so plainly when the phone will not give a location', async ({ page }) => {
+    /*
+     * The console uses the same helper ambiently, where silence on refusal is right. Here the
+     * operator tapped a button, and a button that does nothing without saying why is the worst
+     * of both -- so this diverges from that module's own default deliberately.
+     */
+    await seedDevice(page, OUT);
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'geolocation', {
+        configurable: true,
+        value: { getCurrentPosition: (_ok: unknown, err: (e: unknown) => void) => err({ code: 1 }) }
+      });
+    });
+    await open(page, REGION);
+    await page.locator('[data-nearest]').click();
+    await expect(page.locator('[data-nearest-refused]')).toBeVisible();
+    await expect(page.locator('[data-nearest-refused]')).toContainText(/order is unchanged/i);
+  });
+
+  test('reorders within each kind, and says the fix went nowhere', async ({ page }) => {
+    await seedDevice(page, OUT);
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'geolocation', {
+        configurable: true,
+        value: {
+          getCurrentPosition: (ok: (p: unknown) => void) =>
+            ok({ coords: { latitude: 38.627, longitude: -90.199 } })
+        }
+      });
+    });
+    await open(page, REGION);
+
+    // The grouping by type is how somebody navigates at a door. It must survive the sort.
+    const groupsBefore = await page.locator('section.group').count();
+    expect(groupsBefore).toBeGreaterThan(0);
+
+    await page.locator('[data-nearest]').click();
+    await expect(page.locator('[data-nearest-on]')).toBeVisible();
+    await expect(page.locator('[data-nearest-on]')).toContainText(/sent nowhere/i);
+    // Rounded to ~500m before it is ever held, so the page must not imply more precision.
+    await expect(page.locator('[data-nearest-on]')).toContainText(/500m/i);
+    expect(await page.locator('section.group').count()).toBe(groupsBefore);
+
+    // And it is reversible -- the listed order is theirs to get back.
+    await page.locator('[data-nearest]').click();
+    await expect(page.locator('[data-nearest-on]')).toHaveCount(0);
+  });
+});

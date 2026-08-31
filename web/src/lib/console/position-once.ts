@@ -39,7 +39,7 @@ export function locateOnce(): Promise<Fix | null> {
 }
 
 /** Equirectangular approximation — ample at city scale, the same reasoning as the seeder's. */
-function metresApart(a: Fix, b: Fix): number {
+export function metresApart(a: Fix, b: Fix): number {
   const R = 6_371_000;
   const rad = Math.PI / 180;
   // Wrapped to [-180, 180): found in robustness audit. A raw longitude difference blows up

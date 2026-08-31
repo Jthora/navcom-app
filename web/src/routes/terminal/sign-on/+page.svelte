@@ -13,6 +13,16 @@
   import { watch } from '$lib/terminal/watch.svelte';
   import { operator } from '$lib/terminal/session.svelte';
   import { precision, setPrecision, type Precision } from '$lib/terminal/position.svelte';
+  import { loadConfig } from '$lib/terminal/config';
+
+  /**
+   * Whether a Watchtower is configured at all — not whether it is reachable.
+   *
+   * The distinction that matters for the sentence below is *is there anybody who could
+   * nudge me*, and a configured watch that happens to be Dark tonight is still the
+   * arrangement the operator set up. Dark is reported on its own, above.
+   */
+  let configured = $state(false);
 
   let area = $state('');
   let hours = $state(2);
@@ -21,6 +31,7 @@
 
   onMount(() => {
     share = precision();
+    configured = loadConfig() !== null;
     watch.start();
     return () => watch.stop();
   });
@@ -128,8 +139,34 @@
     <option value={null}>Never</option>
   </select>
   <p class="note">
-    A missed check-in gets you a nudge, and <strong>nothing else</strong>. It never
-    escalates, never pages anyone, and never counts as distress.
+    <!--
+      Unconditional, because it is the claim `capabilities.ts` checks against the prerendered
+      HTML — and because it is the half that is true for everybody.
+    -->
+    <!-- Kept on one line: this phrase is a capability claim, and a source rewrap that split
+         it across lines is what broke the browser assertion for it once. -->
+    A missed check-in <strong>never</strong> escalates, never pages anyone,
+    and never counts as distress.
+  </p>
+  <p class="note">
+    <!--
+      Who does the nudging, which this screen did not say and needed to.
+
+      It read "a missed check-in gets you a nudge", written when nothing sent one at all. The
+      watch now does [`watch-state.spec.md`: on overdue the node MUST attempt contact with the
+      operator], which made the sentence true for an operator with a watch and left it false
+      for the one without — and the operator without a watch is the default case. Somebody
+      believing a nudge is coming when nothing is watching is invariant 4 at the scale of one
+      person.
+    -->
+    {#if configured}
+      Your watch may send you one — <strong>the only thing it ever sends unasked</strong>. It
+      arrives quietly and waits to be looked at, like everything else here.
+    {:else}
+      You have no watch, so <strong>nothing will send you anything</strong>. The time you give
+      is for you, and for anybody watching for you — they see it on their own screen, and
+      nothing reaches them either.
+    {/if}
   </p>
 
   <label for="share">Share where you are</label>
