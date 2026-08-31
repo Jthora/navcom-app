@@ -278,9 +278,9 @@ true.
 **Cost:** unmasking is a documented, strongly-evidenced harm here, and an operator who wants
 to audit their own exposure gets no help from us.
 
-**Instead:** the half NavCom can honestly do is state what *this app* emits and why, which is
-partly written already and scattered across `signals.spec.md`, `refusals.ts` and
-`watch-state.spec.md`. Consolidating that is defensible. Auditing the open internet is not.
+**Instead:** the half NavCom can honestly do is state what *this app* emits and why — now
+written, in [`product/what-leaves.md`](product/what-leaves.md). Auditing the open internet is
+not, and that page says so rather than leaving the reader to wonder whether it was forgotten.
 
 ### An onboarding flow that replaces a person
 

@@ -1,5 +1,9 @@
 # Visibility
 
+**For the short version of everything below — every kind, what is in the clear, and what a
+relay operator can actually learn — see [`what-leaves.md`](what-leaves.md).** This page is the
+policy; that one is the wire.
+
 Operators want genuinely opposite things. Some film everything and have a following;
 some share nothing and never will. Both get a complete app.
 
