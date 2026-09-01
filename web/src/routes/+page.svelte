@@ -218,7 +218,7 @@
         <ul class="nc-results">
           {#each results as r (r.id)}
             <li>
-              <a href="/terminal/directory/{r.region}/">
+              <a href="/directory/{r.id}/">
                 <span class="nc-results-name">{r.name}</span>
                 <span class="nc-results-meta">{r.type.replace(/_/g, ' ')} · {r.regionName}</span>
               </a>

@@ -33,6 +33,35 @@ test.describe('the root console — search works with nothing set up', () => {
     await expect(page.getByText(/nothing matches yet/i)).toBeVisible();
   });
 
+  test('a result opens onto the record it named, not a list to search in again', async ({ page }) => {
+    /*
+     * The console promises, in its own words, that "Results open onto the full record —
+     * hours, intake rules, and how recently anyone checked." It used to link to the record's
+     * *region*, dropping a stranger at the top of a fifty-entry list to find again by eye the
+     * thing they had just successfully searched for. The sentence was true of a page the link
+     * did not go to.
+     */
+    await blankDevice(page);
+    await open(page, '/');
+    await page.getByLabel(/where are you, or what do you need/i).fill('st. louis');
+
+    const first = page.locator('.nc-results li').first();
+    await expect(first).toBeVisible({ timeout: 10_000 });
+    const named = ((await first.locator('.nc-results-name').textContent()) ?? '').trim();
+    expect(named.length).toBeGreaterThan(0);
+
+    await first.locator('a').click();
+    await expect(page).toHaveURL(/\/\/[^/]+\/directory\/[a-z0-9-]+\/$/);
+
+    // The record it named — not its region, and not a near-match.
+    await expect(page.getByRole('heading', { level: 1, name: named })).toBeVisible();
+    // The three things the console's sentence specifically promised are on it.
+    await expect(page.getByText('Intake', { exact: false }).first()).toBeVisible();
+    // On screen the recency is per-field ("checked 18 Aug 2026"); the "Last checked" line
+    // in the same markup is the print header, and is display:none here.
+    await expect(page.getByText(/checked \d{1,2} \w{3} \d{4}/).first()).toBeVisible();
+  });
+
   test('the manual region picker is the fallback when nothing is typed', async ({ page }) => {
     await blankDevice(page);
     await open(page, '/');
