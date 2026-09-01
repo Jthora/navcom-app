@@ -17,6 +17,7 @@
   import { loadIdentity } from '$lib/terminal/identity';
   import { corruptTiers } from '$lib/terminal/storage';
   import { offline } from '$lib/terminal/offline.svelte';
+  import { readClock, type ClockRead } from '$lib/terminal/clock';
 
   const s = $derived(watch.state);
 
@@ -57,7 +58,17 @@
    */
   let waiting = $state(0);
 
+  let { data } = $props();
+  /*
+   * Read once on mount rather than derived, and deliberately not during prerender: at build
+   * time `Date.now()` *is* the stamp, so a derived version would compute a meaningless
+   * "healthy" on the server and bake it into HTML every device then shares. A wrong clock is
+   * a fact about one phone.
+   */
+  let clock = $state<ClockRead>({ behind: false, behindSeconds: 0, behindDays: 0 });
+
   onMount(() => {
+    clock = readClock(data?.built, Date.now());
     configured = loadConfig() !== null;
     identity = loadIdentity();
     damaged = corruptTiers().length > 0;
@@ -204,6 +215,52 @@
   <span class="eyebrow">Field Terminal</span>
   <h1>Status</h1>
 </header>
+
+{#if clock.behind}
+  <!--
+    Above everything, including the watch's own alarms, because it changes what every age
+    below MEANS. The panel under it is an account measured in ages, and this says the thing
+    doing the measuring is broken.
+
+    It is shown only when the clock is *provably* wrong -- earlier than the build it is
+    running, which a phone cannot honestly be. Nothing here is ever shown for a clock that
+    has merely not been checked, because there is no way to check one and a warning nobody
+    can act on is the alarm fatigue this project spends everything else avoiding.
+  -->
+  <section class="nc-panel" data-clock-behind>
+    <header class="nc-panel-head">
+      <span>This phone</span>
+      <span class="nc-panel-post">Clock is wrong</span>
+    </header>
+    <div class="nc-panel-slots">
+      <Slot k="Behind by">
+        <Readout
+          value={clock.behindDays > 0 ? `${clock.behindDays} days` : 'under a day'}
+          tone="alarm"
+          sub="measured against this build, not a server"
+        />
+      </Slot>
+      <Why open>
+        <p>
+          This phone reads earlier than the day this page was built, which it cannot honestly
+          do. <strong>Every age in the app is measured from it</strong> — so a place checked a
+          fortnight ago can read as checked this week, and its opening hours get shown when
+          they should have been held back.
+        </p>
+        <p>
+          It also dates your own work. A correction or a new place you add carries this
+          clock's date, and a newer date beats an older one — so <strong>your check of a door
+          can lose to the listing you wrote it to fix</strong>, and nothing would have told
+          you.
+        </p>
+        <p>
+          Turn on automatic date and time in the phone's settings. It usually corrects within
+          a minute of having signal.
+        </p>
+      </Why>
+    </div>
+  </section>
+{/if}
 
 {#if watch.alarms.length > 0}
   <!--

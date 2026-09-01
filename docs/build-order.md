@@ -990,7 +990,6 @@ leaving.** The bundle budget has a ratchet; the obligation list should have one 
 | — | ~~Off-grid / LoRa bridge~~ | Now Milestone 10. Still waiting on hardware; nothing in software waits on it |
 | — | Playbooks | **Human, permanently.** Not agent work, and now per locale — see [`product/languages.md`](product/languages.md) |
 | — | A second interface language | Now 8.2. The deferral was right and **its condition is met**: somebody looking for a bed in their own language is somebody waiting |
-| — | **A clock check for the operator with no watch** | Skew is detected by comparing the watch's `created_at` to this phone's clock [`CLOCK_TOLERANCE_SECONDS`], so the operator working Alone — the documented default — gets no check at all. A wrong clock makes every staleness reading in the directory wrong, and it does so in the dangerous direction: a clock running *behind* shrinks `now - last_verified`, so records read fresher than they are and stale hours read as current. The cheap version needs no network and has no false positives — a phone cannot legitimately predate the build it is running, and `builtAt` is already stamped [`lib/server/version.ts`] and served at `/version.json`. It catches exactly the harmful direction. Not built in the readiness pass because it is a feature with a screen decision in it, not a defect |
 
 ### The seven ways people actually work, and who is served
 
@@ -1045,6 +1044,7 @@ says so about itself.
 | | Blocks |
 |---|---|
 | Node service language for the box | Session 1 — TypeScript unless there's a reason |
+| What a wrong clock should do to **writing** | Reading is done: a phone that reads earlier than the build it is running says so, and stops being used as the measure [`lib/terminal/clock.ts`]. Writing is not. `last_verified` on a correction and on a new place, and `at` on an endorsement, are all taken from this clock with no input from the operator — so a phone a week behind stamps work that loses to the listing it was written to fix, and one running ahead stamps work that `FUTURE_TOLERANCE_DAYS` reads as unverifiable. The reader is defended in both directions and the writer is never told. Three options, and the choice is a product judgement rather than a technical one: **refuse to sign**, **sign and warn**, or **sign with the clock marked unverified** so a reader can weigh it. A possibly-misdated field report may still beat no field report |
 | Whether to call `navigator.storage.persist()` | Nothing, but it is the device floor's live risk. The app never asks the browser to keep its data, and `delivery.md` already names eviction as the thing that decides whether the cached directory is there at 2am. Chrome grants it silently on an installed PWA; **Firefox shows a permission prompt**, and an unexpected prompt on a field terminal is the banner-shaped intrusion this project bans everywhere else. Read-only `persisted()` never prompts and could report the state honestly instead, at the cost of one more thing on a screen. Not taken unilaterally — the trade is a judgement about whose 2am matters more |
 
 ## The seeding rule

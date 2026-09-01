@@ -11,6 +11,7 @@
 
 import { error } from '@sveltejs/kit';
 import { loadDirectory, loadRegions } from '$lib/directory/load';
+import { BUILT_AT } from '$lib/built';
 
 export const prerender = true;
 
@@ -34,7 +35,7 @@ export function load({ params }: { params: { region: string } }) {
   if (!region) error(404, 'No such region');
 
   return {
-    built: new Date().toISOString(),
+    built: BUILT_AT,
     region,
     records: loadDirectory().filter((r) => r.region === params.region)
   };

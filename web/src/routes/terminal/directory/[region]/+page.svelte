@@ -28,6 +28,7 @@
   import { places } from '$lib/terminal/places.svelte';
   import { Slot, Readout, Why, Heartbeat } from '$lib/components/panel';
   import { clearNote, keepNote, notes } from '$lib/terminal/notes';
+  import { readClock, type ClockRead } from '$lib/terminal/clock';
   import { onMount } from 'svelte';
 
   let { data } = $props();
@@ -58,7 +59,18 @@
    * cached page opened three weeks later does not still claim three-week-old confidence.
    */
   let hydrated = $state(false);
-  const now = $derived(hydrated ? new Date() : new Date(data.built));
+  /*
+   * A clock that is provably behind is not an improvement on the build stamp, it is worse
+   * than it. The hydrated branch exists to beat a frozen time, so when it cannot, it stands
+   * down: a known time beats a known-wrong one, and that is the safe answer rather than the
+   * true one, the same way a watch stamped in our future reads Dark. See `$lib/terminal/clock`.
+   */
+  let clock = $state<ClockRead>({ behind: false, behindSeconds: 0, behindDays: 0 });
+  /** The build stamp, or null when this bundle carries none — see `$lib/built`. */
+  const built = $derived(data.built ? Date.parse(data.built) : null);
+  const now = $derived(
+    built !== null && (!hydrated || clock.behind) ? new Date(built) : new Date()
+  );
 
   /** Which record's report control is open. One at a time — this is not a form. */
   let reporting = $state<string | null>(null);
@@ -138,6 +150,7 @@
   const options = $derived(correcting ? (FIELD_OPTIONS[correcting] ?? null) : null);
 
   onMount(() => {
+    clock = readClock(data.built, Date.now());
     hydrated = true;
 
     // Scoped to the area actually carried. Asking a relay for every correction on the
@@ -274,9 +287,16 @@
     })).filter((g) => g.records.length > 0)
   );
 
-  /** How old the whole copy is — the age nothing on a record would ever mention. */
+  /**
+   * How old the whole copy is — the age nothing on a record would ever mention.
+   *
+   * Null when it cannot be established, and never a zero standing in for one. It used to be
+   * computed against a `built` that a universal load recomputed on the device, so it was
+   * `now - now` and this section told a three-week-old cached page it had been refreshed
+   * today. That is the exact failure the section exists to prevent.
+   */
   const snapshotDays = $derived(
-    Math.floor((now.getTime() - Date.parse(data.built)) / 86_400_000)
+    built === null ? null : Math.floor((now.getTime() - built) / 86_400_000)
   );
 </script>
 
@@ -347,7 +367,7 @@
 </section>
 
 <!-- A cached copy has two ages, and only one of them is written on the records. -->
-<section class="snapshot" class:old={snapshotDays > 7} data-snapshot-age={snapshotDays}>
+<section class="snapshot" class:old={snapshotDays !== null && snapshotDays > 7} data-snapshot-age={snapshotDays ?? 'unknown'}>
   <h2>This copy</h2>
   <!--
     A cached copy has two ages and only one of them is written on the records. This is the
@@ -356,7 +376,19 @@
     rather than a number somebody might rely on.
   -->
   <Slot k="Refreshed">
-    {#if snapshotDays <= 0}
+    <!--
+      The clock branch comes first because it is the only one that can be true while another
+      one looks true. A phone a week behind computes a negative age for this copy and lands
+      on "Today", in green, for something that may be seven days stale -- a false all-clear
+      reached by arithmetic, on the screen this whole section exists to keep honest.
+      Invariant 9 already says what to do with an age that cannot be established: blank reads
+      unknown.
+    -->
+    {#if clock.behind}
+      <Readout value="Unknown" tone="warn" sub="this phone's clock is wrong — call first" />
+    {:else if snapshotDays === null}
+      <Readout value="Unknown" tone="warn" sub="no build stamp to measure against — call first" />
+    {:else if snapshotDays <= 0}
       <Readout value="Today" tone="good" />
     {:else if snapshotDays === 1}
       <Readout value="Yesterday" tone="good" />
@@ -366,7 +398,15 @@
       <Readout value="{snapshotDays} days ago" tone="neutral" />
     {/if}
   </Slot>
-  {#if snapshotDays > 7}
+  {#if clock.behind}
+    <!-- Stays visible: it changes what the reader must do with everything below it. -->
+    <p class="cost" data-clock-behind>
+      This phone's clock reads earlier than the day this page was built, so
+      <strong>none of the ages below can be trusted</strong> — and a place checked a fortnight
+      ago can read as checked this week. Turn on automatic date and time in the phone's
+      settings. Until then, <strong>call first, on everything</strong>.
+    </p>
+  {:else if snapshotDays === null || snapshotDays > 7}
     <!-- Stays visible: it changes what the reader must do with everything below it. -->
     <p class="cost">
       Places close and hours change inside a week. <strong>Call first, on everything.</strong>
