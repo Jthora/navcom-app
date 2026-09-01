@@ -131,3 +131,44 @@ test.describe('holding to send with no watch configured (found in robustness aud
     await expect(page.locator('p.error')).not.toHaveText('');
   });
 });
+
+test.describe('a Distress every relay refuses', () => {
+  test.setTimeout(45_000);
+
+  /*
+   * The failure that looks most like success.
+   *
+   * `unreachable` is the one phase that means the signal never left the device — the relay
+   * answered, so there is no connection error anywhere, and it answered `OK … false`. If the
+   * screen does not say so, an operator watching a Distress "run" is watching nothing, which
+   * is the precise shape invariant 2 forbids: *it may fail, it may never fail silently.*
+   *
+   * `refusePublish` has existed on the seed since the watch-side work and four tests use it,
+   * none of them here. So the ladder's own rendering of a refused publish had never once been
+   * driven, on the screen where being wrong costs the most.
+   */
+  test('says it never left the phone, and keeps trying rather than stopping', async ({ page }) => {
+    const { generateSecretKey, getPublicKey } = await import('nostr-tools/pure');
+    const watchSecret = generateSecretKey();
+    await seedDevice(page, {
+      callsign: 'Wren',
+      watchtower: { pubkey: getPublicKey(watchSecret), relays: ['wss://fake.relay'] },
+      // `relayEvents: []` installs the mock socket. Without it the seed leaves the socket
+      // alone, `wss://fake.relay` fails to connect, and the screen reports `unreachable`
+      // for an entirely different reason — which is how the first version of this test
+      // passed with `refusePublish: false` and proved nothing.
+      relayEvents: [],
+      refusePublish: true
+    });
+    await open(page, '/terminal/distress/');
+    await page.locator('button.raise').dispatchEvent('pointerdown');
+
+    // Told, in words, that nothing was sent — not left reading a progress list.
+    await expect(page.getByText(/never left the phone/i).first()).toBeVisible({ timeout: 20_000 });
+
+    // And it is still going. Only the operator ends a Distress; a client that gave up on
+    // its own would have failed silently one line after saying so out loud.
+    await expect(page.getByText(/attempt 2/i).first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator('button.raise')).toHaveCount(0);
+  });
+});
