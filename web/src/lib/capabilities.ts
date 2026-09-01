@@ -162,7 +162,7 @@ export const CAPABILITIES: Capability[] = [
       'cannot delete this listing or overrule anybody',
       'nobody has to approve it'
     ],
-    control: '[data-report]',
+    control: '[data-report-open]',
     cached: 'on-visit',
     requires: []
   },

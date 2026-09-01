@@ -72,8 +72,10 @@ test.describe('presenting a credential', () => {
     // reader is the one who weighs it.
     await expect(shown).toContainText(/can take watch/i);
     await expect(shown).toContainText(/vouched by wren/i);
-    // And the line that makes it checkable rather than decorative.
-    await expect(shown).toContainText(/verified on this device/i);
+    // And the line about who did the checking. Deliberately *not* "verified": the reader at
+    // arm's length cannot tell a page that checked the signatures from one that only says so,
+    // and claiming verification to them is the beginning of an ID card.
+    await expect(shown).toContainText(/this phone checked the signatures/i);
     await expect(shown).toContainText(/no network used/i);
 
     // Sized for a second reader at arm's length, not a thumb at thirty centimetres.

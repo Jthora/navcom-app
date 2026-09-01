@@ -83,18 +83,37 @@ test.describe('a sheet that has been in a pocket for a year', () => {
     await expect(block).toContainText(/treat everything here as out of date/i);
   });
 
-  test("does not warn about a record the screen considers current", async ({ page }) => {
-    // The other half — a stale record carrying the screen's own "call first" verdict onto
-    // paper — **cannot be exercised today**: no seeded record is more than sixty days old,
-    // so the branch has no data to reach it. Asserted here is the case that does occur, and
-    // the gap is recorded in the audit rather than faked with a fixture, because a fixture
-    // would prove the component renders a string and not that the two surfaces agree.
+  test("agrees with the screen about whether the record is stale", async ({ page }) => {
+    /*
+     * This asserted the *verdict* — that no warning appears — with a comment explaining the
+     * stale branch "cannot be exercised today: no seeded record is more than sixty days old".
+     *
+     * Sixty was the wrong threshold. `hours` is a **volatile** field and goes stale after
+     * fourteen days, and the record this prints was verified 2026-08-18. The branch became
+     * reachable on its own, with no code change, and the test failed for the one reason a
+     * test should never fail: the world moved and the assertion was pinned to a date.
+     *
+     * So it asserts the property instead of the verdict. `staleOnPaper` exists so that paper
+     * and screen cannot disagree about the same record, and that is true on both sides of the
+     * threshold — which is what makes it worth testing at all.
+     */
     await page.goto(RECORD);
-    await page.emulateMedia({ media: 'print' });
 
-    await expect(page.locator('[data-print-provenance]'))
-      .not.toContainText(/may no longer be true/i);
-    // The unconditional half is still there, which is what a reader needs either way.
+    const onScreen = (await page.locator('body').innerText()).toLowerCase();
+    const screenSaysCallFirst = onScreen.includes('call first');
+
+    await page.emulateMedia({ media: 'print' });
+    const onPaper = (await page.locator('[data-print-provenance]').innerText()).toLowerCase();
+    const paperWarns = onPaper.includes('may no longer be true');
+
+    expect(
+      paperWarns,
+      screenSaysCallFirst
+        ? 'the screen says call first and the sheet does not carry the warning'
+        : 'the sheet warns about a record the screen considers current'
+    ).toBe(screenSaysCallFirst);
+
+    // The unconditional half is there either way, which is what a reader needs regardless.
     await expect(page.locator('[data-print-provenance]')).toContainText(/call before you go/i);
   });
 });

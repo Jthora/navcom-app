@@ -634,7 +634,7 @@
               <p class="cost">Goes out under your callsign, or anonymously if you have not picked one.</p>
               <button class="drop" onclick={() => (reporting = null)}>Cancel</button>
             {:else}
-              <button class="drop" data-report onclick={() => { reporting = record.id; correcting = null; }}>
+              <button class="drop" data-report-open onclick={() => { reporting = record.id; correcting = null; }}>
                 Report a problem
               </button>
             {/if}
