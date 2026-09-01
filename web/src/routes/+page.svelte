@@ -139,7 +139,15 @@
    */
   function daysAgo(iso: string): string {
     const then = new Date(iso + 'T00:00:00Z').getTime();
-    const days = Math.max(0, Math.floor((Date.now() - then) / 86_400_000));
+    const days = Math.floor((Date.now() - then) / 86_400_000);
+    /*
+     * A negative age is not "today", it is a check dated in this device's future -- which
+     * means the clock is wrong, and `FUTURE_TOLERANCE_DAYS` already settles what a date that
+     * cannot be weighed is worth. The clamp that used to be here turned exactly that into
+     * the freshest answer available, which is the same false all-clear the directory's copy
+     * age used to compute. Costs nothing to say instead.
+     */
+    if (days < 0) return 'unknown — this clock is wrong';
     if (days === 0) return 'today';
     if (days === 1) return '1 day ago';
     return `${days} days ago`;

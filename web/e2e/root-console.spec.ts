@@ -62,6 +62,32 @@ test.describe('the root console — search works with nothing set up', () => {
     await expect(page.getByText(/checked \d{1,2} \w{3} \d{4}/).first()).toBeVisible();
   });
 
+  test('never calls a check dated in this phone\'s future "today"', async ({ page }) => {
+    /*
+     * The console reports the freshest check anywhere in the directory. The age was clamped
+     * with Math.max(0, …), so a phone whose clock is behind the newest record computed a
+     * negative age and got back the freshest answer the function can give — "today" — for a
+     * figure about how well maintained this directory is. Same false all-clear the cached
+     * directory's copy age used to compute, and the clamp is what hid it.
+     */
+    await blankDevice(page);
+    await page.clock.setFixedTime(new Date(Date.now() - 40 * 86_400_000));
+    await open(page, '/');
+
+    await expect(page.getByText(/this clock is wrong/i)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/most recent check, anywhere/i)).toBeVisible();
+  });
+
+  test('and reads a real age on a phone that is fine', async ({ page }) => {
+    // The pair: returning "unknown" always would satisfy the test above and delete the figure.
+    await blankDevice(page);
+    await open(page, '/');
+    const freshest = page.locator('.nc-slot', { hasText: 'most recent check, anywhere' });
+    await expect(freshest).toBeVisible({ timeout: 10_000 });
+    await expect(freshest).toContainText(/today|day[s]? ago/i);
+    await expect(freshest).not.toContainText(/clock is wrong/i);
+  });
+
   test('the manual region picker is the fallback when nothing is typed', async ({ page }) => {
     await blankDevice(page);
     await open(page, '/');
