@@ -989,7 +989,6 @@ leaving.** The bundle budget has a ratchet; the obligation list should have one 
 | — | Propagation | Designed, not scope. Endorsements are now 7.1, funding 9.5, recovery 9.1 and RelayNode 9.2 |
 | — | ~~Off-grid / LoRa bridge~~ | Now Milestone 10. Still waiting on hardware; nothing in software waits on it |
 | — | Playbooks | **Human, permanently.** Not agent work, and now per locale — see [`product/languages.md`](product/languages.md) |
-| — | **Marking a signed contribution "clock unverified"** | Taken as far as it goes without a schema change: a phone that is provably behind now says so at the point of writing — before a correction, a new place, or an endorsement — because `last_verified` and `at` come from that clock with no input from the operator, and a newer date beats an older one. What is still not possible is telling the *reader*. That needs a field on the correction, place and credential payloads, and corrections **refuse an unknown key on read** rather than ignoring it, so it is a normative change across `packages/core`, the merge and the display. Real, scoped, and deserving its own pass rather than the tail of a readiness one |
 | — | A second interface language | Now 8.2. The deferral was right and **its condition is met**: somebody looking for a bed in their own language is somebody waiting |
 
 ### The seven ways people actually work, and who is served

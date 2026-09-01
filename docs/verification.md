@@ -325,7 +325,15 @@ itself:
   needs an installed PWA. That produced four red tests for an app behaving properly, which
   was the manifest failing to describe reality rather than the screen failing to meet it: it
   now declares `needsPush`, and where a browser cannot be woken the check becomes *the screen
-  must say so and say what would change it*. `BarcodeDetector` is still untouched.
+  must say so and say what would change it*. `BarcodeDetector` is covered too, and the finding there is that the app is right: Safari does
+  not ship the API, so the peers screen's "Scan their code" is simply absent on an iPhone —
+  absent rather than present-and-inert, which is the standard the on-call screen meets as
+  well. What needed asserting, and was asserted nowhere, is that **the other way in is not
+  behind the same gate**: pairing is how the Paired layer exists at all, and a screen offering
+  no route to it on iOS would take that layer from every iPhone silently. It is not, and a
+  test now runs on both projects and takes a different branch on each. Putting the paste-a-code
+  form behind the camera gate fails on WebKit and passes on Chromium — the same signature as
+  the ground defect, and the same reason a single-engine suite could never have caught it.
 
 ## Two found while building the cold start, 2026-08-23
 

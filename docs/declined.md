@@ -413,6 +413,37 @@ otherwise learn without looking. Input feedback, not notification.
 
 ---
 
+### Marking a contribution "clock unverified" so the reader can weigh it
+
+A phone whose clock is wrong dates its own work. `last_verified` on a correction and on a new
+place, and `at` on an endorsement, are taken from the device clock with no input from the
+operator — so behind, an in-person check at a door loses to the website scrape it was written
+to fix, because a newer date beats an older one. The reader is defended by
+`FUTURE_TOLERANCE_DAYS` in both directions; the writer was defended by nothing. Carrying the
+fact into the payload, so a reader could weigh the date differently, looked like the complete
+answer and was written down as deferred work.
+
+**Declined.** It has three possible shapes and all of them fail.
+
+- **Exempt from date-weighing.** A correction that never ages. `attestation.ts` already names
+  the attack this reopens — "corrections are weighed by confidence and ties break on the date,
+  so a correction dated 2099 wins against every honest one, forever, from anybody" — and the
+  existing surface is *bounded* at one day by `FUTURE_TOLERANCE_DAYS`. An exemption is
+  unbounded, which is strictly worse than the thing already refused.
+- **Discount it**, the way the existing "not fully sure about this" flag does. That makes the
+  honest operator's check lose *harder*, which is the opposite of the problem being solved.
+- **Display it in provenance and change no ranking.** An unverifiable self-declaration that an
+  attacker simply would not set, telling a reader something they cannot act on. The field
+  already carries who said it and when, which is the weighing this system actually asks for.
+
+**Cost:** a correction written on a wrong clock still enters the corpus dated wrong, and can
+still lose to the record it was correcting. That is real and it is not recovered.
+
+**What is built instead:** the app says so *at the point of writing* — before a correction,
+before a new place, before an endorsement — because the clock is the thing that can actually
+be fixed, and the operator is the only one who can fix it. A warning somebody can act on,
+rather than a flag propagated into a shared corpus that nobody can verify.
+
 ## What is **not** declined, so nobody mistakes this page for a licence
 
 Everything in [`build-order.md`](build-order.md) is deferred, not declined — endorsements,
