@@ -154,6 +154,46 @@ Whether somebody that age should be doing this is a question for the people arou
 Software that pretended to answer it would be claiming an authority this project spends
 `positioning.md` disclaiming.
 
+### A beginner track for children
+
+Older operators tell younger ones — six, ten, thirteen — to train and get ready rather than
+go out. **That instinct is right**, and the obvious way to support it is a starter path in
+this app: entry-level content, and difficulty tiers to work up through.
+
+It is declined, and the strongest reason is not a rule.
+
+**A difficulty ladder aimed at a twelve-year-old does not redirect them away from
+patrolling. Its top rung is the street.** "Beginner" implies an advanced, and the thing at
+the end of the progression is the activity everybody in the scenario was trying to delay.
+Built well it would be the most compelling on-ramp this community has ever had, in an app
+that is free, needs no account, and by design cannot tell how old anybody is — *"How old anybody is"*, above. The better
+it worked as a curriculum, the worse it would work as a deterrent.
+
+Three of this project's existing refusals land on it independently, which is usually a sign
+the shape is wrong rather than the details:
+
+- **The content.** `CONTRIBUTING.md` names de-escalation, first aid, overdose response and
+  rights as the class where *"confident wrong guidance gets someone hurt, and reviewing it
+  needs real expertise rather than good intentions."* Writing it for children raises those
+  stakes rather than lowering them
+- **The ladder.** Tiers a person climbs are refused network-wide — `refusals.ts`'s
+  `no-credential-gate`, *"claims describe, they never gate"* — and a visible progression is a
+  ranking whatever it is called
+- **The mechanics.** *"No streaks, badges, prompts or nudges. Ever."* Those work on children
+  better than on adults, which is an argument against, not for
+
+**Cost, stated plainly:** a thirteen-year-old who wants to be useful and is being told to
+wait gets nothing from us but a list of other people's courses. That is thin, and the
+community's instinct to give them something real is a good one going unserved.
+
+**Instead:** the app's honesty is the intervention. A kid who opens NavCom is told, before
+every sign-on, that `Distress` pages nobody — which is more sobering than any curriculum, and
+it is already there. Nothing here gamifies going out: no streak, no count, no rank. And
+[`community.ts`](https://github.com/Jthora/navcom-app/blob/main/web/src/lib/community.ts)
+carries `YOUTH` — real organisations that already train young people, with instructors
+qualified to do it, inheriting the same staleness rule as everything else on that page.
+A name and a link, which is the whole of what this project should be doing here.
+
 ### Whether an agent is trustworthy
 
 Unverifiability is answered by **limits, not better tests**. A sufficiently good performance

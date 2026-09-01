@@ -265,6 +265,50 @@ export const TRAINING: Training[] = [
   }
 ];
 
+/**
+ * Places that train young people, run by people qualified to do it.
+ *
+ * ## Why this list exists, and why it is only links
+ *
+ * Older operators tell younger ones to train and get ready rather than go out. That instinct
+ * is right, and the obvious way to support it — a beginner track inside this app, with
+ * difficulty tiers — is [declined](../../../docs/declined.md), because a ladder aimed at a
+ * twelve-year-old does not redirect them away from patrolling. Its top rung is the street.
+ * It would be the most compelling on-ramp this community has, in an app that is free and
+ * needs no account.
+ *
+ * What is left is the honest part: **somebody else already does this properly.** These are
+ * real organisations with real youth programmes and real instructors, and NavCom's whole
+ * contribution is a name and a link.
+ *
+ * Deliberately not comprehensive and deliberately not local. Three countries is enough to
+ * show that the answer is "find the one near you", which is a different sentence from "here
+ * is our curriculum".
+ */
+export const YOUTH: Training[] = [
+  {
+    name: 'American Red Cross — babysitting and child care',
+    url: 'https://www.redcross.org/take-a-class/babysitting-child-care',
+    where: 'United States, generally from age 11',
+    how: 'fetched',
+    checked: '2026-08-31'
+  },
+  {
+    name: 'St John Ambulance — young people',
+    url: 'https://www.sja.org.uk/get-involved/young-people/',
+    where: 'United Kingdom',
+    how: 'fetched',
+    checked: '2026-08-31'
+  },
+  {
+    name: 'St John New Zealand — youth programmes',
+    url: 'https://www.stjohn.org.nz/what-we-do/youth-programmes/',
+    where: 'New Zealand',
+    how: 'fetched',
+    checked: '2026-08-31'
+  }
+];
+
 /** How a liveness marker reads to somebody who is not holding this file. */
 export const LIVENESS_WORDING: Record<Liveness, string> = {
   fetched: 'checked directly',

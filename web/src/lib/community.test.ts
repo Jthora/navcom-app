@@ -20,7 +20,7 @@ import { fileURLToPath } from 'node:url';
 import { parse } from 'node-html-parser';
 import { beforeAll, describe, expect, it } from 'vitest';
 
-import { GONE, LIVE, NEVER_LINK, STALE_AFTER_DAYS, TRAINING, daysSince } from './community';
+import { GONE, LIVE, NEVER_LINK, STALE_AFTER_DAYS, TRAINING, YOUTH, daysSince } from './community';
 
 const BUILD = fileURLToPath(new URL('../../build/', import.meta.url));
 
@@ -50,6 +50,7 @@ beforeAll(() => {
 describe('the community list as data', () => {
   it('has entries in every half', () => {
     expect(TRAINING.length).toBeGreaterThan(0);
+    expect(YOUTH.length).toBeGreaterThan(0);
     // A guard that examines nothing passes. Same reason rendered.test.ts counts what it saw.
     expect(LIVE.length).toBeGreaterThan(0);
     expect(GONE.length).toBeGreaterThan(0);
@@ -58,12 +59,12 @@ describe('the community list as data', () => {
   it('links only over https', () => {
     // Both archive URLs shipped as plaintext `http://` in the first version, copied verbatim
     // out of an API response. On a page about not sending people somewhere unsafe.
-    for (const s of [...LIVE, ...TRAINING]) expect(s.url, s.name).toMatch(/^https:\/\//);
+    for (const s of [...LIVE, ...TRAINING, ...YOUTH]) expect(s.url, s.name).toMatch(/^https:\/\//);
     for (const s of GONE) expect(s.archive, s.name).toMatch(/^https:\/\//);
   });
 
   it('never points a live entry at a domain on the blocklist', () => {
-    for (const s of [...LIVE, ...TRAINING]) {
+    for (const s of [...LIVE, ...TRAINING, ...YOUTH]) {
       const host = new URL(s.url).hostname;
       for (const bad of NEVER_LINK) {
         expect(host === bad || host.endsWith(`.${bad}`), `${s.name} -> ${host}`).toBe(false);
@@ -80,7 +81,7 @@ describe('the community list as data', () => {
   });
 
   it('carries a real check date that is not in the future', () => {
-    for (const s of [...LIVE, ...GONE, ...TRAINING]) {
+    for (const s of [...LIVE, ...GONE, ...TRAINING, ...YOUTH]) {
       expect(s.checked, s.name).toMatch(/^\d{4}-\d{2}-\d{2}$/);
       expect(Number.isNaN(Date.parse(`${s.checked}T00:00:00Z`)), s.name).toBe(false);
       expect(daysSince(s.checked), `${s.name} is checked in the future`).toBeGreaterThanOrEqual(0);
@@ -92,7 +93,7 @@ describe('the community list as data', () => {
     // months. That is the intent: a squatted domain sitting here unnoticed for years is the
     // exact failure this page exists to prevent, and a comment asking someone to re-check
     // does not prevent it. Re-check the links, update `checked`, and this goes green.
-    for (const s of [...LIVE, ...GONE, ...TRAINING]) {
+    for (const s of [...LIVE, ...GONE, ...TRAINING, ...YOUTH]) {
       expect(
         daysSince(s.checked),
         `${s.name} was last checked ${daysSince(s.checked)} days ago — re-verify it and update \`checked\` in community.ts`
@@ -137,7 +138,7 @@ describe('what actually ships', () => {
     // data and not in the page is not published. Superheroes Anonymous was in the first
     // version's table with no link at all, and nothing noticed.
     const shipped = new Set(hrefs.map((h) => h.href));
-    for (const s of [...LIVE, ...TRAINING]) {
+    for (const s of [...LIVE, ...TRAINING, ...YOUTH]) {
       expect(shipped.has(s.url), `${s.name} (${s.url}) is in LIVE but linked from no page`).toBe(true);
     }
   });

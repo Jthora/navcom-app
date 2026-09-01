@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { LIVE, GONE, TRAINING, LIVENESS_WORDING } from '$lib/community';
+  import { LIVE, GONE, TRAINING, YOUTH, LIVENESS_WORDING } from '$lib/community';
 </script>
 
 <svelte:head>
@@ -94,6 +94,25 @@
         >being listed is not an endorsement</strong
       >, and absence is not a judgement.
     </p>
+    <h3>If you are under about sixteen</h3>
+    <p>
+      Older people in this community will tell you to train first rather than go out, and they
+      are right. <strong>NavCom is not where you do that</strong> — it teaches nothing, and a
+      beginner track with levels to climb would be an on-ramp to the street dressed up as
+      preparation. These are organisations that already train young people, with instructors
+      who are qualified to do it.
+    </p>
+    <ul class="sites">
+      {#each YOUTH as t (t.url)}
+        <li>
+          <a href={t.url} rel="noopener external">{t.name}</a>
+          <span class="how" data-how={t.how}>{LIVENESS_WORDING[t.how]} · {t.checked}</span>
+          <span class="what">{t.where}</span>
+        </li>
+      {/each}
+    </ul>
+
+    <h3>Everyone else</h3>
     <ul class="sites">
       {#each TRAINING as t (t.url)}
         <li>
