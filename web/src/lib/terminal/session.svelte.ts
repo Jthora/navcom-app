@@ -14,6 +14,7 @@ import {
   type DistressPhase,
   type OnStationPayload,
   type ResponsePayload,
+  type SignalPayload,
   type SignalType,
   type ReviewCheck,
   type WatchStatePayload
@@ -86,10 +87,18 @@ function ctx() {
   return { config, identity };
 }
 
-async function send(type: SignalType, payload: object, timeoutMs = 10_000) {
+/*
+ * `SignalPayload`, not `object` with a cast.
+ *
+ * The cast was here because `object` is not assignable to `SignalPayload`, which is exactly
+ * the check worth having: it is the union of every shape a watch knows how to read. A cast
+ * on a call into the transport layer is what let the board subscribe to nothing for weeks,
+ * so this one is spent rather than kept.
+ */
+async function send(type: SignalType, payload: SignalPayload, timeoutMs = 10_000) {
   const { config, identity } = ctx();
   const sent = await sendSignal(
-    pool(), config.relays, identity.secretKey, watchAddress(config), type, payload as never
+    pool(), config.relays, identity.secretKey, watchAddress(config), type, payload
   );
   return waitForResponse(
     pool(), config.relays, identity.secretKey, identity.pubkey, config.pubkey, sent, timeoutMs
@@ -97,6 +106,19 @@ async function send(type: SignalType, payload: object, timeoutMs = 10_000) {
 }
 
 /** Attaches the declared area, which is coarse by construction — it came from a sign-on. */
+/*
+ * Overloaded so the two callers that always have text are typed as having it.
+ *
+ * `Query` and `Resupply` require `text`; an `Assist` deliberately does not, because "I need
+ * someone" with no words still means that and requiring a reason would delay a send at the
+ * moment sending matters. One optional parameter collapsed all three into "maybe text",
+ * which is what made a cast necessary at the call into the transport -- and a cast there is
+ * what let the board subscribe to nothing for weeks.
+ */
+function area(text: string): { text: string; area?: string };
+function area(text?: undefined): { area?: string };
+// And the Assist case, where the operator may or may not have typed anything.
+function area(text: string | undefined): { text?: string; area?: string };
 function area(text?: string) {
   return {
     ...(text === undefined ? {} : { text }),
