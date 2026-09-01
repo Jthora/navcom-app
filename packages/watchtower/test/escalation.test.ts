@@ -196,6 +196,49 @@ describe("the trigger", () => {
     expect(executor.ladders.all()).toHaveLength(1);
     expect(page).toHaveBeenCalledTimes(1);
   });
+
+  it("does not page again for a retry the client re-signed [the real failure mode 7]", async () => {
+    /*
+     * The test above delivers the *same event* three times, which is relay redelivery. A
+     * client retry is not that: `sendDistress` signs a fresh event with a fresh id every
+     * attempt, so every retry used to look like a new emergency -- a new ladder, a page, and
+     * a budget unit. At roughly forty-eight attempts an hour against a global budget of
+     * twenty, one operator nobody answered spent the whole hour's paging in twenty-one
+     * minutes, after which a second, unrelated emergency could wake nobody, and the twenty
+     * pages it did spend all went to one person about one emergency.
+     */
+    const operator = generateSecretKey();
+    const page = noopPager();
+    const { executor, pubkey, deliver } = build([onCallEntry("Wren")], page);
+
+    const first = distressFrom(operator, pubkey);
+    const retry = distressFrom(operator, pubkey);
+    expect(retry.id, "the helper made the same event twice, so this proves nothing").not.toBe(
+      first.id,
+    );
+
+    deliver(first);
+    await vi.waitFor(() => expect(page).toHaveBeenCalledTimes(1));
+    deliver(retry);
+    await new Promise((r) => setTimeout(r, 200));
+
+    expect(executor.ladders.all()).toHaveLength(1);
+    expect(page, "a re-signed retry woke the roster a second time").toHaveBeenCalledTimes(1);
+  });
+
+  it("but a second operator is a second emergency, and does page", async () => {
+    // The pair. Joining by operator must never merge two people's emergencies -- that would
+    // be one person's Distress silencing another's.
+    const page = noopPager();
+    const { executor, pubkey, deliver } = build([onCallEntry("Wren")], page);
+
+    deliver(distressFrom(generateSecretKey(), pubkey));
+    await vi.waitFor(() => expect(page).toHaveBeenCalledTimes(1));
+    deliver(distressFrom(generateSecretKey(), pubkey));
+    await vi.waitFor(() => expect(page).toHaveBeenCalledTimes(2));
+
+    expect(executor.ladders.all()).toHaveLength(2);
+  });
 });
 
 describe("what the operator is told", () => {

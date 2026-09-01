@@ -1044,7 +1044,6 @@ says so about itself.
 | | Blocks |
 |---|---|
 | Node service language for the box | Session 1 — TypeScript unless there's a reason |
-| **One Distress can exhaust the whole hour's page budget** | Found while closing the daemon/executor gap, and not fixed because both fixes change behaviour for everybody. `LadderRegistry` is keyed by distress id and its own doc says the design assumes *"a client republishes the same event"* — but `sendDistress` mints a **new signed event with a new id** every retry, so each retry opens its own ladder and each ladder pages. With `ackWindowMs` 20s and backoff to 60s a Distress produces roughly 48 attempts an hour, and `maxPagesPerWindow` is **20 per hour, globally**: one unacknowledged Distress spends the entire budget in under half an hour, after which **a second, unrelated emergency cannot page anybody**. The pages also all go to the same person about the same emergency, which is the alarm fatigue that is supposed to be the thing being prevented. Two ways out, both real changes: have the client **republish the same event** (restores the documented invariant; risks a relay that dedupes ephemeral events by id not re-forwarding), or have the executor **dedupe ladders by operator** rather than by distress id (needs a rule for when an operator's next, genuinely new Distress starts a fresh ladder). Not taken in an audit pass |
 
 ## The seeding rule
 

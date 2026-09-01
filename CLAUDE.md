@@ -61,16 +61,6 @@ prose: `therlsh.forumotion.com` already redirects to a squatter and `superheroes
 resolves nowhere, and a page about link rot that rots is worse than none. Doctrine in
 [`docs/product/community-continuity.md`](docs/product/community-continuity.md).
 
-**One open decision is safety-critical and should be taken before the list below.** A
-`Distress` retries with a **new event id** each time, and the escalation ladder is keyed by
-that id — so every retry opens a fresh ladder and every ladder pages. At roughly 48 attempts
-an hour against a global budget of 20, **one unacknowledged Distress exhausts the whole
-hour's paging in under half an hour**, after which a second, unrelated emergency can page
-nobody — and the twenty pages it did spend all went to one person about one emergency.
-`LadderRegistry`'s own doc assumes the client republishes the *same* event, which it does not.
-Both fixes change behaviour for everyone; the arithmetic and the two options are in
-[`build-order.md`](docs/build-order.md) under Open decisions.
-
 **Build next, in order:**
 
 1. **The directory region-detail screen's remaining prose.** Nineteen of twenty Field

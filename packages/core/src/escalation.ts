@@ -180,27 +180,75 @@ export function ladderReport(ladder: Ladder): string {
 }
 
 /**
- * Tracks live ladders so one distress produces one ladder.
+ * Tracks live ladders so one **emergency** produces one ladder.
  *
- * Failure mode 7. A phone retrying an unacknowledged `Distress` — which the client is
- * *required* to do, indefinitely — republishes the same event, and relays may deliver it
- * more than once besides. Two ladders would page everyone twice and race each other to
- * report contradictory states to the same operator.
+ * Failure mode 7. Two ladders would page everyone twice and race each other to report
+ * contradictory states to the same operator.
+ *
+ * ## Why the key is the operator and not the event
+ *
+ * This said "a phone retrying an unacknowledged `Distress` republishes the same event", and
+ * keyed on that event id. **The client does not republish the same event** — `sendDistress`
+ * signs a fresh one, with a fresh `created_at` and therefore a fresh id, on every attempt. So
+ * every retry looked like a new emergency: a new ladder, a page, and a budget unit.
+ *
+ * The cost was measured rather than guessed. A cycle is `ackWindow + backoff`, which settles
+ * at 80s, so an unanswered `Distress` produces about forty-eight attempts an hour against a
+ * global budget of twenty. One operator nobody answers spent the entire hour's paging in
+ * **twenty-one minutes** — after which a second, unrelated emergency could page nobody — and
+ * the twenty pages it did spend all went to one person about one emergency, which is the
+ * alarm fatigue the budget exists to prevent.
+ *
+ * So a `Distress` from an operator who already has a **live** ladder joins it. Terminal
+ * ladders do not adopt: an operator whose ladder was acknowledged or exhausted and who is
+ * still sending is somebody whose situation has outlived the last attempt to answer it, and
+ * that deserves a fresh ladder rather than silence. Escalation still retries; it retries on
+ * the ladder's own windows instead of on the client's backoff.
+ *
+ * Retry ids are **aliased**, not dropped, because the acknowledgement names whichever id the
+ * responder saw and `acknowledge()` has to find the ladder from it.
  */
 export class LadderRegistry {
   private readonly ladders = new Map<string, Ladder>();
+  /** A retry's own id → the id of the ladder it joined. */
+  private readonly joined = new Map<string, string>();
 
-  /** Returns the existing ladder for this distress, or starts one. Never two. */
+  /** The id a distress resolves to, following an alias if this was a retry. */
+  private canonical(distressId: string): string {
+    return this.joined.get(distressId) ?? distressId;
+  }
+
+  /** The live ladder for this operator, if any. Terminal ones do not count. */
+  private liveFor(operator: string): Ladder | undefined {
+    for (const ladder of this.ladders.values()) {
+      if (ladder.operator !== operator) continue;
+      if (ladder.state === 'acknowledged' || ladder.state === 'exhausted') continue;
+      return ladder;
+    }
+    return undefined;
+  }
+
+  /** Returns the ladder this distress belongs to, or starts one. Never two per emergency. */
   open(input: LadderStart): { ladder: Ladder; started: boolean } {
-    const existing = this.ladders.get(input.distressId);
+    // The same event again — relay redelivery, or a retry already aliased.
+    const existing = this.ladders.get(this.canonical(input.distressId));
     if (existing) return { ladder: existing, started: false };
+
+    // A different event from an operator already being escalated for: a retry, not a second
+    // emergency. Alias it so an acknowledgement naming this id still finds the ladder.
+    const live = this.liveFor(input.operator);
+    if (live) {
+      this.joined.set(input.distressId, live.distressId);
+      return { ladder: live, started: false };
+    }
+
     const ladder = startLadder(input);
     this.ladders.set(input.distressId, ladder);
     return { ladder, started: true };
   }
 
   get(distressId: string): Ladder | undefined {
-    return this.ladders.get(distressId);
+    return this.ladders.get(this.canonical(distressId));
   }
 
   /** Advances every live ladder, returning only those that actually changed state. */
@@ -218,11 +266,14 @@ export class LadderRegistry {
   }
 
   acknowledge(distressId: string, by: Author, now: number): Ladder | null {
-    const ladder = this.ladders.get(distressId);
+    // Through the alias: whoever answers names the id they were shown, which for every
+    // attempt after the first is a retry's id and not the ladder's own.
+    const id = this.canonical(distressId);
+    const ladder = this.ladders.get(id);
     if (!ladder) return null;
     const next = acknowledge(ladder, by, now);
     if (next === ladder) return null;
-    this.ladders.set(distressId, next);
+    this.ladders.set(id, next);
     return next;
   }
 
@@ -246,6 +297,10 @@ export class LadderRegistry {
       if (!terminal) continue;
       if (now - ladder.stateSince < retentionSeconds) continue;
       this.ladders.delete(id);
+      // Its retries go with it, or the alias map is the leak the ladder map used to be.
+      for (const [retry, canonical] of this.joined) {
+        if (canonical === id) this.joined.delete(retry);
+      }
       dropped++;
     }
     return dropped;

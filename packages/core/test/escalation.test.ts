@@ -189,19 +189,71 @@ describe('7 — duplicate distress', () => {
     expect(second.ladder.stateSince).toBe(T0);
   });
 
-  it('keeps separate distress events on separate ladders', () => {
+  it('joins a retry from the same operator to the ladder already running', () => {
+    /*
+     * This used to assert the opposite -- two events, two ladders -- on the reading that a
+     * retrying client republishes the same event. **It does not**: `sendDistress` signs a
+     * fresh one, with a fresh `created_at` and therefore a fresh id, every attempt. So every
+     * retry looked like a new emergency and took a page and a budget unit with it: about
+     * forty-eight attempts an hour against a global budget of twenty, which spent the whole
+     * hour's paging in twenty-one minutes and left a second, unrelated emergency unable to
+     * wake anybody.
+     */
+    const registry = new LadderRegistry();
+    const base = { operator: 'a'.repeat(64), oncall: [oncall('Wren')], hasEmergencyContact: true, now: T0 };
+    const first = registry.open({ ...base, distressId: 'd1' });
+    const retry = registry.open({ ...base, distressId: 'd2', now: T0 + 80 });
+
+    expect(first.started).toBe(true);
+    expect(retry.started, 'a retry started a second ladder, and a second page with it').toBe(false);
+    expect(registry.all()).toHaveLength(1);
+    // Not restarted: a retrying phone must not hold the ladder in PAGING forever.
+    expect(retry.ladder.stateSince).toBe(T0);
+  });
+
+  it('and an acknowledgement naming the retry still finds it', () => {
+    // Whoever answers names the id they were shown, which after the first attempt is a
+    // retry's id and not the ladder's own. Aliased rather than dropped, for exactly this.
     const registry = new LadderRegistry();
     const base = { operator: 'a'.repeat(64), oncall: [oncall('Wren')], hasEmergencyContact: true, now: T0 };
     registry.open({ ...base, distressId: 'd1' });
-    registry.open({ ...base, distressId: 'd2' });
+    registry.open({ ...base, distressId: 'd2', now: T0 + 80 });
+
+    expect(registry.get('d2')?.distressId).toBe('d1');
+    expect(registry.acknowledge('d2', human('Raven'), T0 + 100)?.state).toBe('acknowledged');
+  });
+
+  it('but a different operator always gets their own ladder', () => {
+    // The pair. Joining by operator must never merge two people's emergencies.
+    const registry = new LadderRegistry();
+    const base = { oncall: [oncall('Wren')], hasEmergencyContact: true, now: T0 };
+    registry.open({ ...base, distressId: 'd1', operator: 'a'.repeat(64) });
+    registry.open({ ...base, distressId: 'd2', operator: 'b'.repeat(64) });
+    expect(registry.all()).toHaveLength(2);
+  });
+
+  it('and a terminal ladder does not adopt: a later distress starts fresh', () => {
+    /*
+     * An operator whose ladder was acknowledged or exhausted, still sending, is somebody
+     * whose situation has outlived the last attempt to answer it. Adopting into a finished
+     * ladder would be silence.
+     */
+    const registry = new LadderRegistry();
+    const base = { operator: 'a'.repeat(64), oncall: [oncall('Wren')], hasEmergencyContact: true, now: T0 };
+    registry.open({ ...base, distressId: 'd1' });
+    registry.acknowledge('d1', human('Raven'), T0 + 10);
+
+    const later = registry.open({ ...base, distressId: 'd2', now: T0 + 600 });
+    expect(later.started, 'a finished ladder swallowed a new emergency').toBe(true);
     expect(registry.all()).toHaveLength(2);
   });
 
   it('advances every live ladder and reports only real transitions', () => {
     const registry = new LadderRegistry();
-    const base = { operator: 'a'.repeat(64), oncall: [oncall('Wren')], hasEmergencyContact: true, now: T0 };
-    registry.open({ ...base, distressId: 'd1' });
-    registry.open({ ...base, distressId: 'd2' });
+    const base = { oncall: [oncall('Wren')], hasEmergencyContact: true, now: T0 };
+    // Two operators, because two ladders now means two people.
+    registry.open({ ...base, distressId: 'd1', operator: 'a'.repeat(64) });
+    registry.open({ ...base, distressId: 'd2', operator: 'b'.repeat(64) });
 
     expect(registry.tickAll(T0 + 100)).toHaveLength(0);
     expect(registry.tickAll(T0 + 300).map((l) => l.state)).toEqual(['contact', 'contact']);

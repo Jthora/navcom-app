@@ -308,6 +308,19 @@ itself:
   filter. `test/distress-retry.test.ts` matches `#e` the way a relay does, and has a control
   case so a red result cannot be the harness.
 
+  A third thing came out of it, and it was the larger defect. `LadderRegistry` keyed on the
+  distress id and its own doc said the design assumed *"a client republishes the same
+  event"* — which it does not: `sendDistress` signs a fresh one every attempt. So every retry
+  opened a ladder and every ladder paged. At roughly forty-eight attempts an hour against a
+  global budget of twenty, **one operator nobody answered spent the whole hour's paging in
+  twenty-one minutes**, after which a second, unrelated emergency could wake nobody, and the
+  twenty pages it did spend all went to one person about one emergency. The registry now joins
+  a retry to that operator's live ladder, aliasing the retry's id so an acknowledgement naming
+  it still resolves; terminal ladders do not adopt. The executor test that covered "failure
+  mode 7" delivered *the same event* three times — relay redelivery, not a client retry — so
+  it had never exercised this; the new one re-signs, and with the join disabled it shows two
+  ladders and two pages.
+
   Fixed in two parts, because the first commit's account of the second hole was **wrong** and
   is corrected here. Listening for a response to *any* signal the Distress has sent fixes the
   late-answer case, and is capped at 64 ids because a relay filter is not unbounded. It does
