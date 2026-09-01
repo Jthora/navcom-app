@@ -511,6 +511,19 @@ test.describe('post-quantum cover', () => {
 });
 
 test.describe('being on call', () => {
+  /*
+   * Skipped on WebKit, and the reason is the platform rather than the app: iOS supports
+   * Web Push only for an installed PWA, so in a Safari tab this screen correctly has no
+   * registration control at all. What it shows instead — "cannot be woken", and the Add to
+   * Home Screen route out of it — is asserted in `capabilities.spec.ts`, which now declares
+   * the dependency with `needsPush` rather than leaving four red tests for an app that is
+   * behaving properly.
+   */
+  test.skip(
+    () => test.info().project.name === 'iphone',
+    'Web Push is unavailable in an iOS browser tab; the fallback is asserted in capabilities.spec.ts'
+  );
+
   test('the sender key is pasted in, because nothing discovers it', async ({ page }) => {
     await seedDevice(page, OUT);
     await open(page, '/terminal/on-call/');
@@ -760,6 +773,16 @@ test.describe('reporting a problem with a record', () => {
   });
 
   test('a report survives losing the network, because the directory does', async ({ page, context }) => {
+    /*
+     * `context.setOffline(true)` plus a navigation crashes the WebKit driver — the same
+     * Playwright limitation `offline.spec.ts` documents. Not a fact about this app: WebKit
+     * runs the rest of this suite, and `offline-webkit.spec.ts` proves the worker serves
+     * every terminal route from cache there.
+     */
+    test.skip(
+      test.info().project.name === 'iphone',
+      'WebKit driver crashes on navigation while offline'
+    );
     await seedDevice(page, OUT);
     await open(page, AREA);
     // Nothing is served offline until the worker is actually running.
@@ -955,19 +978,29 @@ test.describe('a phone that has run out of room', () => {
    */
   const refuseWrites = (page: import('@playwright/test').Page) =>
     page.addInitScript(() => {
-      const real = localStorage.setItem.bind(localStorage);
+      /*
+       * Patched on `Storage.prototype`, not on the `localStorage` instance.
+       *
+       * Assigning to the instance works on Chromium and **silently does not stick on
+       * WebKit**, so this shim quietly stopped simulating anything there: no quota error, no
+       * banner, and a failure that reads exactly like the app not reporting. Which matters
+       * more than the tidiness, because iOS is the platform with the tighter quota — the one
+       * where running out of room is least hypothetical.
+       */
+      const proto = Storage.prototype;
+      const real = proto.setItem;
       let armed = false;
       // Armed after the seed lands, so the device still starts as a configured operator.
       queueMicrotask(() => {
         armed = true;
       });
-      localStorage.setItem = (key: string, value: string) => {
+      proto.setItem = function (key: string, value: string) {
         if (armed && key.startsWith('navcom.')) {
           const e = new Error('exceeded the quota');
           e.name = 'QuotaExceededError';
           throw e;
         }
-        return real(key, value);
+        return real.call(this, key, value);
       };
     });
 

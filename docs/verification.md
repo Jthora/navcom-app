@@ -293,36 +293,39 @@ itself:
   confuse a client is reasoned, not observed
 - **Carrying it for a night.** Nothing here finds text that is too long to read in the cold,
   a flow with a step too many, or a control in the wrong place
-- **iPhone, in part.** Chromium is not WebKit, and the two differ most in exactly the places
-  this app leans on — service workers, storage eviction, and `BarcodeDetector`. **The service
-  worker half is now closed** (`npm run test:webkit`): on WebKit the worker controls the page
-  and Cache Storage holds every terminal route with the network cut, checked against
-  `caches.match` rather than a status code, because the worker answers an uncached path with
-  an offline fallback that is also a 200.
+- ~~**iPhone.**~~ **Mostly closed, and it found something.** Chromium is not WebKit, and the
+  two differ most in exactly the places this app leans on. The whole suite now runs on WebKit
+  (`npm run test:webkit`): **324 pass, 12 skip, none fail.**
 
-  What it does not prove, and nothing available here can: **WebKit's own navigation path into
-  that cache.** `context.setOffline(true)` plus `page.goto` crashes the WebKit driver
-  outright, and aborting requests instead preempts the worker for navigations specifically.
-  So the cache and the worker are proven on WebKit; the browser's route from a tapped link to
-  them is inferred. Storage eviction and `BarcodeDetector` are untouched.
+  **A WebKit defect was found, and Chromium cannot see it.** An earlier pass through this
+  file recorded "no WebKit defect was found"; that was true of what had run, and it is no
+  longer true. `body { background: var(--t-ground) }` with an unresolvable property is
+  invalid at computed-value time, and an invalid background is `transparent` rather than a
+  wrong colour — so the root console painted its near-white ink on the white canvas
+  underneath. axe measured the masthead at **1.09**. The live public front door was
+  unreadable on an iPhone, while `/terminal/` was fine on the same browser because
+  `.terminal` paints its own ground. A literal fallback in the `var()` fixes it, and the
+  guard now runs on every project rather than desktop-Chromium only — the falsification is
+  the whole argument: without the fix, WebKit fails and Chromium passes.
 
-  **Looked at once, 2026-09-01**, because the standing policy was *"revisit if a
-  Safari-specific failure ever appears"* — a condition nothing could satisfy while nobody had
-  run it. `playwright.webkit.config.ts` runs the whole suite against an iPhone 13 profile;
-  it is not in the default run.
+  It also found that the **storage-quota shim had been silently inert on WebKit** — it
+  assigned to `localStorage.setItem` on the instance, which does not stick there — so the
+  platform with the tighter quota had never actually tested running out of room. Moved to
+  `Storage.prototype`; both engines exercise it now.
 
-  **No WebKit defect was found.** Every screen hydrates with zero console errors. Seventeen
-  tests failed and none of them was the platform: five were a Playwright driver crash
-  (`WebKit encountered an internal error`) that killed the worker and cascaded; three were
-  the on-call screen behaving **correctly**, since `canBePaged()` requires `PushManager` and
-  WebKit-under-Playwright does not expose it, so the screen says *"Not supported here"* with
-  the iOS remedy; the rest were three real defects **on Chromium** that the suite had been
-  carrying — a selector collision on `data-report`, a test pinned to copy that had
-  deliberately changed, and a test that rotted with the calendar.
+  **Offline on WebKit is half closed.** `context.setOffline(true)` plus a navigation crashes
+  the driver, so `offline.spec.ts` skips there and `offline-webkit.spec.ts` covers what can
+  be covered: the worker controls the page and Cache Storage holds every terminal route with
+  the network cut, checked against `caches.match` rather than a status code, because the
+  worker answers an uncached path with an offline fallback that is also a 200. **WebKit's own
+  navigation path into that cache stays unproven**, and nothing available here can prove it.
+  Two phones on two networks — build order `0.2` — is still the honest answer for that.
 
-  **What it did not close:** offline on WebKit. The driver crash lands on `page.goto`, so the
-  offline specs never ran, and the service-worker question that motivated the whole exercise
-  is still open. Two phones on two networks — build order `0.2` — remains the honest answer.
+  The on-call screen has no registration control in an iOS tab, correctly, because Web Push
+  needs an installed PWA. That produced four red tests for an app behaving properly, which
+  was the manifest failing to describe reality rather than the screen failing to meet it: it
+  now declares `needsPush`, and where a browser cannot be woken the check becomes *the screen
+  must say so and say what would change it*. `BarcodeDetector` is still untouched.
 
 ## Two found while building the cold start, 2026-08-23
 

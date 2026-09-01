@@ -50,6 +50,28 @@ async function liveWatch() {
   return { pubkey: getPublicKey(secret), event };
 }
 
+
+/**
+ * Whether this browser can be woken at all.
+ *
+ * iOS supports Web Push only for an installed PWA, so in a Safari tab there is no
+ * registration control to operate — correctly. A capability that declares `needsPush` is
+ * checked against what the screen actually offers instead.
+ */
+async function canBeWoken(page: import('@playwright/test').Page) {
+  return page.evaluate(
+    () => typeof Notification !== 'undefined' && 'PushManager' in globalThis
+  );
+}
+
+/** The screen has to be legible as unavailable, which is the standard everywhere else here. */
+async function saysItCannotBeWoken(page: import('@playwright/test').Page) {
+  await expect(page.getByText(/cannot be woken/i)).toBeVisible();
+  await expect(page.getByText(/add to home screen/i)).toBeVisible();
+  // Said twice on that screen — the readout sub-line and the paragraph — so .first().
+  await expect(page.getByText(/legitimate choice/i).first()).toBeVisible();
+}
+
 async function seedFor(capability: Capability) {
   const watch = capability.requires.includes('watch') ? await liveWatch() : null;
   return {
@@ -78,6 +100,11 @@ for (const capability of CAPABILITIES) {
     // The screen renders at all. A capability whose page errors with its declared state is
     // not a capability.
     await expect(page.locator('h1')).toBeVisible();
+
+    if (capability.needsPush && !(await canBeWoken(page))) {
+      await saysItCannotBeWoken(page);
+      return;
+    }
 
     if (capability.control) {
       // `.first()` because a control can legitimately name a *class* of controls rather than
@@ -121,7 +148,7 @@ test('a capability that declares no watch does not quietly need one', async ({ b
       const text = (await page.locator('body').innerText()).toLowerCase();
       expect(text, `${capability.name} demands a watch`).not.toContain('not configured');
 
-      if (capability.control) {
+      if (capability.control && !(capability.needsPush && !(await canBeWoken(page)))) {
         await expect(
           page.locator(capability.control).first(),
           `${capability.name}: ${capability.control} is not operable without a watch`

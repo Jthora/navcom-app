@@ -54,6 +54,16 @@ test('the worker can say what it failed to save', async ({ page }) => {
 });
 
 test('an uncached page offline says so rather than looking empty', async ({ page, context }) => {
+    /*
+   * `context.setOffline(true)` plus a navigation crashes the WebKit driver — the same
+   * Playwright limitation `offline.spec.ts` documents. Not a fact about this app: WebKit
+   * runs the rest of this suite, and `offline-webkit.spec.ts` proves the worker serves
+   * every terminal route from cache there.
+   */
+  test.skip(
+    test.info().project.name === 'iphone',
+    'WebKit driver crashes on navigation while offline'
+  );
   await seedDevice(page, WREN);
   await open(page, '/terminal/');
   await serviceWorkerReady(page);
@@ -102,6 +112,16 @@ test('says nothing about carrying when it cannot tell', async ({ page }) => {
 });
 
 test('a deploy does not throw away the areas an operator carries', async ({ page }) => {
+    /*
+   * `context.setOffline(true)` plus a navigation crashes the WebKit driver — the same
+   * Playwright limitation `offline.spec.ts` documents. Not a fact about this app: WebKit
+   * runs the rest of this suite, and `offline-webkit.spec.ts` proves the worker serves
+   * every terminal route from cache there.
+   */
+  test.skip(
+    test.info().project.name === 'iphone',
+    'WebKit driver crashes on navigation while offline'
+  );
   // 0.X. The cache name carries the build version, so activating a new one deleted the old
   // cache whole -- and areas live there too, added on visit rather than shipped in the
   // shell. Carry St. Louis, open the app once on wifi after a deploy, go out with no signal,

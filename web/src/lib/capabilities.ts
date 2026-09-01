@@ -91,6 +91,20 @@ export interface Capability {
    * and a check that demanded precaching here would be demanding the wrong thing.
    */
   cached?: 'precache' | 'on-visit';
+  /**
+   * Whether the control only exists where the browser can be woken.
+   *
+   * Declared because it is true, not to excuse a failure. **iOS supports Web Push only for
+   * an installed PWA**, so in a Safari tab this screen has no registration control at all —
+   * correctly, and it says so in as many words. The first cross-engine run turned that into
+   * four red tests for an app that was behaving properly, which is the manifest failing to
+   * describe reality rather than the screen failing to meet it.
+   *
+   * Where this is set and the platform cannot be woken, the check becomes: the screen must
+   * say so, and say what would change it. That is the same standard applied everywhere else
+   * here — a capability that is unavailable has to be legible as unavailable.
+   */
+  needsPush?: boolean;
   requires: Requirement[];
 }
 
@@ -354,6 +368,7 @@ export const CAPABILITIES: Capability[] = [
       'tells nobody'
     ],
     control: '#sender',
+    needsPush: true,
     requires: []
   },
   {
