@@ -990,6 +990,7 @@ leaving.** The bundle budget has a ratchet; the obligation list should have one 
 | — | ~~Off-grid / LoRa bridge~~ | Now Milestone 10. Still waiting on hardware; nothing in software waits on it |
 | — | Playbooks | **Human, permanently.** Not agent work, and now per locale — see [`product/languages.md`](product/languages.md) |
 | — | A second interface language | Now 8.2. The deferral was right and **its condition is met**: somebody looking for a bed in their own language is somebody waiting |
+| — | **A clock check for the operator with no watch** | Skew is detected by comparing the watch's `created_at` to this phone's clock [`CLOCK_TOLERANCE_SECONDS`], so the operator working Alone — the documented default — gets no check at all. A wrong clock makes every staleness reading in the directory wrong, and it does so in the dangerous direction: a clock running *behind* shrinks `now - last_verified`, so records read fresher than they are and stale hours read as current. The cheap version needs no network and has no false positives — a phone cannot legitimately predate the build it is running, and `builtAt` is already stamped [`lib/server/version.ts`] and served at `/version.json`. It catches exactly the harmful direction. Not built in the readiness pass because it is a feature with a screen decision in it, not a defect |
 
 ### The seven ways people actually work, and who is served
 

@@ -1214,6 +1214,68 @@ test.describe('being shown Dark, and being told why', () => {
     await expect(said).toContainText(/none of it can be read/i);
     await expect(said).toContainText(/safe answer/i);
   });
+
+  /*
+   * The other two of the four.
+   *
+   * `absent` and `corrupt` above were added because the screen did not explain them.
+   * `clock` and `stale` it did explain — and nothing anywhere, unit or browser, ever
+   * checked that the explanation renders. Explained-but-undriven is the state this project
+   * keeps finding on the wrong side of "a mechanism nobody can reach is not built", and
+   * `clock` is the one that matters most off the network: a phone hours out is ordinary on
+   * a cheap handset that has been off, and every staleness judgement in the app is
+   * arithmetic on the difference.
+   */
+  async function stateAt(secondsFromNow: number) {
+    const { finalizeEvent, generateSecretKey, getPublicKey } = await import('nostr-tools/pure');
+    const { buildWatchStateEvent } = await import('@navcom/core');
+    const secret = generateSecretKey();
+    const at = Math.floor(Date.now() / 1000) + secondsFromNow;
+    const event = finalizeEvent(
+      buildWatchStateEvent(
+        { state: 'station', since: at - 60, holder: 'Watchtower', holder_kind: 'node',
+          oncall: [], agent_health: 'ok', last_drill: null, now: at } as never,
+        at
+      ),
+      secret
+    );
+    return { pubkey: getPublicKey(secret), event };
+  }
+
+  test('says the phone is what is wrong when the watch is stamped in its future', async ({ page }) => {
+    // An hour ahead — far past CLOCK_TOLERANCE_SECONDS (120), which is deliberately
+    // generous so relay delivery and an unsynced wake do not trip it.
+    const w = await stateAt(3600);
+    await seedDevice(page, {
+      callsign: 'Wren',
+      watchtower: { pubkey: w.pubkey, relays: ['wss://fake.relay'] },
+      relayEvents: [w.event]
+    });
+    await open(page, '/terminal/');
+
+    const said = page.locator('[data-clock-skew]');
+    await expect(said).toBeVisible({ timeout: 10_000 });
+    // The fix, which is on the phone and nowhere in this app.
+    await expect(page.getByText(/automatic date and time/i)).toBeVisible();
+    // And that Dark here is the safe answer rather than the true one — an operator who
+    // reads it as "my watch is down" would go and fix the wrong thing.
+    await expect(page.getByText(/safe answer rather than the true one/i)).toBeVisible();
+  });
+
+  test('says how old the last word is when a watch has stopped saying anything', async ({ page }) => {
+    // Older than STALE_AFTER_SECONDS (300). The relay is still serving the last message,
+    // which is exactly why this cannot be left reading as a live watch.
+    const w = await stateAt(-900);
+    await seedDevice(page, {
+      callsign: 'Wren',
+      watchtower: { pubkey: w.pubkey, relays: ['wss://fake.relay'] },
+      relayEvents: [w.event]
+    });
+    await open(page, '/terminal/');
+
+    await expect(page.getByText(/last word was \d+s ago/i)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/old is treated as dark/i)).toBeVisible();
+  });
 });
 
 test.describe('the post-quantum cover notice', () => {
