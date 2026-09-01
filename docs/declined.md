@@ -194,6 +194,34 @@ carries `YOUTH` — real organisations that already train young people, with ins
 qualified to do it, inheriting the same staleness rule as everything else on that page.
 A name and a link, which is the whole of what this project should be doing here.
 
+### Summarising a night into a category
+
+External RLSH research proposes an after-action record with an `outcome` field — what
+happened, chosen from a list. The pain point behind it is real and well-evidenced: volunteers
+stay when work comes in **finite, completable units with a record afterward.**
+
+**NavCom already has that**, which is the reason this is declined rather than deferred. Sign-on
+→ stand-down is a completable act with an explicit end, the patrol record is written under the
+operator's own callsign whether or not anybody was watching, and the coming-home panel shows
+it to them at the moment they finish. The completion signal is not missing.
+
+What an `outcome` enum adds is a prompt to **compress a night into a word**, and three things
+are wrong with that here. There is no obviously correct vocabulary, and inventing one shapes
+what operators notice — which is why `CLAUDE.md` reserves the directory's `type` taxonomy for
+people with local knowledge, and this is the same act aimed at nights instead of places. A
+category invites comparison in a system that refuses counts and ranks everywhere else. And
+every field added to that record is a field somebody can put a served person into
+[invariant 1], which is why `log.ts` made its own outcomes a closed union rather than free
+text.
+
+**Cost:** an operator cannot file *what came of it* in any structured way, so nothing can ever
+be counted, filtered or compared across nights — including by them. The free-text note carries
+it instead, and a note is not searchable.
+
+**Instead:** the note, and the fact that standing down already writes the record. If a
+vocabulary is ever wanted, it comes from operators who have run a lot of nights, not from
+here.
+
 ### Whether an agent is trustworthy
 
 Unverifiability is answered by **limits, not better tests**. A sufficiently good performance

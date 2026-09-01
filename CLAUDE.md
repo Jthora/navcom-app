@@ -78,8 +78,15 @@ resolves nowhere, and a page about link rot that rots is worse than none. Doctri
    code. CI itself is closed rather than open: declined on 2026-08-24 rather than left as a
    permanently-broken dependency (9.9)
 
-**One decision is open:** typography for the panel (P8). System stack ships today at zero
-bytes; a subset face costs 8–25 KB against a script budget at 68%.
+**P8 is closed: the system stack stays, and no webfont ships.** It was never a budget
+question — 8–25 KB fits inside the terminal's headroom. It is that **a webfont which has not
+loaded yet is text that is not there**, and the budget script models a cold first load on a
+congested cell at ~3.1s to interactive. `font-display: swap` turns that into a flash of
+fallback and then a reflow, and a reflow while somebody is reaching for `Distress` moves the
+layout under their thumb at the worst available moment. The service worker would cache it
+after the first visit, and the first visit is exactly the case the device floor exists to
+protect. The usual counter — glyph legibility in codes — does not apply: everything
+key-shaped here is hex, so there is no capital `O` to confuse with `0`.
 
 Sequence and gates in [`docs/build-order.md`](docs/build-order.md). Surfaces and budgets in
 [`docs/delivery.md`](docs/delivery.md).
