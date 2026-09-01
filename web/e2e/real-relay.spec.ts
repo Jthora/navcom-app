@@ -437,3 +437,76 @@ test.describe('the rest of the filters, against a relay that honours them', () =
     await context.close();
   });
 });
+
+test.describe('the two filter shapes still untested', () => {
+  /**
+   * Chosen by audit rather than by working down a list.
+   *
+   * Five client filters remained after `waitForResponse`, `relay.ts` and `corrections`, and
+   * they are not equal. Three reuse a shape already proven — `standing.ts` and `pq` are
+   * `authors`, `invites` is `#p`. These two are the ones left that are genuinely different:
+   * a **multi-kind** filter, and the only `#g` in the client.
+   */
+  async function publish(event: unknown) {
+    const { WebSocket } = await import('ws');
+    const socket = new WebSocket(relay.url);
+    await new Promise<void>((resolve, reject) => {
+      socket.once('open', resolve);
+      socket.once('error', reject);
+    });
+    socket.send(JSON.stringify(['EVENT', event]));
+    await new Promise((r) => setTimeout(r, 250));
+    socket.close();
+  }
+
+  /*
+   * A board test was written here and removed rather than shipped.
+   *
+   * It asserted that a signal reaches the phone holding the watch, and it **passed with the
+   * `#p` filter deliberately broken** -- verified by replacing the pubkey with a traceable
+   * marker, confirming the marker was in the built artifact, and watching the test go green
+   * anyway. The relay is not at fault: it tags each delivered event with the matching
+   * subscription's own id, and neither of the board's two filters matches a `20910` once the
+   * first is broken.
+   *
+   * So the test was passing for a reason nothing here explains, which makes it worth less
+   * than no test: a green check against a broken mechanism is the exact thing this file
+   * exists to disprove. `board.svelte.ts` stays on the unverified list in `verification.md`
+   * until somebody works out where that event actually came from.
+   */
+
+  test('a place added in the field reaches the region it is in', async ({ browser }: { browser: Browser }) => {
+    /*
+     * `places.svelte.ts` subscribes `{ kinds: [30915], '#g': [region] }` — the only `#g` in
+     * the client, and the tag exists precisely so a device can ask one relay for one metro.
+     * If it is wrong, a place somebody added from a doorway is invisible to everybody else,
+     * and the cold-start fix for a region with no published directory silently does nothing.
+     */
+    const { generateSecretKey } = await import('nostr-tools/pure');
+    const { buildPlace } = await import('@navcom/core');
+
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await liveDevice(page, relay.url, { callsign: 'Wren' });
+    await open(page, '/terminal/directory/st-louis/');
+
+    await publish(
+      buildPlace(
+        generateSecretKey(),
+        {
+          region: 'st-louis',
+          name: 'The Cherokee Street Drop-in',
+          type: 'daytime',
+          address: '412 Cherokee St',
+          verified_by: 'Raven',
+          method: 'in_person',
+          last_verified: '2026-08-30'
+        } as never,
+        Math.floor(Date.now() / 1000)
+      )
+    );
+
+    await expect(page.getByText(/cherokee street drop-in/i).first()).toBeVisible({ timeout: 20_000 });
+    await context.close();
+  });
+});
