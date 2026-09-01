@@ -95,9 +95,27 @@ export function waitForResponse(
    * wrapping a key for them would be overhead with no membership to express.
    */
   watchtower: string,
-  sent: Event,
+  /**
+   * The signal being answered — or **every signal this Distress has sent so far**.
+   *
+   * One event is right for a Query or an Assist, which are asked once. A `Distress` is not:
+   * it republishes as a **new signed event with a new id** every time nothing answers, and
+   * listening only for a response to the newest id loses two real cases.
+   *
+   * A person woken at 3am takes longer than the 20s window to reach for a phone, so by the
+   * time they acknowledge, the one they were paged about is no longer the one being listened
+   * for — their answer is filtered out at the relay and the operator is told nothing. And
+   * between windows the loop sleeps with no subscription open at all, so an answer arriving
+   * in the gap is missed even when the id does match.
+   *
+   * Passing every id fixes both at once: the response is accepted whichever signal it names,
+   * and one published during a gap is served from the relay's store when the next
+   * subscription opens.
+   */
+  sent: Event | readonly Event[],
   timeoutMs: number
 ): Promise<ResponsePayload> {
+  const answering = (Array.isArray(sent) ? sent : [sent as Event]) as readonly Event[];
   return new Promise((resolve, reject) => {
     let done = false;
     let closer: { close(): void } | null = null;
@@ -122,7 +140,7 @@ export function waitForResponse(
           kinds: [KIND_RESPONSE],
           authors: [watchtower],
           '#p': [ourPubkey],
-          '#e': [sent.id]
+          '#e': answering.map((e) => e.id)
           // No `since`. It would have to be derived from this device's own clock, and a
           // fast client clock silently filters out a real, on-time response server-side
           // before the client ever sees it — a false "nobody answered" when somebody did.
@@ -246,6 +264,15 @@ export async function sendDistressUntilAcknowledged(
   let attempt = 0;
   let saidNobodyAnswering = false;
 
+  /**
+   * Every signal this Distress has published, so a late answer to any of them is still an
+   * answer. Capped because a relay filter is not unbounded and a Distress can run for hours;
+   * sixty-four covers about an hour of retries at this backoff, and an acknowledgement older
+   * than every one of those is not the case anybody is trying to catch.
+   */
+  const outstanding: Event[] = [];
+  const OUTSTANDING = 64;
+
   for (;;) {
     if (opts.signal?.aborted) throw new Error('Distress cancelled by the operator');
     attempt++;
@@ -254,6 +281,8 @@ export async function sendDistressUntilAcknowledged(
     let sent: Event | null = null;
     try {
       sent = await sendDistress(pool, relays, secret, watchtower, payload);
+      outstanding.push(sent);
+      if (outstanding.length > OUTSTANDING) outstanding.shift();
       report({ phase: 'sent', attempt });
     } catch (e) {
       report({ phase: 'unreachable', attempt, error: e instanceof Error ? e.message : String(e) });
@@ -262,7 +291,7 @@ export async function sendDistressUntilAcknowledged(
     if (sent) {
       try {
         const response = await waitForResponse(
-          pool, relays, secret, ourPubkey, watchtower.pubkey, sent, ackWindow
+          pool, relays, secret, ourPubkey, watchtower.pubkey, outstanding, ackWindow
         );
         // An absent responder kind is treated as not-a-human. The spec requires the field on
         // every response, so a missing one is a broken responder, and guessing "human"

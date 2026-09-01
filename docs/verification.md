@@ -289,8 +289,29 @@ itself:
   all: **nine filters were verified and found correct; the tenth was verified and found
   absent.** It had passed every test it ever had, and the only thing that ever contradicted it
   was a test that refused to go green honestly
-- **The daemon and the executor together.** Both subscribe to `20911`; that they do not
-  confuse a client is reasoned, not observed
+- ~~**The daemon and the executor together.**~~ **Observed, and the client was losing
+  acknowledgements.** Three processes subscribe to `20911` — daemon, executor and pager — and
+  the executor publishes responses tagged `["e", distressId]` for the ladder it opened.
+  Ladders are keyed by event id, and a client republishes an unanswered `Distress` as a **new
+  signed event with a new id**, so each retry opens its own ladder answering its own id.
+
+  Meanwhile the client listened on `'#e': [sent.id]` for the newest signal only. `ackWindowMs`
+  is 20s and somebody woken at 3am is slower than that, so the ordinary sequence was: human
+  is paged about attempt 1, answers it, and by then the phone is listening for attempt 2 —
+  **the answer is filtered out at the relay and the operator is told nothing.** The ladder
+  keeps running and at ten minutes says *nobody is answering*, which is false. A second hole
+  sat beside it: between windows the loop sleeps with no subscription open at all.
+
+  Nothing could have caught this. The fake pool in `core.test.ts` hands every event straight
+  to `onevent` and puts **no `#e` tag on its responses**, so that filter term had never been
+  exercised by anything — the same shape as the relay stub that hid the board's missing
+  filter. `test/distress-retry.test.ts` matches `#e` the way a relay does, and has a control
+  case so a red result cannot be the harness.
+
+  Fixed by listening for a response to **any** signal the Distress has sent, which closes both
+  holes at once: a late answer is accepted whichever id it names, and one published during a
+  gap is served from the relay's store when the next subscription opens. Capped at 64 ids,
+  because a relay filter is not unbounded
 - **Carrying it for a night.** Nothing here finds text that is too long to read in the cold,
   a flow with a step too many, or a control in the wrong place
 - ~~**iPhone.**~~ **Mostly closed, and it found something.** Chromium is not WebKit, and the
