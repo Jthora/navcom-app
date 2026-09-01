@@ -53,11 +53,18 @@
   const nowS = $derived(Math.floor(Date.now() / 1000));
   const reachable = $derived(pageableNow(watch.state.oncall, nowS).map((o) => o.author.callsign));
   const watchRead = $derived(
-    watch.state.state === 'dark'
-      ? { value: 'Dark', tone: 'cold' as const, sub: null }
-      : watch.state.state === 'station'
-        ? { value: 'On station', tone: 'good' as const, sub: watch.state.holder }
-        : { value: 'Automated', tone: 'warn' as const, sub: 'agent · not a human' }
+    // "Dark" is a configured watch that is not answering. An operator who never added one
+    // is not in that state, and showing it to them reads as a fault in a setup they never
+    // did -- on the panel labelled "what is behind you", read immediately before they
+    // decide to go out. Query, Assist and Resupply already separate these two; this screen
+    // did not, and it is the one where the distinction is acted on.
+    !configured
+      ? { value: 'No watch', tone: 'cold' as const, sub: 'you have not added one' }
+      : watch.state.state === 'dark'
+        ? { value: 'Dark', tone: 'cold' as const, sub: null }
+        : watch.state.state === 'station'
+          ? { value: 'On station', tone: 'good' as const, sub: watch.state.holder }
+          : { value: 'Automated', tone: 'warn' as const, sub: 'agent · not a human' }
   );
 </script>
 
@@ -104,7 +111,14 @@
   </Panel>
 </div>
 
-{#if watch.state.state === 'dark'}
+<!--
+  Gated on `configured` for the same reason the check-in note below is: with no watch
+  there is no signal to keep trying and nothing to come back up, so both halves of this
+  sentence are false for the operator it was reaching. No replacement text -- the true
+  version is already said once, in the check-in note, and this file's own header warns that
+  two renderings of one fact is how the two drift apart.
+-->
+{#if configured && watch.state.state === 'dark'}
   <section>
     <p class="error">
       Nothing is watching. You can still sign on — the signal will keep trying — but

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { blankDevice, open } from './device';
+import { blankDevice, open, seedDevice } from './device';
 
 /**
  * Pass 1 — the first ninety seconds.
@@ -29,6 +29,36 @@ test.describe('a stranger opens the terminal', () => {
     await open(page, '/terminal/');
     await expect(page.getByText(/pick a callsign/i).first()).toBeVisible();
     await expect(page.getByText(/needs no callsign/i).first()).toBeVisible();
+  });
+
+  test('is not shown a dark-watch fault on sign-on when they never added a watch', async ({ page }) => {
+    /*
+     * The sign-on screen's panel is labelled "what is behind you" and is read in the
+     * seconds before somebody decides to go out. It used to tell an operator with no watch
+     * that "the signal will keep trying" and that nobody would see it "until a watch comes
+     * back up" — both false, since with no watch there is no signal and nothing to come
+     * back — and it labelled their state "Dark", which is a configured watch that is not
+     * answering. Working alone is the documented default, not a fault, and this was the one
+     * screen still rendering it as one in red.
+     */
+    await blankDevice(page);
+    await open(page, '/terminal/sign-on/');
+
+    await expect(page.getByText(/the signal will keep trying/i)).toHaveCount(0);
+    await expect(page.getByText(/until a watch comes back up/i)).toHaveCount(0);
+    // What they get instead: the state named the way its three sibling screens name it.
+    await expect(page.getByText(/you have not added one/i).first()).toBeVisible();
+  });
+
+  test('but a configured watch that has gone dark still says so', async ({ page }) => {
+    // The guard for the rule above. Deleting the block outright would pass the negative
+    // assertions, and that is the shape of fix this project keeps having to catch.
+    await seedDevice(page, {
+      callsign: 'Wren',
+      watchtower: { pubkey: 'b'.repeat(64), relays: ['wss://relay.example'] }
+    });
+    await open(page, '/terminal/sign-on/');
+    await expect(page.getByText(/the signal will keep trying/i)).toBeVisible();
   });
 
   test('is not offered an ordering control on a region with nothing in it', async ({ page }) => {
