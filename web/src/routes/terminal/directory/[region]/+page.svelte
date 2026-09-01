@@ -406,6 +406,13 @@
   default. The type grouping is left alone — it is how somebody navigates this list at a door,
   and sorting *within* each group answers "which of these" without dismantling "which kind".
 -->
+<!--
+  Only where there is something to order. On one of the thirty-five regions that ship empty
+  this rendered a control that would ask for the operator's location and then sort nothing —
+  a permission prompt bought with no answer, on the screen somebody sees when the app has
+  least to offer them.
+-->
+{#if shown.length > 1}
 <section class="ordering">
   <button data-nearest onclick={sortByDistance} disabled={locating}>
     {#if locating}Finding you…{:else if here}Back to listed order{:else}Nearest first{/if}
@@ -425,6 +432,7 @@
     </p>
   {/if}
 </section>
+{/if}
 
 {#each byType as group (group.type)}
   <section class="group">

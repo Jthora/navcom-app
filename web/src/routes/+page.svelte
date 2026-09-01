@@ -110,7 +110,17 @@
     void locateOnce().then((fix) => {
       if (fix) nearRegion = nearest(fix, data.centroids);
     });
-    void fetch('/.well-known/navcom-health.json')
+    /*
+     * Bounded, because a fetch that *hangs* is the case this readout is worst at.
+     *
+     * A failure resolves honestly to "Unreachable" — both `.then` and `.catch` set
+     * `healthTried`. A hang sets nothing, and the panel reads "Checking…" for as long as the
+     * page is open. On a captive portal or a dead cell, which is exactly the first-visit
+     * case, that is a pending state that never resolves and reads as a fact still arriving.
+     */
+    const healthTimeout = new AbortController();
+    const healthGaveUp = setTimeout(() => healthTimeout.abort(), 8_000);
+    void fetch('/.well-known/navcom-health.json', { signal: healthTimeout.signal })
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => {
         health = j;
@@ -118,7 +128,8 @@
       })
       .catch(() => {
         healthTried = true;
-      });
+      })
+      .finally(() => clearTimeout(healthGaveUp));
   });
 
   /**
