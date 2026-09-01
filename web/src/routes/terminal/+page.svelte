@@ -337,6 +337,14 @@
           </p>
         {/if}
 
+        <!--
+          Every branch below explains a watch that *exists* and is Dark, so each is gated on
+          `configured`. Without that guard the chain fell through for the commonest visitor
+          this app has — somebody with no callsign and no watch, for whom `!configured &&
+          identity` is false — and told them "A Watchtower is configured, but its relays are
+          not serving anything from it", followed by "assume nobody is reading what you send".
+          Both false, and to a stranger they read as the app being broken on arrival.
+        -->
         {#if !configured && identity}
           <h2>No watch, and that is a normal way to work</h2>
           <p>
@@ -353,7 +361,7 @@
             because nothing discovers one — you can <a href="/terminal/setup/">add it</a> and
             they start working.
           </p>
-        {:else if watch.read.reason === 'clock'}
+        {:else if configured && watch.read.reason === 'clock'}
           <h2 data-clock-skew>This phone's clock is wrong</h2>
           <p>
             The watch is stamping its messages
@@ -368,7 +376,7 @@
             Turn on automatic date and time in the phone's settings. It usually corrects within
             a minute of having signal.
           </p>
-        {:else if watch.read.reason === 'stale'}
+        {:else if configured && watch.read.reason === 'stale'}
           <h2>Last word was {watch.read.ageSeconds ?? '?'}s ago</h2>
           <p>
             A Watchtower is
@@ -376,7 +384,7 @@
             enough that the daemon may be gone. <strong>Old is treated as Dark</strong> — a
             stale event says what was true, not what is.
           </p>
-        {:else if watch.read.reason === 'absent'}
+        {:else if configured && watch.read.reason === 'absent'}
           <!-- The marker wraps the whole explanation, not its first paragraph: what the test
                is asserting is that the operator was told why, and the why is both halves. -->
           <div data-watch-absent>
