@@ -97,6 +97,32 @@ that data is stale within hours and would be the most dangerous field in the sys
 
 ---
 
+## 3a. The half-life, measured
+
+`hours` and `intake_hours` are **volatile**: stale after fourteen days, after which the value
+is not shown at all and the field reads *call first*. That is rule 2 working exactly as
+written, and it has a consequence nobody had put a number on.
+
+Measured 2026-09-01, against the 479 scraped records: **median age thirteen days.** The whole
+published directory crosses the volatile threshold within about a day of itself, because it
+was all scraped in one pass. 158 records carry hours; all 158 are about to stop showing them.
+
+**This is not a defect and the reader is not stranded.** A record that says *call first* still
+carries its address and its phone numbers, so the answer becomes *"ring them, here is the
+number"* rather than nothing. Checked on the live site rather than reasoned about.
+
+**It is written down because somebody will want to relax the threshold**, and the argument
+against is easy to lose. Fourteen days is not a claim that a shelter changes its hours
+fortnightly. It is the point past which *this project* will not repeat a number it got off a
+website and never checked — and a confident wrong closing time at 10pm is the failure the
+whole schema exists to avoid.
+
+What it does mean is that **6.9 is the only thing that makes the directory show hours at
+all.** A record somebody phoned carries `method: phone`, gets a fresh date, and displays its
+hours like any other. Ten records done properly are ten records that answer the question the
+directory is opened for; the other 469 answer *call first*, honestly and permanently, until
+somebody rings them.
+
 ## 4. Every record is a set of attestations
 
 A row is not a fact. It is [a claim about a place](../attestation.md), carrying who said so,

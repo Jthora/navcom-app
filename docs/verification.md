@@ -291,7 +291,25 @@ itself:
 - **Carrying it for a night.** Nothing here finds text that is too long to read in the cold,
   a flow with a step too many, or a control in the wrong place
 - **iPhone.** Chromium is not WebKit, and the two differ most in exactly the places this app
-  leans on — service workers, storage eviction, and `BarcodeDetector`
+  leans on — service workers, storage eviction, and `BarcodeDetector`.
+
+  **Looked at once, 2026-09-01**, because the standing policy was *"revisit if a
+  Safari-specific failure ever appears"* — a condition nothing could satisfy while nobody had
+  run it. `playwright.webkit.config.ts` runs the whole suite against an iPhone 13 profile;
+  it is not in the default run.
+
+  **No WebKit defect was found.** Every screen hydrates with zero console errors. Seventeen
+  tests failed and none of them was the platform: five were a Playwright driver crash
+  (`WebKit encountered an internal error`) that killed the worker and cascaded; three were
+  the on-call screen behaving **correctly**, since `canBePaged()` requires `PushManager` and
+  WebKit-under-Playwright does not expose it, so the screen says *"Not supported here"* with
+  the iOS remedy; the rest were three real defects **on Chromium** that the suite had been
+  carrying — a selector collision on `data-report`, a test pinned to copy that had
+  deliberately changed, and a test that rotted with the calendar.
+
+  **What it did not close:** offline on WebKit. The driver crash lands on `page.goto`, so the
+  offline specs never ran, and the service-worker question that motivated the whole exercise
+  is still open. Two phones on two networks — build order `0.2` — remains the honest answer.
 
 ## Two found while building the cold start, 2026-08-23
 
