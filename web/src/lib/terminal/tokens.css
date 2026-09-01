@@ -78,7 +78,22 @@
  */
 body {
   margin: 0;
-  background: var(--t-ground);
+  /*
+   * The literal fallback is load-bearing, not belt-and-braces.
+   *
+   * `var(--t-ground)` with nothing to fall back to is **invalid at computed-value time** when
+   * the property does not resolve, and an invalid background is not a wrong colour — it is
+   * `transparent`. On WebKit at `/` that is exactly what happened: `--t-ground` reads
+   * `#0B0E12` on `:root` and empty on `body`, so the root console rendered its near-white
+   * ink (`#f2f5f8`) on the white canvas underneath. Contrast 1.09 — the masthead was
+   * invisible on an iPhone, on the live public front door, while `/terminal/` was fine on the
+   * same browser and `/` was fine on Chromium.
+   *
+   * This file already carries one account of this exact failure, from when the declaration
+   * lived inside `.terminal`: "resolved to nothing at all: not a wrong colour, no colour,
+   * silently". Same trap, second time, found by axe on WebKit rather than by reading.
+   */
+  background: var(--t-ground, #0B0E12);
 }
 
 .terminal * { box-sizing: border-box; }

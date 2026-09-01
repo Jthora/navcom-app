@@ -99,6 +99,32 @@ test.describe('the root console — search works with nothing set up', () => {
   });
 });
 
+test.describe('the ground under the console', () => {
+  /*
+   * Runs on every project, deliberately, because the engine is the variable.
+   *
+   * The existing white-margin test is desktop-Chromium-only and could not see this: on
+   * WebKit `body { background: var(--t-ground) }` produced **transparent**, not a wrong
+   * colour. `--t-ground` reads `#0B0E12` on `:root` and empty on `body` there, so the
+   * declaration was invalid at computed-value time and the console painted its near-white
+   * ink on the white canvas underneath — contrast 1.09, masthead invisible, on the live
+   * public front door of an iPhone. `/terminal/` was fine on the same browser, and `/` was
+   * fine on Chromium, which is why nothing caught it.
+   *
+   * The fix is a literal fallback in the `var()`. This asserts the outcome rather than the
+   * stylesheet, because the stylesheet was syntactically fine both before and after.
+   */
+  for (const path of ['/', '/terminal/']) {
+    test(`is painted at ${path}, not borrowed from whatever is underneath`, async ({ page }) => {
+      await blankDevice(page);
+      await open(page, path);
+      const bg = await page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+      expect(bg, `${path} has no ground of its own`).not.toBe('rgba(0, 0, 0, 0)');
+      expect(bg, `${path} is rendering on white`).not.toMatch(/255,\s*255,\s*255/);
+    });
+  }
+});
+
 test.describe('the fusion — Com reacts to what Nav is looking at', () => {
   test('picking a region changes the Network panel from network-wide to that region\'s own figures', async ({ page }) => {
     await blankDevice(page);
