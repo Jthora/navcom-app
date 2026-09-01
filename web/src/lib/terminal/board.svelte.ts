@@ -226,14 +226,32 @@ export const board = {
     if (!identity || !address || urls.length === 0) return;
 
     closer?.close();
-    closer = pool().subscribeMany(
-      urls,
-      [
-        { kinds: [KIND_SIGNAL, KIND_DISTRESS], '#p': [address] },
+    /*
+     * `subscribeMap`, not `subscribeMany` with an array.
+     *
+     * `subscribeMany(relays, filter, params)` takes **one** filter. This passed two in an
+     * array with an `as never` cast, and the cast is the whole story: the array was wrapped
+     * again and the REQ went out as `["REQ", id, [f1, f2]]` -- a filter that is itself an
+     * array, so it has no `kinds`, no `authors` and no `#`-prefixed keys, and every check a
+     * relay makes is skipped. It matched everything.
+     *
+     * That is why the board's filter could be broken with no effect, and why the first test
+     * written for it passed against a deliberately corrupted `#p` and had to be withdrawn.
+     * The subscription was not narrow-and-wrong, it was absent: this device was asking a
+     * volunteer relay for its entire firehose, on the phone `pool.ts` opens exactly one
+     * socket to save.
+     *
+     * Nothing downstream was fooled -- `readSignal` only keeps what decrypts to this
+     * operator -- so the cost was bandwidth, battery and a stranger's relay rather than a
+     * wrong board.
+     */
+    closer = pool().subscribeMap(
+      urls.flatMap((url) => [
+        { url, filter: { kinds: [KIND_SIGNAL, KIND_DISTRESS], '#p': [address] } },
         // This watch's own published state, so a holder can tell whether they are still the
         // one the world is being told about.
-        { kinds: [KIND_WATCH_STATE], authors: [address] }
-      ] as never,
+        { url, filter: { kinds: [KIND_WATCH_STATE], authors: [address] } }
+      ]),
       {
         onevent: (event: Event) => {
           if (event.kind === KIND_WATCH_STATE) {

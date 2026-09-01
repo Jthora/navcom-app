@@ -32,6 +32,16 @@ vi.mock('./pool', () => ({
       deliver = p.onevent;
       return { close: () => {} };
     },
+    /*
+     * The board uses `subscribeMap`, because `subscribeMany` takes one filter and the board
+     * needs two — passing an array to it was the defect that let a corrupted `#p` filter go
+     * unnoticed for weeks. This stub still ignores filters, which is exactly why the real
+     * proof lives in `e2e/real-relay.spec.ts` against a relay that honours them.
+     */
+    subscribeMap: (_r: unknown, p: { onevent: (e: Event) => void }) => {
+      deliver = p.onevent;
+      return { close: () => {} };
+    },
     publish: () =>
       relaysUp ? [Promise.resolve('ok')] : [Promise.reject(new Error('no relay accepted'))]
   })

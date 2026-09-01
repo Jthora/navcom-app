@@ -262,34 +262,33 @@ itself:
   What is still open is the half that needs a body: **two phones, two networks, a relay
   somebody else runs.** Public relays differ in filter handling, rate limits and retention.
   Build order `0.2` stands
-- **One of ten subscription filters.** Following directly from the lesson above, and
-  written out rather than left as a feeling. Nine have now run against a filter-honouring
-  relay. **One has not, and it is the one that resisted rather than the one nobody got to:**
+- ~~**Ten of ten subscription filters.**~~ **Closed**, and the last one was not a gap in the
+  tests but a defect in the client. Kept in full because the shape of it is the lesson:
 
   | | Filter | If it is wrong |
   |---|---|---|
   | ~~`transport.ts` `waitForResponse`~~ | `kinds`, `authors`, `#p`, `#e` | **Done.** All four terms broken one at a time, each breaking a test. `#e` is proven by an *absence* assertion — a response to a different signal must not be read as the answer to this one — and dropping the term makes that test fail, so the absence is examined rather than assumed |
   | ~~`relay.ts` watch state~~ | `kinds`, `authors`, `limit` | **Done.** `authors` broken and the test failed — a terminal reading Dark while a watch is on station is invariant 4 failing quietly |
-  | `board.svelte.ts` | `kinds`, `#p` | Whoever holds the watch does not see a signal arrive. **A test for this was written and withdrawn**: it passed with the filter deliberately broken — marker verified in the built artifact — and the local relay was ruled out, since it tags each event with the matching subscription's own id. Something delivers that event and nothing here explains what. Until that is understood, this filter is unverified and a green test for it would be worse than none |
+  | ~~`board.svelte.ts`~~ | `kinds`, `#p` | **Done, and it was broken.** `subscribeMany(relays, filter, params)` takes **one** filter; the board passed two in an array behind an `as never` cast, so the array was wrapped again and the REQ went out as `["REQ", id, [f1, f2]]` — a filter that is itself an array. It has no `kinds`, no `authors` and no `#`-prefixed keys, so every check a relay makes is skipped and it **matches everything**. The board was not subscribing narrowly and wrongly, it was not filtering at all: this device asked a volunteer relay for its entire firehose, on the phone `pool.ts` opens exactly one socket to spare. Nothing downstream was fooled — `readSignal` keeps only what decrypts to this operator — so the cost was bandwidth, battery and somebody else's relay rather than a wrong board. **The withdrawn test was reporting the truth**, and binning it rather than trusting it is the only reason this was ever found |
   | ~~`standing.ts` revocations~~ | `kinds`, `authors` | **Done.** `authors` broken and the test failed. The first version of the test opened the standing screen and failed too — for a different reason, because `standing.start()` runs from `/terminal/` so a holder who never opens that screen still learns. A broken test that reads exactly like a broken filter |
   | ~~`invites.svelte.ts`~~ | `kinds`, `#p` | **Done.** `#p` broken and the test failed. The failure it guards is unobservable from either side: declining is deliberately silent, so an invite that never arrives is indistinguishable from one that was ignored |
   | ~~`pq.svelte.ts`~~ | `kinds`, `authors` | **Done.** `authors` broken and the test failed. The only one of the ten whose failure is a false *pessimism* rather than a false reassurance — which is exactly why it needed driving, since a broken filter here is indistinguishable from the honest starting state |
   | ~~`corrections.svelte.ts`~~ | `kinds`, `#d` | **Done.** The only `#d` filter in the client; broken and the test failed. Without it the whole correction loop is a no-op that looks like it is working |
   | ~~`places.svelte.ts`~~ | `kinds`, `#g` | **Done.** The only `#g` in the client; broken deliberately and the test failed |
 
-  The board is *correct as far as anything has checked*, and nothing has checked the part
-  that matters. The stub it runs against ignores filters, so it could be wrong in every term
-  and stay green.
+  The local relay now **refuses a malformed filter rather than matching everything on it**.
+  That guard is what would have saved the weeks: a test relay that quietly matches anything
+  for a request it cannot parse turns a client bug into a passing test, which is exactly what
+  happened. Matching nothing makes the test fail, which is the point of having one.
 
   **`waitForResponse` was done first** — the return leg of every signal including `Distress`.
   Watch state and corrections followed, chosen by consequence and because each is a distinct
   filter *shape*: `authors` narrows by who wrote a thing, `#d` by which record it concerns, and
-  a relay ignoring either looks identical to one agreeing. The last three were done together
-  and were mechanical, as predicted — publish to the local relay from Node, assert the screen,
-  then break each term and watch it fail. All three broken at once and all three tests failed,
-  with the marker confirmed in the built chunks first, because a break that never shipped is
-  how the board test came to pass against a filter it was not using. **One of the ten remains,
-  and it is the board** — known to resist a naive test rather than merely to lack one
+  a relay ignoring either looks identical to one agreeing. The last three were mechanical, as
+  predicted. The board was not, and the difference is the whole argument for doing this at
+  all: **nine filters were verified and found correct; the tenth was verified and found
+  absent.** It had passed every test it ever had, and the only thing that ever contradicted it
+  was a test that refused to go green honestly
 - **The daemon and the executor together.** Both subscribe to `20911`; that they do not
   confuse a client is reasoned, not observed
 - **Carrying it for a night.** Nothing here finds text that is too long to read in the cold,

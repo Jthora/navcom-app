@@ -50,6 +50,24 @@ interface Event {
 
 /** NIP-01 filter matching, plainly. Deliberately not clever. */
 function matches(filter: Filter, event: Event): boolean {
+  /*
+   * A filter that is not a plain object matches nothing, loudly.
+   *
+   * This is the guard that would have saved weeks. `board.svelte.ts` passed an array of two
+   * filters to `subscribeMany`, which takes one, so the REQ went out as
+   * `["REQ", id, [f1, f2]]` -- a *filter that is an array*. Every check below reads a named
+   * property, an array has none of them, and the loop over `#`-prefixed keys sees "0" and
+   * "1". So it fell through every test and returned true: it matched everything, and the
+   * board's filter could be corrupted with no observable effect.
+   *
+   * A test relay that quietly matches everything for a malformed request is worse than one
+   * that refuses, because it turns a client bug into a passing test. Matching nothing makes
+   * the test fail, which is the point.
+   */
+  if (typeof filter !== 'object' || filter === null || Array.isArray(filter)) {
+    console.error('[relay] malformed filter, matching nothing: ' + JSON.stringify(filter));
+    return false;
+  }
   if (filter.ids && !filter.ids.includes(event.id)) return false;
   if (filter.authors && !filter.authors.includes(event.pubkey)) return false;
   if (filter.kinds && !filter.kinds.includes(event.kind)) return false;

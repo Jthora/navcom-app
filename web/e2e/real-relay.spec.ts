@@ -638,3 +638,86 @@ test.describe('the last three filters, against a relay that honours them', () =>
     await context.close();
   });
 });
+
+test.describe('the board, the one filter that resisted a naive test', () => {
+  /**
+   * The tenth and last.
+   *
+   * A previous attempt at this was written and **withdrawn** rather than shipped: it passed
+   * with the `#p` term deliberately broken. Everything that could explain that has since been
+   * ruled out by reading rather than guessed at — the local relay routes each event by the
+   * matching subscription's own id and honours `#`-tag terms (`relay-server.ts`); the board's
+   * second filter is `kinds: [10910]` and cannot match a `20910`; and `apply()` — the only
+   * writer of board entries — is called from exactly one place, the subscription's `onevent`.
+   *
+   * The addressing also reconciles, which it did not appear to before: `sendSignal` tags
+   * `['p', watchtower.pubkey]` and seals the payload to `watchtower.holders`. So the `#p`
+   * term on the *watch* key and decryption with the *operator's own* key are both correct,
+   * and are answering two different questions.
+   *
+   * Which leaves the break itself as the thing that most likely never reached the running
+   * filter. So this one is falsified **first**: broken, watched to fail, and only then
+   * restored. A green that has not been earned that way is what got the last attempt binned.
+   */
+  async function publish(event: unknown) {
+    const { WebSocket } = await import('ws');
+    const socket = new WebSocket(relay.url);
+    await new Promise<void>((resolve, reject) => {
+      socket.once('open', resolve);
+      socket.once('error', reject);
+    });
+    socket.send(JSON.stringify(['EVENT', event]));
+    await new Promise((r) => setTimeout(r, 250));
+    socket.close();
+  }
+
+  test('a signal addressed to the watch reaches the phone holding it', async ({ browser }: { browser: Browser }) => {
+    const { finalizeEvent, generateSecretKey, getPublicKey } = await import('nostr-tools/pure');
+    const { sealToGroup, KIND_SIGNAL } = await import('@navcom/core');
+
+    const watchHex = 'd'.repeat(63) + '7';
+    const watchSecret = Uint8Array.from((watchHex.match(/../g) ?? []).map((b) => parseInt(b, 16)));
+    const watchPub = getPublicKey(watchSecret);
+    // This device's own operator key. A squad seals to holders, and the board decrypts with
+    // the operator's key, not the watch's.
+    const holder = await pubkeyOf(TEST_SECRET);
+
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await liveDevice(page, relay.url, {
+      callsign: 'Vale',
+      watchSecret: watchHex,
+      watchtower: { pubkey: watchPub, relays: [relay.url], holders: [holder] }
+    });
+    await open(page, '/terminal/watch/');
+
+    // Empty is the honest starting state, and it is what makes the transition below mean
+    // something: nothing but the subscription can populate this.
+    await expect(page.locator('[data-empty-board]')).toBeVisible({ timeout: 20_000 });
+
+    const wren = generateSecretKey();
+    await publish(
+      finalizeEvent(
+        {
+          kind: KIND_SIGNAL,
+          created_at: Math.floor(Date.now() / 1000),
+          tags: [['p', watchPub], ['t', 'on-station']],
+          content: sealToGroup(wren, [holder], {
+            callsign: 'Wren',
+            area: 'Downtown',
+            expected_duration: 7200,
+            routine_interval: null,
+            share_position: false,
+            position: null
+          })
+        },
+        wren
+      )
+    );
+
+    const row = page.locator('.nc-floor-row');
+    await expect(row).toHaveCount(1, { timeout: 25_000 });
+    await expect(row).toContainText('Wren');
+    await context.close();
+  });
+});
