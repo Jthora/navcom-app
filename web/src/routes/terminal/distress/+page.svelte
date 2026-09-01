@@ -195,6 +195,21 @@
       <strong>There is nowhere to send this.</strong> Distress goes to a watch and you have
       not added one, so holding the button would raise nobody.
     </p>
+    <p class="cost">
+      <!--
+        Peers named, because "raise nobody" is true and the person most likely to read past it
+        is the one who has paired with somebody. Pairing is mutual *visibility* — a peer sees
+        that you are out and that you are past the time you gave. It is not a channel, and
+        there is no way to reach one deliberately: the app holds no number for them.
+
+        Stated whether or not this operator has peers yet, so the limit is known before
+        somebody pairs rather than discovered after — the same reason unpairing is explained
+        above the pairing form.
+      -->
+      <strong>Peers you have paired with are not told either.</strong> Pairing lets somebody
+      see that you are out and that you are past the time you gave — it does not carry this,
+      and nothing here can reach them for you.
+    </p>
     {#if !contact}
       <p class="cost">
         Nothing on this phone can reach anyone for you.

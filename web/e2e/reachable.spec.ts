@@ -1685,3 +1685,50 @@ test.describe('finding which of these is closest', () => {
     await expect(page.locator('[data-nearest-on]')).toHaveCount(0);
   });
 });
+
+test.describe('what a Distress reaches when there is no watch', () => {
+  /**
+   * A belief gap, not a broken mechanism.
+   *
+   * `sendDistress` is addressed to the Watchtower and nothing else — it never reaches paired
+   * peers, and `Assist` requires a watch. The screen already said "holding the button would
+   * raise nobody", which is true and which the operator most likely to read past is exactly
+   * the one who has paired with somebody: they have a person on their screen, and no reason
+   * to know that pairing is visibility rather than a channel.
+   *
+   * Invariant 4 is about belief. This is the belief.
+   */
+  test('says peers are not told either, and says it to somebody who has one', async ({ page }) => {
+    await seedDevice(page, {
+      ...OUT,
+      peers: [{ pubkey: 'c'.repeat(64), callsign: 'Raven', since: 1 }]
+    });
+    await open(page, '/terminal/distress/');
+
+    const notice = page.locator('[data-no-watch]');
+    await expect(notice).toBeVisible();
+    await expect(notice).toContainText(/raise nobody/i);
+    await expect(notice).toContainText(/peers you have paired with are not told/i);
+    // And why, rather than only that: pairing is visibility, and there is no channel back.
+    await expect(notice).toContainText(/nothing here can reach them for you/i);
+  });
+
+  test('and says it before anybody has paired, not after', async ({ page }) => {
+    // The same reason unpairing is explained above the pairing form: a limit learned after
+    // you relied on it is a limit that already cost something.
+    await seedDevice(page, OUT);
+    await open(page, '/terminal/distress/');
+    await expect(page.locator('[data-no-watch]')).toContainText(/peers you have paired with are not told/i);
+  });
+
+  test('and none of it appears once a watch exists', async ({ page }) => {
+    // The guard against the notice becoming permanent furniture: with somewhere to send it,
+    // this whole section is wrong and must be gone.
+    await seedDevice(page, {
+      ...OUT,
+      watchtower: { pubkey: 'b'.repeat(64), relays: ['wss://relay.example'] }
+    });
+    await open(page, '/terminal/distress/');
+    await expect(page.locator('[data-no-watch]')).toHaveCount(0);
+  });
+});

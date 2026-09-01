@@ -122,6 +122,38 @@ tasks anyone; nothing judges anyone.
 **Instead:** the log, reviewable by the people it concerns, so an argument at least has
 shared facts.
 
+### How old anybody is
+
+Some people in this community started young. An operator five years in can be seventeen, and
+the move most likely to matter to them — from a safe neighbourhood and litter to a patrol
+with some chance of trouble in it — happens at exactly the age where it matters most.
+
+**NavCom cannot know, and never will.** [`identity.md`](product/identity.md) enumerates what
+does not exist anywhere in the system, and date of birth is on that list beside legal name and
+home location. There is no account, no verification step, and nothing to attach an age to. So
+every safety affordance here is **age-blind by construction** — not by omission.
+
+That forecloses the whole class of things a conventional design would reach for: an age gate,
+a different Distress ladder for a minor, a parental view, a warning that fires below some
+number. None of them is buildable without collecting the one field invariant 8 exists to
+refuse, and collecting it would put a minor's date of birth on a device that can be taken —
+which is worse than not knowing.
+
+**Cost, stated plainly:** a seventeen-year-old and a forty-year-old get the same screens, the
+same ladder, and the same silence. If age should change what this app does, it cannot.
+
+**Instead:** the things that happen to help are already there for other reasons, and it is
+worth knowing they are load-bearing for this case too. The contact rung is device-initiated,
+so the parent's number a young operator is most likely to enter **stays on their phone** and
+reaches no node — that is `declined.md`'s own refusal of node-held contacts, arriving at the
+right answer for a case nobody modelled. And the capability receipt states what is behind you
+*before* every sign-on rather than once at setup, which is the closest this design comes to
+saying "you are stepping up" without presuming to judge that anyone is.
+
+Whether somebody that age should be doing this is a question for the people around them.
+Software that pretended to answer it would be claiming an authority this project spends
+`positioning.md` disclaiming.
+
 ### Whether an agent is trustworthy
 
 Unverifiability is answered by **limits, not better tests**. A sufficiently good performance
