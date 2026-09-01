@@ -7,6 +7,7 @@
    * this system.
    */
   import { onMount } from 'svelte';
+  import { readClock, type ClockRead } from '$lib/terminal/clock';
   import { SCOPES, ageInDays, revoke, type Endorsement, type Scope, writeCredential } from '@navcom/core';
   import { StandingError, claim, drop, held, presentable, recordWritten, withdraw, withdrawn, written as writtenCredentials } from '$lib/terminal/standing';
   import { loadIdentity } from '$lib/terminal/identity';
@@ -44,7 +45,18 @@
   let written = $state<string | null>(null);
   let copied = $state(false);
 
+  let { data } = $props();
+  /*
+   * An endorsement carries `at`, taken from this clock with no input from whoever writes it.
+   * Dated behind, it reads as older standing than it is; dated ahead, `FUTURE_TOLERANCE_DAYS`
+   * makes it unweighable. Either way the person receiving it is defended and the person
+   * writing it is never told — and this is the one write on this screen that another human
+   * relies on.
+   */
+  let clock = $state<ClockRead>({ behind: false, behindSeconds: 0, behindDays: 0 });
+
   onMount(() => {
+    clock = readClock(data?.built, Date.now());
     mineWritten = writtenCredentials();
     callsign = loadIdentity()?.callsign ?? null;
     mine = held();
@@ -293,6 +305,14 @@
     <p class="cost">
       Pick what you can honestly say.
     </p>
+    {#if clock.behind}
+      <p class="error" data-clock-dates-this>
+        This phone's clock is <strong>{clock.behindDays > 0 ? `${clock.behindDays} days` : 'under a day'}
+        behind</strong>, and an endorsement carries its date. What you write would read as
+        older standing than it is, to somebody deciding whether to rely on you. Turn on
+        automatic date and time first.
+      </p>
+    {/if}
     <div class="row">
       {#each SCOPES as scope (scope)}
         <button class="drop" onclick={() => write(scope)}>{label(scope)}</button>

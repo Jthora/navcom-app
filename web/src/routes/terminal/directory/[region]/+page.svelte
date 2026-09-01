@@ -661,12 +661,14 @@
                   <input type="checkbox" bind:checked={bridgedFlag} data-bridged-toggle />
                   Not fully sure about this
                 </label>
+                {@render clockDatesThis()}
                 <div class="row">
                   <button class="drop" onclick={() => fix(record.id, correcting!, typed)}>Send</button>
                 </div>
               {/if}
               <button class="drop" onclick={() => { correcting = null; typed = ''; bridgedFlag = false; }}>Back</button>
             {:else if reporting === record.id}
+              {@render clockDatesThis()}
               <div class="row">
                 <button class="drop" onclick={() => report(record.id, 'reported_closed')}>Closed</button>
                 <button class="drop" onclick={() => report(record.id, 'reported_wrong')}>Wrong</button>
@@ -700,6 +702,26 @@
   It is not a banner and it is not a prompt. It sits at the bottom, closed, and says what it
   costs — the same treatment every other contribution control on this screen gets.
 -->
+{#snippet clockDatesThis()}
+  <!--
+    Said where the writing happens, not only on Status.
+    Reading is guarded elsewhere on this screen; this is the other half, and it is the half
+    an operator cannot discover by using the app. `last_verified` on a correction and on a new
+    place is taken from this clock with no input from them, and a newer date beats an older
+    one — so a check made at a door loses to the listing it was written to fix, silently and
+    permanently. The reader is defended by FUTURE_TOLERANCE_DAYS; the writer was not defended
+    by anything.
+  -->
+  {#if clock.behind}
+    <p class="error" data-clock-dates-this>
+      This phone's clock is <strong>{clock.behindDays > 0 ? `${clock.behindDays} days` : 'under a day'}
+      behind</strong>, and what you send carries its date. A newer date beats an older one, so
+      this would lose to the listing you are fixing. Turn on automatic date and time first —
+      it usually corrects within a minute of having signal.
+    </p>
+  {/if}
+{/snippet}
+
 <section class="add">
   {#if !adding}
     <button class="drop" data-add-place onclick={() => { adding = true; addError = null; }}>
@@ -710,6 +732,7 @@
       maintainers, because a place nobody checked can send somebody to a locked door.
     </p>
   {:else}
+    {@render clockDatesThis()}
     <h2>A place that isn't here</h2>
 
     <label for="pl-name">What is it called</label>

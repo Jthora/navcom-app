@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { blankDevice, open } from './device';
+import { blankDevice, open, seedDevice } from './device';
 
 /**
  * A phone whose clock is wrong.
@@ -133,5 +133,62 @@ test.describe('a cached copy opened weeks after it was built', () => {
     await open(page, '/terminal/directory/st-louis/');
     await expect(page.locator('[data-snapshot-age]')).toHaveAttribute('data-snapshot-age', '0');
     await expect(page.locator('section.snapshot')).toContainText(/today/i);
+  });
+});
+
+test.describe('what a wrong clock does to the work an operator sends', () => {
+  /*
+   * The other half of the clock, and the half nobody can discover by using the app.
+   *
+   * `last_verified` on a correction and on a new place, and `at` on an endorsement, are all
+   * taken from this clock with no input from the person writing them. Behind, and a check
+   * made at a door loses to the listing it was written to fix, because a newer date beats an
+   * older one. Ahead, and `FUTURE_TOLERANCE_DAYS` reads it as unweighable. The reader is
+   * defended in both directions; the writer was defended by nothing and told nothing.
+   *
+   * Said at the point of writing rather than only on Status, because that is where somebody
+   * can still act on it.
+   */
+  test('says so before a correction is sent', async ({ page }) => {
+    await blankDevice(page);
+    await clockBehind(page);
+    await open(page, '/terminal/directory/st-louis/');
+
+    await page.locator('[data-report-open]').first().click();
+    const said = page.locator('[data-clock-dates-this]').first();
+    await expect(said).toBeVisible({ timeout: 10_000 });
+    await expect(said).toContainText(/what you send carries its date/i);
+    await expect(said).toContainText(/lose to the listing you are fixing/i);
+  });
+
+  test('and before a place is added', async ({ page }) => {
+    await blankDevice(page);
+    await clockBehind(page);
+    await open(page, '/terminal/directory/st-louis/');
+    await page.locator('[data-add-place]').click();
+    await expect(page.locator('[data-clock-dates-this]').first()).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('and before somebody is vouched for, where another person relies on it', async ({ page }) => {
+    // A callsign, because the vouch section belongs to somebody who has one.
+    await seedDevice(page, { callsign: 'Wren' });
+    await clockBehind(page);
+    await open(page, '/terminal/standing/');
+    const said = page.locator('[data-clock-dates-this]');
+    await expect(said).toBeVisible({ timeout: 10_000 });
+    await expect(said).toContainText(/older standing than it is/i);
+  });
+
+  test('and says none of it on a phone that is fine', async ({ page }) => {
+    // The pair. A warning shown to everybody is the nag this project bans, and would pass
+    // all three assertions above.
+    await blankDevice(page);
+    await open(page, '/terminal/directory/st-louis/');
+    await page.locator('[data-report-open]').first().click();
+    await expect(page.locator('[data-clock-dates-this]')).toHaveCount(0);
+
+    await seedDevice(page, { callsign: 'Wren' });
+    await open(page, '/terminal/standing/');
+    await expect(page.locator('[data-clock-dates-this]')).toHaveCount(0);
   });
 });

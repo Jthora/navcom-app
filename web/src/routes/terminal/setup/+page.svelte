@@ -2,6 +2,7 @@
   import { ConfigError, loadConfig, saveConfig } from '$lib/terminal/config';
   import { ContactError, clearContact, loadContact, saveContact } from '$lib/terminal/contact';
   import { createIdentity, loadIdentity } from '$lib/terminal/identity';
+  import { askToKeep } from '$lib/terminal/persist';
   import { Slot, Readout, Why } from '$lib/components/panel';
   import { onMount } from 'svelte';
 
@@ -41,6 +42,12 @@
       return;
     }
     identity = createIdentity(name);
+    /*
+     * The one moment this is asked. Deliberate, unhurried, and chosen by the operator — the
+     * only kind of moment a browser permission prompt is acceptable in a field tool. Fired
+     * without awaiting, because nothing here waits on a browser policy.
+     */
+    void askToKeep();
   }
 
   function keepContact(event: SubmitEvent) {
