@@ -27,7 +27,8 @@
     "verify": "npm run check && npm run check:data && npm run build && npm run car && npm run pin && npm run announce && npm run test && npm run test:browser && npm run receipt && npm run wellknown && npm run budget && npm run check:secrets",
     "verify:deploy": "npm run check && npm run check:data && npm run build && npm run car && npm run pin && npm run announce && npm run test && npm run receipt && npm run wellknown && npm run budget && npm run check:secrets",
     "test:pin": "node scripts/verify-pin.mjs",
-    "test:relay": "playwright test real-relay.spec.ts --config playwright.relay.config.ts"
+    "test:relay": "playwright test real-relay.spec.ts --config playwright.relay.config.ts",
+    "test:webkit": "playwright test --config playwright.webkit.config.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

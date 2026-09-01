@@ -17,7 +17,19 @@ import { TERMINAL_ROUTES } from '../src/lib/terminal/routes';
 
 const WREN = { callsign: 'Wren' };
 
+
+
 test.describe.configure({ mode: 'serial' });
+
+/*
+ * Chromium only, and the reason is the tooling rather than the app.
+ *
+ * `context.setOffline(true)` is the honest way to cut the network, and **WebKit's driver
+ * crashes on any navigation while it is set** — "WebKit encountered an internal error" out
+ * of `page.goto`. WebKit runs the rest of this suite online without complaint, so this is a
+ * Playwright limitation. `offline-webkit.spec.ts` covers what can be covered there.
+ */
+test.skip(() => test.info().project.name === 'iphone', 'WebKit driver crashes on navigation while offline');
 
 test('every terminal screen loads with the network off', async ({ page, context }) => {
   await seedDevice(page, WREN);

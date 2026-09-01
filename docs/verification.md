@@ -293,8 +293,18 @@ itself:
   confuse a client is reasoned, not observed
 - **Carrying it for a night.** Nothing here finds text that is too long to read in the cold,
   a flow with a step too many, or a control in the wrong place
-- **iPhone.** Chromium is not WebKit, and the two differ most in exactly the places this app
-  leans on — service workers, storage eviction, and `BarcodeDetector`.
+- **iPhone, in part.** Chromium is not WebKit, and the two differ most in exactly the places
+  this app leans on — service workers, storage eviction, and `BarcodeDetector`. **The service
+  worker half is now closed** (`npm run test:webkit`): on WebKit the worker controls the page
+  and Cache Storage holds every terminal route with the network cut, checked against
+  `caches.match` rather than a status code, because the worker answers an uncached path with
+  an offline fallback that is also a 200.
+
+  What it does not prove, and nothing available here can: **WebKit's own navigation path into
+  that cache.** `context.setOffline(true)` plus `page.goto` crashes the WebKit driver
+  outright, and aborting requests instead preempts the worker for navigations specifically.
+  So the cache and the worker are proven on WebKit; the browser's route from a tapped link to
+  them is inferred. Storage eviction and `BarcodeDetector` are untouched.
 
   **Looked at once, 2026-09-01**, because the standing policy was *"revisit if a
   Safari-specific failure ever appears"* — a condition nothing could satisfy while nobody had
