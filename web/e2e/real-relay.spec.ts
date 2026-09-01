@@ -510,3 +510,131 @@ test.describe('the two filter shapes still untested', () => {
     await context.close();
   });
 });
+
+test.describe('the last three filters, against a relay that honours them', () => {
+  /**
+   * The three `verification.md` listed as reusing a proven shape — `standing.ts` and `pq` are
+   * `authors`, `invites` is `#p`.
+   *
+   * Reusing a shape is a reason to do them last, not a reason to skip them. The shape being
+   * proven says a relay honours `authors` somewhere; it says nothing about whether *this*
+   * subscription names the right authors. Every one of the three is seeded here with the
+   * event **absent**, so the assertion is that it arrived over the wire and changed the
+   * screen — not that a fixture was rendered.
+   */
+  async function publish(event: unknown) {
+    const { WebSocket } = await import('ws');
+    const socket = new WebSocket(relay.url);
+    await new Promise<void>((resolve, reject) => {
+      socket.once('open', resolve);
+      socket.once('error', reject);
+    });
+    socket.send(JSON.stringify(['EVENT', event]));
+    await new Promise((r) => setTimeout(r, 250));
+    socket.close();
+  }
+
+  const mine = () => Uint8Array.from((TEST_SECRET.match(/../g) ?? []).map((b) => parseInt(b, 16)));
+
+  test('a withdrawn endorsement reaches the operator holding it', async ({ browser }: { browser: Browser }) => {
+    /*
+     * `standing.ts` subscribes `{ kinds: [30914], authors: endorsers }`. If those authors are
+     * wrong the withdrawal never arrives, and the consequence is not cosmetic: standing is
+     * the gate on taking the watch, so an endorsement somebody has taken back goes on
+     * opening it. Operators would sign on to a board held by somebody no longer vouched for.
+     */
+    const { generateSecretKey } = await import('nostr-tools/pure');
+    const { writeCredential, revoke, claimCredential } = await import('@navcom/core');
+
+    const raven = generateSecretKey();
+    const credential = writeCredential(
+      raven, { scope: 'can-take-watch', endorser: 'Raven', at: '2026-08-01' }, 1_800_000_000
+    );
+    const claim = claimCredential(mine(), credential, 1_800_000_001);
+
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await liveDevice(page, relay.url, {
+      callsign: 'Wren',
+      // The endorsement is held; the withdrawal is deliberately not seeded.
+      accruing: { endorsements: [{ credential, claim }] }
+    });
+
+    /*
+     * Status, not the standing screen. `standing.start()` is called from `/terminal/` on
+     * purpose -- "a holder who never opens that screen must still stop relying on an
+     * endorsement somebody has taken back" -- so the standing screen never subscribes at all.
+     * The first version of this test opened it and failed, which read exactly like a broken
+     * filter and was a broken test.
+     */
+    await open(page, '/terminal/');
+    await expect(page.locator('[data-withdrawn]')).toHaveCount(0);
+
+    const withdrawal = revoke(raven, credential.id, 1_800_009_999);
+    await publish(withdrawal);
+
+    // Waiting on the event's own id, so this does not depend on a storage key name. It is
+    // the wait; the assertion below is the thing a person actually sees.
+    await page.waitForFunction(
+      (id) => JSON.stringify(localStorage).includes(id as string),
+      withdrawal.id,
+      { timeout: 25_000 }
+    );
+
+    await open(page, '/terminal/standing/');
+    const withdrawn = page.locator('[data-withdrawn]');
+    await expect(withdrawn).toBeVisible({ timeout: 15_000 });
+    await expect(withdrawn).toContainText('Raven');
+    await context.close();
+  });
+
+  test('an invite reaches the person it names', async ({ browser }: { browser: Browser }) => {
+    /*
+     * `invites.svelte.ts` subscribes `{ kinds: [1910], '#p': addresses }`. Declining is
+     * deliberately silent — there is no refusal and no read receipt — so an invite that never
+     * arrives is indistinguishable, from the sender's side, from one that was ignored. The
+     * failure is unobservable by either party, which is why it needs observing here.
+     */
+    const { generateSecretKey, getPublicKey } = await import('nostr-tools/pure');
+    const { buildInvite } = await import('@navcom/core');
+    const raven = generateSecretKey();
+
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await liveDevice(page, relay.url, { callsign: 'Wren' });
+    await open(page, '/terminal/peers/');
+    await expect(page.getByText('Raven')).toHaveCount(0);
+
+    await publish(buildInvite(raven, getPublicKey(mine()), { callsign: 'Raven' }, 1_800_000_000));
+
+    await expect(page.getByText('Raven').first()).toBeVisible({ timeout: 25_000 });
+    await context.close();
+  });
+
+  test("a peer's key bundle reaches the operator and lifts the cover notice", async ({ browser }: { browser: Browser }) => {
+    /*
+     * `pq.svelte.ts` subscribes `{ kinds: [10912], authors: wanted }`. Wrong authors and the
+     * bundle never lands, so the Status screen reports "Classical only" for a peer who is in
+     * fact covered — the mildest of the three, and the only one whose failure is a false
+     * *pessimism* rather than a false reassurance. Worth having for exactly that reason: it
+     * is the one where a broken filter is indistinguishable from the honest starting state.
+     */
+    const { generateSecretKey, getPublicKey } = await import('nostr-tools/pure');
+    const { buildKeyBundle } = await import('@navcom/core');
+    const raven = generateSecretKey();
+
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await liveDevice(page, relay.url, {
+      callsign: 'Wren',
+      peers: [{ pubkey: getPublicKey(raven), callsign: 'Raven', since: 0 }]
+    });
+    await open(page, '/terminal/');
+    await expect(page.getByText(/classical only/i)).toBeVisible({ timeout: 20_000 });
+
+    await publish(buildKeyBundle(raven, Math.floor(Date.now() / 1000)));
+
+    await expect(page.getByText(/classical only/i)).toHaveCount(0, { timeout: 25_000 });
+    await context.close();
+  });
+});
