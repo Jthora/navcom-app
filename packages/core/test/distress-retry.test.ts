@@ -100,13 +100,22 @@ function fakePool(plan: { ackFor: number; deliverOn: number }) {
       };
     },
     close() {},
+    /** Delivers an ack for a given attempt at a moment of the test's choosing. */
+    deliverAckFor(attempt: number) {
+      const target = sent[attempt - 1];
+      if (target) deliver(humanAck(target.id));
+    },
     get attempts() {
       return sent.length;
     }
   };
 }
 
-async function run(pool: ReturnType<typeof fakePool>, stopAfterMs: number) {
+async function run(
+  pool: ReturnType<typeof fakePool>,
+  stopAfterMs: number,
+  onSleep?: (pool: ReturnType<typeof fakePool>) => void
+) {
   const controller = new AbortController();
   const phases: string[] = [];
   let clock = 0;
@@ -125,6 +134,8 @@ async function run(pool: ReturnType<typeof fakePool>, stopAfterMs: number) {
       localExhaustedAfterMs: 600_000,
       clock: () => clock,
       sleep: async (ms: number) => {
+        // The backoff gap: nothing is subscribed here except the persistent listener.
+        onSleep?.(pool);
         clock += ms;
         if (clock > stopAfterMs) controller.abort();
       },
@@ -170,6 +181,32 @@ describe('an acknowledgement that arrives after the client has retried', () => {
 
     expect(out.attempts, 'the loop never retried, so nothing was being tested').toBeGreaterThan(1);
     expect(out.acknowledged, 'a human answered and the operator was not told').toBe(true);
+  });
+
+  it('is seen even when it lands in the gap between attempts, where nothing used to listen', async () => {
+    /*
+     * The other half, and the larger one.
+     *
+     * The per-attempt wait listens for `ackWindowMs` and then the loop sleeps for the
+     * backoff — twenty seconds of listening in every eighty once the backoff has grown.
+     * **`20912` is ephemeral, so relays do not store it**: an acknowledgement published
+     * while nothing is subscribed is not delayed, it is gone. Roughly three quarters of the
+     * time a human could answer in had no listener at all, and the executor publishes its
+     * ack exactly once, on the ladder's transition.
+     *
+     * Delivered here from inside the sleep, so the per-attempt subscription is provably
+     * closed and only the Distress-long listener can catch it.
+     */
+    let delivered = false;
+    const pool = fakePool({ ackFor: 99, deliverOn: 99 });
+    const out = await run(pool, 30_000, (p) => {
+      if (delivered || p.attempts < 1) return;
+      delivered = true;
+      p.deliverAckFor(1);
+    });
+
+    expect(delivered, 'the ack was never delivered, so nothing was tested').toBe(true);
+    expect(out.acknowledged, 'a human answered between attempts and was not heard').toBe(true);
   });
 
   it('and one that lands several retries later still reaches the operator', async () => {

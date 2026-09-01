@@ -273,8 +273,61 @@ export async function sendDistressUntilAcknowledged(
   const outstanding: Event[] = [];
   const OUTSTANDING = 64;
 
+  /**
+   * One subscription, open for the whole `Distress`, beside the per-attempt one.
+   *
+   * The per-attempt wait listens for `ackWindowMs` and then the loop sleeps for the backoff
+   * — twenty seconds of listening in every eighty at steady state. **Responses are ephemeral
+   * (`20912`), so relays do not store them**: an acknowledgement published while nothing is
+   * subscribed is not delayed, it is gone. Roughly three quarters of the window a human could
+   * answer in had no listener at all, and the executor publishes an ack exactly once, on the
+   * ladder's transition.
+   *
+   * The filter is deliberately wider than the per-attempt one and the narrowing happens in
+   * the handler instead, against the ids actually outstanding. A filter cannot be widened
+   * after it is opened, and this file's own history says the rest: what lives in a filter is
+   * untested until it runs against a real relay, and what lives in a handler can be tested
+   * anywhere.
+   */
+  let latched: ResponsePayload | null = null;
+  let persistent: { close(): void } | null = null;
+  try {
+    persistent = pool.subscribeMany(
+      relays,
+      { kinds: [KIND_RESPONSE], authors: [watchtower.pubkey], '#p': [ourPubkey] },
+      {
+        onevent(event) {
+          if (latched || !verifyEvent(event)) return;
+          const answers = event.tags.filter((t) => t[0] === 'e').map((t) => t[1]);
+          if (!outstanding.some((o) => answers.includes(o.id))) return;
+          try {
+            const payload = open<ResponsePayload>(secret, watchtower.pubkey, event.content);
+            // Only a human closes a Distress [invariant 5]. An agent seen here changes
+            // nothing; the per-attempt path already reports it when it lands in a window.
+            if (payload.responder?.kind === 'human') latched = payload;
+          } catch {
+            // Not for us.
+          }
+        }
+      }
+    );
+  } catch {
+    // A subscription that cannot be opened must not stop the sending. The per-attempt path
+    // is unchanged and still reports everything it always did.
+    persistent = null;
+  }
+
+  /** Closes the Distress if a human answered while nothing else was listening. */
+  const answered = (): ResponsePayload | null => latched;
+
+  try {
   for (;;) {
     if (opts.signal?.aborted) throw new Error('Distress cancelled by the operator');
+    const early = answered();
+    if (early) {
+      report({ phase: 'acknowledged', response: early });
+      return early;
+    }
     attempt++;
 
     report({ phase: 'sending', attempt });
@@ -317,5 +370,16 @@ export async function sendDistressUntilAcknowledged(
 
     await sleep(backoff);
     backoff = Math.min(backoff * 2, maxBackoff);
+
+    // The gap is exactly where an ephemeral response goes unheard, so it is checked on the
+    // way out of it as well as on the way in.
+    const late = answered();
+    if (late) {
+      report({ phase: 'acknowledged', response: late });
+      return late;
+    }
+  }
+  } finally {
+    persistent?.close();
   }
 }

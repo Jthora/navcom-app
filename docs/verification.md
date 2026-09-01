@@ -308,10 +308,20 @@ itself:
   filter. `test/distress-retry.test.ts` matches `#e` the way a relay does, and has a control
   case so a red result cannot be the harness.
 
-  Fixed by listening for a response to **any** signal the Distress has sent, which closes both
-  holes at once: a late answer is accepted whichever id it names, and one published during a
-  gap is served from the relay's store when the next subscription opens. Capped at 64 ids,
-  because a relay filter is not unbounded
+  Fixed in two parts, because the first commit's account of the second hole was **wrong** and
+  is corrected here. Listening for a response to *any* signal the Distress has sent fixes the
+  late-answer case, and is capped at 64 ids because a relay filter is not unbounded. It does
+  **not** fix the gap: `20912` is ephemeral, so relays do not store responses, and an
+  acknowledgement published while nothing is subscribed is not delayed — it is gone. There is
+  no store to serve it from.
+
+  So the gap needed its own fix: one subscription open for the whole Distress, beside the
+  per-attempt one. At steady state the per-attempt wait listens twenty seconds in every
+  eighty, so roughly **three quarters of the time a human could answer in had no listener at
+  all**, and the executor publishes its ack exactly once, on the ladder's transition. The
+  persistent filter is deliberately wider and the narrowing happens in the handler against the
+  ids actually outstanding — a filter cannot be widened after it is opened, and what lives in
+  a handler can be tested anywhere
 - **Carrying it for a night.** Nothing here finds text that is too long to read in the cold,
   a flow with a step too many, or a control in the wrong place
 - ~~**iPhone.**~~ **Mostly closed, and it found something.** Chromium is not WebKit, and the
