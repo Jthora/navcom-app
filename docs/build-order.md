@@ -1044,6 +1044,7 @@ says so about itself.
 | | Blocks |
 |---|---|
 | Node service language for the box | Session 1 — TypeScript unless there's a reason |
+| Whether to call `navigator.storage.persist()` | Nothing, but it is the device floor's live risk. The app never asks the browser to keep its data, and `delivery.md` already names eviction as the thing that decides whether the cached directory is there at 2am. Chrome grants it silently on an installed PWA; **Firefox shows a permission prompt**, and an unexpected prompt on a field terminal is the banner-shaped intrusion this project bans everywhere else. Read-only `persisted()` never prompts and could report the state honestly instead, at the cost of one more thing on a screen. Not taken unilaterally — the trade is a judgement about whose 2am matters more |
 
 ## The seeding rule
 

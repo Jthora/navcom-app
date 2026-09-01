@@ -96,6 +96,33 @@ export interface Capability {
 
 export const CAPABILITIES: Capability[] = [
   {
+    /*
+     * The Status screen was the one screen no capability declared.
+     *
+     * Nineteen were in this manifest and the app's own home was not -- the screen every
+     * operator opens first and returns to all night. That is where the first-run audit found
+     * a stranger being told "a Watchtower is configured" when none was, and the two facts are
+     * the same fact: nothing here was watching it.
+     *
+     * The claims are the two sentences on it that are unconditional and load-bearing. The
+     * rest of the screen is state -- watch, callsign, session -- and a claim behind `{#if}`
+     * is not a claim.
+     */
+    name: 'Putting it on your home screen',
+    screen: 'terminal/',
+    claims: [
+      // A safety fact about the icon, on the screen where somebody decides to make one, and
+      // it had no test of any kind.
+      'shows whatever name is on the icon',
+      // This screen used to say "nothing is added", which contradicts delivery.md's own
+      // honest pricing of the install and talks an operator on the device floor out of the
+      // one thing that protects the layer they depend on.
+      'less likely to do that to something on your home screen'
+    ],
+    control: '[data-home-screen] summary',
+    requires: []
+  },
+  {
     name: 'Set up a callsign',
     screen: 'terminal/setup/',
     claims: [

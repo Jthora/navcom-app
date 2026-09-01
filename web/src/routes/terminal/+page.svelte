@@ -763,7 +763,7 @@
   </nav>
 {/if}
 
-<section class="nc-panel">
+<section class="nc-panel" data-home-screen>
   <header class="nc-panel-head">
     <span>Home screen</span>
   </header>
@@ -775,11 +775,19 @@
       </p>
       <p>
         <!--
-          No pitch, because there is nothing to pitch: native apps are deferred, so the home
-          screen version and this one are the same app with the same abilities.
+          Still no pitch: native apps are deferred, so the home screen version and this one
+          are the same app with the same abilities, and nothing is withheld from the browser.
+          But "nothing is added" was flatly false. `delivery.md` names two things that
+          genuinely are better installed and calls the second one "the difference between the
+          directory being there at 2am and not" — and this screen was denying it, which
+          leaves an operator on the device floor deciding against the one thing that protects
+          the layer they actually depend on. Stated once, where it is relevant, and never
+          again.
         -->
-        It is the same app either way — a home screen icon and no browser bar. Nothing is added
-        and nothing is withheld.
+        It is the same app either way — a home screen icon and no browser bar — and nothing is
+        withheld from the browser version. One thing does change: a phone short of space may
+        throw away a site's cached data, and it is <strong>less likely to do that to something
+        on your home screen</strong>. That is the cached directory being there at 2am or not.
       </p>
     </Why>
   </div>
