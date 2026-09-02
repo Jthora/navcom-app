@@ -57,6 +57,15 @@
    * away by being acted on rather than by being dismissed.
    */
   let waiting = $state(0);
+  /**
+   * The notes themselves, not just how many.
+   *
+   * This screen said "N waiting — jotted, not yet corrections" and gave no way to reach any
+   * of them. An operator had to remember which of sixty-eight areas each note was about,
+   * open the directory and find the record from memory — so the note stayed a note. The
+   * whole published directory holds **one** `in_person` check, and this is one reason why.
+   */
+  let jotted = $state<{ id: string; region?: string; name?: string }[]>([]);
 
   let { data } = $props();
   /*
@@ -72,7 +81,13 @@
     configured = loadConfig() !== null;
     identity = loadIdentity();
     damaged = corruptTiers().length > 0;
-    waiting = Object.keys(notes()).length;
+    const all = notes();
+    waiting = Object.keys(all).length;
+    jotted = Object.entries(all).map(([id, n]) => ({
+      id,
+      ...(n.region ? { region: n.region } : {}),
+      ...(n.name ? { name: n.name } : {})
+    }));
     void offline.checkShell();
     watch.start();
     presence.start();
@@ -616,6 +631,47 @@
   {/if}
 </Panel>
 
+{#if jotted.length > 0}
+  <!--
+    The way back, which did not exist.
+    "Capture cold, correct warm" is the whole design of a note: you write it at a door with
+    gloves on and turn it into a correction somewhere with light. The second half needed the
+    operator to remember which area the place was in, and this is what they get instead.
+
+    A list, not a task. Nothing here counts anything, nothing chases, and ignoring it costs
+    nothing — the note keeps until a panic wipe, and it was always only for them anyway.
+
+    Names, not the note's own text: this is the screen most likely to be read over a
+    shoulder, and the note is the riskiest free text in the system by its own account.
+  -->
+  <section class="nc-panel" data-notes-open>
+    <header class="nc-panel-head">
+      <span>Notes waiting</span>
+    </header>
+    <div class="nc-panel-slots">
+      <p class="cost">
+        Lines you wrote at a door. They are still <strong>only on this phone</strong> — a
+        correction is what reaches whoever gets there next.
+      </p>
+      <ul class="jotted">
+        {#each jotted as n (n.id)}
+          <li>
+            {#if n.region}
+              <a href="/terminal/directory/{n.region}/">{n.name ?? n.id}</a>
+            {:else}
+              <!-- Written before a note carried its area. Still readable, still promotable,
+                   and honest that this one takes a look through the directory. -->
+              <span>{n.name ?? n.id}</span>
+              <span class="opt">— written before notes carried their area;
+                <a href="/terminal/directory/">find it in the directory</a></span>
+            {/if}
+          </li>
+        {/each}
+      </ul>
+    </div>
+  </section>
+{/if}
+
 <!--
   Distress is not the lit action and it is not on the rail.
 
@@ -852,6 +908,10 @@
 
 <style>
   .closing { border: 2px solid var(--t-line-strong); padding: 1rem 1.1rem; gap: .5rem; }
+  /* Logical, not physical: `rtl.test.ts` fails a stylesheet that would indent the wrong
+     side in a right-to-left language, and 8.2 puts a second one in scope. */
+  .jotted { margin: .4rem 0 0; padding-inline-start: 1.1rem; display: grid; gap: .35rem; }
+  .jotted li { line-height: 1.4; }
   .closing textarea { margin-bottom: .2rem; }
   .opt { color: var(--t-faint); font-size: .8rem; }
 </style>

@@ -27,7 +27,7 @@
   import { locateOnce, metresApart, type Fix } from '$lib/console/position-once';
   import { places } from '$lib/terminal/places.svelte';
   import { Slot, Readout, Why, Heartbeat } from '$lib/components/panel';
-  import { clearNote, keepNote, notes } from '$lib/terminal/notes';
+  import { clearNote, keepNote, notes, type Note } from '$lib/terminal/notes';
   import { readClock, type ClockRead } from '$lib/terminal/clock';
   import { onMount } from 'svelte';
 
@@ -86,12 +86,20 @@
   let bridgedFlag = $state(false);
 
   /** Scribbles, kept on this phone. Reloaded on mount because they are read from storage. */
-  let jotted = $state<Record<string, string>>({});
+  let jotted = $state<Record<string, Note>>({});
   let jotting = $state<string | null>(null);
   let jotText = $state('');
 
-  function jot(id: string) {
-    keepNote(id, jotText);
+  /**
+   * `name` and the region ride along, because this screen is the only one that knows them.
+   *
+   * Status could say how many notes were waiting and offered no way to reach any of them —
+   * so an operator had to remember which of sixty-eight areas each one was in. A note that
+   * cannot be found again does not become a correction, and the directory holds exactly one
+   * `in_person` check.
+   */
+  function jot(id: string, name: string) {
+    keepNote(id, jotText, { region: data.region.slug, name });
     jotted = notes();
     jotting = null;
     jotText = '';
@@ -599,7 +607,7 @@
             -->
             {#if jotted[record.id]}
               <p class="note" data-note>
-                <strong>Your note:</strong> {jotted[record.id]}
+                <strong>Your note:</strong> {jotted[record.id]?.text}
                 <button class="drop" onclick={() => dropNote(record.id)}>Done with it</button>
               </p>
             {/if}
@@ -613,11 +621,11 @@
                 Write about the place, never the person.
               </p>
               <div class="row">
-                <button class="drop" onclick={() => jot(record.id)}>Keep</button>
+                <button class="drop" onclick={() => jot(record.id, record.name)}>Keep</button>
                 <button class="drop" onclick={() => (jotting = null)}>Cancel</button>
               </div>
             {:else if reporting !== record.id}
-              <button class="drop" onclick={() => { jotting = record.id; jotText = jotted[record.id] ?? ''; }}>
+              <button class="drop" onclick={() => { jotting = record.id; jotText = jotted[record.id]?.text ?? ''; }}>
                 Note for later
               </button>
             {/if}
