@@ -256,6 +256,27 @@ describe('rendered display rules', () => {
         ).toBeGreaterThan(0);
         continue;
       }
+      if (rule === 'rule3' && n === 0) {
+        /*
+         * The second legitimate zero, and it arrived the moment fixture data stopped being
+         * published — exactly as the comment above predicted.
+         *
+         * Rule 3 renders a flag before the name. **The only flagged record in the entire
+         * dataset was an invented one** in `data/regions/example/`, which shipped as a live
+         * directory entry until it was excluded. All 477 real records are `flag: ok`, which
+         * follows from nobody having checked or disputed anything yet.
+         *
+         * So zero is accepted only alongside proof that the data contains nothing to flag. If
+         * a real record is ever reported wrong and rule 3 still examines nothing, that is the
+         * renderer and this fails.
+         */
+        const flagged = loadDirectory().filter((r) => r.flag !== 'ok');
+        expect(
+          flagged.map((r) => r.id),
+          'a flagged record exists and rule 3 rendered none of them — that is the renderer'
+        ).toEqual([]);
+        continue;
+      }
       expect(n, `${rule} examined nothing — it is passing vacuously`).toBeGreaterThan(0);
     }
   });
