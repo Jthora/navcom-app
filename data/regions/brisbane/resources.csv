@@ -1,14 +1,14 @@
 id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
-brisbane-osm-e265e9c0,Citipointe Church Marketplace West,meal,"152 Freeman Road, Brisbane, QLD, 4077",-27.5783648,152.9749432,,,,,,,,,,,,,,,,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/node/6215231363
-brisbane-osm-48415d4e,Brisbane Food Not Bombs,meal,"68 Vulture Street, QLD, 4101",-27.4807388,153.0112048,,,,,,,,,,,,,,,Fr 18:30-20:00,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/node/12041540098
-brisbane-osm-4bdb449d,Geebung Meals on Wheels,meal,"356 Robinson Road West, QLD, 4034",-27.3679089,153.0421377,,,,,,,,,,,,,,,,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/node/13093286500
-brisbane-osm-a793cb66,Richmond Fellowship Queensland,medical,"485 Ipswich Road, QLD, 4103",-27.51175,153.0314653,+61733632555,,,,,,,,,,,,,,Mo-Fr 08:30-16:30,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/node/13172085369
-brisbane-osm-ddb7216d,Meals on Wheels,meal,,-27.5144742,153.060222,,,,,,,,,,,,,,,,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/way/37552710
-brisbane-osm-ce7e16fe,Stafford Meals On Wheels,meal,,-27.4080982,153.0078142,,,,,,,,,,,,,,,,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/way/46227214
-brisbane-osm-775bcf0c,Caring Cuisine,meal,"23 Guilfoyle Street, Brisbane, 4067",-27.4977201,152.9963207,,,,,,,,,,,,,,,,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/way/523195956
-brisbane-osm-9bb6e2e9,Wynnum Manly Meals On Wheels,meal,"880 Manly Road, QLD, 4154",-27.475763,153.1468828,,,,,,,,,,,,,,,,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/way/771743776
-brisbane-osm-2e48d0d2,Pindari,shelter,"28 Quarry Street, Brisbane, QLD, 4000",-27.4583506,153.02803,,,,,,,,,,,,,,,,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/way/1058302131
-brisbane-osm-1889ec58,Meals on Wheels Kedron,meal,"39 Mawson Street, Brisbane, QLD, 4031",-27.4009975,153.0239207,,,,,,,,,,,,,,,,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/way/1223715128
-brisbane-osm-80637c3b,Holland Park & Districts Meals on Wheels,meal,469 Broadwater Road,-27.5464122,153.1064774,,,,,,,,,,,,,,,Mo-Fr 07:00-12:30; We off,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/way/1244777958
-brisbane-osm-3fa9bb2d,YHP,shelter,"246 Sandgate Road, 4010",-27.4310052,153.0415869,,,,,,,,,,,,,,,,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/way/1252324528
-brisbane-osm-61c6aa19,Crosby Park Meals on Wheels,meal,"69 Crosby Road, 4010",-27.4342292,153.0465632,+61732560788,,,,,,,,,,,,,,,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/way/1343592836
+brisbane-osm-e265e9c0,Citipointe Church Marketplace West,meal,"152 Freeman Road, Brisbane, QLD, 4077",-27.5783648,152.9749432,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/6215231363
+brisbane-osm-48415d4e,Brisbane Food Not Bombs,meal,"68 Vulture Street, QLD, 4101",-27.4807388,153.0112048,,,,,,,,,,,,,,,Fr 18:30-20:00,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/12041540098
+brisbane-osm-4bdb449d,Geebung Meals on Wheels,meal,"356 Robinson Road West, QLD, 4034",-27.3679089,153.0421377,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/13093286500
+brisbane-osm-a793cb66,Richmond Fellowship Queensland,medical,"485 Ipswich Road, QLD, 4103",-27.51175,153.0314653,+61733632555,,,,,,,,,,,,,,Mo-Fr 08:30-16:30,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/13172085369
+brisbane-osm-ddb7216d,Meals on Wheels,meal,,-27.5144742,153.060222,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/37552710
+brisbane-osm-ce7e16fe,Stafford Meals On Wheels,meal,,-27.4080982,153.0078142,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/46227214
+brisbane-osm-775bcf0c,Caring Cuisine,meal,"23 Guilfoyle Street, Brisbane, 4067",-27.4977201,152.9963207,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/523195956
+brisbane-osm-9bb6e2e9,Wynnum Manly Meals On Wheels,meal,"880 Manly Road, QLD, 4154",-27.475763,153.1468828,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/771743776
+brisbane-osm-2e48d0d2,Pindari,shelter,"28 Quarry Street, Brisbane, QLD, 4000",-27.4583506,153.02803,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/1058302131
+brisbane-osm-1889ec58,Meals on Wheels Kedron,meal,"39 Mawson Street, Brisbane, QLD, 4031",-27.4009975,153.0239207,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/1223715128
+brisbane-osm-80637c3b,Holland Park & Districts Meals on Wheels,meal,469 Broadwater Road,-27.5464122,153.1064774,,,,,,,,,,,,,,,Mo-Fr 07:00-12:30; We off,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/1244777958
+brisbane-osm-3fa9bb2d,YHP,shelter,"246 Sandgate Road, 4010",-27.4310052,153.0415869,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/1252324528
+brisbane-osm-61c6aa19,Crosby Park Meals on Wheels,meal,"69 Crosby Road, 4010",-27.4342292,153.0465632,+61732560788,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/1343592836

@@ -1,1 +1,7 @@
 id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+belfast-osm-e7eeb380,Depaul Ireland Stella Maris,shelter,,54.6087688,-5.9210551,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/13194548111
+belfast-osm-830a252e,The People's Kitchen Belfast,meal,,54.6075804,-5.9361242,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/13196707058
+belfast-osm-79b5eef4,Beech Hall Wellbeing & Treatment Centre,medical,"21 Andersonstown Road, Belfast, BT11 9AF",54.5789588,-5.9805247,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/516494933
+belfast-osm-c0f6ec58,Inniscoole Day Centre,daytime,"55 Rosslea Way, Newtownabbey, BT37 9EZ",54.6666328,-5.9197503,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/596110937
+belfast-osm-13c9c7d9,Morning Star House,shelter,,54.5993256,-5.9366593,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/1237268020
+belfast-osm-4465ec4c,Men's Hostel,shelter,"Utility Street, Belfast",54.5895804,-5.9416386,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/1271981819

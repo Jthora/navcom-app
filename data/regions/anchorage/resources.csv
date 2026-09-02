@@ -1,22 +1,22 @@
 id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
-anchorage-osm-a009cac3,Mobile Food Bank,meal,,61.1956824,-149.9196339,,,,,,,,,,,,,,,Tu 17:00-18:00+,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/node/6806779902
-anchorage-osm-2cd2767c,Mobile Food Bank,meal,,61.2108567,-149.7490672,,,,,,,,,,,,,,,We 09:30-10:00,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/node/6806779907
-anchorage-osm-95e48140,Mobile Food Bank,meal,,61.2253693,-149.7146974,,,,,,,,,,,,,,,We[3] 14:00-14:30,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/node/6806779908
-anchorage-osm-880e94f9,Mobile Food Bank,meal,,61.1237441,-149.8470488,,,,,,,,,,,,,,,Th[3] 14:00-15:00+,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/node/6806779909
-anchorage-osm-0561957d,Mobile Food Bank,meal,,61.2269887,-149.8115177,,,,,,,,,,,,,,,,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/node/6806779916
-anchorage-osm-3141bf18,Mobile Food Bank,meal,,61.1415432,-149.9552691,,,,,,,,,,,,,,,,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/node/6806779931
-anchorage-osm-8215f16f,Mobile Food Bank,meal,,61.1876487,-149.8499314,,,,,,,,,,,,,,,"Sa[1,4] 14:00-15:00+",,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/node/6806779945
-anchorage-osm-0c687b1a,Mobile Food Bank,meal,,61.2133474,-149.862235,,,,,,,,,,,,,,,"Sa[2,3] 14:00-15:00+",,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/node/6806779964
-anchorage-osm-0bebd606,Safe Harbor Muldoon,shelter,,61.2216994,-149.7328718,,,,,,,,,,,,,,,,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/node/10797487551
-anchorage-osm-4f9aa738,St. Francis House Food Pantry,meal,,61.2021803,-149.8109314,,,,,,,,,,,,,,,,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/node/11170393627
-anchorage-osm-831106ac,Food Bank of Alaska,meal,,61.2230708,-149.8406655,,,,,,,,,,,,,,,,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/way/28581884
-anchorage-osm-b4cc50c8,Henry House,shelter,"545 East 4th Avenue, Anchorage, AK, 99501",61.2188165,-149.8731299,,,,,,,,,,,,,,,,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/way/221624357
-anchorage-osm-3ad9e13e,Brother Francis Shelter,shelter,,61.2200774,-149.8640944,,,,,,,,,,,,,,,,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/way/658557464
-anchorage-osm-c250b32d,Bean's Cafe,meal,,61.2197963,-149.8624253,,,,,,,,,,,,,,,,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/way/658557465
-anchorage-osm-6c949092,Abused Women's Aid In Crisis,shelter,,61.2092009,-149.8841654,,,,,,,,,,,,,,,,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/way/724090925
-anchorage-osm-ef936cd1,Downtown Soup Kitchen,meal,,61.2192377,-149.8796418,,,,,,,,,,,,,,,,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/way/725994574
-anchorage-osm-643d2fb4,Covenant House,shelter,,61.2148714,-149.8822707,,,,,,,,,,,,,,,,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/way/725995574
-anchorage-osm-ecba88b7,Clare House,shelter,,61.1830016,-149.9293403,,,,,,,,,,,,,,,,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/way/725996337
-anchorage-osm-6692e4d0,McKinnell House,shelter,,61.2045652,-149.8846398,,,,,,,,,,,,,,,,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/way/725996338
-anchorage-osm-09152a7a,Anchorage Gospel Rescue Mission,shelter,"2823 East Tudor Road, Anchorage, AK, 99508",61.1813235,-149.8279445,,,,,,,,,,,,,,,,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/way/725997898
-anchorage-osm-c146bc73,Apollo Center,shelter,"3745 Community Park Loop, Anchorage, AK, 99508",61.201173,-149.8114068,+19077704979,,,,,,,,,,,,,,,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/way/726000185
+anchorage-osm-a009cac3,Mobile Food Bank,meal,,61.1956824,-149.9196339,,,,,,,,,,,,,,,Tu 17:00-18:00+,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/6806779902
+anchorage-osm-2cd2767c,Mobile Food Bank,meal,,61.2108567,-149.7490672,,,,,,,,,,,,,,,We 09:30-10:00,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/6806779907
+anchorage-osm-95e48140,Mobile Food Bank,meal,,61.2253693,-149.7146974,,,,,,,,,,,,,,,We[3] 14:00-14:30,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/6806779908
+anchorage-osm-880e94f9,Mobile Food Bank,meal,,61.1237441,-149.8470488,,,,,,,,,,,,,,,Th[3] 14:00-15:00+,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/6806779909
+anchorage-osm-0561957d,Mobile Food Bank,meal,,61.2269887,-149.8115177,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/6806779916
+anchorage-osm-3141bf18,Mobile Food Bank,meal,,61.1415432,-149.9552691,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/6806779931
+anchorage-osm-8215f16f,Mobile Food Bank,meal,,61.1876487,-149.8499314,,,,,,,,,,,,,,,"Sa[1,4] 14:00-15:00+",,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/6806779945
+anchorage-osm-0c687b1a,Mobile Food Bank,meal,,61.2133474,-149.862235,,,,,,,,,,,,,,,"Sa[2,3] 14:00-15:00+",,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/6806779964
+anchorage-osm-0bebd606,Safe Harbor Muldoon,shelter,,61.2216994,-149.7328718,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/10797487551
+anchorage-osm-4f9aa738,St. Francis House Food Pantry,meal,,61.2021803,-149.8109314,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/11170393627
+anchorage-osm-831106ac,Food Bank of Alaska,meal,,61.2230708,-149.8406655,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/28581884
+anchorage-osm-b4cc50c8,Henry House,shelter,"545 East 4th Avenue, Anchorage, AK, 99501",61.2188165,-149.8731299,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/221624357
+anchorage-osm-3ad9e13e,Brother Francis Shelter,shelter,,61.2200774,-149.8640944,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/658557464
+anchorage-osm-c250b32d,Bean's Cafe,meal,,61.2197963,-149.8624253,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/658557465
+anchorage-osm-6c949092,Abused Women's Aid In Crisis,shelter,,61.2092009,-149.8841654,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/724090925
+anchorage-osm-ef936cd1,Downtown Soup Kitchen,meal,,61.2192377,-149.8796418,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/725994574
+anchorage-osm-643d2fb4,Covenant House,shelter,,61.2148714,-149.8822707,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/725995574
+anchorage-osm-ecba88b7,Clare House,shelter,,61.1830016,-149.9293403,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/725996337
+anchorage-osm-6692e4d0,McKinnell House,shelter,,61.2045652,-149.8846398,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/725996338
+anchorage-osm-09152a7a,Anchorage Gospel Rescue Mission,shelter,"2823 East Tudor Road, Anchorage, AK, 99508",61.1813235,-149.8279445,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/725997898
+anchorage-osm-c146bc73,Apollo Center,shelter,"3745 Community Park Loop, Anchorage, AK, 99508",61.201173,-149.8114068,+19077704979,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/726000185
