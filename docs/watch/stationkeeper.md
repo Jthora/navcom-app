@@ -43,12 +43,13 @@ was the gap: somebody was being asked to take the highest-privilege position in 
 given no way to check their own work. The first thing that would have noticed a box publishing
 nothing readable was an operator at sign-on, being told Dark.
 
-Three commands, and none of them needs anybody else to be awake.
+Four commands, and none of them needs anybody else to be awake.
 
 ```
 watchtower-daemon --check   /etc/navcom/watchtower.toml
 navcom-escalation --check   /etc/navcom/escalation.toml
 navcom-escalation --drill   /etc/navcom/escalation.toml
+navcom-escalation --review  /etc/navcom/escalation.toml
 ```
 
 **`watchtower-daemon --check` answers the question you cannot answer for yourself:** *what
@@ -72,11 +73,29 @@ and only one of them is "the daemon is not running":
 If no relay was reachable it says so and declines to blame the daemon, because telling you to
 rebuild a working box while your network is down is worse than telling you nothing.
 
-**The other two are about waking people.** `--check` pages your roster with a test message, so
+**The middle two are about waking people.** `--check` pages your roster with a test message, so
 you learn your channels work from you rather than from somebody's 3am. `--drill` runs the whole
 ladder on the same code path a real `Distress` takes — a test mode that exercised something
 else would be testing something nobody depends on. Expect the first drill to fail; that is
 what it is for.
+
+**`--review` is the fourth, and it is not for you.** It prints one week: the last drill and who
+answered it, every escalation with its date, whether the accountability log still verifies, and
+who is on call — then a closing **NEEDS A LOOK** section, which on a good week reads *nothing
+needs a look*. It exits non-zero only when that section has something in it, so it can be a
+weekly cron that stays silent until it shouldn't.
+
+It exists because `CLAUDE.md` asks for a **log reviewer** — *"minutes per week, and it cannot be
+the agent or verification is theatre"* — and nobody has taken the job. That is not surprising
+when the tooling on offer is `ssh` and a JSONL file. **"Minutes per week" is a claim this
+software has to make true before anybody can accept it**, so the command was written before the
+reviewer, the same way `--check` was written before a second Stationkeeper existed.
+
+It does not score anybody. Escalations are listed with their dates rather than counted, because
+[a number invites gaming](../principles.md) and the only figure it prints is the size of a file.
+If you are running a station and no reviewer exists yet, run it yourself and mail the output
+somewhere you will read it — but note that a reviewer who is also the Stationkeeper is the
+theatre the role was defined to avoid, and the arrangement is a stopgap, not the answer.
 
 ## What it actually costs
 

@@ -4,6 +4,8 @@ import { loadOrCreateKeypair } from "../shared/identity.js";
 import { EscalationExecutor } from "./executor.js";
 import { testPage } from "./pager.js";
 import { readDrillState } from "./drills.js";
+import { buildReview, render } from "./review.js";
+import { AccountabilityLog } from "../shared/accountability.js";
 
 /**
  * The escalation executor, as its own process.
@@ -114,8 +116,51 @@ async function drillNow(path: string): Promise<never> {
   process.exit(state?.last?.result === "pass" ? 0 : 1);
 }
 
+/**
+ * The week, for whoever reads the logs.
+ *
+ *   navcom-escalation --review /etc/navcom/escalation.toml
+ *
+ * Written before anybody holds the role, deliberately. 10.b defers the reviewer's retrieval
+ * path until "a reviewer is named", and nobody accepts a job whose tooling is ssh and a JSONL
+ * file -- the two halves have been waiting on each other. "Minutes per week" is a claim the
+ * software has to make true first.
+ *
+ * Exits non-zero when something needs a person, so it can be a weekly cron line that stays
+ * quiet on a good week rather than something somebody has to remember to run.
+ */
+async function reviewNow(path: string, days: number): Promise<never> {
+  const config = load(path);
+  const drills = readDrillState(config.escalation.drillStatePath);
+  const { log, check } = AccountabilityLog.open(config.log.path, config.log.retentionDays);
+
+  const review = buildReview({
+    now: Math.floor(Date.now() / 1000),
+    days,
+    lastDrill: drills?.last ?? null,
+    nextDrillAt: drills?.nextAt ?? null,
+    entries: log.all(),
+    oncall: config.escalation.oncall.map((e) => e.declaration.author.callsign ?? "unnamed"),
+    log: {
+      entries: log.status().entries,
+      startsAt: log.status().startsAt,
+      intact: check.intact,
+      reason: check.reason,
+    },
+  });
+  log.close();
+
+  for (const line of render(review)) console.log(line);
+  process.exit(review.attention.length === 0 ? 0 : 1);
+}
+
 function main(): void {
   const path = configPath();
+  if (process.argv.includes("--review")) {
+    const flag = process.argv.find((a) => a.startsWith("--days="))?.split("=")[1];
+    void reviewNow(path, Number(flag) || 7);
+    return;
+  }
   if (process.argv.includes("--check")) {
     void check(path);
     return;

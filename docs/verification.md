@@ -395,6 +395,20 @@ operator who typed the URL, which is what made it easy to miss.
 The guard is in `e2e/adding-a-place.spec.ts`, and its **first** test is not about the form —
 it is that Nashville answers at all.
 
+**A role nobody could perform.** The fifth instance is not a control with no button — it is a
+*job* with no tool. `CLAUDE.md` asks for a log reviewer at "minutes per week"; what the job
+actually required was `ssh` to the box and reading a JSONL file by eye, which is not minutes,
+and build order 10.b deferred the reviewer's retrieval path until *a reviewer is named*. So the
+role waited on tooling and the tooling waited on the role, and the position stayed empty for
+months without anything ever being *wrong*. `navcom-escalation --review` prints that week on one
+screen and exits non-zero only when something needs a person.
+
+The rule generalises past controls: **a role nobody can perform is not staffed, and the reason
+is usually not that nobody cares.** Two of Milestone 9's `human` rows moved this way — 9.6 once
+`--check` let a second Stationkeeper prove their box was visible, 9.8 once `--review` made
+"minutes per week" true. Neither is filled. Both are now *takeable*, which is the part code can
+do.
+
 **This laptop cannot run the suite.** Twenty-eight tests across twelve files fail here with
 `crypto.getRandomValues must be defined`, and Playwright refuses to start; the working tree is
 clean and CI pins Node 20 while this machine runs 18.16. So the failures are environmental and
