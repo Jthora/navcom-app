@@ -62,3 +62,25 @@ test('and once hydrated there is exactly one Distress control, not two', async (
   await expect(page.locator('#distress-early')).toHaveCount(0);
   await expect(page.locator('a[href="/terminal/distress/"]')).toHaveCount(1);
 });
+
+test('and the way out of the terminal survives the bundle not loading', async ({ page }) => {
+  /*
+   * The terminal links to nothing outside itself — not the public site, not the docs, not the
+   * zero-JavaScript directory. Fine until the bundle is what is going wrong, at which point
+   * the fallback that always works is unreachable from the place you would look for it.
+   *
+   * Prerendered and outside every `{#if}`, so it is checked here with the bundle blocked: a
+   * link that only appears after hydration is no use to somebody whose app will not hydrate.
+   */
+  await blankDevice(page);
+  await withoutTheBundle(page);
+  await page.goto('/terminal/');
+
+  const out = page.locator('[data-static-fallback]');
+  await expect(out).toBeVisible();
+  await expect(out.locator('a[href="/directory/"]')).toBeVisible();
+
+  await out.locator('a[href="/directory/"]').click();
+  await expect(page).toHaveURL(/\/directory\/$/);
+  await expect(page.locator('h1')).toBeVisible();
+});

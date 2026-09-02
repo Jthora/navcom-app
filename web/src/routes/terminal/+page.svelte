@@ -927,6 +927,30 @@
   </div>
 </section>
 
+<!--
+  One door out, and the only unconditional one on this screen.
+
+  The terminal is a closed world: no screen in it links to the public site, to the docs, or to
+  the directory that needs no JavaScript. That is fine until the bundle is the thing going
+  wrong — and then the fallback that always works is unreachable from the place you would look
+  for it.
+
+  Prerendered and outside every `{#if}` on purpose. A link that only appears once the app has
+  hydrated is no use to somebody whose app will not hydrate.
+-->
+<section class="nc-panel" data-static-fallback>
+  <header class="nc-panel-head">
+    <span>If this will not load</span>
+  </header>
+  <div class="nc-panel-slots">
+    <p class="cost">
+      The same places exist as plain pages that need no JavaScript at all —
+      <a href="/directory/">the directory that always works</a>. Slower to search, and nothing
+      there can be corrected or carried offline. It is there when this is not.
+    </p>
+  </div>
+</section>
+
 <style>
   .closing { border: 2px solid var(--t-line-strong); padding: 1rem 1.1rem; gap: .5rem; }
   /* Logical, not physical: `rtl.test.ts` fails a stylesheet that would indent the wrong

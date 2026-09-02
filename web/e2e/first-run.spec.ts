@@ -84,3 +84,27 @@ test.describe('a stranger opens the terminal', () => {
     await expect(page.locator('[data-nearest]')).toBeVisible();
   });
 });
+
+test.describe('an operator whose area is not listed', () => {
+  test('is told so, rather than scrolling a list of somewhere else', async ({ page }) => {
+    /*
+     * Sixty-eight areas were listed and nothing acknowledged the person whose city is not
+     * among them. A silent absence — which is the failure this project prohibits everywhere
+     * else — on the layer CLAUDE.md calls the default and not a degraded state.
+     *
+     * It cannot offer a fix, because there is not one yet: `places.add()` needs a region slug
+     * and regions are prerendered. So the test is that it says that plainly rather than
+     * implying a path that does not exist.
+     */
+    await blankDevice(page);
+    await open(page, '/terminal/directory/');
+
+    const said = page.locator('[data-area-missing]');
+    await expect(said).toBeVisible();
+    await expect(said).toContainText(/this app cannot add it yet/i);
+    // Counted from the data, never typed: this sentence goes wrong the day a 69th is seeded.
+    await expect(said).toContainText(/\d+ areas, in \d+ countries/i);
+    // And one door out of the terminal, which had none at all.
+    await expect(said.locator('a[href="/docs/contributing/"]')).toBeVisible();
+  });
+});

@@ -16,6 +16,10 @@
   // finds out with no signal.
   onMount(() => void offline.check(data.areas.map((a) => a.region.slug)));
 
+  /** Counted, never typed: this sentence is wrong the day somebody seeds a sixty-ninth area. */
+  const areaCount = $derived(data.areas.length);
+  const countryCount = $derived(new Set(data.areas.map((a) => a.region.country)).size);
+
   const byCountry = $derived(
     Object.entries(
       data.areas.reduce<Record<string, typeof data.areas>>((acc, a) => {
@@ -76,6 +80,33 @@
   </section>
 {/each}
 
+<!--
+  The sentence that was not here.
+
+  Sixty-eight areas were listed and nothing acknowledged the person whose city is not among
+  them — they scrolled a list of somewhere else and got no explanation. A silent absence, which
+  is the failure this project prohibits everywhere else, on the layer `CLAUDE.md` calls the
+  default and not a degraded state.
+
+  It cannot offer a fix yet, because there is not one: `places.add()` needs a region slug and
+  regions are prerendered from `data/regions/`. So it says that plainly rather than implying a
+  path that does not exist.
+-->
+<section class="missing" data-area-missing>
+  <h2>Yours might not be here</h2>
+  <p>
+    {areaCount} areas, in {countryCount} countries. If the one you work in is not among them,
+    <strong>this app cannot add it yet</strong> — a place has to go into an area that already
+    exists, and nothing here makes a new one.
+  </p>
+  <p class="cost">
+    That is a real gap, and it shuts the cached directory out for everybody outside these
+    areas. Until it is built the only way in is to ask whoever runs this —
+    <a href="/docs/contributing/">how to contribute</a> says where.
+  </p>
+</section>
+
+
 <style>
   ul { list-style: none; margin: 0; padding: 0; }
   li { border-bottom: 1px solid var(--t-line); }
@@ -84,4 +115,7 @@
     min-height: 3.4rem; text-decoration: none; color: var(--t-ink);
   }
   .name { font-size: 1.02rem; }
+  /* Set apart from the list rather than styled as another row: it is not an area you can
+     open, and looking like one would be its own small lie. */
+  .missing { border-top: 1px solid var(--t-line); margin-top: 1.4rem; padding-top: 1.1rem; }
 </style>
