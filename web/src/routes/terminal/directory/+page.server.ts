@@ -3,6 +3,10 @@
  *
  * An operator works in one place. Offering all of them at once is both useless to them and
  * more than a prepaid phone should be asked to cache.
+ *
+ * A server loader rather than a universal one: this needs a count per region, which means
+ * reading every record, and a universal loader would ship all of them to the browser to
+ * produce sixty-eight integers.
  */
 
 import { loadDirectory, loadRegions } from '$lib/directory/load';

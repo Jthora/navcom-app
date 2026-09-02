@@ -7,6 +7,18 @@
  *
  * It is also the right shape regardless of size: an operator is in one place, and a St.
  * Louis patrol has no use for Sydney's shelters taking up their offline cache.
+ *
+ * ## Why this is `+page.server.ts` and not `+page.ts`
+ *
+ * The split above was real for the *prerendered HTML* and a lie about the *bundle*. A
+ * universal loader runs in the browser too, so importing `loadDirectory` here put every
+ * region's records into the client graph -- and the St. Louis page shipped Sydney's shelters
+ * after all, 33 kB gzipped of them, on all 67 region pages.
+ *
+ * A server loader runs only at build time. Its return value is serialised beside the page, so
+ * a client navigation fetches one region's data instead of executing a loader that can reach
+ * all of them. Nothing about the page changes; the CSV glob simply stops being reachable from
+ * the browser.
  */
 
 import { error } from '@sveltejs/kit';

@@ -1,32 +1,30 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadDirectory } from './index';
 
 /**
- * Pages that do not show records must not ship them.
+ * Every page carries its own records and nobody else's.
  *
- * `load.ts` globs every `resources.csv` **eagerly, at module scope**. A glob's side effect is
- * the import itself, so nothing tree-shakes: importing one function from that module pulls the
- * whole directory into the importing page's bundle.
+ * Two separate defects, found together, both invisible on screen.
  *
- * That went unnoticed because nothing was wrong on screen. `terminal/find` renders a list of
- * region names and reads no record at all — and it was shipping all 507 of them, 41 kB gzipped
- * of addresses and phone numbers, on the heaviest page in the app. `terminal/card` did the
- * same. The budget script saw one large number and could not say what it was made of.
+ * **Pages that show no records were shipping all of them.** `load.ts` globs every
+ * `resources.csv` eagerly at module scope, and a glob's side effect is the import itself, so
+ * nothing tree-shakes. `terminal/find` renders a list of region names, reads no record, and
+ * shipped all 507 -- 41 kB gzipped, on the heaviest page in the app. `terminal/card` too. A
+ * second route in was quieter: `load.ts` re-exports the label tables from `@navcom/core` as a
+ * convenience, so four components pulled the entire directory to format a field label.
  *
- * Two routes back in, both plausible:
+ * **Region pages were split for the HTML and not for the bundle.** `[region]/+page.ts` said in
+ * its own comment that a St. Louis patrol has no use for Sydney's shelters -- and that was true
+ * of the prerendered HTML and false of the JavaScript beside it. A *universal* loader runs in
+ * the browser as well as at build time, so `import { loadDirectory }` put every region's
+ * records in the client graph of all 67 region pages. Making it `+page.server.ts` confines it
+ * to build time and serialises one region's data beside its page.
  *
- * - a page starts needing one region name and imports `$lib/directory/load` because that is
- *   where regions used to live
- * - a component wants a label formatter and imports it from `load.ts`, which **re-exports the
- *   tables from `@navcom/core` as a convenience**. That was the actual second leak: four
- *   components and a page pulled the entire directory to format a field label
- *
- * So this asserts against the **built artifact**, not the import graph. The rule this project
- * keeps relearning is that a module can honour a constraint the bundle does not, and only the
- * output settles it.
+ * Both are asserted against the **built artifact** rather than the import graph, because in
+ * both cases a module honoured a constraint its bundle did not. Only the output settles it.
  */
 
 const BUILD = fileURLToPath(new URL('../../../build/', import.meta.url));
@@ -39,56 +37,91 @@ function scriptsFor(page: string): string[] {
 }
 
 /**
- * Record names distinctive enough that finding one in a bundle means the directory is in it.
+ * Record names distinctive enough that finding one means that region's data is present.
  *
- * Taken from the committed data rather than hardcoded, so this cannot rot into testing a
- * shelter that has since been removed.
+ * Read from the committed data rather than hardcoded, so this cannot rot into testing a
+ * shelter that has since been removed. Names carrying quotes or backslashes are skipped
+ * because they are re-encoded in the output and would not match verbatim.
  */
-function probeNames(): string[] {
+function namesIn(region: string): string[] {
   return loadDirectory()
+    .filter((r) => r.region === region)
     .map((r) => r.name)
-    .filter((n) => n.length > 18 && !n.includes('"') && !n.includes('\\'))
-    .slice(0, 40);
+    .filter((n) => n.length > 18 && !/["\\]/.test(n))
+    .slice(0, 30);
 }
+
+const ALL_NAMES = () =>
+  loadDirectory()
+    .map((r) => r.name)
+    .filter((n) => n.length > 18 && !/["\\]/.test(n));
 
 /** Pages whose job is navigation, not records. */
 const NO_RECORDS = ['terminal/find/index.html', 'terminal/card/index.html'];
 
+/** Two regions with records, far enough apart that neither belongs on the other's page. */
+const HERE = 'los-angeles';
+const ELSEWHERE = 'st-louis';
+
 describe('what each page actually ships', () => {
-  it('has a build to measure', () => {
-    // Without this the whole file passes vacuously, which is the failure mode a test that
-    // reads the build has to guard against first.
+  it('has a build to measure, with records in it', () => {
+    // Without this the whole file passes vacuously, which is the first failure mode a test
+    // that reads the build has to guard against.
     expect(existsSync(join(BUILD, 'terminal/find/index.html'))).toBe(true);
-    expect(probeNames().length).toBeGreaterThan(10);
+    expect(namesIn(HERE).length).toBeGreaterThan(10);
+    expect(namesIn(ELSEWHERE).length).toBeGreaterThan(5);
   });
 
   for (const page of NO_RECORDS) {
     it(`${page} ships no directory records`, () => {
-      const names = probeNames();
+      const names = ALL_NAMES();
       const offenders: string[] = [];
       for (const script of scriptsFor(page)) {
-        const body = readFileSync(script, 'utf8');
-        const found = names.filter((n) => body.includes(n));
+        const found = names.filter((n) => readFileSync(script, 'utf8').includes(n));
         if (found.length > 0) {
-          offenders.push(`${script.replace(BUILD, '')} carries ${found.length} record(s), e.g. "${found[0]}"`);
+          offenders.push(`${script.replace(BUILD, '')} carries ${found.length}, e.g. "${found[0]}"`);
         }
       }
       expect(offenders, offenders.join('\n')).toEqual([]);
     });
   }
 
-  it('a region page carries records, so the probe is capable of failing', () => {
+  it('a region page carries its own records', () => {
     /*
-     * The negative tests above are worthless if `probeNames` cannot find a record anywhere --
-     * a typo in the matcher would make them pass for the wrong reason. This is the positive
-     * control: somewhere in the build, these names really are present in a bundle.
+     * The positive control, and a correctness check in its own right. Records moved out of the
+     * bundle and into the page's serialised data; if that had silently produced empty pages,
+     * every negative assertion here would still pass.
      */
-    const names = probeNames();
-    const scripts = scriptsFor('terminal/directory/los-angeles/index.html');
-    const carrying = scripts.filter((s) => {
-      const body = readFileSync(s, 'utf8');
-      return names.some((n) => body.includes(n));
-    });
-    expect(carrying.length).toBeGreaterThan(0);
+    const html = readFileSync(join(BUILD, `terminal/directory/${HERE}/index.html`), 'utf8');
+    const present = namesIn(HERE).filter((n) => html.includes(n));
+    expect(present.length).toBeGreaterThan(10);
+  });
+
+  it('a region page carries no other region\'s records', () => {
+    // The actual promise: an operator's phone caches their metro, not the whole world.
+    const html = readFileSync(join(BUILD, `terminal/directory/${HERE}/index.html`), 'utf8');
+    const scripts = scriptsFor(`terminal/directory/${HERE}/index.html`);
+    const foreign = namesIn(ELSEWHERE);
+
+    const inHtml = foreign.filter((n) => html.includes(n));
+    expect(inHtml, `${HERE} page names ${ELSEWHERE} records: ${inHtml[0] ?? ''}`).toEqual([]);
+
+    const inJs = scripts.filter((s) => foreign.some((n) => readFileSync(s, 'utf8').includes(n)));
+    expect(inJs.map((s) => s.replace(BUILD, ''))).toEqual([]);
+  });
+
+  it('no script anywhere in the build carries the directory', () => {
+    /*
+     * The strongest form, and cheap now that it is true: records reach a browser as one
+     * region's serialised page data, never as a shared chunk. A universal loader reintroduced
+     * anywhere would break this before it broke anything a person could see.
+     */
+    const names = ALL_NAMES().slice(0, 60);
+    const pages = ['terminal/index.html', `terminal/directory/${HERE}/index.html`, 'terminal/find/index.html'];
+    const scripts = [...new Set(pages.flatMap(scriptsFor))];
+    const carrying = scripts
+      .filter((s) => names.some((n) => readFileSync(s, 'utf8').includes(n)))
+      .map((s) => s.replace(BUILD, ''));
+    expect(carrying).toEqual([]);
   });
 });
