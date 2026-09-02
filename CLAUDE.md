@@ -63,14 +63,13 @@ resolves nowhere, and a page about link rot that rots is worse than none. Doctri
 
 **Build next, in order:**
 
-1. **The directory region-detail screen's remaining prose.** Nineteen of twenty Field
-   Terminal screens are converted; `terminal/directory/[region]/` (736 lines) only got its
-   one isolated, zero-risk section — the per-record loop, add-a-place form and corrections
-   banners are real, separate, future work, deliberately not attempted in one pass. Doctrine
-   and phases in [`docs/design/panel.md`](docs/design/panel.md); **it is a per-screen
-   judgement, not a sweep** — a blanket pass was tried, measured and withdrawn, because
-   `.cost` in this codebase is a typographic class carrying primary state as often as an
-   aside
+1. **Nothing, until somebody carries it for a night.** The region-detail screen's prose was
+   the standing #1; it is **closed on inspection** (2026-09-02). All seventeen blocks were read
+   against [`panel.md`](docs/design/panel.md)'s three outcomes and **fifteen are already where
+   they belong** — the two that could move are per-record state already rendering as readouts,
+   and pushing them through the screen-level component would put header chrome on 254 records
+   in Philadelphia. The finding is the ratio: a screen that reads as unconverted because it
+   contains prose may be a screen whose prose is load-bearing
 2. **Milestone 8**, once **6.9** has real intake rules in it. The gate is not paperwork: a
    person-facing path over scraped skeletons turns somebody away at 11pm with nowhere else
    to be

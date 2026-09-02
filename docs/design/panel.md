@@ -277,6 +277,28 @@ And the rule the six near-misses produced, which is P1's lesson generalised:
 The transform itself is kept — it is useful for finding candidates — but it proposes rather
 than decides.
 
+### The region screen — *closed on inspection, 2026-09-02*
+
+`CLAUDE.md` carried this as **build next, #1** for weeks: nineteen of twenty screens converted,
+and `terminal/directory/[region]/` with "the per-record loop, add-a-place form and corrections
+banners" outstanding. All seventeen of its prose blocks have now been read against the three
+outcomes. **Fifteen are already where they belong**, and the two that could move should not.
+
+| Block | Outcome | Why |
+|---|---|---|
+| Corrections unsent | **visible** | A `Slot`+`Heartbeat` already carries the state. The prose is *"you can see them, nobody else can"* — the sentence whose absence gives an operator positive evidence their correction worked |
+| Corrections partial | **visible** | Says a thing the reader expects — seeing every correction — **will not happen** |
+| Clock behind, and stale snapshot | **visible, already annotated** | Both carry `<!-- Stays visible: it changes what the reader must do with everything below it -->`, above a `Readout` that already says `Call first` |
+| Narrowing | **visible** | One short sentence distinguishing an allowed narrowing box from the banned search-that-asks-somebody. A person typing wants it *then*, not behind a tap |
+| Location refused / nearest on | **visible** | State attached to the control that produced it; a slot would separate the two |
+| The note | **visible** | *"a panic wipe takes it — so turn it into a correction"* is a warning and an instruction in one breath |
+| Add a place | **visible** | *"Not somewhere you read about"* is the eligibility rule for the action; the clause that follows is why it exists, and brevity there costs the point |
+| `.flag`, `.seeded-note`, `.added` | **left as prose** | Per-record state, and *already* rendering as readouts — `.seeded-note` is mono, uppercase, letter-spaced; `.flag` is a bordered line read before the name [Rule 3]. Passing them through the screen-level `Readout` would put header chrome on 254 records in Philadelphia and change a deliberate list treatment |
+
+**The finding is the ratio.** P2 predicted that `.cost` is typographic rather than semantic and that most of it would stay; on this screen it is fifteen of seventeen. A screen that reads as "unconverted" because it contains prose may simply be a screen whose prose is load-bearing.
+
+**Declined rather than deferred**, so it stops recurring as a task. What would reopen it: the record loop growing a *new* state that has no readout, or the per-record markers drifting far enough from the panel language that a reader notices two visual systems. Neither is true today.
+
 ### P3 — The readouts
 
 Convert status, watch, distress, sign-on, standing. The rewrites are drafted:

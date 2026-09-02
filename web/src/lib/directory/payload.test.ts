@@ -25,6 +25,12 @@ import { loadDirectory } from './index';
  *
  * Both are asserted against the **built artifact** rather than the import graph, because in
  * both cases a module honoured a constraint its bundle did not. Only the output settles it.
+ *
+ * **Every scan reads its file once, outside the loop over names.** The first version read it
+ * *inside* the filter -- once per candidate -- which was merely wasteful at 507 records and
+ * timed out the suite at 1,145. A guard that gets slower as the directory grows is a guard
+ * somebody eventually deletes, and this one is the only thing standing between a convenient
+ * re-export and 41 kB of shelter records on the heaviest page in the app.
  */
 
 const BUILD = fileURLToPath(new URL('../../../build/', import.meta.url));
@@ -77,7 +83,8 @@ describe('what each page actually ships', () => {
       const names = ALL_NAMES();
       const offenders: string[] = [];
       for (const script of scriptsFor(page)) {
-        const found = names.filter((n) => readFileSync(script, 'utf8').includes(n));
+        const body = readFileSync(script, 'utf8');
+        const found = names.filter((n) => body.includes(n));
         if (found.length > 0) {
           offenders.push(`${script.replace(BUILD, '')} carries ${found.length}, e.g. "${found[0]}"`);
         }
@@ -106,7 +113,10 @@ describe('what each page actually ships', () => {
     const inHtml = foreign.filter((n) => html.includes(n));
     expect(inHtml, `${HERE} page names ${ELSEWHERE} records: ${inHtml[0] ?? ''}`).toEqual([]);
 
-    const inJs = scripts.filter((s) => foreign.some((n) => readFileSync(s, 'utf8').includes(n)));
+    const inJs = scripts.filter((s) => {
+      const body = readFileSync(s, 'utf8');
+      return foreign.some((n) => body.includes(n));
+    });
     expect(inJs.map((s) => s.replace(BUILD, ''))).toEqual([]);
   });
 
@@ -120,7 +130,10 @@ describe('what each page actually ships', () => {
     const pages = ['terminal/index.html', `terminal/directory/${HERE}/index.html`, 'terminal/find/index.html'];
     const scripts = [...new Set(pages.flatMap(scriptsFor))];
     const carrying = scripts
-      .filter((s) => names.some((n) => readFileSync(s, 'utf8').includes(n)))
+      .filter((s) => {
+        const body = readFileSync(s, 'utf8');
+        return names.some((n) => body.includes(n));
+      })
       .map((s) => s.replace(BUILD, ''));
     expect(carrying).toEqual([]);
   });
