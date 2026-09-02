@@ -1,1 +1,9 @@
 id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+phoenix-osm-9fab12ea,Eve's Place Community Services,shelter,"8877 North 107th Avenue, Peoria, AZ, 85345",33.5642488,-112.2876828,+1623537538018443017908,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/6260993089
+phoenix-osm-0ca6e6d7,Central Arizona Shelter Services (CASS),shelter,,33.4450441,-112.088578,+16022566945,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/10886833482
+phoenix-osm-b712fa98,Maricopa County Government Managed Care System,meal,,33.4247244,-112.0277112,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/11535247426
+phoenix-osm-069b04f1,Valley View Community Food Bank,meal,"Youngtown, AZ, 85363",33.5944625,-112.3018947,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/12333953671
+phoenix-osm-fc92f883,Bishop's Storehouse,meal,,33.6370119,-112.2065132,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/13329491705
+phoenix-osm-4ed5294c,Hope For Hunger,meal,"5404 West Luke Avenue, Glendale, AZ, 85301",33.518983,-112.177148,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/220972301
+phoenix-osm-591cd2b2,The Salvation Army,meal,"6010 West Northern Avenue, Glendale, AZ, 85301",33.5535278,-112.1898111,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/936941393
+phoenix-osm-489a144b,7th Street Food Pantry & Outreach,meal,"4233 South 7th Street, Phoenix, AZ, 85040",33.4074886,-112.0642448,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/1292986492

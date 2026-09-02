@@ -1,1 +1,7 @@
 id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+san-antonio-osm-2958897a,Catholic Worker Mission,meal,,29.4417536,-98.3983505,+12102247736,,,,,,,,,,,,,,Mo-Fr 08:30-12:00,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/12581472695
+san-antonio-osm-aa5a1b6c,San Antonio Food Bank,meal,"5200 Enrique M Barrera Parkway, San Antonio, TX, 78227",29.4174014,-98.5919162,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/80645213
+san-antonio-osm-3f76cf93,Haven For Hope,shelter,"1 Haven for Hope Way, San Antonio, TX, 78207",29.4330616,-98.5072672,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/315086857
+san-antonio-osm-ee91cd68,Haven For Hope Mailroom,shelter,,29.4326754,-98.5066781,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/315086862
+san-antonio-osm-08b8a8df,Holy Redeemer Catholic Church Food Distribution Center,meal,"231 Vargas Alley, San Antonio, TX, 78203",29.4147759,-98.4582094,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/1202456145
+san-antonio-osm-9bd03cb0,Saint Margaret Mary Food Bank,meal,,29.3832516,-98.4585895,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/1205965523

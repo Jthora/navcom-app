@@ -1,1 +1,9 @@
 id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+melbourne-osm-ef6d27fc,Union Mart by UMSU,meal,,-37.7997278,144.9632326,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/10980347050
+melbourne-osm-2fb5d9a7,The Orange Door,shelter,,-37.7562887,145.0679538,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/11571520201
+melbourne-osm-11c3e859,University Food Relief Program,meal,,-37.7995957,144.9632546,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/11578173967
+melbourne-osm-b2f4b0c3,Little Pantry & FREE Library,meal,,-37.8058066,144.9478585,,,,,,,,,,,,,,,24/7,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/12254806029
+melbourne-osm-103584c2,OzHarvest,meal,49 Bertie Street,-37.8300428,144.9384009,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/13515946634
+melbourne-osm-438a5ed1,Osman House,shelter,"179-191 Flemington Road, VIC, 3051",-37.7952723,144.9486248,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/39306723
+melbourne-osm-fd86085a,Flagstaff Crisis Accommodation,shelter,"9 Roden Street, VIC, 3003",-37.8064295,144.9506022,+61393294800,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/422389841
+melbourne-osm-73dfb893,The Open Door,shelter,,-37.7901172,144.9402558,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/1242803913

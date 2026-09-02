@@ -1,1 +1,11 @@
 id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+nottingham-osm-774e1466,NG7 Food Bank,meal,"Nottingham, NG7 6HX",52.9717018,-1.1630809,,,,,,,,,,,,,,,Fr 09:00-18:00,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/2276562526
+nottingham-osm-34942da1,Acorn Resource Centre,daytime,"Gregory Boulevard, Nottingham, NG7 5HY",52.9642669,-1.171554,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/4286726406
+nottingham-osm-90d51643,Marcus Garvey Day Centre,daytime,"Nottingham, NG7 2BY",52.9528946,-1.1755614,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/4498968100
+nottingham-osm-cac6f773,Arnold Foodbank,meal,"14 Mansfield Road, Nottingham, NG5 6AA",52.9957294,-1.1373123,,,,,,,,,,,,,,,"Mo,We,Fr 13:30-15:00",,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/6697000685
+nottingham-osm-36ab441f,The Studio at Padge Road,daytime,"6 Padge Road, Nottingham, NG9 2JR",52.9273598,-1.1983547,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/7759206522
+nottingham-osm-85bda588,Martin Jackaman Centre,daytime,"62 Robins Wood Road, Nottingham, NG8 3LD",52.966538,-1.2012924,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/38451173
+nottingham-osm-cae0e436,Framework,shelter,"6 London Road, Nottingham, NG2 3AB",52.949546,-1.1411562,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/133570688
+nottingham-osm-e1747d89,Aidan House,shelter,"Tewkesbury Drive, Nottingham, NG6 0DJ",52.9865368,-1.177385,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/327576971
+nottingham-osm-ab9c9249,The Willows Day Service,daytime,"Ambergate Road, Nottingham, NG8 3GD",52.9643175,-1.2067981,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/403394552
+nottingham-osm-f634bb66,Malone Terrace,shelter,"10 Fairham Brook Drive, Nottingham, NG11 8PY",52.9018412,-1.1661139,+441158227491,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/1374136281

@@ -1,1 +1,5 @@
 id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+newcastle-uk-osm-78886d15,Newcastle West End Foodbank,meal,Newcastle Upon Tyne,54.9750863,-1.6518269,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/8080235169
+newcastle-uk-osm-ee05577e,Cherry Tree View,shelter,,54.9691462,-1.6344302,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/12979996028
+newcastle-uk-osm-8064b4e2,The Peoples Kitchen,meal,"56 Bath Lane, Newcastle upon Tyne, NE4 5SQ",54.9728843,-1.6227561,+441912220699,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/257120111
+newcastle-uk-osm-5ba38473,Ozanam House,shelter,,54.9700929,-1.6463946,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/1415728759

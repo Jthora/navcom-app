@@ -1,1 +1,2 @@
 id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+sacramento-osm-bd09b8e5,Saint Philomene Food Bank,meal,"2428 Bell Street, Sacramento, CA",38.6103855,-121.4092108,+19164816757,,,,,,,,,,,,,,Tu 18:00-19:00,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/1080839936

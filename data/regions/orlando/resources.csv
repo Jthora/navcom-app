@@ -1,1 +1,2 @@
 id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+orlando-osm-601f6df9,VCentials,meal,,28.5206426,-81.4644358,,,,,,,,,,,,,,,Mo-Th 09:00-15:00,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/13996547170

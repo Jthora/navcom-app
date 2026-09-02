@@ -1,1 +1,4 @@
 id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+edinburgh-osm-5a84fd70,Leith Lets,medical,"10A Constitution Street, Edinburgh",55.9762132,-3.166277,+441312616870,,,,,,,,,,,,,,Mo-Fr 09:00-17:00; Sa-Su off,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/6150362824
+edinburgh-osm-e53b3ac5,Dunedin Harbour,shelter,,55.9745724,-3.1727528,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/1383660740
+edinburgh-osm-5d9dfc37,Bethany House,shelter,,55.9760267,-3.176826,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/1499433619

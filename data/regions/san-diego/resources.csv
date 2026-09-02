@@ -1,1 +1,4 @@
 id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+san-diego-osm-e511c9ad,San Ysidro Health Center,meal,"1655 Broadway, Chula Vista, CA, 91911",32.597098,-117.0758,,,,,,,,,,,,,,,Mo-Fr 08:00-17:00,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/6093447698
+san-diego-osm-ec9d57f4,Temporary Bridge Shelter,shelter,,32.7039298,-117.1516924,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/1079912189
+san-diego-osm-89bd324e,H Barracks Safe Parking,shelter,,32.7305615,-117.2093981,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/1373758480

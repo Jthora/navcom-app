@@ -1,1 +1,6 @@
 id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+pittsburgh-osm-9467953b,Saint Paul of the Cross Monastery Food Bank,meal,,40.4232718,-79.9843918,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/6952826850
+pittsburgh-osm-b42ab1ff,Dormont Free Pantry,meal,,40.3946461,-80.0373196,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/9598644805
+pittsburgh-osm-3ef5af7a,Free Store Wilkinsburg,meal,"619 Penn Avenue, 15221",40.4439213,-79.8851068,+14124369836,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/13396839302
+pittsburgh-osm-3341e852,Light of Life Rescue Mission,shelter,,40.4558552,-80.006141,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/370352715
+pittsburgh-osm-10180af9,FOR Community Resource Center,daytime,"500 Chartiers Avenue, McKees Rocks, PA, 15136",40.4649913,-80.0588243,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/403392700

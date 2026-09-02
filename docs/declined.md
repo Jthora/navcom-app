@@ -238,6 +238,37 @@ data and the `type` taxonomy need humans with local knowledge.
 
 **Cost:** the knowledge layer stays thin until people write it.
 
+### An `outreach` type, to absorb the largest unmapped OSM category
+
+`social_facility=outreach` is the biggest category the seeder drops: **15,547 objects
+worldwide**, against 8,537 for `shelter`. Adding it as a `type` would roughly double what OSM
+yields per region, and that number was very nearly enough on its own.
+
+**Then somebody read the records.** Portland's are Special Olympics Oregon, Oregon Community
+Foundation and the YMCA of Columbia Willamette; Minneapolis has the Jerry Gamble Boys & Girls
+Club and Parents In Community Action; Seattle has the Center for Career Alternatives and the
+Assistance League. In OSM, `outreach` means social-service outreach in general — not homeless
+outreach. A few are exactly right (Downtown Emergency Services Center, Urban Rest Stop), and
+most are a nonprofit's office.
+
+The test that settled it: **none of Seattle's 24 `outreach` records is tagged
+`social_facility:for=homeless`**, in a cache where 87 records do carry that tag. The category
+does not describe who it serves, so nothing distinguishes a hygiene centre from a community
+foundation without a person reading each one.
+
+Putting Special Olympics Oregon in a list somebody scans at 11pm looking for a bed is the
+dilution `normalise.ts` exists to refuse — the same lesson as Philadelphia's 254 records, of
+which 253 were food pantries and one was a shelter. **A record count measures OSM tagging
+conventions, not usefulness.**
+
+**What happens instead:** an `outreach` record that *is* explicitly `for=homeless` — Edinburgh's
+Crisis, for one — already surfaces by name in the build report's uncategorised list, for
+somebody to categorise in a minute. That is the correct treatment and it is already built.
+
+**Cost:** roughly 770 records across the seeded regions stay out of the directory, and the
+handful of real services among them wait on a human. That is the trade this project makes
+every time: *fewer records, all of them plausible.*
+
 ### Interoperating with an allied agency
 
 The Liaison wants their people visible to ours for one night, then gone — federation without

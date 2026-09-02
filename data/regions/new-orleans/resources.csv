@@ -1,1 +1,3 @@
 id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+new-orleans-osm-f9d16492,Salvation Army Food Pantry,meal,4500 South Claiborne Avenue,29.939777,-90.1049528,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/3344247046
+new-orleans-osm-578bccdc,Common Ground Relief Free Pantry,meal,"1804 Deslonde Street, New Orleans, LA, 70117",29.9704205,-90.0218939,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/12497742898

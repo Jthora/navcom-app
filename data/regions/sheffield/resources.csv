@@ -1,1 +1,8 @@
 id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+sheffield-osm-c0b3a3e7,Burngreave Food Bank,meal,"177-179 Spital Hill, Sheffield, S4 7LF",53.391805,-1.4586711,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/14070545617
+sheffield-osm-7ba63f8c,Older Adults Community Mental Health Teams,medical,"7 Edmund Road, Sheffield, S2 4EA",53.3729522,-1.4661493,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/93170091
+sheffield-osm-99e897e0,NHS Fitzwilliam Centre,medical,"143-145 Fitzwilliam Street, Sheffield",53.3765922,-1.4765659,+441143050500,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/100356053
+sheffield-osm-4cb301bb,Ben's Centre,shelter,"22 Wilkinson Street, Sheffield, S10 2GB",53.3795824,-1.4844696,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/103443901
+sheffield-osm-058327b6,Food Works,meal,"130 Richmond Park Road, Sheffield, S13 8HS",53.3740165,-1.3949676,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/137169415
+sheffield-osm-21351d24,Saint Wilfrid's Centre,shelter,"524 Queens Road, Sheffield, S2 4DT",53.3661521,-1.4694471,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/173078399
+sheffield-osm-4336235c,Gleadless Valley Foodbank,meal,"189 Blackstock Road, Sheffield, S14 1FX",53.3450411,-1.4457338,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/1037398687

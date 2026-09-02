@@ -1,1 +1,12 @@
 id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+sydney-osm-84e91175,Addi Road Food Pantry,meal,,-33.8849494,151.1777852,,,,,,,,,,,,,,,Mo-Sa 12:00-16:00; Su off,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/9201565676
+sydney-osm-ead01c13,Sydney City Lifestyle & Mission Centre,meal,"181 Parramatta Road, 2038",-33.8879717,151.1650328,+61449844006,,,,,,,,,,,,,,Tu 12:00-15:30; Fr 08:30-13:30,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/9201565677
+sydney-osm-6404510a,Mobile Community Pantry,meal,,-33.9624619,151.2473596,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/10913609113
+sydney-osm-f8a99eba,Community Food Pantry,meal,,-33.8912149,151.1214643,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/11019698355
+sydney-osm-0f3adccd,St Canice’s Kitchen,meal,,-33.8753961,151.2261414,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/11712134846
+sydney-osm-642828f8,The Haymarket Centre,shelter,137-139 Regent Street,-33.8883929,151.2012646,+61291979701,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/node/13095740738
+sydney-osm-360b231f,Matthew Talbot Hostel,shelter,,-33.8735196,151.2188491,+61293588102,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/556702535
+sydney-osm-64396c78,Canterbury Meals on Wheels,meal,,-33.9126294,151.0998034,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/563740062
+sydney-osm-b3f0ea65,Addi Road Food Pantry,meal,"142 Addison Road, NSW, 2204",-33.9029283,151.1610741,,,,,,,,,,,,,,,Mo-Fr 12:00-16:00,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/608947506
+sydney-osm-e484dd61,Mt St Joseph's Home,shelter,,-33.9064243,151.2453369,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/676709096
+sydney-osm-9430d582,Loaves And Fishes Restaurant,meal,,-33.8901552,151.1271067,,,,,,,,,,,,,,,,,,,2026-09-02,,website,ok,Source: https://www.openstreetmap.org/way/1186458629
