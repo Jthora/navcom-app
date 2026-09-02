@@ -470,6 +470,42 @@ per-test timeout, reduce parallel workers, or accept that this machine cannot ru
 without contention and treat a red run as inconclusive until repeated. Recorded so the next
 person who sees three red browser tests reaches for this entry before reaching for `git bisect`.
 
+## The directory crossed its own horizon at midnight, 2026-09-02
+
+Found by a silence guard, which is the only reason it was found at all.
+
+`rendered.test.ts` counts what each display rule actually examined, because "a guard that
+examines nothing passes". At 00:01 UTC rule 1 — *every rendered volatile value carries an
+age* — reported that it had examined **nothing**. Not a regression: the newest `last_verified`
+anywhere in the directory is `2026-08-19`, the volatile window is fourteen days plus a day of
+margin, and at midnight **2,874 volatile fields across the built site went to "call first"
+together**. Every page, every region, at once.
+
+That is the display rules working exactly as designed. Nobody has re-checked a place in a
+fortnight, and the directory says so rather than showing opening hours it cannot stand behind.
+
+**Two things were wrong, and neither was the behaviour.**
+
+The first is that the only warning was a red test one minute after the fact. There was nothing
+at seven days out, or three, or one — and the fix takes a person ringing a shelter, which
+needs notice. `community.ts` already enforces this discipline for the community links and
+fails the build six months on; the directory operators actually carry had no equivalent, which
+is the wrong way round. `check:data` now prints the horizon every build, per volatility class,
+with the days remaining — and it says the next cliff too: **seasonal data goes dark in
+fifteen days.**
+
+The second is that the silence guard could not tell two very different things apart: *no
+volatile value was rendered because none is fresh* (data, and now announced) and *no volatile
+value was rendered because the renderer broke* (code, and still a failure). It now accepts
+rule 1's zero only alongside proof that every volatile field **was** rendered and deliberately
+suppressed. Falsified by pointing the proof at a selector nothing emits: it fails, with "that
+is the renderer, not the calendar".
+
+**The general lesson**, which applies to every counter in that file: a silence guard is worth
+having and is not free. It fires on real, correct, expected states as well as on breakage, and
+when it does the question is which — a guard that cannot say is one somebody will eventually
+learn to ignore.
+
 ## The part that is not architectural
 
 Several of the nine came from editing files by string replacement against text written from

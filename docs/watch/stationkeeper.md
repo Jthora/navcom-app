@@ -36,6 +36,48 @@ somebody else can host it for you.
 **Not patrol experience, and not permission from anyone.** Standing up your own Watchtower is
 the founder case — nobody has to endorse you into existing.
 
+## How to know it is working
+
+This section did not exist, and the word *check* did not appear anywhere on this page. That
+was the gap: somebody was being asked to take the highest-privilege position in the system and
+given no way to check their own work. The first thing that would have noticed a box publishing
+nothing readable was an operator at sign-on, being told Dark.
+
+Three commands, and none of them needs anybody else to be awake.
+
+```
+watchtower-daemon --check   /etc/navcom/watchtower.toml
+navcom-escalation --check   /etc/navcom/escalation.toml
+navcom-escalation --drill   /etc/navcom/escalation.toml
+```
+
+**`watchtower-daemon --check` answers the question you cannot answer for yourself:** *what
+would an operator see if they pointed at this box right now?* It publishes nothing and starts
+nothing — it reads what is already on the relays, with the same filter and the same reader the
+Field Terminal uses, so it cannot quietly disagree with what an operator is actually shown. It
+names each relay separately, because being up on one of three is real and otherwise invisible,
+and it exits non-zero when an operator would be shown Dark, so it can be a cron line rather
+than something you have to remember to read.
+
+When it says Dark it says **which** Dark, because the four causes have four different fixes
+and only one of them is "the daemon is not running":
+
+| What it says | What to go and change |
+|---|---|
+| `absent` | The daemon is not running, or it is publishing to relays this config does not list |
+| `stale` | It is running and has stopped republishing, or cannot reach the relays it thinks it can. **The quietest of the four** — everything looks right from the box and every operator reads Dark |
+| `corrupt` | Something else is publishing `10910` from this key, or your daemon is a different version than the operators are reading |
+| `clock` | This machine's clock has moved backwards. Fix that before trusting anything else here |
+
+If no relay was reachable it says so and declines to blame the daemon, because telling you to
+rebuild a working box while your network is down is worse than telling you nothing.
+
+**The other two are about waking people.** `--check` pages your roster with a test message, so
+you learn your channels work from you rather than from somebody's 3am. `--drill` runs the whole
+ladder on the same code path a real `Distress` takes — a test mode that exercised something
+else would be testing something nobody depends on. Expect the first drill to fail; that is
+what it is for.
+
 ## What it actually costs
 
 **Uptime you're honest about, not uptime you promise.** [Dark is a supported

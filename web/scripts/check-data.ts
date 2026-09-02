@@ -17,6 +17,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { STALE_AFTER_DAYS, STALENESS_MARGIN_DAYS } from '@navcom/core/directory';
 
 import { INTAKE_FIELDS } from '@navcom/core';
 import { parseDirectory } from '@navcom/core';
@@ -46,6 +47,8 @@ const slugs = readdirSync(ROOT, { withFileTypes: true })
 
 const seenIds = new Map<string, string>();
 let total = 0;
+/** Every check date seen, for the freshness horizon below. */
+const checkDates: string[] = [];
 const today = new Date().toISOString().slice(0, 10);
 
 console.log(`\nChecking ${slugs.length} region(s) in data/regions/\n`);
@@ -108,6 +111,8 @@ for (const slug of slugs) {
     if (r.last_verified && r.last_verified > today) {
       warn(slug, null, r.id, `last_verified ${r.last_verified} is in the future.`);
     }
+    const seen = (r.last_verified ?? '').trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(seen)) checkDates.push(seen);
   }
 
   console.log(
@@ -125,6 +130,67 @@ const show = (label: string, notes: Note[]) => {
     console.log(`    ${n.message}`);
   }
 };
+
+/**
+ * How long before this directory stops answering the question it exists to answer.
+ *
+ * Volatile fields — opening hours, intake hours — are suppressed once `age + margin` passes
+ * their window, and a suppressed field reads "call first". That is correct and it is also a
+ * cliff: when the **newest** check in the whole directory crosses fourteen days, every
+ * volatile value on every page goes dark at once.
+ *
+ * It happened, and the way anybody found out was a unit test going red at 00:01 UTC — a
+ * silence guard reporting that no volatile value was rendered anywhere to examine. Nothing
+ * warned at seven days out, or three, or one. `community.ts` already enforces exactly this
+ * discipline for the community links and fails the build six months on; the directory
+ * operators actually carry had no equivalent, which is the wrong way round.
+ *
+ * So it is said here, every build, with the number of days left — because the fix is a person
+ * ringing a shelter, and a person needs notice.
+ */
+function horizon(): void {
+  const days = (from: string) =>
+    Math.floor((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
+
+  const checked = [...checkDates].sort();
+  const newest = checked[checked.length - 1];
+
+  console.log('\nFRESHNESS');
+  if (!newest) {
+    console.log('  Nothing in this directory carries a check date at all.');
+    warnings.push({ region: '—', row: null, field: 'last_verified', message: 'No record carries a check date.' });
+    return;
+  }
+
+  for (const [cls, window] of Object.entries(STALE_AFTER_DAYS)) {
+    const usable = window - STALENESS_MARGIN_DAYS;
+    const showing = checked.filter((d) => days(d) <= usable).length;
+    const left = usable - days(newest);
+    const line =
+      `  ${cls.padEnd(9)} window ${String(window).padStart(3)}d  ` +
+      `${String(showing).padStart(4)}/${checked.length} records still show a value  ` +
+      (left >= 0 ? `${left}d until none do` : `none for ${-left}d`);
+    console.log(line);
+
+    // Volatile is the one that decides whether somebody can read opening hours tonight.
+    if (cls !== 'volatile') continue;
+    if (showing === 0) {
+      warnings.push({
+        region: '—', row: null, field: 'last_verified',
+        message:
+          `Every volatile value in the directory is suppressed — the newest check is ${days(newest)} days old ` +
+          `and the window is ${window}. Every page reads "call first" for hours and intake until somebody re-checks a place.`
+      });
+    } else if (left <= 7) {
+      warnings.push({
+        region: '—', row: null, field: 'last_verified',
+        message: `${left} day(s) until every volatile value in the directory is suppressed. Newest check: ${newest}.`
+      });
+    }
+  }
+}
+
+horizon();
 
 show('ERRORS', errors);
 show('WARNINGS', warnings);

@@ -229,6 +229,33 @@ describe('rendered display rules', () => {
     // This is the failure that let rule 2 drift: nothing was watching whether the guard
     // still had anything to guard.
     for (const [rule, n] of Object.entries(examined)) {
+      if (rule === 'rule1' && n === 0) {
+        /*
+         * The one legitimate zero, and only in one data state.
+         *
+         * Rule 1 examines volatile values still rendered *as values*. When the newest check
+         * in the whole directory passes the volatile window, every one of them is suppressed
+         * at once and rule 1 has nothing left — which is the display rules working, not
+         * failing. It happened at 00:01 UTC on 2026-09-02: the newest `last_verified`
+         * anywhere was 2026-08-19, and 2,874 volatile fields went to "call first" together.
+         *
+         * That is a fact about the data, and `check:data` now reports the horizon on every
+         * build with the days remaining, so nobody has to learn it from a red test again.
+         * What must still fail here is the *code* fact it would otherwise be confused with:
+         * a renderer that stopped emitting volatile fields at all. So zero is accepted only
+         * alongside proof that every volatile field was rendered and deliberately suppressed.
+         */
+        const suppressed = pages.reduce(
+          (count, { doc }) =>
+            count + doc.querySelectorAll('[data-display="call-first"][data-class="volatile"]').length,
+          0
+        );
+        expect(
+          suppressed,
+          'no volatile field was rendered at all — that is the renderer, not the calendar'
+        ).toBeGreaterThan(0);
+        continue;
+      }
       expect(n, `${rule} examined nothing — it is passing vacuously`).toBeGreaterThan(0);
     }
   });

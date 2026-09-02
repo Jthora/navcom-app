@@ -3,6 +3,7 @@ import { loadDaemonConfig } from "./config.js";
 import { loadOrCreateKeypair } from "../shared/identity.js";
 import { WatchtowerDaemon } from "./watchtower.js";
 import { AccountabilityLog } from "../shared/accountability.js";
+import { checkWatch, report } from "./check.js";
 
 // Found in review: nothing guarded against a truly unexpected error
 // outside the known try/catch paths inside WatchtowerDaemon. Node's own
@@ -24,11 +25,39 @@ process.on("unhandledRejection", (reason: unknown) => {
 });
 
 function configPath(): string {
-  return process.argv[2] || process.env.WATCHTOWER_CONFIG || "./watchtower.toml";
+  // Skips flags, or `--check` itself becomes the config path and the command reports a
+  // missing file instead of a Dark watch.
+  const positional = process.argv.slice(2).find((a) => !a.startsWith("--"));
+  return positional || process.env.WATCHTOWER_CONFIG || "./watchtower.toml";
+}
+
+/**
+ * Answers the one question a Stationkeeper could not otherwise answer.
+ *
+ *   watchtower-daemon --check /etc/navcom/watchtower.toml
+ *
+ * The escalation half has had `--check` and `--drill` since it shipped; this half had no
+ * flags at all. Publishes nothing and starts nothing: it reads what is already on the relays
+ * with the operator's own filter, so a box whose daemon has died reports exactly what an
+ * operator would be told rather than a state the command created for itself.
+ *
+ * Exits non-zero when an operator would be shown Dark, so it can be a cron line or the last
+ * step of a restore drill rather than something somebody has to remember to read.
+ */
+async function checkNow(path: string): Promise<never> {
+  const config = loadDaemonConfig(path);
+  const { pubkey } = loadOrCreateKeypair(config.identity.privkeyPath);
+  const result = await checkWatch({ pubkey, relays: config.relays.urls });
+  for (const line of report(result)) console.log(line);
+  process.exit(result.visible ? 0 : 1);
 }
 
 async function main(): Promise<void> {
   const path = configPath();
+  if (process.argv.includes("--check")) {
+    await checkNow(path);
+    return;
+  }
   const config = loadDaemonConfig(path);
   const { secretKey, pubkey } = loadOrCreateKeypair(config.identity.privkeyPath);
 
