@@ -162,11 +162,32 @@ Three things together make it honest:
 - **A staleness margin.** Confidence is computed against `now + STALENESS_MARGIN_DAYS`, so
   a field reads **call first** a day early rather than a day late. Erring toward call-first
   is the safe direction, and it makes a stale build fail safe instead of fail confident
-- **A daily rebuild**, in `.github/workflows/web.yml`
+- ~~**A daily rebuild**, in `.github/workflows/web.yml`~~ — **that workflow was deleted on
+  2026-08-24** with CI (build order 9.9). There is no scheduled rebuild. Deploys happen on
+  push, and nothing else
 
-**The scheduled rebuild is load-bearing, not housekeeping.** The margin is sized for a
-daily cadence; it will not save a build that is three months old. Any deployment must run
-on the schedule, not only on push.
+**The scheduled rebuild was load-bearing, and removing CI removed it.** That consequence was
+not noticed at the time: `.github/workflows/README.md` records what the decision cost and
+lists *"nothing now notices a dependency going bad"* — it does not mention that
+`STALENESS_MARGIN_DAYS = 1` is sized for exactly the cadence that went with it.
+
+**What this actually costs.** Confidence for the zero-JS public site is computed once, at
+build time, and frozen into HTML. The margin makes a field read *call first* a day early, on
+the assumption the page is never more than a day old. With deploys only on push, a page can
+be a week old or a month, and a field that crossed its window six days ago will still be
+showing its value to somebody reading `/directory/`. **The Field Terminal escapes this and
+does** — it recomputes every verdict against the operator's real clock on hydration — so the
+exposure is exactly the surface with no JavaScript, which is the one a stranger reaches from
+a search engine.
+
+Two honest ways out, and it is a decision rather than a fix: **restore a cadence** by some
+means that is not a dead GitHub workflow, or **widen the margin to the cadence that actually
+happens** and accept reading call-first earlier. What is not honest is the current state,
+where the number assumes a schedule nobody is running.
+
+Meanwhile the page does say how old it is — *"Printed from a page published …, if that is long
+ago treat everything here as out of date"* — which is a real mitigation and is not the same
+thing as computing the verdict correctly.
 
 **The Field Terminal escapes this problem, and does.** It is a running application, so it
 recomputes every verdict against the operator's real clock on hydration — a cached directory

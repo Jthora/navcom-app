@@ -1044,6 +1044,7 @@ says so about itself.
 | | Blocks |
 |---|---|
 | Node service language for the box | Session 1 — TypeScript unless there's a reason |
+| **The staleness margin lost the cadence it was sized for** | `STALENESS_MARGIN_DAYS = 1` exists because confidence is frozen into the zero-JS site at build time, and it assumes the page is never more than a day old. The daily rebuild it was sized for lived in `.github/workflows/web.yml`, **deleted with CI on 2026-08-24** — a decision recorded and reasoned, whose effect on freshness nobody connected at the time. Deploys now happen on push only, so a `/directory/` page can be weeks old and still show a value for a field that crossed its window. The Terminal recomputes on hydration and escapes it; the public surface a stranger reaches from a search engine does not. Either restore a cadence by some means that is not a dead workflow, or widen the margin to the cadence that actually happens and read call-first earlier. Doing neither leaves a number that assumes a schedule nobody runs |
 
 ## The seeding rule
 
