@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { createHash } from 'node:crypto';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 // Plain .mjs, deliberately: this is the file node runs during a build, and testing the thing
 // that actually runs is the point.
 import { census, encode, packDirectory, walk } from '../../../scripts/car.mjs';
@@ -175,7 +178,26 @@ describe('the sidecar describes what the identifier is of', () => {
     const { regions, records } = census();
     expect(regions).toBeGreaterThan(0);
     expect(records).toBeGreaterThan(0);
-    expect(records).toBe(479);
+
+    /*
+     * Counted again from the files, not compared to a number typed in here.
+     *
+     * This asserted `records === 479`, which is a snapshot of one afternoon rather than the
+     * agreement the comment above describes — it went red the first time the directory grew,
+     * which is the one thing a directory is supposed to do. A literal cannot tell a census
+     * that drifted from a directory that changed, and only the first of those is a bug.
+     */
+    const dir = fileURLToPath(new URL('../../../../data/regions/', import.meta.url));
+    let expectedRegions = 0;
+    let expectedRecords = 0;
+    for (const slug of readdirSync(dir)) {
+      const csv = join(dir, slug, 'resources.csv');
+      if (!existsSync(csv)) continue;
+      expectedRegions++;
+      expectedRecords += readFileSync(csv, 'utf8').split(/\r?\n/).filter((l) => l.trim()).length - 1;
+    }
+    expect(records, 'the census and the files disagree about the directory').toBe(expectedRecords);
+    expect(regions, 'the census and the files disagree about the regions').toBe(expectedRegions);
   });
 
   it(

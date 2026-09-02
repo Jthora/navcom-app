@@ -77,6 +77,10 @@
   let clock = $state<ClockRead>({ behind: false, behindSeconds: 0, behindDays: 0 });
 
   onMount(() => {
+    // Removed before `identity` is assigned, so the pre-hydration link and the real Action are
+    // never both on screen: this runs synchronously and Svelte applies the `{#if identity}`
+    // update after.
+    document.getElementById('distress-early')?.remove();
     clock = readClock(data?.built, Date.now());
     configured = loadConfig() !== null;
     identity = loadIdentity();
@@ -679,6 +683,23 @@
   because with no watch it terminates in the operator's own person — which `contact.ts` calls
   "not the third rung of anything. It is the whole safety net."
 -->
+<!--
+  The same control, twice, and only ever one of them on screen.
+
+  This one is prerendered and hidden, and `hooks.server.ts` reveals it before the bundle
+  loads if this device has an identity. The one below is the real `Action` and replaces it on
+  mount. Without the pair, the most urgent control in the app was behind roughly three seconds
+  of hydration on the phone this app is written for — while `hooks.server.ts` already existed
+  to solve exactly that problem one screen deeper.
+
+  Markup matched to `Action`'s own output so the swap is invisible.
+-->
+<div id="distress-early" hidden>
+  <a class="nc-act" data-act data-tone="alarm" href="/terminal/distress/">
+    <span class="nc-act-label">Distress</span>
+  </a>
+</div>
+
 {#if identity}
   <Action label="Distress" tone="alarm" href="/terminal/distress/" />
 {/if}

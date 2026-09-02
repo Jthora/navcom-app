@@ -41,12 +41,25 @@ import type { Handle } from '@sveltejs/kit';
 const BOOTSTRAP = `<script>
 (function () {
   try {
+    var raw = localStorage.getItem('navcom.accruing');
+    if (!raw) return;
+    var store = JSON.parse(raw);
+
+    // Status: the way TO Distress, before the bundle arrives.
+    //
+    // The rest of this script solved being *on* the Distress screen early. Getting there was
+    // still behind the bundle: the Distress action and the whole rail sit inside
+    // \`{#if identity}\`, and identity is read from storage on mount, so for the first few
+    // seconds Status offered two links -- the directory and setup. On the device floor that is
+    // about three seconds, measured, and it is the screen somebody reaches for while something
+    // is happening. Same trick, same file, a few hundred more bytes.
+    var early = document.getElementById('distress-early');
+    if (early && store.secret) early.hidden = false;
+
     var slot = document.getElementById('reach-now');
     var section = document.getElementById('reach-early');
     if (!slot || !section) return;
-    var raw = localStorage.getItem('navcom.accruing');
-    if (!raw) return;
-    var c = JSON.parse(raw).emergency_contact;
+    var c = store.emergency_contact;
     if (!c || !c.number) return;
     var name = String(c.label || 'them');
     var link = function (href, text) {
