@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { callsFor, render } from "./callsheet.js";
 import { cmdRecord, parseRecordArgs } from "./record.js";
 import { dirname, join } from "node:path";
@@ -75,6 +75,19 @@ const cacheDir = (slug: string) => join(regionDir(slug), ".cache");
 const reportPath = (slug: string) => join(regionDir(slug), ".seed-report.json");
 const csvPath = (slug: string) => join(regionDir(slug), "resources.csv");
 const proposedPath = (slug: string) => join(cacheDir(slug), "proposed.csv");
+/**
+ * Named services a person could categorise, **committed** rather than cached.
+ *
+ * The first version wrote these into the report in `.cache/`, which `.gitignore` excludes and
+ * the next `build` overwrites. So a list whose entire purpose was to put six real services --
+ * Union Gospel Mission and the Chief Seattle Club among them -- in front of a human, put them
+ * somewhere no human would look, in a directory git is told to forget. It had already been
+ * destroyed once by the time anybody noticed.
+ *
+ * *A mechanism nobody can reach is not built.* This is that rule's fifth instance, reproduced
+ * an afternoon after it was written down.
+ */
+const uncategorisedPath = (slug: string) => join(regionDir(slug), "uncategorised.md");
 
 function manifest(slug: string): RegionManifest {
   const p = join(regionDir(slug), "region.json");
@@ -219,6 +232,7 @@ function cmdBuild(slug: string): Report {
 
   mkdirSync(cacheDir(slug), { recursive: true });
   writeFileSync(proposedPath(slug), toCsv(result.records));
+  writeUncategorised(slug, uncategorised);
 
   return write(slug, {
     region: slug, command: "build", at: new Date().toISOString(),
@@ -234,6 +248,40 @@ function cmdBuild(slug: string): Report {
       ? { uncategorised: uncategorised.sort((a, b) => a.name.localeCompare(b.name)) }
       : {}),
   });
+}
+
+/**
+ * The list, as a file somebody will actually open.
+ *
+ * Markdown and not JSON: its reader is a person deciding where to spend an hour, not a
+ * program. Names and what the source says they serve, nothing derived and nothing counted --
+ * a total here would invite somebody to work the number down rather than ring the right place.
+ *
+ * Removed rather than left stale when a region has none, so its presence means something.
+ */
+function writeUncategorised(
+  slug: string,
+  rows: { name: string; serves: string; url?: string }[]
+): void {
+  if (rows.length === 0) {
+    if (existsSync(uncategorisedPath(slug))) rmSync(uncategorisedPath(slug));
+    return;
+  }
+  const lines = [
+    "# Places in " + slug + " that need a person",
+    "",
+    "OpenStreetMap says each of these serves homeless people, and does not say **what it",
+    "provides** — whether it is a bed, a meal, a shower or a desk. That is the one thing a",
+    "directory row has to assert, so the seeder will not guess it and these are not published.",
+    "",
+    "Categorising one takes a minute and a phone call. Written by `navcom-seed build`; edit the",
+    "region's `resources.csv` to publish one, and this file is rewritten on the next build.",
+    "",
+  ];
+  for (const r of rows) {
+    lines.push("- **" + r.name + "** — serves " + r.serves + (r.url ? " — <" + r.url + ">" : ""));
+  }
+  writeFileSync(uncategorisedPath(slug), lines.join("\n") + "\n");
 }
 
 function cmdApply(slug: string): void {
