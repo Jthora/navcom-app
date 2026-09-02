@@ -9,6 +9,7 @@ import { audit } from "./audit.js";
 import { dedupe } from "./dedupe.js";
 import { toCsv } from "./emit.js";
 import { merge } from "./merge.js";
+import { needsStatusWrite } from "./manifest.js";
 import { normalise } from "./normalise.js";
 import { fetchOsm, type OsmConfig } from "./sources/osm.js";
 import type { RawRecord, SeededRecord } from "./seeded.js";
@@ -223,7 +224,7 @@ function cmdApply(slug: string): void {
   // the truth by somebody forgetting to edit a second file.
   const manifestPath = join(regionDir(slug), "region.json");
   const region = JSON.parse(readFileSync(manifestPath, "utf8")) as Record<string, unknown>;
-  if (region["status"] !== "maintained") {
+  if (needsStatusWrite(region["status"])) {
     region["status"] = "seeded";
     writeFileSync(manifestPath, JSON.stringify(region, null, 2) + "\n");
   }

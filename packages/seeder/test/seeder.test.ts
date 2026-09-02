@@ -16,7 +16,8 @@ import { mapType, normalise, normalisePhone, seededId } from "../src/normalise.j
 import { parseRecordArgs } from "../src/record.js";
 import { RESOURCE_TYPES } from "@navcom/core";
 import type { RawRecord, SeededRecord } from "../src/seeded.js";
-import { fromOverpass, overpassQuery } from "../src/sources/osm.js";
+import { fromOverpass, overpassQuery , parseStatus, waitForSlot } from "../src/sources/osm.js";
+import { needsStatusWrite } from "../src/manifest.js";
 
 const raw = (over: Partial<RawRecord> = {}): RawRecord => ({
   source: "osm", sourceId: "node/123", name: "Hope House", ...over,
@@ -497,5 +498,101 @@ describe("recording a call (found in robustness audit: --on had no coverage at a
   it("defaults --on to today when omitted, and today is always valid", () => {
     const noOn = ["place-a", "--by", "Wren", "--method", "phone", "--pets", "yes"];
     expect(() => parseRecordArgs("st-louis", noOn)).not.toThrow();
+  });
+});
+
+describe("asking Overpass before knocking", () => {
+  /*
+   * A run over sixty-seven metros lost thirty-one of them to dropped connections once, and
+   * fifty-eight to the same thing again: nine regions succeeded and then Overpass stopped
+   * accepting connections at all. The retry ladder was blind — 4s, 8s, 16s — while the service
+   * publishes exactly when a slot frees to anybody who asks.
+   */
+  it("reads a free slot", () => {
+    const status = parseStatus(
+      ["Connected as: 3086356085", "Current time: 2026-09-02T11:00:00Z", "Rate limit: 2", "2 slots available now."].join("\n"),
+    );
+    expect(status).toEqual({ slots: 2, waitSeconds: 0 });
+  });
+
+  it("takes the soonest slot when none is free", () => {
+    const status = parseStatus(
+      [
+        "Rate limit: 2",
+        "Slot available after: 2026-09-02T11:00:20Z, in 20 seconds.",
+        "Slot available after: 2026-09-02T11:00:14Z, in 14 seconds.",
+      ].join("\n"),
+    );
+    expect(status).toEqual({ slots: 0, waitSeconds: 14 });
+  });
+
+  it("ignores a slot that freed while the page was being written", () => {
+    // Negative seconds appear when the server renders one moment and we read the next.
+    const status = parseStatus("Slot available after: 2026-09-02T10:59:59Z, in -3 seconds.");
+    expect(status.waitSeconds).toBe(0);
+  });
+
+  it("waits the time it was told, and no longer than the cap", async () => {
+    const slept: number[] = [];
+    await waitForSlot("ua", {
+      fetchImpl: (async () => ({ ok: true, text: async () => "Slot available after: x, in 30 seconds." })) as never,
+      sleepImpl: async (ms: number) => void slept.push(ms),
+    });
+    expect(slept).toEqual([30_000]);
+
+    slept.length = 0;
+    await waitForSlot("ua", {
+      capSeconds: 5,
+      fetchImpl: (async () => ({ ok: true, text: async () => "Slot available after: x, in 3600 seconds." })) as never,
+      sleepImpl: async (ms: number) => void slept.push(ms),
+    });
+    expect(slept, "an hour-long wait would stall the whole run").toEqual([5_000]);
+  });
+
+  it("fails open when the status endpoint is the thing that is down", async () => {
+    /*
+     * The assertion that keeps this from being a new failure mode. A politeness check that
+     * throws is worse than no check: it turns a service having a bad day into a run that
+     * cannot start, and the retry ladder below already covers the real failure.
+     */
+    const slept: number[] = [];
+    const out = await waitForSlot("ua", {
+      fetchImpl: (async () => {
+        throw new Error("fetch failed");
+      }) as never,
+      sleepImpl: async (ms: number) => void slept.push(ms),
+    });
+    expect(out).toBeNull();
+    expect(slept, "a dead status endpoint made the caller wait").toEqual([]);
+  });
+
+  it("and when it answers with something unparseable", async () => {
+    const out = await waitForSlot("ua", {
+      fetchImpl: (async () => ({ ok: true, text: async () => "<html>maintenance</html>" })) as never,
+      sleepImpl: async () => undefined,
+    });
+    expect(out).toEqual({ slots: 0, waitSeconds: 0 });
+  });
+});
+
+describe("the manifest is written only when it must be", () => {
+  /*
+   * `apply` rewrote region.json on every run, including for regions already marked `seeded`
+   * where the value written was the value already there. A JSON round-trip is not lossless on
+   * a hand-edited file: reseeding nine regions moved adelaide's bbox from `-35.0` to `-35` —
+   * identical to a parser, a diff nobody asked for, in a file the tool only needed to read.
+   */
+  it("leaves a region that is already seeded alone", () => {
+    expect(needsStatusWrite("seeded")).toBe(false);
+  });
+
+  it("and never overrides a maintainer's own claim", () => {
+    expect(needsStatusWrite("maintained")).toBe(false);
+  });
+
+  it("but does record that a scrape happened when the status says otherwise", () => {
+    // The reason the write exists at all: status must not drift from what the data is.
+    expect(needsStatusWrite("example")).toBe(true);
+    expect(needsStatusWrite(undefined)).toBe(true);
   });
 });

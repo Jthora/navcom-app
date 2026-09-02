@@ -44,6 +44,7 @@ export interface OsmConfig {
 }
 
 const ENDPOINT = "https://overpass-api.de/api/interpreter";
+const STATUS_ENDPOINT = "https://overpass-api.de/api/status";
 
 /**
  * What we ask Overpass for.
@@ -138,6 +139,79 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
  * with no retry lost thirty-one of them to exactly that -- so this backs off and tries
  * again, which is both what gets the data and what a good neighbour does.
  */
+/**
+ * What Overpass says about its own load.
+ *
+ * `/api/status` is the endpoint the service publishes so clients can stop guessing. A blind
+ * backoff -- which is what this had -- either waits too long or hammers a server that is
+ * telling anybody who asks exactly when a slot frees.
+ *
+ * This matters here more than most places. A run over sixty-seven metros lost thirty-one of
+ * them to dropped connections once, and lost fifty-eight to the same thing again today: nine
+ * regions succeeded, then Overpass stopped accepting connections entirely. Retrying four times
+ * each into that is the opposite of the rent `PAUSE_MS` is commented for.
+ */
+export interface OverpassStatus {
+  /** Slots free right now. */
+  slots: number;
+  /** Seconds until the soonest one frees. Zero when one is already free. */
+  waitSeconds: number;
+}
+
+/**
+ * Reads the two shapes the endpoint actually emits, and nothing else.
+ *
+ *   "2 slots available now."
+ *   "Slot available after: 2026-09-02T11:00:14Z, in 14 seconds."
+ *
+ * Pure, so the parsing is tested without a network — the wrapper below is the only part that
+ * needs one, and it is deliberately the part that does almost nothing.
+ */
+export function parseStatus(text: string): OverpassStatus {
+  const now = /(\d+)\s+slots?\s+available\s+now/i.exec(text);
+  if (now) return { slots: Number(now[1]), waitSeconds: 0 };
+
+  const waits = [...text.matchAll(/in\s+(-?\d+)\s+seconds?/gi)].map((m) => Number(m[1]));
+  // Negative appears when a slot freed between the server rendering and us reading it.
+  const soonest = waits.filter((n) => n > 0).sort((a, b) => a - b)[0];
+  return { slots: 0, waitSeconds: soonest ?? 0 };
+}
+
+/**
+ * Waits until Overpass says there is a slot, or gives up asking and lets the caller proceed.
+ *
+ * **Fails open, deliberately.** If the status endpoint is unreachable or unparseable this
+ * returns rather than throwing: a politeness check that becomes a new way for the run to die
+ * is worse than no check at all, and the retry ladder below still covers the real failure.
+ */
+export async function waitForSlot(
+  userAgent: string,
+  opts: {
+    fetchImpl?: typeof fetch;
+    sleepImpl?: (ms: number) => Promise<unknown>;
+    endpoint?: string;
+    /** Never wait longer than this on one look, however far out the slot is. */
+    capSeconds?: number;
+  } = {},
+): Promise<OverpassStatus | null> {
+  const doFetch = opts.fetchImpl ?? fetch;
+  const doSleep = opts.sleepImpl ?? sleep;
+  const url = opts.endpoint ?? STATUS_ENDPOINT;
+  const cap = opts.capSeconds ?? 90;
+
+  try {
+    const response = await doFetch(url, { headers: { "user-agent": userAgent } });
+    if (!response.ok) return null;
+    const status = parseStatus(await response.text());
+    if (status.slots === 0 && status.waitSeconds > 0) {
+      await doSleep(Math.min(status.waitSeconds, cap) * 1000);
+    }
+    return status;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchOsm(
   config: OsmConfig,
   userAgent: string,
@@ -147,6 +221,11 @@ export async function fetchOsm(
   let last = "";
 
   for (let attempt = 1; attempt <= attempts; attempt++) {
+    // Ask before knocking. Costs one cheap GET and replaces a blind 4/8/16s ladder with the
+    // wait the server itself named. Fails open, so a status endpoint having a bad day cannot
+    // stop the run.
+    await waitForSlot(userAgent);
+
     try {
       const response = await fetch(ENDPOINT, {
         method: "POST",
