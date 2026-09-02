@@ -32,6 +32,41 @@ sobriety, ID, curfew — are usually absent entirely.
 *Teaches:* the gap is not "a list of shelters." It's *who they'll actually take, tonight*,
 maintained by people who were there last night.
 
+*Corroborated externally, 2026-09-02.* Three findings from the information-and-referral field
+that were arrived at here independently, and one that was not:
+
+- **No single source is sufficient.** Around 74% of social-service directory records are
+  duplicated across databases and only ~25% are unique to any one of them. So a coverage figure
+  measured against a single source — OpenStreetMap, say — describes that source, not the world
+- **The verification practice is phone calls and monthly line-by-line reconciliation**, described
+  by practitioners as *"tedious, unglamorous work"* and *"the single most effective thing a
+  housing navigator can do."* That is exactly what `callsheet` and `record` generate, and it is
+  a **recurring** act rather than a cleanup — which is what the per-field volatility model
+  already assumes
+- **The fields that change are eligibility, intake location and waitlist status** — which maps
+  onto `id_required`/`sobriety`/`accepts`, `intake_hours`, and `capacity_signal`. `ASK_FIRST`
+  independently put `intake_hours`, `pets`, `id_required` and `capacity_signal` in its top four
+- **The lag is the opportunity, and it had not been named here.** A new programme appears on an
+  agency's own website within a week and takes **three months** to reach the databases
+  front-line navigators actually use. An operator adding a place from the field closes that to
+  the same night, and that — not coverage — is what this directory can offer that a
+  professional one structurally cannot
+
+One convergence is worth stating plainly: New York State's Office for the Aging requires
+**monthly attestations** from providers, and reports that this produces more reliable listings
+than any other mechanism they use. That is [`attestation.md`](../attestation.md)'s primitive,
+reached from the opposite direction by people with an institution behind them.
+
+**[HSDS / Open Referral](https://docs.openreferral.org/)** — the AIRS-endorsed exchange format
+for exactly this data: organisations, services, locations, schedules, `required_document`,
+accessibility, languages.
+
+*Teaches:* there is a standard, and being outside it is a choice rather than an oversight.
+Exporting the directory as HSDS would make field-verified records usable by 211s and navigators
+instead of ending in a silo. **Deferred, with a trigger:** when there are verified records worth
+somebody else's import. Today there is one record with intake hours, and publishing a skeleton
+in a respected format would misrepresent it as something the ecosystem could rely on.
+
 **Discord / Signal** — What teams already use for conversation, and it works well.
 
 *Teaches:* don't build chat. Build what a chat app structurally cannot: a signal protocol
