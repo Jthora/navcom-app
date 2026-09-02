@@ -232,7 +232,16 @@ function cmdBuild(slug: string): Report {
 
   mkdirSync(cacheDir(slug), { recursive: true });
   writeFileSync(proposedPath(slug), toCsv(result.records));
-  writeUncategorised(slug, uncategorised);
+  /*
+   * Whether this region's cache predates the `serves` tag.
+   *
+   * `social_facility:for` is what lets a dropped record be named, and a cache fetched before
+   * it existed carries none -- so the region yields no candidates for a reason that has
+   * nothing to do with the region. Passed through so an absent list can say which kind of
+   * absence it is.
+   */
+  const scanned = flat.some((r) => r.serves !== undefined);
+  writeUncategorised(slug, uncategorised, scanned);
 
   return write(slug, {
     region: slug, command: "build", at: new Date().toISOString(),
@@ -261,8 +270,33 @@ function cmdBuild(slug: string): Report {
  */
 function writeUncategorised(
   slug: string,
-  rows: { name: string; serves: string; url?: string }[]
+  rows: { name: string; serves: string; url?: string }[],
+  scanned: boolean
 ): void {
+  /*
+   * Nothing found and never looked are different facts, and an absent file said both.
+   *
+   * *Volatile data shows its age. Stale reads "call first"; blank reads "unknown"* -- the
+   * directory's own rule, applied to the artifact that decides where somebody spends an hour.
+   * Twenty regions are in exactly this state today because Overpass rate-limited a heavy day,
+   * and a contributor opening one of them would otherwise conclude it had been checked.
+   */
+  if (rows.length === 0 && !scanned) {
+    writeFileSync(
+      uncategorisedPath(slug),
+      [
+        "# " + slug + " has not been scanned for these",
+        "",
+        "This region's cached fetch predates `social_facility:for`, the tag that says who a",
+        "place serves. So no candidate could be named here, and **that is not the same as there",
+        "being none** — nobody has looked.",
+        "",
+        "`navcom-seed fetch " + slug + " && navcom-seed build " + slug + "` rewrites this file.",
+        "",
+      ].join("\n")
+    );
+    return;
+  }
   if (rows.length === 0) {
     if (existsSync(uncategorisedPath(slug))) rmSync(uncategorisedPath(slug));
     return;
