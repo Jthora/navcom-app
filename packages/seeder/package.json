@@ -16,5 +16,5 @@
     "verify": "npm run typecheck && npm test"
   },
   "dependencies": { "@navcom/core": "file:../core" },
-  "devDependencies": { "tsx": "^4.19.2", "typescript": "^5.7.2", "vitest": "^2.1.8" }
+  "devDependencies": { "tsx": "^4.19.2", "typescript": "^5.7.2", "vitest": "^3.2.7" }
 }

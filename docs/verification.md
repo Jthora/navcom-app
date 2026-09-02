@@ -506,6 +506,59 @@ having and is not free. It fires on real, correct, expected states as well as on
 when it does the question is which — a guard that cannot say is one somebody will eventually
 learn to ignore.
 
+## What `npm audit` says, and what it means here, 2026-09-02
+
+Ten advisories, three of them serious-sounding. All ten were **dev tooling** — `npm audit
+--omit=dev` reported zero — and the two loudest were unreachable rather than merely unlikely:
+
+- **CRITICAL, vitest:** arbitrary file read and execute *while the Vitest UI server is
+  listening.* `@vitest/ui` is not installed and no script passes `--ui`. The component the
+  advisory needs does not exist in this tree.
+- **HIGH, vite:** `server.fs.deny` bypass on **Windows** alternate paths. Development is on
+  darwin and deploys build on Linux.
+- The three moderates all require a running **dev server**. `vite build` and `vite preview` do
+  not start one, and every suite here uses `preview`.
+
+**One of the ten was genuinely exploitable, and it was not the one marked CRITICAL.** The
+esbuild advisory — *any website can send requests to the dev server and read the response* —
+needed no unusual preconditions at all: anybody running `npm run dev` on this repo who then
+visited a hostile page in the same browser could have had source read off their dev server.
+It is fixed; esbuild is 0.25.12 under vite 6.4.3. Worth recording because the severity labels
+pointed at the two that could not fire here and away from the one that could.
+
+Checked at the artifact rather than reasoned about, which is this file's whole argument. The
+library does not ship: `build/` has no server directory and no functions, `hooks.server.ts`
+only rewrites the HTML shell, no `+page.server.ts` touches the `cookies` API, and there is not
+one `document.cookie` in the bundle — state is `localStorage`. The **only** occurrence of the
+word anywhere in the built site is this paragraph, rendered as a docs page.
+
+Four independent reasons, each sufficient: nothing of it is deployed; the only execution is at
+build time on a trusted machine rendering the project's own routes, with no request from
+anyone to smuggle input through; the app never calls the API; and it sets no cookies at all.
+For the advisory to matter somebody would have to add a server adapter, write user input into
+a cookie name or path, and deploy it — which is a future feature needing its own review, not a
+latent hole.
+
+**What was upgraded, and why not further.** The advisories clear at `vite >= 6.4.3` and
+`vitest >= 3.2.6`, which is one major each rather than the three and two that `latest` implies.
+So: vite 5.4.21 → 6.4.3, vitest 2.1.9 → 3.2.7, `@sveltejs/vite-plugin-svelte` 4 → 5.1.1,
+`vite-node` 2 → 3.2.4. Ten became **three, all low**. The bundle budget moved 0.1 kB and the
+public site is still zero JavaScript, which was the specific risk in a vite major.
+
+**The root `package.json` declares vite as a devDependency and builds nothing.** That is
+deliberate and it is the only thing that works: `overrides` reports itself as applied
+(`npm ls` prints `overridden`) and installs the old version anyway, even after regenerating
+the lockfile. The override was removed once the direct dependency was shown to be what
+actually hoists it — a config line that does nothing is worse than none, for the same reason a
+workflow that never runs is.
+
+**The three that remain cannot be fixed and should not be chased.** All are one advisory —
+`cookie <0.7.0`, reached through `@sveltejs/kit` — and npm's proposed fix is `@sveltejs/kit@0.0.30`,
+which is its solver admitting there is no 2.x that resolves it. It does not ship, the app has
+no server, and it sets no cookies. **Expect `npm audit` to stay red at three low**; a red audit
+somebody has already read and understood is different from one nobody has, and the difference
+is written here so the next person does not start from zero.
+
 ## The part that is not architectural
 
 Several of the nine came from editing files by string replacement against text written from
