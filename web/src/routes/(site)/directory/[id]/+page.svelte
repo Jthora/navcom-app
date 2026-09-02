@@ -1,7 +1,7 @@
 <script lang="ts">
   import FieldRow from '$lib/components/FieldRow.svelte';
   import { displayField, displayRecord } from '$lib/directory';
-  import { AVAILABILITY_FIELDS, FIELD_LABELS, INTAKE_FIELDS, labelValue } from '$lib/directory/load';
+  import { AVAILABILITY_FIELDS, FIELD_LABELS, INTAKE_FIELDS, labelValue } from '@navcom/core';
   import { localTimeNote } from '@navcom/core';
   import type { PageData } from './$types';
 

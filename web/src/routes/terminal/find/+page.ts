@@ -6,7 +6,7 @@
  * smaller it could name.
  */
 
-import { loadRegions } from '$lib/directory/load';
+import { loadRegions } from '$lib/directory/regions';
 
 export const prerender = true;
 

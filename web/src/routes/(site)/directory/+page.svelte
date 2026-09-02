@@ -1,6 +1,6 @@
 <script lang="ts">
   import RecordSummary from '$lib/components/RecordSummary.svelte';
-  import { labelValue } from '$lib/directory/load';
+  import { labelValue } from '@navcom/core';
   import { localTimeNote } from '@navcom/core';
   import type { PageData } from './$types';
 

@@ -20,7 +20,7 @@
     type ResourceRecord,
     type ResourceType
   } from '$lib/directory';
-  import { AVAILABILITY_FIELDS, FIELD_LABELS, INTAKE_FIELDS, labelValue } from '$lib/directory/load';
+  import { AVAILABILITY_FIELDS, FIELD_LABELS, INTAKE_FIELDS, labelValue } from '@navcom/core';
   import { displayMerged, mergeCorrections, needsChecking, CORRECTABLE_FIELDS, FIELD_OPTIONS,
     isAddedPlace, isSeeded, withPlaces, PlaceError } from '@navcom/core';
   import { corrections } from '$lib/terminal/corrections.svelte';

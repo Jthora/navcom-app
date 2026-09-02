@@ -1,6 +1,6 @@
 <script lang="ts">
   import { displayField, displayRecord, type ResourceRecord } from '$lib/directory';
-  import { labelValue, labelValues } from '$lib/directory/load';
+  import { labelValue, labelValues } from '@navcom/core';
 
   let { record, now }: { record: ResourceRecord; now: Date } = $props();
 

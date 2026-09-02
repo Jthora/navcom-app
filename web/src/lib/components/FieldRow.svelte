@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { FieldDisplay } from '$lib/directory';
-  import { labelValues } from '$lib/directory/load';
+  import { labelValues } from '@navcom/core';
 
   let {
     label,

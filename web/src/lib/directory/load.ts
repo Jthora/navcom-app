@@ -1,57 +1,25 @@
 /**
  * Build-time directory load.
  *
- * Every region's CSV and manifest is inlined by Vite at build time, so the published site
- * is static HTML with no data fetch and no runtime dependency on anything.
+ * Every region's CSV is inlined by Vite at build time, so the published site is static HTML
+ * with no data fetch and no runtime dependency on anything.
+ *
+ * **Importing this module costs the whole directory.** The glob below is eager and runs at
+ * module scope, so there is no such thing as importing one function from here cheaply. That
+ * is fine for a page that renders records and expensive for one that does not — see
+ * `regions.ts`, which exists so the second kind has somewhere to import from. If you need
+ * only region names, or only the label tables from `@navcom/core`, do not import this file.
  */
 
 import { parseDirectoryOrThrow } from '@navcom/core';
-import { parseRegion, type Region } from '@navcom/core';
 import type { ResourceRecord } from '@navcom/core';
+import { isPublished, loadRegions, slugOf, type Region } from './regions';
 
 const csvFiles = import.meta.glob('../../../../data/regions/*/resources.csv', {
   query: '?raw',
   import: 'default',
   eager: true
 }) as Record<string, string>;
-
-const regionFiles = import.meta.glob('../../../../data/regions/*/region.json', {
-  eager: true
-}) as Record<string, { default: unknown }>;
-
-const slugOf = (path: string): string => path.replace(/.*\/regions\/([^/]+)\/.*/, '$1');
-
-/**
- * Folders starting with `_` are scaffolding, not regions — `_template` exists to be copied
- * and its manifest is deliberately invalid so nobody ships it unedited.
- */
-const isRegion = (path: string): boolean => !slugOf(path).startsWith('_');
-
-/**
- * Regions whose slugs must never reach a reader, resolved once from the manifests.
- *
- * `_template` was excluded by its folder name and `status: 'example'` was not excluded at
- * all, so **two fixture shelters were published as live directory entries** — searchable at
- * the root console, each with a full record page carrying an address and a phone number, and
- * both present in `directory.json` for anybody consuming the export. Only the `/directory/`
- * index labelled them; the three surfaces a person in trouble actually meets did not.
- *
- * Excluded rather than labelled in three more places. A person scanning for a bed at 2am
- * should not have to read a badge to find out a shelter is not real, and one filter cannot be
- * got wrong the way three separate markers can. The folder stays: it is what
- * `packages/core/test/directory.test.ts` reads by path, and it is the worked example a
- * contributor copies.
- */
-const FIXTURE_STATUS = 'example';
-const fixtureSlugs = new Set(
-  Object.entries(regionFiles)
-    .filter(([path]) => isRegion(path))
-    .filter(([, mod]) => (mod.default as { status?: string } | null)?.status === FIXTURE_STATUS)
-    .map(([path]) => slugOf(path))
-);
-
-/** A real region: not scaffolding, and not a fixture. */
-const isPublished = (path: string): boolean => isRegion(path) && !fixtureSlugs.has(slugOf(path));
 
 export interface LoadedDirectory {
   regions: Region[];
@@ -67,15 +35,9 @@ let cache: LoadedDirectory | null = null;
 export function loadAll(): LoadedDirectory {
   if (cache) return cache;
 
-  const regions: Region[] = [];
+  const regions = loadRegions();
   const records: ResourceRecord[] = [];
   const seen = new Map<string, string>();
-
-  for (const [path, mod] of Object.entries(regionFiles)) {
-    if (!isPublished(path)) continue;
-    regions.push(parseRegion(slugOf(path), mod.default));
-  }
-  regions.sort((a, b) => a.slug.localeCompare(b.slug));
 
   for (const [path, csv] of Object.entries(csvFiles)) {
     if (!isPublished(path)) continue;
@@ -108,13 +70,11 @@ export function loadDirectory(): ResourceRecord[] {
   return loadAll().records;
 }
 
-export function loadRegions(): Region[] {
-  return loadAll().regions;
-}
-
 export function regionOf(record: ResourceRecord): Region | undefined {
   return loadAll().regions.find((r) => r.slug === record.region);
 }
+
+export { loadRegions };
 
 export {
   FIELD_LABELS, INTAKE_FIELDS, AVAILABILITY_FIELDS, VALUE_LABELS, labelValue, labelValues
