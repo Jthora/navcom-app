@@ -157,3 +157,30 @@ export function labelValue(raw: string): string {
 export function labelValues(values: string[]): string {
   return values.map(labelValue).join(', ');
 }
+
+/**
+ * The question a person can actually say out loud, per field.
+ *
+ * **In core because two things ask it.** `navcom-seed callsheet` prints these for somebody
+ * working a list on a laptop, and the Field Terminal shows the same words to somebody holding
+ * a phone. Two wordings would drift, and the drift would land on the half nobody proof-reads.
+ *
+ * They are phrased for the person being asked, not for the schema: *"Can somebody bring a
+ * dog?"* rather than *"pets?"*. The information-and-referral field describes this work as
+ * "tedious, unglamorous" and the single most effective thing a navigator does, which is an
+ * argument for making the words easy to say rather than accurate to a field name.
+ *
+ * Only the fields worth a stranger's minute on the phone. A blank `languages` almost never
+ * turns somebody away; a blank `pets` routinely does.
+ */
+export const FIELD_QUESTION: Partial<Record<ResourceField, string>> = {
+  intake_hours: "What hours can somebody come in to be taken on? Is that different from when you're open?",
+  pets: 'Can somebody bring a dog? Any animal at all, or only a service animal?',
+  id_required: 'Does somebody need ID to be taken in? What if they have none?',
+  capacity_signal: 'Is there a way to know before coming whether you have room tonight?',
+  sobriety: 'Does somebody need to be sober to come in, or is that not a condition?',
+  accepts: 'Who can you take? Adults, couples, families, under-18s?',
+  curfew: 'Is there a curfew, and what happens if somebody arrives after it?',
+  hours: 'What hours are you open?',
+  phone: 'Is this the best number for somebody who needs a bed tonight?'
+};

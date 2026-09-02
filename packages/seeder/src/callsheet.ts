@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { needsChecking, type ResourceField, type ResourceRecord } from "@navcom/core";
+import { FIELD_QUESTION, needsChecking, type ResourceField, type ResourceRecord } from "@navcom/core";
 
 /**
  * A call sheet: what to ask, and who to ask.
@@ -29,18 +29,14 @@ import { needsChecking, type ResourceField, type ResourceRecord } from "@navcom/
  * would help most.
  */
 
-/** The question a person can actually say out loud, per field. */
-const QUESTION: Partial<Record<ResourceField, string>> = {
-  intake_hours: "What hours can somebody come in to be taken on? Is that different from when you're open?",
-  pets: "Can somebody bring a dog? Any animal at all, or only a service animal?",
-  id_required: "Does somebody need ID to be taken in? What if they have none?",
-  capacity_signal: "Is there a way to know before coming whether you have room tonight?",
-  sobriety: "Does somebody need to be sober to come in, or is that not a condition?",
-  accepts: "Who can you take? Adults, couples, families, under-18s?",
-  curfew: "Is there a curfew, and what happens if somebody arrives after it?",
-  hours: "What hours are you open?",
-  phone: "Is this the best number for somebody who needs a bed tonight?"
-};
+/**
+ * The words to say, from core.
+ *
+ * They moved there when the Field Terminal started showing them too: a person on the phone
+ * and a person at a laptop should be asking the same question, and two copies would drift
+ * onto the half nobody proof-reads.
+ */
+const QUESTION = FIELD_QUESTION;
 
 /**
  * How much an answer here is worth.

@@ -20,7 +20,8 @@
     type ResourceRecord,
     type ResourceType
   } from '$lib/directory';
-  import { AVAILABILITY_FIELDS, FIELD_LABELS, INTAKE_FIELDS, labelValue } from '@navcom/core';
+  import { AVAILABILITY_FIELDS, FIELD_LABELS, FIELD_QUESTION, INTAKE_FIELDS, labelValue,
+    PLACE_METHODS, type PlaceMethod } from '@navcom/core';
   import { displayMerged, mergeCorrections, needsChecking, CORRECTABLE_FIELDS, FIELD_OPTIONS,
     isAddedPlace, isSeeded, withPlaces, PlaceError } from '@navcom/core';
   import { corrections } from '$lib/terminal/corrections.svelte';
@@ -84,6 +85,18 @@
    * call about the fact itself.
    */
   let bridgedFlag = $state(false);
+  /**
+   * How this operator came to know the answer.
+   *
+   * **Every correction used to claim `in_person`, hardcoded.** An operator who rang a shelter
+   * and typed what they were told signed an attestation saying they had stood there — which is
+   * a false provenance claim in a system whose entire model is provenance, and it inflated a
+   * `phone` answer (medium) into an `in_person` one (high) on every surface that ranks them.
+   *
+   * `PLACE_METHODS` rather than a new list: adding a place already offers exactly these three,
+   * for the same reason. Something read on a website is not among them.
+   */
+  let howKnown = $state<PlaceMethod>('in_person');
 
   /** Scribbles, kept on this phone. Reloaded on mount because they are read from storage. */
   let jotted = $state<Record<string, Note>>({});
@@ -117,11 +130,12 @@
 
   async function fix(id: string, field: ResourceField, value: string) {
     if (!value.trim()) return;
-    await corrections.submit(id, { [field]: value.trim() }, 'in_person', bridgedFlag);
+    await corrections.submit(id, { [field]: value.trim() }, howKnown, bridgedFlag);
     reporting = null;
     correcting = null;
     typed = '';
     bridgedFlag = false;
+    howKnown = 'in_person';
   }
 
   /**
@@ -637,7 +651,7 @@
               <p class="asks" data-asks>
                 <strong>Nobody knows</strong>
                 {asks.map((f) => (FIELD_LABELS[f] ?? f).toLowerCase()).join(', ')}.
-                If you are there, ask.
+                If you are there, ask &mdash; or ring them.
               </p>
             {/if}
 
@@ -688,6 +702,21 @@
                 and one meant for later that never happens.
               -->
               <p class="cost">{FIELD_LABELS[correcting] ?? correcting}</p>
+              <!--
+                The words to say, when the answer is going to come from a stranger.
+
+                Shared with `navcom-seed callsheet` rather than written again here. The
+                information-and-referral field calls ringing round "tedious, unglamorous work"
+                and the single most effective thing a navigator does -- and until now that hour
+                was only available to somebody with a checkout and a terminal.
+
+                Not a work list and not a queue. It appears on a field an operator has already
+                chosen to answer, because *nothing tasks anyone* [invariant 6] and a screen that
+                handed out jobs would be a dispatch verb with better manners.
+              -->
+              {#if FIELD_QUESTION[correcting]}
+                <p class="say" data-say>&ldquo;{FIELD_QUESTION[correcting]}&rdquo;</p>
+              {/if}
               {#if options}
                 <div class="row">
                   {#each options as opt (opt)}
@@ -725,7 +754,22 @@
                   <button class="drop" onclick={() => fix(record.id, correcting!, typed)}>Send</button>
                 </div>
               {/if}
-              <button class="drop" onclick={() => { correcting = null; typed = ''; bridgedFlag = false; }}>Back</button>
+              <!--
+                How you came to know it. Was hardcoded to `in_person` on every correction, so
+                an operator who phoned signed a claim that they had been there -- and a `phone`
+                answer was ranked as though it were a doorstep one. Offered on both paths
+                because the enum tap is just as likely to be the result of a call.
+              -->
+              <p class="cost">How do you know?</p>
+              <div class="row" data-how-known>
+                {#each PLACE_METHODS as m (m)}
+                  <button class="drop" aria-pressed={howKnown === m}
+                    data-how={m} onclick={() => (howKnown = m)}>
+                    {m === 'in_person' ? 'I was there' : m === 'phone' ? 'I phoned them' : 'Staff told me'}
+                  </button>
+                {/each}
+              </div>
+              <button class="drop" onclick={() => { correcting = null; typed = ''; bridgedFlag = false; howKnown = 'in_person'; }}>Back</button>
             {:else if reporting === record.id}
               {@render clockDatesThis()}
               <div class="row">
@@ -908,6 +952,17 @@
   .asks {
     margin: .4rem 0 0; color: var(--t-muted); font-size: .88rem;
     border-inline-start: 2px solid var(--t-line-strong); padding-inline-start: .6rem;
+  }
+  /*
+    The words to say. Louder than `.asks` directly above it and deliberately so: that one
+    reports what is unknown, this one is a line somebody reads out to a stranger, and a
+    person mid-call should find it without hunting. Italic rather than a heavier weight,
+    because it is speech rather than emphasis.
+  */
+  .say {
+    margin: .5rem 0 0; font-size: .92rem; font-style: italic;
+    color: var(--t-text); border-inline-start: 2px solid var(--t-station);
+    padding-inline-start: .6rem;
   }
   .fix { width: 100%; margin-top: .4rem; }
   .corrected { margin: .4rem 0 0; color: var(--t-faint); font-size: .82rem; }

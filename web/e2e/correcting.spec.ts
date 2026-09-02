@@ -98,3 +98,88 @@ test.describe('a note to yourself about a place', () => {
     await expect(record.locator('[data-note]')).toHaveCount(0);
   });
 });
+
+test.describe('a correction made on the phone rather than at a door', () => {
+  /*
+   * Until this, `fix()` passed a hardcoded `'in_person'` on every correction.
+   *
+   * An operator who rang a shelter and typed what they were told signed an attestation saying
+   * they had stood there. In a system whose whole model is provenance that is a false claim,
+   * and it inflated a `phone` answer (medium) into an `in_person` one (high) on every surface
+   * that ranks them.
+   *
+   * The information-and-referral field describes ringing round as the single most effective
+   * thing a navigator does. It was the one act this app could not honestly record.
+   */
+
+  test('the operator can say how they know, and it is not assumed', async ({ page }) => {
+    const record = await firstRecord(page);
+    await record.getByRole('button', { name: /report a problem/i }).click();
+    await record.getByRole('button', { name: /^open$/i }).click();
+
+    const how = record.locator('[data-how-known]');
+    await expect(how).toBeVisible();
+    for (const m of ['in_person', 'phone', 'staff_confirmed']) {
+      await expect(how.locator(`[data-how="${m}"]`)).toBeVisible();
+    }
+
+    // Nothing read on a website. A place can only be vouched for by somebody who went, phoned,
+    // or was told by staff — the correction path may not be a looser door than the create one.
+    await expect(how.locator('[data-how="website"]')).toHaveCount(0);
+    await expect(how.locator('[data-how="secondhand"]')).toHaveCount(0);
+  });
+
+  test('choosing "I phoned them" is what gets recorded', async ({ page }) => {
+    const record = await firstRecord(page);
+    await record.getByRole('button', { name: /report a problem/i }).click();
+    await record.getByRole('button', { name: /^open$/i }).click();
+
+    await record.locator('[data-how="phone"]').click();
+    await expect(record.locator('[data-how="phone"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(record.locator('[data-how="in_person"]')).toHaveAttribute('aria-pressed', 'false');
+
+    await record.locator('input.fix').fill('24/7');
+    await record.getByRole('button', { name: /^send$/i }).click();
+    await expect(record.locator('[data-corrected]')).toBeVisible({ timeout: 10_000 });
+
+    /*
+     * The claim the operator actually made, read off the field's own by-line.
+     *
+     * The first version of this asserted `getByText(/phone/i)` anywhere on the record, which
+     * passed with the provenance hardcoded back to `in_person` -- because every record has a
+     * *phone number* field, so the word was on screen either way. A guard that cannot fail is
+     * worse than none, and this one was checked by breaking it.
+     */
+    const byLine = record.locator('[data-said-by="hours"]');
+    await expect(byLine).toBeVisible();
+    await expect(byLine).toContainText(/phone/i);
+    await expect(byLine).not.toContainText(/in.person/i);
+  });
+
+  test('the words to say are on screen, for the person mid-call', async ({ page }) => {
+    /*
+     * Shared with `navcom-seed callsheet` rather than written twice. Somebody holding a phone
+     * and somebody at a laptop should be asking a shelter the same question.
+     */
+    const record = await firstRecord(page);
+    await record.getByRole('button', { name: /report a problem/i }).click();
+    await record.getByRole('button', { name: /pets/i }).click();
+    await expect(record.locator('[data-say]')).toContainText(/bring a dog/i);
+  });
+
+  test('it offers no queue of work, because nothing tasks anyone', async ({ page }) => {
+    /*
+     * Invariant 6. The unknown-field panel reports what a record does not know and stops
+     * there -- "nobody knows pets, curfew. If you are there, ask -- or ring them." A screen
+     * that handed out jobs would be a dispatch verb with better manners, and the question only
+     * appears on a field the operator has already chosen to answer.
+     */
+    const record = await firstRecord(page);
+    await expect(record.locator('[data-say]')).toHaveCount(0);
+    const asks = record.locator('[data-asks]');
+    if (await asks.count()) {
+      await expect(asks).not.toContainText(/\d+ (fields?|records?) (to|need)/i);
+      await expect(asks).toContainText(/ask/i);
+    }
+  });
+});
