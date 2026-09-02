@@ -596,3 +596,76 @@ describe("the manifest is written only when it must be", () => {
     expect(needsStatusWrite(undefined)).toBe(true);
   });
 });
+
+describe("who a place serves, when it will not say what it is", () => {
+  /*
+   * `social_facility:for` is the most precise tag OSM offers for this directory, and it was
+   * fetched and thrown away -- `fromOverpass` kept `social_facility`, `healthcare` and
+   * `amenity` and dropped it in flight.
+   *
+   * It can never assign a type. "Serves homeless people" does not say whether a place is a
+   * bed, a meal or an outreach desk, and filing a `for=homeless` node as `shelter` is exactly
+   * the confident wrong category this module refuses. What it can do is stop a real service
+   * disappearing into a tally.
+   */
+
+  it("keeps the qualifier, split on either separator real data uses", () => {
+    const [one] = fromOverpass({
+      elements: [
+        { type: "node", id: 1, lat: 47.6, lon: -122.3, tags: {
+          name: "Union Gospel Mission", "social_facility:for": "homeless" } },
+      ],
+    });
+    expect(one!.serves).toEqual(["homeless"]);
+
+    const [two] = fromOverpass({
+      elements: [
+        { type: "node", id: 2, lat: 47.6, lon: -122.3, tags: {
+          name: "Sacred Medicine House",
+          "social_facility:for": "native_americans;veterans;homeless" } },
+      ],
+    });
+    expect(two!.serves).toEqual(["native_americans", "veterans", "homeless"]);
+
+    // Comma and spacing both occur in the wild; so does mixed case.
+    const [three] = fromOverpass({
+      elements: [
+        { type: "node", id: 3, lat: 0, lon: 0, tags: {
+          name: "A place", "social_facility:for": "Youth, Young_Adult" } },
+      ],
+    });
+    expect(three!.serves).toEqual(["youth", "young_adult"]);
+  });
+
+  it("asks Overpass for the qualifier at all", () => {
+    // The tag cannot be kept if it is never fetched. A place tagged only by who it serves
+    // was outside the query entirely.
+    const q = overpassQuery([-122.45, 47.48, -122.22, 47.74]);
+    expect(q).toContain('social_facility:for');
+  });
+
+  it("never turns a qualifier into a type", () => {
+    /*
+     * The load-bearing negative. Knowing a node is for homeless people is not knowing what it
+     * provides, and a directory row asserts what it provides.
+     */
+    expect(mapType("homeless")).toBeUndefined();
+    const [r] = fromOverpass({
+      elements: [
+        { type: "node", id: 4, lat: 0, lon: 0, tags: {
+          name: "Somewhere", "social_facility:for": "homeless" } },
+      ],
+    });
+    expect(normalise("seattle", r!)).toBeNull();
+  });
+
+  it("leaves a record with no qualifier alone", () => {
+    const [r] = fromOverpass({
+      elements: [
+        { type: "node", id: 5, lat: 0, lon: 0, tags: { name: "Plain", social_facility: "shelter" } },
+      ],
+    });
+    expect(r!.serves).toBeUndefined();
+    expect(normalise("seattle", r!)?.type).toBe("shelter");
+  });
+});

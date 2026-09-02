@@ -62,6 +62,11 @@ export function overpassQuery(bbox: OsmConfig["bbox"]): string {
     'way["amenity"="social_facility"]',
     'node["amenity"="food_bank"]',
     'way["amenity"="food_bank"]',
+    // Tagged by who it serves rather than by what it is. Fetched so a place explicitly
+    // marked for homeless people can be *named* in the report when it cannot be typed --
+    // never to include it. See `serves` on RawRecord.
+    'node["social_facility:for"]',
+    'way["social_facility:for"]',
   ];
   return (
     "[out:json][timeout:90];(" +
@@ -87,6 +92,20 @@ function categoryOf(tags: Record<string, string>): string | undefined {
     tags["amenity"] ??
     undefined
   );
+}
+
+/**
+ * Who OSM says a facility is for. Multi-valued, and the separator is not consistent --
+ * "native_americans;veterans;homeless" and "youth, young_adult" both occur in real data.
+ */
+function servesOf(tags: Record<string, string>): string[] | undefined {
+  const raw = tags["social_facility:for"];
+  if (!raw) return undefined;
+  const parts = raw
+    .split(/[;,]/)
+    .map((p) => p.trim().toLowerCase().replace(/[\s_-]+/g, "_"))
+    .filter((p) => p.length > 0);
+  return parts.length > 0 ? parts : undefined;
 }
 
 function addressOf(tags: Record<string, string>): string | undefined {
@@ -123,6 +142,7 @@ export function fromOverpass(json: { elements?: OverpassElement[] }): RawRecord[
         ? { phone: (tags["phone"] ?? tags["contact:phone"]) as string }
         : {}),
       ...(tags["opening_hours"] ? { hours: tags["opening_hours"] } : {}),
+      ...(servesOf(tags) ? { serves: servesOf(tags)! } : {}),
       url: "https://www.openstreetmap.org/" + el.type + "/" + el.id,
     });
   }

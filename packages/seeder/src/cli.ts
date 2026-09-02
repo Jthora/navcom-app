@@ -57,6 +57,14 @@ interface Report {
   proposed?: { added: number; changed: number; unchanged: number; protected: number };
   merged?: { kept: string; dropped: string; reason: string }[];
   review?: { id: string; name: string; reason: string }[];
+  /**
+   * Dropped, but explicitly for the people this directory serves.
+   *
+   * Named individually rather than counted, because a count cannot be acted on and a name
+   * can: these are the records a person can categorise in a minute and nobody can categorise
+   * automatically.
+   */
+  uncategorised?: { name: string; serves: string; url?: string }[];
   findings?: { id: string; problem: string }[];
   /** Source categories with no home in the taxonomy. A question for a human, not an error. */
   unmapped?: { category: string; count: number }[];
@@ -175,12 +183,30 @@ function cmdBuild(slug: string): Report {
   // Categories nothing could be done with. Reported by name and count, so the person who
   // owns the taxonomy can see what is being left out and decide whether to extend it.
   const unmapped = new Map<string, number>();
+  /*
+   * Dropped records that OSM says are for homeless people.
+   *
+   * A count told nobody anything: "Union Gospel Mission" and "(none): 18" are the same line
+   * in a tally, and the first is one of the largest providers in its city. `social_facility:for`
+   * says who a place serves; it does not say what it provides, so it can never assign a type
+   * -- filing a `for=homeless` node as `shelter` is the confident wrong category this module
+   * exists to refuse. What it can do is stop the record vanishing, so somebody with ten
+   * minutes can look it up and say what it is.
+   */
+  const uncategorised: { name: string; serves: string; url?: string }[] = [];
 
   for (const r of flat) {
     const one = normalise(slug, r, country);
     if (!one) {
       const key = r.category ?? "(none)";
       unmapped.set(key, (unmapped.get(key) ?? 0) + 1);
+      if (r.serves?.some((v) => v.includes("homeless")) && r.name) {
+        uncategorised.push({
+          name: r.name,
+          serves: r.serves.join(", "),
+          ...(r.url ? { url: r.url } : {}),
+        });
+      }
       continue;
     }
     normalised.push(one);
@@ -204,6 +230,9 @@ function cmdBuild(slug: string): Report {
     unmapped: [...unmapped.entries()]
       .map(([category, count]) => ({ category, count }))
       .sort((a, b) => b.count - a.count),
+    ...(uncategorised.length > 0
+      ? { uncategorised: uncategorised.sort((a, b) => a.name.localeCompare(b.name)) }
+      : {}),
   });
 }
 

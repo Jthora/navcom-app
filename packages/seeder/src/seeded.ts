@@ -40,6 +40,16 @@ export interface RawRecord {
   name: string;
   /** The source's word for what this is. Mapped by `normalise`, never trusted directly. */
   category?: string;
+  /**
+   * Who the source says this serves, in the source's own words.
+   *
+   * Never mapped to a `type` and never used to include a record. It says *who* a place is
+   * for, which is not the same as *what it provides* -- and a record that serves homeless
+   * people while saying nothing about whether it is a bed or a meal cannot be characterised
+   * without guessing. It is kept so a dropped record can be named for a human instead of
+   * disappearing into a count.
+   */
+  serves?: string[];
   address?: string;
   lat?: number;
   lon?: number;
