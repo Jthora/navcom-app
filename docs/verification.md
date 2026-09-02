@@ -395,6 +395,30 @@ operator who typed the URL, which is what made it easy to miss.
 The guard is in `e2e/adding-a-place.spec.ts`, and its **first** test is not about the form —
 it is that Nashville answers at all.
 
+**The checker that was wrong three times.** `navcom-relay-check` asks whether the relays the
+app ships with can carry its traffic — and a checker that reports failure is indistinguishable
+from a broken checker, so it was written against the local relay in `e2e/relay-server.ts`
+first, where every claim *must* pass. It failed three times, and each failure would have
+produced a confident wrong answer about a real relay:
+
+- **It shipped the bug that already cost this project weeks.** `subscribeMany` takes one
+  filter object; it was passed `[filter]`, so the REQ went out as `["REQ", id, [f]]` — a
+  filter that is an array. `board.svelte.ts` did this once and it was undetectable, because a
+  lenient relay matches everything and the test passes. The local relay was hardened to match
+  **nothing** for a malformed filter precisely so the next occurrence would be loud. It caught
+  this one on the first run, which is the clearest return that guard will ever produce
+- **`reached` was computed as "did we fill in any claims"** — which the error handler had just
+  made true, so a refused connection reported itself as reached
+- **EOSE does not mean connected.** `SimplePool` fires `oneose` once every relay has *settled*,
+  failures included, so a dead address produced an instant EOSE. `ensureRelay` is the honest
+  signal
+
+The tool also demonstrated its own three-state design by accident. Repeated runs got
+`relay.damus.io` to stop answering, and the check reported *"unreachable — nothing was proven
+either way"* and exited zero rather than raising an alarm about the Distress path. Ninety
+seconds of backing off and it passed all five. A two-state checker would have cried wolf
+because we were rude to a volunteer's server.
+
 **A role nobody could perform.** The fifth instance is not a control with no button — it is a
 *job* with no tool. `CLAUDE.md` asks for a log reviewer at "minutes per week"; what the job
 actually required was `ssh` to the box and reading a JSONL file by eye, which is not minutes,

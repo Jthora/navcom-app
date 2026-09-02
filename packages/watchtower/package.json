@@ -12,7 +12,8 @@
     "navcom-escalation": "dist/escalation/index.js",
     "navcom-pager": "./dist/pager/index.js",
     "navcom-push": "./dist/push/index.js",
-    "navcom-promote": "./dist/promote/index.js"
+    "navcom-promote": "./dist/promote/index.js",
+    "navcom-relay-check": "./dist/relay/index.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",

@@ -14,16 +14,17 @@
  * be explainable to somebody pointing a proxy at it.
  */
 
+import { DEFAULT_RELAYS } from '@navcom/core';
 import { get, set } from './storage';
 import { loadConfig } from './config';
 
 /**
  * Where an operator starts.
  *
- * Two, not one: a single relay is a single point of failure for presence, and these are
- * free services run by volunteers who owe nobody uptime.
+ * Defined in core rather than here, because `navcom-relay-check` needs the same answer and a
+ * second copy would drift -- silently, since the checker is the copy nobody signs on to.
  */
-export const DEFAULT_RELAYS = ['wss://relay.damus.io', 'wss://nos.lol'];
+export { DEFAULT_RELAYS };
 
 const FIELD = 'relays_own';
 
@@ -39,7 +40,7 @@ export function relays(): string[] {
   if (watch?.length) return watch;
   const own = get<string[]>('accruing', FIELD);
   if (own?.length) return own;
-  return DEFAULT_RELAYS;
+  return [...DEFAULT_RELAYS];
 }
 
 /** Whether the list in use is the shipped default rather than anything chosen. */
