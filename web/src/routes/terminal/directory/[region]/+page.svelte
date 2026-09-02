@@ -207,6 +207,31 @@
    */
   const shown = $derived(withPlaces(data.records as ResourceRecord[], places.all));
 
+  /**
+   * Narrowing what is already on this phone.
+   *
+   * **This is not the search box the anti-pattern table forbids.** That rule is about `Query`:
+   * asking the watch, because "someone with both hands free does the lookup — that *is* the
+   * product". Nothing here asks anybody anything. It filters a list already carried, offline,
+   * and the root console has had exactly this control since it shipped.
+   *
+   * It earns its place at scale and nowhere else: Los Angeles carries 113 records with no way
+   * to reach one you can already name, and the shape of that failing is that it is worst in the
+   * best-covered areas.
+   *
+   * Substring over name and address, deliberately dumb. Fuzzy matching that guesses is a
+   * confident wrong answer in a list where the wrong answer is a locked door.
+   */
+  let narrow = $state('');
+  const NARROW_WORTH_IT = 10;
+  const narrowed = $derived.by(() => {
+    const q = narrow.trim().toLowerCase();
+    if (!q) return shown;
+    return shown.filter((r: ResourceRecord) =>
+      `${r.name ?? ''} ${r.address ?? ''}`.toLowerCase().includes(q)
+    );
+  });
+
   /** The ways of knowing that count as a person having checked, everywhere in this system. */
   const HUMAN_METHODS = new Set(['in_person', 'staff_confirmed', 'phone']);
 
@@ -285,13 +310,13 @@
 
   /** How many in this region could not be placed, so the ordering does not overclaim. */
   const unplaceable = $derived(
-    shown.filter((r: ResourceRecord) => typeof r.lat !== 'number' || typeof r.lon !== 'number').length
+    narrowed.filter((r: ResourceRecord) => typeof r.lat !== 'number' || typeof r.lon !== 'number').length
   );
 
   const byType = $derived(
     RESOURCE_TYPES.map((type) => ({
       type,
-      records: nearestFirst(shown.filter((r: ResourceRecord) => r.type === type))
+      records: nearestFirst(narrowed.filter((r: ResourceRecord) => r.type === type))
     })).filter((g) => g.records.length > 0)
   );
 
@@ -460,6 +485,32 @@
   a permission prompt bought with no answer, on the screen somebody sees when the app has
   least to offer them.
 -->
+<!--
+  Placed above ordering because narrowing changes what there is to order, and gated on a list
+  long enough to be worth it: a filter over four records is a control that costs a tap and
+  saves none.
+-->
+{#if shown.length > NARROW_WORTH_IT}
+  <section class="narrowing">
+    <label for="narrow">Narrow this list</label>
+    <input
+      id="narrow" data-narrow type="text" bind:value={narrow}
+      autocomplete="off" spellcheck="false" placeholder="name or street"
+    />
+    <p class="cost">
+      Filters what is already on this phone. <strong>Nothing is sent and nobody is asked</strong>
+      — this is not <a href="/terminal/query/">Query</a>.
+    </p>
+    {#if narrow.trim() && narrowed.length === 0}
+      <p class="cost" data-narrow-empty>
+        Nothing here matches “{narrow.trim()}”. It may still be in this area and spelled
+        differently, or not carried yet — <button class="drop" onclick={() => (narrow = '')}>show
+        all {shown.length}</button>.
+      </p>
+    {/if}
+  </section>
+{/if}
+
 {#if shown.length > 1}
 <section class="ordering">
   <button data-nearest onclick={sortByDistance} disabled={locating}>
@@ -806,6 +857,18 @@
 </Why>
 
 <style>
+  .narrowing { display: grid; gap: .35rem; margin-bottom: .9rem; }
+  .narrowing label {
+    font-size: .74rem; text-transform: uppercase; letter-spacing: .12em; color: var(--t-faint);
+  }
+  .narrowing input {
+    /* 16px, or iOS zooms the page on focus — which on this screen means losing your place in a
+       list you opened because you were in a hurry. */
+    font-size: 16px; padding: .6rem .7rem; min-height: 2.9rem;
+    background: var(--t-sunk); color: var(--t-ink);
+    border: 1px solid var(--t-line-strong); border-radius: 2px;
+  }
+
   .snapshot { border-inline-start: 3px solid var(--t-line-strong); padding-inline-start: .9rem; }
   .snapshot.old { border-inline-start-color: var(--t-oncall); }
   .snapshot.old strong { color: var(--t-oncall); }

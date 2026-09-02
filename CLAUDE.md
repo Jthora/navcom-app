@@ -159,7 +159,7 @@ Every one is a conventional solution that is wrong here.
 | Add notifications | Only `Distress` paging, only to on-call operators who registered a channel. The field terminal is silent |
 | Persist the board for history | The board expires. Only the accountability log survives, and it records actions, not positions |
 | Let the agent judge or decide | Its authority is bounded so misbehaviour is survivable. Unverifiability is answered by limits, not better tests |
-| Put a search box on the field terminal | `Query` goes to the watch. Someone with both hands free does the lookup. That *is* the product |
+| Put a search box on the field terminal that **asks somebody** | `Query` goes to the watch. Someone with both hands free does the lookup. That *is* the product. **Narrowing a list already on the phone is a different act** and is allowed — it asks nobody, works offline, and the root console has had one since it shipped. The line is whether a person is on the other end of it, not whether there is a text input |
 | Make onboarding engaging | No streaks, badges, prompts or nudges. Ever |
 | Escalate on a missed check-in | Overdue nudges. Alarm fatigue destroys the one mechanism where failure means someone is hurt |
 | Show a count of anything | Provenance by name. A number invites gaming |
