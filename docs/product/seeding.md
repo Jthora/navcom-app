@@ -83,8 +83,52 @@ are open, some are not, and this list is a starting point rather than a cleared 
 | **211 / United Way** | The broadest listing of services | Coverage and terms vary by region |
 | **City & county open data** | Shelters, warming centres, clinics | Best quality where it exists, absent where it does not |
 | **OpenStreetMap** | `social_facility`, `healthcare`, addresses, coordinates | Open licence, uneven coverage, good for geocoding |
+| **Overture Maps** | `homeless_shelter`, `food_bank`, `soup_kitchen`, **phones**, addresses, a confidence score | Measured 2026-09-02, see below. Open data, bulk Parquet, no rate limit |
 | **Health centre lookups** | Federally qualified clinics | Reliable for `medical` |
 | **Individual org websites** | Hours, phone, current status | Last resort per record, and the only place `hours` is often found |
+
+### Overture Maps, measured
+
+Probed against release `2026-08-19.0` over Seattle's bounding box, the same one the OSM source
+uses, for the same three categories:
+
+| | OpenStreetMap | Overture |
+|---|---|---|
+| Records | 45 | **84** |
+| Carrying a phone | 14 (31%) | **81 (96%)** |
+| Carrying an address | 35 | **84 (100%)** |
+| At `confidence >= 0.7` | n/a | 69 |
+
+Roughly 62 are absent from what OSM gave us — Sacred Heart Shelter, DESC's Kerner-Scott House,
+Plymouth Housing, Noel House Programs, Salvation Army food distribution.
+
+**The doubling is not the point. The phone numbers are.** A number is what turns a record into
+something a person can settle in a minute, and ringing round is the single most effective thing
+anybody can do for this directory. Thirty-one per cent to ninety-six is the difference between a
+locator and a work list.
+
+It also passes the test `sources/osm.ts` learned the hard way — *a source that cannot
+distinguish the thing that matters must not be used for that category*. Overture's taxonomy has
+`homeless_shelter` under `[public_service_and_government, organization,
+social_service_organizations]`, and its **confidence score sorts the noise to the bottom**: at
+0.92, Union Gospel Mission, Northwest Harvest and Dorothy Day House; at 0.32 and below, "Seattle
+Housing Authority Resident Managers" and "Level Up Seattle". A threshold removes them. That is
+precisely what `social_facility=outreach` could not offer, which is why that one was declined.
+
+And it types two records OSM could not. **Seattle's Union Gospel Mission** and **The Bridge Care
+Center** both sit in `data/regions/seattle/uncategorised.md` today because OSM said who they
+serve and not what they provide. Overture answers exactly that question.
+
+**Two costs, stated:**
+
+- **Freshness floor.** Overture publishes about monthly — only two releases exist at a time. For
+  a building's address and coordinates that is irrelevant; for anything volatile it is worse than
+  Overpass, which answers live. This is a locator source that layers *under* OSM, not a
+  replacement for it
+- **A tool, not a fetch.** The data is partitioned Parquet on S3, not an API. Reading it needs
+  DuckDB. The seeder should shell out to a `duckdb` binary if one is present and say plainly
+  when it is not, rather than taking a native npm dependency that every contributor pays for
+  whether or not they seed
 
 ## Shape of the thing
 
