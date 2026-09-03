@@ -5,6 +5,45 @@ system *is*; this one describes how it arrives on a device, and what that constr
 
 ---
 
+## The root console's search index, and where it stops
+
+**Measured 2026-09-03, at 1,405 records.** The console inlines a search index into
+`index.html`, so unlike the field terminal it grows with the directory: 72.8 kB in the
+morning, 87.2 kB after the first seed, **94.0 kB of a 120 kB budget** by the evening.
+
+Trimming was tried three ways before concluding anything:
+
+| | Index | Ceiling |
+|---|---|---|
+| As shipped — id, name, type, region, regionName | 27.9 kB gz | ~2,700 records |
+| Drop the repeated region name | 27.2 kB | ~2,800 |
+| Strip the region prefix from each id | 26.3 kB | ~2,880 |
+| One-character source flag as well | 26.1 kB | ~2,900 |
+| **No id at all** | **16.4 kB** | **~4,600** |
+
+**Every field-level optimisation buys about 7%.** Gzip already collapses the repetition — 43 kB
+of duplicated region names compress to almost nothing — and what remains is the eight-character
+hash in each id, which is irreducible entropy. The obvious optimisation is worthless, and the
+only one that helps costs the console its direct link to a record page.
+
+Even that reaches **~4,600 records**. Full US coverage is 10,000 or more, which is 117 kB of
+index by itself: the entire page budget before a single byte of HTML or script.
+
+**So an all-records instant index cannot hold a national directory, and no amount of tuning
+changes that.** What changes it is what the console searches:
+
+- **Regions rather than records.** 380 metro areas is roughly 8 kB and scales indefinitely. The
+  record-level search already exists one click deeper — the region page's narrowing input, which
+  asks nobody and works offline
+- **Or a sharded index fetched on demand.** Keeps record search on the front page, at the cost
+  of a network round trip for the first query, which the public site can afford in a way the
+  field terminal cannot
+
+The first is simpler and matches how somebody arrives: they know what city they are in. The
+second keeps the front page's most compelling behaviour. **It is a product decision and it is
+not the seeder's to make** — but it is the thing standing between this directory and national
+coverage, and the number is 4,600.
+
 ## navcom.app — three surfaces
 
 | Surface | For | Notes |
