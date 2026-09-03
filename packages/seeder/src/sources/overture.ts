@@ -55,6 +55,13 @@ export interface OvertureConfig {
   /** e.g. `2026-08-19.0`. Pinned, never "latest": a moving source is not a reproducible one. */
   release: string;
   /**
+   * How much memory DuckDB may use, e.g. `2GB`. Defaults to a deliberately small `1GB`.
+   *
+   * Raise it for a genuinely large area on a machine that can spare it. Do not raise it to
+   * make a continental query work -- chunk the query instead.
+   */
+  memoryLimit?: string;
+  /**
    * Below this, a place is not proposed.
    *
    * 0.5 by default, which over Seattle kept 79 of 84 and dropped exactly the rows a person
@@ -66,6 +73,24 @@ export interface OvertureConfig {
 
 const BUCKET = "s3://overturemaps-us-west-2/release";
 const DEFAULT_MIN_CONFIDENCE = 0.5;
+
+/**
+ * How much of the machine this is allowed to take.
+ *
+ * **DuckDB defaults to about 80% of physical RAM**, which on a laptop means "all of it". A
+ * bounding box the size of the continental United States, uncapped, took an 8 GB machine down
+ * to thirteen megabytes free and seven gigabytes in the compressor -- it did not finish, it
+ * took the desktop with it, and the crash reporter blamed whichever application got squeezed
+ * rather than the query.
+ *
+ * A metro-sized box needs a fraction of this. The cap is not a tuning knob, it is the
+ * difference between a slow query and an unusable computer, and this project's device floor
+ * ethic does not stop at the phone: the person seeding a region is on a laptop that has other
+ * work to do.
+ *
+ * With a temp directory set, DuckDB spills to disk rather than dying when it hits the ceiling.
+ */
+const DEFAULT_MEMORY_LIMIT = "1GB";
 
 /**
  * Overture's category, mapped to ours.
@@ -87,7 +112,11 @@ const CATEGORIES: Record<string, string> = {
  * row-group statistics prune on those columns, which is the difference between reading a
  * bounding box and reading the planet.
  */
-export function overtureQuery(config: OvertureConfig, extensionDir?: string): string {
+export function overtureQuery(
+  config: OvertureConfig,
+  extensionDir?: string,
+  tempDir?: string
+): string {
   const [w, s, e, n] = config.bbox;
   const min = config.minConfidence ?? DEFAULT_MIN_CONFIDENCE;
   const cats = Object.keys(CATEGORIES).map((c) => `'${c}'`).join(", ");
@@ -101,6 +130,9 @@ export function overtureQuery(config: OvertureConfig, extensionDir?: string): st
      * thing they already have. `NAVCOM_DUCKDB_EXTENSIONS` points it somewhere writable.
      */
     ...(extensionDir ? [`SET extension_directory='${extensionDir}';`] : []),
+    // Bounded before anything is read. See DEFAULT_MEMORY_LIMIT.
+    `SET memory_limit='${config.memoryLimit ?? DEFAULT_MEMORY_LIMIT}';`,
+    ...(tempDir ? [`SET temp_directory='${tempDir}';`] : []),
     "INSTALL httpfs; LOAD httpfs; SET s3_region='us-west-2';",
     "SELECT id, names.primary AS name, taxonomy.primary AS category, confidence,",
     "       addresses[1].freeform AS address, addresses[1].locality AS locality,",
@@ -172,9 +204,10 @@ export class DuckDbMissing extends Error {}
 export async function fetchOverture(
   config: OvertureConfig,
   duckdbPath = process.env["NAVCOM_DUCKDB"] ?? "duckdb",
-  extensionDir = process.env["NAVCOM_DUCKDB_EXTENSIONS"]
+  extensionDir = process.env["NAVCOM_DUCKDB_EXTENSIONS"],
+  tempDir = process.env["NAVCOM_DUCKDB_TEMP"]
 ): Promise<RawRecord[]> {
-  const sql = overtureQuery(config, extensionDir);
+  const sql = overtureQuery(config, extensionDir, tempDir);
   let stdout: string;
   try {
     ({ stdout } = await run(duckdbPath, ["-json", "-c", sql], {

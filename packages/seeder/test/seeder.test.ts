@@ -682,6 +682,26 @@ describe("Overture, the second source", () => {
     expect(overtureQuery(cfg)).not.toContain("latest");
   });
 
+  it("caps its own memory before reading anything", () => {
+    /*
+     * DuckDB defaults to ~80% of physical RAM. Uncapped, a continental bounding box took an
+     * 8 GB machine to thirteen megabytes free and seven gigabytes in the compressor -- it did
+     * not finish, and it took the desktop with it.
+     *
+     * The device floor ethic does not stop at the phone: whoever seeds a region is on a
+     * laptop with other work to do. Asserted before the read so a future edit cannot quietly
+     * move it after one.
+     */
+    const q = overtureQuery(cfg);
+    expect(q).toContain("SET memory_limit='1GB'");
+    expect(q.indexOf("memory_limit")).toBeLessThan(q.indexOf("read_parquet"));
+    expect(overtureQuery({ ...cfg, memoryLimit: "4GB" })).toContain("SET memory_limit='4GB'");
+  });
+
+  it("spills to disk when a temp directory is offered", () => {
+    expect(overtureQuery(cfg, undefined, "/tmp/dd")).toContain("SET temp_directory='/tmp/dd'");
+  });
+
   it("filters in the query, not after it", () => {
     /*
      * The bbox and confidence predicates are what let Parquet row-group statistics prune --
