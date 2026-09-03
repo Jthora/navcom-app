@@ -1,0 +1,23 @@
+{
+  "slug": "little-rock",
+  "name": "Little Rock-North Little Rock-Conway, AR",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "sources": {
+    "overture": {
+      "bbox": [
+        -93.306,
+        34.059,
+        -91.633,
+        35.368
+      ],
+      "release": "2026-08-19.0",
+      "minConfidence": 0.5
+    }
+  },
+  "cbsa": "30780"
+}

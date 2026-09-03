@@ -1,0 +1,23 @@
+{
+  "slug": "des-moines",
+  "name": "Des Moines-West Des Moines, IA",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "sources": {
+    "overture": {
+      "bbox": [
+        -94.745,
+        41.157,
+        -92.757,
+        41.863
+      ],
+      "release": "2026-08-19.0",
+      "minConfidence": 0.5
+    }
+  },
+  "cbsa": "19780"
+}

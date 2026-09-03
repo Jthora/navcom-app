@@ -1,0 +1,23 @@
+{
+  "slug": "jackson",
+  "name": "Jackson, MS",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "sources": {
+    "overture": {
+      "bbox": [
+        -90.76,
+        31.685,
+        -89.322,
+        33.375
+      ],
+      "release": "2026-08-19.0",
+      "minConfidence": 0.5
+    }
+  },
+  "cbsa": "27140"
+}

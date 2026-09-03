@@ -1,0 +1,23 @@
+{
+  "slug": "tulsa",
+  "name": "Tulsa, OK",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "sources": {
+    "overture": {
+      "bbox": [
+        -97.064,
+        35.377,
+        -95.208,
+        36.999
+      ],
+      "release": "2026-08-19.0",
+      "minConfidence": 0.5
+    }
+  },
+  "cbsa": "46140"
+}

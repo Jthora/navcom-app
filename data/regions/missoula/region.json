@@ -1,0 +1,23 @@
+{
+  "slug": "missoula",
+  "name": "Missoula, MT",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "sources": {
+    "overture": {
+      "bbox": [
+        -115.759,
+        46.632,
+        -113.303,
+        47.6
+      ],
+      "release": "2026-08-19.0",
+      "minConfidence": 0.5
+    }
+  },
+  "cbsa": "33540"
+}

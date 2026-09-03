@@ -1,0 +1,23 @@
+{
+  "slug": "wichita",
+  "name": "Wichita, KS",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "sources": {
+    "overture": {
+      "bbox": [
+        -97.808,
+        36.999,
+        -96.523,
+        38.175
+      ],
+      "release": "2026-08-19.0",
+      "minConfidence": 0.5
+    }
+  },
+  "cbsa": "48620"
+}

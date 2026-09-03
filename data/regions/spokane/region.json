@@ -1,0 +1,23 @@
+{
+  "slug": "spokane",
+  "name": "Spokane-Spokane Valley, WA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "sources": {
+    "overture": {
+      "bbox": [
+        -118.402,
+        47.259,
+        -117.04,
+        49.001
+      ],
+      "release": "2026-08-19.0",
+      "minConfidence": 0.5
+    }
+  },
+  "cbsa": "44060"
+}

@@ -1,0 +1,23 @@
+{
+  "slug": "fargo",
+  "name": "Fargo, ND-MN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "sources": {
+    "overture": {
+      "bbox": [
+        -97.706,
+        46.629,
+        -96.172,
+        47.24
+      ],
+      "release": "2026-08-19.0",
+      "minConfidence": 0.5
+    }
+  },
+  "cbsa": "22020"
+}

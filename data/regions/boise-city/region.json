@@ -1,0 +1,23 @@
+{
+  "slug": "boise-city",
+  "name": "Boise City, ID",
+  "country": "US",
+  "timezone": "America/Boise",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "sources": {
+    "overture": {
+      "bbox": [
+        -117.033,
+        41.996,
+        -114.967,
+        44.511
+      ],
+      "release": "2026-08-19.0",
+      "minConfidence": 0.5
+    }
+  },
+  "cbsa": "14260"
+}
