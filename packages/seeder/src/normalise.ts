@@ -45,6 +45,9 @@ export function mapType(category: string | undefined): ResourceType | undefined 
     shelter: "shelter", homelessshelter: "shelter", emergencyshelter: "shelter",
     nightshelter: "shelter", refuge: "shelter",
     soupkitchen: "meal", foodbank: "meal", foodpantry: "meal", meal: "meal", food: "meal",
+    // Overture's vocabulary, which happens to normalise onto the same keys as OSM's once
+    // spaces and underscores are stripped -- `homeless_shelter` and `food_bank` are already
+    // covered above. Listed for the reader rather than needed by the code.
     shower: "hygiene", laundry: "hygiene", hygiene: "hygiene", toilets: "hygiene",
     clinic: "medical", doctors: "medical", hospital: "medical", healthcare: "medical",
     medical: "medical", pharmacy: "medical",

@@ -12,6 +12,7 @@ import { merge } from "./merge.js";
 import { needsStatusWrite } from "./manifest.js";
 import { normalise } from "./normalise.js";
 import { fetchOsm, type OsmConfig } from "./sources/osm.js";
+import { DuckDbMissing, fetchOverture, type OvertureConfig } from "./sources/overture.js";
 import type { RawRecord, SeededRecord } from "./seeded.js";
 
 /**
@@ -38,7 +39,7 @@ const USER_AGENT = "navcom-seeder/0.1 (+" + CONTACT + ")";
 interface RegionManifest {
   slug?: string;
   country?: string;
-  sources?: { osm?: OsmConfig };
+  sources?: { osm?: OsmConfig; overture?: OvertureConfig };
 }
 
 interface SourceReport {
@@ -141,16 +142,34 @@ function cachedRaw(slug: string): Record<string, RawRecord[]> {
 /** Hours before a cached response is considered worth replacing. */
 const CACHE_HOURS = Number(process.env["NAVCOM_SEED_CACHE_HOURS"] ?? 24);
 
-function cacheIsFresh(slug: string): boolean {
+/**
+ * Fresh **for what is being asked**, which is not the same as recent.
+ *
+ * The mtime check alone had a bug that only appears when a region gains a source. Adding
+ * `overture` to Seattle and running `fetch seattle --source overture` returned the cache and
+ * ran nothing, because a `raw.json` written that morning by the *OSM* source looked fresh --
+ * and the report said `"name": "cache"` in a line that is easy to skim past. Every one of the
+ * forty-three US regions is about to be in exactly that state.
+ *
+ * So a cache is fresh only if it already holds every source being asked for. Politeness is
+ * preserved -- OSM is not re-fetched to satisfy a request for Overture -- and a source that has
+ * never run is never mistaken for one that returned nothing.
+ */
+function cacheIsFresh(slug: string, region: RegionManifest, only?: string): boolean {
   const p = join(cacheDir(slug), "raw.json");
   if (!existsSync(p)) return false;
-  return Date.now() - statSync(p).mtimeMs < CACHE_HOURS * 3_600_000;
+  if (Date.now() - statSync(p).mtimeMs >= CACHE_HOURS * 3_600_000) return false;
+
+  const held = Object.keys(cachedRaw(slug));
+  const wanted = only ? [only] : Object.keys(region.sources ?? {});
+  return wanted.every((w) => held.includes(w));
 }
 
 async function cmdFetch(slug: string, only?: string, refresh = false): Promise<void> {
+  const region = manifest(slug);
   // The politest request is the one not made. A re-run over sixty-seven metros should cost
   // Overpass nothing for the ones already fetched today.
-  if (!refresh && cacheIsFresh(slug)) {
+  if (!refresh && cacheIsFresh(slug, region, only)) {
     write(slug, {
       region: slug, command: "fetch", at: new Date().toISOString(),
       sources: [{ name: "cache", ok: true, records: Object.values(cachedRaw(slug)).flat().length, ms: 0 }],
@@ -158,13 +177,32 @@ async function cmdFetch(slug: string, only?: string, refresh = false): Promise<v
     return;
   }
 
-  const region = manifest(slug);
   const raw = cachedRaw(slug);
   const sources: SourceReport[] = [];
 
   // Each source is independent. One returning 403 must leave the others intact and say
   // which one broke -- a run that silently produces half a region is worse than one that
   // stops, and worse still than one that says so.
+  /*
+   * A second source, and the ordering is trust order -- OSM first because it answers live,
+   * Overture second because it publishes monthly. `dedupe` decides what merges, and it errs
+   * toward keeping both: "a duplicate is a nuisance an operator resolves by reading two
+   * entries. A wrongly-merged record is two half-truths welded together."
+   */
+  if (region.sources?.overture && (!only || only === "overture")) {
+    const started = Date.now();
+    try {
+      const records = await fetchOverture(region.sources.overture);
+      raw["overture"] = records;
+      sources.push({ name: "overture", ok: true, records: records.length, ms: Date.now() - started });
+    } catch (err: unknown) {
+      // A missing tool is reported as itself rather than as a broken region. Every other
+      // source still runs, and the message says which binary and where to get it.
+      const why = err instanceof DuckDbMissing ? err.message : err instanceof Error ? err.message : String(err);
+      sources.push({ name: "overture", ok: false, records: 0, ms: Date.now() - started, error: why });
+    }
+  }
+
   if (region.sources?.osm && (!only || only === "osm")) {
     const started = Date.now();
     try {

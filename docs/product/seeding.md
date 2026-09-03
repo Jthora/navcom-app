@@ -126,9 +126,36 @@ serve and not what they provide. Overture answers exactly that question.
   Overpass, which answers live. This is a locator source that layers *under* OSM, not a
   replacement for it
 - **A tool, not a fetch.** The data is partitioned Parquet on S3, not an API. Reading it needs
-  DuckDB. The seeder should shell out to a `duckdb` binary if one is present and say plainly
-  when it is not, rather than taking a native npm dependency that every contributor pays for
-  whether or not they seed
+  DuckDB, so `sources/overture.ts` **shells out to a binary** rather than taking a native npm
+  dependency every contributor pays for whether or not they seed. Absent, it says which tool and
+  where to get it, and every other source still runs
+
+#### Running it
+
+```
+navcom-seed fetch <region> --source=overture
+```
+
+Needs the [DuckDB CLI](https://duckdb.org/docs/installation/) on `PATH`, or `NAVCOM_DUCKDB`
+pointing at one. Where `~/.duckdb` is not writable — a sandbox, a locked build agent — set
+`NAVCOM_DUCKDB_EXTENSIONS` to somewhere that is; DuckDB reports that case as *"Extension httpfs
+not found"*, which reads like a missing install and sends people to reinstall what they already
+have.
+
+A region opts in by declaring the source beside its bbox, with the release **pinned**:
+
+```json
+"sources": {
+  "osm": { "bbox": [...] },
+  "overture": { "bbox": [...], "release": "2026-08-19.0", "minConfidence": 0.5 }
+}
+```
+
+**Measured on Seattle, both sources merged:** 45 records to 108, and phones from 14 (31%) to 78
+(72%). `dedupe` folded 16 duplicates and **absorbed rather than discarded** — an OSM record with
+no phone inherits Overture's, which is why coverage more than doubled instead of OSM's 31%
+merely surviving. Trust order keeps the live-fetched OSM record as the identity and takes the
+month-old source's contact details, which is the right way round.
 
 ## Shape of the thing
 

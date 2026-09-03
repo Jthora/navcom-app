@@ -17,6 +17,7 @@ import { parseRecordArgs } from "../src/record.js";
 import { RESOURCE_TYPES } from "@navcom/core";
 import type { RawRecord, SeededRecord } from "../src/seeded.js";
 import { fromOverpass, overpassQuery , parseStatus, waitForSlot } from "../src/sources/osm.js";
+import { fromOverture, overtureQuery } from "../src/sources/overture.js";
 import { needsStatusWrite } from "../src/manifest.js";
 
 const raw = (over: Partial<RawRecord> = {}): RawRecord => ({
@@ -667,5 +668,67 @@ describe("who a place serves, when it will not say what it is", () => {
     });
     expect(r!.serves).toBeUndefined();
     expect(normalise("seattle", r!)?.type).toBe("shelter");
+  });
+});
+
+describe("Overture, the second source", () => {
+  const BBOX: [number, number, number, number] = [-122.45, 47.48, -122.22, 47.74];
+  const cfg = { bbox: BBOX, release: "2026-08-19.0" };
+
+  it("pins a release rather than tracking latest", () => {
+    // A moving source is not a reproducible one: two people running the same command a month
+    // apart must be able to explain a diff between their outputs.
+    expect(overtureQuery(cfg)).toContain("release/2026-08-19.0/");
+    expect(overtureQuery(cfg)).not.toContain("latest");
+  });
+
+  it("filters in the query, not after it", () => {
+    /*
+     * The bbox and confidence predicates are what let Parquet row-group statistics prune --
+     * the difference between reading a bounding box and reading the planet. Asserted because
+     * moving either into JavaScript would still pass every other test here while downloading
+     * a continent.
+     */
+    const q = overtureQuery(cfg);
+    expect(q).toContain("bbox.xmin BETWEEN -122.45 AND -122.22");
+    expect(q).toContain("bbox.ymin BETWEEN 47.48 AND 47.74");
+    expect(q).toContain("confidence >= 0.5");
+    expect(overtureQuery({ ...cfg, minConfidence: 0.8 })).toContain("confidence >= 0.8");
+  });
+
+  it("asks only for categories that describe a service", () => {
+    const q = overtureQuery(cfg);
+    for (const c of ["homeless_shelter", "food_bank", "soup_kitchen"]) expect(q).toContain(c);
+    // The rule osm.ts learned the hard way. A generic social-services category cannot
+    // distinguish a hygiene centre from a community foundation.
+    expect(q).not.toContain("social_service_organizations");
+  });
+
+  it("keeps the source's own stable id, so a re-scrape reads as a diff", () => {
+    const [r] = fromOverture([
+      { id: "08f2aa...", name: "Union Gospel Mission", category: "homeless_shelter",
+        confidence: 0.92, address: "1808 18th Ave", locality: "Seattle",
+        phone: "+12067230767", lat: 47.6, lon: -122.3 },
+    ]);
+    expect(r!.sourceId).toBe("08f2aa...");
+    expect(r!.source).toBe("overture");
+    expect(r!.category).toBe("shelter");
+    expect(r!.address).toBe("1808 18th Ave, Seattle");
+    expect(r!.phone).toBe("+12067230767");
+  });
+
+  it("drops a row with no name or no id", () => {
+    // An operator cannot be sent to an unnamed building, and a record with no durable id
+    // reads as a deletion plus a creation on every subsequent run.
+    expect(fromOverture([{ id: "x", category: "homeless_shelter" }])).toEqual([]);
+    expect(fromOverture([{ name: "Somewhere", category: "homeless_shelter" }])).toEqual([]);
+  });
+
+  it("refuses a category it was not asked for, even if the source returns one", () => {
+    // Defence in depth: the query filters, and so does this. A source that widens its
+    // taxonomy must not widen this directory by accident.
+    expect(fromOverture([
+      { id: "1", name: "Some Charity Office", category: "social_welfare_center", confidence: 0.9 },
+    ])).toEqual([]);
   });
 });
