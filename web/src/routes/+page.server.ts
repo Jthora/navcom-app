@@ -4,10 +4,9 @@
  * Three things, all derived from the same directory the site and the terminal already load
  * [`$lib/directory/load`] — nothing fabricated, nothing asserted twice:
  *
- * - A slim search index. Not `directory.json`'s full per-record export (that carries a
- *   computed field verdict per record, which is what makes it heavy) — just enough to search
- *   and link onward to the existing `/terminal/directory/[region]/` page, which already
- *   renders full record detail correctly.
+ * - Every region, with its figures. This is the whole embedded index: a few kilobytes that
+ *   do not grow as the directory does. Records are **not** here — one region's are fetched
+ *   from `/console-index/<region>.json` once the nearest is known.
  * - The coverage aggregate `status/+page.server.ts` already computes: record count, regions
  *   with data, and the single freshest `last_verified` date across all of them.
  * - A per-region centroid, derived from the mean of that region's own geotagged records
@@ -20,9 +19,9 @@
  *   (`packages/core/src/refusals.ts`) rather than a second, invented metric.
  */
 
-import { loadDirectory, loadRegions, regionOf } from '$lib/directory/load';
+import { loadDirectory, loadRegions } from '$lib/directory/load';
 import { regionFigures } from '$lib/console/figures';
-import type { ConsoleIndexEntry, ConsoleCentroid } from '$lib/console/types';
+import type { ConsoleCentroid } from '$lib/console/types';
 
 export const prerender = true;
 
@@ -30,14 +29,18 @@ export function load() {
   const records = loadDirectory();
   const regions = loadRegions();
 
-  const index: ConsoleIndexEntry[] = records.map((r) => ({
-    id: r.id,
-    name: r.name,
-    type: r.type,
-    region: r.region ?? '',
-    regionName: regionOf(r)?.name ?? r.region ?? ''
-  }));
-
+  /*
+   * No record index here any more.
+   *
+   * Every record used to be embedded so the search worked with no fetch at all. At 1,405
+   * records that was 27.9 kB gzipped and a 94 kB page against a 120 kB budget, with a ceiling
+   * near 4,600 however the fields were trimmed -- and national coverage needs 10,000 or more.
+   *
+   * The regions below are the whole embedded index now. One region's records are fetched from
+   * `/console-index/<region>.json` once the nearest is known, so **this page stops growing as
+   * the directory does**. See `delivery.md` for the three trimming attempts that ruled out
+   * doing it any other way.
+   */
   const regionsWithData = new Set(records.map((r) => r.region)).size;
 
   // ISO dates (YYYY-MM-DD) sort lexicographically the same as chronologically, so the max
@@ -64,7 +67,6 @@ export function load() {
   }));
 
   return {
-    index,
     coverage: {
       records: records.length,
       regionsWithData,

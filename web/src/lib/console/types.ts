@@ -7,6 +7,18 @@ export interface ConsoleIndexEntry {
   regionName: string;
 }
 
+/**
+ * One region's records, fetched on demand from `/console-index/<region>.json`.
+ *
+ * No `region`/`regionName`: the caller knows which region it asked for, and repeating it 254
+ * times in Philadelphia's file is the redundancy that made the inlined index unaffordable.
+ */
+export interface ConsoleRecordEntry {
+  id: string;
+  name: string;
+  type: string;
+}
+
 /** A region's centroid, derived from its own geotagged records — never hand-curated. */
 export interface ConsoleCentroid {
   region: string;

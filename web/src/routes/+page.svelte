@@ -15,7 +15,8 @@
   import '$lib/terminal/screen.css';
   import '$lib/terminal/panel.css';
   import { Panel, Slot, Readout, Why } from '$lib/components/panel';
-  import { search } from '$lib/console/search';
+  import { search, type ConsoleHit } from '$lib/console/search';
+  import type { ConsoleRecordEntry } from '$lib/console/types';
   import { locateOnce, nearest } from '$lib/console/position-once';
   import type { ConsoleCentroid } from '$lib/console/types';
   import { get, set } from '$lib/terminal/storage';
@@ -41,11 +42,68 @@
   let sig = $state<'low' | 'document'>('document');
 
   let query = $state('');
-  const typed = $derived(search(data.index, query));
+  /**
+   * What the search can currently see.
+   *
+   * Regions always; one region's records once they have arrived. The scope is a value rather
+   * than a module global so the screen can say plainly which of the two it just searched --
+   * a search that quietly covers less than a person assumes is worse than one that covers
+   * less and says so.
+   */
+  let loaded = $state<{ region: string; name: string; entries: ConsoleRecordEntry[] } | null>(null);
+
+  /**
+   * Fetch one region's records so the search can see them.
+   *
+   * Driven by whichever of the two ways the visitor told us where they are -- the one-shot
+   * location fix, or the region they picked by hand. **Picking by hand must not buy less than
+   * allowing location**, which is the trap in offering both: the manual control existed for
+   * "geolocation said no", and it would have been the weaker path.
+   *
+   * A failed fetch is a silent no-op, exactly as a denied location is. The search still covers
+   * every region, and a console that announced a missing index would be reporting its own
+   * plumbing to somebody deciding whether to trust the project.
+   */
+  async function loadRegionIndex(region: string, name: string): Promise<void> {
+    if (loaded?.region === region) return;
+    try {
+      const res = await fetch(`/console-index/${region}.json`);
+      if (!res.ok) return;
+      loaded = { region, name, entries: (await res.json()) as ConsoleRecordEntry[] };
+    } catch {
+      /* offline, blocked, or gone: regions still search */
+    }
+  }
+
+  $effect(() => {
+    if (!manualRegion) return;
+    const r = regionList.find((x) => x.region === manualRegion);
+    if (r) void loadRegionIndex(r.region, r.name);
+  });
+  /** `regionFigures` is keyed by slug; the search wants them in a stable order. */
+  const regionList = $derived(
+    Object.values(data.regionFigures).sort((a, b) => a.name.localeCompare(b.name))
+  );
+  const typed = $derived(search({ regions: regionList, loaded }, query));
 
   let nearRegion = $state<ConsoleCentroid | null>(null);
-  const defaultResults = $derived(
-    nearRegion ? data.index.filter((e) => e.region === nearRegion!.region).slice(0, 30) : []
+  /*
+   * What is shown before anybody types: the nearest region's own places, once loaded.
+   *
+   * Previously sliced out of the embedded all-records index. That index is gone -- the loaded
+   * region *is* the nearest region, so this is the same list from the file that replaced it.
+   */
+  const defaultResults = $derived<ConsoleHit[]>(
+    loaded
+      ? loaded.entries.slice(0, 30).map((e) => ({
+          kind: 'record' as const,
+          id: e.id,
+          name: e.name,
+          type: e.type,
+          region: loaded!.region,
+          regionName: loaded!.name
+        }))
+      : []
   );
   const results = $derived(query.trim() ? typed : defaultResults);
 
@@ -107,8 +165,16 @@
     // landed back on / (the brand link, a bookmark) silently lost it here.
     sig = readSignature();
     applySignature(sig);
-    void locateOnce().then((fix) => {
+    void locateOnce().then(async (fix) => {
       if (fix) nearRegion = nearest(fix, data.centroids);
+      /*
+       * Load the one region's records the visitor is most likely to test us on.
+       *
+       * A failed fetch is a silent no-op, exactly as a denied location is: the search still
+       * covers every region, and a console that shouted about a missing index would be
+       * reporting its own plumbing to somebody deciding whether to trust the project.
+       */
+      if (nearRegion) await loadRegionIndex(nearRegion.region, nearRegion.name);
     });
     /*
      * Bounded, because a fetch that *hangs* is the case this readout is worst at.
@@ -224,12 +290,35 @@
       />
       {#if results.length > 0}
         <ul class="nc-results">
-          {#each results as r (r.id)}
+          <!--
+            Two kinds of hit, and they are not interchangeable. A record is the answer somebody
+            typed a shelter's name to get; a region is the answer to a city, and the door to a
+            city whose records are not loaded here. Marked in the markup rather than inferred
+            from a shape, so a test can tell them apart.
+          -->
+          {#each results as r (r.kind === 'record' ? r.id : 'region:' + r.region)}
             <li>
-              <a href="/directory/{r.id}/">
-                <span class="nc-results-name">{r.name}</span>
-                <span class="nc-results-meta">{r.type.replace(/_/g, ' ')} · {r.regionName}</span>
-              </a>
+              {#if r.kind === 'record'}
+                <a href="/directory/{r.id}/" data-hit="record">
+                  <span class="nc-results-name">{r.name}</span>
+                  <span class="nc-results-meta">{r.type.replace(/_/g, ' ')} · {r.regionName}</span>
+                </a>
+              {:else}
+                <!--
+                  The region's own page, not an anchor on the flat index. The first attempt
+                  linked to `/directory/#<region>`, which does not exist -- the public index
+                  has one anchor, `#main` -- so it would have dropped somebody at the top of a
+                  1,405-entry list to find by eye what they had just searched for. That is the
+                  exact failure the "opens onto the record it named" test was written to stop,
+                  and it caught this.
+                -->
+                <a href="/terminal/directory/{r.region}/" data-hit="region">
+                  <span class="nc-results-name">{r.name}</span>
+                  <span class="nc-results-meta">
+                    {r.records === 0 ? 'no records carried yet' : `${r.records} places`}
+                  </span>
+                </a>
+              {/if}
             </li>
           {/each}
         </ul>
@@ -249,9 +338,18 @@
       {/if}
       <Why summary="What this searches">
         <p>
-          Every public record this directory holds, searched on this device with nothing sent
-          anywhere. Results open onto the full record — hours, intake rules, and how recently
-          anyone checked.
+          <strong>Every region this directory covers</strong>, always — and
+          {#if loaded}
+            <strong>every place in {loaded.name}</strong>, because that is the area nearest you.
+          {:else}
+            no individual places yet: pick a region below, or allow location, and this searches
+            that area's places too.
+          {/if}
+        </p>
+        <p>
+          Searched on this device, with nothing sent anywhere. Places elsewhere are found by
+          finding their city first — the whole directory is too large to carry on one page, and
+          a search that silently covered only part of it would be worse than one that says so.
         </p>
       </Why>
     </Panel>

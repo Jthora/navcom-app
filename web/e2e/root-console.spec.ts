@@ -13,7 +13,17 @@ import { blankDevice, open, seedDevice } from './device';
  */
 
 test.describe('the root console — search works with nothing set up', () => {
-  test('typing filters the real directory, with no fetch and no watch', async ({ page }) => {
+  test('typing a city finds the city, asking nobody', async ({ page }) => {
+    /*
+     * This used to assert "with no fetch and no watch", and half of that is now untrue on
+     * purpose. The console carried every record inline so its search needed no fetch at all;
+     * at 1,405 records that was a 94 kB page against a 120 kB budget with a ceiling near
+     * 4,600, and national coverage needs more [`delivery.md`]. It now carries every *region*
+     * and fetches one region's records.
+     *
+     * **The half that is doctrine still holds and is what this asserts:** nothing here asks a
+     * person. A static file on the same origin is not `Query`, which goes to the watch.
+     */
     await blankDevice(page);
     await open(page, '/');
 
@@ -21,9 +31,25 @@ test.describe('the root console — search works with nothing set up', () => {
     await expect(input).toBeVisible();
 
     await input.fill('st. louis');
-    const results = page.locator('.nc-results li');
-    await expect(results.first()).toBeVisible({ timeout: 10_000 });
-    await expect(page.locator('.nc-results-meta').first()).toContainText(/st\. louis/i);
+    const first = page.locator('.nc-results li').first();
+    await expect(first).toBeVisible({ timeout: 10_000 });
+    await expect(first.locator('[data-hit="region"]')).toBeVisible();
+    await expect(first.locator('.nc-results-name')).toContainText(/st\. louis/i);
+  });
+
+  test('and a region result opens that region, not the top of the whole list', async ({ page }) => {
+    /*
+     * The first version of this linked to `/directory/#<region>`. That anchor does not exist --
+     * the public index has one, `#main` -- so it dropped a stranger at the top of a 1,405-entry
+     * list to find by eye what they had just searched for, which is the failure the test below
+     * was written to stop. Caught by that test, and asserted here so it cannot come back.
+     */
+    await blankDevice(page);
+    await open(page, '/');
+    await page.getByLabel(/where are you, or what do you need/i).fill('st. louis');
+    const link = page.locator('.nc-results li [data-hit="region"]').first();
+    await expect(link).toBeVisible({ timeout: 10_000 });
+    expect(await link.getAttribute('href')).toBe('/terminal/directory/st-louis/');
   });
 
   test('an unmatched query says so plainly, rather than showing nothing silently', async ({ page }) => {
@@ -43,12 +69,29 @@ test.describe('the root console — search works with nothing set up', () => {
      */
     await blankDevice(page);
     await open(page, '/');
-    await page.getByLabel(/where are you, or what do you need/i).fill('st. louis');
 
+    /*
+     * Pick a region first, which a visitor who denied location does by hand.
+     *
+     * The property this test protects is unchanged -- a **named place** opens its own record.
+     * What changed is that the console no longer carries every record, so the records of one
+     * region have to be loaded before there is a named place to click. Searching "st. louis"
+     * now finds the *city*, correctly, which is a different result and has its own test above.
+     *
+     * Deliberately the manual picker rather than a geolocation stub: it is the path somebody
+     * who declined location takes, and it must not buy them less than allowing it would.
+     */
+    await page.getByLabel(/pick a region/i).selectOption('st-louis');
+
+    const input = page.getByLabel(/where are you, or what do you need/i);
     const first = page.locator('.nc-results li').first();
     await expect(first).toBeVisible({ timeout: 10_000 });
     const named = ((await first.locator('.nc-results-name').textContent()) ?? '').trim();
     expect(named.length).toBeGreaterThan(0);
+
+    // Search that place by name; it must be a record hit, not the city again.
+    await input.fill(named.slice(0, 12));
+    await expect(first.locator('[data-hit="record"]')).toBeVisible({ timeout: 10_000 });
 
     await first.locator('a').click();
     await expect(page).toHaveURL(/\/\/[^/]+\/directory\/[a-z0-9-]+\/$/);
