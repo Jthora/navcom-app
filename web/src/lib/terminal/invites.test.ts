@@ -49,6 +49,24 @@ const flood = (n: number) => {
   for (let i = 0; i < n; i++) deliver(from(newSecretKey(), `S${i}`, T + i));
 };
 
+/**
+ * Enough to overrun a cap of fifty, and not four times more.
+ *
+ * These tests used to flood **200**, which meant 200 keypairs generated and 200 invites
+ * signed, encrypted and decrypted -- about 2.2 seconds of real crypto each, on an idle
+ * machine, against vitest's 5-second default. Under any load they crossed it: **one in five
+ * runs failed in isolation and one in two inside the full suite**, and the failure was a
+ * timeout wearing the costume of a broken cap.
+ *
+ * A flaky test is worse than a missing one, because it teaches people to re-run instead of
+ * read -- and this project's whole verification posture depends on a red result meaning
+ * something.
+ *
+ * The assertion does not get stronger past the cap. Sixty overruns fifty, proves precisely
+ * what 200 proved, and leaves headroom on a machine with other work open.
+ */
+const OVER_CAP = 60;
+
 beforeEach(() => {
   relaysUp = true;
   invites.ignoreAll();
@@ -60,26 +78,26 @@ describe('when pairing requests arrive faster than the list will hold', () => {
     // Unbounded, five thousand of these cost twelve and a half million property copies and
     // four seconds on a laptop, because each arrival copied the whole map. On a prepaid
     // Android 8 the screen is gone, and the peers list goes with it.
-    flood(200);
+    flood(OVER_CAP);
     expect(invites.waiting.length).toBeLessThanOrEqual(50);
   });
 
   it('says so, rather than quietly turning people away', () => {
-    flood(200);
+    flood(OVER_CAP);
     expect(invites.flooded).toBe(true);
   });
 
   it('can be cleared in one action, or the cap is worse than the flood', () => {
     // A capped list that empties only fifty taps at a time is one an operator cannot
     // recover from — which would make the cap the attack rather than the defence.
-    flood(200);
+    flood(OVER_CAP);
     invites.ignoreAll();
     expect(invites.waiting).toHaveLength(0);
     expect(invites.flooded).toBe(false);
   });
 
   it('takes a real invite again once there is room', () => {
-    flood(200);
+    flood(OVER_CAP);
     invites.ignoreAll();
     deliver(from(newSecretKey(), 'Raven', T + 9_999));
     expect(invites.waiting.map((w) => w.payload.callsign)).toContain('Raven');

@@ -45,6 +45,35 @@
   let configured = $state(false);
   let identity = $state<ReturnType<typeof loadIdentity>>(null);
   let damaged = $state(false);
+  /** The `20911` this device was paged about, if it arrived through a notification. */
+  let ackId = $state<string | null>(null);
+  let acking = $state(false);
+  let ackDone = $state(false);
+  let ackFailed = $state<string | null>(null);
+
+  /**
+   * Sends *"I have this."* -- the only thing that stops the escalation ladder.
+   *
+   * **Only ever from a tap.** A delivery receipt, a read receipt or an app-open must never be
+   * routed here [signals.spec]: somebody whose phone buzzed is not somebody who woke up.
+   *
+   * A failure is said out loud rather than swallowed. The ladder keeps paging either way, but
+   * the person standing here has to know their ack did not land, because the alternative is
+   * believing they have handled something they have not.
+   */
+  async function acknowledge() {
+    if (!ackId || acking) return;
+    acking = true;
+    ackFailed = null;
+    try {
+      await operator.acknowledge(ackId);
+      ackDone = true;
+    } catch (err) {
+      ackFailed = err instanceof Error ? err.message : 'It did not send.';
+    } finally {
+      acking = false;
+    }
+  }
   /**
    * Lines jotted at a door that have not become corrections yet.
    *
@@ -81,6 +110,18 @@
     // never both on screen: this runs synchronously and Svelte applies the `{#if identity}`
     // update after.
     document.getElementById('distress-early')?.remove();
+    /*
+     * A Distress this device was paged about, carried in the URL the notification opened.
+     *
+     * It cannot come from anywhere else. `20911` is ephemeral, so a relay forwards it to
+     * whoever is subscribed at that instant and stores nothing -- a phone that was asleep when
+     * it fired and woke on the page finds the event gone [2.5].
+     *
+     * Validated as a 64-character hex id before it is shown, because a query parameter is
+     * attacker-controlled by definition: anybody can send somebody a link.
+     */
+    const q = new URLSearchParams(location.search).get('ack');
+    if (q && /^[0-9a-f]{64}$/.test(q)) ackId = q;
     clock = readClock(data?.built, Date.now());
     configured = loadConfig() !== null;
     identity = loadIdentity();
@@ -340,7 +381,23 @@
 <Panel label="Status" post={post.label} data-state={s.state} data-post={post.id}>
   <!-- Rule 5. One lit action, and it is the thing this post actually does. -->
   {#snippet action()}
-    {#if !identity}
+    <!--
+      Rule 5 says one lit action, and an acknowledgement outranks every other thing this
+      screen offers: somebody raised a Distress and is waiting on this tap. It is shown before
+      sign-on and before check-in for that reason, and it disappears once it has been sent.
+    -->
+    {#if ackId && !ackDone}
+      <!-- Wrapped only to give this one control a selector of its own; `Action` takes no
+           arbitrary attributes, and a test that matched on tone would also match Distress. -->
+      <span data-ack>
+        <Action
+          label={acking ? '…' : 'I have this'}
+          tone="alarm"
+          disabled={acking}
+          onfire={acknowledge}
+        />
+      </span>
+    {:else if !identity}
       <Action label="Choose a callsign" tone="warn" href="/terminal/setup/" />
     {:else if session}
       <Action
@@ -353,6 +410,29 @@
       <Action label="Sign on" tone="warn" href="/terminal/sign-on/" />
     {/if}
   {/snippet}
+
+    {#if ackId}
+      <!--
+        The outcome, said plainly. An ack that did not land must never look like one that did:
+        the ladder keeps paging either way, but somebody who believes they have handled this
+        will stop looking for another way to reach the operator.
+      -->
+      {#if ackDone}
+        <p class="cost" data-ack-sent>
+          <strong>Sent.</strong> The watch has been told you have this, under your callsign.
+        </p>
+      {:else if ackFailed}
+        <p class="cost" data-ack-failed>
+          <strong>It did not send — {ackFailed}</strong> Nobody has been told you have this.
+          Reach the operator another way, and try again when you have signal.
+        </p>
+      {:else}
+        <p class="cost" data-ack-pending>
+          An operator raised a <strong>Distress</strong> and is waiting for a human. Tapping
+          says you have it, and is the only thing that stops the ladder paging.
+        </p>
+      {/if}
+    {/if}
 
     <div data-capability>
       <Slot k="Watch">

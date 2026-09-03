@@ -76,6 +76,23 @@ export async function pageAll(
   roster: OnCallEntry[],
   message: string,
   timeoutMs = 30_000,
+  /**
+   * The `20911` this page is about, for a channel that can carry it.
+   *
+   * **Why it has to travel with the page.** A `distress-ack` names a `distress_id`, and the
+   * paged person's device cannot look one up: `20911` is ephemeral [20000-29999], so a relay
+   * forwards it to whoever is subscribed at that moment and stores nothing. A phone that was
+   * asleep and wakes on the page finds the event gone. The id being public does not help --
+   * there is nothing left to read it from.
+   *
+   * So the only path is the page itself. Substituted as `{{distress}}` in an operator's own
+   * command template, which is how every other value reaches a channel here -- no provider is
+   * embedded in this file and none should be.
+   *
+   * A channel that cannot carry it simply does not use the placeholder, and that operator
+   * acknowledges from the console as before. Nothing about the ladder depends on it.
+   */
+  distressId = "",
 ): Promise<PageResult[]> {
   const wakeable = roster.filter((e) => e.declaration.channel !== "console-open");
 
@@ -85,6 +102,7 @@ export async function pageAll(
         fill(entry.command, {
           message,
           callsign: entry.declaration.author.callsign ?? "",
+          distress: distressId,
         }),
         timeoutMs,
       ),

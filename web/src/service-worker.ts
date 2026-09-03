@@ -213,8 +213,27 @@ sw.addEventListener('push', (event) => {
   // Failing closed here would mean a silent page, which is the failure this exists to
   // prevent -- so anything unparseable is treated as a real Distress.
   let drill = false;
+  /*
+   * The `20911` this page is about, when the sender could carry one.
+   *
+   * **Not rendered, and it is not text.** Everything above still holds: no payload from the
+   * wire reaches the screen. This is an opaque id, read only to build the URL the tap opens,
+   * so a `distress-ack` can name the event it acknowledges.
+   *
+   * It has to arrive this way. `20911` is ephemeral, so a relay forwards it to whoever is
+   * subscribed at that instant and stores nothing -- a phone that was asleep and woke on this
+   * notification finds the event gone and has nothing to acknowledge [2.5].
+   *
+   * Validated as hex before it is used: it is going into a URL, and a payload is still a
+   * payload even when the channel that carried it is encrypted.
+   */
+  let distress: string | null = null;
   try {
-    drill = (event.data?.json() as { drill?: boolean } | null)?.drill === true;
+    const data = event.data?.json() as { drill?: boolean; distress?: string } | null;
+    drill = data?.drill === true;
+    if (typeof data?.distress === 'string' && /^[0-9a-f]{64}$/.test(data.distress)) {
+      distress = data.distress;
+    }
   } catch {
     drill = false;
   }
@@ -234,26 +253,48 @@ sw.addEventListener('push', (event) => {
          * looking for a button that is not there.
          */
         body: drill
-          ? 'A drill, not an emergency. Acknowledge it in the console so the roster can be proven.'
-          : 'An operator is waiting for a human. Open the board and tell them you are awake.',
+          ? distress
+            ? 'A drill, not an emergency. Tap to acknowledge it, so the roster can be proven.'
+            : 'A drill, not an emergency. Acknowledge it in the console so the roster can be proven.'
+          : distress
+            ? 'An operator is waiting for a human. Tap to say you have it.'
+            : 'An operator is waiting for a human. Open the board and tell them you are awake.',
         // Distinguishable by the recipient, in the text they actually read [C29]. Somebody
         // woken at 3am has seconds and no context.
         tag: drill ? 'navcom-drill' : 'navcom-distress',
         requireInteraction: !drill,
-        data: { url: `${base}/terminal/` }
+        data: { url: distress ? `${base}/terminal/?ack=${distress}` : `${base}/terminal/` }
       }
     )
   );
 });
 
-/** Tapping it opens the terminal, focusing a tab that is already there rather than adding one. */
+/**
+ * Tapping it opens the terminal, focusing a tab that is already there rather than adding one.
+ *
+ * **And navigates that tab, which it did not before.** Focusing alone discarded the URL, so an
+ * operator who already had the terminal open -- the likeliest person to be on-call -- would tap
+ * a page about a Distress and land on whatever screen they had left open, with the `ack` id
+ * dropped on the floor. The feature would have worked only for somebody with no tab open,
+ * which is the opposite of who it is for.
+ */
 sw.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const url = (event.notification.data as { url?: string } | null)?.url ?? `${base}/terminal/`;
   event.waitUntil(
-    sw.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+    sw.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (clients) => {
       for (const client of clients) {
-        if (client.url.includes('/terminal') && 'focus' in client) return client.focus();
+        if (!client.url.includes('/terminal') || !('focus' in client)) continue;
+        // Best-effort: a client that refuses to navigate is still focused, which is what the
+        // old behaviour was. Never fail the tap.
+        if ('navigate' in client && !client.url.endsWith(url)) {
+          try {
+            await client.navigate(url);
+          } catch {
+            /* not controlled, or cross-origin: focus is still better than nothing */
+          }
+        }
+        return client.focus();
       }
       return sw.clients.openWindow(url);
     })

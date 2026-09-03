@@ -248,9 +248,19 @@ export class EscalationExecutor {
         return;
       }
 
+      /*
+       * The id goes with the page, because it cannot be fetched afterwards.
+       *
+       * `20911` is ephemeral, so a phone that was asleep when this fired and wakes on the
+       * notification finds nothing on the relay to acknowledge. Carrying it here is what makes
+       * a one-tap ack possible at all [2.5]; a channel that cannot carry it ignores the
+       * placeholder and that operator uses the console.
+       */
       const results = await this.page(
         this.config.escalation.oncall,
         `NavCom DISTRESS from ${event.pubkey.slice(0, 8)} -- ack in the console`,
+        undefined,
+        event.id,
       );
       for (const r of results) {
         console.log(

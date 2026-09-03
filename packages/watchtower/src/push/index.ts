@@ -26,10 +26,19 @@ import webpush from "web-push";
  *
  * ## What is sent
  *
- * Almost nothing: a flag saying whether this is a drill. The service worker holds the
- * wording. The sender cannot read the `Distress` either, so there is no detail to pass on —
- * and a notification rendering text from the wire would put a stranger's words on a locked
- * screen.
+ * Almost nothing: a flag saying whether this is a drill, and the id of the `20911` this is
+ * about. The service worker holds the wording. The sender cannot read the `Distress` either,
+ * so there is no detail to pass on — and a notification rendering text from the wire would put
+ * a stranger's words on a locked screen.
+ *
+ * **The id is the exception, and it is not text.** A `distress-ack` names a `distress_id`, and
+ * the paged device cannot look one up afterwards: `20911` is ephemeral, so a relay forwards it
+ * to whoever is subscribed at that instant and stores nothing. A phone that was asleep finds
+ * the event gone. Carrying it here is the only path to a one-tap ack [2.5].
+ *
+ * It leaks nothing. The payload is encrypted to keys only this browser holds, so the push
+ * service relays a blob; and an event id is public on the relay to anyone whose filter matches
+ * anyway. It is never rendered — it is passed to the ack and nowhere else.
  *
  * ## Not verified end to end
  *
@@ -45,7 +54,7 @@ const usage = `navcom-push — wake an on-call operator through Web Push.
       Generates a sender keypair. Run once. The public half goes to whoever is
       registering a device; the private half stays here and is a secret.
 
-  navcom-push --to <subscription.json> [--drill] [message]
+  navcom-push --to <subscription.json> [--drill] [--distress <id>] [message]
       Sends a page. The subscription file is what the on-call operator handed over
       from the terminal's "On call" screen.
 
@@ -104,7 +113,14 @@ async function send(argv: string[]): Promise<void> {
   webpush.setVapidDetails(process.env.NAVCOM_PUSH_CONTACT ?? "mailto:navcom@example.org", pub, priv);
 
   const drill = argv.includes("--drill");
-  await webpush.sendNotification(readSubscription(readFileSync(to, "utf8")), JSON.stringify({ drill }), {
+  /*
+   * Accepted but not required. A ladder paging a channel that predates this simply does not
+   * pass one, and that operator acknowledges from the console -- the ack path degrades, the
+   * page does not.
+   */
+  const distress = argv[argv.indexOf("--distress") + 1];
+  const hasDistress = argv.includes("--distress") && typeof distress === "string" && !distress.startsWith("--");
+  await webpush.sendNotification(readSubscription(readFileSync(to, "utf8")), JSON.stringify(hasDistress ? { drill, distress } : { drill }), {
     // A page nobody reads for four hours is not a page. Long enough to survive a phone that
     // is briefly off, short enough that it is never a surprise from yesterday.
     TTL: 3600,

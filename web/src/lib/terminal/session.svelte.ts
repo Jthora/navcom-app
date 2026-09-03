@@ -285,6 +285,39 @@ export const operator = {
     };
   },
 
+  /**
+   * *"I have this."* The only thing that stops the escalation ladder.
+   *
+   * The last missing piece of the paging path [2.5]. `distress-ack` has been a defined signal
+   * with a 10-second budget — *"one tap, and somebody is waiting on it as they are waiting on
+   * nothing else"* — the executor has accepted it, the roster can identify who sent it, and
+   * **no client sent one.** The push notification told people to "acknowledge in the console",
+   * because the control this replaces did not exist.
+   *
+   * The id comes from the page that woke them and cannot come from anywhere else: `20911` is
+   * ephemeral, so a relay forwards it to whoever is subscribed at that instant and stores
+   * nothing. A phone that was asleep finds the event gone.
+   *
+   * Deliberately not waiting for a response. The budget is ten seconds and the person is
+   * standing there; `sendSignal` throws when no relay accepted, which is the only distinction
+   * that matters to them — it went, or it did not and they must reach somebody another way.
+   *
+   * **Never called except by a person tapping.** A delivery receipt, a read receipt or an
+   * app-open MUST NOT be routed here [signals.spec]: somebody whose phone buzzed is not
+   * somebody who woke up, and an agent may never acknowledge at all [invariant 5].
+   */
+  async acknowledge(distressId: string) {
+    const { config, identity } = ctx();
+    await sendSignal(
+      pool(),
+      config.relays,
+      identity.secretKey,
+      watchAddress(config),
+      'distress-ack',
+      { distress_id: distressId }
+    );
+  },
+
   async routine() {
     const r = await run(() => send('routine', {}));
     if (r) {
