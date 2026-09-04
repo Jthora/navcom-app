@@ -64,8 +64,15 @@ one layer down. **An observation is superseded by a later observation, never edi
 Not ephemeral (`2xxxx`), which is the deliberate opposite choice from `Distress`. A distress
 call must leave no queryable history. An observation is *for* the record.
 
-Signed with the **Contact key**, or published anonymously. Never the Operational key — the
-whole point of the split is that "publishing costs no operational exposure."
+Signed with the **Contact key**. Never the Operational key — the whole point of the split is
+that "publishing costs no operational exposure."
+
+**Anonymity here is field-level, not key-level**, and the earlier wording promised both. The
+`callsign` field may be the literal `anonymous`; the event is still Contact-key signed. That
+is a deliberate limit rather than a shortcut: key-level anonymity would need a fresh throwaway
+key per observation, which forfeits `supersedes` entirely, since supersession is scoped to an
+author's own account. An operator who wants no linkage at all between two observations must
+also accept that neither can correct the other.
 
 ## 3. Fields
 
@@ -120,6 +127,14 @@ is a population.
 It is also the ethical asymmetry made structural. An institution can dispute a report about
 itself; a patch of ground cannot, and neither can the people on it. **So institutions are
 reportable and ground is not.**
+
+**The anchor path must not carry `notes`.** The rule above is enforced by there being no
+free-text field to put a descriptor in — and the place-creation path has one.
+`PLACE_EXTRAS = ['phone', 'hours', 'notes']`, and `notes` is free text. An observation that
+creates its anchor could therefore publish exactly what §6 exists to prevent, through the door
+standing next to it. The observation flow must not expose `notes`, and must say so in the
+docblock the way `places.ts` already names the decisive fields it deliberately omits — so the
+next person does not restore it as an oversight.
 
 **An anchor may be created by the observation**, through the existing operator-added place
 path in [`directory-schema.md`](directory-schema.md) §5 — which already demands a `method`
@@ -188,18 +203,29 @@ The doctrine notes such information "may still be accurate, actionable, and valu
 first-night operator is F6. **There is therefore no quality bar on submission, ever:** the
 grade carries the caveat so the gate does not have to.
 
-## 9. Expiry — uncorroborated intel evaporates
+## 9. Retention — uncorroborated intel is dropped, not deleted
 
-An observation that is never corroborated and never cited **expires after 90 days**.
-Corroborated or cited observations are pinned permanently.
+An observation that is never corroborated and never cited **is dropped from local stores after
+90 days**. Corroborated or cited observations are kept.
+
+**This is a retention rule, not a property of the event, and the distinction is not pedantic.**
+A regular Nostr event is immutable and held by whatever relay chose to store it; §11 forbids
+deletion; nothing here can reach across the network and remove something already published.
+An earlier draft of this section said observations "expire", which described something no
+relay would honour and no client could enforce — a rule the code could never satisfy.
+
+What is actually specified: devices and nodes drop what they hold, on the shape
+`escalation.ts`'s `reap` already uses. A relay that keeps everything forever is not in
+violation; it is simply not participating in the part we control. The Doxxer's dataset shrinks
+wherever this runs, which is the honest claim, and it is smaller than the one it replaces.
 
 **Why 90.** It reuses the window the Accountability tier already has rather than inventing a
 new one, and it is long enough for a second operator to visit the same place in an ordinary
 patrol cycle.
 
-One rule doing two jobs: it keeps the pool clean with no moderator, and it shrinks the
-Doxxer's dataset to only the observations that mattered to somebody. **An observation is
-permanently true; permanent retention is a separate choice.**
+One rule doing two jobs: it keeps the pool clean with no moderator, and it shrinks the stored
+set to the observations that mattered to somebody. **An observation is permanently true;
+permanent retention is a separate choice, and it is the only half of that we can decide.**
 
 Citation pins, so the provenance chain can never break — anything a report depends on is by
 definition cited.
@@ -215,6 +241,22 @@ destroying the evidence chain.
 | Direction | Crosses | Never |
 |---|---|---|
 | NavCom → Starcom | Observations, whole, with provenance | Operational-key anything; positions; board state; query text |
+
+**On the callsign, because two published contracts disagreed about it.**
+[`navcom-refusals.json`](../../packages/core/src/refusals.ts) says callsigns never cross;
+this object declares `callsign` required. Both were shipped on the same night and could not
+both be true as written.
+
+The resolution is that they describe different acts. **The valve governs what NavCom
+*discloses* — hands over, correlates, answers questions about. It cannot govern what an
+operator already published**, because a Contact-key observation goes to public relays and
+Starcom can subscribe to those without asking anyone. A rule forbidding the handover of
+something already readable is not a protection, it is a fig leaf, and this project does not
+get to ship one.
+
+So the control is **operator-side and always was**: `anonymous` is available on every
+observation, and an operator who does not want their callsign on a public fact does not put
+it there. That is a weaker guarantee than the refusals file implied, and it is the true one.
 | Starcom → NavCom | Grades and citations for observations | Anything reaching the Field Terminal; anything as a feed |
 
 **Provenance must survive refinement.** An Intel Report cites the event ids it was built

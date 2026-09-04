@@ -299,7 +299,6 @@ function nodeIdentity(env = process.env) {
  */
 export function intelDocument(root = ROOT) {
   const spec = readFileSync(join(root, 'docs/product/raw-intel.md'), 'utf8');
-  const kinds = readFileSync(join(root, 'packages/core/src/events/kinds.ts'), 'utf8');
 
   const block = spec.match(/```\n([\s\S]*?)```/)?.[1] ?? '';
   /** @type {Record<string, string[]>} */
@@ -309,7 +308,16 @@ export function intelDocument(root = ROOT) {
     if (m) vocabulary[m[1]] = m[2].split('\u00b7').map((t) => t.trim()).filter(Boolean);
   }
 
-  const emitted = /KIND_OBSERVATION\s*=\s*1911/.test(kinds);
+  /*
+   * Derived from whether anything can BUILD one, not whether a constant exists.
+   *
+   * This tested `kinds.ts` for `KIND_OBSERVATION = 1911`, which would have flipped a public
+   * contract to "implemented" on a one-line commit declaring a number — while no operator could
+   * file an observation and none existed. Starcom would have been told to expect events that
+   * nothing emits. Declaring a kind is not implementing an object, and this project's own
+   * standard is that a mechanism nobody can reach is not built.
+   */
+  const emitted = existsSync(join(root, 'packages/core/src/directory/observation.ts'));
 
   return {
     spec: 'navcom-intel',
@@ -320,8 +328,8 @@ export function intelDocument(root = ROOT) {
       'NavCom defines what raw intel is on this grid. A consumer conforms to this document; ' +
       'it does not negotiate with it. Changes are announced here, by version.',
     status: emitted
-      ? 'implemented — the observation kind is declared in packages/core'
-      : 'specified, not implemented — nothing emits kind 1911 yet, and no observation exists',
+      ? 'implemented in core — an observation can be built and signed. Whether an operator can reach it is a separate question this file does not answer'
+      : 'specified, not implemented — nothing can build an observation yet, and none exists',
     defines: [
       {
         kind: 1911,

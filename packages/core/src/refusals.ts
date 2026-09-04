@@ -90,7 +90,7 @@ export const REFUSALS: readonly Refusal[] = [
     id: 'no-callsigns-outbound',
     refuses: 'Requests for operator records, callsigns, positions, board state, query text or endorsements',
     because:
-      'None of it crosses the valve. Directory corrections are the only NavCom output that survives "pattern, never record", because they are facts about places. Provenance travels as a rotating opaque source token; the name stays here.'
+      'None of it is disclosed on request. What an operator publishes themselves is a separate matter and always their choice: directory corrections and observations are facts about places, signed with a contact key, and carry whatever callsign the author put on them — or `anonymous`, which is the real control and is operator-side, not here. This refusal is that NavCom will not hand over, correlate, or answer questions about who said what. It was never a claim that a name an operator chose to publish stays secret, and an earlier wording said so.'
   }
 ] as const;
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { REFUSALS, PERMITTED, BROADCAST } from '@navcom/core';
 // Plain .mjs, deliberately: this is the file node runs during a build, long after the
 // TypeScript is gone, and testing the thing that actually runs is the point.
@@ -198,8 +199,15 @@ describe('the intel declaration', () => {
     // The failure this exists to prevent: a published contract telling Starcom we emit
     // something we do not, or still calling itself a plan after it ships. The status page
     // already drifted this way once, which is why it is derived rather than written.
-    const declared = /KIND_OBSERVATION\s*=\s*1911/.test(kindsSrc());
-    expect(doc().status.startsWith(declared ? 'implemented' : 'specified, not implemented')).toBe(true);
+    //
+    // Keyed on an emitter existing, not on the kind constant. Testing the constant would have
+    // flipped this to "implemented" on a one-line commit declaring a number, while nothing
+    // could build an observation and none existed — telling Starcom to expect events nothing
+    // emits. Declaring a kind is not implementing an object.
+    const buildable = existsSync(
+      fileURLToPath(new URL('../../../../packages/core/src/directory/observation.ts', import.meta.url))
+    );
+    expect(doc().status.startsWith(buildable ? 'implemented in core' : 'specified, not implemented')).toBe(true);
   });
 
   it('publishes a vocabulary read out of the spec, not retyped', () => {
