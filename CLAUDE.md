@@ -76,6 +76,15 @@ resolves nowhere, and a page about link rot that rots is worse than none. Doctri
 3. **Nobody is a single point of failure** — 9.4, 9.6, 9.7, 9.8 are all people rather than
    code. CI itself is closed rather than open: declined on 2026-08-24 rather than left as a
    permanently-broken dependency (9.9)
+4. **Raw Intel** — the one component the Earth Intelligence Network is specified around and
+   nobody builds. Starcom *refines* raw intel; the phrase appears twice in the docs tree and
+   both times as its input. Design is complete and normative in
+   [`raw-intel.md`](docs/product/raw-intel.md): observation kind `1911`, an anchor rule that
+   makes invariant 1 structural, and a closed vocabulary whose only job is that no descriptor
+   and no encampment location has anywhere to go. **Gated on the tag vocabulary**, which needs
+   local knowledge and is explicitly not agent work — though the schema, anchor enforcement,
+   publication split and expiry can all be built against a placeholder first. Crew federation
+   (C37) is reversed and sits behind it
 
 **P8 is closed: the system stack stays, and no webfont ships.** It was never a budget
 question — 8–25 KB fits inside the terminal's headroom. It is that **a webfont which has not

@@ -271,6 +271,19 @@ every time: *fewer records, all of them plausible.*
 
 ### Interoperating with an allied agency
 
+> **Reversed 2026-09-03.** The condition this entry set for its own reversal — *"reverse this
+> the day someone asks"* — has been met. Archangel Agency asked, and the counterparty is no
+> longer imagined: Zone Guardians and Rescue Rangers are real crews with real keys, so the
+> shape can be designed against them rather than against a hypothesis.
+>
+> Scope note, because the name hides a split. **The intel half is nearly free and partly
+> already shipped**: corrections, places and cards are Contact-key signed and public, so
+> another crew can read them today with no interop protocol at all. **The board half — live
+> positions, time-boxing, revocation — is the expensive part, and is what this entry was
+> actually about.** Reversing it commits to the second, not merely the first.
+>
+> The original decision is kept below rather than deleted. It was right when it was made.
+
 The Liaison wants their people visible to ours for one night, then gone — federation without
 membership, time-boxed and scoped to an operation. It is a real requirement and it is
 genuinely hard.
