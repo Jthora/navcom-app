@@ -1,0 +1,12 @@
+{
+  "slug": "montgomery-ny",
+  "name": "Montgomery, NY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "36057",
+  "timezone_derived_from": "state"
+}

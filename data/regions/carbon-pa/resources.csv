@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+carbon-pa-overture-941fd8b9,Panther Valley Community Food Pantry,meal,"1 Mermon Ave, Nesquehoning",40.86639404296875,-75.81180572509766,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+carbon-pa-overture-5e186b98,Peaceful Knights,shelter,"215 N 1st St, Lehighton",40.83562088012695,-75.70884704589844,+16103404786,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.PeacefulKnights.org/
+carbon-pa-overture-7685783a,Nesquehoning Pantry,meal,"126 W Catawissa St, Nesquehoning",40.86354064941406,-75.81339263916016,+15706699212,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.nesquehoning.org

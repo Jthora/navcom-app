@@ -1,0 +1,12 @@
+{
+  "slug": "richland-sc",
+  "name": "Richland, SC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "45079",
+  "timezone_derived_from": "state"
+}

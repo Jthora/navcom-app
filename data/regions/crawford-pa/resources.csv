@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+crawford-pa-overture-98596317,Hayden House,shelter,"1007 Liberty St, Meadville",41.634803771972656,-80.14860534667969,+18148131308,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://nomnwpa.org/home
+crawford-pa-overture-d82dc9fb,Titusville Area Food Bank,meal,"134 W Central Ave, Titusville",41.627254486083984,-79.67475891113281,18148272378,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+crawford-pa-overture-0df6600e,SAM | Shelter Area Meadville,shelter,"Clinton Ct, Meadville",41.63667678833008,-80.14898681640625,+18145476771,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://euma-erie.org/

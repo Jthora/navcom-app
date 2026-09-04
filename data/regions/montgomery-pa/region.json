@@ -1,0 +1,12 @@
+{
+  "slug": "montgomery-pa",
+  "name": "Montgomery, PA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "42091",
+  "timezone_derived_from": "state"
+}

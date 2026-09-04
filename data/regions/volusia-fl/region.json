@@ -1,0 +1,12 @@
+{
+  "slug": "volusia-fl",
+  "name": "Volusia, FL",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "12127",
+  "timezone_derived_from": "state"
+}

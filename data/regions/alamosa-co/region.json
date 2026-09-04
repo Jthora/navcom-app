@@ -1,0 +1,12 @@
+{
+  "slug": "alamosa-co",
+  "name": "Alamosa, CO",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "08003",
+  "timezone_derived_from": "state"
+}

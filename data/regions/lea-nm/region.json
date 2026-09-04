@@ -1,0 +1,12 @@
+{
+  "slug": "lea-nm",
+  "name": "Lea, NM",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "35025",
+  "timezone_derived_from": "state"
+}

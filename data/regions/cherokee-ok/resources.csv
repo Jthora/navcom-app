@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+cherokee-ok-overture-b6aa28c9,Care Food Pantry,meal,"315 E Shawnee St, Tahlequah",35.91374588012695,-94.96497344970703,19184585338,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://wecarefoodpantry.org
+cherokee-ok-overture-27046e3f,Care Food Pantry,meal,"220 N Muskogee Ave, Tahlequah",35.91522216796875,-94.96989440917969,+19184585338,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://wecarefoodpantry.org
+cherokee-ok-overture-0806dbb1,Tahlequah Men's Shelter,shelter,"118 W Keetoowah St, Tahlequah",35.912559509277344,-94.97222900390625,+19187089474,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://mensshelter.wix.com/tahlequahmen-shelter

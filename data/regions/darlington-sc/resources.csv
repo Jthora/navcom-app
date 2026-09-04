@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+darlington-sc-overture-e33dec55,Trent Hill Center Group Home & Administrative Offices,shelter,"522 W Bobo Newsom Hwy, Hartsville",34.33982467651367,-80.0843734741211,+18433095502,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.trenthillcenter.org/
+darlington-sc-overture-0f863b3b,Lord Cares,meal,"201 Grove St, Darlington",34.300907135009766,-79.87140655517578,+18433951001,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.thelordcares.org
+darlington-sc-overture-1b7620b4,New Vision Community Development Corp - Food Distribution Center,meal,"1416 Bethlehem Rd, Hartsville",34.43578338623047,-79.96916198730469,18433834343,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.newvisioncdc.org

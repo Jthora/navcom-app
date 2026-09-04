@@ -1,0 +1,12 @@
+{
+  "slug": "jasper-in",
+  "name": "Jasper, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18073",
+  "timezone_derived_from": "state"
+}

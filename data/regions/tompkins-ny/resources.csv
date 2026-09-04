@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+tompkins-ny-overture-b303fd69,Caroline Food Pantry,meal,"522 Valley Rd, Brooktondale",42.38087844848633,-76.3935775756836,6075396810,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://carolinefoodpantry.org/
+tompkins-ny-overture-757d7274,Loaves and Fishes,meal,"210 N Cayuga St, Ithaca",42.44114685058594,-76.49947357177734,+16072725457,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.loaves.org/
+tompkins-ny-overture-4964b771,Mutual Aid Tompkins Food Sharing Cabinets,meal,"802 W Buffalo St, Ithaca",42.44124984741211,-76.51276397705078,16072883252,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://mutualaidtompkins.com
+tompkins-ny-overture-77779629,Lansing Food Pantry,meal,"1767 E Shore Dr, Lansing",42.51832580566406,-76.50389099121094,+16073797245,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+tompkins-ny-overture-eb241685,Ithaca Kitchen Cupboard,meal,"150 N Albany St, Ithaca",42.439788818359375,-76.50187683105469,+16072732400,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.ithacakitchencupboard.org/
+tompkins-ny-overture-b3fffdb7,Lakeview SRO,shelter,"320 3rd St, Ithaca",42.4470100402832,-76.50584411621094,+16072770035,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.lakeviewmhs.org

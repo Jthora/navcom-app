@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+parker-tx-overture-0cd90007,"Heartland Tornado Shelters, Llc",shelter,"2276 Mineral Wells Hwy, Weatherford",32.764163970947266,-97.83794403076172,9404535915,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.heartlandtornadoshelters.com
+parker-tx-overture-129ab2fd,Manna,meal,"129 E Spring St, Weatherford",32.76074981689453,-97.79583740234375,+18175996569,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://mannastorehouse.org/
+parker-tx-overture-24800bdd,Neighbors To Neighbors,meal,"413 S Main St, Springtown",32.961971282958984,-97.68278503417969,+16823276880,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://n2nfoodpantry.com
+parker-tx-overture-46b66c85,Tarrant Area Food Bank West - Where No One Has To Go Hungry,meal,"112 Winners Circle, Weatherford",32.7132568359375,-97.91902160644531,8178577172,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://tafb.org/
+parker-tx-overture-05761f5c,Community Caring Center,meal,"317 Commerce St, Azle",32.90522003173828,-97.55133819580078,+18172702962,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.communitycaringcenter.com/

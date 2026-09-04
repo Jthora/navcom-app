@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+lamoille-vt-overture-5475603a,Lamoille Community House,shelter,"213 Clark Dr, Hyde Park",44.58718490600586,-72.58036041259766,+18025217943,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://lamoilleshelter.org/
+lamoille-vt-overture-a5759988,Johnson Food Shelf,meal,"661 Railroad St, Johnson",44.6301155090332,-72.69253540039062,+18026359003,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+lamoille-vt-overture-46dca568,Lamoille Community Food Share,meal,"197 Harrel St, Morrisville",44.569007873535156,-72.5936050415039,+18028886550,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.lcfoodshare.org/

@@ -1,0 +1,12 @@
+{
+  "slug": "new-hanover-nc",
+  "name": "New Hanover, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37129",
+  "timezone_derived_from": "state"
+}

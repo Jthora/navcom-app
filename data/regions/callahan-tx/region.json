@@ -1,0 +1,12 @@
+{
+  "slug": "callahan-tx",
+  "name": "Callahan, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48059",
+  "timezone_derived_from": "state"
+}

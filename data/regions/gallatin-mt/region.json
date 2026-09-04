@@ -1,0 +1,12 @@
+{
+  "slug": "gallatin-mt",
+  "name": "Gallatin, MT",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "30031",
+  "timezone_derived_from": "state"
+}

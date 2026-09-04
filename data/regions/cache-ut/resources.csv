@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+cache-ut-overture-a5af14de,WAB Warming Center,shelter,"85 E 100 N, Logan",41.73356628417969,-111.83284759521484,+14357573336,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://linktr.ee/wabwarmingcenter
+cache-ut-overture-7d293373,Western Rural Development Center,meal,"4880 Old Main Hl, Logan",41.74232864379883,-111.80852508544922,4357977606,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://wrdc.uidaho.edu/
+cache-ut-overture-2cfdc3e4,Cache Community Food Pantry,meal,"359 S Main St, Logan",41.724796295166016,-111.83539581298828,+14357537140,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://cachefoodpantry.com/

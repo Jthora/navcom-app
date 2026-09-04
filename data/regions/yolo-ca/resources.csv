@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+yolo-ca-overture-1ae8a7ea,Woodland Volunteer Food Closet - Food Distribution Center,meal,"420 Grand Ave, Woodland",38.67691421508789,-121.7827377319336,15306627020,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://woodlandfoodcloset.org
+yolo-ca-overture-d9a2f1a2,ASUCD Pantry,meal,"Memorial Union, 1 Shields Ave, Davis",38.54248046875,-121.7491683959961,+15307522612,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://thepantry.ucdavis.edu/
+yolo-ca-overture-f248b460,Yolo Food Bank,meal,"233 Harter Ave, Woodland",38.6885986328125,-121.76006317138672,+15306680690,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://yolofoodbank.org/
+yolo-ca-overture-c40f8698,Fourth & Hope,shelter,"1901 E Beamer St, Woodland",38.68513107299805,-121.7314224243164,+15306611218,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.fourthandhope.org/

@@ -1,0 +1,12 @@
+{
+  "slug": "montgomery-nc",
+  "name": "Montgomery, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37123",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "baca-co",
+  "name": "Baca, CO",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "08009",
+  "timezone_derived_from": "state"
+}

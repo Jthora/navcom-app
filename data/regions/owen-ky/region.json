@@ -1,0 +1,12 @@
+{
+  "slug": "owen-ky",
+  "name": "Owen, KY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "21187",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+logan-ok-overture-20594c82,Crescent Regional Foodbank,meal,"813 E Jefferson St, Crescent",35.95404052734375,-97.58590698242188,+14059693322,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+logan-ok-overture-bc9d71ae,God's Food Bank,meal,"402 W Vilas Ave, Guthrie",35.87608337402344,-97.42899322509766,+14052601412,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.godsfoodbank.org/
+logan-ok-overture-22801b3a,Hands of Jesus,meal,"2403 W Noble Ave, Guthrie",35.87955856323242,-97.454345703125,+14052603440,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.thehandsofjesusguthrie/

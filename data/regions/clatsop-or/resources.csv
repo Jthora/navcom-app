@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+clatsop-or-overture-533aa8e7,Astoria Rescue Mission,shelter,"62 W Bond St, Astoria",46.19002914428711,-123.84358215332031,+15033256243,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://astoriarescuemission.com/
+clatsop-or-overture-12010b14,South Clatsop County Food Bank,meal,"2041 N Roosevelt Dr, Seaside",46.0075798034668,-123.91471099853516,+15037389800,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.southcountyfood.com/
+clatsop-or-overture-3a847932,Copeland Commons,shelter,"1167 Marine Dr, Astoria",46.189491271972656,-123.83072662353516,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.copelandcommons.org/
+clatsop-or-overture-d3b8076d,Cannon Beach Food Pantry,meal,"268 Beaver St, Cannon Beach",45.90143966674805,-123.95919799804688,+19713260479,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://cannonbeachcommunityfoodpantry.com/
+clatsop-or-overture-421df9a9,Hope House,shelter,"3107 Grand Ave, Astoria",46.19019317626953,-123.8084487915039,+15033256754,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://lcsnw.org/

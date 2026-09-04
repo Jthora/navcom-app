@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+christian-il-overture-687a26bd,Dinner Seasoned With Love,meal,"930 Haner Ave, Taylorville",39.55961227416992,-89.30105590820312,12178256824,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.dswlact.com
+christian-il-overture-77116ec0,Midland Area Food Pantry,meal,"600 Tower Pl, Kincaid",39.58896255493164,-89.41375732421875,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+christian-il-overture-685c699f,Taylorville Food Pantry,meal,"1429 E Main Cross St, Taylorville",39.55085372924805,-89.27886962890625,+12178202651,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://Www.taylorvillefoodpantry.com/

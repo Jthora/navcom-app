@@ -1,0 +1,12 @@
+{
+  "slug": "marion-al",
+  "name": "Marion, AL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "01093",
+  "timezone_derived_from": "state"
+}

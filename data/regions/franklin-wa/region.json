@@ -1,0 +1,12 @@
+{
+  "slug": "franklin-wa",
+  "name": "Franklin, WA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "53021",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "tulare-ca",
+  "name": "Tulare, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06107",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "burnett-wi",
+  "name": "Burnett, WI",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "55013",
+  "timezone_derived_from": "state"
+}

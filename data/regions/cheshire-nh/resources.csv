@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+cheshire-nh-overture-66c9ca6f,Our Place Community Food Center,meal,"4 Island St, Bellows Falls",43.13506317138672,-72.44259643554688,+18024632217,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.ourplacevermont.org/
+cheshire-nh-overture-28db352f,The Community Kitchen,meal,"37 Mechanic St, Winchester",42.77815246582031,-72.3804931640625,+16033523200,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.thecommunitykitchen.org/
+cheshire-nh-overture-4221e286,Fall Mountain Food Shelf,meal,"122 NH-12A, Langdon",43.16231918334961,-72.37966918945312,+16032873194,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.fallmountainfoodshelf.org/donate-here
+cheshire-nh-overture-317e16fe,Hundred Nights,shelter,"122 Water St, Keene",42.9304084777832,-72.27327728271484,+16033525197,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.hundrednightsinc.org/

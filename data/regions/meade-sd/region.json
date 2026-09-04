@@ -1,0 +1,12 @@
+{
+  "slug": "meade-sd",
+  "name": "Meade, SD",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "46093",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "laurens-ga",
+  "name": "Laurens, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13175",
+  "timezone_derived_from": "state"
+}

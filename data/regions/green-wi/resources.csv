@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+green-wi-overture-48e362ed,Pregnancy Center of Green County,meal,"1508 11th St, Monroe",42.6009635925293,-89.6406021118164,+16083255051,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.carenetgreencounty.org
+green-wi-overture-39545eb7,Green County Inter-Church Food Pantry,meal,"1129 17th Ave, Monroe",42.6003532409668,-89.63871765136719,+16083297511,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+green-wi-overture-72715d25,Green Cares Food Pantry,meal,"422 S Garfield St, Monticello",42.7418212890625,-89.58937072753906,+16089384238,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://greencaresfoodpantry.weebly.com/

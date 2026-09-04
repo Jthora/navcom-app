@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+charlotte-fl-overture-319e3503,CHAPS Food and Hygiene Pantry,meal,"18200 Paulson Dr A1, Port Charlotte",27.017227172851562,-82.14795684814453,+19416252552,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.chapsfoodpantry.com/
+charlotte-fl-overture-a5136433,Charlotte County Homeless Coalition,shelter,"1476 Kenesaw St, Port Charlotte",27.004573822021484,-82.15797424316406,+19416274313,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://cchomelesscoalition.org/
+charlotte-fl-overture-c22a3bb9,Community Resource Center Of Punta Gorda Inc,meal,"222 Brown St, Punta Gorda",26.937448501586914,-82.04580688476562,19414629874,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

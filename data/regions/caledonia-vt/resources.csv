@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+caledonia-vt-overture-9a3e0b0f,Lyndon Area Food Shelf,meal,"51 Elm St, Lyndonville",44.534423828125,-72.00420379638672,+18026265586,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+caledonia-vt-overture-135001b7,Open Door,meal,"29 Hill St, Danville",44.41189193725586,-72.14036560058594,+18026842515,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+caledonia-vt-overture-cca777b1,Hardwick Area Food Pantry,meal,"39 W Church St, Hardwick",44.50605010986328,-72.3658218383789,+18024725940,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.nourishhardwick.org/pantry
+caledonia-vt-overture-59902751,Kingdom Community Services,meal,"36 Steeple Pl, St Johnsbury",44.42117691040039,-72.02046966552734,+18027518581,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://kingdomcommunityservices-stj.org/

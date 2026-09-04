@@ -1,0 +1,12 @@
+{
+  "slug": "stanly-nc",
+  "name": "Stanly, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37167",
+  "timezone_derived_from": "state"
+}

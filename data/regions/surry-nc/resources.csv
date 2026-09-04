@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+surry-nc-overture-9f48b962,TheArk Elkin,shelter,"130 Hill St, Elkin",36.26479721069336,-80.8468246459961,+13365271637,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://thearkelkin.org/
+surry-nc-overture-95d9f9a8,Foothills Food Pantry,meal,"233 Cooper St, Dobson",36.39138412475586,-80.72444152832031,+13363868405,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.secondharvestnwnc.org
+surry-nc-overture-10003e87,Shepherd's House,shelter,"227 Rockford St, Mt Airy",36.49716567993164,-80.60891723632812,+13367861420,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.shepherdshousema.org/

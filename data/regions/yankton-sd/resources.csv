@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+yankton-sd-overture-1564987b,Contact Center,meal,"718 Walnut St, Yankton",42.87641525268555,-97.39326477050781,+16052604400,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://yanktoncontactcenter.org/
+yankton-sd-overture-90eeb1ad,Pathways Shelter for the Homeless,shelter,"412 E 4th St, Yankton",42.87118148803711,-97.38648223876953,+16056658994,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://stores.inksoft.com/pathways_homeless_shelter/shop/home

@@ -1,0 +1,12 @@
+{
+  "slug": "hertford-nc",
+  "name": "Hertford, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37091",
+  "timezone_derived_from": "state"
+}

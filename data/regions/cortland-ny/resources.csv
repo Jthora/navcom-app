@@ -1,0 +1,2 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+cortland-ny-overture-e26a477f,Cortland Housing Authority,shelter,"51 Port Watson St, Cortland",42.597415924072266,-76.17707061767578,+16077539364,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: www.cortlandhousing.com

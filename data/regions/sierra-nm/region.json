@@ -1,0 +1,12 @@
+{
+  "slug": "sierra-nm",
+  "name": "Sierra, NM",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "35051",
+  "timezone_derived_from": "state"
+}

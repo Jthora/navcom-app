@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+columbia-ga-overture-e4643269,Fishes and Loaves Food Pantry,meal,"387 W Church St, Harlem",33.41231155395508,-82.3210220336914,+17069015040,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+columbia-ga-overture-074dc6a4,Blount Beginnings Inc.,shelter,"4210 Columbia Rd  Bldg 13 , Ste C, Martinez",33.504642486572266,-82.11717987060547,17622469917,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.blountbeginnings.com
+columbia-ga-overture-a15ba854,Columbia County Cares Food,meal,"1959 Appling Harlem Rd, Appling",33.54679870605469,-82.31611633300781,+17065412834,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://columbiacountycares.org/contact-us

@@ -1,0 +1,12 @@
+{
+  "slug": "beaufort-sc",
+  "name": "Beaufort, SC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "45013",
+  "timezone_derived_from": "state"
+}

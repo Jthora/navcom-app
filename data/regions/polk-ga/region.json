@@ -1,0 +1,12 @@
+{
+  "slug": "polk-ga",
+  "name": "Polk, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13233",
+  "timezone_derived_from": "state"
+}

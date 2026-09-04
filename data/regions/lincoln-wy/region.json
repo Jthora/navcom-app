@@ -1,0 +1,12 @@
+{
+  "slug": "lincoln-wy",
+  "name": "Lincoln, WY",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "56023",
+  "timezone_derived_from": "state"
+}

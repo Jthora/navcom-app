@@ -1,0 +1,12 @@
+{
+  "slug": "herkimer-ny",
+  "name": "Herkimer, NY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "36043",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+dougherty-ga-overture-727ba5b1,Feeding the Valley Albany,meal,"1706 Ledo Rd, Albany",31.622453689575195,-84.18476867675781,+12294962031,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.feedingthevalley.org/
+dougherty-ga-overture-b1d76b59,Second Harvest of South Georgia - Albany Branch,meal,"3011 Clark Ave, Albany",31.581798553466797,-84.07176971435547,+12292442678,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.feedingsga.org
+dougherty-ga-overture-6556f26f,Food Bank Of Southwest Georgia,meal,"2800 Phillips Dr, Albany",31.566328048706055,-84.22937774658203,+12298835959,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+dougherty-ga-overture-deec5d19,Lord's Pantry,meal,"219 W Society Ave, Albany",31.5863037109375,-84.15320587158203,+12294350911,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://dcs.georgia.gov/location/lords-pantry

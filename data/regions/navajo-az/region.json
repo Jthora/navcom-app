@@ -1,0 +1,12 @@
+{
+  "slug": "navajo-az",
+  "name": "Navajo, AZ",
+  "country": "US",
+  "timezone": "America/Phoenix",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "04017",
+  "timezone_derived_from": "state"
+}

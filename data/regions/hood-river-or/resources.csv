@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+hood-river-or-overture-899b87b4,FISH Food Bank,meal,"4910 Baseline Dr, Mt Hood Parkdale",45.519779205322266,-121.59396362304688,+15413523500,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.fish-food-bank.com/
+hood-river-or-overture-93952edc,Hood River Shelter Services,shelter,"1733 Oak St, Hood River",45.70869445800781,-121.5287094116211,+15419650990,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.mccac.com/hood-river-shelter
+hood-river-or-overture-b8e8f02c,FISH Food Bank,meal,"1130 Tucker Rd, Hood River",45.686100006103516,-121.52510833740234,+15413863474,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.fishfoodbank.org/
+hood-river-or-overture-6af5793a,FISH Food Bank - Cascade Locks,meal,"140 Wa Na Pa St, Cascade Locks",45.67110061645508,-121.88754272460938,5413863474,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.fish-food-bank.com/

@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+leon-tx-overture-74b8e599,Leon Community Food Pantry and Clothes Closet,meal,"201 Cameron St, Jewett",31.36016082763672,-96.14212036132812,+19033908786,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=MGUFHBJXQ2J9U
+leon-tx-overture-a418b71f,Lord's Pantry,meal,"212 Buffalo Ave, Buffalo",31.462995529174805,-96.06670379638672,+19033227005,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

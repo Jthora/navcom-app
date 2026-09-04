@@ -1,0 +1,12 @@
+{
+  "slug": "rice-mn",
+  "name": "Rice, MN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "27131",
+  "timezone_derived_from": "state"
+}

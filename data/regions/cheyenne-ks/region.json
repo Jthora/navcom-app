@@ -1,0 +1,12 @@
+{
+  "slug": "cheyenne-ks",
+  "name": "Cheyenne, KS",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "20023",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+nez-perce-id-overture-9ec87bd8,Family Promise of Lewis Clark Valley,shelter,"921 9th Ave, Lewiston",46.41154861450195,-117.01890563964844,+12087983349,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.familypromiselc.org/
+nez-perce-id-overture-26fccc15,The Salvation Army Lewiston Corps,meal,"1220 21st St, Lewiston",46.40774917602539,-117.00231170654297,+12087469653,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.salvationarmyusa.org/
+nez-perce-id-overture-14b79f3f,Idaho Youth Ranch Thrift Store,shelter,"432 Thain Rd, Lewiston",46.37813949584961,-116.97327423095703,2087463040,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.youthranch.org/

@@ -1,0 +1,12 @@
+{
+  "slug": "polk-tn",
+  "name": "Polk, TN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "47139",
+  "timezone_derived_from": "state"
+}

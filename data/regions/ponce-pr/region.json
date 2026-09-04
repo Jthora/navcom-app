@@ -1,0 +1,12 @@
+{
+  "slug": "ponce-pr",
+  "name": "Ponce, PR",
+  "country": "US",
+  "timezone": "America/Puerto_Rico",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "72113",
+  "timezone_derived_from": "state"
+}

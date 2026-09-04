@@ -1,0 +1,12 @@
+{
+  "slug": "los-angeles-ca",
+  "name": "Los Angeles, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06037",
+  "timezone_derived_from": "state"
+}

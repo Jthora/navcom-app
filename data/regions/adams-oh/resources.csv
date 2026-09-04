@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+adams-oh-overture-1e99a0d3,C180 Emergency Food,meal,"2556 Moores Rd, Seaman",38.94095993041992,-83.58550262451172,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+adams-oh-overture-5bd2d65b,Adams County Shelter for the Homeless,shelter,"11483 State Rte 41, West Union",38.78431701660156,-83.56028747558594,+19375448164,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://acsh1.org/
+adams-oh-overture-0be7bf30,Adams Metropolitan Housing,shelter,"50 8th Ave, Peebles",38.94441223144531,-83.39826202392578,+19375873343,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

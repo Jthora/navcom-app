@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+thurston-wa-overture-983932cd,Thurston County Food Bank Olympia Food Pantry,meal,"220 Thurston Ave NE, Olympia",47.04776382446289,-122.89982604980469,+13603528597,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://tcfb.org/
+thurston-wa-overture-eab7a768,Pear Blossom Place,shelter,"837 7th Ave SE, Olympia",47.04266357421875,-122.89118957519531,+13607549297,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+thurston-wa-overture-0191eaee,Drexel House,shelter,"604 Devoe St SE, Olympia",47.044124603271484,-122.86046600341797,+13607533340,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+thurston-wa-overture-4cb116c4,Plum Street Village,shelter,"830 Union Ave SE, Olympia",47.04011917114258,-122.89089965820312,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+thurston-wa-overture-8bdc706a,Special Ops Secure Haven,shelter,"6621 Littlerock Rd SW, Olympia",46.98835372924805,-122.92881774902344,2535332290,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

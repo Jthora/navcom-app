@@ -1,0 +1,2 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+essex-ny-overture-9208b17a,Community Food Shelf,meal,"20 Williams St, Elizabethtown",44.213172912597656,-73.59344482421875,+15188736521,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

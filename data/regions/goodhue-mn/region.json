@@ -1,0 +1,12 @@
+{
+  "slug": "goodhue-mn",
+  "name": "Goodhue, MN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "27049",
+  "timezone_derived_from": "state"
+}

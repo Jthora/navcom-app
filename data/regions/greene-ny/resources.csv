@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+greene-ny-overture-7c4acef0,Greenville Food Pantry,meal,"25 Town Pk Dr, Greenville",42.42205810546875,-74.02140808105469,+15189665640,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+greene-ny-overture-d9e4aa46,Catskill Food Pantry,meal,"50 William St, Catskill",42.21877670288086,-73.86360168457031,+15512992456,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.catskillfoodpantry.org/
+greene-ny-overture-43b02562,Matthew 25 Food Pantry,meal,"8 Union St, Catskill",42.221439361572266,-73.86736297607422,+15189435890,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.m25foodpantry.com
+greene-ny-overture-f6ad3b0a,Coxsackie Area Food Pantry,meal,"117 Mansion St, Coxsackie",42.35636520385742,-73.80622863769531,+15187318603,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://kelleyhair7.wixsite.com/foodpantry

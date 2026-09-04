@@ -1,0 +1,12 @@
+{
+  "slug": "santa-fe-nm",
+  "name": "Santa Fe, NM",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "35049",
+  "timezone_derived_from": "state"
+}

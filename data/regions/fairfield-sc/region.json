@@ -1,0 +1,12 @@
+{
+  "slug": "fairfield-sc",
+  "name": "Fairfield, SC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "45039",
+  "timezone_derived_from": "state"
+}

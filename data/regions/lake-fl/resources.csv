@@ -1,0 +1,9 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+lake-fl-overture-e2b1863b,Lake Cares Inc,meal,"4500 County Rd 19A, Mt Dora",28.817663192749023,-81.68429565429688,+13523830100,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.lakecares.org/
+lake-fl-overture-b7a2fd85,Love Groveland,meal,"137 E Cherry St, Groveland",28.559213638305664,-81.85543823242188,+13524292651,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://lovegroveland.org/
+lake-fl-overture-8bdae17b,St. Vincent De Paul Society,meal,"1351 Paige Pl, Lady Lake",28.946094512939453,-81.95377349853516,13527531455,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: svdpusa.org
+lake-fl-overture-eaea4d8c,Christian Food Pantry,meal,"103 E Lady Lake Blvd, Lady Lake",28.916311264038086,-81.92041015625,+13522590788,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.christianfoodpantry.org
+lake-fl-overture-aa0a861d,Joining Hands In Food Ministry,meal,"130 S Lone Oak Dr, Leesburg",28.81068229675293,-81.89948272705078,13527446035,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+lake-fl-overture-ca589642,Leesburg Food Bank Inc,meal,"503 N 13th St, Leesburg",28.816818237304688,-81.88545227050781,+13523265463,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://LeesburgFoodBank.org/
+lake-fl-overture-fb2f8105,Operation Homebound,meal,"975 Rolling Acres Rd, Lady Lake",28.93696403503418,-81.93622589111328,+13526891040,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.northlakepc.org/ministries/operation-homebound-2/
+lake-fl-overture-6f13d870,Christian Care Center Samaritan Inn,shelter,"108 N 14th St, Leesburg",28.8118839263916,-81.8871078491211,+13523148733,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://christiancarecenter.org/saminn

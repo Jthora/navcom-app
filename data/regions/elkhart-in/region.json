@@ -1,0 +1,12 @@
+{
+  "slug": "elkhart-in",
+  "name": "Elkhart, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18039",
+  "timezone_derived_from": "state"
+}

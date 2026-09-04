@@ -1,0 +1,12 @@
+{
+  "slug": "cumberland-il",
+  "name": "Cumberland, IL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "17035",
+  "timezone_derived_from": "state"
+}

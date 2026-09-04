@@ -1,0 +1,12 @@
+{
+  "slug": "cherokee-ga",
+  "name": "Cherokee, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13057",
+  "timezone_derived_from": "state"
+}

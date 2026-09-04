@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+sevier-tn-overture-bb27d5e6,Lighting the Way Outreach,meal,"173 E Wears Valley Rd, Pigeon Forge",35.80768966674805,-83.57484436035156,+18653661322,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://lightingthewayoutreach.com/
+sevier-tn-overture-daa3c291,CROSS Food Ministry,meal,"406 Boyds Creek Hwy, Seymour",35.87427520751953,-83.75139617919922,+18655796192,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.crossfoodministry.org/
+sevier-tn-overture-d840eb77,Sevier County Food Ministries,meal,"890 Old Knoxville Hwy, Sevierville",35.880775451660156,-83.57975006103516,+18654285182,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.seviercountyfoodministries.org/

@@ -1,0 +1,2 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+taylor-ia-overture-1bd06bba,Lenox Neighborhood Center,meal,"110 S Main St, Lenox",40.88112258911133,-94.55917358398438,+16415364442,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

@@ -1,0 +1,12 @@
+{
+  "slug": "talbot-md",
+  "name": "Talbot, MD",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "24041",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "summit-oh",
+  "name": "Summit, OH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "39153",
+  "timezone_derived_from": "state"
+}

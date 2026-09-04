@@ -1,0 +1,12 @@
+{
+  "slug": "brevard-fl",
+  "name": "Brevard, FL",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "12009",
+  "timezone_derived_from": "state"
+}

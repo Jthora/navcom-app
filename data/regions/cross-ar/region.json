@@ -1,0 +1,12 @@
+{
+  "slug": "cross-ar",
+  "name": "Cross, AR",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "05037",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "lewis-and-clark-mt",
+  "name": "Lewis and Clark, MT",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "30049",
+  "timezone_derived_from": "state"
+}

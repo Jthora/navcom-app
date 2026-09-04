@@ -1,0 +1,12 @@
+{
+  "slug": "pennington-sd",
+  "name": "Pennington, SD",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "46103",
+  "timezone_derived_from": "state"
+}

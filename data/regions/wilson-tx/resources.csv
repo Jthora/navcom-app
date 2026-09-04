@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+wilson-tx-overture-0c40fe5c,La Vernia Christian Food Pantry,meal,"321 Texas Heritage, La Vernia",29.35648536682129,-98.11727905273438,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+wilson-tx-overture-2b908d95,Floresville Food Pantry,meal,"5th street and, A St, Floresville",29.137258529663086,-98.15802764892578,+18303211151,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.floresvillefoodpantry.org/

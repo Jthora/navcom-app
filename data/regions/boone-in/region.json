@@ -1,0 +1,12 @@
+{
+  "slug": "boone-in",
+  "name": "Boone, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18011",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "mason-wa",
+  "name": "Mason, WA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "53045",
+  "timezone_derived_from": "state"
+}

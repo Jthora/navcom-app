@@ -1,0 +1,12 @@
+{
+  "slug": "putnam-il",
+  "name": "Putnam, IL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "17155",
+  "timezone_derived_from": "state"
+}

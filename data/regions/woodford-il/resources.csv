@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+woodford-il-overture-320dd02f,Eureka Area Food Pantry,meal,"106 N Callender St, Eureka",40.72186279296875,-89.27437591552734,+13094673026,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+woodford-il-overture-fc20c8c2,Open arms food pantry,meal,"1200 W Mt Vernon St, Metamora",40.788795471191406,-89.37893676757812,+13093674892,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.metmenno.org/serve/open-arms-food-pantry/
+woodford-il-overture-1596a174,El Paso City Food Pantry,meal,"560 W Clay St, El Paso",40.73350143432617,-89.02430725097656,+13095273333,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://communitywell55.org/index.html

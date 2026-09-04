@@ -1,0 +1,12 @@
+{
+  "slug": "grant-or",
+  "name": "Grant, OR",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "41023",
+  "timezone_derived_from": "state"
+}

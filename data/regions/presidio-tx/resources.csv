@@ -1,0 +1,2 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+presidio-tx-overture-b36d9b0e,Marfa Food Pantry,meal,"1403 W San Antonio St, Marfa",30.305744171142578,-104.03595733642578,+14322951447,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.marfafoodpantry.com/

@@ -1,0 +1,12 @@
+{
+  "slug": "nassau-ny",
+  "name": "Nassau, NY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "36059",
+  "timezone_derived_from": "state"
+}

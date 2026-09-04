@@ -1,0 +1,12 @@
+{
+  "slug": "perquimans-nc",
+  "name": "Perquimans, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37143",
+  "timezone_derived_from": "state"
+}

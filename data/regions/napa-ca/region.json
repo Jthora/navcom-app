@@ -1,0 +1,12 @@
+{
+  "slug": "napa-ca",
+  "name": "Napa, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06055",
+  "timezone_derived_from": "state"
+}

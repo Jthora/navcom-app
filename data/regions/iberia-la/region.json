@@ -1,0 +1,12 @@
+{
+  "slug": "iberia-la",
+  "name": "Iberia, LA",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "22045",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "oneida-wi",
+  "name": "Oneida, WI",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "55085",
+  "timezone_derived_from": "state"
+}

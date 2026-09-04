@@ -1,0 +1,2 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+van-buren-tn-overture-791ac62b,Van Buren County Food Outreach,meal,"322 Sparta St, Spencer",35.751800537109375,-85.46585083007812,+19318086900,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

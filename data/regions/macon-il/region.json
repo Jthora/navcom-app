@@ -1,0 +1,12 @@
+{
+  "slug": "macon-il",
+  "name": "Macon, IL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "17115",
+  "timezone_derived_from": "state"
+}

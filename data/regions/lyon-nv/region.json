@@ -1,0 +1,12 @@
+{
+  "slug": "lyon-nv",
+  "name": "Lyon, NV",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "32019",
+  "timezone_derived_from": "state"
+}

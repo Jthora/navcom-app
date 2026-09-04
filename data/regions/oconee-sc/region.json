@@ -1,0 +1,12 @@
+{
+  "slug": "oconee-sc",
+  "name": "Oconee, SC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "45073",
+  "timezone_derived_from": "state"
+}

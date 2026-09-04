@@ -1,0 +1,12 @@
+{
+  "slug": "dyer-tn",
+  "name": "Dyer, TN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "47045",
+  "timezone_derived_from": "state"
+}

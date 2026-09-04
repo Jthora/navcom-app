@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+chenango-ny-overture-97cb5ddc,Care and Share Food Pantry,meal,"102 Clarence Church Rd, South Otselic",42.646976470947266,-75.78028106689453,+13156530040,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://southotselicunitedmethodistchurch.org/
+chenango-ny-overture-15eaa792,Greene Area Food Pantry,meal,"109 County Road 2, Greene",42.303260803222656,-75.80342102050781,+16076567028,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+chenango-ny-overture-f962e738,Catholic Charities Of Chenango County - Food Distribution Center,meal,"105 Leilanis Ln, Norwich",42.54357147216797,-75.51168060302734,16073367897,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: ccofcc.com

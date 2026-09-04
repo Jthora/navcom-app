@@ -1,0 +1,12 @@
+{
+  "slug": "carroll-nh",
+  "name": "Carroll, NH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "33003",
+  "timezone_derived_from": "state"
+}

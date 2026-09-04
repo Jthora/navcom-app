@@ -1,0 +1,12 @@
+{
+  "slug": "clinton-mi",
+  "name": "Clinton, MI",
+  "country": "US",
+  "timezone": "America/Detroit",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "26037",
+  "timezone_derived_from": "state"
+}

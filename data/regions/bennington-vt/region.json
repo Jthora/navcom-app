@@ -1,0 +1,12 @@
+{
+  "slug": "bennington-vt",
+  "name": "Bennington, VT",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "50003",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+itasca-mn-overture-d2711243,Grace House,shelter,"501 1st Ave SW, Grand Rapids",47.226402282714844,-93.5301742553711,+12183262790,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.gracehousemn.org/
+itasca-mn-overture-4ce3bbd3,Neighbors Helping Neighbors,meal,"301 Central Ave, Nashwauk",47.38058853149414,-93.16574096679688,+12188854021,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+itasca-mn-overture-81178a84,Deer River Area Food Shelf,meal,"1006 Comstock Dr, Deer River",47.34478759765625,-93.791748046875,+12182462500,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://secondharvestncfb.com/GetHelp/FindAnAgency/DeerRiverFoodShelf.aspx
+itasca-mn-overture-31ceb739,Second Harvest Food Shelf - Food Distribution Center,meal,"2222 Cromell Dr, Grand Rapids",47.223655700683594,-93.49214172363281,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://secondharvestncfb.com

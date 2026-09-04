@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+lyon-nv-overture-0b6cdc6b,Dayton Food Pantry,meal,"209 Dayton Valley Rd, Dayton",39.23723220825195,-119.58616638183594,+17752467834,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://healthycomm.org/donate/
+lyon-nv-overture-d32aa415,Yerinton Food Pantry,meal,"502 W Bridge St, Yerington",38.983341217041016,-119.16963958740234,+17753504597,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.healthycomm.org/
+lyon-nv-overture-cd684502,Silver Stage Food Pantry,meal,"1290 Lahontan St, Silver Springs",39.41294860839844,-119.22433471679688,+17755779161,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.healthycomm.org/

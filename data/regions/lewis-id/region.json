@@ -1,0 +1,12 @@
+{
+  "slug": "lewis-id",
+  "name": "Lewis, ID",
+  "country": "US",
+  "timezone": "America/Boise",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "16061",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "whitman-wa",
+  "name": "Whitman, WA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "53075",
+  "timezone_derived_from": "state"
+}

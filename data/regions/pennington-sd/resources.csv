@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+pennington-sd-overture-1e4c2e38,Hill City Food Pantry,meal,"525 Main St, Hill City",43.92778396606445,-103.57652282714844,+16055742426,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.thelittlewhitechurch.net/kidsministries
+pennington-sd-overture-70b56f4e,Corner Stone Rescue Mission,shelter,"30 Main St, Rapid City",44.07965850830078,-103.21708679199219,+16053412844,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.cornerstonemission.org/
+pennington-sd-overture-1d243989,Feeding South Dakota,meal,"1111 N Creek Dr, Rapid City",44.09636306762695,-103.1784439086914,+16053482689,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.feedingsouthdakota.org

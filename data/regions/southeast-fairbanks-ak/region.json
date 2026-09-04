@@ -1,0 +1,12 @@
+{
+  "slug": "southeast-fairbanks-ak",
+  "name": "Southeast Fairbanks, AK",
+  "country": "US",
+  "timezone": "America/Anchorage",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "02240",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "roscommon-mi",
+  "name": "Roscommon, MI",
+  "country": "US",
+  "timezone": "America/Detroit",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "26143",
+  "timezone_derived_from": "state"
+}

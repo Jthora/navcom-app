@@ -1,0 +1,12 @@
+{
+  "slug": "flagler-fl",
+  "name": "Flagler, FL",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "12035",
+  "timezone_derived_from": "state"
+}

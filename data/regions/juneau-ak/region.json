@@ -1,0 +1,12 @@
+{
+  "slug": "juneau-ak",
+  "name": "Juneau, AK",
+  "country": "US",
+  "timezone": "America/Anchorage",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "02110",
+  "timezone_derived_from": "state"
+}

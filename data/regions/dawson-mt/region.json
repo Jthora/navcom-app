@@ -1,0 +1,12 @@
+{
+  "slug": "dawson-mt",
+  "name": "Dawson, MT",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "30021",
+  "timezone_derived_from": "state"
+}

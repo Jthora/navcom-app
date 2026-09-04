@@ -1,0 +1,12 @@
+{
+  "slug": "cortland-ny",
+  "name": "Cortland, NY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "36023",
+  "timezone_derived_from": "state"
+}

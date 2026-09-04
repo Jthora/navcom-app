@@ -1,0 +1,12 @@
+{
+  "slug": "liberty-tx",
+  "name": "Liberty, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48291",
+  "timezone_derived_from": "state"
+}

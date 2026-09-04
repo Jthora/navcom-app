@@ -1,0 +1,12 @@
+{
+  "slug": "camden-nj",
+  "name": "Camden, NJ",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "34007",
+  "timezone_derived_from": "state"
+}

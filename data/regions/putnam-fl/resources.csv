@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+putnam-fl-overture-47f7da17,Epic Cure,meal,"1207 Washington St, Palatka",29.654787063598633,-81.64030456542969,+13862277611,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.epic-cure.org/
+putnam-fl-overture-c57fc98c,Food Pantry,meal,"1414 Bronson St, Palatka",29.64388656616211,-81.64311218261719,+13869720875,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+putnam-fl-overture-09d9212e,God's Kitchen,meal,"613 Saint Johns Ave, Palatka",29.64678192138672,-81.63505554199219,+13863853374,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.godskitchen.co.in
+putnam-fl-overture-cc3a9064,Feed The Need,meal,"158 Louis Broer Rd, East Palatka",29.65513038635254,-81.60035705566406,+13869373862,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.paypal.com/ncp/payment/YN48NBXTH5F3S

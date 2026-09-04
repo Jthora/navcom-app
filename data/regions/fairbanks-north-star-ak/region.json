@@ -1,0 +1,12 @@
+{
+  "slug": "fairbanks-north-star-ak",
+  "name": "Fairbanks North Star, AK",
+  "country": "US",
+  "timezone": "America/Anchorage",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "02090",
+  "timezone_derived_from": "state"
+}

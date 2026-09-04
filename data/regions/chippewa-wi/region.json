@@ -1,0 +1,12 @@
+{
+  "slug": "chippewa-wi",
+  "name": "Chippewa, WI",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "55017",
+  "timezone_derived_from": "state"
+}

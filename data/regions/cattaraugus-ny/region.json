@@ -1,0 +1,12 @@
+{
+  "slug": "cattaraugus-ny",
+  "name": "Cattaraugus, NY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "36009",
+  "timezone_derived_from": "state"
+}

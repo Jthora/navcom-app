@@ -1,0 +1,12 @@
+{
+  "slug": "loudoun-va",
+  "name": "Loudoun, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51107",
+  "timezone_derived_from": "state"
+}

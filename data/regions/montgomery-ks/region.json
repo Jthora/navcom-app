@@ -1,0 +1,12 @@
+{
+  "slug": "montgomery-ks",
+  "name": "Montgomery, KS",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "20125",
+  "timezone_derived_from": "state"
+}

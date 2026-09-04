@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+ellis-tx-overture-eb59ffbd,Manna House,meal,"205 E Main St, Italy",32.18449020385742,-96.8843994140625,+19724831800,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.mannahouseoutreach.org/
+ellis-tx-overture-9b1aba97,4:19 Food Pantry,meal,"320 East Ovilla Road, Red Oak",32.53418731689453,-96.80062866210938,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+ellis-tx-overture-2ff37c78,Waxahachie Care Services,meal,"1208 Ferris Ave, Waxahachie",32.399742126464844,-96.84304809570312,19729232273,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.waxahachiecare.org

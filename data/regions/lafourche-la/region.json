@@ -1,0 +1,12 @@
+{
+  "slug": "lafourche-la",
+  "name": "Lafourche, LA",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "22057",
+  "timezone_derived_from": "state"
+}

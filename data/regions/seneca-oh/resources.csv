@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+seneca-oh-overture-478b82a8,First Step,shelter,"1099 Columbus Ave, Fostoria",41.14052200317383,-83.39253234863281,+14194357300,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.firststepfostoria.org/
+seneca-oh-overture-5b356a0e,Tiffin Community Non-food Pantry,meal,"96 S Monroe St, Tiffin",41.11418151855469,-83.1784439086914,+14194472004,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://tiffinpantry.com/
+seneca-oh-overture-12b69806,Pantry Plus,meal,"4481 US-23, Fostoria",41.18824768066406,-83.41976165771484,+14196190183,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.pantry-plus.org/

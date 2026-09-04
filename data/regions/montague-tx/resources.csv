@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+montague-tx-overture-5ed1c5a0,Nocona Ministries,meal,"207 Cooke St, Nocona",33.7894287109375,-97.7266616821289,19408674429,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.fbcnocona.org
+montague-tx-overture-080cb1e0,Bowie Mission,meal,"201 E Greenwood Ave, Bowie",33.56553649902344,-97.83897399902344,+19408724678,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+montague-tx-overture-1948fd6e,A Hand Up,meal,"207 Cooke St, Nocona",33.789306640625,-97.72622680664062,+19408255115,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

@@ -1,0 +1,12 @@
+{
+  "slug": "grady-ok",
+  "name": "Grady, OK",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "40051",
+  "timezone_derived_from": "state"
+}

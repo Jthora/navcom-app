@@ -1,0 +1,12 @@
+{
+  "slug": "boone-mo",
+  "name": "Boone, MO",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "29019",
+  "timezone_derived_from": "state"
+}

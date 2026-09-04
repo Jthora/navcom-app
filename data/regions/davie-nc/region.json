@@ -1,0 +1,12 @@
+{
+  "slug": "davie-nc",
+  "name": "Davie, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37059",
+  "timezone_derived_from": "state"
+}

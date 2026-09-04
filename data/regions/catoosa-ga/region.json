@@ -1,0 +1,12 @@
+{
+  "slug": "catoosa-ga",
+  "name": "Catoosa, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13047",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+oxford-me-overture-a024b3b9,Old School Food Pantry,meal,"3 Recreation Dr, Mexico",44.55715560913086,-70.53925323486328,+12073647408,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.rvhcc.org/
+oxford-me-overture-1eba4b88,Lovell Area Food Pantry,meal,"2081 Main St, Lovell",44.24369812011719,-70.87288665771484,+12075427239,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://lovellareafoodpantry.org/
+oxford-me-overture-08d8ca0e,Andover Maine Food Pantry,meal,"23 Elm St, Andover",44.63629150390625,-70.74972534179688,+12073924678,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+oxford-me-overture-5050b2ff,Grampa Food Pantry,meal,"163 Main St, Mexico",44.555667877197266,-70.53980255126953,+12073648185,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

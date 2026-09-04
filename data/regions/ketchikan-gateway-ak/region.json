@@ -1,0 +1,12 @@
+{
+  "slug": "ketchikan-gateway-ak",
+  "name": "Ketchikan Gateway, AK",
+  "country": "US",
+  "timezone": "America/Anchorage",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "02130",
+  "timezone_derived_from": "state"
+}

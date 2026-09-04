@@ -20,8 +20,6 @@
  */
 
 import { loadDirectory, loadRegions } from '$lib/directory/load';
-import { regionFigures } from '$lib/console/figures';
-import type { ConsoleCentroid } from '$lib/console/types';
 
 export const prerender = true;
 
@@ -50,21 +48,6 @@ export function load() {
     if (r.last_verified && (!freshest || r.last_verified > freshest)) freshest = r.last_verified;
   }
 
-  const sums = new Map<string, { lat: number; lon: number; n: number }>();
-  for (const r of records) {
-    if (r.lat === undefined || r.lon === undefined || !r.region) continue;
-    const s = sums.get(r.region) ?? { lat: 0, lon: 0, n: 0 };
-    s.lat += r.lat;
-    s.lon += r.lon;
-    s.n += 1;
-    sums.set(r.region, s);
-  }
-  const centroids: ConsoleCentroid[] = [...sums.entries()].map(([slug, s]) => ({
-    region: slug,
-    name: regions.find((r) => r.slug === slug)?.name ?? slug,
-    lat: s.lat / s.n,
-    lon: s.lon / s.n
-  }));
 
   return {
     coverage: {
@@ -73,7 +56,14 @@ export function load() {
       regionsTotal: regions.length,
       freshest
     },
-    centroids,
-    regionFigures: regionFigures(records, regions)
+    /*
+     * Slug and name only -- what a search needs on the first keystroke.
+     *
+     * Centroids and figures moved to `/console-regions.json`, fetched on mount. At 1,912
+     * regions they were 402 kB of inline data on a page with a 120 kB budget, and neither is
+     * needed until a location fix returns or a region is focused. Splitting on *when it is
+     * needed* is what fits; trimming their fields saved 2 kB of 41.
+     */
+    regionList: regions.map((r) => [r.slug, r.name] as [string, string])
   };
 }

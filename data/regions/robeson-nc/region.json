@@ -1,0 +1,12 @@
+{
+  "slug": "robeson-nc",
+  "name": "Robeson, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37155",
+  "timezone_derived_from": "state"
+}

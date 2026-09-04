@@ -1,0 +1,12 @@
+{
+  "slug": "williams-oh",
+  "name": "Williams, OH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "39171",
+  "timezone_derived_from": "state"
+}

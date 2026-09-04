@@ -1,0 +1,12 @@
+{
+  "slug": "scott-va",
+  "name": "Scott, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51169",
+  "timezone_derived_from": "state"
+}

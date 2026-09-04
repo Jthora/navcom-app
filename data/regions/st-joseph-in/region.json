@@ -1,0 +1,12 @@
+{
+  "slug": "st-joseph-in",
+  "name": "St. Joseph, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18141",
+  "timezone_derived_from": "state"
+}

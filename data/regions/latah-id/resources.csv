@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+latah-id-overture-e37d3e15,Sojourners Alliance,shelter,"627 N Van Buren St, Moscow",46.7405891418457,-116.9959716796875,+12088833438,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.sojournersalliance.org
+latah-id-overture-c5b845ec,Backyard Harvest,meal,"510 W Palouse River Dr, Moscow",46.71571350097656,-117.0071792602539,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+latah-id-overture-19ec7c4c,Potlatch Food Pantry,meal,"510 Pine St, Potlatch",46.9208984375,-116.90048217773438,+12088758953,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://cityofpotlatch.org/

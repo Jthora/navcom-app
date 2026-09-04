@@ -1,0 +1,12 @@
+{
+  "slug": "goliad-tx",
+  "name": "Goliad, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48175",
+  "timezone_derived_from": "state"
+}

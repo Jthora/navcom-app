@@ -1,0 +1,12 @@
+{
+  "slug": "howard-in",
+  "name": "Howard, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18067",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "sonoma-ca",
+  "name": "Sonoma, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06097",
+  "timezone_derived_from": "state"
+}

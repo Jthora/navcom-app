@@ -1,0 +1,12 @@
+{
+  "slug": "miller-ar",
+  "name": "Miller, AR",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "05091",
+  "timezone_derived_from": "state"
+}

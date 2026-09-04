@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+hancock-in-overture-d7e8917a,MUMC Food Pantry,meal,"6247 W Broadway, McCordsville",39.89371871948242,-85.92317199707031,+14632667171,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://McCordsvilleumc.org/
+hancock-in-overture-4388e4b5,Hancock Hope House Inc,shelter,"35 E Pierson St, Greenfield",39.781009674072266,-85.76776123046875,+13174674991,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.hancockhopehouse.org
+hancock-in-overture-f858bd83,Mount Comfort Vineyard Food Pantry,meal,"1672 N 600 W, Greenfield",39.80743408203125,-85.91609954833984,+13178943280,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.vccmtcomfort.org/
+hancock-in-overture-c26ca5f6,Hancock County Food Pantry,meal,"2040 W Main St, Greenfield",39.78437423706055,-85.79882049560547,+13174680273,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://hancockcountyfoodpantry.net/
+hancock-in-overture-bc040559,Gleaners Mobile Pantry - Food Pantry,meal,"9450 N 200 W, Fortville",39.92143630981445,-85.84404754638672,13179250191,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.gleaners.org
+hancock-in-overture-ac50f8e1,Kenneth Butler Memorial Soup Kitchen,meal,"202 E Main St, Greenfield",39.785430908203125,-85.76756286621094,+13174629900,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://kbmsk.org/

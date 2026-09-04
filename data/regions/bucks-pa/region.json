@@ -1,0 +1,12 @@
+{
+  "slug": "bucks-pa",
+  "name": "Bucks, PA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "42017",
+  "timezone_derived_from": "state"
+}

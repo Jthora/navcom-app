@@ -1,0 +1,12 @@
+{
+  "slug": "forsyth-nc",
+  "name": "Forsyth, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37067",
+  "timezone_derived_from": "state"
+}

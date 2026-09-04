@@ -1,0 +1,12 @@
+{
+  "slug": "pierce-ga",
+  "name": "Pierce, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13229",
+  "timezone_derived_from": "state"
+}

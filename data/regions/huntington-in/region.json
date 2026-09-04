@@ -1,0 +1,12 @@
+{
+  "slug": "huntington-in",
+  "name": "Huntington, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18069",
+  "timezone_derived_from": "state"
+}

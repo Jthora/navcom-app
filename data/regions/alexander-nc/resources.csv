@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+alexander-nc-overture-21d98863,Christian Crisis Center,meal,"215 5th Ave SW, Taylorsville",35.91537094116211,-81.18183135986328,+18286320022,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.alexandercountyonline.com/
+alexander-nc-overture-8578ac85,Hiddenite Community Helpers Food Pantry,meal,"45 Fire Dept Ct, Hiddenite",35.90205383300781,-81.09123992919922,+18283205269,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

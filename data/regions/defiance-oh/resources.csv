@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+defiance-oh-overture-350a787e,Path Center Community Services,meal,"1939 E 2nd St, Defiance",41.28185272216797,-84.32486724853516,+14197826962,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.nocac.org
+defiance-oh-overture-a5f9ce34,Sherwood Community Food Pantry,meal,"512 N Harrison St, Sherwood",41.29168701171875,-84.5538101196289,+14198992492,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+defiance-oh-overture-ea6efb6c,New Jerusalem Church,meal,"600 Division St, Defiance",41.28533172607422,-84.3680191040039,+14197821851,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.njclife.com

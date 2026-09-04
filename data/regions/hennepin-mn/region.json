@@ -1,0 +1,12 @@
+{
+  "slug": "hennepin-mn",
+  "name": "Hennepin, MN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "27053",
+  "timezone_derived_from": "state"
+}

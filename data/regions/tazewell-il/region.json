@@ -1,0 +1,12 @@
+{
+  "slug": "tazewell-il",
+  "name": "Tazewell, IL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "17179",
+  "timezone_derived_from": "state"
+}

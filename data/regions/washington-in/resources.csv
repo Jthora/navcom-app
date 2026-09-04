@@ -1,0 +1,2 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+washington-in-overture-8dac485d,Washington County Food Bank,meal,"106 N Water St, Salem",38.606422424316406,-86.1021957397461,+18128832655,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://washingtoncounty.in.gov/

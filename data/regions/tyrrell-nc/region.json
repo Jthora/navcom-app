@@ -1,0 +1,12 @@
+{
+  "slug": "tyrrell-nc",
+  "name": "Tyrrell, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37177",
+  "timezone_derived_from": "state"
+}

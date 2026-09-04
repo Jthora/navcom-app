@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+shasta-ca-overture-e161485f,Good News Rescue Mission,shelter,"2842 S Market St, Redding",40.570064544677734,-122.388427734375,15302415754,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://gnrm.org
+shasta-ca-overture-b18a30f8,Redding/shasta Continuum Of Care,shelter,"1450 Court St  Ste 108, Redding",40.58348083496094,-122.39640045166016,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.co.shasta.ca.us/index.aspx
+shasta-ca-overture-be551c8a,Food Bank,meal,"100 Mercy Oaks Dr, Redding",40.617034912109375,-122.32950592041016,+15302263071,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://ssnpweb.org

@@ -1,0 +1,12 @@
+{
+  "slug": "moody-sd",
+  "name": "Moody, SD",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "46101",
+  "timezone_derived_from": "state"
+}

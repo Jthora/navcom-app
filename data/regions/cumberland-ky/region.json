@@ -1,0 +1,12 @@
+{
+  "slug": "cumberland-ky",
+  "name": "Cumberland, KY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "21057",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+calaveras-ca-overture-0cd1c9af,"West Point Food Pantry, Clothes Closet and Lunch",meal,"22264 Highway 26, West Point",38.398643493652344,-120.52717590332031,+12092949504,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://westpointccc.com/gatheringoutreach
+calaveras-ca-overture-867eb382,Mountain Ranch Youth Alliance,meal,"7867 Whiskey Slide Rd, Mountain Ranch",38.22854232788086,-120.543212890625,+12097544073,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://linktr.ee/mtnranchyouthalliance
+calaveras-ca-overture-6f115c2b,The Resource Connection,meal,"206 George Reed Dr, San Andreas",38.179359436035156,-120.67899322509766,12097541257,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://trcac.org

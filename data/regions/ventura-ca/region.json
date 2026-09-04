@@ -1,0 +1,12 @@
+{
+  "slug": "ventura-ca",
+  "name": "Ventura, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06111",
+  "timezone_derived_from": "state"
+}

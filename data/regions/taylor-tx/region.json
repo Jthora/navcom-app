@@ -1,0 +1,12 @@
+{
+  "slug": "taylor-tx",
+  "name": "Taylor, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48441",
+  "timezone_derived_from": "state"
+}

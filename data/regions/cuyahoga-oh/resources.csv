@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+cuyahoga-oh-overture-45c441a5,AnnGeorge food pantry,meal,"6369 Pearl Rd, Parma Heights",41.38655090332031,-81.76668548583984,+14408426491,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+cuyahoga-oh-overture-812b79a1,Middleburg Heights Food Pantry,meal,"7000 Paula Dr, Middleburg Heights",41.37860870361328,-81.80428314208984,+12163620044,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://mhfoodpantry.org/
+cuyahoga-oh-overture-2334439d,Euclid Hunger Task Force,meal,"291 E 222nd St, Euclid",41.607025146484375,-81.52607727050781,+12167313329,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.euclidhungercenter.com/
+cuyahoga-oh-overture-8a80532c,Strongsville Food Bank,meal,"13259 Pearl Rd, Strongsville",41.31770324707031,-81.83354187011719,+14408460197,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://strongsvillefoodbank.org/
+cuyahoga-oh-overture-f797e2d9,Cleveland Kosher Food Pantry,meal,"2004 S Green Rd, South Euclid",41.50499725341797,-81.5196533203125,+12163827202,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://Kosherfb.org/

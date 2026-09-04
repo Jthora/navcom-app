@@ -1,0 +1,12 @@
+{
+  "slug": "cedar-mo",
+  "name": "Cedar, MO",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "29039",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "spink-sd",
+  "name": "Spink, SD",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "46115",
+  "timezone_derived_from": "state"
+}

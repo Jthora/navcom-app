@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+piscataquis-me-overture-e6b15e32,Dover-Foxcroft Area Food Center,meal,"76 North St, Dover Foxcroft",45.18980407714844,-69.23258972167969,+12077177529,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.prfoodcenter.org/dfafc
+piscataquis-me-overture-e90cc452,Pleasant & Center Community Kitchen,meal,"23 Pleasant St, Monson",45.286582946777344,-69.5036392211914,+12075794320,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://pleasantandcenter.com/
+piscataquis-me-overture-65dbe44e,Dover-foxcroft Area Food Cupboard,meal,"824 W Main St, Dover Foxcroft",45.18419647216797,-69.23235321044922,+12077177529,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+piscataquis-me-overture-7e6ee810,Piscataquis Regional Food Center,meal,"76 North St, Dover Foxcroft",45.1882438659668,-69.23336791992188,+12078028230,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.prfoodcenter.org/

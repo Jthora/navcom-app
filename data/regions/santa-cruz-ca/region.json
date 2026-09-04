@@ -1,0 +1,12 @@
+{
+  "slug": "santa-cruz-ca",
+  "name": "Santa Cruz, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06087",
+  "timezone_derived_from": "state"
+}

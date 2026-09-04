@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+wood-wv-overture-5cf51807,Old Man Rivers,meal,"703 Pike St, Parkersburg",39.251319885253906,-81.54508972167969,+13044286677,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://Oldmanriversmission.org/
+wood-wv-overture-f3caaaed,Arthur N Gustke Shelter,shelter,"1640 St Marys Ave, Parkersburg",39.27370071411133,-81.54534912109375,+13044245244,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.childhswv.org/about/locations/arthur-n-gustke-child-shelter
+wood-wv-overture-ffd03314,House To Home,shelter,"825 Seventh St, Parkersburg",39.2640495300293,-81.5488052368164,+13048935353,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.housetohomepkb.com/

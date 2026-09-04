@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+wayne-ny-overture-afba2bd4,"The Newark Food Closet, Corp.",meal,"301 E Miller St, Newark",43.04566955566406,-77.08880615234375,+13153328582,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://NewarkFoodCloset.com/
+wayne-ny-overture-8e9d76c9,Rose Grange,shelter,"4101 Main Street, NY-414, Rose",43.15402603149414,-76.87867736816406,+13155872766,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+wayne-ny-overture-ff5db797,Lyons Community Food Pantry,meal,"11 Queen St, Lyons",43.06577682495117,-76.9922866821289,+13159464723,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.pcusa.org/

@@ -1,0 +1,12 @@
+{
+  "slug": "franklin-oh",
+  "name": "Franklin, OH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "39049",
+  "timezone_derived_from": "state"
+}

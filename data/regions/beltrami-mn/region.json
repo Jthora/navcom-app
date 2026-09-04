@@ -1,0 +1,12 @@
+{
+  "slug": "beltrami-mn",
+  "name": "Beltrami, MN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "27007",
+  "timezone_derived_from": "state"
+}

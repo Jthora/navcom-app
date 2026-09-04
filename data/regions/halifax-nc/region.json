@@ -1,0 +1,12 @@
+{
+  "slug": "halifax-nc",
+  "name": "Halifax, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37083",
+  "timezone_derived_from": "state"
+}

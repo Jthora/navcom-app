@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+dekalb-il-overture-740d091b,Barb Food Mart,meal,"900 E Garden St, Dekalb",41.92304611206055,-88.7455825805664,+18155960141,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.givedekalbcounty.org/organizations/barb-food-mart
+dekalb-il-overture-5b7ac7a8,Feed My Sheep Food Pantry - DeKalb,shelter,"1915 N 1st St, Dekalb",41.95044708251953,-88.74695587158203,+18157583203,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.bethlehemdekalb.org/
+dekalb-il-overture-8c309f12,Spartan Food Pantry,meal,"1947 Bethany Rd, Sycamore",41.96678161621094,-88.71363067626953,+18158998199,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.spartanfoodpantry.org/
+dekalb-il-overture-52d82080,Hope Haven of DeKalb County,shelter,"1145 Rushmoore Dr, Dekalb",41.94725036621094,-88.77214050292969,+18157585765,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://hopehavendekalb.com/
+dekalb-il-overture-660aa400,Hinckley Area Food Pantry,meal,"190 W Lincoln Hwy, Waterman",41.76926803588867,-88.77507781982422,+18152867275,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://hinckleyareafoodpantry.org/

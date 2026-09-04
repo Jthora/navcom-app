@@ -1,0 +1,12 @@
+{
+  "slug": "western-connecticut-ct",
+  "name": "Western Connecticut, CT",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "09190",
+  "timezone_derived_from": "state"
+}

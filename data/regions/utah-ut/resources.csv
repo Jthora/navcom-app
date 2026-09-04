@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+utah-ut-overture-7a0b7642,Tabitha's Way Local Food Pantry,meal,"50 E 100 N, Spanish Fork",40.11100387573242,-111.65425872802734,+18017098573,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.tabithaswaysouth.org/
+utah-ut-overture-9b6b4058,Saturday Grace,meal,"239 S Main St, Springville",40.16336441040039,-111.6104507446289,+18014918440,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.saturdaygrace.org/
+utah-ut-overture-acdaeeec,Community Action Services and Food Bank,meal,"815 S Freedom Blvd, Provo",40.22343063354492,-111.66191101074219,+18013738200,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://communityactionprovo.org/
+utah-ut-overture-5110fd36,Food and Care Coalition,meal,"299 E 900 S, Provo",40.22274398803711,-111.65338134765625,+18013731825,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.foodandcare.org/
+utah-ut-overture-2ad20891,Tabitha's Way Local Food Pantry North County,meal,"675 W Garden Dr, Pleasant Grove",40.367454528808594,-111.75072479248047,+18016921881,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.tabithasway.org/
+utah-ut-overture-8c8931b1,Tabitha’s Way Food Pantry,meal,"920 E State Rd, American Fork",40.37019729614258,-111.77289581298828,+18016921881,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: tabithasway.com

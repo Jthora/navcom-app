@@ -1,0 +1,12 @@
+{
+  "slug": "scott-mo",
+  "name": "Scott, MO",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "29201",
+  "timezone_derived_from": "state"
+}

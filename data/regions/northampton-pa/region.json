@@ -1,0 +1,12 @@
+{
+  "slug": "northampton-pa",
+  "name": "Northampton, PA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "42095",
+  "timezone_derived_from": "state"
+}

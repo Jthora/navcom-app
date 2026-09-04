@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+baldwin-al-overture-91ae77fc,Lighthouse of the Angels,shelter,"40960 State Highway 225, Bay Minette",30.821876525878906,-87.86150360107422,2518665708,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+baldwin-al-overture-af57d5f7,Family Promise of Baldwin County,shelter,"20511 Co Rd 36, Summerdale",30.50189971923828,-87.67449188232422,+12519475641,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.familypromisebaldwinal.org/
+baldwin-al-overture-f43c5624,Alston Court,shelter,"1000 S Alston St, Foley",30.39595603942871,-87.6851577758789,+12519711766,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+baldwin-al-overture-06ec470b,Prodisee Pantry,meal,"9315 Spanish Fort Blvd, Daphne",30.676908493041992,-87.86392974853516,+12516261720,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.prodiseepantry.org/

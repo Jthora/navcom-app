@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+st-clair-al-overture-3980ebb7,Christian Love Pantry,meal,"205 Edwin Holladay, Pell City",33.588104248046875,-86.28691864013672,+12053382358,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.christianlovepantry.org/
+st-clair-al-overture-216d3162,Grace Farms,meal,"315 Browning Rd, Odenville",33.62255859375,-86.4490966796875,+12053836259,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.gracefarmsministries.com/
+st-clair-al-overture-605b03c6,Argo Community Food Bank - Food Distribution Center,meal,"100 Blackjack Rd, Trussville",33.68925094604492,-86.51011657714844,12053522134,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://cityofargo.org

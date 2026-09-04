@@ -1,0 +1,12 @@
+{
+  "slug": "powhatan-va",
+  "name": "Powhatan, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51145",
+  "timezone_derived_from": "state"
+}

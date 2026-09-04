@@ -1,0 +1,12 @@
+{
+  "slug": "oktibbeha-ms",
+  "name": "Oktibbeha, MS",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "28105",
+  "timezone_derived_from": "state"
+}

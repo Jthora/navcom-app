@@ -1,0 +1,12 @@
+{
+  "slug": "crenshaw-al",
+  "name": "Crenshaw, AL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "01041",
+  "timezone_derived_from": "state"
+}

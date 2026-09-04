@@ -1,0 +1,12 @@
+{
+  "slug": "wilson-tx",
+  "name": "Wilson, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48493",
+  "timezone_derived_from": "state"
+}

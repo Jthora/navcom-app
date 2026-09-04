@@ -1,0 +1,12 @@
+{
+  "slug": "routt-co",
+  "name": "Routt, CO",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "08107",
+  "timezone_derived_from": "state"
+}

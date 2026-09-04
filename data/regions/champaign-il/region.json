@@ -1,0 +1,12 @@
+{
+  "slug": "champaign-il",
+  "name": "Champaign, IL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "17019",
+  "timezone_derived_from": "state"
+}

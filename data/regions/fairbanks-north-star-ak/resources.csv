@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+fairbanks-north-star-ak-overture-3769b114,Fairbanks Rescue Mission,shelter,"723 27th Ave, Fairbanks",64.82206726074219,-147.71731567382812,+19073316292,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.fairbanksrescuemission.org/
+fairbanks-north-star-ak-overture-47cd5567,No Limits,shelter,"253 Romans Way, Fairbanks",64.81962585449219,-147.70379638671875,+19074519650,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.nolimitsinc.org/
+fairbanks-north-star-ak-overture-b4a933a2,Fairbanks Community Food Bank,meal,"725 26th Ave STE 101, Fairbanks",64.8231430053711,-147.71670532226562,+19074574273,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.fairbanksfoodbank.org/

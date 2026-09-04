@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+columbiana-oh-overture-c5e40547,Salem Community Pantry Inc,meal,"794 E 3rd St, Salem",40.90327835083008,-80.8500747680664,+13303325166,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://SalemPantry.com/
+columbiana-oh-overture-98888404,The Fish,meal,"213 W 4th St, East Liverpool",40.61933898925781,-80.58256530761719,13303854457,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://the-fish.poi.place
+columbiana-oh-overture-836d632e,Caring Hands Food Ministry,meal,"20 W Martin St, East Palestine",40.83708572387695,-80.5401611328125,+13304269687,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://cocep.org/caring-hands
+columbiana-oh-overture-d5bd4574,The Lord's Blessing Food Pantry,meal,"145 E Main St, Washingtonville",40.90058898925781,-80.76451110839844,+13309410423,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

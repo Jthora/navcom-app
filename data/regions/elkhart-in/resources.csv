@@ -1,0 +1,8 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+elkhart-in-overture-49aaa8e6,Fairfield Food Pantry,meal,"67493 Co Rd 23, New Paris",41.51526641845703,-85.82878112792969,+15742382514,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+elkhart-in-overture-faee0f2c,Middlebury Food Pantry,meal,"13307 Co Rd 16, Middlebury",41.66872024536133,-85.72061157226562,+15745965135,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.middlebury-bridge.org/
+elkhart-in-overture-94804e4e,Susanna’s Kitchen,meal,"831 W Marion St, Elkhart",41.67963790893555,-85.98238372802734,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://gofund.me/c99e9b8a
+elkhart-in-overture-69459659,Shepherd's Cove Food Pantry,meal,"1010 E Mishawaka Rd, Elkhart",41.64800262451172,-85.9530258178711,+15742935963,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.shepherdscovefoodpantry.com/
+elkhart-in-overture-b247d2ba,Guidance Ministries,meal,"216 N 2nd St, Elkhart",41.6887321472168,-85.9756088256836,+15742967192,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.guidanceministries.com/
+elkhart-in-overture-e1973e6f,The Salvation Army,meal,"300 N Main St, Elkhart",41.68977355957031,-85.97453308105469,+15749700088,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.saelkhart.org/
+elkhart-in-overture-80e628b3,SPA Women's Ministry Homes,shelter,"3404 Toledo Rd, Elkhart",41.674835205078125,-85.91100311279297,+15745228338,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.spaministryhomes.org/

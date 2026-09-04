@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+fredericksburg-va-overture-5e24e864,Thurman Brisben Center,shelter,"471 Central Rd, Fredericksburg",38.28371810913086,-77.47112274169922,+15408999853,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://linktr.ee/thebrisbencenter
+fredericksburg-va-overture-1e56d377,The Hub of Hope,meal,"1320 Central Park Blvd Ste 200, Fredericksburg",38.302818298339844,-77.51300048828125,+15408706161,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://hubofhopeusa.com/
+fredericksburg-va-overture-513922ca,Hope House,shelter,"902 Lafayette Blvd, Fredericksburg",38.29401397705078,-77.46546936035156,+15403710831,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.loisannshopehouse.org/

@@ -1,0 +1,12 @@
+{
+  "slug": "midland-mi",
+  "name": "Midland, MI",
+  "country": "US",
+  "timezone": "America/Detroit",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "26111",
+  "timezone_derived_from": "state"
+}

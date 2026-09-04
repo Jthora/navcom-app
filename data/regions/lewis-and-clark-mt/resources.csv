@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+lewis-and-clark-mt-overture-01670a43,The Salvation Army Helena,meal,"1330 Hudson St, Helena",46.60774230957031,-112.05116271972656,+14064428244,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://give-nw.salvationarmy.org/give/166926/#!/donation/checkout
+lewis-and-clark-mt-overture-7fc0272b,God's Love,shelter,"533 N Last Chance Gulch, Helena",46.59215545654297,-112.03645324707031,+14064427000,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.ourredeemerlives.org
+lewis-and-clark-mt-overture-9dec7272,YWCA Helena,shelter,"501 N Park Ave, Helena",46.59209442138672,-112.04007720947266,+14064428774,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.ywcahelena.org/
+lewis-and-clark-mt-overture-2c248f98,Helena Food Share,meal,"1280 Boulder Ave, Helena",46.597652435302734,-112.0191650390625,+14064433663,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.helenafoodshare.org/

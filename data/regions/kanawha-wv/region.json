@@ -1,0 +1,12 @@
+{
+  "slug": "kanawha-wv",
+  "name": "Kanawha, WV",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "54039",
+  "timezone_derived_from": "state"
+}

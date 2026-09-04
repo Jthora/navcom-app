@@ -1,0 +1,12 @@
+{
+  "slug": "winona-mn",
+  "name": "Winona, MN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "27169",
+  "timezone_derived_from": "state"
+}

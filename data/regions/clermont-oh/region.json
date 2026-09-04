@@ -1,0 +1,12 @@
+{
+  "slug": "clermont-oh",
+  "name": "Clermont, OH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "39025",
+  "timezone_derived_from": "state"
+}

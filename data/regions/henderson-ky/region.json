@@ -1,0 +1,12 @@
+{
+  "slug": "henderson-ky",
+  "name": "Henderson, KY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "21101",
+  "timezone_derived_from": "state"
+}

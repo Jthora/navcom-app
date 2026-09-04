@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+greene-pa-overture-7367a23a,GREENE Greene County Human Services,shelter,"19 S Washington St, Waynesburg",39.89609146118164,-80.18708801269531,+17248525276,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.co.greene.pa.us
+greene-pa-overture-f986c81a,Corner Cupboard Food Bank,meal,"881 Rolling Meadows Rd, Waynesburg",39.888336181640625,-80.12645721435547,+17246279784,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.cornercupboard.org/

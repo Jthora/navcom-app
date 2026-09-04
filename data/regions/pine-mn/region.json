@@ -1,0 +1,12 @@
+{
+  "slug": "pine-mn",
+  "name": "Pine, MN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "27115",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "phelps-mo",
+  "name": "Phelps, MO",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "29161",
+  "timezone_derived_from": "state"
+}

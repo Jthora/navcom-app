@@ -1,0 +1,12 @@
+{
+  "slug": "james-city-va",
+  "name": "James City, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51095",
+  "timezone_derived_from": "state"
+}

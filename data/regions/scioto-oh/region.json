@@ -1,0 +1,12 @@
+{
+  "slug": "scioto-oh",
+  "name": "Scioto, OH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "39145",
+  "timezone_derived_from": "state"
+}

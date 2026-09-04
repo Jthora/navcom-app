@@ -1,0 +1,12 @@
+{
+  "slug": "siskiyou-ca",
+  "name": "Siskiyou, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06093",
+  "timezone_derived_from": "state"
+}

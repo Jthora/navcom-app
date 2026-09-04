@@ -1,0 +1,12 @@
+{
+  "slug": "fayette-ga",
+  "name": "Fayette, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13113",
+  "timezone_derived_from": "state"
+}

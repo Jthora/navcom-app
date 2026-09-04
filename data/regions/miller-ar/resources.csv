@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+miller-ar-overture-f109aa38,Saint Edward's Outreach Center - Food Distribution Center,meal,"416 Ash St, Texarkana",33.42692947387695,-94.03778076171875,18703304024,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://saintedwardstexarkana.com
+miller-ar-overture-3e72989a,Watersprings Ranch,shelter,"n, 7707 Sanderson Ln, Miller County",33.512210845947266,-94.01520538330078,+18707727187,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.watersprings.com/
+miller-ar-overture-91c4981b,Fouke Food Pantry,meal,"Jenkins Expy, Fouke",33.2595329284668,-93.88565826416016,+19032783746,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

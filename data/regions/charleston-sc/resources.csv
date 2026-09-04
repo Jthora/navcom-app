@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+charleston-sc-overture-69690ac4,The Navigation Center,shelter,"126 Coming St, Charleston",32.787010192871094,-79.94023132324219,+18553551200,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://thenavigationcenter.org
+charleston-sc-overture-8e24fc9d,Steve Austin Facility,shelter,"1383 Remount Rd #100-2, North Charleston",32.901123046875,-79.99763488769531,+18437449949,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+charleston-sc-overture-210c4b2a,Lowcountry Food Bank,meal,"2864 Azalea Dr, North Charleston",32.843963623046875,-79.97266387939453,+18437478146,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.lowcountryfoodbank.org/
+charleston-sc-overture-8623e735,One80 Place,shelter,"35 Walnut St, Charleston",32.7999382019043,-79.94400024414062,8437239477,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+charleston-sc-overture-a2c6da28,Lowcountry Veterans Home,shelter,"1707 Mcleod Ave, Charleston",32.75107955932617,-79.97260284423828,+18438641954,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://lowcountryveteranshome.org/

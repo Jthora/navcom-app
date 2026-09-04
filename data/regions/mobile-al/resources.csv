@@ -1,0 +1,9 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+mobile-al-overture-3aada30c,"Elite Boarding Home, LLC",shelter,"612 Clarke St, Mobile",30.669469833374023,-88.09268188476562,+12513823940,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+mobile-al-overture-bb94d559,Love All Pantry at Central,meal,"1260 Dauphin St, Mobile",30.687650680541992,-88.06522369384766,+12514320591,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://loveallpantry.org/
+mobile-al-overture-e63db439,"Housing First, Inc.",shelter,"279 N Washington Ave, Mobile",30.693227767944336,-88.05354309082031,12513038058,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: hfal.org
+mobile-al-overture-367ccfa8,Miracle & Co. Inc,shelter,"2727 Mill St, Mobile",30.705692291259766,-88.10491180419922,12513310906,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+mobile-al-overture-6ef1e52b,Serving Our Unique People,meal,"1320 Center St, Mobile",30.693693161010742,-88.06755065917969,+12513770030,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://servingouruniquepeoplecdc.com/
+mobile-al-overture-565acf30,My Father's House of Prayer,meal,"3803 St Stephens Rd, Prichard",30.756181716918945,-88.12000274658203,+12514570902,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+mobile-al-overture-1556bc46,Bay Area Food Bank,meal,"5248 Mobile South St, Theodore",30.581024169921875,-88.16292572021484,+12516531617,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.bayareafoodbank.org
+mobile-al-overture-077226d1,Waterfront Rescue Mission,shelter,"279 N Washington Ave, Mobile",30.693401336669922,-88.05345916748047,+12514331847,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://waterfrontmission.org

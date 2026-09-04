@@ -1,0 +1,9 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+delaware-in-overture-1ddeba59,Soup Kitchen of Muncie,meal,"920 E Charles St, Muncie",40.19102096557617,-85.37617492675781,+17652878439,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://soupkitchenofmuncie.org/
+delaware-in-overture-cf2648f7,Second Harvest Food Bank,meal,"6621 Old State Rd 3, Muncie",40.24895477294922,-85.37137603759766,+17652878698,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.curehunger.org/
+delaware-in-overture-823a2bd4,Squared Away Foods,meal,"2144 W White River Blvd, Muncie",40.1876335144043,-85.41091918945312,+17657027769,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://squaredawayfoods.com/
+delaware-in-overture-d9b2e58f,Reach Yorktown Ministry - Food Pantry,meal,"2400 S Russ St  Bldg 2, Yorktown",40.17213439941406,-85.4847640991211,17657590590,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://reachyorktown.com
+delaware-in-overture-72a0e8d3,Beauty For Ashes Transitional Home,shelter,"1725 S Liberty St, Muncie",40.17976379394531,-85.39048767089844,17652889122702,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: alexbfa.org
+delaware-in-overture-6a598821,Eaton Community Food Pantry,meal,"101 N Center St, Eaton",40.34209060668945,-85.3570327758789,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+delaware-in-overture-d38123c0,Harvest Christian Fellowship - Whitely Community - Food Pantry,meal,"1010 E Centennial Ave, Muncie",40.20886993408203,-85.37580108642578,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: whitelycc.org
+delaware-in-overture-a530ab9a,Muncie Hub,shelter,"318 W 8th St, Muncie",40.182228088378906,-85.3894271850586,17652823948,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://munciemission.org

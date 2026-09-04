@@ -1,0 +1,12 @@
+{
+  "slug": "clarke-va",
+  "name": "Clarke, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51043",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "sharp-ar",
+  "name": "Sharp, AR",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "05135",
+  "timezone_derived_from": "state"
+}

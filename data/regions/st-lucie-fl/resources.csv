@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+st-lucie-fl-overture-0b2e4eee,Wave Crest CHS,meal,"4520 Selvitz Rd, Fort Pierce",27.3848934173584,-80.36613464355469,+17724609752,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.chsfl.org
+st-lucie-fl-overture-3d3dfc89,Mustard Seed Ministries Fort Pierce Food Pantry,meal,"3130 S US Hwy 1, Fort Pierce",27.409183502197266,-80.32505798339844,+17724656021,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.mustardseedslc.org/
+st-lucie-fl-overture-bd52b26d,Treasure Coast Food Bank,meal,"401 Angle Rd, Fort Pierce",27.450857162475586,-80.36080932617188,+17724893034,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://linktr.ee/tcfb
+st-lucie-fl-overture-20745609,1st Light of Hope,shelter,"118 SW Andover Ct, Port St Lucie",27.248769760131836,-80.35075378417969,+17729191413,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

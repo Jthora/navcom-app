@@ -1,0 +1,12 @@
+{
+  "slug": "fulton-in",
+  "name": "Fulton, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18049",
+  "timezone_derived_from": "state"
+}

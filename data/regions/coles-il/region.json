@@ -1,0 +1,12 @@
+{
+  "slug": "coles-il",
+  "name": "Coles, IL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "17029",
+  "timezone_derived_from": "state"
+}

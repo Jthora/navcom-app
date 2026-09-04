@@ -1,0 +1,12 @@
+{
+  "slug": "jim-hogg-tx",
+  "name": "Jim Hogg, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48247",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "bastrop-tx",
+  "name": "Bastrop, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48021",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "isanti-mn",
+  "name": "Isanti, MN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "27059",
+  "timezone_derived_from": "state"
+}

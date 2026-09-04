@@ -1,0 +1,12 @@
+{
+  "slug": "monmouth-nj",
+  "name": "Monmouth, NJ",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "34025",
+  "timezone_derived_from": "state"
+}

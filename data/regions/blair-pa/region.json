@@ -1,0 +1,12 @@
+{
+  "slug": "blair-pa",
+  "name": "Blair, PA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "42013",
+  "timezone_derived_from": "state"
+}

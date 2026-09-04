@@ -1,0 +1,12 @@
+{
+  "slug": "riley-ks",
+  "name": "Riley, KS",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "20161",
+  "timezone_derived_from": "state"
+}

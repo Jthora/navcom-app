@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+polk-tx-overture-20a9a56f,Godtel Ministries,shelter,"1607 S Washington Ave, Livingston",30.6950626373291,-94.9305191040039,+19363278863,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.godtel.org
+polk-tx-overture-23e2139c,Center of Hope Polk County Mission Center,meal,"600 S Washington Ave, Livingston",30.704137802124023,-94.93295288085938,+19363277634,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.centerofhopepolk.org/
+polk-tx-overture-c8aa1992,Mannafest,meal,"803 W Feagin St, Livingston",30.71501350402832,-94.93994140625,19363279555,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.mannafestlivingstontexas.org

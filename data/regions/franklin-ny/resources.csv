@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+franklin-ny-overture-6d07dc45,Tupper Lake Community Food Pantry,meal,"40 Marion St, Tupper Lake",44.21827697753906,-74.45614624023438,+15183593080,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+franklin-ny-overture-50e84a0d,The Emmaus Soup Kitchen,meal,"227 W Main St, Malone",44.848697662353516,-74.30687713623047,+15184814485,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+franklin-ny-overture-699f1f34,Jceo - Food Services And Outreach Center,meal,"43 Valco Dr, Malone",44.857872009277344,-74.33827209472656,15183194028,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.jceo.org

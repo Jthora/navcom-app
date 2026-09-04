@@ -1,0 +1,12 @@
+{
+  "slug": "wilson-nc",
+  "name": "Wilson, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37195",
+  "timezone_derived_from": "state"
+}

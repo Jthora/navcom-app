@@ -1,0 +1,12 @@
+{
+  "slug": "wahkiakum-wa",
+  "name": "Wahkiakum, WA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "53069",
+  "timezone_derived_from": "state"
+}

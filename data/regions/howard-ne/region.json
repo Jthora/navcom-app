@@ -1,0 +1,12 @@
+{
+  "slug": "howard-ne",
+  "name": "Howard, NE",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "31093",
+  "timezone_derived_from": "state"
+}

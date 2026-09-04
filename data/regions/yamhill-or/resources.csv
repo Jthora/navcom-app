@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+yamhill-or-overture-8b13b99a,Grand Sheramina Food Pantry,meal,"120 N Bridge St, Sheridan",45.099769592285156,-123.39530944824219,+15038433133,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://gsmafoodpantry.com/
+yamhill-or-overture-e0213844,Good Neighbor Family Pantry,meal,"21555 SW Hells Canyon Rd, Sherwood",45.32542037963867,-122.89852905273438,+15035540630,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.goodneighborfamilypantry.org/
+yamhill-or-overture-bb930491,Yamhill County Gospel Rescue,shelter,"1340 NE Logan St, McMinnville",45.21776580810547,-123.18612670898438,+15034729766,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.ycgrm.org/
+yamhill-or-overture-99d5814e,Newberg FISH Emergency Service,meal,"125 S Elliott Rd Suite A, Newberg",45.29942321777344,-122.9524154663086,+15035384444,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.newbergfish.org/

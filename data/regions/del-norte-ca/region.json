@@ -1,0 +1,12 @@
+{
+  "slug": "del-norte-ca",
+  "name": "Del Norte, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06015",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "mckean-pa",
+  "name": "McKean, PA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "42083",
+  "timezone_derived_from": "state"
+}

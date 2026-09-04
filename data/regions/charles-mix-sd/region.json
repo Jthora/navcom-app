@@ -1,0 +1,12 @@
+{
+  "slug": "charles-mix-sd",
+  "name": "Charles Mix, SD",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "46023",
+  "timezone_derived_from": "state"
+}

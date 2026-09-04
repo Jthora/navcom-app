@@ -1,0 +1,12 @@
+{
+  "slug": "carson-city-nv",
+  "name": "Carson City, NV",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "32510",
+  "timezone_derived_from": "state"
+}

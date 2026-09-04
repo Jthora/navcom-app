@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+smyth-va-overture-da10b86a,Gray Ridge Village,shelter,"155 Ridgefield Dr, Marion",36.809730529785156,-81.61714935302734,+12763787080,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.dss.virginia.gov/facility/search/alf.cgi?rm=Details%3BID%3D46048%3B
+smyth-va-overture-5a70745e,Loaves and Fishes Chilhowie Area Food Pantry Inc.,meal,"141 S Pine Ave, Chilhowie",36.801918029785156,-81.6752700805664,+12766469939,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.loavesfishesva.com/
+smyth-va-overture-a307bda0,Partnership Shelter,shelter,"Appalachian National Scenic Trail, Marion",36.8094482421875,-81.42237091064453,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+dallas-al-overture-f526f865,Selma Area Food Bank,meal,"Ave C, Selma",32.359092712402344,-86.98790740966797,+13348724111,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.selmafoodbank.com/
+dallas-al-overture-9df9afcf,Selma Area Food Bank,meal,"497 Oak St, Selma",32.419883728027344,-87.04920959472656,+13348724111,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://selmafoodbank.com
+dallas-al-overture-eb05d8b8,Selma COA Food Pantry,meal,"700 J L Chestnut Jr Blvd, Selma",32.4144401550293,-87.02903747558594,+13348726904,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

@@ -1,0 +1,12 @@
+{
+  "slug": "sangamon-il",
+  "name": "Sangamon, IL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "17167",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+washington-md-overture-76ac6d8b,Willamsport Food Bank,meal,"30 W Salisbury St, Williamsport",39.59883117675781,-77.82254791259766,+13049019012,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+washington-md-overture-f13131b4,Maryland Food Bank - Western Branch,shelter,"220 McRand Ct, Hagerstown",39.6482048034668,-77.747802734375,+14107378282,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+washington-md-overture-58bab00d,St. John's Shelter Inc.,shelter,"14 Randolph Ave, Hagerstown",39.64570236206055,-77.71675109863281,+12405136388,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+washington-md-overture-8393d475,The Hope Center at Hagerstown Rescue Mission,shelter,"125 N Prospect St, Hagerstown",39.646175384521484,-77.72282409667969,+13017391165,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.hopecenterhagerstown.org/

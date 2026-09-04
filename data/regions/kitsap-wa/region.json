@@ -1,0 +1,12 @@
+{
+  "slug": "kitsap-wa",
+  "name": "Kitsap, WA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "53035",
+  "timezone_derived_from": "state"
+}

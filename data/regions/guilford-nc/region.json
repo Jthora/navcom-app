@@ -1,0 +1,12 @@
+{
+  "slug": "guilford-nc",
+  "name": "Guilford, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37081",
+  "timezone_derived_from": "state"
+}

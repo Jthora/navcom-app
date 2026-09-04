@@ -1,0 +1,12 @@
+{
+  "slug": "lee-il",
+  "name": "Lee, IL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "17103",
+  "timezone_derived_from": "state"
+}

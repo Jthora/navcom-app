@@ -1,0 +1,12 @@
+{
+  "slug": "vanderburgh-in",
+  "name": "Vanderburgh, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18163",
+  "timezone_derived_from": "state"
+}

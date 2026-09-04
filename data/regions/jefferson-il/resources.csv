@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+jefferson-il-overture-1fa754c4,Southern 30 Adolescent Center,shelter,"17077 IL-37, Mt Vernon",38.37506866455078,-88.92286682128906,+16182422238,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://lcss.org
+jefferson-il-overture-edb74731,Lifeboat Alliance Family Shelter,shelter,"1717 Jefferson Ave, Mt Vernon",38.31928253173828,-88.9123764038086,+16182444088,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://lifeboatalliance.org/

@@ -1,0 +1,12 @@
+{
+  "slug": "montgomery-md",
+  "name": "Montgomery, MD",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "24031",
+  "timezone_derived_from": "state"
+}

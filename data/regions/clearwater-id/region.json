@@ -1,0 +1,12 @@
+{
+  "slug": "clearwater-id",
+  "name": "Clearwater, ID",
+  "country": "US",
+  "timezone": "America/Boise",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "16035",
+  "timezone_derived_from": "state"
+}

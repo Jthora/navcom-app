@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+woods-ok-overture-ee2a5df3,Alva Wesleyan Food Bank,shelter,"818 Lane Blvd, Alva",36.7988395690918,-98.64761352539062,+15803272636,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://alva-wesleyan-food-bank.square.site/
+woods-ok-overture-19801529,Campus Cabinet-NWOSU,meal,"709 Oklahoma Blvd, Alva",36.7967529296875,-98.66830444335938,+15803278577,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.nwosu.edu/campus-cabinet
+woods-ok-overture-ee0cdbe7,Waynoka Food Bank,meal,"1971 Waynoka St, Waynoka",36.58382034301758,-98.8768539428711,+15807372014,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

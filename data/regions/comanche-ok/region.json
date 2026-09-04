@@ -1,0 +1,12 @@
+{
+  "slug": "comanche-ok",
+  "name": "Comanche, OK",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "40031",
+  "timezone_derived_from": "state"
+}

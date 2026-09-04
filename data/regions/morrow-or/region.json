@@ -1,0 +1,12 @@
+{
+  "slug": "morrow-or",
+  "name": "Morrow, OR",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "41049",
+  "timezone_derived_from": "state"
+}

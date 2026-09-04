@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+jackson-nc-overture-7bfe74c9,The Community Table,meal,"23 Central St, Sylva",35.37565612792969,-83.22427368164062,+18285866782,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.communitytable.org/
+jackson-nc-overture-5d2a60d9,United Christian Ministries of Jackson County,meal,"191 Skyland Dr, Sylva",35.380062103271484,-83.21366119384766,8285868228,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://ucmsylva.org/
+jackson-nc-overture-28fb91c9,Fishes & Loaves Food Pantry Inc.,meal,"549 Frank Allen Rd, Cashiers",35.1117057800293,-83.1068115234375,+18285080378,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+jackson-nc-overture-45fc1521,The Sylva Support Stop,meal,"23 Central St, Sylva",35.3756103515625,-83.22413635253906,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

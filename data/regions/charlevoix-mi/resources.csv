@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+charlevoix-mi-overture-d4240d15,East Jordan Care & Share Food Pantry,meal,"6710 M-32, South Arm Twp",45.13869094848633,-85.11968231201172,+12315367423,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+charlevoix-mi-overture-3c5a1e14,Community Food Pantry,meal,"100 W Hurlbut St, Charlevoix",45.31375503540039,-85.25898742675781,+12312379490,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.ChxCommunityFoodPantry.com/
+charlevoix-mi-overture-3355d5e6,Good Neighbors Food Pantry,meal,"624 State St, Boyne City",45.21619415283203,-85.0025634765625,+12314978677,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.goodneighborsboyne.org/
+charlevoix-mi-overture-e88d3bfb,Joppa House Ministries,shelter,"801 State St, Charlevoix",45.3113899230957,-85.26100158691406,+12313302643,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.joppahouseministries.org/
+charlevoix-mi-overture-661a8057,Boyne Valley Pantry,meal,"3031 Main St, Boyne Falls",45.166969299316406,-84.91488647460938,+12315492230,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

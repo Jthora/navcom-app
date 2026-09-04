@@ -1,0 +1,12 @@
+{
+  "slug": "grays-harbor-wa",
+  "name": "Grays Harbor, WA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "53027",
+  "timezone_derived_from": "state"
+}

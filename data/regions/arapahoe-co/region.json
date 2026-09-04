@@ -1,0 +1,12 @@
+{
+  "slug": "arapahoe-co",
+  "name": "Arapahoe, CO",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "08005",
+  "timezone_derived_from": "state"
+}

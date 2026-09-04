@@ -1,0 +1,12 @@
+{
+  "slug": "big-stone-mn",
+  "name": "Big Stone, MN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "27011",
+  "timezone_derived_from": "state"
+}

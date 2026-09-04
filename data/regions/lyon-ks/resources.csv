@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+lyon-ks-overture-1d976c2e,Abundant Harvest Food Kitchen,meal,"1028 Whittier St, Emporia",38.410888671875,-96.16313171386719,+16203427439,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.emporiamission.org/
+lyon-ks-overture-406d3b1a,shiloh home of hope,shelter,"615 Congress St, Emporia",38.40555191040039,-96.18414306640625,+16203422244,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.shilohemporia.com/
+lyon-ks-overture-98df1a71,Bloom House Youth Services,shelter,"301 W 11th Ave, Emporia",38.41090774536133,-96.18429565429688,+16202081199,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.bloomhouseks.org/

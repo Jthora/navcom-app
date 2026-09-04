@@ -1,0 +1,12 @@
+{
+  "slug": "tuscarawas-oh",
+  "name": "Tuscarawas, OH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "39157",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "calhoun-al",
+  "name": "Calhoun, AL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "01015",
+  "timezone_derived_from": "state"
+}

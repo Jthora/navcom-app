@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+logan-il-overture-ce62e21e,Salvation Army 360 Life Center,shelter,"307 N Kickapoo St, Lincoln",40.14878845214844,-89.3604507446289,+12177327890,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://centralusa.salvationarmy.org/360lifecenters/lincoln/
+logan-il-overture-17e44326,Lincoln Logan Food Pantry,meal,"125 N Logan St, Lincoln",40.149200439453125,-89.3647232055664,+12177326644,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.centralilfoodbank.org/AgencyDetail.aspx?aid=256

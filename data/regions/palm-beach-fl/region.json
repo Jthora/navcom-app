@@ -1,0 +1,12 @@
+{
+  "slug": "palm-beach-fl",
+  "name": "Palm Beach, FL",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "12099",
+  "timezone_derived_from": "state"
+}

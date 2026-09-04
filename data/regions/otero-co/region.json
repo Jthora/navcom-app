@@ -1,0 +1,12 @@
+{
+  "slug": "otero-co",
+  "name": "Otero, CO",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "08089",
+  "timezone_derived_from": "state"
+}

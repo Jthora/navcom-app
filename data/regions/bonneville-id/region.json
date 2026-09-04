@@ -1,0 +1,12 @@
+{
+  "slug": "bonneville-id",
+  "name": "Bonneville, ID",
+  "country": "US",
+  "timezone": "America/Boise",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "16019",
+  "timezone_derived_from": "state"
+}

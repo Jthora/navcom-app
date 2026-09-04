@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+camden-nj-overture-39da2c00,Corner Cupboard Food Pantry ,meal,"57 White Horse Pike, Chesilhurst",39.73207092285156,-74.8662338256836,+18568828307,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://Cornercupboardfoodpantry.com/
+camden-nj-overture-c91f0db5,City of Light Ministries,meal,"615 Jackson Rd, Atco",39.775238037109375,-74.8614273071289,+18563811563,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.atcoag.com/
+camden-nj-overture-acce9173,Friends of Clementon food pantry,meal,"33 Berlin Rd, Clementon",39.80555725097656,-74.98933410644531,+16092307714,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://friendsofclementonfoodpantry.com/

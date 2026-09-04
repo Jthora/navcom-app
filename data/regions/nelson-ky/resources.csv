@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+nelson-ky-overture-d141d997,Bread for Life Community Food Pantry St. Vincent De Paul,meal,"1065 Bloomfield Rd, Bardstown",37.82728958129883,-85.42405700683594,+15023487270,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.svdpbard.org/
+nelson-ky-overture-04c77e0b,Bread For Life Community Food Pantry,meal,"219 E Muir Ave, Bardstown",37.80538558959961,-85.46450805664062,15023487270,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://svdpbard.org
+nelson-ky-overture-1296836f,Bethany Haven,shelter,"512 Edelen Ave, Bardstown",37.81205749511719,-85.47496795654297,+15023498064,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.bethanyhaven.org/

@@ -1,0 +1,12 @@
+{
+  "slug": "macomb-mi",
+  "name": "Macomb, MI",
+  "country": "US",
+  "timezone": "America/Detroit",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "26099",
+  "timezone_derived_from": "state"
+}

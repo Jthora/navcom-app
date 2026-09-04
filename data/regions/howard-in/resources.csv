@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+howard-in-overture-c257b04d,Kokomo Rescue Mission,shelter,"321 W Mulberry St, Kokomo",40.488136291503906,-86.13442993164062,+17654563838,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.kokomorescuemission.org/
+howard-in-overture-a12953d5,Tzion Food Pantry,meal,"614 W Monroe St, Kokomo",40.491851806640625,-86.13829040527344,+17653987721,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.congregationyeshivattzion.org/tzion-food-clothing-pantry
+howard-in-overture-f25a649c,Jackson Street Commons,shelter,"322 E Jackson St, Kokomo",40.49040985107422,-86.12801361083984,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: jacksonstreetcommons.com

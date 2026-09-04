@@ -1,0 +1,12 @@
+{
+  "slug": "polk-fl",
+  "name": "Polk, FL",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "12105",
+  "timezone_derived_from": "state"
+}

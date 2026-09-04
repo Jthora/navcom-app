@@ -1,0 +1,12 @@
+{
+  "slug": "kendall-tx",
+  "name": "Kendall, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48259",
+  "timezone_derived_from": "state"
+}

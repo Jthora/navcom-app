@@ -1,0 +1,12 @@
+{
+  "slug": "curry-nm",
+  "name": "Curry, NM",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "35009",
+  "timezone_derived_from": "state"
+}

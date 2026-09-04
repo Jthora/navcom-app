@@ -1,0 +1,12 @@
+{
+  "slug": "walsh-nd",
+  "name": "Walsh, ND",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "38099",
+  "timezone_derived_from": "state"
+}

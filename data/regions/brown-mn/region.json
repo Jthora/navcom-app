@@ -1,0 +1,12 @@
+{
+  "slug": "brown-mn",
+  "name": "Brown, MN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "27015",
+  "timezone_derived_from": "state"
+}

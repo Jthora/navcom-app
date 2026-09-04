@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+jefferson-mo-overture-16137807,Gateway Food Pantry,meal,"2024 Key West Dr, Arnold",38.440547943115234,-90.38577270507812,+16362873663,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://gatewayfoodpantry.org/
+jefferson-mo-overture-5ed913b6,Peace Pantry,meal,"6672 Veterans Dr, Cedar Hill",38.35630416870117,-90.64531707763672,+16362850934,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://thepeacepantry.org
+jefferson-mo-overture-85d8789e,Peace Pantry,meal,"8100 S Industrial Dr, Cedar Hill",38.35015869140625,-90.65055847167969,+16362850934,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.peacepantry.org/
+jefferson-mo-overture-34ececc2,Ozark Food Pantry,meal,"1 Sunset Park, Festus",38.22032928466797,-90.39981842041016,+16369339974,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.ozarkfoodpantry.org/
+jefferson-mo-overture-6fac7a3e,The Hillsboro Food Pantry,meal,"10399 MO-21 Bus, Hillsboro",38.2410774230957,-90.56243896484375,+16367895920,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://hillsborofoodpantry.com/

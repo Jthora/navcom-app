@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+ontario-ny-overture-5129b22c,Gleaners Community Kitchen,meal,"183 N Main St, Canandaigua",42.89372634887695,-77.2847900390625,+15853944818,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.gleanerskitchen.net/
+ontario-ny-overture-2f19e59a,Victor Farmington Food Cupboard,meal,"6548 Anthony Dr, Victor",42.975711822509766,-77.38873291015625,+15859242720,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.paypal.com/fundraiser/charity/2245658
+ontario-ny-overture-c9b5c81d,Family Promise,shelter,"185 N Main St, Canandaigua",42.893672943115234,-77.28540802001953,+15859053988,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.FamilyPromiseOntarioCounty.org/
+ontario-ny-overture-8e78856a,Geneva Housing Authority,shelter,"150 Lyceum St, Geneva",42.868560791015625,-76.99906158447266,+13157890316,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.genevahousingauthority.com

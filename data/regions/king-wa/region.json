@@ -1,0 +1,12 @@
+{
+  "slug": "king-wa",
+  "name": "King, WA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "53033",
+  "timezone_derived_from": "state"
+}

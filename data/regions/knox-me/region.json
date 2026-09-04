@@ -1,0 +1,12 @@
+{
+  "slug": "knox-me",
+  "name": "Knox, ME",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "23013",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "lincoln-ok",
+  "name": "Lincoln, OK",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "40081",
+  "timezone_derived_from": "state"
+}

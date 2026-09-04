@@ -1,0 +1,12 @@
+{
+  "slug": "brunswick-nc",
+  "name": "Brunswick, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37019",
+  "timezone_derived_from": "state"
+}

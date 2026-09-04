@@ -1,0 +1,12 @@
+{
+  "slug": "salem-va",
+  "name": "Salem, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51775",
+  "timezone_derived_from": "state"
+}

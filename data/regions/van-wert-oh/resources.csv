@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+van-wert-oh-overture-f0ca8623,Karla's Kupboard Food Pantry at Trinity Friends,meal,"605 N Franklin St, Van Wert",40.87684631347656,-84.57315063476562,+14192382788,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.trinityfriendschurch.com/foodpantry
+van-wert-oh-overture-569bf8ab,Haven of Hope,shelter,"233 N Market St, Van Wert",40.871768951416016,-84.5809097290039,+14196056717,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://havenofhopevw.org/

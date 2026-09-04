@@ -1,0 +1,12 @@
+{
+  "slug": "matagorda-tx",
+  "name": "Matagorda, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48321",
+  "timezone_derived_from": "state"
+}

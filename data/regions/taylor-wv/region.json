@@ -1,0 +1,12 @@
+{
+  "slug": "taylor-wv",
+  "name": "Taylor, WV",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "54091",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+ashtabula-oh-overture-0ac05130,Veterans Villa,shelter,"2111 W Prospect Rd #34, Ashtabula",41.85869598388672,-80.8126449584961,+14409928787,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://vvsd.net
+ashtabula-oh-overture-5c0ad93d,Country Neighbor,meal,"39 S Maple St, Orwell",41.534156799316406,-80.86760711669922,+14404376311,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://countryneighbor.org/
+ashtabula-oh-overture-406208e4,Ashtabula Dream Center,meal,"5028 Benefit Ave, Ashtabula",41.86166763305664,-80.80546569824219,+14409983732,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.ashtabuladreamcenter.org/
+ashtabula-oh-overture-c8392a51,Geneva Food Pantry,meal,"505 W Main St, Geneva",41.80253219604492,-80.95622253417969,+14404665500,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+ashtabula-oh-overture-480530e1,Opal House - Bridges to Discovery,shelter,"26 E Jefferson St, Jefferson",41.73830795288086,-80.76802062988281,4405760126,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.mwelsh.wix.com/bridgestodiscovery

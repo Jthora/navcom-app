@@ -1,0 +1,12 @@
+{
+  "slug": "finney-ks",
+  "name": "Finney, KS",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "20055",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "florence-sc",
+  "name": "Florence, SC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "45041",
+  "timezone_derived_from": "state"
+}

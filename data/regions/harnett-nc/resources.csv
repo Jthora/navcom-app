@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+harnett-nc-overture-592ec371,Five N Two Food Pantry,meal,"17247 NC-27 W, Sanford",35.31107711791992,-79.08256530761719,+19193433000,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://fiventwofoodpantry.com/
+harnett-nc-overture-780153bf,Cumberland Street Center,shelter,"200 S King Ave, Dunn",35.30841827392578,-78.6138687133789,+19134232266,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.beaconmission.com/
+harnett-nc-overture-3f35fd57,Beacon Rescue Mission,shelter,"207 W Broad St, Dunn",35.309226989746094,-78.6123046875,+19108925772,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://beaconmission.com/
+harnett-nc-overture-800866b1,Duma Food Pantry,meal,"319 E Broad St, Dunn",35.30695724487305,-78.6075439453125,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+harnett-nc-overture-59c0d297,Harnett Food Pantry,meal,"413 W Old Rd, Lillington",35.3935546875,-78.82498168945312,+19109857787,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://theharnettfoodpantry.org/

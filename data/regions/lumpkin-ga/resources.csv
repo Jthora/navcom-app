@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+lumpkin-ga-overture-a58002ff,Jeremiah's Place,shelter,"1445 Red Oak Flats Rd, Dahlonega",34.48102951049805,-83.93914031982422,+17068675404,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.lumpkincountyhomeless.org/
+lumpkin-ga-overture-41ea58cb,Unseen Hands Food Bank,meal,"45 Blackburn Rd, Dawsonville",34.45463180541992,-84.02417755126953,+16784562082,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

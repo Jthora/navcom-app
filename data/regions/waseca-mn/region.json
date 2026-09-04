@@ -1,0 +1,12 @@
+{
+  "slug": "waseca-mn",
+  "name": "Waseca, MN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "27161",
+  "timezone_derived_from": "state"
+}

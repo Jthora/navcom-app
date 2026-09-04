@@ -1,0 +1,12 @@
+{
+  "slug": "pinal-az",
+  "name": "Pinal, AZ",
+  "country": "US",
+  "timezone": "America/Phoenix",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "04021",
+  "timezone_derived_from": "state"
+}

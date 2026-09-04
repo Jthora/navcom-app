@@ -1,0 +1,12 @@
+{
+  "slug": "sheridan-wy",
+  "name": "Sheridan, WY",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "56033",
+  "timezone_derived_from": "state"
+}

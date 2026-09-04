@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+livingston-mi-overture-048b0bda,Bountiful Harvest Inc,meal,"290 E Grand River Ave, Brighton",42.52727127075195,-83.78081512451172,+18103600271,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.bountifulharvest-mi.org/
+livingston-mi-overture-2343686f,Bethel Suites,shelter,"4495 W Grand River Ave, Howell",42.637203216552734,-84.00361633300781,+15175188523,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.bethelsuites.org/
+livingston-mi-overture-da0b0964,Chuck Waggin Pet Food Pantry,meal,"7190 Cliffwood Ct, Fenton",42.71215057373047,-83.79236602783203,+18102807317,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://chuckwagginpetpantry.com/

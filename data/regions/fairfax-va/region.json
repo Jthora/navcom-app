@@ -1,0 +1,12 @@
+{
+  "slug": "fairfax-va",
+  "name": "Fairfax, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51600",
+  "timezone_derived_from": "state"
+}

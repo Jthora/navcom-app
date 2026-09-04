@@ -1,0 +1,12 @@
+{
+  "slug": "travis-tx",
+  "name": "Travis, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48453",
+  "timezone_derived_from": "state"
+}

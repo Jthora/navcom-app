@@ -1,0 +1,12 @@
+{
+  "slug": "placer-ca",
+  "name": "Placer, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06061",
+  "timezone_derived_from": "state"
+}

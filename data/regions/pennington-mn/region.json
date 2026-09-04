@@ -1,0 +1,12 @@
+{
+  "slug": "pennington-mn",
+  "name": "Pennington, MN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "27113",
+  "timezone_derived_from": "state"
+}

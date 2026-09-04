@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+richland-oh-overture-c26da6e6,Fish of Shelby,meal,"115 W Main St, Shelby",40.881526947021484,-82.66568756103516,+14193475010,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.shelbyhelpline.org/contact-us.html
+richland-oh-overture-8e919527,Catholic Charities Diocese of Toledo's Mansfield Office,meal,"2 Smith Ave, Mansfield",40.75876998901367,-82.4932632446289,+14195240733,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.catholiccharitiesnwo.org/
+richland-oh-overture-6e6f9f8d,Lucas Area Food Pantry,meal,"252 W Main St, Lucas",40.705257415771484,-82.4299087524414,+14198922825,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+richland-oh-overture-48f5661d,Plymouth Shiloh Food Pantry,shelter,"26 Mechanics St, Shiloh",40.96928405761719,-82.60063171386719,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

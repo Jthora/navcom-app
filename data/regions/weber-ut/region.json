@@ -1,0 +1,12 @@
+{
+  "slug": "weber-ut",
+  "name": "Weber, UT",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "49057",
+  "timezone_derived_from": "state"
+}

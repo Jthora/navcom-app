@@ -1,0 +1,12 @@
+{
+  "slug": "deaf-smith-tx",
+  "name": "Deaf Smith, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48117",
+  "timezone_derived_from": "state"
+}

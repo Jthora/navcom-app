@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+twin-falls-id-overture-f9afaaf4,Twin Falls Warming Center,shelter,"601 Shoshone St N, Twin Falls",42.55964660644531,-114.46546173095703,+12087386502,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://valley-house.org/
+twin-falls-id-overture-1f2fae38,Rock Creek Food Pantry,meal,"325 Madison St E, Kimberly",42.53453826904297,-114.3614730834961,+12082120787,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://rockcreekfoodpantry.org/
+twin-falls-id-overture-4cc14937,Idaho Youth Ranch Thrift Store,shelter,"162 Main Ave S, Twin Falls",42.554931640625,-114.46918487548828,2087343075,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.youthranch.org/
+twin-falls-id-overture-aab0c35f,Idaho Youth Ranch Thrift Store,shelter,"1118 Main St, Buhl",42.59797286987305,-114.76162719726562,2085434259,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.youthranch.org/
+twin-falls-id-overture-91edd0e4,Valley House Homeless Shelter,shelter,"507 Addison Ave W, Twin Falls",42.563392639160156,-114.48988342285156,+12087347736,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://valley-house.org/
+twin-falls-id-overture-be38454d,Wema Emergency Food Pantry,meal,"908 Maple St, Buhl",42.60145950317383,-114.7617416381836,12083292393,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.fbcford.com

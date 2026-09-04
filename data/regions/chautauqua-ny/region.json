@@ -1,0 +1,12 @@
+{
+  "slug": "chautauqua-ny",
+  "name": "Chautauqua, NY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "36013",
+  "timezone_derived_from": "state"
+}

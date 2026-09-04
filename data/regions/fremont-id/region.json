@@ -1,0 +1,12 @@
+{
+  "slug": "fremont-id",
+  "name": "Fremont, ID",
+  "country": "US",
+  "timezone": "America/Boise",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "16043",
+  "timezone_derived_from": "state"
+}

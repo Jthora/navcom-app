@@ -1,0 +1,12 @@
+{
+  "slug": "surry-nc",
+  "name": "Surry, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37171",
+  "timezone_derived_from": "state"
+}

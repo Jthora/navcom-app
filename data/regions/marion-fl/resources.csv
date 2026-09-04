@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+marion-fl-overture-6b327f38,His Compassion Food Bank,meal,"2000 NE 78th St, Ocala",29.267202377319336,-82.11102294921875,13523510732,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://hiscompassionflorida.org
+marion-fl-overture-2d08c338,Trinity Villas,shelter,"3728 NE 8th Pl, Ocala",29.195148468017578,-82.08417510986328,+13526945507,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://trinityvillas.com
+marion-fl-overture-3feb1994,HELP Agency,meal,"14094 FL-40, Silver Springs",29.199052810668945,-81.9183578491211,+13522995830,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.sozokids.org/help-agency.html
+marion-fl-overture-390a8324,Open Arms Village of Ocala,shelter,"1839 NE 8th Rd, Ocala",29.205766677856445,-82.12838745117188,+13523046229,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://openarmsvillageocala.org/
+marion-fl-overture-8e55a291,Community of Gratitude,meal,"13335 SE 123rd St, Ocklawaha",29.043569564819336,-81.93191528320312,+13522883499,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.communityofgratitude.com/
+marion-fl-overture-f103deca,Salvation Army Center Of Hope,shelter,"320 NW 1st Ave, Ocala",29.190275192260742,-82.1381607055664,13527328326,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: salvationarmyflorida.org

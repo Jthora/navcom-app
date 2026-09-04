@@ -1,0 +1,12 @@
+{
+  "slug": "autauga-al",
+  "name": "Autauga, AL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "01001",
+  "timezone_derived_from": "state"
+}

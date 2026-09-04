@@ -1,0 +1,12 @@
+{
+  "slug": "colorado-tx",
+  "name": "Colorado, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48089",
+  "timezone_derived_from": "state"
+}

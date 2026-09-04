@@ -1,0 +1,12 @@
+{
+  "slug": "granite-mt",
+  "name": "Granite, MT",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "30039",
+  "timezone_derived_from": "state"
+}

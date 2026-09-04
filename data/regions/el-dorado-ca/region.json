@@ -1,0 +1,12 @@
+{
+  "slug": "el-dorado-ca",
+  "name": "El Dorado, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06017",
+  "timezone_derived_from": "state"
+}

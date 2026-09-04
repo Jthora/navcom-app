@@ -1,0 +1,12 @@
+{
+  "slug": "fergus-mt",
+  "name": "Fergus, MT",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "30027",
+  "timezone_derived_from": "state"
+}

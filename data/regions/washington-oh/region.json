@@ -1,0 +1,12 @@
+{
+  "slug": "washington-oh",
+  "name": "Washington, OH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "39167",
+  "timezone_derived_from": "state"
+}

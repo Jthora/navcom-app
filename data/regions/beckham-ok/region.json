@@ -1,0 +1,12 @@
+{
+  "slug": "beckham-ok",
+  "name": "Beckham, OK",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "40009",
+  "timezone_derived_from": "state"
+}

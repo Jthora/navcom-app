@@ -1,0 +1,12 @@
+{
+  "slug": "fayette-ia",
+  "name": "Fayette, IA",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "19065",
+  "timezone_derived_from": "state"
+}

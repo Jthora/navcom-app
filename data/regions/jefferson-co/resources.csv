@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+jefferson-co-overture-4350571d,BGOLDN,meal,"17455 W 16th Ave, Golden",39.74270248413086,-105.19678497314453,+17206872041,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.bgoldn.org/
+jefferson-co-overture-89bae8d9,Bgoldn,meal,"16800 W 9th Ave, Golden",39.73102569580078,-105.18962860107422,+17206862041,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.bgoldn.org
+jefferson-co-overture-ed1e5638,Feed Colorado Food Drive,meal,"12345 W Alameda Pkwy  Ste 111, Lakewood",39.70446014404297,-105.13911437988281,13032319222,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://arcfeedcolorado.com
+jefferson-co-overture-b3ece23b,Tin Shed Food Pantry,meal,"10555 W 44th Ave, Wheat Ridge",39.778602600097656,-105.11641693115234,+17205451498,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://tinshedpantry.org/
+jefferson-co-overture-d0a96b33,Open Arms Food Bank,meal,"6500 W Coal Mine Ave, Littleton",39.59332275390625,-105.069580078125,+17206673145,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.openarmsfoodbank.org

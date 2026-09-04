@@ -1,0 +1,12 @@
+{
+  "slug": "leon-fl",
+  "name": "Leon, FL",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "12073",
+  "timezone_derived_from": "state"
+}

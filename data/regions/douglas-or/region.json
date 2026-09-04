@@ -1,0 +1,12 @@
+{
+  "slug": "douglas-or",
+  "name": "Douglas, OR",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "41019",
+  "timezone_derived_from": "state"
+}

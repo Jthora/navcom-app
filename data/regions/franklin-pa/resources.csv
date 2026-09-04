@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+franklin-pa-overture-d965b355,Greencastle Antrim Food Pantry,meal,"57 W Baltimore St, Greencastle",39.79050064086914,-77.729248046875,+17175978333,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.visitgpc.com/
+franklin-pa-overture-ca80a37d,Franklin County Shelter,shelter,"223 S Main St, Chambersburg",39.93385696411133,-77.6622085571289,+17172673669,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.sccap.org/
+franklin-pa-overture-69dc395d,My Neighbor's Bounty,meal,"11427 Church Hill Rd  Apt A, Mercersburg",39.83521270751953,-77.89632415771484,17174347272,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+franklin-pa-overture-44eb375c,Matthew 25 Project,meal,"433 Walker Rd, Chambersburg",39.93819808959961,-77.62804412841797,7173318224,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+franklin-pa-overture-d8da3ce2,Chambersburg Cold Weather Drop In Shelter,shelter,"195 W Loudon St, Chambersburg",39.93582534790039,-77.66535949707031,+17172622143,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://ccwdis.org/
+franklin-pa-overture-236131e1,SCCAP Franklin Pantry,meal,"533 S Main St, Chambersburg",39.92953872680664,-77.66358184814453,+17172635060,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.sccap.org/health-and-nutrition

@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+montgomery-al-overture-a4763e46,Friendship Mission,shelter,"312 Chisholm St, Montgomery",32.413639068603516,-86.27991485595703,+13343566412,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.amazon.com/hz/wishlist/ls/4AK8IH4VFRUQ/ref=hz_ls_biz_ex
+montgomery-al-overture-a4c40580,Heart Of Alabama Food Bank,meal,"521 Trade Center St, Montgomery",32.371795654296875,-86.34514617919922,13342633784,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.alfoodbanks.org
+montgomery-al-overture-d1ee4416,STINSON COMMUNITY DEVELOPMENT INC,shelter,"3036 Woodley Park Dr, Montgomery",32.32121658325195,-86.24980163574219,3342097726,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://scdi714.com/
+montgomery-al-overture-db6c1459,Homeless Shelter Garden,shelter,"3561 Mobile Hwy, Montgomery",32.336936950683594,-86.33917236328125,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

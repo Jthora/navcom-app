@@ -1,0 +1,12 @@
+{
+  "slug": "franklin-vt",
+  "name": "Franklin, VT",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "50011",
+  "timezone_derived_from": "state"
+}

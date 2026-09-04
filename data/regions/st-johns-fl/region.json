@@ -1,0 +1,12 @@
+{
+  "slug": "st-johns-fl",
+  "name": "St. Johns, FL",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "12109",
+  "timezone_derived_from": "state"
+}

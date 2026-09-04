@@ -1,0 +1,12 @@
+{
+  "slug": "fulton-il",
+  "name": "Fulton, IL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "17057",
+  "timezone_derived_from": "state"
+}

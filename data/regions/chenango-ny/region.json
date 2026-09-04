@@ -1,0 +1,12 @@
+{
+  "slug": "chenango-ny",
+  "name": "Chenango, NY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "36017",
+  "timezone_derived_from": "state"
+}

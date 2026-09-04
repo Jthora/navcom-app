@@ -1,0 +1,8 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+centre-pa-overture-8fd4a47e,State College Food Bank,meal,"169 Gerald St, State College",40.827735900878906,-77.80943298339844,+18142342310,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.scfoodbank.org/
+centre-pa-overture-58bfd0a4,Burrowes Street Youth Haven,shelter,"334 S Burrowes St, State College",40.789615631103516,-77.86014556884766,+18142342100,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://ccysb.com/
+centre-pa-overture-2a173a27,Crops for Christ Inc,meal,"1050 W Water St, Bellefonte",40.902156829833984,-77.7947006225586,8142644769,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.cropsforchrist.org/
+centre-pa-overture-bce56c51,Food Bank,meal,"276 W Hamilton Ave, State College",40.786834716796875,-77.85765075683594,+18142342310,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+centre-pa-overture-9a3b358d,Osceola Mills Community Food Bank,meal,"601 Lingle St, Osceola Mills",40.85141372680664,-78.26874542236328,+18143397403,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+centre-pa-overture-da3913f4,Lion's Pantry,meal,"Orange N, Services Rd, University Park",40.81049346923828,-77.86702728271484,+18148650990,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://thelionspantry.psu.edu/
+centre-pa-overture-054937e0,Faith Centre Food Bank,meal,"135 S Allegheny St, Bellefonte",40.91107940673828,-77.77763366699219,+18143554400,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.faithcentre.info

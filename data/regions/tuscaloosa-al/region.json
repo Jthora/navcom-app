@@ -1,0 +1,12 @@
+{
+  "slug": "tuscaloosa-al",
+  "name": "Tuscaloosa, AL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "01125",
+  "timezone_derived_from": "state"
+}

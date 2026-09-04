@@ -1,0 +1,12 @@
+{
+  "slug": "archuleta-co",
+  "name": "Archuleta, CO",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "08007",
+  "timezone_derived_from": "state"
+}

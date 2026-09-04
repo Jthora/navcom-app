@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+lea-nm-overture-311684ec,"Manna Outreach, Inc.",shelter,"909 S Selman St, Hobbs",32.69199752807617,-103.13031005859375,15753971155,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.mannaoutreach.org
+lea-nm-overture-aafeae2f,Sheri's House of Hope,shelter,"800 N Turner St, Hobbs",32.70851516723633,-103.13578796386719,+15753934673,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.sherishoh.org/
+lea-nm-overture-a764899b,Salvation Army Food Bank,meal,"520 E Main St, Hobbs",32.69270324707031,-103.13041687011719,+15053939580,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.salvationarmyusa.org/

@@ -1,0 +1,12 @@
+{
+  "slug": "cleveland-nc",
+  "name": "Cleveland, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37045",
+  "timezone_derived_from": "state"
+}

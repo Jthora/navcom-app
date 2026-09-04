@@ -1,0 +1,12 @@
+{
+  "slug": "clark-wi",
+  "name": "Clark, WI",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "55019",
+  "timezone_derived_from": "state"
+}

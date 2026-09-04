@@ -1,0 +1,12 @@
+{
+  "slug": "sevier-tn",
+  "name": "Sevier, TN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "47155",
+  "timezone_derived_from": "state"
+}

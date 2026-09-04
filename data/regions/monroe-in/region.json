@@ -1,0 +1,12 @@
+{
+  "slug": "monroe-in",
+  "name": "Monroe, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18105",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+washington-mn-overture-0c18c850,Mahtomedi Area Food Shelf,meal,"700 Mahtomedi Ave, Mahtomedi",45.063751220703125,-92.9571533203125,16513955350,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: stjudeofthelake.org
+washington-mn-overture-302dfd52,Friends in Need Food Shelf,meal,"535 4th St, St Paul Park",44.848487854003906,-92.99723052978516,+16514580730,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.finfood.org/
+washington-mn-overture-bc7284d3,Open Cupboard,meal,"8264 4th St N, Oakdale",44.95064163208008,-92.93910217285156,+16512331296,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://opencupboard.org/
+washington-mn-overture-bf54cfc3,Open Cupboard,meal,"8264 4th St N, Oakdale",44.951133728027344,-92.9771499633789,16512331296,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://opencupboard.org
+washington-mn-overture-8cb23739,Hugo Good Neighbors Food Shelf,meal,"15106 Francesca Ave N, Hugo",45.169227600097656,-92.98847198486328,+16515286224,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.hugofoodshelf.org/
+washington-mn-overture-124d92a2,Today's Harvest,meal,"8264 4th St N, Oakdale",44.95068359375,-92.93932342529297,6514091005,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://todaysharvestmn.org/

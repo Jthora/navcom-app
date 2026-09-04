@@ -1,0 +1,12 @@
+{
+  "slug": "santa-clara-ca",
+  "name": "Santa Clara, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06085",
+  "timezone_derived_from": "state"
+}

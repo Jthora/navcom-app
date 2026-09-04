@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+jefferson-ny-overture-96fd4292,Cape Vincent Food Pantry,meal,"159 S Esselstyne St, Cape Vincent",44.12812423706055,-76.333251953125,+13156542438,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.cvfp.org/
+jefferson-ny-overture-00cb580f,Antwerp Food Pantry,meal,"52 Main St, Antwerp",44.199520111083984,-75.60799407958984,+13157837527,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+jefferson-ny-overture-3e99ea51,Vem-Food Pantry,meal,"495 S Washington St, Carthage",43.97663116455078,-75.59513092041016,+13154931341,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://carthagefoodpantry.org

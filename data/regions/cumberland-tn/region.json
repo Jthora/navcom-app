@@ -1,0 +1,12 @@
+{
+  "slug": "cumberland-tn",
+  "name": "Cumberland, TN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "47035",
+  "timezone_derived_from": "state"
+}

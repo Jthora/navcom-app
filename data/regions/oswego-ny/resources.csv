@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+oswego-ny-overture-5ce97a6d,Unity Acres,shelter,"2290 County Rte 2, Richland",43.57645797729492,-76.02336883544922,+13152986215,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+oswego-ny-overture-f821f37d,Redfield Food Pantry,meal,"8 School Rd, Redfield",43.53353500366211,-75.82215881347656,+15853308434,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+oswego-ny-overture-b098848d,Sandy Creek Lacona Food Pantry,meal,"6046 S Main St, Sandy Creek",43.64250183105469,-76.0864486694336,+13153875323,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://friendshipshop.weebly.com/sales-and-other-events.html
+oswego-ny-overture-a57b9f86,Catholic Charities of Oswego County,meal,"808 W Broadway, Fulton",43.32094955444336,-76.4360580444336,+13155983980,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.ccoswego.com/
+oswego-ny-overture-b16a16d9,Human Concern Inc,meal,"75 E 2nd St, Oswego",43.45851135253906,-76.5066146850586,+13153088625,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

@@ -1,0 +1,12 @@
+{
+  "slug": "buchanan-va",
+  "name": "Buchanan, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51027",
+  "timezone_derived_from": "state"
+}

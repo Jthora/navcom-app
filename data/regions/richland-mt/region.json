@@ -1,0 +1,12 @@
+{
+  "slug": "richland-mt",
+  "name": "Richland, MT",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "30083",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "winneshiek-ia",
+  "name": "Winneshiek, IA",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "19191",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "spalding-ga",
+  "name": "Spalding, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13255",
+  "timezone_derived_from": "state"
+}

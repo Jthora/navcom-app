@@ -1,0 +1,12 @@
+{
+  "slug": "luna-nm",
+  "name": "Luna, NM",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "35029",
+  "timezone_derived_from": "state"
+}

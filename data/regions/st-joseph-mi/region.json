@@ -1,0 +1,12 @@
+{
+  "slug": "st-joseph-mi",
+  "name": "St. Joseph, MI",
+  "country": "US",
+  "timezone": "America/Detroit",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "26149",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "mason-wv",
+  "name": "Mason, WV",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "54053",
+  "timezone_derived_from": "state"
+}

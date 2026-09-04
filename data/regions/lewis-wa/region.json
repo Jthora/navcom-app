@@ -1,0 +1,12 @@
+{
+  "slug": "lewis-wa",
+  "name": "Lewis, WA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "53041",
+  "timezone_derived_from": "state"
+}

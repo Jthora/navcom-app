@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+lewis-wa-overture-3cb64dbe,Toledo Neighbors Program,meal,"5516 Jackson Hwy, Toledo",46.4623908996582,-122.83741760253906,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://toledoneighbors.org/
+lewis-wa-overture-0a06b2da,Greater Chehalis Food Bank,meal,"750 SW 21st St, Chehalis",46.6460075378418,-122.93738555908203,+13607481226,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+lewis-wa-overture-755db992,Pastor's Pantry Food Bank,meal,"277 7th St, Morton",46.55615997314453,-122.28298950195312,+13604965456,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+lewis-wa-overture-590bc25b,Lewis County Shelter Program,shelter,"621 S Diamond St, Centralia",46.710208892822266,-122.95301055908203,+13607365140,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+lewis-wa-overture-0ea25ea8,White Pass Community Food Bank,meal,"116 Kindle Rd, Randle",46.53570556640625,-121.92564392089844,+13605203817,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+lewis-wa-overture-94554848,The Winlock-Vader Food Bank,meal,"503 NE 1st St, Winlock",46.493255615234375,-122.9367904663086,+13607852185,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

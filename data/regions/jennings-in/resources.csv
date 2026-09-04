@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+jennings-in-overture-57d9b3cf,The Shelter,shelter,"6050 State Hwy 7, Scipio",39.07289123535156,-85.70747375488281,+18123433554,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://umctheshelter.org
+jennings-in-overture-2f6c638c,Good Samaritan Food Pantry,meal,"2250 State Hwy 7, North Vernon",39.01839065551758,-85.64323425292969,+18123520500,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://gsfoodpantrynv.org
+jennings-in-overture-eb80404b,Wayside Inn,shelter,"304 Hoosier St, North Vernon",39.008052825927734,-85.62584686279297,+18123527598,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.waysideinnshelter.com/

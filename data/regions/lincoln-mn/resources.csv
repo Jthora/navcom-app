@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+lincoln-mn-overture-81348a4f,Hendricks Food Shelf,meal,"207 S Division St, Hendricks",44.50835418701172,-96.4261474609375,+16055308226,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+lincoln-mn-overture-0d9fe38c,Lake Benton Food Shelf,meal,"106 Center St S, Lake Benton",44.26136016845703,-96.28724670410156,+15073683663,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+lincoln-mn-overture-d7a1dc05,Tyler Area Food Shelf,meal,"148 W Bradley St, Tyler",44.27743148803711,-96.13642883300781,+15072473955,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://tyler.govoffice.com/index.asp?SEC=A1246C38-9C21-4684-9379-C22605D7891B&Type=NONE&mobile=false

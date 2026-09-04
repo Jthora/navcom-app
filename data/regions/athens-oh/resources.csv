@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+athens-oh-overture-afde9d91,Salvation Army,meal,"70 N Plains Rd, The Plains",39.37397384643555,-82.13417053222656,7407971305,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://athenssalvationarmy.org/
+athens-oh-overture-05cfdff5,Friends And Neighbors,meal,"24576 Parkersburg Rd, Coolville",39.21348190307617,-81.8290023803711,17406670684,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://friends-cafe.edan.io
+athens-oh-overture-f8728551,Athens County Food Pantry,meal,"13183 OH-13, Millfield",39.39303207397461,-82.11985778808594,+17405907051,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.athenscountyfoodpantry.org/

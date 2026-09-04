@@ -1,0 +1,12 @@
+{
+  "slug": "walker-al",
+  "name": "Walker, AL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "01127",
+  "timezone_derived_from": "state"
+}

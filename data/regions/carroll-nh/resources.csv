@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+carroll-nh-overture-db4a4c7c,Lakes Region Food Pantry & Thrift Shop,meal,"977 Whittier Hwy, Moultonborough",43.75394821166992,-71.3976821899414,+16034765400,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.lakesregionfoodpantry.org/
+carroll-nh-overture-ddda4a9c,Madison Church Food Pantry,meal,"53 Conway Rd, Madison",43.90082550048828,-71.1465835571289,16037336323,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.themadisonchurch.org
+carroll-nh-overture-a7f3fdcf,Wakefield Food Pantry,meal,"1500 Wakefield Rd, Wakefield",43.53830337524414,-71.02668762207031,+16035223094,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.WakefieldFoodPantryNH.org/
+carroll-nh-overture-d785d2cf,Life Ministries Food Pantry,meal,"264 S Main St, Wolfeboro",43.579959869384766,-71.1995620727539,+16035690202,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.lifeministriesfoodpantry.org/

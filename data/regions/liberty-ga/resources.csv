@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+liberty-ga-overture-dfb59af1,Manna House of Liberty County,meal,"244 W Memorial Dr Ste A, Hinesville",31.851856231689453,-81.59978485107422,9123683660,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://libertycountymannahouse.org/
+liberty-ga-overture-7c03d56d,Manna House of Liberty County,meal,"100 S Commerce St, Hinesville",31.847328186035156,-81.59527587890625,+19123683660,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+liberty-ga-overture-1da0e142,Ltop Angels Of Mercy Food Ministry,meal,"1272 Kelly Dr, Hinesville",31.798830032348633,-81.62734985351562,+19129801198,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://ltopangelsofmercyfoodministry.com
+liberty-ga-overture-b9b45c5e,Hinesville House of Refuge,shelter,"203 Maple Dr N, Hinesville",31.808271408081055,-81.6019287109375,+19128777252,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://houseofrefugeinc1.org

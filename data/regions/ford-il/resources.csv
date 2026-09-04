@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+ford-il-overture-72635039,Gibson City Community Food Pantry,meal,"619 E 1st St, Gibson City",40.45648956298828,-88.36740112304688,+12177714100,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.gibsonareafoodpantry.org/
+ford-il-overture-33936e7b,Hands of Christ Food Pantry,meal,"361 N Railroad Ave, Paxton",40.4635124206543,-88.09444427490234,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://sites.vivery.org/hands-of-christ-food-pantry/paxton-il/1873

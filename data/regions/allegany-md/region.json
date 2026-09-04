@@ -1,0 +1,12 @@
+{
+  "slug": "allegany-md",
+  "name": "Allegany, MD",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "24001",
+  "timezone_derived_from": "state"
+}

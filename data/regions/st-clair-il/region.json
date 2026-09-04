@@ -1,0 +1,12 @@
+{
+  "slug": "st-clair-il",
+  "name": "St. Clair, IL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "17163",
+  "timezone_derived_from": "state"
+}

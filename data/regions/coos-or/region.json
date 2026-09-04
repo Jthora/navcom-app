@@ -1,0 +1,12 @@
+{
+  "slug": "coos-or",
+  "name": "Coos, OR",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "41011",
+  "timezone_derived_from": "state"
+}

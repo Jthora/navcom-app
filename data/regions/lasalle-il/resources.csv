@@ -1,0 +1,9 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+lasalle-il-overture-41da3901,Streatorland Community Food,meal,"210 N Wasson St, Streator",41.1229248046875,-88.82957458496094,+18156733688,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://streatorfoodpantry.com/
+lasalle-il-overture-cb3a11de,Illinois Valley Food Pantry,meal,"4133 Progress Blvd, Peru",41.3574333190918,-89.12162780761719,+18152243658,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.ivfoodpantry.com/
+lasalle-il-overture-43e05697,Pads Homeless Shelter,shelter,"1320 Menards Dr, Peru",41.36174392700195,-89.12234497070312,18152243047,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://ivpads.com
+lasalle-il-overture-96704ce1,Mendota Area Christian Food Pantry,meal,"710 6th Ave, Mendota",41.55393600463867,-89.11357879638672,18155382211,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.macfp.net
+lasalle-il-overture-2c765460,Lone Point Shelter,shelter,"1145-1173 IL-71, Ottawa",41.310787200927734,-88.93994903564453,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+lasalle-il-overture-bb77f503,Ottawa PADS,shelter,"1120 Canal St, Ottawa",41.351715087890625,-88.84532928466797,+18154331292,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.ivpads.com/
+lasalle-il-overture-1ef9596e,Mendota Area Christian Food Pantry,meal,"710 6th Ave, Mendota",41.548519134521484,-89.11640930175781,+18155382211,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://mendotareporter.com/article/mendota-food-pantry-continues-service
+lasalle-il-overture-07629635,Marseilles Food Pantry,meal,"200 Broadway St, Marseilles",41.32724380493164,-88.70780181884766,+18155798922,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

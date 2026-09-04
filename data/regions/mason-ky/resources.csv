@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+mason-ky-overture-e591330b,Community Care of Mason County,meal,"1679 Forest Ave, Maysville",38.637054443359375,-83.72539520263672,+16063756863,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://tinyurl.com/CCMCGive
+mason-ky-overture-e4bdd1a8,Jesus From A Jail Cell and Last Stop Missions,shelter,"410 Buckner St, Maysville",38.64002227783203,-83.74249267578125,+16067827018,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

@@ -1,0 +1,8 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+porter-in-overture-f7ab1165,Gabriel Horn Homeless Shelter,shelter,"792 McCool Rd, Valparaiso",41.5491828918457,-87.14408874511719,+12193648018,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.gabrielshelter.org/
+porter-in-overture-6404c59d,Westchester Neighbors Food Pantry,meal,"801 Broadway, Chesterton",41.61111068725586,-87.0633316040039,12197878475,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://westchesterneighborsfoodpantry.org
+porter-in-overture-cab2b469,Christian Food Pantry,meal,"7 E Chicago St, Valparaiso",41.4699592590332,-87.06008911132812,+12194625615,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+porter-in-overture-6167c9d5,The Caring Place,shelter,"607 Bullseye Lake Rd, Valparaiso",41.5008430480957,-87.05308532714844,+12194642128,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://tr.ee/Kbfol5wN20
+porter-in-overture-221411cc,"Housing Opportunities, Inc",meal,"2001 Calumet Ave, VALPARAISO",41.486209869384766,-87.05062103271484,2195482800,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.housing-opportunities.com/
+porter-in-overture-fec0c808,Hebron Country Pantry,meal,"106 E Sigler St, Hebron",41.31734848022461,-87.2017822265625,+12199967161,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+porter-in-overture-ed080257,Helping Hands Food Pantry,meal,"793 Juniper Rd, Valparaiso",41.5491943359375,-87.13607788085938,+12192032350,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

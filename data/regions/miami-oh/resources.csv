@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+miami-oh-overture-0ab7e6c8,Family Abuse Shelter of Miami County,shelter,"530 Crescent Dr, Troy",40.03519821166992,-84.2219467163086,+19373396761,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.familyabusesheltermc.org/
+miami-oh-overture-11182f0e,First Place Food Pantry,meal,"Next to Red Cross, North East Corner, 1100 Wayne St Ste 1450, Troy",40.033836364746094,-84.21785736083984,+19375704329,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.troyfoodpantry.org/
+miami-oh-overture-ea45b55b,Bethany Center,meal,"339 South St, Piqua",40.14014434814453,-84.2438735961914,+19376159762,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://bethanycenterpiqua.wixsite.com/bethanycenter

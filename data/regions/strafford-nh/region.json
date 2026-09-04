@@ -1,0 +1,12 @@
+{
+  "slug": "strafford-nh",
+  "name": "Strafford, NH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "33017",
+  "timezone_derived_from": "state"
+}

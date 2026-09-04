@@ -1,0 +1,12 @@
+{
+  "slug": "yakima-wa",
+  "name": "Yakima, WA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "53077",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "navarro-tx",
+  "name": "Navarro, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48349",
+  "timezone_derived_from": "state"
+}

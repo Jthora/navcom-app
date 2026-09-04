@@ -1,0 +1,12 @@
+{
+  "slug": "montgomery-tx",
+  "name": "Montgomery, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48339",
+  "timezone_derived_from": "state"
+}

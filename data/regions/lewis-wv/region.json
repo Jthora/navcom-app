@@ -1,0 +1,12 @@
+{
+  "slug": "lewis-wv",
+  "name": "Lewis, WV",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "54041",
+  "timezone_derived_from": "state"
+}

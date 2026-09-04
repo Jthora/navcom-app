@@ -1,0 +1,12 @@
+{
+  "slug": "jefferson-tn",
+  "name": "Jefferson, TN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "47089",
+  "timezone_derived_from": "state"
+}

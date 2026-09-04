@@ -1,0 +1,8 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+richmond-ga-overture-53d02667,Golden Harvest Food Bank,meal,"3310 Commerce Dr, Augusta",33.44998550415039,-82.05980682373047,+17067361199,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.goldenharvest.org/
+richmond-ga-overture-191f42fe,Augusta Dream Center,meal,"3364 Peach Orchard Rd, Augusta",33.40034103393555,-82.0230484008789,+17063642860,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.AugustaDreamCenter.org/
+richmond-ga-overture-aced2f05,Compass For Hope (not A Shelter),shelter,"702 Crawford Ave, Augusta",33.4782600402832,-81.99623107910156,17065890694,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://compassforhope.org
+richmond-ga-overture-d40eda9f,DCCM Home,meal,"430 8th St, Augusta",33.47239685058594,-81.96671295166016,+17067223530,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.dccmpantry.org/
+richmond-ga-overture-eaec2379,Augusta Rescue Mission,shelter,"526 Walker St, Augusta",33.46907043457031,-81.96232604980469,17067222058,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.augustarescuemission.com
+richmond-ga-overture-4d3b5702,Garden City Rescue Mission,shelter,"828 Fenwick St, Augusta",33.469547271728516,-81.96939086914062,+17067246960,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://GardenCityGospelMission.org/
+richmond-ga-overture-6e98ffa9,Faith Food Factory,meal,"1831 Old Savannah Rd, Augusta",33.45110321044922,-81.98703002929688,+17062610186,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

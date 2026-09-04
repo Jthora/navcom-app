@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+livingston-il-overture-534c8813,St. Mary's Food Pantry,meal,"401 E Water St, Pontiac",40.878787994384766,-88.62501525878906,+18158443663,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+livingston-il-overture-48c8dbfa,Forrest Community Food Pantry,meal,"301 W James St, Forrest",40.75344467163086,-88.41393280029297,+18156749878,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.eifoodbank.org/
+livingston-il-overture-7fe803e7,Livingston County Community Pantry,meal,"420 N Plum St, Pontiac",40.881710052490234,-88.63069152832031,+18158441039,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

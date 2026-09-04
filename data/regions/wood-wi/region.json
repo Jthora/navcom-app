@@ -1,0 +1,12 @@
+{
+  "slug": "wood-wi",
+  "name": "Wood, WI",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "55141",
+  "timezone_derived_from": "state"
+}

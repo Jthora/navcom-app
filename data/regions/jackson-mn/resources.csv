@@ -1,0 +1,2 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+jackson-mn-overture-1a4db3a0,Lakefield MN Food Shelf,meal,"St Joseph's Catholic Church, 410 Broadway Ave, Lakefield",43.676246643066406,-95.17017364501953,+15078413350,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

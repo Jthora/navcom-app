@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+ouachita-la-overture-02b6b3ee,City Of West Monroe - Food Distribution Center,meal,"1800 N 7th St, West Monroe",32.51093292236328,-92.14411163330078,13183241280,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.cityofwestmonroe.com
+ouachita-la-overture-c2ec1dc3,Food Bank of Northeast Louisiana,meal,"4600 Central Ave, Monroe",32.51233673095703,-92.06073760986328,+13183223567,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.foodbanknela.org/
+ouachita-la-overture-57ca6f1d,Hope House of West Monroe,meal,"341 Washington St, West Monroe",32.482025146484375,-92.17550659179688,+13373244957,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+ouachita-la-overture-e8500bff,Grace Place Ministries,meal,"1600 Jackson St, Monroe",32.48925018310547,-92.11027526855469,+13183619702,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://graceplaceministries.org/

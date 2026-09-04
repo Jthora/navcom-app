@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+berkeley-wv-overture-03bc1754,CCAP Loaves & Fishes,meal,"549 N Queen St, Martinsburg",39.463863372802734,-77.9609375,+13042633940,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://ccaploavesandfishes.com/
+berkeley-wv-overture-ab32f24b,365 Church,meal,"881 Mid Atlantic Pkwy, Martinsburg",39.497196197509766,-77.94727325439453,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.365church.org
+berkeley-wv-overture-08da3207,Friends Feeding Friends - Soup Kitchen,meal,"101 W Martin St, Martinsburg",39.45850372314453,-77.96354675292969,13042639291,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: stjohnsmartinsburg.org
+berkeley-wv-overture-0aaa3a45,Martinsburg Union Rescue Mission,shelter,"608 W King St, Martinsburg",39.457923889160156,-77.97190856933594,+13042636901,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.murmwv.org/

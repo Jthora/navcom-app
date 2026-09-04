@@ -1,0 +1,12 @@
+{
+  "slug": "rhea-tn",
+  "name": "Rhea, TN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "47143",
+  "timezone_derived_from": "state"
+}

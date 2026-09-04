@@ -1,0 +1,2 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+lafayette-ms-overture-7fc30abc,ATSLM Emergency Food Pantry,meal,"485 County Road 303, Taylor",34.30755615234375,-89.5870590209961,6623803587,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://atslm-emergency-food-pantry.business.site/

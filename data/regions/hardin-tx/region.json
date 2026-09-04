@@ -1,0 +1,12 @@
+{
+  "slug": "hardin-tx",
+  "name": "Hardin, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48199",
+  "timezone_derived_from": "state"
+}

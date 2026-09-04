@@ -1,0 +1,12 @@
+{
+  "slug": "hardin-ia",
+  "name": "Hardin, IA",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "19083",
+  "timezone_derived_from": "state"
+}

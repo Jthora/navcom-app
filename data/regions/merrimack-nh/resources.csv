@@ -1,0 +1,8 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+merrimack-nh-overture-204bfa2c,Henniker Food Pantry,meal,"21 Western Ave, Henniker",43.179527282714844,-71.8228988647461,+16034287474,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.henniker.org/food-pantry
+merrimack-nh-overture-9edf8d60,McKenna House,shelter,"100 S Fruit St, Concord",43.19407653808594,-71.5483169555664,+16032283505,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.salvationarmyusa.org/
+merrimack-nh-overture-52d658fc,Hooksett Community Food Pantry,meal,"35 Main St, Hooksett",43.09052658081055,-71.4629135131836,+16034857222,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.hooksett.org/community-development
+merrimack-nh-overture-aa7e5841,Concord Coalition to End Homelessness,shelter,"238 N Main St, Concord",43.21337890625,-71.5397720336914,+16032903375,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://concordhomeless.org/
+merrimack-nh-overture-cd91379f,Stone Phoundation,shelter,"64 Rumford St Ste 3B, Concord",43.20555877685547,-71.54263305664062,6037155109,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+merrimack-nh-overture-4e5f8f8d,Epsom Food Pantry,meal,"1598 Dover Rd, Epsom",43.22318649291992,-71.3334732055664,+16037364024,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+merrimack-nh-overture-cf97327c,Loudon Food Pantry,meal,"30 Chichester Rd, Loudon",43.27351379394531,-71.45965576171875,+16037249731,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://loudonfoodpantry.org/?page_id=58

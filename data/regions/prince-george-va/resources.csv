@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+prince-george-va-overture-a7bc8c30,Food Bank of PG County,meal,"11033 Prince George Dr, Disputanta",37.15925216674805,-77.27481079101562,+18047331691,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+prince-george-va-overture-1d792f1c,Humanities Foundation - Food Distribution Center,meal,"4270 Anne Ter, Prince George",37.254798889160156,-77.36707305908203,18432845122,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.humanitiesfoundation.org

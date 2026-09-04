@@ -1,0 +1,12 @@
+{
+  "slug": "clark-il",
+  "name": "Clark, IL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "17023",
+  "timezone_derived_from": "state"
+}

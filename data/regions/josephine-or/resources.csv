@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+josephine-or-overture-8ea542f0,Gospel Rescue Mission,shelter,"540 SW Foundry St, Grants Pass",42.44069290161133,-123.33267974853516,+15414760082,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://gospelrescuemissiongp.org/
+josephine-or-overture-4fa50541,Josephine County Food Bank,meal,"3658 Upper River Rd, Grants Pass",42.44633483886719,-123.38351440429688,+15414795556,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.jocofoodbank.org/
+josephine-or-overture-49821a26,ROC Food Pantry,meal,"564 SW Foundry St, Grants Pass",42.441184997558594,-123.33402252197266,+15414763344,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.rochome.org/
+josephine-or-overture-0606ab43,Foundry Village,shelter,"1020 SW Foundry St, Grants Pass",42.44245910644531,-123.33775329589844,+15414990880,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.rogueretreat.org/housing-shelter/#foundry-village
+josephine-or-overture-6fccf1e0,Faith House,shelter,"220 NW A St, Grants Pass",42.44436264038086,-123.3265609741211,+15418623379,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://faithhousegp.org/

@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+radford-va-overture-c7950cab,Radford-Fairlawn Daily Bread,meal,"501 2nd St, Radford",37.13185119628906,-80.57705688476562,+15408382210,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://radfordfairlawndailybread.org/
+radford-va-overture-0f549275,Its All About Jesus Child Care and Learning Center,shelter,"1301 W Main St, Radford",37.1248893737793,-80.58853149414062,+15403202307,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

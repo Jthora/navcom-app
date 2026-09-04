@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+indiana-pa-overture-92aea3ee,IUP Food Pantry,meal,"Wallwork Hall, 455 Pratt Dr, Indiana",40.6168098449707,-79.15678405761719,+17243572220,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.iup.edu/studentaffairs/food-pantry/
+indiana-pa-overture-53810f6e,Family Promise of In County,shelter,"812 Marion Rd, White Twp",40.638031005859375,-79.13945770263672,+17244645220,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.familypromiseofindianacounty.com/
+indiana-pa-overture-747388e6,Indiana County Community Action Agency - Iccaa - Food Distribution Center,meal,"827 Water St, Indiana",40.62467575073242,-79.15520477294922,17244637440,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://iccap.net

@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+washington-vt-overture-b7dab624,Good Samaritan Haven,shelter,"105 N Seminary St, Barre",44.204219818115234,-72.5058822631836,+18024792294,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://goodsamaritanhaven.org/
+washington-vt-overture-8592ad4b,Vermont Foodbank,meal,"33 Parker Rd, Barre",44.17323684692383,-72.48298645019531,+18005852265,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.vtfoodbank.org/
+washington-vt-overture-30d86490,"Faith In Action Northern Communities Partnership, Inc.",meal,"3339 Main St, Cabot",44.40550994873047,-72.30879211425781,+18025633322,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.fiancp.com

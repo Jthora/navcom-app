@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+putnam-tn-overture-91112bcd,Cookeville Rescue Mission,shelter,"1331 S Jefferson Ave, Cookeville",36.12593078613281,-85.50679016113281,19315285819,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+putnam-tn-overture-1ee14135,Cookeville Housing Authority,shelter,"235 W Jackson St, Cookeville",36.154762268066406,-85.51245880126953,+19315269793,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://highlandsrs.com

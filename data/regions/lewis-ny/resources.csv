@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+lewis-ny-overture-3180e7e3,Port Leyden Food Pantry,meal,"7108 North St, Port Leyden",43.58467483520508,-75.34463500976562,+13153486104,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+lewis-ny-overture-36f92a3f,Lowville Food Pantry,meal,"5502 Trinity Ave, Lowville",43.79041290283203,-75.4874496459961,+13153767431,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.lowvillefoodpantry.org/
+lewis-ny-overture-69539f45,Croghan Food Pantry,meal,"9794 NY-812, Croghan",43.89433670043945,-75.39205169677734,+13159210830,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

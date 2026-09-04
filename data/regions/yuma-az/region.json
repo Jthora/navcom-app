@@ -1,0 +1,12 @@
+{
+  "slug": "yuma-az",
+  "name": "Yuma, AZ",
+  "country": "US",
+  "timezone": "America/Phoenix",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "04027",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+franklin-vt-overture-85b1dced,Enosburg Food Shelf,meal,"21 Missisquoi St, Enosburg Falls",44.907291412353516,-72.80484771728516,+18023307623,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+franklin-vt-overture-05cf9357,Sheldon Interfaith Food Shelf,meal,"52 Church St, Sheldon",44.88261413574219,-72.9417495727539,+18029334487,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+franklin-vt-overture-bd12cd37,Martha's Community Kitchen,meal,"139 Lake St, St Albans",44.811134338378906,-73.08895874023438,+18025249749,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://marthascommunitykitchen802.org/
+franklin-vt-overture-a4fac40b,Samaritan House,shelter,"20 Kingman St, St Albans",44.81211853027344,-73.08405303955078,+18025270847,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.cvoeo.org/samaritan-house
+franklin-vt-overture-5f062146,NorthWest Family Foods,meal,"5 Lemnah Dr, St Albans",44.804622650146484,-73.08917999267578,+18025277392,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.cvoeo.org/get-help/northwest-family-foods

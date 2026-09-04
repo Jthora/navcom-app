@@ -1,0 +1,12 @@
+{
+  "slug": "polk-tx",
+  "name": "Polk, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48373",
+  "timezone_derived_from": "state"
+}

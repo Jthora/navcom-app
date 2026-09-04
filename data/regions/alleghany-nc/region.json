@@ -1,0 +1,12 @@
+{
+  "slug": "alleghany-nc",
+  "name": "Alleghany, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37005",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "lake-or",
+  "name": "Lake, OR",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "41037",
+  "timezone_derived_from": "state"
+}

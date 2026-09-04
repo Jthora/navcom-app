@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+hunt-tx-overture-362e1744,Lake Area Shared Ministries Food Pantry,meal,"8493 TX-34, Quinlan",32.91685485839844,-96.12649536132812,+19033566744,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.lakeareasharedministries.org
+hunt-tx-overture-40df2b9b,Abba's House Greenville,shelter,"2701 Lee St, Greenville",33.13970184326172,-96.10819244384766,+14302803964,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://abbashouseministriesgtx.com/
+hunt-tx-overture-444e8ae1,Arms of Hope Boles Campus,shelter,"7065 Love, Quinlan",32.94633865356445,-96.10645294189453,+19032244900,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.armsofhope.org/pages/home
+hunt-tx-overture-875e0f87,Texas Storm Shelter,shelter,"3611 Interstate 30 W, Caddo Mills",33.02597427368164,-96.1946029663086,+19729555775,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.texasstormshelter.com/

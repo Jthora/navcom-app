@@ -1,0 +1,12 @@
+{
+  "slug": "lamar-ga",
+  "name": "Lamar, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13171",
+  "timezone_derived_from": "state"
+}

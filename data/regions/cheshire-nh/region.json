@@ -1,0 +1,12 @@
+{
+  "slug": "cheshire-nh",
+  "name": "Cheshire, NH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "33005",
+  "timezone_derived_from": "state"
+}

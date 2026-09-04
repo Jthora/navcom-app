@@ -1,0 +1,12 @@
+{
+  "slug": "sutton-tx",
+  "name": "Sutton, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48435",
+  "timezone_derived_from": "state"
+}

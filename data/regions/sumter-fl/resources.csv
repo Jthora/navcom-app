@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+sumter-fl-overture-f3806e3a,Wildwood Food Pantry,meal,"300 Mason St, Wildwood",28.8631534576416,-82.03772735595703,+13527481275,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.wildwoodflumc.org/
+sumter-fl-overture-d07b6e90,Hope Ministries,meal,"90 CR-542D, Bushnell",28.677703857421875,-82.10568237304688,+13525687729,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.hopeministriesfl.org/
+sumter-fl-overture-6aa9d5e0,Refuge At Jumper Creek Inc,shelter,"4912 SE 7th Dr, Bushnell",28.68445587158203,-82.09335327148438,+13525688400,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.therefugeatjumpercreekinc.com/
+sumter-fl-overture-4d686659,Wildwood Soup Kitchen,meal,"203 Barwick St, Wildwood",28.863380432128906,-82.03919219970703,+13527481008,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.wildwoodsoupkitchen.org

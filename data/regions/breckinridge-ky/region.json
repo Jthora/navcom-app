@@ -1,0 +1,12 @@
+{
+  "slug": "breckinridge-ky",
+  "name": "Breckinridge, KY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "21027",
+  "timezone_derived_from": "state"
+}

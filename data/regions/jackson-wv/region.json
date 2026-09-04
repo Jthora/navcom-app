@@ -1,0 +1,12 @@
+{
+  "slug": "jackson-wv",
+  "name": "Jackson, WV",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "54035",
+  "timezone_derived_from": "state"
+}

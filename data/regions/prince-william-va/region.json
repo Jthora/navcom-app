@@ -1,0 +1,12 @@
+{
+  "slug": "prince-william-va",
+  "name": "Prince William, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51153",
+  "timezone_derived_from": "state"
+}

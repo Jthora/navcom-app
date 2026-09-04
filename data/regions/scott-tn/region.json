@@ -1,0 +1,12 @@
+{
+  "slug": "scott-tn",
+  "name": "Scott, TN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "47151",
+  "timezone_derived_from": "state"
+}

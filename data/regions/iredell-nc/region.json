@@ -1,0 +1,12 @@
+{
+  "slug": "iredell-nc",
+  "name": "Iredell, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37097",
+  "timezone_derived_from": "state"
+}

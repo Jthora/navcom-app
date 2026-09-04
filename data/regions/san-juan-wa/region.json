@@ -1,0 +1,12 @@
+{
+  "slug": "san-juan-wa",
+  "name": "San Juan, WA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "53055",
+  "timezone_derived_from": "state"
+}

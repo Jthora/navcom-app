@@ -1,0 +1,12 @@
+{
+  "slug": "morgan-co",
+  "name": "Morgan, CO",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "08087",
+  "timezone_derived_from": "state"
+}

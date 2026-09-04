@@ -1,0 +1,8 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+mason-wa-overture-02de40f8,North Mason Food Bank,meal,"22471 E State Route 3, Belfair",47.434783935546875,-122.83977508544922,+13602754615,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://northmasonfoodbank.org
+mason-wa-overture-abc12288,Community Lifeline,shelter,"218 N 3rd St, Shelton",47.2144775390625,-123.10191345214844,+13604624439,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://sheltonlifeline.org/
+mason-wa-overture-79c7ea29,Crossroads Housing,shelter,"71 Sargison Loop, Shelton",47.205650329589844,-123.0986099243164,+13604276919,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.crossroads-housing.net/
+mason-wa-overture-47847063,Hood Canal Food Bank,meal,"331 N Finch Creek Rd, Hoodsport",47.406044006347656,-123.14630889892578,+13608776507,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://hoodcanalfoodbank.org/about/
+mason-wa-overture-c4dc1721,Community Food Pantry,meal,"71 NE Old Belfair Hwy, Belfair",47.454734802246094,-122.82799530029297,+13602774038,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://paypal.me/CommunityFoodPantry
+mason-wa-overture-d573c677,Saint's Pantry,meal,"205 W Cota St, Shelton",47.21200942993164,-123.10163116455078,+13604278847,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://saintspantry.org/
+mason-wa-overture-c6f51e88,North Mason Food Bank,meal,"24131 WA-3, Belfair",47.454566955566406,-122.82122802734375,+13602754615,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.northmasonfoodbank.org/

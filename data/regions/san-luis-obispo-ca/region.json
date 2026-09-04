@@ -1,0 +1,12 @@
+{
+  "slug": "san-luis-obispo-ca",
+  "name": "San Luis Obispo, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06079",
+  "timezone_derived_from": "state"
+}

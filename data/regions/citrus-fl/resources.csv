@@ -1,0 +1,10 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+citrus-fl-overture-e4ade96a,Mission In Citrus Inc Shelter,shelter,"306 S Park Ave, Inverness",28.865209579467773,-82.39372253417969,+13524196505,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.adoptourveterans.com/
+citrus-fl-overture-f0c6ebb8,We Care Food Pantry,meal,"5259 W Cardinal St, Homosassa",28.7650203704834,-82.52074432373047,+13525032079,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://wecarefoodpantry.us
+citrus-fl-overture-1df47711,Casa,shelter,"1100 Turner Camp Rd, Inverness",28.854734420776367,-82.33564758300781,+13523448111,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://casafl.org
+citrus-fl-overture-b7421fc1,FBCCR Food Pantry,meal,"840 N Citrus Ave, Crystal River",28.9017333984375,-82.5937271118164,+13527953367,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+citrus-fl-overture-88f0790a,Path Of Citrus County Inc,shelter,"21 S Melbourne St, Beverly Hills",28.925434112548828,-82.46100616455078,13525276500,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.pathofcitrus.org
+citrus-fl-overture-b312ee25,"Citrus County Veterans Coalition, Inc.",meal,"1081 N Paul Dr, Inverness",28.878400802612305,-82.36434936523438,13524008952,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+citrus-fl-overture-d99863b2,Community Food Bank,meal,"5259 W Cardinal St, Homosassa",28.765148162841797,-82.52068328857422,+13526283663,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.feed352.org/
+citrus-fl-overture-8b114731,Club Recovery Of Citrus County,meal,"2500 N Anvil Ter, Hernando",28.899290084838867,-82.39482116699219,+13524194836,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: clubrecoveryofcitruscounty.com
+citrus-fl-overture-42c5a13b,Citrus Cold Weather Shelter,shelter,Homosassa,28.78830909729004,-82.56342315673828,+13522343099,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://basicsunited.org/

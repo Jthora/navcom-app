@@ -1,0 +1,12 @@
+{
+  "slug": "erie-ny",
+  "name": "Erie, NY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "36029",
+  "timezone_derived_from": "state"
+}

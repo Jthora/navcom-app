@@ -1,0 +1,12 @@
+{
+  "slug": "shawnee-ks",
+  "name": "Shawnee, KS",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "20177",
+  "timezone_derived_from": "state"
+}

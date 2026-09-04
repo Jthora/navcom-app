@@ -1,0 +1,12 @@
+{
+  "slug": "socorro-nm",
+  "name": "Socorro, NM",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "35053",
+  "timezone_derived_from": "state"
+}

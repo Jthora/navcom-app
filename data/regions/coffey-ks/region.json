@@ -1,0 +1,12 @@
+{
+  "slug": "coffey-ks",
+  "name": "Coffey, KS",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "20031",
+  "timezone_derived_from": "state"
+}

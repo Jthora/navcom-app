@@ -1,0 +1,12 @@
+{
+  "slug": "lagrange-in",
+  "name": "LaGrange, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18087",
+  "timezone_derived_from": "state"
+}

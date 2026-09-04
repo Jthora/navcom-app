@@ -1,0 +1,12 @@
+{
+  "slug": "adair-ok",
+  "name": "Adair, OK",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "40001",
+  "timezone_derived_from": "state"
+}

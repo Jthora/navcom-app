@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+mason-mi-overture-0608ce78,Caritas Food Pantry,meal,"85 S Madison Ave, Custer",43.953399658203125,-86.220458984375,+12313010626,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+mason-mi-overture-6119f954,Communities Overcoming Violent Encounters,shelter,"906 E Ludington Ave, Ludington",43.955726623535156,-86.43362426757812,+12318432541,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.callcove.com/
+mason-mi-overture-5db5bf71,Women's Jericho House,shelter,"912 E Ludington Ave, Ludington",43.9559211730957,-86.4327392578125,+12318433044,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

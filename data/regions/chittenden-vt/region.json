@@ -1,0 +1,12 @@
+{
+  "slug": "chittenden-vt",
+  "name": "Chittenden, VT",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "50007",
+  "timezone_derived_from": "state"
+}

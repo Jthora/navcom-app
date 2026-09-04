@@ -1,0 +1,12 @@
+{
+  "slug": "flathead-mt",
+  "name": "Flathead, MT",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "30029",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+franklin-oh-overture-b863dfe3,Greenfield Place,shelter,"283 Green Ave, Groveport",39.848148345947266,-82.89364624023438,+16148365867,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.lssco.org
+franklin-oh-overture-7c401c0b,Reynoldsburg Helping Hands,meal,"7453 E Main St, Reynoldsburg",39.954898834228516,-82.7987289428711,+16148689394,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://reynoldsburghelpinghands.org/
+franklin-oh-overture-2a62a8ff,Greater Groveport Food Pantry,meal,"595 Cherry St, Groveport",39.850711822509766,-82.88418579101562,+16148367652,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://groveportfoodpantry.com/

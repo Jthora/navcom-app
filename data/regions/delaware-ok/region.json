@@ -1,0 +1,12 @@
+{
+  "slug": "delaware-ok",
+  "name": "Delaware, OK",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "40041",
+  "timezone_derived_from": "state"
+}

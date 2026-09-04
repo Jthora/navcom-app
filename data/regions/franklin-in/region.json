@@ -1,0 +1,12 @@
+{
+  "slug": "franklin-in",
+  "name": "Franklin, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18047",
+  "timezone_derived_from": "state"
+}

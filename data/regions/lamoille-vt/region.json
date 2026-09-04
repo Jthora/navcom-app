@@ -1,0 +1,12 @@
+{
+  "slug": "lamoille-vt",
+  "name": "Lamoille, VT",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "50015",
+  "timezone_derived_from": "state"
+}

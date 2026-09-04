@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+butler-mo-overture-4821335a,Bread Shed,meal,"203 N D St, Poplar Bluff",36.75638961791992,-90.38658905029297,+15737126597,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.breadshed.org/
+butler-mo-overture-273e1b65,St Vincent De Paul Food Pantry,meal,"213 S Broadway St, Poplar Bluff",36.75515365600586,-90.39430236816406,+15736861948,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+butler-mo-overture-158e7088,United Gospel Rescue Mission,shelter,"400 S Broadway St, Poplar Bluff",36.753997802734375,-90.39429473876953,15737854683,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://pbrescue.org
+butler-mo-overture-046f9dfb,United Gospel Rescue Mission,shelter,"421 W Pine St, Poplar Bluff",36.75764465332031,-90.394775390625,+15737854683,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.pbrescue.org/

@@ -1,0 +1,12 @@
+{
+  "slug": "marion-wv",
+  "name": "Marion, WV",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "54049",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+cowlitz-wa-overture-8f1a24ea,Crime Victim Advocacy Program,shelter,"1330 11th Ave, Longview",46.13724899291992,-122.93135070800781,+13604251176,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.esshelter.com/crime-victim-advocacy-program-cvap.html
+cowlitz-wa-overture-0d7650c1,Hope Project,shelter,"1330 11th Ave, Longview",46.137245178222656,-122.93134307861328,+13604251176,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.esshelter.com/
+cowlitz-wa-overture-22c37a67,The Refuge,meal,"403 Cowlitz Way, Kelso",46.146846771240234,-122.90804290771484,+13609161278,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+cowlitz-wa-overture-bf7bea28,Emergency Support Shelter,shelter,"1330 11th Ave, Longview",46.13724136352539,-122.9313735961914,+13604251176,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://givebutter.com/emergency-support-shelter
+cowlitz-wa-overture-3e7afbc9,Kalama Housing Authority,shelter,"226 Cloverdale Rd, Kalama",46.000938415527344,-122.83456420898438,+13606733444,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://cityofkalama.com

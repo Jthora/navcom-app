@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+cobb-ga-overture-00e95533,"Georgia Alliance To End Homelessness, Inc.",shelter,"2655 Dallas Hwy Sw  Ste 610, Marietta",33.945335388183594,-84.62991333007812,17705755785,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+cobb-ga-overture-796f897c,Sheltering Grace Ministry,shelter,"1180 Franklin Gtwy Se  Ste 100, Marietta",33.92371368408203,-84.49249267578125,16783377858,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.shelteringgrace.org
+cobb-ga-overture-80e10e35,Community Food Center,meal,"1605 Austell Rd SE, Marietta",33.91331100463867,-84.55464172363281,+14783944547,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.acfb.org/
+cobb-ga-overture-ca841c06,The Extension,shelter,"130 Holiday St NE, Marietta",33.954322814941406,-84.53894805908203,17705909075306,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://theextension.org
+cobb-ga-overture-35115ccf,"BackPack Blessings, Inc.",meal,"4385 Lower Roswell Rd, Marietta",33.96408462524414,-84.42281341552734,+16785759625,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://backpackblessings.org/

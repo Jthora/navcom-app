@@ -1,0 +1,12 @@
+{
+  "slug": "fremont-co",
+  "name": "Fremont, CO",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "08043",
+  "timezone_derived_from": "state"
+}

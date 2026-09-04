@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+augusta-va-overture-46d13ade,Craigsville Area Food Pantry,meal,"2510 Estaline Valley Rd, Goshen",38.04670715332031,-79.3918685913086,+15409975827,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://smile.amazon.com/ch/20-5471677
+augusta-va-overture-2eda3423,Blue Ridge Area Food Bank - Western Region & Headquarters,meal,"96 Laurel Hill Rd, Verona",38.19970703125,-79.00520324707031,15402483663,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.brafb.org
+augusta-va-overture-d01aef4c,Verona Community Food Pantry,meal,"68 Dick Huff Ln, Verona",38.195396423339844,-79.01286315917969,+15404302844,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://vcfp.us/

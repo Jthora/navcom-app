@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+bulloch-ga-overture-14e967eb,Statesboro Food Bank,meal,"506 Miller St, Statesboro",32.4626579284668,-81.79136657714844,+19123861462,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.statesborofoodbank.org/
+bulloch-ga-overture-c43d3c24,Bulloch Counseling Center,meal,"11 N College St, Statesboro",32.45026779174805,-81.78594970703125,+19127649868,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://pinelandcsb.org
+bulloch-ga-overture-f862aa66,City Of David - Food Distribution Center,meal,"227 Institute St, Statesboro",32.44321060180664,-81.78960418701172,19124892228,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://helpendhunger.org

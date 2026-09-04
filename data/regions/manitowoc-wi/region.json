@@ -1,0 +1,12 @@
+{
+  "slug": "manitowoc-wi",
+  "name": "Manitowoc, WI",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "55071",
+  "timezone_derived_from": "state"
+}

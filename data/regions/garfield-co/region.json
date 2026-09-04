@@ -1,0 +1,12 @@
+{
+  "slug": "garfield-co",
+  "name": "Garfield, CO",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "08045",
+  "timezone_derived_from": "state"
+}

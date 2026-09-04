@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+potter-tx-overture-ed148676,Faith City Family Shelter,shelter,"401 SE 2nd Ave, Amarillo",35.21160125732422,-101.83196258544922,18063765348,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.faithcity.org
+potter-tx-overture-668f9a7e,Hope Welcome Center,shelter,"9400 E Amarillo Blvd, Amarillo",35.22645950317383,-101.7282943725586,+18063789967,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.hopewelcomecenter.net
+potter-tx-overture-2e8bf294,Medical Center League House,shelter,"7000 W Amarillo Blvd, Amarillo",35.19404220581055,-101.91698455810547,+18063583759,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.leaguehouse.org/
+potter-tx-overture-c131a3c4,Martha's Home,shelter,"1204 SW 18th Ave, Amarillo",35.19570541381836,-101.85153198242188,+18063724035,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.marthashome.org/
+potter-tx-overture-751af5f1,High Plains Food Bank,meal,"1910 SE 8th Ave, Amarillo",35.202392578125,-101.81529998779297,+18063748562,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.hpfb.org/

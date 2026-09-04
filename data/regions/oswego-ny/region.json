@@ -1,0 +1,12 @@
+{
+  "slug": "oswego-ny",
+  "name": "Oswego, NY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "36075",
+  "timezone_derived_from": "state"
+}

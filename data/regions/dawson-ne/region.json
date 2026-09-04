@@ -1,0 +1,12 @@
+{
+  "slug": "dawson-ne",
+  "name": "Dawson, NE",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "31047",
+  "timezone_derived_from": "state"
+}

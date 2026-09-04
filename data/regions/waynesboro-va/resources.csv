@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+waynesboro-va-overture-ae5fc6be,Valley Mission Thrift,shelter,"2800 W Main St, Waynesboro",38.08132553100586,-78.92977142333984,+15409464395,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.valleymission.net/
+waynesboro-va-overture-a9cdf495,The Prayer Room,shelter,"204 Arch Ave, Waynesboro",38.06748580932617,-78.8871078491211,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+waynesboro-va-overture-de3fad36,Waynesboro Area Refuge Ministry,shelter,"1035 Fairfax Ave, Waynesboro",38.08153533935547,-78.87651062011719,+15403248166,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.warmwaynesboro.org/

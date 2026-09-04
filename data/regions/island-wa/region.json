@@ -1,0 +1,12 @@
+{
+  "slug": "island-wa",
+  "name": "Island, WA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "53029",
+  "timezone_derived_from": "state"
+}

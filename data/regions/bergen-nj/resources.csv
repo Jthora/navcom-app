@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+bergen-nj-overture-6d1a5d1b,The WholeSum Pantry,meal,"66 Summit St, Norwood",40.99223327636719,-73.96339416503906,+12017680634,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.thechurchoftheholycommunion.com/
+bergen-nj-overture-ebbc55b8,Closter Food Pantry,meal,"295 Closter Dock Rd, Closter",40.971336364746094,-73.95912170410156,+12017840600,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.closterboro.com/closter/Boards
+bergen-nj-overture-48ae84c4,Helping Hand Food Pantry,meal,"349 Hillsdale Ave, Hillsdale",41.00239562988281,-74.0369644165039,12016640600,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.helpinghandfoodpantry.com
+bergen-nj-overture-95659f63,Center For Food Action,meal,"90 Ridge Rd, Mahwah",41.088294982910156,-74.16044616699219,+12015292029,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.cfanj.org/cfanj-site-locations
+bergen-nj-overture-a810e022,CSBC Mom's Food Pantry,meal,"7 W Main St, Bergenfield",40.928001403808594,-73.99654388427734,+12018004150,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

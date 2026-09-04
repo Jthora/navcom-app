@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+walsh-nd-overture-5125465f,Park River Area Food Pantry,meal,"129 Harris Ave S, Park River",48.39714050292969,-97.74677276611328,+17012846197,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.oslcparkriver.com/parkriverareafoodpantry
+walsh-nd-overture-8bea9f50,St Gianna's Maternity Home,shelter,"15605 Co Rd 15, Minto",48.2955436706543,-97.25341033935547,+17012483077,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://sgpmollahome.com/

@@ -1,0 +1,12 @@
+{
+  "slug": "sandoval-nm",
+  "name": "Sandoval, NM",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "35043",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+woodward-ok-overture-c48c9098,High Plains Outreach Center,shelter,"1220 7th St, Woodward",36.434120178222656,-99.388427734375,+15802545162,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+woodward-ok-overture-02b64f8f,Woodward Community Kitchen,meal,"1316 9th St, Woodward",36.432987213134766,-99.38987731933594,+15803340699,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+woodward-ok-overture-6c977675,The Hope Center,meal,"810 Santa Fe St, Woodward",36.438499450683594,-99.38973236083984,+15802905029,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.hopecenterfrc.org/

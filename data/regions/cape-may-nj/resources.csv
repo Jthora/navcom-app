@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+cape-may-nj-overture-724b6b7f,Family Promise,shelter,"505 Town Bank Rd, Lower Twp",38.98185729980469,-74.94351196289062,+16098467862,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://familypromisecmc.org/
+cape-may-nj-overture-860ff1a0,CM Community FOOD Closet,meal,"500 Hughes St, Cape May",38.931819915771484,-74.92163848876953,+16096007715,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.cmfoodcloset.org/
+cape-may-nj-overture-f8f0526a,Ocean City Community Food Cupboard,meal,"501 E 8th St, Ocean City",39.27932357788086,-74.57379150390625,+16093983191,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.augiesocnj.com

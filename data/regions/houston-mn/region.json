@@ -1,0 +1,12 @@
+{
+  "slug": "houston-mn",
+  "name": "Houston, MN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "27055",
+  "timezone_derived_from": "state"
+}

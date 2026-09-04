@@ -1,0 +1,12 @@
+{
+  "slug": "columbia-ga",
+  "name": "Columbia, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13073",
+  "timezone_derived_from": "state"
+}

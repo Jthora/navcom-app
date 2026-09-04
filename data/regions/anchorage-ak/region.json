@@ -1,0 +1,12 @@
+{
+  "slug": "anchorage-ak",
+  "name": "Anchorage, AK",
+  "country": "US",
+  "timezone": "America/Anchorage",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "02020",
+  "timezone_derived_from": "state"
+}

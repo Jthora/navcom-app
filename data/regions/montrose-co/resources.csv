@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+montrose-co-overture-63ca5799,Sharing Ministries Food Bank,meal,"49 N 1st St, Montrose",38.47787857055664,-107.88125610351562,+19702408385,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://sharingministries.com/
+montrose-co-overture-3ef0626d,West End Family Link Center,meal,"853 Main St, Nucla",38.26346206665039,-108.54578399658203,+19708642245,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://weflc.org/
+montrose-co-overture-bcaf3875,Haven House,shelter,"4806 N River Rd, Olathe",38.62415313720703,-107.98765563964844,+19703235280,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://havenhousehomeless.org/

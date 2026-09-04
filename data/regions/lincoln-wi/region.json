@@ -1,0 +1,12 @@
+{
+  "slug": "lincoln-wi",
+  "name": "Lincoln, WI",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "55069",
+  "timezone_derived_from": "state"
+}

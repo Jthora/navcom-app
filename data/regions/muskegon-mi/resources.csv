@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+muskegon-mi-overture-763a929b,Muskegon Rescue Mission,shelter,"1691 Peck St, Muskegon",43.22170639038086,-86.24464416503906,12317276090,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+muskegon-mi-overture-e0c1581f,"Muskegon Rescue Mission, Men's Shelter",shelter,"400 W Laketon Ave, Muskegon",43.220279693603516,-86.25392150878906,12317276085,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: muskegonmission.org
+muskegon-mi-overture-b4b9731b,Family Promise Of The Lakeshore,shelter,"2160 Crozier Ave, Muskegon",43.20991897583008,-86.2961196899414,12317478855,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://fp-lakeshore.org
+muskegon-mi-overture-08815c50,Agewell Services,meal,"560 Seminole Rd, Muskegon",43.186946868896484,-86.25621795654297,2317550434,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://agewellservices.org/
+muskegon-mi-overture-af34e02f,Love Inc Of Muskegon,meal,"2735 E Apple Ave, Muskegon",43.23312759399414,-86.17570495605469,+12317733448,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://linktr.ee/loveincofmuskegon

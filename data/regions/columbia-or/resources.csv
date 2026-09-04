@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+columbia-or-overture-b7168f49,Columbia Pacific Food Bank,meal,"474 Milton Way, Saint Helens",45.855796813964844,-122.82366943359375,5033979708,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://cpfoodbank.org/
+columbia-or-overture-118782db,Columbia Pacific Food Bank,meal,"1421 Columbia Blvd, St Helens",45.86018371582031,-122.81218719482422,+15033979708,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://cpfoodbank.org/
+columbia-or-overture-aed60c6c,Hope of Rainier Oregon,meal,"404 E A St, Rainier",46.089149475097656,-122.93213653564453,+15035560701,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.hopeofrainier.com/
+columbia-or-overture-20f84fb3,Vernonia Cares Inc,meal,"547 Weed Ave, Vernonia",45.8564338684082,-123.19686126708984,+15034291414,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://vernoniacares.org/

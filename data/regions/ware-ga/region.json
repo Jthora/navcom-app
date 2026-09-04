@@ -1,0 +1,12 @@
+{
+  "slug": "ware-ga",
+  "name": "Ware, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13299",
+  "timezone_derived_from": "state"
+}

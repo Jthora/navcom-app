@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+carroll-md-overture-2ef5ee9c,South Carroll Food Pantry,meal,"961 Johnsville Rd, Sykesville",39.40496826171875,-76.96061706542969,+14107952777,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.wesleyfreedom.org/
+carroll-md-overture-53540a28,Deeds of Faith Food Pantry,meal,"640 Lucabaugh Mill Rd, Westminster",39.59114074707031,-76.970703125,+14108485537,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://deedsoffaith.com/
+carroll-md-overture-db26df1b,Hampstead's Little Free Pantry,meal,"1205 N Main St, Hampstead",39.60699462890625,-76.85009765625,+18336227862,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.nccpumc.com/little-free-pantry.html
+carroll-md-overture-a93c0c07,Silver Run Community Food Pantry,meal,"3978 Littlestown Pike, Westminster",39.683837890625,-77.04627227783203,14432440453,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://stmaryselc.org
+carroll-md-overture-22286cfb,Carroll County Food Sunday,meal,"10 Distillery Rd, Westminster",39.575660705566406,-76.99440002441406,14108577926,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://ccfoodsunday.org

@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+newton-ga-overture-763ed821,Lakeside Food Pantry,meal,"15845 GA-36, Covington",33.42251205444336,-83.8510971069336,+16786442161,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.foodpantry.org/
+newton-ga-overture-cc1788d8,Giving Hands Food Pantry,meal,"2160 Church St, Covington",33.59269714355469,-83.85973358154297,+17707867305,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://givinghandsfoodpantry.org/

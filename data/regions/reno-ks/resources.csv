@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+reno-ks-overture-2122c598,New Compassions Group Home LLC,shelter,"2408 Howell Rd, Hutchinson",38.08063507080078,-97.87207794189453,+16206800845,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://g.page/newcompassionsinc
+reno-ks-overture-7bddb11d,Food Bank Of Reno County,meal,"700 N Walnut St, Hutchinson",38.06125259399414,-97.92997741699219,16206654076,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+reno-ks-overture-b50e64cb,Food Bank of Reno County,meal,"921 E 4th Ave Ste A, Hutchinson",38.05696487426758,-97.91265106201172,+16206654076,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.foodbankofrenocounty.org/

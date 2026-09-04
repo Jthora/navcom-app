@@ -1,0 +1,12 @@
+{
+  "slug": "canadian-ok",
+  "name": "Canadian, OK",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "40017",
+  "timezone_derived_from": "state"
+}

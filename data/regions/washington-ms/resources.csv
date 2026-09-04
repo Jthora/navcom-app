@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+washington-ms-overture-ff3df520,Greater Greenville Housing and Revitalization Association,shelter,"504 Central St, Greenville",33.4079704284668,-91.06200408935547,+16623783121,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://gghra.org/
+washington-ms-overture-e915f485,The Chinn Dynasty,meal,"152 N Hinds St, Greenville",33.41241455078125,-91.05925750732422,+16013165447,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://dattastenola.org/the-chinn-dynasty

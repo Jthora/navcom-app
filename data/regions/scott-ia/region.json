@@ -1,0 +1,12 @@
+{
+  "slug": "scott-ia",
+  "name": "Scott, IA",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "19163",
+  "timezone_derived_from": "state"
+}

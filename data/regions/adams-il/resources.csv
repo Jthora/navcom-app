@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+adams-il-overture-e1aad71a,Luther Memorial Church Food Pantry,meal,"1210 Jersey St, Quincy",39.93037414550781,-91.3962173461914,+12172225085,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.LMCQuincy.org/
+adams-il-overture-8242f103,Horizons Soup Kitchen And Food Pantry,meal,"224 S 8th St, Quincy",39.92971420288086,-91.40373992919922,12172245530,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.horizonsquincy.com
+adams-il-overture-722a1d89,Quincy Housing Authority,shelter,"815 Elm St, Quincy",39.94098663330078,-91.40216064453125,+12172249421,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.quincyhousingauthority.com

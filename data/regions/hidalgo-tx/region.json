@@ -1,0 +1,12 @@
+{
+  "slug": "hidalgo-tx",
+  "name": "Hidalgo, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48215",
+  "timezone_derived_from": "state"
+}

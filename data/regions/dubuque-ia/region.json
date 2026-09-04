@@ -1,0 +1,12 @@
+{
+  "slug": "dubuque-ia",
+  "name": "Dubuque, IA",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "19061",
+  "timezone_derived_from": "state"
+}

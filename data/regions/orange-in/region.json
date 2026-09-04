@@ -1,0 +1,12 @@
+{
+  "slug": "orange-in",
+  "name": "Orange, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18117",
+  "timezone_derived_from": "state"
+}

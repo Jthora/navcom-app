@@ -1,0 +1,12 @@
+{
+  "slug": "otero-nm",
+  "name": "Otero, NM",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "35035",
+  "timezone_derived_from": "state"
+}

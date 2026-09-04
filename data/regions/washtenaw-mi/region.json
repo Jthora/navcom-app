@@ -1,0 +1,12 @@
+{
+  "slug": "washtenaw-mi",
+  "name": "Washtenaw, MI",
+  "country": "US",
+  "timezone": "America/Detroit",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "26161",
+  "timezone_derived_from": "state"
+}

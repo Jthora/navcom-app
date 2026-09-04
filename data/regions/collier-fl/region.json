@@ -1,0 +1,12 @@
+{
+  "slug": "collier-fl",
+  "name": "Collier, FL",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "12021",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "manati-pr",
+  "name": "Manat\u00ed, PR",
+  "country": "US",
+  "timezone": "America/Puerto_Rico",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "72091",
+  "timezone_derived_from": "state"
+}

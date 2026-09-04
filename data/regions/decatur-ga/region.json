@@ -1,0 +1,12 @@
+{
+  "slug": "decatur-ga",
+  "name": "Decatur, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13087",
+  "timezone_derived_from": "state"
+}

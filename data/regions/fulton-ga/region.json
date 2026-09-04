@@ -1,0 +1,12 @@
+{
+  "slug": "fulton-ga",
+  "name": "Fulton, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13121",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+cecil-md-overture-56208561,Cecil County Men's Shelter,shelter,"168 W Main St, Elkton",39.606407165527344,-75.83264923095703,14103928066,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+cecil-md-overture-c32da277,Sheilagh's Pantry,meal,"200 Road B, Elkton",39.603431701660156,-75.84785461425781,+14102871100,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+cecil-md-overture-36e98312,Meeting Ground Inc,shelter,"401 North St, Elkton",39.611961364746094,-75.83059692382812,14106204701,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.meetingground.org

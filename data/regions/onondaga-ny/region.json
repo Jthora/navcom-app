@@ -1,0 +1,12 @@
+{
+  "slug": "onondaga-ny",
+  "name": "Onondaga, NY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "36067",
+  "timezone_derived_from": "state"
+}

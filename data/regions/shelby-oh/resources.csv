@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+shelby-oh-overture-dae761f5,Agape Distribution,meal,"801 S Vandemark Rd, Sidney",40.276641845703125,-84.18797302246094,19374984368,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.agapedistribution.org
+shelby-oh-overture-2275c27b,Mercy mission house,shelter,"950 Childrens Home Rd, Sidney",40.273414611816406,-84.1517333984375,+19378151777,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.themercymissionhouse.org/donate
+shelby-oh-overture-3a5b53e9,Agape Distribution,meal,"209 Brooklyn Ave, Sidney",40.28343200683594,-84.14936065673828,+19374984368,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.agapedistribution.org/

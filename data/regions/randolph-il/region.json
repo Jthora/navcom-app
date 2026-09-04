@@ -1,0 +1,12 @@
+{
+  "slug": "randolph-il",
+  "name": "Randolph, IL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "17157",
+  "timezone_derived_from": "state"
+}

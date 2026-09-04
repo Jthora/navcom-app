@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+somerset-pa-overture-1a96c11e,Turkeyfoot/confluence food pantry,meal,"711 Logan Pl, Confluence",39.812252044677734,-79.35791015625,+18142794884,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+somerset-pa-overture-1cf2801b,Next Step Center Inc,shelter,"406 Stoystown Rd, Somerset",40.01337432861328,-79.07166290283203,18144448588,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.nextstepcenter.org/contact
+somerset-pa-overture-7f75fe91,Helping Hand Food Pantry,meal,"301 Center St, Boswell",40.16184616088867,-79.02931213378906,+18146297471,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://helpinghandsboswell.org/
+somerset-pa-overture-4062dc3f,Lazarus Gate Food Pantry,meal,"144 Jubilee St, Rockwood",39.944095611572266,-79.19071197509766,+18149262215,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+somerset-pa-overture-4b1533dd,Salvation Army,shelter,"334 W Main St, Somerset",40.00865936279297,-79.08393859863281,+18144459232,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.salvationarmywpa.org/somerset
+somerset-pa-overture-8dc8b03f,Shade-Central City Food Pantry,meal,"44 2nd St, Cairnbrook",40.12357711791992,-78.81632232666016,+18142887107,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

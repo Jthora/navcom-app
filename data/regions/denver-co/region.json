@@ -1,0 +1,12 @@
+{
+  "slug": "denver-co",
+  "name": "Denver, CO",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "08031",
+  "timezone_derived_from": "state"
+}

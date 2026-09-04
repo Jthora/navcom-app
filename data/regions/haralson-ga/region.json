@@ -1,0 +1,12 @@
+{
+  "slug": "haralson-ga",
+  "name": "Haralson, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13143",
+  "timezone_derived_from": "state"
+}

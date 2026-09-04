@@ -1,0 +1,12 @@
+{
+  "slug": "aroostook-me",
+  "name": "Aroostook, ME",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "23003",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "franklin-fl",
+  "name": "Franklin, FL",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "12037",
+  "timezone_derived_from": "state"
+}

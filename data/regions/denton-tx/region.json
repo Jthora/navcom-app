@@ -1,0 +1,12 @@
+{
+  "slug": "denton-tx",
+  "name": "Denton, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48121",
+  "timezone_derived_from": "state"
+}

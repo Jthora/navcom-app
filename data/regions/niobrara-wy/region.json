@@ -1,0 +1,12 @@
+{
+  "slug": "niobrara-wy",
+  "name": "Niobrara, WY",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "56027",
+  "timezone_derived_from": "state"
+}

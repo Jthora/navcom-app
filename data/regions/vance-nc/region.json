@@ -1,0 +1,12 @@
+{
+  "slug": "vance-nc",
+  "name": "Vance, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37181",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+bennington-vt-overture-e74f1bf3,Bennington County Coalition for the Homeless,shelter,"966 Main St, Bennington",42.88007354736328,-73.17513275146484,+18024422424,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://bcchvt.org/donate
+bennington-vt-overture-88560d74,Melville Nauheim Shelter,shelter,"Appalachian National Scenic Trail, Woodford",42.88783264160156,-73.0950927734375,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+bennington-vt-overture-96eba9a6,Bennington Rutland Opportunity CNCL,meal,"332 Orchard Rd, Bennington",42.90068054199219,-73.20240783691406,+18024477515,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.broc.org/
+bennington-vt-overture-6ce1d96d,Arlington Area Food Shelf,shelter,"265 E Arlington Rd, Arlington",43.06934356689453,-73.15319061279297,+18023756328,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+bennington-vt-overture-b7652e6a,Community Food Cupboard,meal,"6039 Main St, Manchester",43.18893814086914,-73.0436782836914,+18027338119,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://communityfoodcupboard.org/

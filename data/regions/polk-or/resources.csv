@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+polk-or-overture-1172e238,WOU Food Pantry,meal,"Welcome Center, 701 Monmouth Ave N Room 165, Monmouth",44.85493469238281,-123.23658752441406,+15038389381,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.wou.edu/foodpantry
+polk-or-overture-a205a92a,Dallas Food Bank,meal,"322 S Main St STE 180, Dallas",44.92723083496094,-123.31364440917969,+15036233578,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://dallasfoodbank.com/
+polk-or-overture-56516727,Ella Curran Food Bank,meal,"870 N Main St, Independence",44.86111068725586,-123.18496704101562,+15039171681,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.ellacurranfoodbank.org/

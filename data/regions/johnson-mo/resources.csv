@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+johnson-mo-overture-f8a26576,The Food Center,meal,"137 E Culton St Lower Level, Warrensburg",38.76403045654297,-93.7387466430664,+16607476188,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.thefoodcenter.org/
+johnson-mo-overture-bd7fd73f,The Fuller Center for Housing of JOCOMO,shelter,"123 E Gay St, Warrensburg",38.76620101928711,-93.73933410644531,+16604292763,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://linktr.ee/fullercenterjocomo
+johnson-mo-overture-46d7e14a,Refuge on Ming,shelter,"207 Ming St, Warrensburg",38.76155090332031,-93.74357604980469,+16606241062,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://refugeonming.org/
+johnson-mo-overture-a3afd8da,Survival House,shelter,"137 E Culton St Lower Level, Warrensburg",38.763999938964844,-93.73863220214844,+16604291088,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://survivalhouse.org/

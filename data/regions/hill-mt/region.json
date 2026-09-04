@@ -1,0 +1,12 @@
+{
+  "slug": "hill-mt",
+  "name": "Hill, MT",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "30041",
+  "timezone_derived_from": "state"
+}

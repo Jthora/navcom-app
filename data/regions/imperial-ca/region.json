@@ -1,0 +1,12 @@
+{
+  "slug": "imperial-ca",
+  "name": "Imperial, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06025",
+  "timezone_derived_from": "state"
+}

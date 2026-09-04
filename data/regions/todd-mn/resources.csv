@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+todd-mn-overture-286c8906,Staples Area Food Shelf,meal,"402 Wisconsin Ave SE, Staples",46.35249328613281,-94.79473876953125,+12188941935,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.greaterstaples.com/serve/food-shelf.html
+todd-mn-overture-904c4b7f,The Hive House,shelter,"223 4th St SW, Staples",46.352806091308594,-94.80464172363281,+13479399302,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.hivehousemn.com/
+todd-mn-overture-569f4f95,Browerville Area Food Shelf,meal,"709 Main St N, Browerville",46.08640670776367,-94.86712646484375,+13205946391,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.mnfoodshare.gmcc.org

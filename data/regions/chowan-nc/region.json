@@ -1,0 +1,12 @@
+{
+  "slug": "chowan-nc",
+  "name": "Chowan, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37041",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "orleans-ny",
+  "name": "Orleans, NY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "36073",
+  "timezone_derived_from": "state"
+}

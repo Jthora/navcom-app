@@ -1,0 +1,12 @@
+{
+  "slug": "washington-vt",
+  "name": "Washington, VT",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "50023",
+  "timezone_derived_from": "state"
+}

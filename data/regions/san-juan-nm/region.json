@@ -1,0 +1,12 @@
+{
+  "slug": "san-juan-nm",
+  "name": "San Juan, NM",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "35045",
+  "timezone_derived_from": "state"
+}

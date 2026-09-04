@@ -1,0 +1,12 @@
+{
+  "slug": "ouachita-ar",
+  "name": "Ouachita, AR",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "05103",
+  "timezone_derived_from": "state"
+}

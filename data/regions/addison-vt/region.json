@@ -1,0 +1,12 @@
+{
+  "slug": "addison-vt",
+  "name": "Addison, VT",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "50001",
+  "timezone_derived_from": "state"
+}

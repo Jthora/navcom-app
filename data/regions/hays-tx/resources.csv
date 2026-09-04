@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+hays-tx-overture-49d8f9b2,Helping Hands - Dripping Springs,meal,"28708 Ranch Rd 12, Dripping Springs",30.205060958862305,-98.08702087402344,+15128200476,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.helpinghands-drippingsprings.org/
+hays-tx-overture-e84856f4,Hays County Food Bank,meal,"1612 S I-35 South Frontage Rd, San Marcos",29.863323211669922,-97.9471206665039,+15123928300,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.HaysFoodBank.org/
+hays-tx-overture-b67416c0,Hays County Food Bank,meal,"220 Herndon St, San Marcos",29.878293991088867,-97.94459533691406,15123928300,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.haysfoodbank.org

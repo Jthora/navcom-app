@@ -1,0 +1,12 @@
+{
+  "slug": "sheridan-mt",
+  "name": "Sheridan, MT",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "30091",
+  "timezone_derived_from": "state"
+}

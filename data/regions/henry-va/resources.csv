@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+henry-va-overture-f321c162,Henry County Food Pantry,meal,"3321 Fairystone Park Hwy, Bassett",36.76067352294922,-79.99356079101562,12766291369,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+henry-va-overture-8d4098ef,Disaster Relief Food Ministry,meal,"24 Gov Stanley Hwy, Bassett",36.75224685668945,-79.97987365722656,+12762296272,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.drfminc.com
+henry-va-overture-9b073b9b,Henry County Food Pantry,meal,"3321 Fairystone Park Hwy, Bassett",36.75712966918945,-79.9886245727539,+12766291369,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://henrycountyfoodpantry.org/

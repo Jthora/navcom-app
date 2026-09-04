@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+brown-mn-overture-4bf94458,Springfield Area Food Shelf,meal,"625 N Jackson Ave, Springfield",44.24652862548828,-94.97122192382812,+15077233663,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://springfieldfoodshelf.com/
+brown-mn-overture-b0909bdf,Food Shelf New Ulm Area,meal,"1305 S Valley St, New Ulm",44.30232620239258,-94.4420394897461,15073547668,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://newulmfoodshelf.com
+brown-mn-overture-181d07d2,Sleepy Eye Food Shelf,meal,"115 2nd Ave NE, Sleepy Eye",44.297969818115234,-94.72085571289062,+15077945969,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

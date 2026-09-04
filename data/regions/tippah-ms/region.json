@@ -1,0 +1,12 @@
+{
+  "slug": "tippah-ms",
+  "name": "Tippah, MS",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "28139",
+  "timezone_derived_from": "state"
+}

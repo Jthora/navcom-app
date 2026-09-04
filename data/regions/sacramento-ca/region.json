@@ -1,0 +1,12 @@
+{
+  "slug": "sacramento-ca",
+  "name": "Sacramento, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06067",
+  "timezone_derived_from": "state"
+}

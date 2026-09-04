@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+newport-ri-overture-436a4978,McKinney Cooperative Shelter,shelter,"15 Meeting St, Newport",41.49045944213867,-71.3134536743164,+14018466385,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://mckinneyshelter.org/contact-us
+newport-ri-overture-acab0931,Lucy's Hearth,shelter,"19 Valley Rd, Middletown",41.523136138916016,-71.29579162597656,4018472021,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://lucyshearth.org/
+newport-ri-overture-edeb7017,Little Flower Home,shelter,"304 Hooper, Tiverton",41.66864776611328,-71.18441009521484,4016255929,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+newport-ri-overture-cb4a4458,Little Compton Food Bank,meal,"115 E Main Rd, Little Compton",41.52130126953125,-71.1618881225586,+14015920403,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.paypal.com/us/fundraiser/charity/4288178

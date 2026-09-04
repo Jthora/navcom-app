@@ -1,0 +1,12 @@
+{
+  "slug": "hancock-oh",
+  "name": "Hancock, OH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "39063",
+  "timezone_derived_from": "state"
+}

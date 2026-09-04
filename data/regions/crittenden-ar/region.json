@@ -1,0 +1,12 @@
+{
+  "slug": "crittenden-ar",
+  "name": "Crittenden, AR",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "05035",
+  "timezone_derived_from": "state"
+}

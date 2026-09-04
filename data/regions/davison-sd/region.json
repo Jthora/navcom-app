@@ -1,0 +1,12 @@
+{
+  "slug": "davison-sd",
+  "name": "Davison, SD",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "46035",
+  "timezone_derived_from": "state"
+}

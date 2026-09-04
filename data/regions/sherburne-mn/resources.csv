@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+sherburne-mn-overture-db1f703a,Passing the Bread,meal,"26833 5th St W, Zimmerman",45.456172943115234,-93.59407043457031,+16122262779,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.passingthebread.com/
+sherburne-mn-overture-7b692806,Faith Pantry,meal,"12266 255th Ave, Zimmerman",45.4336051940918,-93.57925415039062,+17633007426,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.faithclc.com/
+sherburne-mn-overture-44032b96,Big Lake Community Food Shelf,meal,"160 Lake St N, Big Lake",45.333351135253906,-93.74542999267578,+17632632432,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.blcfs.org/volunteer-application/
+sherburne-mn-overture-c860b8b5,Becker Food Shelf - Food Distribution Center,meal,"12060 Sherburne Ave, Becker",45.39609146118164,-93.87146759033203,17632614612,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: ci.becker.mn.us
+sherburne-mn-overture-25c09b4f,CAER Food Shelf,meal,"12621 Elk Lake Rd NW, Elk River",45.32081985473633,-93.58882141113281,+17634411020,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.caerfoodshelf.org/?give=PYEVM6DX

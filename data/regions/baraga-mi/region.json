@@ -1,0 +1,12 @@
+{
+  "slug": "baraga-mi",
+  "name": "Baraga, MI",
+  "country": "US",
+  "timezone": "America/Detroit",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "26013",
+  "timezone_derived_from": "state"
+}

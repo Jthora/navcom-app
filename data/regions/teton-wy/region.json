@@ -1,0 +1,12 @@
+{
+  "slug": "teton-wy",
+  "name": "Teton, WY",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "56039",
+  "timezone_derived_from": "state"
+}

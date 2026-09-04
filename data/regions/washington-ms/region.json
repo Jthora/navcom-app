@@ -1,0 +1,12 @@
+{
+  "slug": "washington-ms",
+  "name": "Washington, MS",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "28151",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "anderson-sc",
+  "name": "Anderson, SC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "45007",
+  "timezone_derived_from": "state"
+}

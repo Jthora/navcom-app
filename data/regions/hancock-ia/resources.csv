@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+hancock-ia-overture-dff4dfd9,Zion Church Of The Nazarene - Britt Area Food Bank - Food Pantry,meal,"195 2nd St SW, Britt",43.094905853271484,-93.8037109375,16418433064,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://brittzionnaz.com
+hancock-ia-overture-6409e42f,Britt Area Food Bank,meal,"195 2nd St SW, Britt",43.09677505493164,-93.80235290527344,+16418434667,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.usda.gov/non-discrimination-statement
+hancock-ia-overture-25b78e13,God's Pantry,meal,"885 Maben Ave, Garner",43.09699630737305,-93.60067749023438,+16419232191,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

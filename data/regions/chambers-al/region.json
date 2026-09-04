@@ -1,0 +1,12 @@
+{
+  "slug": "chambers-al",
+  "name": "Chambers, AL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "01017",
+  "timezone_derived_from": "state"
+}

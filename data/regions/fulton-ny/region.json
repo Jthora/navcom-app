@@ -1,0 +1,12 @@
+{
+  "slug": "fulton-ny",
+  "name": "Fulton, NY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "36035",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "washington-ne",
+  "name": "Washington, NE",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "31177",
+  "timezone_derived_from": "state"
+}

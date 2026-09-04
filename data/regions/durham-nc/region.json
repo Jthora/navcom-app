@@ -1,0 +1,12 @@
+{
+  "slug": "durham-nc",
+  "name": "Durham, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37063",
+  "timezone_derived_from": "state"
+}

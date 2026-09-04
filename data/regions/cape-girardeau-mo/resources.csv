@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+cape-girardeau-mo-overture-cad93993,FISH Volunteers of Cape Girardeau,meal,"106 S Sprigg St, Cape Girardeau",37.30253601074219,-89.5272216796875,+15733340207,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+cape-girardeau-mo-overture-7515c1b7,Catholic Social Ministries Food Pantry,meal,"141 S Frederick St, Cape Girardeau",37.302024841308594,-89.52607727050781,+15733359347,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://stmarycathedral.net/Food-Pantry

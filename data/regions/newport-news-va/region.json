@@ -1,0 +1,12 @@
+{
+  "slug": "newport-news-va",
+  "name": "Newport News, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51700",
+  "timezone_derived_from": "state"
+}

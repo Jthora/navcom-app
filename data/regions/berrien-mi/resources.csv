@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+berrien-mi-overture-ce07344a,Emergency Shelter Services,shelter,"185 E Main St, Benton Harbor",42.1162109375,-86.45462799072266,+12699251131,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.essberrien.org/
+berrien-mi-overture-2eec9373,Benton Harbor Boys Shelter,shelter,"852 McGuigan Ave, Benton Harbor",42.1105842590332,-86.43803405761719,+2693640566,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+berrien-mi-overture-393d38a0,Harbor Country Emergency Food Pantry,meal,"301 N Elm St, Three Oaks",41.8040657043457,-86.61061096191406,+12697567444,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+berrien-mi-overture-f2a8e9fc,Caring Cupboard at Woodland Shores,meal,"3555 W Shawnee Rd, Bridgman",41.94382858276367,-86.53912353515625,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://wsbchurch.com/

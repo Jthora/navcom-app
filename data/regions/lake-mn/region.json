@@ -1,0 +1,12 @@
+{
+  "slug": "lake-mn",
+  "name": "Lake, MN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "27075",
+  "timezone_derived_from": "state"
+}

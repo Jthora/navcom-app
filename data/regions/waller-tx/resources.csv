@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+waller-tx-overture-4d5ca0f6,Lord Send Me Ministries,meal,"34522 Park Green Dr, Brookshire",29.76780128479004,-95.95912170410156,+12816200739,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://lsmm.org/
+waller-tx-overture-7ccebfb0,Brookshire Pattison Food Pantry,meal,"531 FM 359 Rd S, Brookshire",29.77431297302246,-95.95101928710938,12818224200,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+waller-tx-overture-74529012,Eternal Food Ministry - Food Distribution Center,meal,"6801 Highway Blvd, Katy",29.785478591918945,-95.83753967285156,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: eternalfoodministry.org

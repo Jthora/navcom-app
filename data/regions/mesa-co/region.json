@@ -1,0 +1,12 @@
+{
+  "slug": "mesa-co",
+  "name": "Mesa, CO",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "08077",
+  "timezone_derived_from": "state"
+}

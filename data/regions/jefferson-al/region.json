@@ -1,0 +1,12 @@
+{
+  "slug": "jefferson-al",
+  "name": "Jefferson, AL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "01073",
+  "timezone_derived_from": "state"
+}

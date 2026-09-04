@@ -1,0 +1,12 @@
+{
+  "slug": "hockley-tx",
+  "name": "Hockley, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48219",
+  "timezone_derived_from": "state"
+}

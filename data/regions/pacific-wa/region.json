@@ -1,0 +1,12 @@
+{
+  "slug": "pacific-wa",
+  "name": "Pacific, WA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "53049",
+  "timezone_derived_from": "state"
+}

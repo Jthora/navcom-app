@@ -1,0 +1,12 @@
+{
+  "slug": "kauai-hi",
+  "name": "Kauai, HI",
+  "country": "US",
+  "timezone": "Pacific/Honolulu",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "15007",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+multnomah-or-overture-ed2f9441,Zarephath Kitchen & Pantry,meal,"59 NW Ava Ave, Gresham",45.498050689697266,-122.43694305419922,+15036677932,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://feedeastcounty.org/
+multnomah-or-overture-53c82f81,East County Food Pantry,meal,"2420 Fairview Ave, Fairview",45.5408821105957,-122.43267059326172,+15036676800,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://eastcountyfoodpantry.org/
+multnomah-or-overture-fb1c9264,Wallula House,shelter,"801 NW Wallula Ave, Gresham",45.50306701660156,-122.445556640625,+15036743575,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

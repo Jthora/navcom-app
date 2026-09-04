@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+shawano-wi-overture-0cbfc256,Safparc,meal,"218 E Richmond St, Shawano",44.77433395385742,-88.6056900024414,+17155245863,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.safparc.org/
+shawano-wi-overture-a78f0a87,Tigerton Food Pantry,meal,"430 Swanke St, Tigerton",44.73878860473633,-89.06685638427734,+17153263750,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+shawano-wi-overture-4e548911,Sam25,shelter,"105 E Richmond St, Shawano",44.77481460571289,-88.6085205078125,17158517252,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.sam25.org

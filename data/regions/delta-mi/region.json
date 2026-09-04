@@ -1,0 +1,12 @@
+{
+  "slug": "delta-mi",
+  "name": "Delta, MI",
+  "country": "US",
+  "timezone": "America/Detroit",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "26041",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+comal-tx-overture-194524a3,SOS Food Bank,meal,"248 W Merriweather St, New Braunfels",29.692398071289062,-98.1151351928711,+18306293663,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://sosnb.org/
+comal-tx-overture-df60facc,St. Jude's Ranch for Children,shelter,"652 Old Bear Creek Rd, New Braunfels",29.753747940063477,-98.2049560546875,+18306290659,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.stjudesranch.org
+comal-tx-overture-6f600200,New Braunfels Food Bank,meal,"1620 S Seguin Ave, New Braunfels",29.684640884399414,-98.10813903808594,+18303276000,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://nbfoodbank.org/
+comal-tx-overture-6005d15a,Provisions,meal,"2295-1 Bulverde Rd, Bulverde",29.744691848754883,-98.4542236328125,+18304387899,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://provisionsoutreach.org/

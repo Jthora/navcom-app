@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+park-mt-overture-5bdcf3e7,Loaves & Fishes of Livingston MT,meal,"301 S Main St Unit 1, Livingston",45.65923309326172,-110.55752563476562,+14062224824,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.livingstonfrc.org
+park-mt-overture-ab59a6ab,Livingston Food Resource Center,meal,"202 S 2nd St, Livingston",45.65957260131836,-110.56006622314453,+14062225335,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://linktr.ee/livingstonfrc
+park-mt-overture-8b7c9ec7,Gardiner Food Pantry,meal,"108 S 3rd St, Gardiner",45.030311584472656,-110.70648956298828,+13072505853,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

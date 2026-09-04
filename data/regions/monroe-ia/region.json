@@ -1,0 +1,12 @@
+{
+  "slug": "monroe-ia",
+  "name": "Monroe, IA",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "19135",
+  "timezone_derived_from": "state"
+}

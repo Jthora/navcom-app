@@ -1,0 +1,12 @@
+{
+  "slug": "dutchess-ny",
+  "name": "Dutchess, NY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "36027",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "harrison-ms",
+  "name": "Harrison, MS",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "28047",
+  "timezone_derived_from": "state"
+}

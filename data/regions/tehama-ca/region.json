@@ -1,0 +1,12 @@
+{
+  "slug": "tehama-ca",
+  "name": "Tehama, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06103",
+  "timezone_derived_from": "state"
+}

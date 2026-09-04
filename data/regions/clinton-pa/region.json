@@ -1,0 +1,12 @@
+{
+  "slug": "clinton-pa",
+  "name": "Clinton, PA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "42035",
+  "timezone_derived_from": "state"
+}

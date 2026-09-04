@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+barry-mi-overture-2d3ca75c,Thornapple Valley Church Food Pantry,meal,"2750 M-43, Rutland Twp",42.61374282836914,-85.35881042480469,+12699482549,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.tvcweb.com
+barry-mi-overture-061ea2bb,Manna's Market,meal,"7180 Velte Rd, Woodland Twp",42.75901794433594,-85.1119613647461,+12693311943,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.mannasmarket.org/
+barry-mi-overture-983daf84,Family Promise Of Barry County,shelter,"2920 S M 37 Hwy, Hastings",42.61182403564453,-85.27216339111328,12692564594,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://familypromisebarrycounty.org

@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+midland-tx-overture-e77aa702,Breaking Bread Kitchen,meal,"410 E Florida Ave, Midland",31.988988876342773,-102.06961822509766,+14326892339,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://secure.qgiv.com/for/cowi/
+midland-tx-overture-512219e1,Jubilee Center of Midland,meal,"3311 Andrews Hwy, Midland",32.00336456298828,-102.12129974365234,+14325200671,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.jubileemidland.org/
+midland-tx-overture-124610a1,Midland Soup Kitchen Ministry,meal,"1401 Orchard Ln, Midland",32.005374908447266,-102.06233215332031,+14326867687,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://midlandsoupkitchen.org/
+midland-tx-overture-31594ef7,Family Promise of Midland,shelter,"2908 W Ohio Ave, Midland",31.994705200195312,-102.109375,+14322188231,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://familypromiseofmidland.com/

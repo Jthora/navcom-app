@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+davidson-nc-overture-ac037053,West Davidson Food Pantry,meal,"4600 W Old Hwy 64, Lexington",35.844974517822266,-80.33245086669922,+13367874357,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.wdfoodpantry.org
+davidson-nc-overture-504facd5,Cooperative Community Ministry,meal,"10 W Guilford St, Thomasville",35.88460159301758,-80.0838623046875,+13364761842,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.ccmtville.org/
+davidson-nc-overture-a3205ff2,South Davidson Family Resource Center,meal,"292 S Main St, Denton",35.62923812866211,-80.11335754394531,+13368595399,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://southdavidsonfrc.com/
+davidson-nc-overture-f03e471b,Davidson County First Hope Ministries,shelter,"107 E 1st Ave #3335, Lexington",35.82212448120117,-80.2524642944336,+13362486684,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://DCFirstHope.org/
+davidson-nc-overture-53ec9153,Greater Things Outreach Center,meal,"6282 Old U.S. Hwy 52, Lexington",35.910888671875,-80.25411224365234,+13366190171,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.gtocfood.org/

@@ -1,0 +1,12 @@
+{
+  "slug": "robertson-tn",
+  "name": "Robertson, TN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "47147",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+vermilion-il-overture-aa0e79b2,Grant Township Food Cupboard,meal,"525 S Market St, Hoopeston",40.462799072265625,-87.66864776611328,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+vermilion-il-overture-f0132854,Salvation Army Food Pantry,meal,"855 E Fairchild St, Danville",40.13913345336914,-87.61270904541016,+12174425911,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.salvationarmyusa.org/il/danville/e-fairchild-corps/
+vermilion-il-overture-55e57fca,Vermilion Community Restoration,shelter,"100 N Franklin St, Danville",40.12699508666992,-87.6329574584961,12172747124,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: www.drm3150.wixsite.com
+vermilion-il-overture-123e7629,Oakwood Area Food Pantry,meal,"202 S Scott St, Oakwood",40.11419677734375,-87.7767562866211,+12175970079,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://myevent.com/feedoakwood

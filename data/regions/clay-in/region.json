@@ -1,0 +1,12 @@
+{
+  "slug": "clay-in",
+  "name": "Clay, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18021",
+  "timezone_derived_from": "state"
+}

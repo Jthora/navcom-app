@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+pacific-wa-overture-2b504aa1,Ilwaco Senior Nutrition Center,meal,"152 1st Ave N, Ilwaco",46.3109130859375,-124.04288482666016,+13606423990,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+pacific-wa-overture-bfad7dce,North Pacific County Food Bank,meal,"1899 Park Ave, Raymond",46.69377899169922,-123.73980712890625,+13609424726,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.gofundme.com/NorthPacificCountyFoodBank
+pacific-wa-overture-781350fb,Ocean Park Food Bank,meal,"1601 Bay Ave, Ocean Park",46.491600036621094,-124.0485610961914,+13606656567,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.oceanparkfoodbank.org/

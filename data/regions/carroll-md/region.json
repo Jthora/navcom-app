@@ -1,0 +1,12 @@
+{
+  "slug": "carroll-md",
+  "name": "Carroll, MD",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "24013",
+  "timezone_derived_from": "state"
+}

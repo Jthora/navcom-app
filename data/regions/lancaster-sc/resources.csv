@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+lancaster-sc-overture-6f93b460,Rella Crew,meal,"2522 Douglas Rd, Lancaster",34.65171813964844,-80.76691436767578,+17048522430,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+lancaster-sc-overture-c9e3b332,Lancaster Manor,shelter,"201 Chesterfield Ave, Lancaster",34.71607208251953,-80.76668548583984,+18032864453,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.voa.org/housing_properties/lancaster-manor
+lancaster-sc-overture-e18cda92,Lancaster Children's Home,shelter,"1335 Childrens Ave, Lancaster",34.69997787475586,-80.6973648071289,+18032865277,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.lancasterchambersc.org/list/member/lancaster-children-s-home-lancaster-281

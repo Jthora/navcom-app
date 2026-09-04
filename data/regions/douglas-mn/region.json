@@ -1,0 +1,12 @@
+{
+  "slug": "douglas-mn",
+  "name": "Douglas, MN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "27041",
+  "timezone_derived_from": "state"
+}

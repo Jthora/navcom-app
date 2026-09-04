@@ -1,0 +1,12 @@
+{
+  "slug": "marin-ca",
+  "name": "Marin, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06041",
+  "timezone_derived_from": "state"
+}

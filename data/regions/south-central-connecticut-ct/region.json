@@ -1,0 +1,12 @@
+{
+  "slug": "south-central-connecticut-ct",
+  "name": "South Central Connecticut, CT",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "09170",
+  "timezone_derived_from": "state"
+}

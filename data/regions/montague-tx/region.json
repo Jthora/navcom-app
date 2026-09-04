@@ -1,0 +1,12 @@
+{
+  "slug": "montague-tx",
+  "name": "Montague, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48337",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "sumter-ga",
+  "name": "Sumter, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13261",
+  "timezone_derived_from": "state"
+}

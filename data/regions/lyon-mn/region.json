@@ -1,0 +1,12 @@
+{
+  "slug": "lyon-mn",
+  "name": "Lyon, MN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "27083",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "texas-ok",
+  "name": "Texas, OK",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "40139",
+  "timezone_derived_from": "state"
+}

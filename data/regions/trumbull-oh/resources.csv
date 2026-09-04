@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+trumbull-oh-overture-ab2a460e,Eagle Creek,shelter,"216 Myron St, Hubbard",41.163970947265625,-80.5728759765625,+13304481760,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.trumbulltmha.org
+trumbull-oh-overture-f31c15c8,Emmanuel Community Care Center,shelter,"2 N State St, Girard",41.1541862487793,-80.7011947631836,+13305454301,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.hmhousing.org/who-we-are/locations
+trumbull-oh-overture-53132b81,Brookfield Food Pantry,meal,"7382 Stewart Sharon Rd, Hubbard",41.21329879760742,-80.55184173583984,+17248159360,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.livingwaterscommunitychurch.com/
+trumbull-oh-overture-b58ad1c7,Dylan’s House,shelter,"2747 Belmont Ave, Liberty Twp",41.135009765625,-80.6642837524414,+13307597921,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://Dylanshouse.org/

@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+cole-mo-overture-518a4f0c,"Project Homeless Connect, Jefferson City, Mo, Usa",shelter,"201 Monroe St, Jefferson City",38.575565338134766,-92.16868591308594,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.jcmo-phc.org
+cole-mo-overture-a9463f0d,The Pantry JC,meal,"2123 Missouri Blvd, Jefferson City",38.58091735839844,-92.20740509033203,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.thepantryjc.org/
+cole-mo-overture-02fb89f0,Jefferson City Room at the Inn,shelter,"107 Monroe St, Jefferson City",38.57670974731445,-92.16779327392578,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+cole-mo-overture-477421e6,Samaritan Center,meal,"1310 E McCarty St, Jefferson City",38.56349182128906,-92.15708923339844,+15736347776,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.midmosamaritan.org/

@@ -1,0 +1,12 @@
+{
+  "slug": "delaware-ny",
+  "name": "Delaware, NY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "36025",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "bristol-ri",
+  "name": "Bristol, RI",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "44001",
+  "timezone_derived_from": "state"
+}

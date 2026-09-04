@@ -1,0 +1,12 @@
+{
+  "slug": "douglas-il",
+  "name": "Douglas, IL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "17041",
+  "timezone_derived_from": "state"
+}

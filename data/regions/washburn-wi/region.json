@@ -1,0 +1,12 @@
+{
+  "slug": "washburn-wi",
+  "name": "Washburn, WI",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "55129",
+  "timezone_derived_from": "state"
+}

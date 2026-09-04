@@ -1,0 +1,12 @@
+{
+  "slug": "clackamas-or",
+  "name": "Clackamas, OR",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "41005",
+  "timezone_derived_from": "state"
+}

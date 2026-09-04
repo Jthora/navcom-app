@@ -1,0 +1,12 @@
+{
+  "slug": "hampden-ma",
+  "name": "Hampden, MA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "25013",
+  "timezone_derived_from": "state"
+}

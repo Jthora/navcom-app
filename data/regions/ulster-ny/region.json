@@ -1,0 +1,12 @@
+{
+  "slug": "ulster-ny",
+  "name": "Ulster, NY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "36111",
+  "timezone_derived_from": "state"
+}

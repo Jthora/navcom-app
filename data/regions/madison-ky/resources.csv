@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+madison-ky-overture-24b36b77,New Liberty Family Shelter,shelter,"123 Pine St, Richmond",37.74311447143555,-84.27937316894531,+18596234564,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.foothillscap.org/
+madison-ky-overture-221ffac2,"Madison Home, Inc.",shelter,"105 5th St, Richmond",37.749847412109375,-84.29846954345703,+18598000068,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://madisonhome.org/
+madison-ky-overture-6ec6fa87,Berea Food Bank,meal,"108 Parkway Ave, Berea",37.57027816772461,-84.29470825195312,18599851903,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.bereaoutreach.org
+madison-ky-overture-7b36a0b1,Grace Now Food Pantry,meal,"110 S Collins St, Richmond",37.746219635009766,-84.2921371459961,+18596268990,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.gracenowky.com/

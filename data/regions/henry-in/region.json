@@ -1,0 +1,12 @@
+{
+  "slug": "henry-in",
+  "name": "Henry, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18065",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "ontario-ny",
+  "name": "Ontario, NY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "36069",
+  "timezone_derived_from": "state"
+}

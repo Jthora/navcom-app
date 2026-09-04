@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+jackson-ms-overture-45234f25,Lord Is My Help,meal,"1205 Desoto St, Ocean Springs",30.414060592651367,-88.82442474365234,+12288722331,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://thelordismyhelp.org/
+jackson-ms-overture-23fbf4d2,New Beginnings Domestic Violence Program,shelter,"5000-A Morris St, Moss Point",30.413042068481445,-88.53710174560547,+12286279174,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+jackson-ms-overture-aaabbc6d,Faith Human Development Center,shelter,"12924 Seaman Rd, Vancleave",30.52756690979004,-88.73319244384766,+12288263747,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

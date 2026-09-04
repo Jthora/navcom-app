@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+polk-wi-overture-f740ecd8,Lifeline Food Pantry,meal,"560 5th St, Clear Lake",45.24916458129883,-92.27320098876953,+17152633846,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.foodlifeline.org
+polk-wi-overture-86bb64bc,St. Croix Falls UMC Food Pantry,meal,"809 Pine St, St Croix Falls",45.40272521972656,-92.62648010253906,+17155571653,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.razoo.com/us/story/St-Croix-Falls-Food-Shelf
+polk-wi-overture-38baf1d0,Amery Area Food Pantry,meal,"230 Deronda St, Amery",45.302059173583984,-92.36609649658203,+17152685999,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.amerymedicalcenter.org

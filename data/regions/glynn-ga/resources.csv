@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+glynn-ga-overture-3fcb9565,Americas Second Harvest Food Bank,meal,"3810 Whitlock St, Brunswick",31.18234634399414,-81.49872589111328,+19122790074,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://helpendhunger.org
+glynn-ga-overture-dfc016f0,Hand in Hand of Glynn,shelter,"4621 Altama Ave, Brunswick",31.196611404418945,-81.48567962646484,+19122179507,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://handinhandofglynn.org/
+glynn-ga-overture-e9fc5e55,The Well,shelter,"1101 Gloucester St, Brunswick",31.15058135986328,-81.49101257324219,+19122757935,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://faithworksministry.org/what-we-do/

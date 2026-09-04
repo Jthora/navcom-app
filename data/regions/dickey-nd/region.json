@@ -1,0 +1,12 @@
+{
+  "slug": "dickey-nd",
+  "name": "Dickey, ND",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "38021",
+  "timezone_derived_from": "state"
+}

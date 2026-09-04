@@ -1,0 +1,12 @@
+{
+  "slug": "peach-ga",
+  "name": "Peach, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13225",
+  "timezone_derived_from": "state"
+}

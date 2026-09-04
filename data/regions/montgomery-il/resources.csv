@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+montgomery-il-overture-9ef72912,Panhandle Food Pantry,meal,"317 E Broad St, Raymond",39.32021713256836,-89.5719223022461,+12172293074,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+montgomery-il-overture-e39259d9,Five Loaves,meal,"116 S Main St, Fillmore",39.11480712890625,-89.2784423828125,+12176062924,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://fiveloavesnfp.com/
+montgomery-il-overture-0312c1ab,St. Clare Center - Food Pantry,meal,"603 N Madison St, Litchfield",39.17882537841797,-89.65692901611328,12173242800,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.hshs.org

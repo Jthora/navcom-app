@@ -1,0 +1,12 @@
+{
+  "slug": "haywood-nc",
+  "name": "Haywood, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37087",
+  "timezone_derived_from": "state"
+}

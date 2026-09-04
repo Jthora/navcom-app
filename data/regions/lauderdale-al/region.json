@@ -1,0 +1,12 @@
+{
+  "slug": "lauderdale-al",
+  "name": "Lauderdale, AL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "01077",
+  "timezone_derived_from": "state"
+}

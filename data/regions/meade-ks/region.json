@@ -1,0 +1,12 @@
+{
+  "slug": "meade-ks",
+  "name": "Meade, KS",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "20119",
+  "timezone_derived_from": "state"
+}

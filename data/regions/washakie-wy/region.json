@@ -1,0 +1,12 @@
+{
+  "slug": "washakie-wy",
+  "name": "Washakie, WY",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "56043",
+  "timezone_derived_from": "state"
+}

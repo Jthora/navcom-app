@@ -1,0 +1,12 @@
+{
+  "slug": "washington-tn",
+  "name": "Washington, TN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "47179",
+  "timezone_derived_from": "state"
+}

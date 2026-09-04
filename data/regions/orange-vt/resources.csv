@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+orange-vt-overture-db8c6c89,Randolph Area Food Shelf,meal,"12 Prince St, Randolph",43.926063537597656,-72.6640853881836,+18024310144,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.randolphareafoodshelf.org/
+orange-vt-overture-fed1bfba,Williamstown Food Shelf,meal,"47 Methodist Ln, Williamstown",44.121822357177734,-72.54214477539062,+18024335453,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+orange-vt-overture-001a5b15,Safe Haven,shelter,"4 Highland Ave, Randolph",43.919090270996094,-72.66548156738281,+18027284466,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

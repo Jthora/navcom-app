@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+pitt-nc-overture-a86e5589,Community Crossroads Center,shelter,"207 Manhattan Ave, Greenville",35.605228424072266,-77.38784790039062,+12527520829,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.communitycrossroadscenter.org/
+pitt-nc-overture-e46790ee,Little Free Pantry at UUCG,meal,"131 Oakmont Dr, Greenville",35.579769134521484,-77.3587417602539,+12523556658,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+pitt-nc-overture-d25e4daf,Joy Soup Kitchen,meal,"700 Albemarle Ave, Greenville",35.610511779785156,-77.38037109375,+12525617519,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://joysoupkitchen.org/
+pitt-nc-overture-32ed417a,Grifton Mission Ministries Resale Store,meal,"6927 S Highland Blvd, Grifton",35.3728141784668,-77.4406967163086,+12525311931,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+pitt-nc-overture-fb63ecf7,Ayden Christian Care Center,meal,"4106 West Ave, Ayden",35.47249221801758,-77.41635131835938,+12527462995,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://Aydenchristiancarecenter.org/
+pitt-nc-overture-3e8c26dc,Food Bank Of North Carolina,meal,"497 W 9th St, Greenville",35.6076545715332,-77.37793731689453,+12527524996,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

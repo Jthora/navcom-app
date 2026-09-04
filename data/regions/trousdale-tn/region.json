@@ -1,0 +1,12 @@
+{
+  "slug": "trousdale-tn",
+  "name": "Trousdale, TN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "47169",
+  "timezone_derived_from": "state"
+}

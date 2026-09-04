@@ -1,0 +1,12 @@
+{
+  "slug": "jefferson-wa",
+  "name": "Jefferson, WA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "53031",
+  "timezone_derived_from": "state"
+}

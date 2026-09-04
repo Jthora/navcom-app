@@ -1,0 +1,12 @@
+{
+  "slug": "adair-mo",
+  "name": "Adair, MO",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "29001",
+  "timezone_derived_from": "state"
+}

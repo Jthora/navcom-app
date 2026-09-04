@@ -1,0 +1,12 @@
+{
+  "slug": "stark-oh",
+  "name": "Stark, OH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "39151",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "langlade-wi",
+  "name": "Langlade, WI",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "55067",
+  "timezone_derived_from": "state"
+}

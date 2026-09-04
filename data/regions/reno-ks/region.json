@@ -1,0 +1,12 @@
+{
+  "slug": "reno-ks",
+  "name": "Reno, KS",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "20155",
+  "timezone_derived_from": "state"
+}

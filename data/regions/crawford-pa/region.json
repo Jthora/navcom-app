@@ -1,0 +1,12 @@
+{
+  "slug": "crawford-pa",
+  "name": "Crawford, PA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "42039",
+  "timezone_derived_from": "state"
+}

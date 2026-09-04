@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+chesapeake-va-overture-3cc8a1be,Kingdom Living Ministries,meal,"4200 Indian River Rd, Chesapeake",36.821842193603516,-76.22856903076172,+17579371092,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+chesapeake-va-overture-63ff0672,House of Blessing,meal,"525 Kempsville Rd, Chesapeake",36.74525833129883,-76.22272491455078,+17575479341,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://harvestva.com/houseofblessing
+chesapeake-va-overture-3c1a0686,Herons Landing,shelter,"2133 S Military Hwy, Chesapeake",36.78052520751953,-76.26448822021484,+17578024689,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+chesapeake-va-overture-8fce637b,Buffalow Family and Friends Community Days,meal,"2403 Bainbridge Blvd, Chesapeake",36.80121612548828,-76.27493286132812,+17575244104,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.buffalowfamily.org/

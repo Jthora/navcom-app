@@ -1,0 +1,12 @@
+{
+  "slug": "emanuel-ga",
+  "name": "Emanuel, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13107",
+  "timezone_derived_from": "state"
+}

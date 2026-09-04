@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+sussex-nj-overture-96282ef5,Sussex Help Center Food Pantry,meal,"20 Main St, Sussex",41.20873260498047,-74.60789489746094,+19737021922,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+sussex-nj-overture-09cc4d70,High Point Shelter,shelter,"Appalachian Trl, Wantage",41.31573486328125,-74.6573486328125,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+sussex-nj-overture-27322b53,The Sparta Community Food Pantry,meal,"99 Demarest Rd, Sparta Twp",41.0721435546875,-74.66861724853516,+18622660563,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.spartacommunityfoodpantry.org/
+sussex-nj-overture-9f860d55,Scarc,meal,"4 Camre Dr, Newton",41.095367431640625,-74.73580169677734,19733837000,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: stb-menden.de

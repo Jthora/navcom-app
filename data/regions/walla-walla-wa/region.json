@@ -1,0 +1,12 @@
+{
+  "slug": "walla-walla-wa",
+  "name": "Walla Walla, WA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "53071",
+  "timezone_derived_from": "state"
+}

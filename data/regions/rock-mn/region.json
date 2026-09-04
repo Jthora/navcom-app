@@ -1,0 +1,12 @@
+{
+  "slug": "rock-mn",
+  "name": "Rock, MN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "27133",
+  "timezone_derived_from": "state"
+}

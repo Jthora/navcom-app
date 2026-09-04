@@ -1,0 +1,12 @@
+{
+  "slug": "jefferson-or",
+  "name": "Jefferson, OR",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "41031",
+  "timezone_derived_from": "state"
+}

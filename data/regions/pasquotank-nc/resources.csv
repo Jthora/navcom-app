@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+pasquotank-nc-overture-92ab964d,Food Bank of the Albemarle,meal,"109 Tidewater Way, Elizabeth City",36.26871109008789,-76.20858001708984,+12523354035,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.afoodbank.org/
+pasquotank-nc-overture-066720ee,Tabernacle Of Faith Church Inc,shelter,"515 S Road St, Elizabeth City",36.295501708984375,-76.22374725341797,12523311397,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://tofcoc.org

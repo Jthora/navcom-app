@@ -1,0 +1,12 @@
+{
+  "slug": "st-clair-mi",
+  "name": "St. Clair, MI",
+  "country": "US",
+  "timezone": "America/Detroit",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "26147",
+  "timezone_derived_from": "state"
+}

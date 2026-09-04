@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+montezuma-co-overture-faac0408,Bridge Emergency Shelter,shelter,"735 N Park St, Cortez",37.35662078857422,-108.57539367675781,+19705659808,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.thebridgeshelter.org/
+montezuma-co-overture-f7d8d77b,Bridge Emergency Shelter,shelter,"24 N Chestnut St, Cortez",37.34925842285156,-108.58623504638672,9705659808,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+montezuma-co-overture-f9b9b79d,Good Samaritan Cortez,meal,"30 N Beech St, Cortez",37.3494987487793,-108.58375549316406,+19705656424,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://goodsamscortez.org/

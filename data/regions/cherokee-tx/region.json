@@ -1,0 +1,12 @@
+{
+  "slug": "cherokee-tx",
+  "name": "Cherokee, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48073",
+  "timezone_derived_from": "state"
+}

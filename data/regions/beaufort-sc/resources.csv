@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+beaufort-sc-overture-dea4cc7e,Sandalwood Community Food Pantry,meal,"114 Beach City Rd, Hilton Head Island",32.22785568237305,-80.70066833496094,+18437153583,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.sandalwoodfoodpantry.com/
+beaufort-sc-overture-51c449e5,Second Helpings,meal,"20 Palmetto Pkwy Ste H, Hilton Head Island",32.21772003173828,-80.70667266845703,+18436893689,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: secondhelpingslc.org
+beaufort-sc-overture-86ce7bfc,Second Helpings,meal,"11-A Marina Side Dr, Hilton Head Island",32.17747497558594,-80.729736328125,+18436893689,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.secondhelpingslc.org/

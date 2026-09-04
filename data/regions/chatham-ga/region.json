@@ -1,0 +1,12 @@
+{
+  "slug": "chatham-ga",
+  "name": "Chatham, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13051",
+  "timezone_derived_from": "state"
+}

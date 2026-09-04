@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+warren-oh-overture-91ee15c9,Lebanon Food Pantry,meal,"190 New St, Lebanon",39.43896484375,-84.20471954345703,+15139323617,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+warren-oh-overture-2f2f6d0b,Springboro Community Assistance Center,meal,"1629 S Main St, Springboro",39.53837203979492,-84.2349624633789,+19375726488,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://springborocommunityassistance.org/
+warren-oh-overture-ad951690,Little Miami Food Service,meal,"4766 Whitacre Dr, Morrow",39.3578987121582,-84.09723663330078,+15138994802,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.LittleMiamiFoodService.org/
+warren-oh-overture-319a3d9c,Bernie's Homeless Shelter,shelter,"204 S Mary Ellen St, South Lebanon",39.371116638183594,-84.20970153808594,+15134942307,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.newhousingohio.org
+warren-oh-overture-35ceaeda,Mason Food Pantry,meal,"406 4th Ave, Mason",39.3571891784668,-84.31695556640625,+15132293191,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://MasonFoodPantry.org/

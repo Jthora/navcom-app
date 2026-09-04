@@ -1,0 +1,12 @@
+{
+  "slug": "columbia-wi",
+  "name": "Columbia, WI",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "55021",
+  "timezone_derived_from": "state"
+}

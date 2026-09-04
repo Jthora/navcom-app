@@ -1,0 +1,8 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+clarke-ga-overture-72df8655,Our Daily Bread,meal,"355 Pulaski St, Athens",33.95924377441406,-83.38137817382812,+17063536647,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://downtownministries.org/our-daily-bread
+clarke-ga-overture-3b3bff07,The Food Bank of Northeast Georgia,meal,"890 Newton Bridge Rd, Athens",34.002201080322266,-83.39981842041016,+17063548191,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.foodbanknega.org/
+clarke-ga-overture-b6da20cf,Bigger Vision of Athens,shelter,"95 North Ave, Athens",33.965980529785156,-83.37222290039062,+17063406062,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://bvoa.org/
+clarke-ga-overture-8f3008b0,Athens Area Homeless Shelter,shelter,"620 Barber St, Athens",33.968570709228516,-83.38623046875,17063540423,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: helpathenshomeless.org
+clarke-ga-overture-a1d97b4b,UGA Food 2 Kids,meal,"861 Newton Bridge Rd, Athens",34.00231170654297,-83.40144348144531,+6787636989,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.ugafood2kids.com/
+clarke-ga-overture-64cce55a,Family Promise Of Athens,shelter,"355 Pulaski St, Athens",33.959228515625,-83.38117980957031,17064251881,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.familypromiseathens.org
+clarke-ga-overture-a03ee2a6,Athens Area Emergency Food Bank,meal,"640 Barber St, Athens",33.96873092651367,-83.38652801513672,+17063538182,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.athensfoodbank.org/

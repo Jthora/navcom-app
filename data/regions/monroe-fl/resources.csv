@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+monroe-fl-overture-bb25c5eb,Keys Area Interdenominational Resources,meal,"3010 Overseas Hwy, Marathon",24.710887908935547,-81.0968017578125,+13057434582,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://KAIRonline.net/
+monroe-fl-overture-1088b724,Florida Keys Outreach Coalition,shelter,"3154 Northside Dr # 202, Key West",24.567195892333984,-81.76692199707031,+13052957741,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://fkoc.org
+monroe-fl-overture-a8125ac0,Southernmost Homeless Assistance League,shelter,"5537 College Rd, Key West",24.577953338623047,-81.75205993652344,+13052922744,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+monroe-fl-overture-56a58cf7,Samuel's House,shelter,"1614 Truesdell Ct, Key West",24.565845489501953,-81.76050567626953,+13052960240,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://samuelshouse.org/
+monroe-fl-overture-52be28cd,SOS Callahan Community Kitchen,meal,"1020 United St, Key West",24.552444458007812,-81.79046630859375,+13052923013,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.sosmission.org/

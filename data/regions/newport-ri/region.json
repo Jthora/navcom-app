@@ -1,0 +1,12 @@
+{
+  "slug": "newport-ri",
+  "name": "Newport, RI",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "44005",
+  "timezone_derived_from": "state"
+}

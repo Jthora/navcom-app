@@ -1,0 +1,12 @@
+{
+  "slug": "monroe-il",
+  "name": "Monroe, IL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "17133",
+  "timezone_derived_from": "state"
+}

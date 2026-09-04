@@ -1,0 +1,12 @@
+{
+  "slug": "grayson-tx",
+  "name": "Grayson, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48181",
+  "timezone_derived_from": "state"
+}

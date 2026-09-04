@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+henry-in-overture-e96c115a,Christian Love Help Center,shelter,"418 S 18th St, New Castle",39.92738342285156,-85.36258697509766,17655212837,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+henry-in-overture-c9ecd97e,Knightstown Community Food Pantry,meal,"27 S Jefferson St, Knightstown",39.794715881347656,-85.52593994140625,+17653455912,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+henry-in-overture-6eb41691,Shepherd's Door Food Pantry,meal,"3600 S Memorial Dr, New Castle",39.89748764038086,-85.38285827636719,+17655210203,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.firstassembly-ws.org

@@ -1,0 +1,12 @@
+{
+  "slug": "henrico-va",
+  "name": "Henrico, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51087",
+  "timezone_derived_from": "state"
+}

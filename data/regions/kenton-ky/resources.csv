@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+kenton-ky-overture-b14d6a46,Action Ministries,meal,"4375 Boron Dr, Covington",39.040225982666016,-84.5141830444336,+18592613649,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.actionministries.org/
+kenton-ky-overture-c68129b2,Madonna House,shelter,"25 Orphanage Rd, Fort Mitchell",39.035118103027344,-84.55911254882812,+18593441191,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.madonnahousenky.org/

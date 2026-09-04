@@ -1,0 +1,12 @@
+{
+  "slug": "clinton-ny",
+  "name": "Clinton, NY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "36019",
+  "timezone_derived_from": "state"
+}

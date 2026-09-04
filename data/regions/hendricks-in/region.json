@@ -1,0 +1,12 @@
+{
+  "slug": "hendricks-in",
+  "name": "Hendricks, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18063",
+  "timezone_derived_from": "state"
+}

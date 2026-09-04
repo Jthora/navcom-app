@@ -1,0 +1,12 @@
+{
+  "slug": "jackson-la",
+  "name": "Jackson, LA",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "22049",
+  "timezone_derived_from": "state"
+}

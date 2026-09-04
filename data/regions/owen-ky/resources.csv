@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+owen-ky-overture-c7712b5a,Beechwood Assembly of God Food Pantry,meal,"10620 Georgetown Rd, Owenton",38.407737731933594,-84.7350845336914,+15026670766,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.beechwoodfoodpantry.org/
+owen-ky-overture-41ef339d,Food From The Heart,meal,"7170 Georgetown Rd, Owenton",38.44524002075195,-84.75558471679688,+15026820417,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+owen-ky-overture-e14a14f2,FCC Community Food Pantry,shelter,"106 Perry St, Owenton",38.536956787109375,-84.8352279663086,+15027503342,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

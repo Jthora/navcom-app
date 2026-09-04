@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+wasco-or-overture-aeda1921,Transitional Housing & Shelter - The Annex Mid Columbia Community Action Council,shelter,"200 W 2nd St, The Dalles",45.60285568237305,-121.18607330322266,5412985131,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.mccac.com/housing
+wasco-or-overture-59470642,St. Vincent De Paul Food Bank,meal,"505 W 9th St, The Dalles",45.60053253173828,-121.19346618652344,15412969566,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: svdpthedalles.org
+wasco-or-overture-7b2d09bc,Columbia Gorge Food Bank,meal,"3525 Crates Way, The Dalles",45.624385833740234,-121.19995880126953,+15413702333,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.columbiagorgefoodbank.org/
+wasco-or-overture-96aa4009,Windy River Gleaners,meal,"2937 E 2nd St  Ste 9, The Dalles",45.59959030151367,-121.1429672241211,5413702499,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: gorgenonprofit.org

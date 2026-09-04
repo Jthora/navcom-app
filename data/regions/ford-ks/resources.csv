@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+ford-ks-overture-075b6593,Manna House,shelter,"1012 1st Ave, Dodge City",37.758182525634766,-100.01750946044922,+16202276707,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.dodgecityhousing.com/for-buyers/manna-house
+ford-ks-overture-abba2df1,The Salvation Army Dodge City Kansas,meal,"1100 Avenue E, Dodge City",37.75233840942383,-99.9964828491211,+16202254871,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.salvationarmyusa.org/
+ford-ks-overture-36b8c40e,The Salvation Army- Dodge City - Food Distribution Center,meal,"1100 Avenue E, Dodge City",37.758724212646484,-100.00909423828125,16202254871,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://centralusa.salvationarmy.org/indiana

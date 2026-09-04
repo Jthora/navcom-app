@@ -1,0 +1,12 @@
+{
+  "slug": "lyon-ks",
+  "name": "Lyon, KS",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "20111",
+  "timezone_derived_from": "state"
+}

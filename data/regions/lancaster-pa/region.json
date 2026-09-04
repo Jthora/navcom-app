@@ -1,0 +1,12 @@
+{
+  "slug": "lancaster-pa",
+  "name": "Lancaster, PA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "42071",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "gratiot-mi",
+  "name": "Gratiot, MI",
+  "country": "US",
+  "timezone": "America/Detroit",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "26057",
+  "timezone_derived_from": "state"
+}

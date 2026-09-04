@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+beaver-pa-overture-57183385,Families Matter Food Pantry,meal,"186 Wagner Rd, Monaca",40.68372344970703,-80.29696655273438,+17247097718,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.paypal.com/donate?hosted_button_id=2XYUHALF6MNKJ
+beaver-pa-overture-fd5cf0ae,Manna Community Meal,meal,"2100 Irwin St, Aliquippa",40.60418701171875,-80.27742004394531,+17243752033,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.hoplutheran.org/
+beaver-pa-overture-6c67ac86,The Cornerstone of Beaver County,shelter,"602 6th St, Beaver Falls",40.747657775878906,-80.31832122802734,+17248466400,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://cornerstonebeaver.org/

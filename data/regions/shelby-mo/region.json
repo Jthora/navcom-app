@@ -1,0 +1,12 @@
+{
+  "slug": "shelby-mo",
+  "name": "Shelby, MO",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "29205",
+  "timezone_derived_from": "state"
+}

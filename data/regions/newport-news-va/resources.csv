@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+newport-news-va-overture-9c04cc63,Ehouse Inc,meal,"521 North Ave, Newport News",37.02792739868164,-76.45211029052734,17579264400,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+newport-news-va-overture-3fd66cbd,Menchville House Ministries,shelter,"13658 Warwick Blvd, Newport News",37.120323181152344,-76.5241470336914,+17578335980,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://menchvillehouse.com/
+newport-news-va-overture-22e8993b,Five Loaves Food Pantry,meal,"13813 Warwick Blvd Building #E, Newport News",37.12533187866211,-76.53377532958984,+17577754211,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://fiveloavesfoodpantry.org/
+newport-news-va-overture-d6990379,Peninsula Rescue Mission,shelter,"3700 Huntington Ave, Newport News",36.986351013183594,-76.43318176269531,+17573806909,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://prm.info/
+newport-news-va-overture-7f9a8dfc,Grace's Place,shelter,"621 Randolph Rd, Newport News",37.032958984375,-76.44937133789062,+17577822853,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.gracesplacehomes.com/

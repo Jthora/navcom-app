@@ -1,0 +1,12 @@
+{
+  "slug": "ottawa-oh",
+  "name": "Ottawa, OH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "39123",
+  "timezone_derived_from": "state"
+}

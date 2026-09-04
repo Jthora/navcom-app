@@ -1,0 +1,12 @@
+{
+  "slug": "kiowa-ok",
+  "name": "Kiowa, OK",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "40075",
+  "timezone_derived_from": "state"
+}

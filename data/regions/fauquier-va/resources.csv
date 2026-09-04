@@ -1,0 +1,8 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+fauquier-va-overture-dc4a1e29,Leeds Feeds,meal,"4346 Leeds Manor Rd, Markham",38.850425720214844,-77.9969482421875,+15402274522,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://brand.page/leedsfeeds
+fauquier-va-overture-f64d7939,Share The Harvest Food Bank,meal,"9668 Maidstone Rd, Delaplane",38.89997482299805,-77.91159057617188,+15405064910,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.sharetheharvestfb.com/
+fauquier-va-overture-ebee6ecc,Whiskey Hollow Shelter,shelter,"38.9697, -77.99721, Crooked Run, Fauquier County",38.96935272216797,-77.99612426757812,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+fauquier-va-overture-f799ec0c,Manassas Gap Shelter,shelter,Fauquier County,38.93070983886719,-78.0327377319336,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+fauquier-va-overture-d268030e,Fauquier FISH,meal,"680A Industrial Rd, Warrenton",38.69648742675781,-77.78545379638672,+15403473474,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.fauquierfish.org/
+fauquier-va-overture-c7b7a243,Fauquier Food Bank & Thrift Store,meal,"249 E Shirley Ave, Warrenton",38.704566955566406,-77.79267883300781,+15403596053,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://FAUQUIERFOODBANK.ORG/
+fauquier-va-overture-9ff2ffa2,Fauquier Family Shelter Services,shelter,"95 Keith St, Warrenton",38.71225357055664,-77.79883575439453,+15403510130,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.familyshelterservices.org/

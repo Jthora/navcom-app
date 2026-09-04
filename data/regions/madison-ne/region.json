@@ -1,0 +1,12 @@
+{
+  "slug": "madison-ne",
+  "name": "Madison, NE",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "31119",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "eagle-co",
+  "name": "Eagle, CO",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "08037",
+  "timezone_derived_from": "state"
+}

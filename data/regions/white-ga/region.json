@@ -1,0 +1,12 @@
+{
+  "slug": "white-ga",
+  "name": "White, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13311",
+  "timezone_derived_from": "state"
+}

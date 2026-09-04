@@ -1,0 +1,12 @@
+{
+  "slug": "honolulu-hi",
+  "name": "Honolulu, HI",
+  "country": "US",
+  "timezone": "Pacific/Honolulu",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "15003",
+  "timezone_derived_from": "state"
+}

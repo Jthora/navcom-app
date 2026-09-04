@@ -1,0 +1,12 @@
+{
+  "slug": "washington-ri",
+  "name": "Washington, RI",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "44009",
+  "timezone_derived_from": "state"
+}

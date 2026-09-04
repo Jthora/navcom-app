@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+williamson-tx-overture-b60d6474,Neighbors Serving Neighbors,meal,"875 S Dalton St, Bartlett",30.78659439086914,-97.42990112304688,+12547608541,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://neighborsservingneighbors.org/
+williamson-tx-overture-089a6a88,Growing Heart,meal,"220 Quarry Ln, Liberty Hill",30.663745880126953,-97.88953399658203,+17373189712,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+williamson-tx-overture-a709b399,Jarrell Community Food Pantry,meal,"404 N 1st St, Jarrell",30.824060440063477,-97.60968017578125,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+williamson-tx-overture-8e37f1b2,Furrbaby Food Pantry,meal,"1603 Northwest Blvd, Georgetown",30.65814208984375,-97.67794036865234,+16265360979,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://Furrbabyfoodpantry.org/
+williamson-tx-overture-9a637471,Brighter Days Food Pantry,meal,"300 Crystal Falls Pkwy, Leander",30.556079864501953,-97.84595489501953,+15122594673,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.leanderchurchofchrist.org/food-pantry/

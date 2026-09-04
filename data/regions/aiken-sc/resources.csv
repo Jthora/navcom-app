@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+aiken-sc-overture-bd30d644,Mt. Salem Outreach Mission,shelter,"2534 Augusta Rd, Warrenville",33.520931243896484,-81.83779907226562,+18035932276,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+aiken-sc-overture-a7734231,Salvation Army Shelter,shelter,"604 Park Ave SE, Aiken",33.55648422241211,-81.7126693725586,+18036414149,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.salvationarmyusa.org/
+aiken-sc-overture-26f4d4fe,Hope Ministries of the Valley,meal,"2331 Augusta Rd, Gloverville",33.52420425415039,-81.83213806152344,+18033809025,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

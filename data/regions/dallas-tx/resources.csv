@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+dallas-tx-overture-62bb86a2,North Central Texas Prayer Warriors Ministry,meal,"1017 S Cedar Hill Rd  Ste 206, Cedar Hill",32.57202911376953,-96.95989227294922,14692729820,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+dallas-tx-overture-7c4db05d,Transitional and Boarding house,shelter,"1229 E Pleasant Run Rd, Desoto",32.605628967285156,-96.827392578125,+14694557287,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.precioushand.net/
+dallas-tx-overture-0d3a3af0,New Wine Foundation,shelter,"2300 Valley View Ln, Irving",32.83985900878906,-97.02079772949219,+19725141174,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+dallas-tx-overture-4dff760a,Desoto Food Pantry,meal,"106 N Lyndalyn Ave, Desoto",32.590797424316406,-96.85560607910156,+19722234050,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://desotofoodpantryinc.com/

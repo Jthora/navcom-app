@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+menominee-mi-overture-f262498f,Maple Ridge Group Home,shelter,"Maple St, Stephenson",45.41732406616211,-87.59962463378906,+19067536656,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://mapleridgemanor.com
+menominee-mi-overture-e78942de,Menominee MidCounty Ministerium Food Pantry,meal,"526 Samuel Street, Stephenson",45.41556167602539,-87.61141204833984,+19067534732,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+menominee-mi-overture-75e3fc26,Abundant Life Mission Inc.,shelter,"1406 10th Ave, Menominee",45.10826110839844,-87.62016296386719,+19064244429,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.alcmission.org/

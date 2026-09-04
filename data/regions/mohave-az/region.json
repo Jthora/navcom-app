@@ -1,0 +1,12 @@
+{
+  "slug": "mohave-az",
+  "name": "Mohave, AZ",
+  "country": "US",
+  "timezone": "America/Phoenix",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "04015",
+  "timezone_derived_from": "state"
+}

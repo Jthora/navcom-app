@@ -1,0 +1,12 @@
+{
+  "slug": "jackson-nc",
+  "name": "Jackson, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37099",
+  "timezone_derived_from": "state"
+}

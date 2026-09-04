@@ -1,0 +1,12 @@
+{
+  "slug": "livingston-il",
+  "name": "Livingston, IL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "17105",
+  "timezone_derived_from": "state"
+}

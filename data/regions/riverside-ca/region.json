@@ -1,0 +1,12 @@
+{
+  "slug": "riverside-ca",
+  "name": "Riverside, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06065",
+  "timezone_derived_from": "state"
+}

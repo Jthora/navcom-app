@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+cass-il-overture-8f071561,Cass County Food Pantry,meal,"210 S Main St, Virginia",39.94955825805664,-90.21054077148438,+12174735638,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+cass-il-overture-75352a75,Beardstown Food Pantry,meal,"121 E 2nd St, Beardstown",40.017520904541016,-90.4336166381836,+12179094890,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

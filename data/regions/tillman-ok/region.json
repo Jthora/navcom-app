@@ -1,0 +1,12 @@
+{
+  "slug": "tillman-ok",
+  "name": "Tillman, OK",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "40141",
+  "timezone_derived_from": "state"
+}

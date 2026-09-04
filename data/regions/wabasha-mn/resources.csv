@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+wabasha-mn-overture-7936458f,Plainview Elgin Area Food Shelf,meal,"25 Main St W, Elgin",44.13059616088867,-92.2522964477539,+15078760112,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+wabasha-mn-overture-56cddb46,Lake City Food Shelf,meal,"600 S 8th St, Lake City",44.44059753417969,-92.26790618896484,+16513455888,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://lakecityfoodshelf.org/
+wabasha-mn-overture-b520c0f5,Zumbro Valley Food Shelf,meal,"56817 Highway 63, Zumbro Falls",44.20573425292969,-92.43334197998047,+15072591442,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://southtroywesleyan.org/food-shelf/
+wabasha-mn-overture-b0a536b2,Wabasha Area Food Shelf,meal,"611 Broadway Ave, Wabasha",44.37932205200195,-92.02796173095703,+16515655667,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://wabashafood.com/

@@ -1,0 +1,12 @@
+{
+  "slug": "sullivan-in",
+  "name": "Sullivan, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18153",
+  "timezone_derived_from": "state"
+}

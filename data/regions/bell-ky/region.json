@@ -1,0 +1,12 @@
+{
+  "slug": "bell-ky",
+  "name": "Bell, KY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "21013",
+  "timezone_derived_from": "state"
+}

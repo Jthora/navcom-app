@@ -1,0 +1,12 @@
+{
+  "slug": "marlboro-sc",
+  "name": "Marlboro, SC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "45069",
+  "timezone_derived_from": "state"
+}

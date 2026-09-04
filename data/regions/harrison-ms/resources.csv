@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+harrison-ms-overture-8cbf1a03,Long Beach Community Food Pantry,meal,"21081 Johnson Rd, Long Beach",30.350509643554688,-89.19276428222656,+12288611291,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+harrison-ms-overture-5371a577,Twelve Baskets Food Bank,meal,"1520 29th Ave, Gulfport",30.36981201171875,-89.09624481201172,+12288220836,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+harrison-ms-overture-2eeac0e5,Open Doors Homeless Coalition,shelter,"11975 Seaway Rd, Gulfport",30.43364143371582,-89.0344009399414,+12286042048,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.opendoorshc.org/

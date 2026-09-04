@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+story-ia-overture-9688455b,Slater/sheldahl Food Pantry,meal,"411 3rd Ave, Slater",41.8811149597168,-93.68286895751953,15152283933,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: www.slaterblc.org
+story-ia-overture-d2536d0a,Rosedale Shelter,shelter,"703 Burnett Ave, Ames",42.02809143066406,-93.6158218383789,15152332330,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.yss.org
+story-ia-overture-201bae9b,Food At First,meal,"611 Clark Ave, Ames",42.02717971801758,-93.6176528930664,+15153444357,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://FoodAtFirst.com/
+story-ia-overture-5918e4ef,Bethesda Community Food Pantry - Food Distribution Center,meal,"1517 Northwestern Ave, Ames",42.03732681274414,-93.62651824951172,15152326256,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://bethesdanet.org
+story-ia-overture-3d6cdc14,The Bridge Home,shelter,"225 S Kellogg Ave, Ames",42.02069854736328,-93.61392974853516,15152328075,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: thebridgehome.org

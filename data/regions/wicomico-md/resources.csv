@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+wicomico-md-overture-d9458013,HALO Cafe,shelter,"119 South Blvd, Salisbury",38.353515625,-75.5988540649414,+14107429356,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.haloministry.org/
+wicomico-md-overture-22211335,Adopt A Block,meal,"818 Benny St, Salisbury",38.37253189086914,-75.58631134033203,+14107493748,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://adoptablockbreadoflifemarket.as.me/
+wicomico-md-overture-85ecbe4d,Salisbury Outreach Services,meal,"1905 Cedar Way, Salisbury",38.38613510131836,-75.57461547851562,+14103414767,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+wicomico-md-overture-ca8d4b93,Christian Shelter,shelter,"334 Barclay St, Salisbury",38.371681213378906,-75.59088897705078,+14107495673,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.christianshelter.org/
+wicomico-md-overture-1687a0a5,Joseph House Crisis Center,shelter,"812 Boundary St, Salisbury",38.37377166748047,-75.6103515625,+14107494239,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://thejosephhouse.org/contact-us

@@ -1,0 +1,12 @@
+{
+  "slug": "hardee-fl",
+  "name": "Hardee, FL",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "12049",
+  "timezone_derived_from": "state"
+}

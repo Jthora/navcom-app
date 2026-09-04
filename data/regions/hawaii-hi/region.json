@@ -1,0 +1,12 @@
+{
+  "slug": "hawaii-hi",
+  "name": "Hawaii, HI",
+  "country": "US",
+  "timezone": "Pacific/Honolulu",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "15001",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "eastland-tx",
+  "name": "Eastland, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48133",
+  "timezone_derived_from": "state"
+}

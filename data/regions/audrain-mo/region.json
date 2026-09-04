@@ -1,0 +1,12 @@
+{
+  "slug": "audrain-mo",
+  "name": "Audrain, MO",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "29007",
+  "timezone_derived_from": "state"
+}

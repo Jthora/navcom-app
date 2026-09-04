@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+le-sueur-mn-overture-d5f827ef,W-E Share Food Shelf,meal,"132 E Main St, Elysian",44.19880676269531,-93.6738510131836,+15073170532,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+le-sueur-mn-overture-37f56b95,Le Sueur Food Shelf,meal,"427 S 5th St, Le Sueur",44.45511245727539,-93.91358947753906,+15076652615,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+le-sueur-mn-overture-4dad0163,Montgomery Food Shelf - Salvation Army,meal,"151 Elm Ave SE, Montgomery",44.43684005737305,-93.58029174804688,15072912905,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.salvationarmy.org

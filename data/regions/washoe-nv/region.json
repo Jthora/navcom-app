@@ -1,0 +1,12 @@
+{
+  "slug": "washoe-nv",
+  "name": "Washoe, NV",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "32031",
+  "timezone_derived_from": "state"
+}

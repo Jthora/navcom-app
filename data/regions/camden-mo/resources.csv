@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+camden-mo-overture-74afb096,Hobo Discount Depot,shelter,"111 High St, Climax Springs",38.172882080078125,-92.9002914428711,5736470599,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+camden-mo-overture-bf153643,Share the Harvest Food Pantry,meal,"689 N State Highway 7, Camdenton",38.095298767089844,-92.83312225341797,+15738735855,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.sharetheharvestfoodpantry.org/
+camden-mo-overture-36948a83,Lake Area Helping Hands,shelter,"68 Holden Dr, Camdenton",37.99696350097656,-92.76370239257812,15733464968,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://lakeareahelpinghands.com

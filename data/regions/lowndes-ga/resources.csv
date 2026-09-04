@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+lowndes-ga-overture-d722d1de,LAMP,shelter,"714 Charlton St, Valdosta",30.840059280395508,-83.27715301513672,+12292457157,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.lampinc.org/
+lowndes-ga-overture-373d2754,Second Harvest Of South Georgia,meal,"1411 Harbin Cir, Valdosta",30.805248260498047,-83.28709411621094,18884534143,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://feedingsga.org
+lowndes-ga-overture-5f97c0cf,South Street Community Center,meal,"311 South St, Valdosta",30.825212478637695,-83.2716293334961,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+lowndes-ga-overture-5f1172d1,Second Harvest of South Georgia,meal,"1836 Piedmont Pl, Valdosta",30.785430908203125,-83.28795623779297,+18884534143,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://feedingsga.org/give/

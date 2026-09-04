@@ -1,0 +1,12 @@
+{
+  "slug": "washington-me",
+  "name": "Washington, ME",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "23029",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+isanti-mn-overture-8d7ca1de,New Pathways,shelter,"310 Ashland St S, Cambridge",45.57040786743164,-93.22500610351562,+17636910121,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://newpathwaysmn.org/
+isanti-mn-overture-d7046fbb,Cambridge Surplus Food Distribution,meal,"3101 Hwy 95 NE, Cambridge",45.57444381713867,-93.1916732788086,+16124026100,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.cambridgefooddistribution.org/
+isanti-mn-overture-ff099730,Braham Area Food Shelf,meal,"655 8th St SW, Braham",45.71574783325195,-93.184326171875,13204259077,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://tusentack.org/braham-food-shelf

@@ -1,0 +1,12 @@
+{
+  "slug": "montgomery-il",
+  "name": "Montgomery, IL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "17135",
+  "timezone_derived_from": "state"
+}

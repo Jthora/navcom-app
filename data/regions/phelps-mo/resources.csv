@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+phelps-mo-overture-0865b631,The Rolla Mission,shelter,"708 N Main St, Rolla",37.949886322021484,-91.77318572998047,+15733085474,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://therollamission.org/
+phelps-mo-overture-c10fdee7,Phelps County Dream Center,meal,"12684 US-63, Rolla",37.912681579589844,-91.77538299560547,+15734586989,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://phelpscountydreamcenter.org/
+phelps-mo-overture-6e26bfe4,Almost Home,shelter,"2329 N Bishop Ave, Rolla",37.96709060668945,-91.76457214355469,5733415270,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://almosthomerolla.com/

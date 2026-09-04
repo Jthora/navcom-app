@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+schenectady-ny-overture-b3f3849a,Lighthouse Food Pantry,meal,"4780 Duanesburg Rd, Princetown",42.77261734008789,-74.09672546386719,+15183552277,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+schenectady-ny-overture-15998f62,Sicm Food Program - Food Distribution Center,meal,"839 Albany St, Schenectady",42.806297302246094,-73.9349365234375,15183464445,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: sicm.us
+schenectady-ny-overture-06cc4152,Bethesda House of Schenectady,shelter,"834 State St, Schenectady",42.806278228759766,-73.93351745605469,+15183747873,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.bethesdahs.org/

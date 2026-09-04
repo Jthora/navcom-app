@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+macomb-mi-overture-8fc0cfd2,Macomb County Rotating Emergency Shelter Team (mcrest),meal,"145 Colonial Ct, Mount Clemens",42.58769226074219,-82.88311004638672,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://mcrest.org
+macomb-mi-overture-3ccb2d6a,McWarm,shelter,"21201 E 13 Mile Rd, St Clair Shores",42.52677917480469,-82.90218353271484,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://venmo.com/code?user_id=3414134481747968987&created=1637766571.839267&printed=1
+macomb-mi-overture-20a80497,CSI Support & Development,shelter,"8425 E 12 Mile Rd, Warren",42.507110595703125,-83.02237701416016,+15867539002,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.csi.coop/
+macomb-mi-overture-2a009989,Gleaners Community Food Bank,meal,"24140 Mound Rd, Warren",42.47113037109375,-83.04415893554688,+15864275314,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+macomb-mi-overture-f3e22690,MCREST,shelter,"215 S Main St, Mt Clemens",42.58962631225586,-82.88092803955078,+15864155101,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.mcrest.org/
+macomb-mi-overture-f166e0bd,Lakepointe Food Pantry,meal,"48571 Van Dyke Ave, Shelby Twp",42.65228271484375,-83.0335922241211,+15869911845,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://lakepointepantry.org/

@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+greene-oh-overture-745cfdc4,Bridges of Hope,shelter,"1087 W 2nd St, Xenia",39.680233001708984,-83.94973754882812,+19377088053,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.skbridgesofhope.org/
+greene-oh-overture-961f5744,Fish Fairborn,meal,"1149 N Broad St, Fairborn",39.8340950012207,-84.01539611816406,+19378791313,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+greene-oh-overture-d3d83916,Yellow Springs Home Inc,shelter,"305 N Walnut St A, Yellow Springs",39.809818267822266,-83.888916015625,+19377672790,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.yshome.org/
+greene-oh-overture-030ded79,Family Promise of Greene County Ohio,shelter,"124 S Detroit St, Xenia",39.683258056640625,-83.92949676513672,+19373720705,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://familypromisegreeneco.org/
+greene-oh-overture-9bc7c943,Fairborn FISH Food Pantry,meal,"480 W Funderburg Rd, Fairborn",39.78876876831055,-84.03765869140625,+19379025393,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.fishfairborn.org/
+greene-oh-overture-9e53745a,Greene County Food Pantry,meal,"774 Cincinnati Ave, Xenia",39.67578887939453,-83.94119262695312,+19373728441,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.gcfp.org/

@@ -1,0 +1,12 @@
+{
+  "slug": "shelby-oh",
+  "name": "Shelby, OH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "39149",
+  "timezone_derived_from": "state"
+}

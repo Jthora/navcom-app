@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+warren-ny-overture-8d7cd204,Adirondack Vets House Inc,shelter,"26 Pine St, Glens Falls",43.308773040771484,-73.64918518066406,+15187936545,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.adirondackvetshouse.com/
+warren-ny-overture-bd1665f7,North Country Ministry,meal,"3933 Main St, Warrensburg",43.49953079223633,-73.78034973144531,+15186232829,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://linktr.ee/northcountryministry
+warren-ny-overture-1cf7ecf5,The Open Door Mission,shelter,"226 Warren St, Glens Falls",43.31065368652344,-73.6288833618164,+15187925900,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.opendoor-ny.org/
+warren-ny-overture-1b3b8a94,Chester Town Food Pantry,meal,"6307 US-9, Chestertown",43.64979934692383,-73.80157470703125,+15184942433,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.chestertownfarmersmarket.com/

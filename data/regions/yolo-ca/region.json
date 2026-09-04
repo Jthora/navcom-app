@@ -1,0 +1,12 @@
+{
+  "slug": "yolo-ca",
+  "name": "Yolo, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06113",
+  "timezone_derived_from": "state"
+}

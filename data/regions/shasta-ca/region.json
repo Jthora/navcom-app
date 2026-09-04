@@ -1,0 +1,12 @@
+{
+  "slug": "shasta-ca",
+  "name": "Shasta, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06089",
+  "timezone_derived_from": "state"
+}

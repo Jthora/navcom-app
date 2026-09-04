@@ -1,0 +1,12 @@
+{
+  "slug": "mcnairy-tn",
+  "name": "McNairy, TN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "47109",
+  "timezone_derived_from": "state"
+}

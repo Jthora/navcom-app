@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+gadsden-fl-overture-fc3e5fc6,Community Cares Outreach,meal,"118 3rd St SW, Havana",30.622451782226562,-84.41690063476562,+18505395349,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://3cprintandpromo.com
+gadsden-fl-overture-ec701480,Farm Share,meal,"Historic District, 18212 Blue Star Hwy, Quincy",30.58634376525879,-84.622802734375,+18506279500,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.farmshare.org
+gadsden-fl-overture-571e5165,Hope Harvest Food Pantry,meal,"1110 Rich Bay Rd, Havana",30.59360694885254,-84.3918228149414,+18505391690,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.hopeharvestfoodpantry.com/

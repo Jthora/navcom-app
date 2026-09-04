@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+johnson-in-overture-76816a47,Great Harvest Food Pantry,meal,"6766 US 31 S, Greenwood",39.57533264160156,-86.0990982055664,+13176574998,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.greatharvestfoodpantry.org/
+johnson-in-overture-9dfd162d,Edinburgh Food Pantry,meal,"110 E Main Cross St, Edinburgh",39.35435485839844,-85.96604919433594,+18125265840,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+johnson-in-overture-64b2b7fa,Interchurch Food Pantry,meal,"211 Commerce Dr, Franklin",39.5072135925293,-86.06607055664062,+13177365090,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.jcpantry.org/
+johnson-in-overture-c3dee768,The Refuge,meal,"1150 S Park Dr, Greenwood",39.61646270751953,-86.0796890258789,+13178897338,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.therefugeinc.com/

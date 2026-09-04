@@ -1,0 +1,12 @@
+{
+  "slug": "hillsborough-fl",
+  "name": "Hillsborough, FL",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "12057",
+  "timezone_derived_from": "state"
+}

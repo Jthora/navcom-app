@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+coweta-ga-overture-241037cf,NEST,shelter,"19 1st Ave, Newnan",33.37248611450195,-84.80291748046875,+16782035956,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://linktr.ee/restartcoweta
+coweta-ga-overture-ecabc97a,Coweta Community Food Pantry,meal,"253 Temple Ave, Newnan",33.387718200683594,-84.82039642333984,+17706837705,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.oneroofoutreach.org/
+coweta-ga-overture-d5ccfbe1,"BelAir Estates, Inc.",shelter,"630 Newton Rd, Newnan",33.448341369628906,-84.8655776977539,7702527220,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

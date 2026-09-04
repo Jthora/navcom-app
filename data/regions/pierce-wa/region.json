@@ -1,0 +1,12 @@
+{
+  "slug": "pierce-wa",
+  "name": "Pierce, WA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "53053",
+  "timezone_derived_from": "state"
+}

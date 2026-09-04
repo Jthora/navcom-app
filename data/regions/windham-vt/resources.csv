@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+windham-vt-overture-5b95a337,Deerfield Valley Food Pantry,meal,"7 Church St, Wilmington",42.867584228515625,-72.87113189697266,+18024640148,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.deerfieldvalleyfoodpantry.org/
+windham-vt-overture-256ad102,Morningside House,shelter,"81 Royal Rd, Brattleboro",42.84391784667969,-72.55449676513672,+18022570066,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+windham-vt-overture-13d97569,Foodworks,meal,"141 Canal St, Brattleboro",42.84787368774414,-72.5619125366211,18024902412,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.groundworksvt.org
+windham-vt-overture-778dfb39,Townshend Community Food Shelf,meal,"34 Common Rd, Townshend",43.047027587890625,-72.66889953613281,+18023654348,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+windham-vt-overture-fd028a9a,Vermont Foodbank,meal,"22 Browne Ct, Brattleboro",42.88833236694336,-72.55155181884766,+18022460993,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.vtfoodbank.org

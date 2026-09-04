@@ -1,0 +1,12 @@
+{
+  "slug": "panola-ms",
+  "name": "Panola, MS",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "28107",
+  "timezone_derived_from": "state"
+}

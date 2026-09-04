@@ -1,0 +1,12 @@
+{
+  "slug": "laurel-ky",
+  "name": "Laurel, KY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "21125",
+  "timezone_derived_from": "state"
+}

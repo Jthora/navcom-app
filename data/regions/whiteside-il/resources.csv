@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+whiteside-il-overture-4a591b52,White Side County Housing Auth,shelter,"1101 5th Ave, Rock Falls",41.77107620239258,-89.69109344482422,+18156263687,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+whiteside-il-overture-41b83f05,Sauk Valley Foodbank,meal,"1801 Plant Dr, Sterling",41.80292510986328,-89.72642517089844,18156264556,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.saukvalleyfoodbank.org
+whiteside-il-overture-38603081,Erie Food Pantry,meal,"9107 Moline Rd, Erie",41.66512680053711,-90.07137298583984,+13096592332,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+whiteside-il-overture-1a1ef038,Twin Cities PADS Homeless Shelter,shelter,"111 Wahl Rd, Sterling",41.81587600708008,-89.69546508789062,+18156262210,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.paypal.com/donate/?hosted_button_id=ECBB7W5XLRRNU

@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+galax-va-overture-932112d9,Galax Hope House,shelter,"408 W Center St, Galax",36.66175842285156,-80.92923736572266,+12762367573,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+galax-va-overture-4f1840d1,God's Storehouse Soup Kitchen,meal,"406 W Oldtown St, Galax",36.66008758544922,-80.9284439086914,+12762376424,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.godsstorehouseva.org/
+galax-va-overture-c0be5ae1,Elisha's House - Galax Warming Shelter,shelter,"222 Carroll St, Galax",36.659969329833984,-80.92305755615234,+12762626508,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

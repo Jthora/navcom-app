@@ -1,0 +1,12 @@
+{
+  "slug": "mahaska-ia",
+  "name": "Mahaska, IA",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "19123",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "avery-nc",
+  "name": "Avery, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37011",
+  "timezone_derived_from": "state"
+}

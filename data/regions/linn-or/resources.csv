@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+linn-or-overture-4a064234,God's Storehouse,meal,"180 Smith St, Harrisburg",44.27214813232422,-123.17257690429688,+15419958403,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.harrisburgchristianchurch.org
+linn-or-overture-f277fbef,Mid Valley Gleaners,meal,"3405 Kizer Ave NE, Albany",44.65922546386719,-123.05912017822266,+14582854741,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+linn-or-overture-dc6119cd,Signs of Victory Ministries,meal,"1100 Jackson St SE, Albany",44.62937545776367,-123.0982894897461,5419678545,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.signsofvictory.webs.com/
+linn-or-overture-4df5df15,2nd Chance Homeless Shelter,shelter,"1100 SE Jackson St, Albany",44.62971115112305,-123.09862518310547,+15419678545,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.2ndchancehomelessshelter.org/
+linn-or-overture-432d566c,Sweet Home Gleaners,meal,"3031 Santiam Hwy, Sweet Home",44.40102767944336,-122.70877838134766,+15413673190,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.sweethomegleaners.org
+linn-or-overture-50dd4782,Easterseals Oregon,shelter,"250 Broadalbin St SW Ste 108, Albany",44.63594436645508,-123.10717010498047,5418128667,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.easterseals.com/oregon/

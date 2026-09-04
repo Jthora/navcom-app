@@ -1,0 +1,12 @@
+{
+  "slug": "mcleod-mn",
+  "name": "McLeod, MN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "27085",
+  "timezone_derived_from": "state"
+}

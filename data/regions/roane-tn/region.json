@@ -1,0 +1,12 @@
+{
+  "slug": "roane-tn",
+  "name": "Roane, TN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "47145",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "clay-tn",
+  "name": "Clay, TN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "47027",
+  "timezone_derived_from": "state"
+}

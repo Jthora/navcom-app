@@ -1,0 +1,12 @@
+{
+  "slug": "mendocino-ca",
+  "name": "Mendocino, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06045",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "clatsop-or",
+  "name": "Clatsop, OR",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "41007",
+  "timezone_derived_from": "state"
+}

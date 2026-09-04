@@ -1,0 +1,12 @@
+{
+  "slug": "ozaukee-wi",
+  "name": "Ozaukee, WI",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "55089",
+  "timezone_derived_from": "state"
+}

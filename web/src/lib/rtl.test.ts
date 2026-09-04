@@ -99,10 +99,17 @@ describe('the document states its direction', () => {
     walk(BUILD);
 
     expect(pages.length).toBeGreaterThan(0);
+
+    // Collected rather than asserted per page, and matched against the opening tag rather
+    // than the whole document: two expect() calls against 15kB of HTML, 12,329 times over,
+    // took 24s and timed out. Same offenders-list shape the tests above already use.
+    const offenders: string[] = [];
     for (const page of pages) {
-      const html = readFileSync(page, 'utf8');
-      expect(html, page.replace(BUILD, '')).toMatch(/<html[^>]*\blang=/);
-      expect(html, page.replace(BUILD, '')).toMatch(/<html[^>]*\bdir=/);
+      const head = readFileSync(page, 'utf8').slice(0, 2048);
+      const tag = head.match(/<html[^>]*>/)?.[0] ?? '';
+      if (!/\blang=/.test(tag)) offenders.push(`${page.replace(BUILD, '')}: no lang`);
+      if (!/\bdir=/.test(tag)) offenders.push(`${page.replace(BUILD, '')}: no dir`);
     }
-  });
+    expect(offenders).toEqual([]);
+  }, 120_000);
 });

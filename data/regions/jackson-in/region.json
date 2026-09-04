@@ -1,0 +1,12 @@
+{
+  "slug": "jackson-in",
+  "name": "Jackson, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18071",
+  "timezone_derived_from": "state"
+}

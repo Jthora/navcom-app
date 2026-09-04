@@ -1,0 +1,12 @@
+{
+  "slug": "plumas-ca",
+  "name": "Plumas, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06063",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "dale-al",
+  "name": "Dale, AL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "01045",
+  "timezone_derived_from": "state"
+}

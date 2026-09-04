@@ -1,0 +1,12 @@
+{
+  "slug": "ramsey-nd",
+  "name": "Ramsey, ND",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "38071",
+  "timezone_derived_from": "state"
+}

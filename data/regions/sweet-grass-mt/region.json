@@ -1,0 +1,12 @@
+{
+  "slug": "sweet-grass-mt",
+  "name": "Sweet Grass, MT",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "30097",
+  "timezone_derived_from": "state"
+}

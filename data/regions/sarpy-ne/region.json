@@ -1,0 +1,12 @@
+{
+  "slug": "sarpy-ne",
+  "name": "Sarpy, NE",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "31153",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "dougherty-ga",
+  "name": "Dougherty, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13095",
+  "timezone_derived_from": "state"
+}

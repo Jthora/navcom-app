@@ -1,0 +1,12 @@
+{
+  "slug": "warrick-in",
+  "name": "Warrick, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18173",
+  "timezone_derived_from": "state"
+}

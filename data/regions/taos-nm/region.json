@@ -1,0 +1,12 @@
+{
+  "slug": "taos-nm",
+  "name": "Taos, NM",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "35055",
+  "timezone_derived_from": "state"
+}

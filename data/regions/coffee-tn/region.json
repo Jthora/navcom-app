@@ -1,0 +1,12 @@
+{
+  "slug": "coffee-tn",
+  "name": "Coffee, TN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "47031",
+  "timezone_derived_from": "state"
+}

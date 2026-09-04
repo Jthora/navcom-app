@@ -1,0 +1,12 @@
+{
+  "slug": "nueces-tx",
+  "name": "Nueces, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48355",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+williamson-tn-overture-99a528db,One Generation Away (OneGenAway),meal,"320 Premier Ct Suite 218, Franklin",35.95407485961914,-86.82819366455078,+18446424673,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.onegenaway.com/
+williamson-tn-overture-0bea8d59,Williamson County Homeless Alliance,shelter,"511 W Meade Blvd, Franklin",35.914398193359375,-86.88616180419922,+16154990071,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.wilcohomeless.com/
+williamson-tn-overture-328aefb2,St. Thomas House,shelter,"4673 Celeste Lane, Franklin",35.82401657104492,-86.79678344726562,+16157949861,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.StThomasHouse.org/

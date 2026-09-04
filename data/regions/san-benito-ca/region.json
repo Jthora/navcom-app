@@ -1,0 +1,12 @@
+{
+  "slug": "san-benito-ca",
+  "name": "San Benito, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06069",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,2 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+ketchikan-gateway-ak-overture-ac62b0ce,Ketchikan Homeless Shelter,shelter,"628 Park Ave, Ketchikan",55.34328842163086,-131.6445770263672,+19072254194,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.ketchikanpath.org/

@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+pike-mo-overture-4cf61269,Bgma Hope Center,meal,"30 N Court St, Bowling Green",39.34267044067383,-91.19538879394531,+15733246255,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+pike-mo-overture-b18296f9,Louisiana Community Food Pantry,meal,"406 S Carolina St, Louisiana",39.44865417480469,-91.04801940917969,+15737542421,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

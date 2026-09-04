@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+hood-tx-overture-fb4d89d6,Brazos Food Bank,meal,"2201 Mitchell Bend Hwy, Granbury",32.3449821472168,-97.72862243652344,+18174085533,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+hood-tx-overture-885593de,Meals on Wheels Hood County,meal,"501 E Moore St, Granbury",32.451942443847656,-97.78282165527344,+18175735533,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://mowhctx.org/
+hood-tx-overture-553e9e74,God's Food Pantry,meal,"3755 Acton Hwy, Granbury",32.441680908203125,-97.7279052734375,+18172435831,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

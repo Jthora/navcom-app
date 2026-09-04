@@ -1,0 +1,12 @@
+{
+  "slug": "douglas-wa",
+  "name": "Douglas, WA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "53017",
+  "timezone_derived_from": "state"
+}

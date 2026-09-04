@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+nelson-va-overture-bea7bcc7,Maupin Field Shelter,shelter,Nelson County,37.88490295410156,-78.99363708496094,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+nelson-va-overture-32171f73,Heritage Center Food Pantry,meal,"1653 Thomas Nelson Hwy, Arrington",37.67885971069336,-78.95332336425781,+14342159850,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+nelson-va-overture-b47af33e,Nelson County Pantry,meal,"9890 Thomas Nelson Hwy, Lovingston",37.76851272583008,-78.86892700195312,+14342636694,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://NelsonCountyPantry.org/

@@ -1,0 +1,12 @@
+{
+  "slug": "sussex-de",
+  "name": "Sussex, DE",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "10005",
+  "timezone_derived_from": "state"
+}

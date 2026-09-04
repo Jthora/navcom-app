@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+allegany-ny-overture-59cd2cb5,Alfred Area Food Pantry,meal,"United Methodist Church, 1389 Moland Hill Rd Alfred, Alfred",42.2535514831543,-77.80393981933594,+16073827915,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+allegany-ny-overture-576f89fa,Wellspring Ministries,meal,"5993 County Road 16, Belfast",42.297035217285156,-78.07350158691406,+15853652250,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+caldwell-tx-overture-a0349d39,Luling Food Bank,meal,"410 Mulberry Ave S, Luling",29.677093505859375,-97.65924072265625,+18308752863,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+caldwell-tx-overture-52815ab0,Caldwell County Christian,meal,"901 Bois D'Arc St #910, Lockhart",29.885591506958008,-97.68486022949219,+15123766661,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.caldwellfoodpantry.com/

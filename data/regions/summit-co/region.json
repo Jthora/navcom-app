@@ -1,0 +1,12 @@
+{
+  "slug": "summit-co",
+  "name": "Summit, CO",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "08117",
+  "timezone_derived_from": "state"
+}

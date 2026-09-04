@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+kosciusko-in-overture-085633a7,Milford Food Bank,meal,"112 E. Emeline St, 111 S James St, Milford",41.40848922729492,-85.84466552734375,+12603611441,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.milfordfoodbank.org/
+kosciusko-in-overture-84a86388,Fellowship Missions,shelter,"1520 E Winona Ave, Warsaw",41.23516845703125,-85.83607482910156,+15742689555,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://fellowshipmissions.net/
+kosciusko-in-overture-ca4570e8,Syracuse Food Pantry,meal,"203 E Main St, Syracuse",41.4282112121582,-85.75125122070312,15744575450,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

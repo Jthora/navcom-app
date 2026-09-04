@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+poinsett-ar-overture-44977ee2,Bread of Life Food Pantry,shelter,"204 S Main St, Harrisburg",35.56210708618164,-90.71794128417969,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+poinsett-ar-overture-cda44ad6,Trumann Food Pantry,meal,"610 Walnut St, Trumann",35.675071716308594,-90.5008544921875,+18704831118,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://trumannfoodpantry.org/
+poinsett-ar-overture-71e5a52a,Stepping Stone Sanctuary,shelter,"904 Speedway St W, Trumann",35.67870330810547,-90.5199966430664,+18704180111,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://steppingstonesanctuary.org/

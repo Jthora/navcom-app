@@ -1,0 +1,12 @@
+{
+  "slug": "summers-wv",
+  "name": "Summers, WV",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "54089",
+  "timezone_derived_from": "state"
+}

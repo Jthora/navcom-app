@@ -1,0 +1,12 @@
+{
+  "slug": "abbeville-sc",
+  "name": "Abbeville, SC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "45001",
+  "timezone_derived_from": "state"
+}

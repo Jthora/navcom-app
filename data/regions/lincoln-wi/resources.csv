@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+lincoln-wi-overture-ca143b4b,Our Sisters' House,shelter,"328 E Washington Ave, Tomahawk",45.47285842895508,-89.72382354736328,+17152243520,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=NRYLHXBY6PM68
+lincoln-wi-overture-b774a81a,MAC Home - Merrill Community Homeless Center,shelter,"407 W Main St, Merrill",45.17872619628906,-89.7059326171875,+17157221200,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://MACHomeMerrillWI.com/
+lincoln-wi-overture-8e67a36e,Community Food Pantry-merrill,meal,"503 S Center Ave, Merrill",45.176273345947266,-89.6807632446289,17155364505,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://merrillfoodpantry.com

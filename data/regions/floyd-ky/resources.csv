@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+floyd-ky-overture-77dc2f8d,"Floyd County Homeless Shelter, Kentucky",shelter,"644 Ky Route 122, Martin",37.55742263793945,-82.7541275024414,+16069492033,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://FloydCoHomelessshelter.com/
+floyd-ky-overture-3f2f8e70,Heaven's Harvest Food Pantry,meal,"3534 KY-122, Printer",37.52613067626953,-82.75128173828125,+15025179233,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://heavensharvestfood.wixsite.com/website
+floyd-ky-overture-29a9befc,Mountain Haven Emergency Shelter,shelter,"222 University Dr, Prestonsburg",37.680545806884766,-82.78044128417969,+16064590111,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.mtcomp.org/mthaven
+floyd-ky-overture-b0faa982,VFW Post 5839,shelter,"3106 S Lake Dr, Prestonsburg",37.667816162109375,-82.7335433959961,+16068869428,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.gofundme.com/veteranshelter

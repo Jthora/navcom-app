@@ -1,0 +1,12 @@
+{
+  "slug": "waller-tx",
+  "name": "Waller, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48473",
+  "timezone_derived_from": "state"
+}

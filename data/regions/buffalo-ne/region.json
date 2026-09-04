@@ -1,0 +1,12 @@
+{
+  "slug": "buffalo-ne",
+  "name": "Buffalo, NE",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "31019",
+  "timezone_derived_from": "state"
+}

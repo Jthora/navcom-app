@@ -1,0 +1,12 @@
+{
+  "slug": "matanuska-susitna-ak",
+  "name": "Matanuska-Susitna, AK",
+  "country": "US",
+  "timezone": "America/Anchorage",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "02170",
+  "timezone_derived_from": "state"
+}

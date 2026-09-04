@@ -1,0 +1,12 @@
+{
+  "slug": "dane-wi",
+  "name": "Dane, WI",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "55025",
+  "timezone_derived_from": "state"
+}

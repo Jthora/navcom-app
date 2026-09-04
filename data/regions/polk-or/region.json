@@ -1,0 +1,12 @@
+{
+  "slug": "polk-or",
+  "name": "Polk, OR",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "41053",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "logan-ok",
+  "name": "Logan, OK",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "40083",
+  "timezone_derived_from": "state"
+}

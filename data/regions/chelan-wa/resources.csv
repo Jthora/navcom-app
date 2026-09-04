@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+chelan-wa-overture-69ac59f3,Entiat Valley Community Services Food Bank,meal,"2084 Entiat Way, Entiat",47.67552185058594,-120.20996856689453,+15098883999,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.evcsfb.org/
+chelan-wa-overture-15b53f9d,Lake Chelan Food Bank,meal,"417 S Bradley St, Chelan",47.836387634277344,-120.01260375976562,+15093684151,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://lakechelanfoodbank.org/
+chelan-wa-overture-fc04c882,Wenatchee Rescue Mission,shelter,"1450 S Wenatchee Ave, Wenatchee",47.40336227416992,-120.30135345458984,+15096634289,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.wrmchange.org/
+chelan-wa-overture-fed82931,Chelan Bluff,shelter,"1135 S Bradley St, Chelan",47.83022689819336,-120.01275634765625,+15096825952,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://chelan-bluff.hub.biz
+chelan-wa-overture-77b212ed,Cashmere Food Bank,meal,"316 River St, Cashmere",47.52242660522461,-120.47453308105469,+15092456464,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://cashmerefoodbank.org/

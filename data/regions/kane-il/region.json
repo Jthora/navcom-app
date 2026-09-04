@@ -1,0 +1,12 @@
+{
+  "slug": "kane-il",
+  "name": "Kane, IL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "17089",
+  "timezone_derived_from": "state"
+}

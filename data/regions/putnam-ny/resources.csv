@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+putnam-ny-overture-989d06ef,Second Chance Foods,meal,"120 Marvin Ave, Brewster",41.39524841308594,-73.6113510131836,+18457343002,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.secondchancefoods.org/
+putnam-ny-overture-ef3beae9,Putnam Community Action,meal,"121 Main St, Brewster",41.39546203613281,-73.61355590820312,+18452788021,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.putnamcap.org/
+putnam-ny-overture-26b98269,Walter Hoving Home,shelter,"40 Walter Hoving Rd, Philipstown",41.38721466064453,-73.93018341064453,+18454243674,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.walterhovinghome.com
+putnam-ny-overture-145107d3,Hillside Food Outreach,meal,"1108 Route 52, Carmel",41.49306869506836,-73.6793212890625,+18452253393,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://hillsidefoodoutreach.org
+putnam-ny-overture-fed21514,Philipstown Food Pantry,meal,"10 Academy St, Cold Spring",41.41990280151367,-73.95278930664062,+18452653220,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.presbychurchcoldspring.org/food-pantry.html

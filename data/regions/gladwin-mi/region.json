@@ -1,0 +1,12 @@
+{
+  "slug": "gladwin-mi",
+  "name": "Gladwin, MI",
+  "country": "US",
+  "timezone": "America/Detroit",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "26051",
+  "timezone_derived_from": "state"
+}

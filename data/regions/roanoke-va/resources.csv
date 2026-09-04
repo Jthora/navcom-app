@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+roanoke-va-overture-9dd10b49,Family Promise Of Greater Roanoke,shelter,"631 Abney Rd, Roanoke",37.3277587890625,-79.95446014404297,15404447374,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://familypromiseroanoke.org
+roanoke-va-overture-2e9d4430,The Least Of These Ministry (tlot),shelter,"422 Luck Ave SW, Roanoke",37.269561767578125,-79.94947052001953,15405563200,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://theleastoftheseministry.org
+roanoke-va-overture-0853ab80,Christian Soldiers Food Pantry,meal,"728 Church Ave SE, Roanoke",37.27201461791992,-79.93236541748047,+15402063466,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+roanoke-va-overture-c9d585a0,The Patterson Place,shelter,"1405 Patterson Ave SW, Roanoke",37.27308654785156,-79.96516418457031,+15405249510,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

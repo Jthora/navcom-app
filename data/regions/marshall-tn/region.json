@@ -1,0 +1,12 @@
+{
+  "slug": "marshall-tn",
+  "name": "Marshall, TN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "47117",
+  "timezone_derived_from": "state"
+}

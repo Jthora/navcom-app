@@ -1,0 +1,12 @@
+{
+  "slug": "kent-mi",
+  "name": "Kent, MI",
+  "country": "US",
+  "timezone": "America/Detroit",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "26081",
+  "timezone_derived_from": "state"
+}

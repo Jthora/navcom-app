@@ -1,0 +1,12 @@
+{
+  "slug": "st-tammany-la",
+  "name": "St. Tammany, LA",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "22103",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "labette-ks",
+  "name": "Labette, KS",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "20099",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+pottawatomie-ok-overture-a3e39fbf,Homeless Resource Center,shelter,"506 S Beard St, Shawnee",35.32244873046875,-96.92512512207031,+14052871777,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.shawneerescuemission.com/
+pottawatomie-ok-overture-63926d28,Shawnee Rescue Mission,shelter,"506 S Beard St, Shawnee",35.32244873046875,-96.92501831054688,+14058788700,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+pottawatomie-ok-overture-48915b86,Our Community Market of Pottawatomie County,meal,"120 S Center St, Shawnee",35.32706069946289,-96.90794372558594,+14057884957,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.ourcommunitymarket.org/

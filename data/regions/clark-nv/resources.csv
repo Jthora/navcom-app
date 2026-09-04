@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+clark-nv-overture-6a17d4d3,Friends in the Desert Foundation,meal,"43 W Pacific Ave, Henderson",36.032264709472656,-114.98612213134766,+17025658742,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.friendsinthedesert.com/
+clark-nv-overture-b0567f2e,Virgin Valley Community Food and Thrift Store,meal,"115 S 1st st, Mesquite",36.80296325683594,-114.07321166992188,+17023460900,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+clark-nv-overture-d29346ff,St. Vincent de Paul,meal,"722 S Boulder Hwy, Henderson",36.029571533203125,-114.97048950195312,+17028779500,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://svdpusa.org/

@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+clallam-wa-overture-5a91e247,Makah Food Bank,meal,"90 Resort Dr, Neah Bay",48.34730529785156,-124.66845703125,+13606452454,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+clallam-wa-overture-918183dd,Port Angeles Food Bank,meal,"402 S Valley St, Port Angeles",48.11870193481445,-123.44239807128906,+13604528568,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://portangelesfoodbank.org
+clallam-wa-overture-ce1086f7,Sequim Food Bank,meal,"144 W Alder St, Sequim",48.082462310791016,-123.10369110107422,+13606831205,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://sequimfoodbank.org/
+clallam-wa-overture-37fd7cff,Mariposa House,shelter,"81 S 2nd Ave, Forks",47.95000076293945,-124.38714599609375,+13603746411,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.mariposahouse.org/
+clallam-wa-overture-9a867de8,Serenity House of Clallam County,shelter,"2203 W 18th St, Port Angeles",48.12238311767578,-123.4901351928711,+13604527224,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.serenityhouseclallam.org/

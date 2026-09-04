@@ -1,0 +1,12 @@
+{
+  "slug": "jefferson-co",
+  "name": "Jefferson, CO",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "08059",
+  "timezone_derived_from": "state"
+}

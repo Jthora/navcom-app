@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+oneida-wi-overture-cac8500f,Frederick Place,shelter,"204 W Frederick St, Rhinelander",45.6403694152832,-89.4145278930664,+17153699777,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.nathnorthwoods.com/
+oneida-wi-overture-4eb6b21e,Rhinelander Area Food Pantry,meal,"627 Coon St, Rhinelander",45.63175964355469,-89.4023666381836,+17153697237,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.rhinelanderareafoodpantry.org/

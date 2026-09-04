@@ -1,0 +1,12 @@
+{
+  "slug": "laporte-in",
+  "name": "LaPorte, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18091",
+  "timezone_derived_from": "state"
+}

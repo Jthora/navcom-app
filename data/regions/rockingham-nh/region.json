@@ -1,0 +1,12 @@
+{
+  "slug": "rockingham-nh",
+  "name": "Rockingham, NH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "33015",
+  "timezone_derived_from": "state"
+}

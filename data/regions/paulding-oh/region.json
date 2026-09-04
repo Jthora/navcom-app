@@ -1,0 +1,12 @@
+{
+  "slug": "paulding-oh",
+  "name": "Paulding, OH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "39125",
+  "timezone_derived_from": "state"
+}

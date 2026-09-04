@@ -1,0 +1,12 @@
+{
+  "slug": "buchanan-ia",
+  "name": "Buchanan, IA",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "19019",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+mcpherson-ks-overture-3fe945d4,The Canton Community Food Bank,meal,"207 W Railroad St, Canton",38.38507080078125,-97.42935180664062,+16207270618,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+mcpherson-ks-overture-c1fa4bac,McPherson County Food Bank,meal,"707 S Main St, McPherson",38.36269760131836,-97.66674041748047,+16202418050,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://mcphersonks.org

@@ -1,0 +1,12 @@
+{
+  "slug": "fayette-tn",
+  "name": "Fayette, TN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "47047",
+  "timezone_derived_from": "state"
+}

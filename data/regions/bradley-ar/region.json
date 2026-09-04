@@ -1,0 +1,12 @@
+{
+  "slug": "bradley-ar",
+  "name": "Bradley, AR",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "05011",
+  "timezone_derived_from": "state"
+}

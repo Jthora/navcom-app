@@ -1,0 +1,12 @@
+{
+  "slug": "beaverhead-mt",
+  "name": "Beaverhead, MT",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "30001",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+kalamazoo-mi-overture-1ba80215,Kalamazoo Loaves and Fishes,meal,"901 Portage Street, Kalamazoo",42.282535552978516,-85.57238006591797,+12694882617,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.kzoolf.org/
+kalamazoo-mi-overture-40aa4a2b,Twelve Baskets Food Pantry,meal,"10332 Portage Rd, Portage",42.16685485839844,-85.56996154785156,+12695324912,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://Twelve-Baskets.org/
+kalamazoo-mi-overture-c2bd4899,Westwood Neighborhood Food Pantry,meal,"538 Nichols Rd, Kalamazoo",42.297306060791016,-85.62794494628906,+12699980315,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.westwood-umc.org/wumc-food-pantry/
+kalamazoo-mi-overture-986f858f,Kalamazoo Gospel Ministries,shelter,"448 N Burdick St, Kalamazoo",42.295326232910156,-85.5827407836914,12693452974,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.kzoogospel.org

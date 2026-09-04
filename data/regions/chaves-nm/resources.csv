@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+chaves-nm-overture-5e047b48,Harvest Ministries,meal,"601 N Main St, Roswell",33.39899826049805,-104.52259826660156,+15756242415,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.harvestmin.net/
+chaves-nm-overture-7e97f7ae,Loaves and Fishes Food Pantry,meal,"120 E Argyle St, Hagerman",33.11375427246094,-104.32644653320312,+15756261778,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+chaves-nm-overture-145db9c2,Assurance Home Inc,shelter,"1000 E 18th St, Roswell",33.41374206542969,-104.50917053222656,+15756241780,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://assurancehome.org/

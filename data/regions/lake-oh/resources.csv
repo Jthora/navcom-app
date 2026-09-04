@@ -1,0 +1,8 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+lake-oh-overture-7f5aeada,Project Hope For The Homeless,shelter,"25 Freedom Rd, Painesville",41.72072219848633,-81.26810455322266,14403546417,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.projecthopeforthehomeless.org
+lake-oh-overture-7d41d44a,Madison Food Center,meal,"1954 Hubbard Rd, Madison",41.821128845214844,-81.04890441894531,+14404289601,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.madisonfoodcenter.org
+lake-oh-overture-9dbc2dec,The Perfect Storm Shelter,shelter,"8171 Tyler Blvd, Mentor",41.68315887451172,-81.34797668457031,+14402557525,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.theperfectstormshelters.com/
+lake-oh-overture-ed08c92d,Forbes Hse Battered Women's Shelter,shelter,"66 E South St, Painesville",41.721588134765625,-81.2411117553711,+14403571018,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+lake-oh-overture-4c40c35e,McKinley Community Outreach Center Food Pantry,meal,"1200 Lost Nation Rd, Willoughby",41.693321228027344,-81.3998794555664,+14402698008,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.mckinleycenter.org/
+lake-oh-overture-5845aeba,Food Force Food Pantry,meal,"1 Victoria Pl, Painesville",41.725196838378906,-81.24240112304688,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.ccdocle.org
+lake-oh-overture-6f8530e4,Perry Center,meal,"4261 Manchester Rd, Perry",41.76932907104492,-81.1361083984375,14402593332,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

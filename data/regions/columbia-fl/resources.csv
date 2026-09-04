@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+columbia-fl-overture-84cffca1,Lad Soup Kitchen,shelter,"127 NW Escambia St, Lake City",30.195545196533203,-82.63776397705078,+13867582217,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.cjsministries.org
+columbia-fl-overture-96271539,Florida Gateway Food Bank,meal,"553 NW Railroad St, Lake City",30.196455001831055,-82.64523315429688,13867555683,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://catholiccharitieslakecity.org

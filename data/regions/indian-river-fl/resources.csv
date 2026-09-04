@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+indian-river-fl-overture-b3c25998,Hope for Families Center,shelter,"720 4th St, Vero Beach",27.609121322631836,-80.38761138916016,+17725675537,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.hopeforfamiliescenter.org/
+indian-river-fl-overture-7ad7d8a7,The Source,meal,"1015 Commerce Ave, Vero Beach",27.619970321655273,-80.38990783691406,+17725640202,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.iamthesource.org/
+indian-river-fl-overture-0c949826,Our Father's Table Soup Kitchen,meal,"4221 28th Ave, Vero Beach",27.66994285583496,-80.4136962890625,+17725626268,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://our-fathers-table-soup-kitchen.hub.biz/

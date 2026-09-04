@@ -1,0 +1,12 @@
+{
+  "slug": "grand-isle-vt",
+  "name": "Grand Isle, VT",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "50013",
+  "timezone_derived_from": "state"
+}

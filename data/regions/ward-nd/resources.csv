@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+ward-nd-overture-10df01fc,Kenmare Food Pantry,meal,"Optometry Clinic PC, 28 2nd St NW, Kenmare",48.67486572265625,-102.08297729492188,+17013854528,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+ward-nd-overture-e24973c5,Men's Winter Refuge,shelter,"1038 43rd St SE, Minot",48.22538375854492,-101.22943115234375,+17018222585,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.menswinterrefuge.com/
+ward-nd-overture-a8f4e4f5,Lord's Cupboard Food Pantry,meal,"1901 S Broadway, Minot",48.223018646240234,-101.3200912475586,+17018391990,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://thelordscupboardfoodpantry.com/

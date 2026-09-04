@@ -1,0 +1,12 @@
+{
+  "slug": "park-wy",
+  "name": "Park, WY",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "56029",
+  "timezone_derived_from": "state"
+}

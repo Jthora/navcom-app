@@ -1,0 +1,12 @@
+{
+  "slug": "maui-hi",
+  "name": "Maui, HI",
+  "country": "US",
+  "timezone": "Pacific/Honolulu",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "15009",
+  "timezone_derived_from": "state"
+}

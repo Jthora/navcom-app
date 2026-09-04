@@ -1,0 +1,12 @@
+{
+  "slug": "thurston-wa",
+  "name": "Thurston, WA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "53067",
+  "timezone_derived_from": "state"
+}

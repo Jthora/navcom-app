@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+la-plata-co-overture-88cd3181,Durango Food Bank,meal,"194 Bodo Dr C, Durango",37.245155334472656,-107.87691497802734,+19703752672,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://durangoareafoodbank.org/
+la-plata-co-overture-31b64be4,Durango Food Bank,meal,"989 S Camino del Rio, Durango",37.24144744873047,-107.87305450439453,+19703752672,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://durangoareafoodbank.org
+la-plata-co-overture-4dcf5f42,Merced de las Animas,shelter,"3701 W 2nd Ave, Durango",37.30504608154297,-107.86892700195312,+19702479066,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.mercyhousing.org/CO-Merced-de-las-Animas
+la-plata-co-overture-7abc7e69,Manna Durango,shelter,"1100 Avenida del Sol, Durango",37.277099609375,-107.88552856445312,+19703855095,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://linktr.ee/mannasoupkitchen
+la-plata-co-overture-4ae68fe4,Durango Community Shelter,shelter,"1055 Avenida Del Sol, Durango",37.27675247192383,-107.88616943359375,+19702591255,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.voa.org

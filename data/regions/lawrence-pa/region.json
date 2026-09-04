@@ -1,0 +1,12 @@
+{
+  "slug": "lawrence-pa",
+  "name": "Lawrence, PA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "42073",
+  "timezone_derived_from": "state"
+}

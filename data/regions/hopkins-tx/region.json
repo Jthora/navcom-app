@@ -1,0 +1,12 @@
+{
+  "slug": "hopkins-tx",
+  "name": "Hopkins, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48223",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "prince-george-s-md",
+  "name": "Prince George's, MD",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "24033",
+  "timezone_derived_from": "state"
+}

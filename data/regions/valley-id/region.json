@@ -1,0 +1,12 @@
+{
+  "slug": "valley-id",
+  "name": "Valley, ID",
+  "country": "US",
+  "timezone": "America/Boise",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "16085",
+  "timezone_derived_from": "state"
+}

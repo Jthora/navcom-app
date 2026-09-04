@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+iroquois-il-overture-81980b19,Sheldon Area Food Pantry,meal,"107 N 4th St, Sheldon",40.77067947387695,-87.56373596191406,+18154867157,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+iroquois-il-overture-07608cae,Clifton Community Food Pantry,meal,"1030 E Rd, Clifton",40.941219329833984,-87.93833923339844,+18157915491,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+iroquois-il-overture-afda2fa4,G O D's Food Pantry-Gilman,meal,"116 N Thomas St, Gilman",40.767852783203125,-87.99067687988281,+18152654133,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

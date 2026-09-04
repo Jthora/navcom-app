@@ -1,0 +1,12 @@
+{
+  "slug": "sumter-fl",
+  "name": "Sumter, FL",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "12119",
+  "timezone_derived_from": "state"
+}

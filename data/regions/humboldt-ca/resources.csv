@@ -1,0 +1,9 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+humboldt-ca-overture-30954236,Tri-County Independent Living,meal,"2822 Harris St, Eureka",40.78046798706055,-124.13613891601562,7074458404,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+humboldt-ca-overture-cd377d47,Arcata House Partnership,shelter,"501 9th St, Arcata",40.86845016479492,-124.08367156982422,+17076336236,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://arcatahouse.org/
+humboldt-ca-overture-2367da29,Eureka Rescue Mission,shelter,"110 2nd St, Eureka",40.8037109375,-124.17045593261719,+17074434551,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.eurekarescuemission.org/
+humboldt-ca-overture-ebb9fd1f,Arcata Endeavor,shelter,"501 9th St, Arcata",40.86844253540039,-124.08355712890625,+17078225008,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+humboldt-ca-overture-163f2096,Arcata House Partnership Admin Office,shelter,"1005 11th St, Arcata",40.87099838256836,-124.08856201171875,7078224528,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://arcatahouse.org
+humboldt-ca-overture-6f3dafc0,Yurok Indian Housing Authority,shelter,"15900 US Highway 101 N, Klamath",41.19535827636719,-123.7142105102539,+17074821506,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.yurokhousing.com
+humboldt-ca-overture-d8022cde,Karuk Tribe,shelter,"37960 State Highway 96, Orleans",41.30107879638672,-123.54240417480469,+15306273446,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://klamathrestoration.org
+humboldt-ca-overture-6537a465,Food for People,meal,"307 W 14th St, Eureka",40.7937126159668,-124.17426300048828,+17074453166,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.foodforpeople.org/

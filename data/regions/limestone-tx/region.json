@@ -1,0 +1,12 @@
+{
+  "slug": "limestone-tx",
+  "name": "Limestone, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48293",
+  "timezone_derived_from": "state"
+}

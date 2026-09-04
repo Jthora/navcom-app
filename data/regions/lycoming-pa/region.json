@@ -1,0 +1,12 @@
+{
+  "slug": "lycoming-pa",
+  "name": "Lycoming, PA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "42081",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "bristol-va",
+  "name": "Bristol, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51520",
+  "timezone_derived_from": "state"
+}

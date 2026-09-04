@@ -1,0 +1,12 @@
+{
+  "slug": "madison-mt",
+  "name": "Madison, MT",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "30057",
+  "timezone_derived_from": "state"
+}

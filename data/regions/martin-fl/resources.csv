@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+martin-fl-overture-d8984dc5,House Of Hope-indiantown - Food Distribution Center,meal,"15549 SW Warfield Blvd, Indiantown",27.02004051208496,-80.465087890625,17722864673,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.hohmartin.org
+martin-fl-overture-984e0f10,Can We Help,meal,"1300 Se 10th St Rm 14, Stuart",27.18995475769043,-80.22928619384766,+17724868150,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+martin-fl-overture-484d5066,Mary's Home,shelter,"1033 SE 14th St, Stuart",27.18684959411621,-80.23517608642578,+17722235000,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://maryshome.org/

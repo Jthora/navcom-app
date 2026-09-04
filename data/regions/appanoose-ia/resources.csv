@@ -1,0 +1,2 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+appanoose-ia-overture-abbd987b,CCSD Food Pantry,meal,"600 CHS Dr, Centerville",40.72977828979492,-92.87699127197266,+16418958583,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://sites.google.com/centervillek12.org/chsfoodpantry/home

@@ -1,0 +1,12 @@
+{
+  "slug": "menominee-mi",
+  "name": "Menominee, MI",
+  "country": "US",
+  "timezone": "America/Detroit",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "26109",
+  "timezone_derived_from": "state"
+}

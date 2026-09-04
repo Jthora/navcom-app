@@ -1,0 +1,12 @@
+{
+  "slug": "asotin-wa",
+  "name": "Asotin, WA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "53003",
+  "timezone_derived_from": "state"
+}

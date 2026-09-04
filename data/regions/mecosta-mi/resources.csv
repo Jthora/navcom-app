@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+mecosta-mi-overture-c1b4b099,Our Brother's Keeper,shelter,"405 S 3rd Ave, Big Rapids",43.69908142089844,-85.4716796875,12316298160,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://obkshelter.org
+mecosta-mi-overture-d779506b,Project Starburst,meal,"120 S State St, Big Rapids",43.69757843017578,-85.48458099365234,+12317965342,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.projectstarburst.org/
+mecosta-mi-overture-91cca6a3,Manna Pantry of Big Rapids,meal,"315 S State St, Big Rapids",43.694862365722656,-85.48375701904297,+12314082940,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.mannapantry.org/

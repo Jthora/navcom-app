@@ -1,0 +1,12 @@
+{
+  "slug": "cherokee-al",
+  "name": "Cherokee, AL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "01019",
+  "timezone_derived_from": "state"
+}

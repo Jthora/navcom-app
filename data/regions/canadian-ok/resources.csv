@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+canadian-ok-overture-0bf729d2,Safehand Shelters,shelter,"10948 NW Expressway, Yukon",35.591915130615234,-97.71821594238281,+14052563646,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.safehandshelters.com
+canadian-ok-overture-8324d81a,Yukon Sharing Ministry - Food Distribution Center,meal,"4 N 6th St, Yukon",35.50834274291992,-97.75249481201172,14053549456,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.yukonsharing.org

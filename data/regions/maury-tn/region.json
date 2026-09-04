@@ -1,0 +1,12 @@
+{
+  "slug": "maury-tn",
+  "name": "Maury, TN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "47119",
+  "timezone_derived_from": "state"
+}

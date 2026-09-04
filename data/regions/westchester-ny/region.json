@@ -1,0 +1,12 @@
+{
+  "slug": "westchester-ny",
+  "name": "Westchester, NY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "36119",
+  "timezone_derived_from": "state"
+}

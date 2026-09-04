@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+chattooga-ga-overture-e61bf0a8,Hope Rebirth Homeless Shelter,shelter,"50 Eleanor Ave, Summerville",34.48236083984375,-85.34242248535156,7068574804,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+chattooga-ga-overture-a30d68af,Menlo Housing Authority,shelter,"71 Edison St, Menlo",34.4754638671875,-85.47883605957031,+17068622339,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.menlo-housing-authority.hub.biz
+chattooga-ga-overture-6f75ef81,Community Resource Center Of Chattooga,meal,"50 Eleanor Ave  Ste A, Summerville",34.48236083984375,-85.34242248535156,17068080477,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.www.feedchattooga.com

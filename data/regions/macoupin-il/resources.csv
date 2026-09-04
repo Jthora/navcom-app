@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+macoupin-il-overture-0deac7e2,Carlinville Food Pantry,meal,"55 Carlinville Plaza, Carlinville",39.29336929321289,-89.876220703125,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://carlinvillefoodpantry.org/
+macoupin-il-overture-4f068824,Mount Olive Care Center,meal,"120 E Main St, Mt Olive",39.071983337402344,-89.72614288330078,+12179992651,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://mtzion.com/
+macoupin-il-overture-c3a0bb96,Staunton Helping Hands Center,meal,"219 W Main St, Staunton",39.01219940185547,-89.78850555419922,+16186352267,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://goo.gl/y3Uk60

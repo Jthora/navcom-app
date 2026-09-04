@@ -1,0 +1,12 @@
+{
+  "slug": "lincoln-nc",
+  "name": "Lincoln, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37109",
+  "timezone_derived_from": "state"
+}

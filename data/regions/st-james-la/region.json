@@ -1,0 +1,12 @@
+{
+  "slug": "st-james-la",
+  "name": "St. James, LA",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "22093",
+  "timezone_derived_from": "state"
+}

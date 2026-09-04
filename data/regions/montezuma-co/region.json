@@ -1,0 +1,12 @@
+{
+  "slug": "montezuma-co",
+  "name": "Montezuma, CO",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "08083",
+  "timezone_derived_from": "state"
+}

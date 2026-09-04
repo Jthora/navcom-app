@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+whitman-wa-overture-603ab48d,Albion WA Food Pantry,meal,"310 N F St, Albion",46.793853759765625,-117.2497329711914,+15093325095,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+whitman-wa-overture-fe3ed9fb,Pullman Child Welfare,meal,"108 NW Stadium Way, Pullman",46.74017333984375,-117.17321014404297,15093380801,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: www.pullmanchildwelfare.org
+whitman-wa-overture-2fa01b64,Garfield Food Pantry,meal,"211 E Main St, Garfield",47.007076263427734,-117.13742065429688,+15092375337,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

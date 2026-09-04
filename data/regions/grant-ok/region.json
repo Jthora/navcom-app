@@ -1,0 +1,12 @@
+{
+  "slug": "grant-ok",
+  "name": "Grant, OK",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "40053",
+  "timezone_derived_from": "state"
+}

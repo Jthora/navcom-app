@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+sauk-wi-overture-153afcd8,Pathway Home,shelter,"1200 Silver Cir, Baraboo",43.45222854614258,-89.74470520019531,+16083563069,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://pathwayhomewi.org/
+sauk-wi-overture-e81ee6ed,Beyond Blessed Pantry,meal,"1515 Walnut St, Baraboo",43.44998550415039,-89.74124908447266,16088440052,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.bbpantry.org/about-5
+sauk-wi-overture-3b16712d,Beyond Blessed Pantry,meal,"1101 Lake St, Baraboo",43.454593658447266,-89.73130798339844,+16088440052,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.bbpantry.org/
+sauk-wi-overture-0a36101a,Sauk Prairie Area Food Pantry,meal,"821 Industry Rd, Sauk City",43.267127990722656,-89.73311614990234,+16085717737,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.spfoodpantry.org/
+sauk-wi-overture-67f35567,Baraboo Food Pantry,meal,"100 South Blvd, Baraboo",43.465938568115234,-89.7464370727539,+16083564649,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.baraboofoodpantry.org/

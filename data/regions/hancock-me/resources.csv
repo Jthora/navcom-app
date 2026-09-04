@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+hancock-me-overture-47ad377c,Loaves and Fishes Food Pantry,meal,"137 US-1, Ellsworth",44.52760314941406,-68.39251708984375,+12076674363,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://loavesandfishesellsworth.org/
+hancock-me-overture-bd53b8cb,Bar Harbor Food Pantry,meal,"34 Kennebec Pl, Bar Harbor",44.388004302978516,-68.20636749267578,+12072883375,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.barharborfoodpantry.org/
+hancock-me-overture-fba727a0,Emmaus Homeless Shelter,shelter,"51 Main St, Ellsworth",44.5408935546875,-68.4251708984375,+12076673962,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.emmaushomelessshelter.org/

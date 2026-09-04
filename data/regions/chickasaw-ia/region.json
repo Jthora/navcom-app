@@ -1,0 +1,12 @@
+{
+  "slug": "chickasaw-ia",
+  "name": "Chickasaw, IA",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "19037",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+umatilla-or-overture-71f763be,Martha's House,shelter,"305 SE 4th St, Hermiston",45.83848190307617,-119.28472137451172,+15415713963,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://marthashousehermiston.org
+umatilla-or-overture-fcaa5ea0,Hermiston Warming Station,shelter,"1075 S Highway 395, Hermiston",45.832759857177734,-119.2822036743164,5412892150,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+umatilla-or-overture-4fa407df,Breadbasket,meal,"8 NE 7th Ave, Milton-Freewater",45.94296646118164,-118.39696502685547,+15419383158,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

@@ -1,0 +1,12 @@
+{
+  "slug": "deschutes-or",
+  "name": "Deschutes, OR",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "41017",
+  "timezone_derived_from": "state"
+}

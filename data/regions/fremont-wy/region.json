@@ -1,0 +1,12 @@
+{
+  "slug": "fremont-wy",
+  "name": "Fremont, WY",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "56013",
+  "timezone_derived_from": "state"
+}

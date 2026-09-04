@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+pickens-sc-overture-f53b4c47,Helping Hands of Clemson,shelter,"167 Brookbend Rd, Central",34.76076889038086,-82.8272933959961,+18646546154,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.helpinghandsofclemson.org
+pickens-sc-overture-17770e15,Pickens County Shelter of Hope,shelter,"141 City View Cir, Pickens",34.89458465576172,-82.71229553222656,+18645073112,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.tsgministries.com/
+pickens-sc-overture-2f21f754,"Feed A Hungry Child PC, Inc.",meal,"118 Old Saw Mill Rd, Easley",34.85390853881836,-82.6670150756836,+18648979890,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.pickenschildren.com/
+pickens-sc-overture-21035171,Family Promise of Pickens County,shelter,"104 Stewart Dr, Easley",34.830963134765625,-82.58284759521484,+18646448828,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.familypromisepickens.org

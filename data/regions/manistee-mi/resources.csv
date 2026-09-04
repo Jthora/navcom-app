@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+manistee-mi-overture-7bfc7e0c,Safe Harbor of Manistee County,shelter,"525 Michael St, Manistee",44.241493225097656,-86.3224105834961,+12317236613,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.echohislove.org/
+manistee-mi-overture-42a2522b,Matthew25:35 Food Pantry,shelter,"249 6th St, Manistee",44.24009323120117,-86.31607818603516,+12317232619,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+manistee-mi-overture-049f3e34,Feed Your Soul & Community Resources,meal,"16798 1st St Box 6, Copemish",44.480716705322266,-85.92371368408203,+12312851419,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://feedyoursoulmi.org/

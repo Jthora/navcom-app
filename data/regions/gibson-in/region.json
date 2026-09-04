@@ -1,0 +1,12 @@
+{
+  "slug": "gibson-in",
+  "name": "Gibson, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18051",
+  "timezone_derived_from": "state"
+}

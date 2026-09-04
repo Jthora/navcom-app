@@ -1,0 +1,12 @@
+{
+  "slug": "waynesboro-va",
+  "name": "Waynesboro, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51820",
+  "timezone_derived_from": "state"
+}

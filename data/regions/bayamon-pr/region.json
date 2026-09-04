@@ -1,0 +1,12 @@
+{
+  "slug": "bayamon-pr",
+  "name": "Bayam\u00f3n, PR",
+  "country": "US",
+  "timezone": "America/Puerto_Rico",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "72021",
+  "timezone_derived_from": "state"
+}

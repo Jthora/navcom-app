@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+lexington-sc-overture-f74419f2,Chapin We Care Center,meal,"1800 Chapin Rd, Chapin",34.17207717895508,-81.36419677734375,+18033453244,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.chapinwecare.org/
+lexington-sc-overture-e0e34672,Christian Life Assembly - Food Distribution Center,meal,"2700 Bush River Rd, Columbia",34.03434753417969,-81.12981414794922,18032543886,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: clcolumbia.com

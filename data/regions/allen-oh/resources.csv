@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+allen-oh-overture-7d9b991f,Churches United Pantry,meal,"129 S Pierce St, Lima",40.73903274536133,-84.10933685302734,+14192213243,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://limacup.org/2017/05/18/189
+allen-oh-overture-d9b85349,West Ohio Food Bank,meal,"1380 E Kibby St, Lima",40.729759216308594,-84.08062744140625,+14192227946,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.westohiofoodbank.org/
+allen-oh-overture-6464c068,Lima's Samaritan House,shelter,"328 W McKibben St, Lima",40.746551513671875,-84.10971069335938,+14192224663,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://samaritanhouselima.org/
+allen-oh-overture-8cfe0640,Our Daily Bread Soup Kitchen,meal,"125 S Central Ave, Lima",40.7391357421875,-84.10203552246094,+14192242086,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.odbread.org/

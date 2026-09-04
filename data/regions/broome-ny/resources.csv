@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+broome-ny-overture-1b47d2cd,Binghamton Rescue Mission,shelter,"56-58 Whitney Ave, Binghamton",42.10963821411133,-75.89591217041016,+16072011030,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.binghamtonrescuemission.org/
+broome-ny-overture-871dba75,Binghamton Housing Authority,shelter,"25 Felters Rd, Binghamton",42.098140716552734,-75.87528228759766,+16077713064,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+broome-ny-overture-1e0ca8eb,Deposit Food Pantry,meal,"91 2nd St, Deposit",42.0616455078125,-75.42659759521484,+16074671013,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://depositfoundation.com/

@@ -1,0 +1,12 @@
+{
+  "slug": "san-augustine-tx",
+  "name": "San Augustine, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48405",
+  "timezone_derived_from": "state"
+}

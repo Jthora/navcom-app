@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+fayette-oh-overture-9bd79d7c,Ranch of Opportunity,shelter,"1771 Old Palmer Rd, Fayette County",39.54157638549805,-83.4838638305664,+17403353126,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://ranch.eastway.org/
+fayette-oh-overture-78c662ca,Obgc III Sr Citizen Housing,shelter,"1215 Gregg St, Washington Court House",39.549598693847656,-83.43053436279297,+17403355404,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.b360mgt.com
+fayette-oh-overture-638693ed,Military Chow Hall Veterans Food Pantry,meal,"212 E Elm St, Washington Court House",39.52988815307617,-83.43032836914062,+12039473794,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://militarychowhall.com/

@@ -1,0 +1,12 @@
+{
+  "slug": "norfolk-ma",
+  "name": "Norfolk, MA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "25021",
+  "timezone_derived_from": "state"
+}

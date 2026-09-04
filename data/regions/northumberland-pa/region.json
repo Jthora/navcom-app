@@ -1,0 +1,12 @@
+{
+  "slug": "northumberland-pa",
+  "name": "Northumberland, PA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "42097",
+  "timezone_derived_from": "state"
+}

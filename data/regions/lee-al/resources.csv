@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+lee-al-overture-2cc71d96,Max Fitness,shelter,"189 E University Dr, Auburn",32.5797233581543,-85.49199676513672,+13348261224,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://maxfitnessauburn.com
+lee-al-overture-7301f049,Community Market of East Alabama,meal,"1606 1st Ave, Opelika",32.63901138305664,-85.39337921142578,+13347498844,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://foodbankofeastalabama.com/the-community-market/
+lee-al-overture-440358d3,Food Bank of East Alabama,meal,"355 Industry Dr, Auburn",32.599124908447266,-85.52919006347656,+13348219006,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://foodbankofeastalabama.com/

@@ -1,0 +1,12 @@
+{
+  "slug": "pickens-ga",
+  "name": "Pickens, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13227",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "monterey-ca",
+  "name": "Monterey, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06053",
+  "timezone_derived_from": "state"
+}

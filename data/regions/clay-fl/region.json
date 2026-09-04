@@ -1,0 +1,12 @@
+{
+  "slug": "clay-fl",
+  "name": "Clay, FL",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "12019",
+  "timezone_derived_from": "state"
+}

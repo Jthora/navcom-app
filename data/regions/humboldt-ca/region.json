@@ -1,0 +1,12 @@
+{
+  "slug": "humboldt-ca",
+  "name": "Humboldt, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06023",
+  "timezone_derived_from": "state"
+}

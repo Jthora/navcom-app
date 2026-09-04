@@ -1,0 +1,12 @@
+{
+  "slug": "dukes-ma",
+  "name": "Dukes, MA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "25007",
+  "timezone_derived_from": "state"
+}

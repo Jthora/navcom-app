@@ -1,0 +1,12 @@
+{
+  "slug": "chelan-wa",
+  "name": "Chelan, WA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "53007",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "marquette-mi",
+  "name": "Marquette, MI",
+  "country": "US",
+  "timezone": "America/Detroit",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "26103",
+  "timezone_derived_from": "state"
+}

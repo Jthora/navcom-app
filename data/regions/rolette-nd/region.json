@@ -1,0 +1,12 @@
+{
+  "slug": "rolette-nd",
+  "name": "Rolette, ND",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "38079",
+  "timezone_derived_from": "state"
+}

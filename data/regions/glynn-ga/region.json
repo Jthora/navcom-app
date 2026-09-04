@@ -1,0 +1,12 @@
+{
+  "slug": "glynn-ga",
+  "name": "Glynn, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13127",
+  "timezone_derived_from": "state"
+}

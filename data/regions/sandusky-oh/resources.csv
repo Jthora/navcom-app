@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+sandusky-oh-overture-3928ade0,Liberty Center of Sandusky County,shelter,"1421 E State St, Fremont",41.34158706665039,-83.09342193603516,+14193328777,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.libertycenterfremont.org/
+sandusky-oh-overture-1de4ae9a,The Community Fortress,shelter,"410 Birchard Ave, Fremont",41.344581604003906,-83.1152572631836,14195521813,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+sandusky-oh-overture-106ec0fd,Sandusky County Food Pantry,meal,"129 Bidwell Ave, Fremont",41.34539031982422,-83.11234283447266,+14193348158,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://sanduskycountyfoodpantry.org/

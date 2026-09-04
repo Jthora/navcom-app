@@ -1,0 +1,12 @@
+{
+  "slug": "middlesex-nj",
+  "name": "Middlesex, NJ",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "34023",
+  "timezone_derived_from": "state"
+}

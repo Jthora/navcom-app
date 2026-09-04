@@ -1,0 +1,12 @@
+{
+  "slug": "okeechobee-fl",
+  "name": "Okeechobee, FL",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "12093",
+  "timezone_derived_from": "state"
+}

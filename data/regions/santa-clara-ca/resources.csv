@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+santa-clara-ca-overture-36e8e93a,South Palo Alto Food Closet,meal,"670 E Meadow Dr, Palo Alto",37.4232292175293,-122.11546325683594,+16506000979,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://southpaloaltofoodcloset.com/
+santa-clara-ca-overture-be2a18d1,Opportunity Center,shelter,"33 Encina Ave, Palo Alto",37.43922805786133,-122.16101837158203,+16508538672,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://ivsn.org
+santa-clara-ca-overture-e345b4c2,South County Compassion Center,shelter,"1335 1st St  Ste C, Gilroy",37.013954162597656,-121.59562683105469,14087637120,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.thecompassioncenter.org
+santa-clara-ca-overture-1773facc,Gilroy Sobrato,shelter,"9389 Monterey Rd, Gilroy",37.03278732299805,-121.58230590820312,+14088484544,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.edenhousing.org/property/gilroy-sobrato-studios

@@ -1,0 +1,12 @@
+{
+  "slug": "webb-tx",
+  "name": "Webb, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48479",
+  "timezone_derived_from": "state"
+}

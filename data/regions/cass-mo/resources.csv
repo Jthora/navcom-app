@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+cass-mo-overture-f4b136c1,Shepherd's Staff Food Pantry,meal,"1311 Sanders St, Harrisonville",38.645755767822266,-94.35336303710938,+18168440078,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+cass-mo-overture-9657fd18,Cass County Rescue Mission,shelter,"304 E Wall St, Harrisonville",38.65421676635742,-94.34663391113281,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+cass-mo-overture-4ca2343f,Bridge Over Troubled Waters Mobile Food Pantry Bus,meal,"6909 E 163rd St, Belton",38.82773971557617,-94.51648712158203,+18164254169,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.mofamilyresource.org/

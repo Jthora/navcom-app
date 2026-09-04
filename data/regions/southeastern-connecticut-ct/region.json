@@ -1,0 +1,12 @@
+{
+  "slug": "southeastern-connecticut-ct",
+  "name": "Southeastern Connecticut, CT",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "09180",
+  "timezone_derived_from": "state"
+}

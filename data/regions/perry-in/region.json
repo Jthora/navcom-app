@@ -1,0 +1,12 @@
+{
+  "slug": "perry-in",
+  "name": "Perry, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18123",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "lower-connecticut-river-valley-ct",
+  "name": "Lower Connecticut River Valley, CT",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "09130",
+  "timezone_derived_from": "state"
+}

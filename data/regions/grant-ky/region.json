@@ -1,0 +1,12 @@
+{
+  "slug": "grant-ky",
+  "name": "Grant, KY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "21081",
+  "timezone_derived_from": "state"
+}

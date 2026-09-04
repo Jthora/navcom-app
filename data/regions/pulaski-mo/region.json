@@ -1,0 +1,12 @@
+{
+  "slug": "pulaski-mo",
+  "name": "Pulaski, MO",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "29169",
+  "timezone_derived_from": "state"
+}

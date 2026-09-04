@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+morrison-mn-overture-dea4d5d2,Oasis Central Minnesota,shelter,"16545 Haven Rd, Little Falls",46.00123977661133,-94.34764862060547,+13206329140,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://oasiscentralmn.org/
+morrison-mn-overture-2b8b43a1,Motley Area Food Shelf,meal,"697 3rd Ave S, Motley",46.330989837646484,-94.64903259277344,+12183526344,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+morrison-mn-overture-7ebb3c79,Morrison County Food Shelf,meal,"912 1st Ave SW, Little Falls",45.97601318359375,-94.38299560546875,+13206328304,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.mcfoodshelf.org/

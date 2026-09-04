@@ -1,0 +1,12 @@
+{
+  "slug": "washington-wi",
+  "name": "Washington, WI",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "55131",
+  "timezone_derived_from": "state"
+}

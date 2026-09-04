@@ -1,0 +1,12 @@
+{
+  "slug": "preble-oh",
+  "name": "Preble, OH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "39135",
+  "timezone_derived_from": "state"
+}

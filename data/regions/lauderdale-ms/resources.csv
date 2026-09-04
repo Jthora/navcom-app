@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+lauderdale-ms-overture-c4ae961f,Care Lodge,shelter,"1627 23rd Ave, Meridian",32.37406539916992,-88.70146942138672,+16016934673,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://linktr.ee/carelodgems
+lauderdale-ms-overture-6d57a47c,Evangelical Crusade For Christ Ministries,meal,"6991 Russell Topton Rd, Toomsuba",32.4349365234375,-88.58837890625,+16015278404,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+lauderdale-ms-overture-78715bf7,Feed By Faith,meal,"3401 5th St, Meridian",32.360931396484375,-88.71281433105469,+16014838999,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://feedbyfaith.org/index.htm
+lauderdale-ms-overture-8cdd00e5,Salvation Army Men's Shelter,shelter,"710 B St, Meridian",32.36796188354492,-88.68488311767578,+16012863016,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.salvationarmyusa.org/

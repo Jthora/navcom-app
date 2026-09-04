@@ -1,0 +1,12 @@
+{
+  "slug": "union-ia",
+  "name": "Union, IA",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "19175",
+  "timezone_derived_from": "state"
+}

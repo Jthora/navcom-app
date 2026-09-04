@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+taylor-tx-overture-e53c5f11,Methodist Service Center and Food Pantry,meal,"2618 N 1st St, Abilene",32.4508171081543,-99.75434112548828,+13258646605,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+taylor-tx-overture-ae990af8,The Highland Food Pantry on Walnut,meal,"701 Walnut St, Abilene",32.455833435058594,-99.73089599609375,+13256731234,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://highlandchurch.org/pantry/
+taylor-tx-overture-e07e9d24,Abilene Hope Haven,shelter,"801 S Treadaway Blvd, Abilene",32.439918518066406,-99.72819519042969,+13256774673,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://abilenehopehaven.org/
+taylor-tx-overture-ebecbdf7,Presbyterian Food Pantry - Food Distribution Center,meal,"333 Orange St, Abilene",32.45267868041992,-99.73748016357422,13256773501,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.fcpc.net

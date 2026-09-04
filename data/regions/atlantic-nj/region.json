@@ -1,0 +1,12 @@
+{
+  "slug": "atlantic-nj",
+  "name": "Atlantic, NJ",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "34001",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "weld-co",
+  "name": "Weld, CO",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "08123",
+  "timezone_derived_from": "state"
+}

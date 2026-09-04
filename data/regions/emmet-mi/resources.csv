@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+emmet-mi-overture-3fa6f396,The Nehemiah Project,shelter,"36 Bridge St, Petoskey",45.36878204345703,-84.9639892578125,+12313470363,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.nehemiahshelters.org/
+emmet-mi-overture-36b502b5,Women's Resource Center,shelter,"423 Porter St, Petoskey",45.367794036865234,-84.96708679199219,+12313470067,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.wrcnm.org/
+emmet-mi-overture-d1adfcf7,Brother Dan's Food Pantry,meal,"415 State St, Petoskey",45.37199783325195,-84.95512390136719,+12313482385,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+emmet-mi-overture-ae9420e6,Manna Food Project,meal,"8791 McBride Park Dr, Harbor Springs",45.424678802490234,-84.89118194580078,+12313478852,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.mannafoodproject.org/

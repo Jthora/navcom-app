@@ -1,0 +1,12 @@
+{
+  "slug": "jackson-oh",
+  "name": "Jackson, OH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "39079",
+  "timezone_derived_from": "state"
+}

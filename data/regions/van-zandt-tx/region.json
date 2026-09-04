@@ -1,0 +1,12 @@
+{
+  "slug": "van-zandt-tx",
+  "name": "Van Zandt, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48467",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+butler-pa-overture-419d8d0d,Feed My Sheep Food Cupboard,meal,"324 N Main St, Slippery Rock",41.06761169433594,-80.05879211425781,+17244215274,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+butler-pa-overture-c04758d9,The Lighthouse Foundation,meal,"116 Browns Hill Rd, Valencia",40.71299743652344,-79.92930603027344,17245865554,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://torontofoundation.ca
+butler-pa-overture-b8b3f78d,Portersville Food Pantry,meal,"160 E Portersville Rd, Portersville",40.92177963256836,-80.1377182006836,+17243684014,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+butler-pa-overture-89efa034,The Inn Maternity Home,shelter,"PO Box 85, Butler",40.857975006103516,-79.8951644897461,8772237558,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.yourlifechoicesinfo.com/maternity-home
+butler-pa-overture-df38e047,Southwest Butler Food Cupboard,meal,"557 Perry Hwy, Harmony",40.8486328125,-80.12155151367188,+17244534184,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.swbfoodcupboard.org/

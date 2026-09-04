@@ -1,0 +1,12 @@
+{
+  "slug": "stephens-ga",
+  "name": "Stephens, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13257",
+  "timezone_derived_from": "state"
+}

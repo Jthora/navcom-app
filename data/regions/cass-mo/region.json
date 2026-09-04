@@ -1,0 +1,12 @@
+{
+  "slug": "cass-mo",
+  "name": "Cass, MO",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "29037",
+  "timezone_derived_from": "state"
+}

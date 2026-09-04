@@ -1,0 +1,12 @@
+{
+  "slug": "clinton-mo",
+  "name": "Clinton, MO",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "29049",
+  "timezone_derived_from": "state"
+}

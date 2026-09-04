@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+kerr-tx-overture-9855f57c,Svdp Food Pantry - Food Distribution Center,meal,"1145 Broadway, Kerrville",30.04132652282715,-99.13560485839844,18308966898,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://svdpndkerr.org
+kerr-tx-overture-f66ba155,K'Star Counseling Center,shelter,"1016 Main St, Kerrville",30.04319190979004,-99.13540649414062,+18308965404,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.kstar.org

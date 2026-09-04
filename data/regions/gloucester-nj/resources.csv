@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+gloucester-nj-overture-57f244f7,Bishops' Storehouse and Home Storage Center,meal,"613 Heron Dr, Bridgeport",39.772491455078125,-75.35636901855469,8564670031,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+gloucester-nj-overture-11c25819,St. Peter's Community Pantry,meal,"304 Kings Hwy, Clarksboro",39.799381256103516,-75.2242660522461,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.stpetersclarksboro.org/pantry
+gloucester-nj-overture-fddcba36,Homestead At Harmony,shelter,"400 Harmony Rd, Gibbstown",39.818241119384766,-75.2575454711914,+18564235891,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.voadv.org
+gloucester-nj-overture-ebaa61e8,Viola's Place,shelter,"115 S Main St Units B-C, Monroe Twp",39.685264587402344,-74.99441528320312,+18565355634,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.violasplaceinc.net/

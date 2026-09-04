@@ -1,0 +1,12 @@
+{
+  "slug": "tift-ga",
+  "name": "Tift, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13277",
+  "timezone_derived_from": "state"
+}

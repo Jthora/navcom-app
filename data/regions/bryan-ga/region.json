@@ -1,0 +1,12 @@
+{
+  "slug": "bryan-ga",
+  "name": "Bryan, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13029",
+  "timezone_derived_from": "state"
+}

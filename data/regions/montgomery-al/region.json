@@ -1,0 +1,12 @@
+{
+  "slug": "montgomery-al",
+  "name": "Montgomery, AL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "01101",
+  "timezone_derived_from": "state"
+}

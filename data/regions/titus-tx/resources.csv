@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+titus-tx-overture-59aedf65,Titus County Cares,meal,"310 N Edwards Ave, Mt Pleasant",33.159061431884766,-94.97480010986328,+19035759157,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.tituscountycares.org/
+titus-tx-overture-3a9a330a,"Rhute Haven (we Are Not A Shelter, But Can Help You Find One)",shelter,"1420 N Jefferson Ave, Mt Pleasant",33.16996765136719,-94.96993255615234,19365815886,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://rhutehaven.com
+titus-tx-overture-148a425e,Rhute Haven,shelter,"2760 N Jefferson Ave, Mt Pleasant",33.20079803466797,-94.99484252929688,+19365815886,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.rhutehaven.com/

@@ -1,0 +1,12 @@
+{
+  "slug": "hood-tx",
+  "name": "Hood, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48221",
+  "timezone_derived_from": "state"
+}

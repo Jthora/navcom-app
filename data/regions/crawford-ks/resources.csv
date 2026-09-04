@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+crawford-ks-overture-55e013d3,The Salvation Army Food Distribution Center,meal,"307 E 5th St, Pittsburg",37.41221237182617,-94.7008285522461,+16202314230,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.salvationarmyusa.org/
+crawford-ks-overture-909c4f6d,The Whetzell Institute,shelter,"613 W 3rd St, Pittsburg",37.409759521484375,-94.71359252929688,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

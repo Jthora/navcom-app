@@ -1,0 +1,12 @@
+{
+  "slug": "morris-ks",
+  "name": "Morris, KS",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "20127",
+  "timezone_derived_from": "state"
+}

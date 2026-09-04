@@ -1,0 +1,12 @@
+{
+  "slug": "shoshone-id",
+  "name": "Shoshone, ID",
+  "country": "US",
+  "timezone": "America/Boise",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "16079",
+  "timezone_derived_from": "state"
+}

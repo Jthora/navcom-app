@@ -1,0 +1,12 @@
+{
+  "slug": "pasquotank-nc",
+  "name": "Pasquotank, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37139",
+  "timezone_derived_from": "state"
+}

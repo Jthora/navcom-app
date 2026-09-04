@@ -1,0 +1,12 @@
+{
+  "slug": "anderson-tx",
+  "name": "Anderson, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48001",
+  "timezone_derived_from": "state"
+}

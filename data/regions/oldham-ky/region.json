@@ -1,0 +1,12 @@
+{
+  "slug": "oldham-ky",
+  "name": "Oldham, KY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "21185",
+  "timezone_derived_from": "state"
+}

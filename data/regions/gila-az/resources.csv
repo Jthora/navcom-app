@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+gila-az-overture-56068add,Gila Community Food Bank,meal,"317 W Hackney Ave, Globe",33.3994140625,-110.79150390625,19284253639,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+gila-az-overture-ebc116a6,Payson Warming Center,shelter,"601 E State Highway 260, Payson",34.2410888671875,-111.31426239013672,+19284743190,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://thepaysonwarmingcenter.org/
+gila-az-overture-61208bd4,San Carlos Food Distribution,meal,"4 San Carlos Ave, Graham County",33.347103118896484,-110.45265197753906,+19284752302,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

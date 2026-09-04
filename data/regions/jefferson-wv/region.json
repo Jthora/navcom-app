@@ -1,0 +1,12 @@
+{
+  "slug": "jefferson-wv",
+  "name": "Jefferson, WV",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "54037",
+  "timezone_derived_from": "state"
+}

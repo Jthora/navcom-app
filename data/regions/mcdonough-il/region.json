@@ -1,0 +1,12 @@
+{
+  "slug": "mcdonough-il",
+  "name": "McDonough, IL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "17109",
+  "timezone_derived_from": "state"
+}

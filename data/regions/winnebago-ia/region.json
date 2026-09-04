@@ -1,0 +1,12 @@
+{
+  "slug": "winnebago-ia",
+  "name": "Winnebago, IA",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "19189",
+  "timezone_derived_from": "state"
+}

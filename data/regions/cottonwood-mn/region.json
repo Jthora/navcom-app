@@ -1,0 +1,12 @@
+{
+  "slug": "cottonwood-mn",
+  "name": "Cottonwood, MN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "27033",
+  "timezone_derived_from": "state"
+}

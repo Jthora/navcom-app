@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+adams-in-overture-43cc8773,Crossroads Community,shelter,"426 Wind Ridge Trail, Berne",40.64559555053711,-84.95416259765625,+12603011871,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://crossroadsadamscounty.org/
+adams-in-overture-e57eef57,Decatur Operation Help Food Pantry,meal,"313 W Jefferson St, Decatur",40.8281364440918,-84.92538452148438,+12607245300,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+adams-in-overture-074d9621,"St. Mary’s Vincentian Center, Decatur, IN",meal,"301 Mercer Ave, Decatur",40.827415466308594,-84.92288208007812,+12607289423,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

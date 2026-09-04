@@ -1,0 +1,12 @@
+{
+  "slug": "madison-nc",
+  "name": "Madison, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37115",
+  "timezone_derived_from": "state"
+}

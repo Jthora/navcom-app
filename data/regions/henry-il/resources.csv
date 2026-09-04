@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+henry-il-overture-8e65064a,Colona Food Pantry,meal,"617 8th St, Colona",41.473426818847656,-90.3670425415039,+13094281349,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+henry-il-overture-f1789dbf,Geneseo-Atkinson Food Pantry,meal,"620 W Main St, Geneseo",41.44731521606445,-90.16571044921875,+13099443165,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.geneseofoodpantry.org/
+henry-il-overture-0603c1f3,Kewanee Food Pantry,meal,"924 Rose St, Kewanee",41.241783142089844,-89.93727111816406,+13098523577,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://kewaneefoodpantry.org/

@@ -1,0 +1,12 @@
+{
+  "slug": "franklin-pa",
+  "name": "Franklin, PA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "42055",
+  "timezone_derived_from": "state"
+}

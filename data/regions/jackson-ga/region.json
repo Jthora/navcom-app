@@ -1,0 +1,12 @@
+{
+  "slug": "jackson-ga",
+  "name": "Jackson, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13157",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+brazoria-tx-overture-9745be06,Brazosport Cares Food Pantry,meal,"923 N Avenue F, Freeport",28.968730926513672,-95.3680648803711,+19792391225,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.brazosportcares.org/
+brazoria-tx-overture-30e30453,Alvin Community Food Pantry,meal,"1212 S Durant St, Alvin",29.413312911987305,-95.25411987304688,+12818248871,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.foodpantries.org/li/alvin-community-food-pantry
+brazoria-tx-overture-872e6439,The Warriors Refuge,shelter,"212 Noth 14 St, West Columbia",29.14519500732422,-95.64314270019531,+19793453800,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://thewarriorsrefuge.us/

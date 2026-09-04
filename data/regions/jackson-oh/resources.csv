@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+jackson-oh-overture-fe6ee850,Oak Hill Food Pantry,meal,"105 W Main St, Oak Hill",38.89546585083008,-82.57279205322266,17409888761,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+jackson-oh-overture-c04b59c7,Food Program and Clothesline,meal,"323 E Broadway St, Jackson",39.05360412597656,-82.62735748291016,+17402865937,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+jackson-oh-overture-78a69c17,Faith Lutheran Church Food Pantry,meal,"245 E Huron St, Jackson",39.04440689086914,-82.63439178466797,+17402863711,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://appalachiannutritionnetwork.wordpress.com

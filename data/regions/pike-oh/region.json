@@ -1,0 +1,12 @@
+{
+  "slug": "pike-oh",
+  "name": "Pike, OH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "39131",
+  "timezone_derived_from": "state"
+}

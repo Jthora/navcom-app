@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+oneida-ny-overture-40ae7d94,Utica Food Pantry,meal,"524 Elizabeth St, Utica",43.0981559753418,-75.22197723388672,+13159275021,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://uticafoodpantry.org/
+oneida-ny-overture-b25c7ae7,Hope House,shelter,"112 South St, Utica",43.09635543823242,-75.23454284667969,+13157933723,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.hopehouseutica.org/
+oneida-ny-overture-fcf8992b,Rescue Mission of Utica,shelter,"293 Genesee St, Utica",43.09725570678711,-75.23832702636719,+13157351645,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.uticamission.org/
+oneida-ny-overture-8717eef4,Utica Center for Development INC.,shelter,"726 Washington St, Utica",43.10049819946289,-75.2342529296875,+13157650975,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.ucdevelopment.org/
+oneida-ny-overture-da6b44c7,Rome Rescue Mission,shelter,"413 E Dominick St, Rome",43.20656967163086,-75.44758605957031,+13153372516,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.romemission.org/
+oneida-ny-overture-1c40da02,Utica Food Pantry,meal,"729 Broadway, Utica",43.10051727294922,-75.23472595214844,13157246000,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://uticafoodpantry.org

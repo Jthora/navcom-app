@@ -1,0 +1,12 @@
+{
+  "slug": "mclennan-tx",
+  "name": "McLennan, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48309",
+  "timezone_derived_from": "state"
+}

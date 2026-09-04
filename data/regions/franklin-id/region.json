@@ -1,0 +1,12 @@
+{
+  "slug": "franklin-id",
+  "name": "Franklin, ID",
+  "country": "US",
+  "timezone": "America/Boise",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "16041",
+  "timezone_derived_from": "state"
+}

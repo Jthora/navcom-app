@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+delaware-ny-overture-eba87c83,"The Community Pantry of Arkville/Margaretville, NY",meal,"42838 State Highway 28, Arkville",42.14622497558594,-74.62830352783203,+18455862233,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.community-pantry.org/
+delaware-ny-overture-d3d5a29b,Walton Food Pantry,meal,"58 East St, Walton",42.17424392700195,-75.12667083740234,+16078657184,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+delaware-ny-overture-8cae8c85,Greater Franklin Food Pantry,meal,"574 Main St, Franklin",42.34178924560547,-75.16374206542969,+16073861601,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://greaterfranklinfoodpantry.org/
+delaware-ny-overture-79f32a5a,Family Table Community Assistance,meal,"629 Main St, Margaretville",42.14725875854492,-74.65087890625,+18455863150,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.cmcconline.org/cap

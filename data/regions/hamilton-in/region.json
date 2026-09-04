@@ -1,0 +1,12 @@
+{
+  "slug": "hamilton-in",
+  "name": "Hamilton, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18057",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "grant-in",
+  "name": "Grant, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18053",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+garfield-ok-overture-322aa9e8,Transitional Housing- THPenid.com,shelter,"724 W Randolph Ave, Enid",36.39797592163086,-97.88754272460938,+15804783353,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://thpenid.com/
+garfield-ok-overture-4f712183,Loaves & Fishes - Food Distribution Center,meal,"701 E Maine Ave, Enid",36.39503860473633,-97.86822509765625,+15805409830,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.loavesandfishesnwok.org/
+garfield-ok-overture-ec2500f1,Hope Outreach Parenting,shelter,"815 W Broadway Ave, Enid",36.39642333984375,-97.8885269165039,15802372292,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.hopeoutreach.org
+garfield-ok-overture-5fa0e916,Our Daily Bread,meal,"616 W Randolph Ave, Enid",36.39799499511719,-97.8859634399414,+15802425718,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://stfrancisenid.com

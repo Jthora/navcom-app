@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+liberty-tx-overture-441c7704,Tarkington Helping Hands,meal,"3304 County Road 2274, Cleveland",30.29125213623047,-94.97301483154297,12815921283,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://givelove.church
+liberty-tx-overture-48dcc078,Trinity River Food Bank,meal,"500 E Houston St, Cleveland",30.340877532958984,-95.08380126953125,12815925001,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: trinityriverfoodbank.org
+liberty-tx-overture-8cec5943,Meals on Wheels of South Liberty County,meal,"539 Main St, Liberty",30.059993743896484,-94.79619598388672,+19366412846,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.libertymeals.com/
+liberty-tx-overture-d1c10ed5,Covenant With Christ International Community Services,meal,"500 E Houston St, Cleveland",30.340877532958984,-95.08380126953125,2815925001,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://covenantwithchrist.org

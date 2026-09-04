@@ -1,0 +1,12 @@
+{
+  "slug": "gosper-ne",
+  "name": "Gosper, NE",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "31073",
+  "timezone_derived_from": "state"
+}

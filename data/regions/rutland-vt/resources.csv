@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+rutland-vt-overture-0f39d47b,Poultney Food Shelf Inc,meal,"66 Beaman St, Poultney",43.517879486083984,-73.23243713378906,18022879558,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+rutland-vt-overture-cd6ebacf,Slate Valley Cares,meal,"49 Main St, Fair Haven",43.59267044067383,-73.26505279541016,+18022653666,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.slatevalleycares.org/
+rutland-vt-overture-1c1b426d,Rutland Community Cupboard,meal,"65 River St, Rutland",43.60272216796875,-72.97853088378906,+18027476119,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.rutlandcommunitycupboard.org/
+rutland-vt-overture-b16c0796,Green  Mountain Food Pantry,meal,"158 Stratton Rd, Rutland",43.60753631591797,-72.95625305175781,+18026831298,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+rutland-vt-overture-5f383f77,The Dodge House VT,shelter,"95 Crescent St, Rutland",43.61556625366211,-72.9829330444336,+18027756772,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

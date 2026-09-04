@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+angelina-tx-overture-58b7b144,Royal Priesthood Kingdom Mission Ministry,shelter,"907 Kurth Dr, Lufkin",31.355758666992188,-94.73135375976562,+15048742399,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://royalpriesthoodkingdommission.com
+angelina-tx-overture-dc42e481,The Salvation Army Lufkin - Food Distribution Center,meal,"412 S 3rd St, Lufkin",31.33443832397461,-94.7278823852539,+19366345132,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.salvationarmyusa.org/
+angelina-tx-overture-d1f79d65,The Mantooth House,shelter,"501 Mantooth Ave, Lufkin",31.34102439880371,-94.73406219482422,+19368995626,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://themantoothhouse.com/

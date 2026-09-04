@@ -48,16 +48,35 @@ const isRegion = (path: string): boolean => !slugOf(path).startsWith('_');
  */
 const FIXTURE_STATUS = 'example';
 
-const fixtureSlugs = new Set(
-  Object.entries(regionFiles)
-    .filter(([path]) => isRegion(path))
-    .filter(([, mod]) => (mod.default as { status?: string } | null)?.status === FIXTURE_STATUS)
-    .map(([path]) => slugOf(path))
-);
+/**
+ * Computed on first use, never at module scope.
+ *
+ * **This was a `new Set(...)` at the top level, and it cost 179 kB gzipped on four pages.**
+ * Vite cannot prove that iterating a glob is side-effect-free, so a module-scope computation
+ * over `regionFiles` pins every matched file into the bundle — even when the importer uses
+ * nothing from this module. At 68 regions that was invisible. At 1,915 the emitted chunk was
+ * 924 kB of region manifests, retained to build a Set the minifier then discarded because
+ * nothing read it.
+ *
+ * The rule this encodes: **a module that globs must do no work until somebody asks it to.**
+ * Everything below is inside a function for that reason, and `loadRegions` is the only entry.
+ */
+let fixtures: Set<string> | null = null;
+
+function fixtureSlugs(): Set<string> {
+  if (fixtures) return fixtures;
+  fixtures = new Set(
+    Object.entries(regionFiles)
+      .filter(([path]) => isRegion(path))
+      .filter(([, mod]) => (mod.default as { status?: string } | null)?.status === FIXTURE_STATUS)
+      .map(([path]) => slugOf(path))
+  );
+  return fixtures;
+}
 
 /** A real region: not scaffolding, and not a fixture. */
 export const isPublished = (path: string): boolean =>
-  isRegion(path) && !fixtureSlugs.has(slugOf(path));
+  isRegion(path) && !fixtureSlugs().has(slugOf(path));
 
 let cache: Region[] | null = null;
 

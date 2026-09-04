@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+cumberland-nj-overture-d1826e43,Help And Hope Ministries,meal,"214 Howard St, Millville",39.39493942260742,-75.0459213256836,+18562934357,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://helpandhopeministries.org/
+cumberland-nj-overture-d92bc09c,Vineland Code Blue,shelter,"726 E Wood St, Vineland",39.487369537353516,-75.01954650878906,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.vinelandnjcodeblue.com/
+cumberland-nj-overture-d7a61ab5,Lawrence Township Free Commodity Services,meal,"93 Maple Ave, Cedarville",39.33255386352539,-75.19903564453125,+18563671833,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+cumberland-nj-overture-16ceaaef,Rural Development Corporation,shelter,"6140 Mays Landing Rd, Vineland",39.43235778808594,-74.91426086425781,+18568253144,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+cumberland-nj-overture-3e70835e,Cumberland Family Shelter,shelter,"6140 Mays Landing Rd, Vineland",39.432125091552734,-74.91361999511719,+18568253144,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.ruraldevelopmentcorp.org

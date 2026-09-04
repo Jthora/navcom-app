@@ -1,0 +1,12 @@
+{
+  "slug": "manatee-fl",
+  "name": "Manatee, FL",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "12081",
+  "timezone_derived_from": "state"
+}

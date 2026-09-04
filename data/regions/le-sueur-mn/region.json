@@ -1,0 +1,12 @@
+{
+  "slug": "le-sueur-mn",
+  "name": "Le Sueur, MN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "27079",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "cecil-md",
+  "name": "Cecil, MD",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "24015",
+  "timezone_derived_from": "state"
+}

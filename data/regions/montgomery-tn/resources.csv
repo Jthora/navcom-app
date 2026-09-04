@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+montgomery-tn-overture-7dabcba9,Manna Café Ministries,meal,"1319 Franklin St, Clarksville",36.53476333618164,-87.3380126953125,9319330970,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.mannacafeministries.com/
+montgomery-tn-overture-d54dae3a,Fort Campbell Army Fisher House,shelter,"652 Joel Dr, Clarksville",36.6336784362793,-87.44796752929688,+12707988330,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://blanchfield.tricare.mil/Patient-Resources/Fisher-House
+montgomery-tn-overture-8b814ede,Old Fire House,shelter,"1498 Golf Club Ln, Clarksville",36.51640701293945,-87.32859802246094,+19315420381,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://theoldfirehouse.com

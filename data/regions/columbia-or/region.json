@@ -1,0 +1,12 @@
+{
+  "slug": "columbia-or",
+  "name": "Columbia, OR",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "41009",
+  "timezone_derived_from": "state"
+}

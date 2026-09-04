@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+lapeer-mi-overture-d0c5019d,The Refuge Homeless Shelter,shelter,"1009 N Saginaw St, Lapeer",43.05839538574219,-83.3109359741211,+18106673886,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://refugelapeer.org/
+lapeer-mi-overture-429c571b,Stone Soup Food Pantry,meal,"475 S Court St, Lapeer",43.04613494873047,-83.30682373046875,+18102450500,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.stonesoupfoodpantry.org/

@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+hawaii-hi-overture-81e55fe3,Kona Gospel Chapel Pentecostal,shelter,"81-1037 Nani Kupuna Pl, Kealakekua",19.517623901367188,-155.9181671142578,+18083233110,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.pcg.org
+hawaii-hi-overture-f7b551ab,Hawaii Island Food Bank,meal,"140 Holomua St Ste B, Hilo",19.701969146728516,-155.06663513183594,+18083221418,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: foodbaskethi.org
+hawaii-hi-overture-67343421,DA BUX Double Up Food Bucks,meal,"1284 Kilauea Ave #1B, Hilo",19.709688186645508,-155.07687377929688,+18084373044,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://dabux.org/
+hawaii-hi-overture-1ef14336,Hawaii Island Home For Recovery,shelter,"440 Kapiolani St #105, Hilo",19.713241577148438,-155.085205078125,+18089347852,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.hihrecovery.org/

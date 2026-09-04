@@ -1,0 +1,2 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+anchorage-ak-overture-032b0ae5,Chugiak Eagle River Food Pantry,meal,"12836 Old Glenn Hwy, Eagle River",61.33679962158203,-149.56460571289062,+19076945228,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://umcchugiak.org/missions/chugiakeagle-river-food-pantry

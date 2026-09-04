@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+rice-mn-overture-4124deed,Lonsdale Area Food Shelf,meal,"7525 Garfield Ave, Lonsdale",44.47798538208008,-93.4019775390625,+15077445399,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.lonsdaleareafoodshelf.org/
+rice-mn-overture-0290a405,Community Action Center Food Shelf - Food Distribution Center,meal,"1651 Jefferson Pkwy, Northfield",44.441959381103516,-93.16692352294922,5076643585,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.communityactioncenter.org
+rice-mn-overture-b0ab8a06,Ruth's House,shelter,"124 1st Ave SW, Faribault",44.28862380981445,-93.2701416015625,+15073322236,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.ruthshousemn.org

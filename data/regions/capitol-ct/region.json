@@ -1,0 +1,12 @@
+{
+  "slug": "capitol-ct",
+  "name": "Capitol, CT",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "09110",
+  "timezone_derived_from": "state"
+}

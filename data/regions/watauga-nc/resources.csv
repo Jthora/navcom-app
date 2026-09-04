@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+watauga-nc-overture-bba00837,Casting Bread,meal,"194 Aho Rd, Blowing Rock",36.152748107910156,-81.64584350585938,+18287833510,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.increasefoodsecurity.org/
+watauga-nc-overture-72823e6b,Hospitality House of Boone Area,meal,"302 W King St, Boone",36.216800689697266,-81.67831420898438,+18282641237,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.boonesaloon.com
+watauga-nc-overture-f200e427,OASIS Inc.,shelter,"225 Birch St #4, Boone",36.198974609375,-81.65287780761719,+18282641532,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://givebutter.com/c/midnight26
+watauga-nc-overture-7f09f098,Hospitality House Northwest,shelter,"160 Den Mac Dr, Boone",36.21400833129883,-81.6371841430664,+18282641237,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.hosphouse.org/
+watauga-nc-overture-f5810e64,Blowing Rock CARES,meal,"1218 Main St, Blowing Rock",36.13065719604492,-81.67902374267578,+18282957675,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://blowingrockcares.com/
+watauga-nc-overture-9539d09e,Hospitality House Of Boone - Food Distribution Center,meal,"338 Brook Hollow Rd, Boone",36.214088439941406,-81.6408920288086,18282641237,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: hospitalityhouseofboone.org

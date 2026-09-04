@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+sullivan-nh-overture-1373940c,Claremont Soup Kitchen,meal,"53 Central St, Claremont",43.37453842163086,-72.34366607666016,+16035433290,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.claremontsoupkitchen.org/
+sullivan-nh-overture-73ea116e,Newport Area Association of Churches,meal,"95 S Main St, Newport",43.35959243774414,-72.17021179199219,+16038633411,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.newportaac.org/

@@ -1,0 +1,12 @@
+{
+  "slug": "mcminn-tn",
+  "name": "McMinn, TN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "47107",
+  "timezone_derived_from": "state"
+}

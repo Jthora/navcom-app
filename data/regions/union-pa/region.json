@@ -1,0 +1,12 @@
+{
+  "slug": "union-pa",
+  "name": "Union, PA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "42119",
+  "timezone_derived_from": "state"
+}

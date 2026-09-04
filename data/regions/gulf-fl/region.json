@@ -1,0 +1,12 @@
+{
+  "slug": "gulf-fl",
+  "name": "Gulf, FL",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "12045",
+  "timezone_derived_from": "state"
+}

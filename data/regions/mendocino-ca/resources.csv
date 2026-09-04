@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+mendocino-ca-overture-cc2d6a2e,Anderson Valley Food Pantry,meal,"13850 CA-128, Boonville",39.01068115234375,-123.3708267211914,+17073970716,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.andersonvalleyfoodbank.org/
+mendocino-ca-overture-d2b31c07,Mendocino Coast Hospitality Center,shelter,"101 N Franklin St, Fort Bragg",39.441829681396484,-123.80464172363281,+17079610172,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.mendocinochc.org/
+mendocino-ca-overture-e21335f4,Willits Community Services & Food Bank,meal,"344 Railroad Ave, Willits",39.408565521240234,-123.35041046142578,+17074593333,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.willitsfoodbank.com/
+mendocino-ca-overture-cb255495,Food Bank Ukiah,meal,"888 N State St, Ukiah",39.158973693847656,-123.20893859863281,+17074632409,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.co.lake.ca.us
+mendocino-ca-overture-b8e728b9,Redwood Gospel Mission Ukiah,shelter,"150 Luce Ave, Ukiah",39.13886260986328,-123.2069320678711,+17072348750,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.srmission.org/ukiah

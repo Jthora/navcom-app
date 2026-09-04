@@ -1,0 +1,12 @@
+{
+  "slug": "kootenai-id",
+  "name": "Kootenai, ID",
+  "country": "US",
+  "timezone": "America/Boise",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "16055",
+  "timezone_derived_from": "state"
+}

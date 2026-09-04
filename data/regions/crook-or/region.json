@@ -1,0 +1,12 @@
+{
+  "slug": "crook-or",
+  "name": "Crook, OR",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "41013",
+  "timezone_derived_from": "state"
+}

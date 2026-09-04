@@ -1,0 +1,12 @@
+{
+  "slug": "bingham-id",
+  "name": "Bingham, ID",
+  "country": "US",
+  "timezone": "America/Boise",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "16011",
+  "timezone_derived_from": "state"
+}

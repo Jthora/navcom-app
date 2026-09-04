@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+monongalia-wv-overture-6d8fa376,Caritas House Inc.,shelter,"391 Scott Ave, Morgantown",39.5839729309082,-79.96942901611328,+13049850021,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+monongalia-wv-overture-ef42ba58,The Pantry Plus More,meal,"9 Rousch Dr, Morgantown",39.6298713684082,-79.98422241210938,+13042414751,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.pantryplusmore.org/
+monongalia-wv-overture-c6a0fd06,St Ursula Food Pantry,meal,"Main St, Pursglove",39.667110443115234,-80.03389739990234,+13045997780,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.stmarystarcity.com
+monongalia-wv-overture-56197f17,Bartlett House,shelter,"1110 University Ave, Morgantown",39.62919616699219,-79.95850372314453,+13042920101,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.bartletthouse.org

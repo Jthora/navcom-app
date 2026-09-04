@@ -1,0 +1,12 @@
+{
+  "slug": "dona-ana-nm",
+  "name": "Do\u00f1a Ana, NM",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "35013",
+  "timezone_derived_from": "state"
+}

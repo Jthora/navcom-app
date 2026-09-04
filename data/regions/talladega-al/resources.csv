@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+talladega-al-overture-4c0650bf,Lincoln Food Pantry,meal,"225 Magnolia St, Lincoln",33.60690689086914,-86.11856842041016,+12054738097,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.lincolnfoodpantry.com/
+talladega-al-overture-f47f4248,Presbyterian Home For Children,shelter,"905 Gertrude Michaels Dr, Talladega",33.43366622924805,-86.08637237548828,+12563622114,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://phfc.org/donate/
+talladega-al-overture-ddbef7b2,Housing Authority of City Talladega,shelter,"151 Chinnabee Cir SE, Talladega",33.45346450805664,-86.09852600097656,+12563625010,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://housing-authority-of-city-talladega.hub.biz/

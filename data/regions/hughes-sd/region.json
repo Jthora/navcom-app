@@ -1,0 +1,12 @@
+{
+  "slug": "hughes-sd",
+  "name": "Hughes, SD",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "46065",
+  "timezone_derived_from": "state"
+}

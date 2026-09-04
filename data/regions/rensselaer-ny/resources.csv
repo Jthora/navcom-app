@@ -1,0 +1,8 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+rensselaer-ny-overture-7d89c000,Nassau Resource Center,meal,"15 Church St, Nassau",42.5158576965332,-73.60857391357422,+15187669014,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+rensselaer-ny-overture-c4419287,St Peter's Residence,shelter,"2335 5th Ave, Troy",42.73862838745117,-73.68521881103516,+15182733291,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://cchoalbany.org/contactus.htm
+rensselaer-ny-overture-413df9be,Mount Ida Food Pantry,meal,"548 Congress St, Troy",42.72184371948242,-73.67698669433594,+15182721115,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://forms.gle/4H1Bg4p3oTCatPDX8
+rensselaer-ny-overture-8962f81d,St Paul's Center,shelter,"947 3rd St, Rensselaer",42.647613525390625,-73.73609924316406,15184342910,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://stpaulscenter.com
+rensselaer-ny-overture-3f22561c,Gathering Place,meal,"24 Albany Ave, Nassau",42.5168342590332,-73.61244201660156,+15187664164,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.newhopeforlife.org/resources
+rensselaer-ny-overture-8410cdbd,Brunswick Cares Community Food Pantry,meal,"42 White Church Ln, Brunswick",42.73468780517578,-73.56158447265625,+15182793792,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.brunswickcares.org/
+rensselaer-ny-overture-422d4b10,Joseph's House and Shelter,shelter,"202 4th St, Troy",42.72757339477539,-73.69084167480469,+15182722544,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.josephshousetroy.org/

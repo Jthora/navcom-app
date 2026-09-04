@@ -1,0 +1,12 @@
+{
+  "slug": "marathon-wi",
+  "name": "Marathon, WI",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "55073",
+  "timezone_derived_from": "state"
+}

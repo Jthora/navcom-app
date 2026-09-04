@@ -1,0 +1,12 @@
+{
+  "slug": "marion-ar",
+  "name": "Marion, AR",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "05089",
+  "timezone_derived_from": "state"
+}

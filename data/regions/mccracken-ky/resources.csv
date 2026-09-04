@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+mccracken-ky-overture-073d6bbc,Rose Gardens And Orchards,meal,"1622 S 6th St, Paducah",37.069000244140625,-88.58992767333984,+19285309559,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+mccracken-ky-overture-c6465dbe,Community Kitchen,meal,"1237 Martin Luther King Jr Dr, Paducah",37.08681106567383,-88.61375427246094,+12705753400,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.paducahcommunitykitchen.org/
+mccracken-ky-overture-ce61c7da,Paducah Cooperative Ministry,shelter,"2001 N 12th St, Paducah",37.09275436401367,-88.62823486328125,+12704440005,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+mccracken-ky-overture-53a8f9ef,River City Missions Inc,shelter,"1466 Bechtold Rd, Paducah",37.05192184448242,-88.59808349609375,+12704427921,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.rivercitymission.org/

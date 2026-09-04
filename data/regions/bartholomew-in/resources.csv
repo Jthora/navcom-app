@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+bartholomew-in-overture-1f7005fe,Brighter Days Housing (love Chapel),shelter,"421 S Mapleton St, Columbus",39.19293212890625,-85.9002685546875,18123444512,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.columbuslovechapel.com
+bartholomew-in-overture-ecfdd64c,Bull Dog Pantry,meal,"1400 25th St, Columbus",39.22489929199219,-85.91167449951172,+18123764431,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.bulldogpantry.com/

@@ -1,0 +1,12 @@
+{
+  "slug": "san-mateo-ca",
+  "name": "San Mateo, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06081",
+  "timezone_derived_from": "state"
+}

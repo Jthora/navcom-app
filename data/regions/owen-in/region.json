@@ -1,0 +1,12 @@
+{
+  "slug": "owen-in",
+  "name": "Owen, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18119",
+  "timezone_derived_from": "state"
+}

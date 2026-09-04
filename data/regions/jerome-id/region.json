@@ -1,0 +1,12 @@
+{
+  "slug": "jerome-id",
+  "name": "Jerome, ID",
+  "country": "US",
+  "timezone": "America/Boise",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "16053",
+  "timezone_derived_from": "state"
+}

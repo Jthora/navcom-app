@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+napa-ca-overture-1471f87a,Napa Valley Local Assitance Center,shelter,"301 1st St, Napa",38.30255126953125,-122.27723693847656,17072587829,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: cityofnapa.org
+napa-ca-overture-857d39b7,Calistoga Cares Food Bank,shelter,"1435 N Oak St, Calistoga",38.582942962646484,-122.58547973632812,+17072536128,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+napa-ca-overture-10454127,Abode Services Napa,shelter,"100 Hartle Ct, Napa",38.28345489501953,-122.27963256835938,+17072717818,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.abode.org/
+napa-ca-overture-32aac093,South Napa Shelter,shelter,"100 Hartle Ct, Napa",38.283355712890625,-122.27961730957031,+17072598133,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

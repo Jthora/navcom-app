@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+maui-hi-overture-d288e4c9,Maui Food Bank,meal,"760 Kolu St, Wailuku",20.90471076965332,-156.48643493652344,+18082439500,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://mauifoodbank.org/
+maui-hi-overture-e9cc4bdb,Hale Kau Kau,meal,"25 W Lipoa St, Kihei",20.74725341796875,-156.4555206298828,+18088758754,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.halekaukau.org/index.html
+maui-hi-overture-311b7a20,Ka Hale A Ke Ola Homeless Resource Centers,shelter,"670 Waiale Rd, Kahului",20.875295639038086,-156.49903869628906,+18082427600,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://khako.org/
+maui-hi-overture-ae9e006a,Akahi Elderly,shelter,"300 W Wakea Ave, Kahului",20.882408142089844,-156.4737091064453,+18088770544,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.halemahaolu.org
+maui-hi-overture-e22766f9,Hale Mahaolu Ehiku,shelter,"64 Ehiku Loop, Kihei",20.735036849975586,-156.44659423828125,+18088918588,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.halemahaolu.org

@@ -1,0 +1,12 @@
+{
+  "slug": "chattooga-ga",
+  "name": "Chattooga, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13055",
+  "timezone_derived_from": "state"
+}

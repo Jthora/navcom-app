@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+douglas-il-overture-2ec5c9e9,Arthur Southern Baptist Church Food Pantry,meal,"530 N Vine St, Arthur",39.72294998168945,-88.47232055664062,+12174939755,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+douglas-il-overture-d34f350e,Arcola Food Pantry,meal,"206 Egyptian Trail, Arcola",39.681427001953125,-88.28359985351562,+12172685122,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.paypal.com/donate/?hosted_button_id=AFEUKZFZVAJRW
+douglas-il-overture-bd33006b,Arcola Food Pantry,meal,"126 S Locust St, Arcola",39.68345642089844,-88.30721282958984,+12172685122,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.arcolaumchurch.org

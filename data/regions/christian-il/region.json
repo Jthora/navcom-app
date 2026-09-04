@@ -1,0 +1,12 @@
+{
+  "slug": "christian-il",
+  "name": "Christian, IL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "17021",
+  "timezone_derived_from": "state"
+}

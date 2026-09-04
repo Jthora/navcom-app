@@ -1,0 +1,12 @@
+{
+  "slug": "butler-pa",
+  "name": "Butler, PA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "42019",
+  "timezone_derived_from": "state"
+}

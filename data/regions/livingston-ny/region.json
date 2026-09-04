@@ -1,0 +1,12 @@
+{
+  "slug": "livingston-ny",
+  "name": "Livingston, NY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "36051",
+  "timezone_derived_from": "state"
+}

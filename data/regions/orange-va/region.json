@@ -1,0 +1,12 @@
+{
+  "slug": "orange-va",
+  "name": "Orange, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51137",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "douglas-nv",
+  "name": "Douglas, NV",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "32005",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "adams-pa",
+  "name": "Adams, PA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "42001",
+  "timezone_derived_from": "state"
+}

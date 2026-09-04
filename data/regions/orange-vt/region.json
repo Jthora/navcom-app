@@ -1,0 +1,12 @@
+{
+  "slug": "orange-vt",
+  "name": "Orange, VT",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "50017",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+chilton-al-overture-84b62e3d,Chilton Bread of Life- Food Pantry,meal,"304 Park Plz, Clanton",32.84268569946289,-86.62773132324219,+12053892141,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+chilton-al-overture-434a0831,Housing Authority of Clanton,shelter,"100 Thompson Ave, Clanton",32.851402282714844,-86.63077545166016,+12057551416,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+chilton-al-overture-57d21c92,Son Light Center,meal,"151 Bibb St, Jemison",32.95948791503906,-86.74685668945312,+12056882368,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

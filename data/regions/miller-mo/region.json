@@ -1,0 +1,12 @@
+{
+  "slug": "miller-mo",
+  "name": "Miller, MO",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "29131",
+  "timezone_derived_from": "state"
+}

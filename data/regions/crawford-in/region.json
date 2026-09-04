@@ -1,0 +1,12 @@
+{
+  "slug": "crawford-in",
+  "name": "Crawford, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18025",
+  "timezone_derived_from": "state"
+}

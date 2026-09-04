@@ -1,0 +1,12 @@
+{
+  "slug": "jasper-mo",
+  "name": "Jasper, MO",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "29097",
+  "timezone_derived_from": "state"
+}

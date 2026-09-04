@@ -1,0 +1,12 @@
+{
+  "slug": "cumberland-va",
+  "name": "Cumberland, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51049",
+  "timezone_derived_from": "state"
+}

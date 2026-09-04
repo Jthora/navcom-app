@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+northumberland-pa-overture-31aa3cd6,Gate House,shelter,"21 Gatehouse Dr, Danville",40.948238372802734,-76.60034942626953,+15702756766,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://gatehousepa.org/index.html
+northumberland-pa-overture-9e122c95,Haven Ministry Job Search,shelter,"1043 S Front St, Sunbury",40.847843170166016,-76.80327606201172,+15702861672,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://haven-ministry-center.hub.biz/
+northumberland-pa-overture-9c7bbef1,"American Rescue Workers Thrift Store, Milton",shelter,"122 Maple Ave, Milton",41.016326904296875,-76.85043334960938,5707422141,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.arwwilliamsport.org/arwthriftstores

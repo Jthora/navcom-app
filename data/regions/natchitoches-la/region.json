@@ -1,0 +1,12 @@
+{
+  "slug": "natchitoches-la",
+  "name": "Natchitoches, LA",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "22069",
+  "timezone_derived_from": "state"
+}

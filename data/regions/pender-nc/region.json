@@ -1,0 +1,12 @@
+{
+  "slug": "pender-nc",
+  "name": "Pender, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37141",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "madison-fl",
+  "name": "Madison, FL",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "12079",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "harrisonburg-va",
+  "name": "Harrisonburg, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51660",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+warren-pa-overture-e47b64ef,Allegheny Valley Veterans Center,shelter,"100 N Main St, Clarendon",41.782962799072266,-79.0952377319336,+18143136886,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://avvc.us/
+warren-pa-overture-107f772a,2nd Street Food Pantry,meal,"18 2nd St, Youngsville",41.85289764404297,-79.32044219970703,+18145634351,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.2ndstreetfood.org/

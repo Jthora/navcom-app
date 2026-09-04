@@ -1,0 +1,12 @@
+{
+  "slug": "ashe-nc",
+  "name": "Ashe, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37009",
+  "timezone_derived_from": "state"
+}

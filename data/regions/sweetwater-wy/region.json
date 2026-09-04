@@ -1,0 +1,12 @@
+{
+  "slug": "sweetwater-wy",
+  "name": "Sweetwater, WY",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "56037",
+  "timezone_derived_from": "state"
+}

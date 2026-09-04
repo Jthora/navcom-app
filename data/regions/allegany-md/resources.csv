@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+allegany-md-overture-b64d9157,Western Maryland Food Bank,meal,"816 Frederick St, Cumberland",39.6623420715332,-78.755126953125,3017222797,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.wmdfoodbank.org/
+allegany-md-overture-ac3c6dda,Healing Hunger Food Service,meal,"12504 Naves Cross Rd NE, Cumberland",39.676475524902344,-78.73201751708984,+13017244467,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://healing-hunger.square.site/
+allegany-md-overture-7e523b2a,Frostburg Interfaith Food Pantry,meal,"44 W Main St, Frostburg",39.65806579589844,-78.92933654785156,+13016871728,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

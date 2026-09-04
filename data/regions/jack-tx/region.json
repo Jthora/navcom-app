@@ -1,0 +1,12 @@
+{
+  "slug": "jack-tx",
+  "name": "Jack, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48237",
+  "timezone_derived_from": "state"
+}

@@ -45,7 +45,10 @@ beforeAll(() => {
       .querySelectorAll('a[href]')
       .map((a) => ({ path, href: a.getAttribute('href') as string }))
   );
-});
+  // Deliberately site-wide: the guard's whole point is that *nothing* anywhere links to a
+  // squatted domain. Memory is fine — each document is collectable once its hrefs are out —
+  // but scanning 12,329 pages does not fit the 10s hook default.
+}, 120_000);
 
 describe('the community list as data', () => {
   it('has entries in every half', () => {

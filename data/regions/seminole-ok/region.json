@@ -1,0 +1,12 @@
+{
+  "slug": "seminole-ok",
+  "name": "Seminole, OK",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "40133",
+  "timezone_derived_from": "state"
+}

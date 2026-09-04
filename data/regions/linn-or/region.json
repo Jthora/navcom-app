@@ -1,0 +1,12 @@
+{
+  "slug": "linn-or",
+  "name": "Linn, OR",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "41043",
+  "timezone_derived_from": "state"
+}

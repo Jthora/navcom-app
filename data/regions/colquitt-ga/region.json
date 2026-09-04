@@ -1,0 +1,12 @@
+{
+  "slug": "colquitt-ga",
+  "name": "Colquitt, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13071",
+  "timezone_derived_from": "state"
+}

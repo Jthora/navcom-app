@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+eddy-nm-overture-98befff6,Carlsbad Community Kitchen,meal,"402 S Alameda St, Carlsbad",32.416725158691406,-104.23162841796875,+15758854174,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.centerfornonprofitexcellence.org/nonprofit-directory/carlsbad-community-kitchen
+eddy-nm-overture-7954f166,Battered Family Shelter,shelter,"520 N 6th St, Carlsbad",32.425750732421875,-104.25347900390625,+15758854615,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.carlsbadshelter.com/
+eddy-nm-overture-9bce0b86,Jonah's House Food Pantry,meal,"512 W Stevens St, Carlsbad",32.42173767089844,-104.23260498046875,15758875904,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+eddy-nm-overture-64ab49af,St. Vincent de Paul Food Bank,meal,"603 S Roselawn Ave, Artesia",32.836448669433594,-104.39976501464844,+15757488824,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+eddy-nm-overture-92346ca3,Hope Center,shelter,"1314 S Canal St, Carlsbad",32.40696334838867,-104.22708129882812,+15752001377,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://hopenm.org/
+eddy-nm-overture-d4b514d6,Grammy's House,shelter,"811 W Texas Ave, Artesia",32.84317398071289,-104.40705108642578,+15757481198,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://grammyshouse.org/

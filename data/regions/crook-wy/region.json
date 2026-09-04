@@ -1,0 +1,12 @@
+{
+  "slug": "crook-wy",
+  "name": "Crook, WY",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "56011",
+  "timezone_derived_from": "state"
+}

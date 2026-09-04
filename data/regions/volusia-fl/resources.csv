@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+volusia-fl-overture-0056ca67,Pay-It-Forward DeLand Pantry,meal,"250 N Hill Ave, DeLand",29.031457901000977,-81.2833023071289,+13216048002,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+volusia-fl-overture-8d7d33ec,Family Renew Community,shelter,"810 Ridgewood Ave, Holly Hill",29.23952293395996,-81.03845977783203,+13862390861,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://familyrenew.org/
+volusia-fl-overture-91081ab4,First Step Shelter,shelter,"3889 W International Speedway Blvd, Daytona Beach",29.13251495361328,-81.14916229248047,+13863613800,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.firststepshelter.org/
+volusia-fl-overture-7c74131a,Gifts of Love Food Bank,shelter,"820 W Park Ave, Edgewater",28.98678970336914,-80.91967010498047,+13864235257,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://nsbchurchofchrist.com
+volusia-fl-overture-133c6ec3,Hope Place,shelter,"1340 Wright St, Daytona Beach",29.241588592529297,-81.0712890625,+13863175886,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+lincoln-nc-overture-8a6f808a,Lake Norman Food Mission,meal,"7501 Hagers Hollow Dr, Denver",35.50471115112305,-81.0035171508789,+17049660079,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+lincoln-nc-overture-3c4f121e,Communities In Schools of Lincoln County,meal,"410 Linden St, Lincolnton",35.47261047363281,-81.24095916748047,+17042404085,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://cislincolnnc.org/
+lincoln-nc-overture-d679f7b1,Hesed House of Hope Lincoln County,shelter,"100 Ann Gaither Ct, Lincolnton",35.473506927490234,-81.24292755126953,+17047320175,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.hesedhouseofhope.com/
+lincoln-nc-overture-40fc9b6b,Nourishing Hands,meal,"3413 E NC-150, Lincolnton",35.50408172607422,-81.18008422851562,+17047321351,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+lincoln-nc-overture-23748b8b,Day One Recovery Homes,shelter,"1228 N Flint St, Lincolnton",35.48931884765625,-81.2514877319336,+18283225915,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://integratedcarehickory.com/

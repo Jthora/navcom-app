@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+lawrence-in-overture-886c86fc,L.i.f.e. Food Pantry,meal,"1204 I St, Bedford",38.865562438964844,-86.48249053955078,18122794442,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.lifeindiana.org
+lawrence-in-overture-1c18cea0,Becky's Place,shelter,"1108 5th St, Bedford",38.874114990234375,-86.48617553710938,+18122755773,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.beckysplacebedford.org/
+lawrence-in-overture-60be8704,Bedford Community Care Center,meal,"1018 J St, Bedford",38.8654670715332,-86.48356628417969,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+lawrence-in-overture-c8ded561,Men's Warming Center,shelter,"1414 H St, Bedford",38.86277770996094,-86.48090362548828,+18123291118,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.bedfordmenswarmingshelter.org/

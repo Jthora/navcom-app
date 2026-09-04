@@ -1,0 +1,12 @@
+{
+  "slug": "jefferson-fl",
+  "name": "Jefferson, FL",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "12065",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "clinton-oh",
+  "name": "Clinton, OH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "39027",
+  "timezone_derived_from": "state"
+}

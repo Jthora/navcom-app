@@ -1,0 +1,12 @@
+{
+  "slug": "burleigh-nd",
+  "name": "Burleigh, ND",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "38015",
+  "timezone_derived_from": "state"
+}

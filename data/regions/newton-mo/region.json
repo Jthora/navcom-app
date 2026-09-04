@@ -1,0 +1,12 @@
+{
+  "slug": "newton-mo",
+  "name": "Newton, MO",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "29145",
+  "timezone_derived_from": "state"
+}

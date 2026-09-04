@@ -1,0 +1,12 @@
+{
+  "slug": "bureau-il",
+  "name": "Bureau, IL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "17011",
+  "timezone_derived_from": "state"
+}

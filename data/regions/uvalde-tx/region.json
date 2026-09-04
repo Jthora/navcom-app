@@ -1,0 +1,12 @@
+{
+  "slug": "uvalde-tx",
+  "name": "Uvalde, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48463",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+avoyelles-la-overture-1667be6b,Mansura Care and Hope Ministries,meal,"2058 L'Eglise St, Mansura",31.067153930664062,-92.05137634277344,+13189645569,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+avoyelles-la-overture-8d62f2f2,Evergreen Safe House,shelter,"205 Hill St, Evergreen",30.952659606933594,-92.10601043701172,+17087518196,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+avoyelles-la-overture-287f5fac,Cottonport Housing Authority,shelter,"650 Jacob Dr, Cottonport",30.9815731048584,-92.05967712402344,+13188763457,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://affordablehousingonline.com/housing-search/Louisiana/Cottonport

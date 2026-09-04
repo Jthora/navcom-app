@@ -1,0 +1,12 @@
+{
+  "slug": "fauquier-va",
+  "name": "Fauquier, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51061",
+  "timezone_derived_from": "state"
+}

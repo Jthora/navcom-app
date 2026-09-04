@@ -1,0 +1,12 @@
+{
+  "slug": "hood-river-or",
+  "name": "Hood River, OR",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "41027",
+  "timezone_derived_from": "state"
+}

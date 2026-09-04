@@ -1,0 +1,12 @@
+{
+  "slug": "clark-wa",
+  "name": "Clark, WA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "53011",
+  "timezone_derived_from": "state"
+}

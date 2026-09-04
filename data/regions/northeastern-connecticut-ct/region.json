@@ -1,0 +1,12 @@
+{
+  "slug": "northeastern-connecticut-ct",
+  "name": "Northeastern Connecticut, CT",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "09150",
+  "timezone_derived_from": "state"
+}

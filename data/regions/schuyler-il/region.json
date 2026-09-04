@@ -1,0 +1,12 @@
+{
+  "slug": "schuyler-il",
+  "name": "Schuyler, IL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "17169",
+  "timezone_derived_from": "state"
+}

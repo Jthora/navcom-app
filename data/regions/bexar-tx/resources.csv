@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+bexar-tx-overture-c79970d6,Faith Worship Center - Food Distribution Center,meal,"11502 Big Mesa Dr, San Antonio",29.39520263671875,-98.70121765136719,+12103901763,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.fwcsa.org/
+bexar-tx-overture-53704acb,Daily Bread Free Little Pantry,meal,"11011 Shaenfield Rd, San Antonio",29.521236419677734,-98.70905303955078,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

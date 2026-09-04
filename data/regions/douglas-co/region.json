@@ -1,0 +1,12 @@
+{
+  "slug": "douglas-co",
+  "name": "Douglas, CO",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "08035",
+  "timezone_derived_from": "state"
+}

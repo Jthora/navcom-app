@@ -1,0 +1,12 @@
+{
+  "slug": "chugach-ak",
+  "name": "Chugach, AK",
+  "country": "US",
+  "timezone": "America/Anchorage",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "02063",
+  "timezone_derived_from": "state"
+}

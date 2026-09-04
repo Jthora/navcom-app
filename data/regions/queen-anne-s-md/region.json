@@ -1,0 +1,12 @@
+{
+  "slug": "queen-anne-s-md",
+  "name": "Queen Anne's, MD",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "24035",
+  "timezone_derived_from": "state"
+}

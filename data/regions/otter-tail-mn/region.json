@@ -1,0 +1,12 @@
+{
+  "slug": "otter-tail-mn",
+  "name": "Otter Tail, MN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "27111",
+  "timezone_derived_from": "state"
+}

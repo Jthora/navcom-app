@@ -1,0 +1,12 @@
+{
+  "slug": "passaic-nj",
+  "name": "Passaic, NJ",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "34031",
+  "timezone_derived_from": "state"
+}

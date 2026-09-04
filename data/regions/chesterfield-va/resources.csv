@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+chesterfield-va-overture-127aa966,Richmond Friends of the Homeless,shelter,"4600 Jaydee Dr, Moseley",37.44002151489258,-77.71691131591797,+18046080971,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.richmondfriendsofthehomeless.org/donate
+chesterfield-va-overture-0bdb414a,Chesterfield Food Bank Outreach Center,meal,"12211 Iron Bridge Rd, Chester",37.35243606567383,-77.47823333740234,+18044148885,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.cfboc.org/
+chesterfield-va-overture-442bbf5d,Engage Food Pantry,shelter,"101 W Hundred Rd, Chester",37.34892654418945,-77.36382293701172,+18042434996,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.instagram.com/engagefoodpantry/

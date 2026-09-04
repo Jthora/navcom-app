@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+fond-du-lac-wi-overture-96b21c27,Stone Soup FDL Community,meal,"237 N Macy St, Fond du Lac",43.78532409667969,-88.4483642578125,+19202380793,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.corefdl.org/
+fond-du-lac-wi-overture-cf2deb74,Holyland Food Pantry,meal,"W929 Kiel Rd, New Holstein",43.9067497253418,-88.20378875732422,+19202861333,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://holylandfoodpantry.com/
+fond-du-lac-wi-overture-82a03af9,Fondy Food Pantry,meal,"573 W Rolling Meadows Dr, Fond du Lac",43.75498962402344,-88.4755859375,+19203220369,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.fondyfoodpantry.org/
+fond-du-lac-wi-overture-01a3127f,Solutions Center,shelter,"358 N Peters Ave #2, Fond du Lac",43.78898620605469,-88.47454071044922,+18008529571,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://solutionsfdl.org/
+fond-du-lac-wi-overture-0cb57595,Solutions Center Shelter,shelter,"75 W Division St, Fond du Lac",43.77914047241211,-88.4500732421875,19209232880,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://solutionsfdl.org

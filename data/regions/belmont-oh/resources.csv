@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+belmont-oh-overture-affb1235,Epworth Center,shelter,"301 N Main St, Bethesda",40.018585205078125,-81.0740966796875,+17404844705,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+belmont-oh-overture-736971bd,The Food Pantry of St. Clairsville,shelter,"102 St Patricks Aly, St Clairsville",40.07911682128906,-80.9039306640625,+17406950690,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+belmont-oh-overture-f4e53802,Flushing Ministerial Association Food Pantry,meal,"427 E High St, Flushing",40.152488708496094,-81.05013275146484,+17409683911,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

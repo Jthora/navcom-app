@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+lee-ms-overture-53b758ba,Faith Food Pantry,meal,"102 Front Ave, Nettleton",34.090877532958984,-88.62574005126953,+16622050138,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.nettfaithfoodpantry.com/
+lee-ms-overture-f8566db6,Faith Haven Inc,shelter,"4497 Roebuck Rd, Tupelo",34.23524856567383,-88.78044891357422,+16628447091,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://faithhaventupelo.com/
+lee-ms-overture-8f704796,St. Luke Food Pantry,meal,"2653 S Eason Blvd, Tupelo",34.23525619506836,-88.68533325195312,+16626874500,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.stlukefoodpantry.org/

@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+kaufman-tx-overture-06359c17,Kaufman County Children's Shelter,shelter,"4090 S Houston St, Kaufman",32.56378936767578,-96.3172607421875,+14693764510,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://norvillecenter.com/contact
+kaufman-tx-overture-96c5b1b0,Forney Food Pantry,meal,"222 Industrial Dr, Forney",32.75404739379883,-96.45639038085938,+19725522011,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://forneyfoodpantryinc.org/
+kaufman-tx-overture-daa2417f,MAGS - Mabank Area Good Samaritans,meal,"405 W Walnut St, Mabank",32.36372375488281,-96.10969543457031,+19038870547,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

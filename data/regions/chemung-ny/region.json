@@ -1,0 +1,12 @@
+{
+  "slug": "chemung-ny",
+  "name": "Chemung, NY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "36015",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+lee-nc-overture-2df36a1f,Family Promise of Lee County,shelter,"2302 Woodland Ave, Sanford",35.45650100708008,-79.1559829711914,+19197181540,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.familypromiseofleecounty.org/services#!
+lee-nc-overture-ddc94025,Outreach Mission Inc. Omi,shelter,"705 Chatham St, Sanford",35.47406005859375,-79.17066192626953,19192921508,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.sanfordoutreachmission.com
+lee-nc-overture-3bd12380,Bread of Life Ministries,meal,"219 Maple Ave, Sanford",35.48054504394531,-79.17150115966797,+19197777233,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://bolmnc.org/give/donate/
+lee-nc-overture-024fcec5,Christians United Outreach Center of Lee County,meal,"2885 Lee Ave, Sanford",35.450504302978516,-79.14453887939453,+19197748485,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.cuoclc.org/
+lee-nc-overture-14c5fa2e,Bread Basket of Sanford,meal,"140 E Chisholm St, Sanford",35.485984802246094,-79.17808532714844,+19197743118,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.breadbasketofsanford.org/

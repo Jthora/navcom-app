@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+hardin-ky-overture-1f29c6ff,St Vincent DePaul Outreach,meal,"307 W Dixie Ave, Elizabethtown",37.69656753540039,-85.86334228515625,+12707634249,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+hardin-ky-overture-d0970932,Feeding America,meal,"300 Peterson Dr, Elizabethtown",37.682342529296875,-85.90052032470703,+12707351407,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://feedingamericaky.org
+hardin-ky-overture-ef0b6cfa,Warm Blessings Community Kitchen,meal,"609 E Dixie Ave, Elizabethtown",37.68576431274414,-85.85133361816406,+12707639276,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.warmblessingsinc.com/

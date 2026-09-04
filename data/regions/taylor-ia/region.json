@@ -1,0 +1,12 @@
+{
+  "slug": "taylor-ia",
+  "name": "Taylor, IA",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "19173",
+  "timezone_derived_from": "state"
+}

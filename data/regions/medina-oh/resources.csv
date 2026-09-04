@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+medina-oh-overture-c483d1e0,Brunswick Food Pantry,meal,"835 Pearl Rd, Brunswick",41.252471923828125,-81.84046173095703,13302208299,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.brunswickfoodpantry.org
+medina-oh-overture-b32a7858,Feeding Medina County,meal,"650 W Smith Rd C-8, Medina",41.134891510009766,-81.87602233886719,+13304214816,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.feedingmedinacounty.org/
+medina-oh-overture-1266312d,Medina UMC Food Pantry,meal,"4747 Foote Rd, Medina",41.146331787109375,-81.83271026611328,+13307254943,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://medinaumc.com/food-pantry
+medina-oh-overture-916475db,Cathy's House,shelter,"515 W Liberty St, Medina",41.1392822265625,-81.87174224853516,+13307644486,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.cathyshouse.org/
+medina-oh-overture-b49d218b,Marian's Closet,shelter,"154 East St, Wadsworth",41.023921966552734,-81.72560119628906,+13303363642,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://marianscloset.org/

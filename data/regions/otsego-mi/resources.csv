@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+otsego-mi-overture-37be3401,Otsego County Food Pantry,meal,"116 E 5th St, Gaylord",45.02131652832031,-84.67298889160156,+19897328929,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.otsegocountyfoodpantry.org/
+otsego-mi-overture-9dc4f642,The Refuge In Otsego County,shelter,"116 E 5th St, Gaylord",45.02142333984375,-84.6727066040039,19893508231,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.otsegorefuge.org
+otsego-mi-overture-a27f5153,Patriot Place,shelter,"1430 Patriot Dr, Gaylord",45.03244400024414,-84.70311737060547,+19894482260,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.goodwillnmi.org/patriotplace

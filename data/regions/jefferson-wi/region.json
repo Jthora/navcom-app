@@ -1,0 +1,12 @@
+{
+  "slug": "jefferson-wi",
+  "name": "Jefferson, WI",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "55055",
+  "timezone_derived_from": "state"
+}

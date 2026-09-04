@@ -1,0 +1,12 @@
+{
+  "slug": "acadia-la",
+  "name": "Acadia, LA",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "22001",
+  "timezone_derived_from": "state"
+}

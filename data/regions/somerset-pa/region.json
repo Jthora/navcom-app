@@ -1,0 +1,12 @@
+{
+  "slug": "somerset-pa",
+  "name": "Somerset, PA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "42111",
+  "timezone_derived_from": "state"
+}

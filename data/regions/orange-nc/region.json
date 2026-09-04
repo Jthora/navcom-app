@@ -1,0 +1,12 @@
+{
+  "slug": "orange-nc",
+  "name": "Orange, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37135",
+  "timezone_derived_from": "state"
+}

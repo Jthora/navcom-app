@@ -1,0 +1,12 @@
+{
+  "slug": "sussex-nj",
+  "name": "Sussex, NJ",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "34037",
+  "timezone_derived_from": "state"
+}

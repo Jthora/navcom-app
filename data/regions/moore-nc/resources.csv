@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+moore-nc-overture-1a2d6368,Sandhills Moore Coalition for Human Care,meal,"1500 W Indiana Ave, Southern Pines",35.18630599975586,-79.40986633300781,+19106931600,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.sandhillscoalition.org/
+moore-nc-overture-49468b31,Clara Mclean House,shelter,"20 First Village Dr., Pinehurst",35.20945739746094,-79.457275390625,+19107154220,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.firsthealth.org/clara-mclean-house
+moore-nc-overture-d577020f,Robbins Area Christian Ministries,meal,"120 S Middleton St, Robbins",35.43384552001953,-79.5869140625,19109484211,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://robbinsareachristianministries.blogspot.com

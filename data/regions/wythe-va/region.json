@@ -1,0 +1,12 @@
+{
+  "slug": "wythe-va",
+  "name": "Wythe, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51197",
+  "timezone_derived_from": "state"
+}

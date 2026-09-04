@@ -1,0 +1,12 @@
+{
+  "slug": "randolph-wv",
+  "name": "Randolph, WV",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "54083",
+  "timezone_derived_from": "state"
+}

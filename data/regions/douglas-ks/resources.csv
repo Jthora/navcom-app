@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+douglas-ks-overture-e3f50d7a,Homeless Resource Center,shelter,"944 Kentucky St, Lawrence",38.96591567993164,-95.23811340332031,+17852510987,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.hrclawrence.org/
+douglas-ks-overture-fc9d3d98,Lawrence Community Shelter,shelter,"3655 E 25th St, Lawrence",38.93846130371094,-95.19251251220703,+17858328864,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.lawrenceshelter.org/
+douglas-ks-overture-2136cc85,Just Food,meal,"1000 E 11th St, Lawrence",38.964786529541016,-95.22319793701172,+17858567030,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.justfoodks.org/

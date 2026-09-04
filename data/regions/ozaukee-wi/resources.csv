@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+ozaukee-wi-overture-b9d9af9d,"Port Washington Food Pantry, Inc.",meal,"1800 N Wisconsin St, Port Washington",43.408851623535156,-87.86904907226562,12622841148,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.thefoodpantryinc.com
+ozaukee-wi-overture-55055100,Joyful Foundation Inc,meal,"145 W Church St, Saukville",43.379764556884766,-87.94430541992188,14144397514,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.joyfulfoundationinc.org
+ozaukee-wi-overture-0d30d37c,Ozaukee Food Alliance,meal,"100 E Green Bay Ave, Saukville",43.3803825378418,-87.94170379638672,+12626898591,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.ozaukeefoodalliance.org/

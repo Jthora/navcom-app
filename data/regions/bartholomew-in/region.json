@@ -1,0 +1,12 @@
+{
+  "slug": "bartholomew-in",
+  "name": "Bartholomew, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18005",
+  "timezone_derived_from": "state"
+}

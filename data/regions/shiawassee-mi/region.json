@@ -1,0 +1,12 @@
+{
+  "slug": "shiawassee-mi",
+  "name": "Shiawassee, MI",
+  "country": "US",
+  "timezone": "America/Detroit",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "26155",
+  "timezone_derived_from": "state"
+}

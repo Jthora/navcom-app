@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+hancock-oh-overture-09f8d0ad,City Mission of Findlay,shelter,"510 W Main Cross St, Findlay",41.03982925415039,-83.65743255615234,+14194239151,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.findlaymission.org/
+hancock-oh-overture-c65e69af,Chopin Hall,meal,"1800 N Blanchard St, Findlay",41.061702728271484,-83.64270782470703,+14194226401,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.chopinhall.org/
+hancock-oh-overture-e8b96200,Hope House,shelter,"1800 N Blanchard St, Findlay",41.06167221069336,-83.64263153076172,+14194272848,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://findlayhopehouse.org/

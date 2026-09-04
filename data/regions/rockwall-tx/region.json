@@ -1,0 +1,12 @@
+{
+  "slug": "rockwall-tx",
+  "name": "Rockwall, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48397",
+  "timezone_derived_from": "state"
+}

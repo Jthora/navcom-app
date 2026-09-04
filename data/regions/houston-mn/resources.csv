@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+houston-mn-overture-f9bba015,Houston Community Food Shelf,shelter,"118 S Lincoln St, Houston",43.762306213378906,-91.57022094726562,+15078964558,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+houston-mn-overture-1dc39a8a,La Crescent Food Shelf,meal,"436 6th St S, La Crescent",43.82329559326172,-91.30780792236328,+15078951115,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.lacrescenthcp.org/programs/la-crescent-food-shelf
+houston-mn-overture-71ff762a,Hokah Area Food Shelf,meal,"57 Main St #6500, Hokah",43.759395599365234,-91.34618377685547,+16083940457,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

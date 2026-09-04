@@ -1,0 +1,12 @@
+{
+  "slug": "nodaway-mo",
+  "name": "Nodaway, MO",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "29147",
+  "timezone_derived_from": "state"
+}

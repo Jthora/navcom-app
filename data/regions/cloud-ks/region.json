@@ -1,0 +1,12 @@
+{
+  "slug": "cloud-ks",
+  "name": "Cloud, KS",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "20029",
+  "timezone_derived_from": "state"
+}

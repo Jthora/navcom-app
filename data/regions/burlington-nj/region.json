@@ -1,0 +1,12 @@
+{
+  "slug": "burlington-nj",
+  "name": "Burlington, NJ",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "34005",
+  "timezone_derived_from": "state"
+}

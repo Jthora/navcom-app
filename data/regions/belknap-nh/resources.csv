@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+belknap-nh-overture-b576bbd0,Belknap House,shelter,"200 Court St, Laconia",43.521663665771484,-71.47380065917969,+16035278097,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.belknaphouse.org/
+belknap-nh-overture-5ae4cdd3,New Durham Food Pantry,meal,"5 Main St, New Durham",43.43511199951172,-71.16368865966797,+16038170372,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://newdurhamfoodpantry.my.canva.site/#home
+belknap-nh-overture-73a96563,Barnstead Food Pantry,meal,"27 Depot St, Barnstead",43.34008026123047,-71.2630615234375,+16038487648,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

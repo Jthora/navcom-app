@@ -1,0 +1,12 @@
+{
+  "slug": "hunt-tx",
+  "name": "Hunt, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48231",
+  "timezone_derived_from": "state"
+}

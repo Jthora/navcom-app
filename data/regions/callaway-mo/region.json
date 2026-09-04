@@ -1,0 +1,12 @@
+{
+  "slug": "callaway-mo",
+  "name": "Callaway, MO",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "29027",
+  "timezone_derived_from": "state"
+}

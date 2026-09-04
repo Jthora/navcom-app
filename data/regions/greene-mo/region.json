@@ -1,0 +1,12 @@
+{
+  "slug": "greene-mo",
+  "name": "Greene, MO",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "29077",
+  "timezone_derived_from": "state"
+}

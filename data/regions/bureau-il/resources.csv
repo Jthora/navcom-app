@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+bureau-il-overture-576b07a6,Hall Food Pantry,meal,"500 N Terry St, Spring Valley",41.32888412475586,-89.2033920288086,+18156632085,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.halltwpfoodpantry.org/
+bureau-il-overture-dddd3376,Hall Township Food Pantry - Food Distribution Center,meal,"500 N Terry St  # 1300, Spring Valley",41.32881164550781,-89.20360565185547,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: halltwpfoodpantry.org
+bureau-il-overture-7a34c0a0,Western Bureau County Food Pantry,meal,"123 S Main St, Sheffield",41.357994079589844,-89.73766326904297,+13092383229,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

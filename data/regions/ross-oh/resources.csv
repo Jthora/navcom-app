@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+ross-oh-overture-05ff4fb0,Paint Valley Ministries,meal,"204 E 2nd St, Bainbridge",39.22731018066406,-83.2675552368164,+17406343680,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+ross-oh-overture-12c28592,God's Community Food Pantry,meal,"11759 Market St, Adelphi",39.46770095825195,-82.74907684326172,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+ross-oh-overture-87f1a15a,Seeds Of Hope,shelter,"2170 Lunbeck Rd, Chillicothe",39.294593811035156,-82.95538330078125,+17406637005,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.seedsofhopeohio.com/
+ross-oh-overture-6ef8d797,Good Samaritan Network,meal,"255 N Woodbridge Ave, Chillicothe",39.33461380004883,-83.00426483154297,+17407796303,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.goodsamrossco.org/

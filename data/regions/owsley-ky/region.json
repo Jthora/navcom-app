@@ -1,0 +1,12 @@
+{
+  "slug": "owsley-ky",
+  "name": "Owsley, KY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "21189",
+  "timezone_derived_from": "state"
+}

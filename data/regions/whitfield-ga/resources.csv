@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+whitfield-ga-overture-edc5d428,Food Distribution Center,meal,"515 N Tibbs Rd, Dalton",34.78016662597656,-84.99905395507812,17062788051,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: ccocdalton.org
+whitfield-ga-overture-c112f8dc,Northwest Georgia Family Crisis Center,shelter,Dalton,34.769935607910156,-84.97002410888672,+17062785586,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://nwgafcc.com/
+whitfield-ga-overture-12735543,Northwest GA Branch of the Chattanooga Area Food Bank,meal,"1111 S Hamilton St, Dalton",34.754432678222656,-84.96583557128906,+17065088591,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.chattfoodbank.org/

@@ -1,0 +1,12 @@
+{
+  "slug": "jackson-or",
+  "name": "Jackson, OR",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "41029",
+  "timezone_derived_from": "state"
+}

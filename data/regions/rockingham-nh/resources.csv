@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+rockingham-nh-overture-5e77f364,Newmarket Food Pantry,meal,"137 Main St, Newmarket",43.07818603515625,-70.93636322021484,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.newmarketchurch.org
+rockingham-nh-overture-92c4f3ad,FBC Community Food Pantry,meal,"4 Crystal Ave #4, Derry",42.88257598876953,-71.3247299194336,+16034211897,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://fbcfoodpantry.org/
+rockingham-nh-overture-9b79447d,New Generation,shelter,"568 Portsmouth Ave, Greenland",43.0368766784668,-70.83821105957031,16034364989,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.newgennh.org
+rockingham-nh-overture-b0ba8ca8,Bread Of Life Food Pantry,meal,"171 Zion Hill Rd, Salem",42.82472610473633,-71.2322998046875,16038930305,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.triumphantcross.org
+rockingham-nh-overture-e989efb5,Seacoast Adopt-a-block Food Pantry,meal,"600A Lafayette Rd, Portsmouth",43.05579376220703,-70.77066040039062,16039882671,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: www.adoptablock.net
+rockingham-nh-overture-05e91c5d,Cross Roads House Inc,shelter,"600 Lafayette Rd, Portsmouth",43.055519104003906,-70.77088928222656,+16034362218,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.crossroadshouse.org/donations/gift-form/

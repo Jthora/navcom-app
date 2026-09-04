@@ -1,0 +1,12 @@
+{
+  "slug": "shelby-al",
+  "name": "Shelby, AL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "01117",
+  "timezone_derived_from": "state"
+}

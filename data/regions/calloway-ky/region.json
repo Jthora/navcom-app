@@ -1,0 +1,12 @@
+{
+  "slug": "calloway-ky",
+  "name": "Calloway, KY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "21035",
+  "timezone_derived_from": "state"
+}

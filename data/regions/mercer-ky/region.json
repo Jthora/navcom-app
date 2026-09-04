@@ -1,0 +1,12 @@
+{
+  "slug": "mercer-ky",
+  "name": "Mercer, KY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "21167",
+  "timezone_derived_from": "state"
+}

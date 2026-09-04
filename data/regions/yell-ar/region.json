@@ -1,0 +1,12 @@
+{
+  "slug": "yell-ar",
+  "name": "Yell, AR",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "05149",
+  "timezone_derived_from": "state"
+}

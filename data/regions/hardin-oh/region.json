@@ -1,0 +1,12 @@
+{
+  "slug": "hardin-oh",
+  "name": "Hardin, OH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "39065",
+  "timezone_derived_from": "state"
+}

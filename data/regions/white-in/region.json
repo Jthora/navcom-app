@@ -1,0 +1,12 @@
+{
+  "slug": "white-in",
+  "name": "White, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18181",
+  "timezone_derived_from": "state"
+}

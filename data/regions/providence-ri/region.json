@@ -1,0 +1,12 @@
+{
+  "slug": "providence-ri",
+  "name": "Providence, RI",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "44007",
+  "timezone_derived_from": "state"
+}

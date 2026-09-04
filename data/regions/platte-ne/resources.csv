@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+platte-ne-overture-c6e910ec,Simon House,meal,"1853 10th Ave, Columbus",41.434608459472656,-97.33879089355469,+14025648444,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.thesimonhouse.org/
+platte-ne-overture-b0df193b,Columbus Rescue Mission,shelter,"1112 15th St, Columbus",41.431427001953125,-97.34081268310547,+14025631096,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.columbusrescuemission.org/

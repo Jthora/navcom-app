@@ -1,0 +1,12 @@
+{
+  "slug": "teller-co",
+  "name": "Teller, CO",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "08119",
+  "timezone_derived_from": "state"
+}

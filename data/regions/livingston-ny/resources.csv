@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+livingston-ny-overture-1bfb30bf,"Sent By Ravens Food Pantry, INC",meal,"40 Spring St, Livonia",42.817161560058594,-77.66809844970703,+15854815942,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://sbrfood.org/
+livingston-ny-overture-31002596,Geneseo/Groveland Emergency Food Pantry,meal,"31 Center St, Geneseo",42.7962646484375,-77.81400299072266,+15859918220,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.ggefoodpantry.org/
+livingston-ny-overture-3ad6259e,Avon NY Food Pantry,meal,"133 Genesee St, Avon",42.913726806640625,-77.74525451660156,+15853581671,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

@@ -1,0 +1,12 @@
+{
+  "slug": "stanislaus-ca",
+  "name": "Stanislaus, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06099",
+  "timezone_derived_from": "state"
+}

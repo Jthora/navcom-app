@@ -1,0 +1,12 @@
+{
+  "slug": "muscogee-ga",
+  "name": "Muscogee, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13215",
+  "timezone_derived_from": "state"
+}

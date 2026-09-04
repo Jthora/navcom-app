@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+valencia-nm-overture-2b7beec3,Valencia Shelter Services,shelter,"445 Camino del Rey Dr, Los Lunas",34.811065673828125,-106.76115417480469,+15055653100,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://linktr.ee/vssnm
+valencia-nm-overture-232d3942,BelenArea Food Pantry,meal,"116 S 6th St, Belen",34.66022491455078,-106.77074432373047,+15053188234,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

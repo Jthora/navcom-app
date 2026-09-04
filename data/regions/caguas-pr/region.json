@@ -1,0 +1,12 @@
+{
+  "slug": "caguas-pr",
+  "name": "Caguas, PR",
+  "country": "US",
+  "timezone": "America/Puerto_Rico",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "72025",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+orange-nc-overture-574426c8,SECU Family House at UNC Hospitals,shelter,"123 Old Mason Farm Rd, Chapel Hill",35.90105056762695,-79.02964782714844,+19199328000,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.secufh.org/
+orange-nc-overture-9913fb3d,Triangle Toy Takeaway,meal,"100 Horizon Pl, Durham",36.047489166259766,-79.01904296875,+19194716443,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.newhorizonchurch.tv/toytakeaway

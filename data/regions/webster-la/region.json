@@ -1,0 +1,12 @@
+{
+  "slug": "webster-la",
+  "name": "Webster, LA",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "22119",
+  "timezone_derived_from": "state"
+}

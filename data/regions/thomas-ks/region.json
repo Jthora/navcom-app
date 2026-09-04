@@ -1,0 +1,12 @@
+{
+  "slug": "thomas-ks",
+  "name": "Thomas, KS",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "20193",
+  "timezone_derived_from": "state"
+}

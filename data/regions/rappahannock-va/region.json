@@ -1,0 +1,12 @@
+{
+  "slug": "rappahannock-va",
+  "name": "Rappahannock, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51157",
+  "timezone_derived_from": "state"
+}

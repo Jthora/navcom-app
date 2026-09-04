@@ -1,0 +1,12 @@
+{
+  "slug": "jefferson-la",
+  "name": "Jefferson, LA",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "22051",
+  "timezone_derived_from": "state"
+}

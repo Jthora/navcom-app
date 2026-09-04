@@ -1,0 +1,12 @@
+{
+  "slug": "taney-mo",
+  "name": "Taney, MO",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "29213",
+  "timezone_derived_from": "state"
+}

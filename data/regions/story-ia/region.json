@@ -1,0 +1,12 @@
+{
+  "slug": "story-ia",
+  "name": "Story, IA",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "19169",
+  "timezone_derived_from": "state"
+}

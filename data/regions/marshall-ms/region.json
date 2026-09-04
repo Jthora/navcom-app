@@ -1,0 +1,12 @@
+{
+  "slug": "marshall-ms",
+  "name": "Marshall, MS",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "28093",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "nash-nc",
+  "name": "Nash, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37127",
+  "timezone_derived_from": "state"
+}

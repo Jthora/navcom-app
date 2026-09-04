@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+burleigh-nd-overture-f918b2ec,Welcome House Inc.,shelter,"617 N 7th St, Bismarck",46.81134796142578,-100.7813491821289,+17017510142,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.welcomehousend.org/
+burleigh-nd-overture-1f1b5e6d,Edwinton Place,shelter,"1121 S 11th St, Bismarck",46.79401779174805,-100.77511596679688,+17017510922,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+burleigh-nd-overture-077edcd5,Bismarck Emergency Food Pantry,meal,"1012 S 12th St, Bismarck",46.794063568115234,-100.77460479736328,17012589188,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+burleigh-nd-overture-0eaead14,Bismarck Emergency Food Pantry,meal,"220 W Front Ave, Bismarck",46.804622650146484,-100.79275512695312,+17012589188,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://bismarckemergencyfoodpantry6.godaddysites.com/

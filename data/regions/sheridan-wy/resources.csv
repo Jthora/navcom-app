@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+sheridan-wy-overture-8882e3c7,The Food Group,meal,"1141 Crook St, Sheridan",44.80961990356445,-106.9510726928711,+13077630850,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.foodgroupwy.org/
+sheridan-wy-overture-2f8cb367,Community Cupboard,meal,"411 US-14, Ranchester",44.90895462036133,-107.16468811035156,+13077528259,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+sheridan-wy-overture-d320ec21,Volunteers Of America,shelter,"1898 Fort Rd, Sheridan",44.82960891723633,-106.98839569091797,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: voanr.org

@@ -1,0 +1,12 @@
+{
+  "slug": "columbia-fl",
+  "name": "Columbia, FL",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "12023",
+  "timezone_derived_from": "state"
+}

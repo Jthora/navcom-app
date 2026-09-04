@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+wood-wi-overture-1ddffc9d,The Bread Barn,meal,"8095 Bethel Rd, Arpin",44.53984832763672,-90.0904769897461,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+wood-wi-overture-cc5e57c5,Shirleys House of Hope,shelter,"1316 N Hume Ave, Marshfield",44.67930603027344,-90.1515121459961,+17154869000,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.shirleyshouseofhope.org/
+wood-wi-overture-5f1a9214,The Neighborhood Table,meal,"441 Garfield St, Wisconsin Rapids",44.38711929321289,-89.82333374023438,17154221980,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.theneighborhoodtable.org

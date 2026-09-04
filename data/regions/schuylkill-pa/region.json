@@ -1,0 +1,12 @@
+{
+  "slug": "schuylkill-pa",
+  "name": "Schuylkill, PA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "42107",
+  "timezone_derived_from": "state"
+}

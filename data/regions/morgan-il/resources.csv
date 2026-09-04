@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+morgan-il-overture-b602fc12,New Directions Warming and Cleaning,shelter,"100 S Fayette St, Jacksonville",39.73430252075195,-90.23512268066406,+12172711014,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://mealtrain.com/41m0l6
+morgan-il-overture-3f54f91d,Bread of Love,meal,"301 W Beecher Ave, Jacksonville",39.730987548828125,-90.23197174072266,+12172435921,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://pcaging.com/service-locator

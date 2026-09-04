@@ -1,0 +1,12 @@
+{
+  "slug": "robertson-tx",
+  "name": "Robertson, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48395",
+  "timezone_derived_from": "state"
+}

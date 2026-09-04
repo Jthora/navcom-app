@@ -1,0 +1,12 @@
+{
+  "slug": "dekalb-il",
+  "name": "DeKalb, IL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "17037",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "barrow-ga",
+  "name": "Barrow, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13013",
+  "timezone_derived_from": "state"
+}

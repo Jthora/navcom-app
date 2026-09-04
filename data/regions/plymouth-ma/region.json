@@ -1,0 +1,12 @@
+{
+  "slug": "plymouth-ma",
+  "name": "Plymouth, MA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "25023",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "essex-ma",
+  "name": "Essex, MA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "25009",
+  "timezone_derived_from": "state"
+}

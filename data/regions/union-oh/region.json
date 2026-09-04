@@ -1,0 +1,12 @@
+{
+  "slug": "union-oh",
+  "name": "Union, OH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "39159",
+  "timezone_derived_from": "state"
+}

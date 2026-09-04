@@ -1,0 +1,12 @@
+{
+  "slug": "citrus-fl",
+  "name": "Citrus, FL",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "12017",
+  "timezone_derived_from": "state"
+}

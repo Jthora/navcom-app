@@ -1,0 +1,12 @@
+{
+  "slug": "austin-tx",
+  "name": "Austin, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48015",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+kittitas-wa-overture-7d77961b,HopeSource Food Pantry,meal,"110 N Pennsylvania Ave, Cle Elum",47.194297790527344,-120.93840789794922,+15099251448,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.hopesource.us/
+kittitas-wa-overture-886412ee,CWU Wildcat Pantry,meal,"North Wildcat Way, E Dean Nicholson Blvd Library 101C, Ellensburg",47.00502395629883,-120.54151916503906,+15099631856,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.cwu.edu/push/
+kittitas-wa-overture-39887fdc,APOYO,meal,"1320 E 18th Ave, Ellensburg",47.01023483276367,-120.52623748779297,5092011820,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.apoyo-community.org/
+kittitas-wa-overture-726b5558,FISH Community Food Bank,meal,"804 Elmview Rd, Ellensburg",47.02717971801758,-120.53754425048828,+15099255990,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.kvfish.org/donate

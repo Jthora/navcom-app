@@ -1,0 +1,12 @@
+{
+  "slug": "baltimore-md",
+  "name": "Baltimore, MD",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "24510",
+  "timezone_derived_from": "state"
+}

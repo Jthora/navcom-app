@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+dekalb-in-overture-83e110f1,Sue Atkison Memorial Community Care Food Pantry,meal,"108 W Houston St, Garrett",41.34853744506836,-85.13671112060547,+12603573315,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+dekalb-in-overture-c9412660,Hearten House Gospel Rescue Mission,shelter,"1304 Center St, Auburn",41.35768127441406,-85.04859924316406,+12603337223,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.heartenhouse.org/
+dekalb-in-overture-f48c9392,Hoosiers Feeding the Hungry,meal,"4490 State Road 327, Garrett",41.366600036621094,-85.1362533569336,+12602331444,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.hoosiersfeedingthehungry.org/

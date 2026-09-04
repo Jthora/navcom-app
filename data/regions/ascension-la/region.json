@@ -1,0 +1,12 @@
+{
+  "slug": "ascension-la",
+  "name": "Ascension, LA",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "22005",
+  "timezone_derived_from": "state"
+}

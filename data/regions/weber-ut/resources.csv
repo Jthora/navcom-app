@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+weber-ut-overture-8b717efe,Lantern House,shelter,"269 W 33rd St, Ogden",41.20337677001953,-111.98281860351562,+18016215036,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.stannescenter.org/
+weber-ut-overture-cb999385,Family Promise of Ogden,shelter,"324 E 1100 N, Harrisville",41.2779655456543,-111.97145080566406,+13852981081,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.familypromiseofogden.org/
+weber-ut-overture-17ac56d6,Open Hand Ministry,meal,"2890 S 1900 W, Ogden",41.2127685546875,-112.02552795410156,+18015645964,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://sites.google.com/site/openhandpublic/
+weber-ut-overture-e035b965,Griffin Memorial Church Food Pantry - Food Distribution Center,meal,"2424 E Ave, Ogden",41.2225227355957,-111.99506378173828,18013992171,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://griffinmemorialcogic.com
+weber-ut-overture-fe05a996,Youth Futures,shelter,"2760 Adams Ave, Ogden",41.21493148803711,-111.96762084960938,+18015281214,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.youthfuturesutah.org/

@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+houston-al-overture-341ba233,Living Hope Community Outreach Center,meal,"309 N Lena St, Dothan",31.227834701538086,-85.39594268798828,+13346712376,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.livinghopedothan.com/donate
+houston-al-overture-52dd7dd1,Wiregrass Area Food Bank,meal,"382 Twitchell Rd, Dothan",31.246408462524414,-85.39800262451172,+13347949775,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://WiregrassFoodBank.com/
+houston-al-overture-36469c1d,Dothan Rescue Mission,shelter,"216 E Crawford St, Dothan",31.22162437438965,-85.38934326171875,+13347944637,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.dothanrescuemission.com
+houston-al-overture-de797500,The Ark Dothan,shelter,"475 W Main St, Dothan",31.224674224853516,-85.39850616455078,+13347947223,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.thearkdothan.org/
+houston-al-overture-f49aa789,Human Resource Development Corporation,meal,"388 Sharpie Rd, Newton",31.218612670898438,-85.62213134765625,+13346923537,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+houston-al-overture-8a0957a5,Food For The Children,meal,"206 W Troy St, Dothan",31.225553512573242,-85.39453125,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

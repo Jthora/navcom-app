@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+brazos-tx-overture-19af4bf0,Brazos Valley Food Bank,meal,"1501 Independence Ave, Bryan",30.659704208374023,-96.40753173828125,+19797793663,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.bvfb.org/donate-now
+brazos-tx-overture-182ec187,The Bridge Ministries,meal,"304 Post Office St, Bryan",30.64729118347168,-96.36060333251953,+19797046037,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.TheBridgeMinistries.org/
+brazos-tx-overture-16a9e203,Alices Attic-Twin City Mission,shelter,"424 N Main St, Bryan",30.67725372314453,-96.37313842773438,+19798222979,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.twincitymission.org
+brazos-tx-overture-92840d91,Home | Bvch,shelter,"2505 S College Ave, Bryan",30.644775390625,-96.3616714477539,19798227511,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.brazosvalleyhomeless.org
+brazos-tx-overture-f0680ac2,Brazos Church Pantry,meal,"304 W 26th St, Bryan",30.674030303955078,-96.37567901611328,+19798222660,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://benebloc.com/brazoschurchpantry/index.html

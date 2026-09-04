@@ -1,0 +1,12 @@
+{
+  "slug": "northampton-nc",
+  "name": "Northampton, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37131",
+  "timezone_derived_from": "state"
+}

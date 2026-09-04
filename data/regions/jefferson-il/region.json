@@ -1,0 +1,12 @@
+{
+  "slug": "jefferson-il",
+  "name": "Jefferson, IL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "17081",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+brooke-wv-overture-86eff285,St John's Food Pantry,meal,"2200 Charles St, Wellsburg",40.28469467163086,-80.61022186279297,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+brooke-wv-overture-ca35eef9,Urban Mission Homeless Shelter,shelter,"142 N 6th St, Steubenville",40.36172866821289,-80.6167221069336,17402831621,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: urbanmission.org

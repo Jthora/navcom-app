@@ -1,0 +1,12 @@
+{
+  "slug": "noble-in",
+  "name": "Noble, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18113",
+  "timezone_derived_from": "state"
+}

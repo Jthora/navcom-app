@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+rock-island-il-overture-89f69fb9,Coal Valley Food Pantry - Food Distribution Center,meal,"2431 1st St, Coal Valley",41.42691421508789,-90.46150207519531,13097993511,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: cvpres.com
+rock-island-il-overture-e2faafc9,St Joseph The Worker House Association,shelter,"901 20th St, Rock Island",41.502220153808594,-90.57159423828125,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+rock-island-il-overture-f32057e9,Milan Christian Food Pantry,meal,"225 1st St E, Milan",41.45147705078125,-90.5670166015625,+13092783400,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+rock-island-il-overture-d99dcc24,Christian Care,shelter,"2209 3rd Ave, Rock Island",41.51002883911133,-90.568603515625,+13097865734,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.christiancareqc.org/
+rock-island-il-overture-f9655b0e,The Third Place QC,shelter,"2000 3rd Ave, Rock Island",41.50974655151367,-90.57157897949219,+13095533461,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.thethirdplaceqc.org/

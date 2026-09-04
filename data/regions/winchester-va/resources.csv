@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+winchester-va-overture-397d0941,Highland Food Pantry,meal,"446 Highland Ave, Winchester",39.188907623291016,-78.15831756591797,+15405330347,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.highlandpantrywinc.org/
+winchester-va-overture-8162525f,Winchester Rescue Mission,shelter,"435 N Cameron St, Winchester",39.18906021118164,-78.1625747680664,5406675379,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.winrescue.org/
+winchester-va-overture-42bbe90b,Winchester Rescue Mission,shelter,"2655 Valley Ave, Winchester",39.15346145629883,-78.18804931640625,+15406675379,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.winrescue.org/
+winchester-va-overture-1a1dc85b,Blue Ridge Area Food Bank - Northern Region,meal,"1802 Roberts St, Winchester",39.16840362548828,-78.17680358886719,15406650770,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.brafb.org

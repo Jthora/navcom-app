@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+chautauqua-ny-overture-1a7fe8bf,Friendly Kitchen,meal,"319 Washington Ave, Dunkirk",42.48427963256836,-79.3338851928711,+17163661787,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://theccrm.org/
+chautauqua-ny-overture-a946bcbd,Westfield Community Food Pantry,shelter,"101 E Main St, Westfield",42.32415771484375,-79.57553100585938,+17163263243,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+chautauqua-ny-overture-f565edc0,Silver Creek Food Pantry,meal,"260 Central Ave, Silver Creek",42.544410705566406,-79.16545104980469,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+chautauqua-ny-overture-b31004d6,Chautauqua County Rural Ministry,meal,"319 Washington Ave, Dunkirk",42.4864616394043,-79.33587646484375,+17163661787,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://theccrm.org/
+chautauqua-ny-overture-4ff4ebb2,Runaway Homeless Youth Shelter,shelter,"16 E 6th St, Jamestown",42.09892654418945,-79.24127197265625,7166619446,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.chautauquaopportunities.com/

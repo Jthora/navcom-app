@@ -1,0 +1,12 @@
+{
+  "slug": "butte-id",
+  "name": "Butte, ID",
+  "country": "US",
+  "timezone": "America/Boise",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "16023",
+  "timezone_derived_from": "state"
+}

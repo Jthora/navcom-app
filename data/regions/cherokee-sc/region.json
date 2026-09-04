@@ -1,0 +1,12 @@
+{
+  "slug": "cherokee-sc",
+  "name": "Cherokee, SC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "45021",
+  "timezone_derived_from": "state"
+}

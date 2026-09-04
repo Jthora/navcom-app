@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+waldo-me-overture-42c8382b,No Greater Love Food Pantry,meal,"34 Field St, Belfast",44.43083572387695,-69.01559448242188,12072992093,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+waldo-me-overture-f68c66ce,Little River Church - Food Pantry,meal,"259 Northport Ave, Belfast",44.398624420166016,-68.98799133300781,12076360206,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://blueskycounseling.com
+waldo-me-overture-a160df3e,Volunteer Regional Food Pantry,meal,"180 Depot St, Unity",44.61451721191406,-69.32350158691406,+12074871199,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.vrfp.me/
+waldo-me-overture-803cd283,Neighbor's Cupboard,meal,"40 Park Dr, Winterport",44.63610076904297,-68.85320281982422,+12072234497,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

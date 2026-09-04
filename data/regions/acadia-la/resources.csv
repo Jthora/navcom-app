@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+acadia-la-overture-3b508f7d,Manna Christian Service Center,meal,"W B N St, Rayne",30.241172790527344,-92.27041625976562,+13373932146,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+acadia-la-overture-f6b2f120,Housing Authority Of Crowley,shelter,"200 Westwood Dr, Crowley",30.212411880493164,-92.39613342285156,+13377838521,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.officialhousingauthority.com

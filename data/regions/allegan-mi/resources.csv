@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+allegan-mi-overture-7960e047,Project Hope,meal,"1808 143rd Ave, Dorr",42.731502532958984,-85.72257232666016,16166814673,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://projecthope-dorr.org
+allegan-mi-overture-bd8c481a,Parrot Kiwi,meal,"1445 10th St, Martin",42.526493072509766,-85.6395034790039,+12696725605,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+allegan-mi-overture-e1be129b,Allegan County Food Pantry,meal,"1313 Lincoln Rd, Allegan",42.51532745361328,-85.8328857421875,+12696866369,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://allegancountyfoodpantry.com/
+allegan-mi-overture-a3548408,Ladders Of Hope Food Pantry,meal,"717 E Main St, Fennville",42.594482421875,-86.09564971923828,+12696866456,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://laddersofhopemi.org/

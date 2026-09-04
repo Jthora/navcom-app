@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+chippewa-wi-overture-15806e44,Cornell Food Pantry,meal,"401 S 2nd St, Cornell",45.164085388183594,-91.15060424804688,+17158270894,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+chippewa-wi-overture-9d972385,FPC Community Food Pantry,meal,"130 W Central St, Chippewa Falls",44.935089111328125,-91.39505767822266,+17157235717,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://fpcchippewa.org/
+chippewa-wi-overture-603a0f3e,Bloomer Food Pantry,meal,"808 Jackson St, Bloomer",45.10777282714844,-91.48494720458984,+17155683733,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://bloomerfoodpantry.wixsite.com/bnapantry
+chippewa-wi-overture-96d41449,Starting Points,shelter,"13 E Spruce St, Chippewa Falls",44.939884185791016,-91.3960189819336,7157267937,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

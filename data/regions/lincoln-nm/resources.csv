@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+lincoln-nm-overture-641aa922,The Nest Domestic Violence Shelter,shelter,"26374 US-70, Ruidoso Downs",33.33381652832031,-105.5845718383789,+18663786378,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.helpendabuseforlife.org/
+lincoln-nm-overture-ff6c6f78,Lincoln County Food Bank,meal,"138 Service Rd, Ruidoso",33.32340621948242,-105.6363754272461,+15752570682,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.lincolncountyfoodbank.org/
+lincoln-nm-overture-f2b47129,Torino's,meal,"2913 Sudderth Dr, Ruidoso",33.33375930786133,-105.68292236328125,+15754541775,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

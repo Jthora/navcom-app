@@ -1,0 +1,12 @@
+{
+  "slug": "leslie-ky",
+  "name": "Leslie, KY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "21131",
+  "timezone_derived_from": "state"
+}

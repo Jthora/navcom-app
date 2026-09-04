@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+blair-pa-overture-971d591a,St Vincent De Paul Food Pantry,meal,"1523 Adams Ave, Altoona",40.50273513793945,-78.38867950439453,+18149437962,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://stvincent.org
+blair-pa-overture-03b7398f,Altoona Food Bank,meal,"2100 6th Ave, Altoona",40.504737854003906,-78.40340423583984,+18149428415,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+blair-pa-overture-fa832d81,Food For Families Food Bank,meal,"2201 Union Ave, Altoona",40.50594711303711,-78.40631866455078,+18149446302,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://svdpcares.org/family-kitchens

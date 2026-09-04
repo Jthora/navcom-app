@@ -1,0 +1,12 @@
+{
+  "slug": "bullitt-ky",
+  "name": "Bullitt, KY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "21029",
+  "timezone_derived_from": "state"
+}

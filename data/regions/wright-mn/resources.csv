@@ -1,0 +1,8 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+wright-mn-overture-5ddc1ce1,Cokato Food Shelf,meal,"395 Broadway Ave S, Cokato",45.07544708251953,-94.18999481201172,+13203337877,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+wright-mn-overture-5b22828f,Annandale Food Shelf,meal,"390 Annandale Blvd, Annandale",45.25556564331055,-94.1008529663086,+13202743663,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.annandalefoodshelf.org
+wright-mn-overture-5c558dad,Hanover Area Food Shelf,meal,"11024 Church St NE, Hanover",45.15620803833008,-93.66517639160156,+17634980086,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://hanoverareafoodshelf.org/
+wright-mn-overture-d66e3366,Buffalo Food Shelf,meal,"301 12th Ave S, Buffalo",45.167877197265625,-93.85401916503906,+17636841699,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.buffalofoodshelf.com/
+wright-mn-overture-0f084cfe,Clearwater Clear Lake Food Shelf,meal,"1135 County Rd 75 NW, Clearwater",45.41114044189453,-94.0475082397461,+13205582954,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.clearwatercity.com/
+wright-mn-overture-e34a1088,WCCA Food Shelf & Thrift Store,meal,"411 Elm Ave, Waverly",45.06692886352539,-93.96824645996094,7636584414,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.wccaweb.com/
+wright-mn-overture-c1e181e0,Delano Helping Hands Food Shelf,meal,"221 2nd St N Suite 110, Delano",45.04240798950195,-93.78811645507812,+17639724455,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.delanohelpinghands.org/

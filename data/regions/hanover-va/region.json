@@ -1,0 +1,12 @@
+{
+  "slug": "hanover-va",
+  "name": "Hanover, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51085",
+  "timezone_derived_from": "state"
+}

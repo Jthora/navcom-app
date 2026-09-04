@@ -1,0 +1,10 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+mercer-nj-overture-68d3f742,Mercer Street Friends Food Bank,meal,"3 Graphics Dr, Ewing",40.277496337890625,-74.79899597167969,16094060503,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://mercerstreetfriends.org
+mercer-nj-overture-91e1b047,Doorway To Hope Inc,shelter,"827 E State St, Trenton",40.222923278808594,-74.74612426757812,16093965579,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+mercer-nj-overture-fa4127da,Mother Estelle Clark Food Pantry,meal,"60 Randall Ave, Trenton",40.20244216918945,-74.7486801147461,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://mecfoodpantry.org
+mercer-nj-overture-c8583cbc,Trenton Housing Authority,shelter,"146 Oakland St, Trenton",40.23797607421875,-74.77687072753906,+16093932341,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+mercer-nj-overture-5c0949f2,Trenton Housing Authonrity,shelter,"924 Southard St, Trenton",40.23231506347656,-74.76061248779297,+16099898663,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+mercer-nj-overture-fd2f2e89,Rescue Mission of Trenton,shelter,"98 Carroll St, Trenton",40.22336196899414,-74.75667572021484,6096951436,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://rescuemissionoftrenton.org/
+mercer-nj-overture-eaf1168a,Anchor House,shelter,"482 Centre St, Trenton",40.2059440612793,-74.75878143310547,16093968329,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.anchorhousenj.org
+mercer-nj-overture-776655fd,HelpSelf,meal,"215 N Montgomery St, Trenton",40.22273254394531,-74.7624740600586,+16096384164,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.helpself.org/
+mercer-nj-overture-366f4a35,Arm In Arm,meal,"48 Hudson St, Trenton",40.21599197387695,-74.75225830078125,+16093969355,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

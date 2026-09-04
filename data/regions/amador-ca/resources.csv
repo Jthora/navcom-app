@@ -1,0 +1,2 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+amador-ca-overture-c48cbf99,Interfaith Food Bank,meal,"12181 Airport Rd, Jackson",38.37589645385742,-120.79971313476562,+12092679006,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://secure.etransfer.com/EFT/BlockCode/donation1.cfm?d2org=InterfaithFoodBank&d2tool=donate

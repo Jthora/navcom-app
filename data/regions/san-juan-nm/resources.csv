@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+san-juan-nm-overture-0251e074,PATH - People Assisting the Homeless,shelter,"520 Hydro Plant Rd, Farmington",36.720909118652344,-108.20035552978516,+15053273104,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.pathnm.org/
+san-juan-nm-overture-4649ec00,Csfp,meal,"401 S Commercial Ave, Farmington",36.725955963134766,-108.20472717285156,15053263770,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.fns.usda.gov/tn/local-school-wellness-policy
+san-juan-nm-overture-6690dc7a,Echo Food Bank,meal,"401 S Commercial Ave, Farmington",36.72562789916992,-108.20478820800781,+15053263770,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://echoinc.org

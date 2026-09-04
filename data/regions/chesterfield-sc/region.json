@@ -1,0 +1,12 @@
+{
+  "slug": "chesterfield-sc",
+  "name": "Chesterfield, SC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "45025",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "santa-rosa-fl",
+  "name": "Santa Rosa, FL",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "12113",
+  "timezone_derived_from": "state"
+}

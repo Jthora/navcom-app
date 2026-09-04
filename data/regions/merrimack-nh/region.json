@@ -1,0 +1,12 @@
+{
+  "slug": "merrimack-nh",
+  "name": "Merrimack, NH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "33013",
+  "timezone_derived_from": "state"
+}

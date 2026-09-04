@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+washington-la-overture-4fba3771,Washington Parish Food Bank,meal,"2208 Washington St, Franklinton",30.847070693969727,-90.13005065917969,+19853222017,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.washingtonparishalerts.org/
+washington-la-overture-d42ee17b,Bogalusa Help Center,meal,"350 Martin Luther King Jr Dr, Bogalusa",30.777498245239258,-89.8540267944336,+19857356404,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.dcfs.louisiana.gov/index.cfm?md=directory&tmp=detail&id=433

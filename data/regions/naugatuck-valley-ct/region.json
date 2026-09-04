@@ -1,0 +1,12 @@
+{
+  "slug": "naugatuck-valley-ct",
+  "name": "Naugatuck Valley, CT",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "09140",
+  "timezone_derived_from": "state"
+}

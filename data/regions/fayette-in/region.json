@@ -1,0 +1,12 @@
+{
+  "slug": "fayette-in",
+  "name": "Fayette, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18041",
+  "timezone_derived_from": "state"
+}

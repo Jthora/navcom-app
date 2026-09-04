@@ -1,0 +1,12 @@
+{
+  "slug": "sullivan-nh",
+  "name": "Sullivan, NH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "33019",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "dunn-wi",
+  "name": "Dunn, WI",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "55033",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "churchill-nv",
+  "name": "Churchill, NV",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "32001",
+  "timezone_derived_from": "state"
+}

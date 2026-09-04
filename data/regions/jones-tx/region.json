@@ -1,0 +1,12 @@
+{
+  "slug": "jones-tx",
+  "name": "Jones, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48253",
+  "timezone_derived_from": "state"
+}

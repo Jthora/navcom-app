@@ -1,0 +1,12 @@
+{
+  "slug": "augusta-va",
+  "name": "Augusta, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51015",
+  "timezone_derived_from": "state"
+}

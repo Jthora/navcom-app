@@ -1,0 +1,12 @@
+{
+  "slug": "belknap-nh",
+  "name": "Belknap, NH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "33001",
+  "timezone_derived_from": "state"
+}

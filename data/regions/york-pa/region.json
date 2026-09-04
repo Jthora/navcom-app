@@ -1,0 +1,12 @@
+{
+  "slug": "york-pa",
+  "name": "York, PA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "42133",
+  "timezone_derived_from": "state"
+}

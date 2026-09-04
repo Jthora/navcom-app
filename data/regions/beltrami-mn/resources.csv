@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+beltrami-mn-overture-8ccede43,Red Lake Homeless Shelter,shelter,"15855 Main Ave, Red Lake",47.87980651855469,-95.01859283447266,+12186793171,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+beltrami-mn-overture-590dc051,Park Place of Bemidji,shelter,"600 3rd St NW, Bemidji",47.470359802246094,-94.8875503540039,+12184448717,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+beltrami-mn-overture-a932d15d,Bemidji Community Food Shelf,meal,"1260 Exchange Ave SE, Bemidji",47.44809341430664,-94.8597412109375,+12184446580,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.bcfsmn.org/
+beltrami-mn-overture-695f081d,"Ruby's Pantry - Bemidji, MN",meal,"1111 Event Center Dr NE, Bemidji",47.46341323852539,-94.8536376953125,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.rubyspantry.org/

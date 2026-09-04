@@ -1,5 +1,4 @@
 <script lang="ts">
-  import RecordSummary from '$lib/components/RecordSummary.svelte';
   import { labelValue } from '@navcom/core';
   import { localTimeNote } from '@navcom/core';
   import type { PageData } from './$types';
@@ -9,16 +8,9 @@
   const now = $derived(new Date(data.builtAt));
   const publishedOn = $derived(data.builtAt.slice(0, 10));
 
-  const realCount = $derived(data.records.filter((r) => !r.id.startsWith('EXAMPLE')).length);
+  const counts = $derived(data.counts);
+  const realCount = $derived(data.realCount);
 
-  const byType = $derived(
-    Object.entries(
-      data.records.reduce<Record<string, typeof data.records>>((acc, r) => {
-        (acc[r.type] ??= []).push(r);
-        return acc;
-      }, {})
-    ).sort(([a], [b]) => a.localeCompare(b))
-  );
 </script>
 
 <svelte:head>
@@ -63,16 +55,25 @@
     </p>
   </div>
 
-  {#each data.regions as region (region.slug)}
-    <p class="region">
-      <strong>{region.name}</strong> ({region.country}) · {localTimeNote(region)}
-      {#if region.status === 'seeded'}
-        <span class="unchecked">Seeded from public sources — nobody has checked it.</span>
-      {:else if region.status === 'example'}
-        <span class="unchecked">Example data. Not a real place.</span>
-      {/if}
-    </p>
-  {/each}
+  <!--
+    Areas, not records.
+    
+    This page used to render every record in the country: at 8,428 that was 11 MB of raw HTML
+    and 350 kB gzipped against a 250 kB budget — unopenable on a slow connection, listing
+    places for people whose connections are the worst. Each area now links to its own page.
+  -->
+  <ul class="areas">
+    {#each data.regions as region (region.slug)}
+      <li>
+        <a href="/directory/area/{region.slug}/">{region.name}</a>
+        <span class="meta">
+          {region.country} · {counts[region.slug] ?? 0}
+          {(counts[region.slug] ?? 0) === 1 ? 'place' : 'places'}
+          {#if region.status === 'seeded'}· not checked by anyone{/if}
+        </span>
+      </li>
+    {/each}
+  </ul>
 
   <p class="built-at">
     Checked-on dates below are exact. This page was rebuilt
@@ -80,16 +81,6 @@
     shown as <strong>call first</strong> a day early rather than a day late.
   </p>
 
-  {#each byType as [type, records] (type)}
-    <section>
-      <h2>{labelValue(type)}</h2>
-      <ul class="cards">
-        {#each records as record (record.id)}
-          <li><RecordSummary {record} {now} /></li>
-        {/each}
-      </ul>
-    </section>
-  {/each}
 
   <p class="built">
     Rebuilt daily. Last build <time datetime={publishedOn}>{publishedOn}</time>.
@@ -106,15 +97,6 @@
 
   .notice { margin-bottom: 1rem; }
 
-  .region {
-    font-size: .92rem;
-    color: var(--muted);
-    padding: .6rem 0;
-    border-bottom: 1px solid var(--line);
-  }
-  .region strong { color: var(--ink); }
-  .unchecked { display: block; color: var(--accent); }
-
   .notice .quiet { color: var(--muted); font-size: .9rem; }
 
   .built-at {
@@ -125,21 +107,6 @@
     margin: 1.25rem 0 0;
     max-width: var(--measure);
   }
-
-  section { margin-top: 2.5rem; display: flex; flex-direction: column; gap: 1rem; }
-
-  h2 {
-    font-size: 1.05rem;
-    font-family: var(--font-body);
-    font-weight: 700;
-    letter-spacing: 0.09em;
-    text-transform: uppercase;
-    color: var(--muted);
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--line-strong);
-  }
-
-  .cards { display: flex; flex-direction: column; gap: 1rem; }
 
   .built {
     margin-top: 3rem;

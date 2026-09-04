@@ -1,0 +1,12 @@
+{
+  "slug": "wells-in",
+  "name": "Wells, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18179",
+  "timezone_derived_from": "state"
+}

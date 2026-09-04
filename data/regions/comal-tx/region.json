@@ -1,0 +1,12 @@
+{
+  "slug": "comal-tx",
+  "name": "Comal, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48091",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "cumberland-pa",
+  "name": "Cumberland, PA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "42041",
+  "timezone_derived_from": "state"
+}

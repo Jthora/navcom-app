@@ -1,0 +1,10 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+weld-co-overture-f7287d35,Table Of Hope Food Pantry,meal,"2950 Colorful Ave Ste 100, Longmont",40.16357421875,-105.03804016113281,7207817526,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://table-of-hope.com/
+weld-co-overture-1c98fcff,Windsor Severance Food Pantry,meal,"1051 Walnut St, Windsor",40.478023529052734,-104.91582489013672,+19703291588,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://windsorseverancefoodpantry.com/
+weld-co-overture-f1fbf30f,Greeley Family House,shelter,"1206 10th St, Greeley",40.42230987548828,-104.69842529296875,+19703523215,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.greeleyfamilyhouse.org/
+weld-co-overture-0c8ebce2,Erie Community Food Bank,meal,"635 Pierce St, Erie",40.05067443847656,-105.04857635498047,+17203834865,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://eriecommunityfoodbank.com/
+weld-co-overture-43ffee28,Fort Lupton Food & Clothing Bank,meal,"421 N Denver Ave, Fort Lupton",40.083858489990234,-104.81060028076172,+13038571096,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.flfcb.org/
+weld-co-overture-3ab1a368,Weld Food Bank,meal,"1108 H St, Greeley",40.4437255859375,-104.69891357421875,+19703562199,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://linktr.ee/weldfoodbank
+weld-co-overture-16162cac,Lighthouse Community Center and Food Pantry,meal,"4800 Hill-N-Park Dr, Greeley",40.363853454589844,-104.74639129638672,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://thelighthousecc.com/
+weld-co-overture-da7ad741,Lighthouse Mission,shelter,"4800 Hill-N-Park Dr, Greeley",40.36393737792969,-104.7465591430664,+19705069335,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.lighthousemission.com
+weld-co-overture-2b182a50,Weld Food Bank,meal,"1108 H St, Greeley",40.41472625732422,-104.69813537597656,9703562199,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://weldfoodbank.org/

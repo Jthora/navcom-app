@@ -1,0 +1,12 @@
+{
+  "slug": "cabarrus-nc",
+  "name": "Cabarrus, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37025",
+  "timezone_derived_from": "state"
+}

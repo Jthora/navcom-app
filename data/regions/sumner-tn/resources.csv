@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+sumner-tn-overture-c01de004,Stay Warm Shelter,shelter,"290 E Winchester St, Gallatin",36.386138916015625,-86.44042205810547,+16154797784,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.unlimitedpotentialcdc.org
+sumner-tn-overture-0feddbe6,Sumner County Food Bank,meal,"1021 Woods Ferry Rd, Gallatin",36.374122619628906,-86.44024658203125,16155046182,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.sumnercountyfoodbank.com
+sumner-tn-overture-abf210a1,Hands Of Hope Portland Tn,meal,"101C S Russell St, Portland",36.57968521118164,-86.51366424560547,16154485742,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.portlandhandsofhope.com
+sumner-tn-overture-620f25d0,Portland Pay It Forward,meal,"201 College St, Portland",36.58298873901367,-86.51860809326172,+16158123059,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.facebook.com/groups/1571922822851393/
+sumner-tn-overture-b627e492,Hope Food Bank,meal,"212 Portland Rd, White House",36.47065734863281,-86.64832305908203,+16156728006,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://hopecenterwhitehouse.com
+sumner-tn-overture-fddc085a,Feed Sumner,meal,"1121 Gregory Dr, Gallatin",36.390045166015625,-86.40440368652344,+16153484470,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://feedsumner.org/

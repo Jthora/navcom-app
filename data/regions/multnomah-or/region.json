@@ -1,0 +1,12 @@
+{
+  "slug": "multnomah-or",
+  "name": "Multnomah, OR",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "41051",
+  "timezone_derived_from": "state"
+}

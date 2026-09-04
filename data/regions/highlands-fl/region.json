@@ -1,0 +1,12 @@
+{
+  "slug": "highlands-fl",
+  "name": "Highlands, FL",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "12055",
+  "timezone_derived_from": "state"
+}

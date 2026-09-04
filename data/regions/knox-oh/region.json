@@ -1,0 +1,12 @@
+{
+  "slug": "knox-oh",
+  "name": "Knox, OH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "39083",
+  "timezone_derived_from": "state"
+}

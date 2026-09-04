@@ -1,0 +1,12 @@
+{
+  "slug": "fredericksburg-va",
+  "name": "Fredericksburg, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51630",
+  "timezone_derived_from": "state"
+}

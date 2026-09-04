@@ -1,0 +1,12 @@
+{
+  "slug": "contra-costa-ca",
+  "name": "Contra Costa, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06013",
+  "timezone_derived_from": "state"
+}

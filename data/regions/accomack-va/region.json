@@ -1,0 +1,12 @@
+{
+  "slug": "accomack-va",
+  "name": "Accomack, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51001",
+  "timezone_derived_from": "state"
+}

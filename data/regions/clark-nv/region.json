@@ -1,0 +1,12 @@
+{
+  "slug": "clark-nv",
+  "name": "Clark, NV",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "32003",
+  "timezone_derived_from": "state"
+}

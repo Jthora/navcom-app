@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+gregg-tx-overture-6c8907de,Caring & Sharing,meal,"2307 S Mobberly Ave, Longview",32.4638786315918,-94.7320556640625,19032349521,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://caringandsharingcenter.org
+gregg-tx-overture-126c4a13,Salvation Army Longview Social Services and Shelter,shelter,"519 E Cotton St, Longview",32.49239730834961,-94.73235321044922,+19032158463,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://southernusa.salvationarmy.org/texas-longview/
+gregg-tx-overture-643fed68,Helping Hands Of Kilgore,meal,"201 S Martin St, Kilgore",32.3873176574707,-94.88007354736328,19039841796,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://helpinghandskilgore.com
+gregg-tx-overture-c92c37fe,Hiway 80 Rescue Mission,shelter,"3117 W Marshall Ave, Longview",32.5070686340332,-94.78932189941406,+19037598101,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.hiway80rm.org/
+gregg-tx-overture-ee266de4,Helping Hands of Kilgore,meal,"201 S Martin St, Kilgore",32.38430404663086,-94.8751220703125,+19039841796,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://helpinghandskilgore.org/

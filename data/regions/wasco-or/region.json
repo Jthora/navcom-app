@@ -1,0 +1,12 @@
+{
+  "slug": "wasco-or",
+  "name": "Wasco, OR",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "41065",
+  "timezone_derived_from": "state"
+}

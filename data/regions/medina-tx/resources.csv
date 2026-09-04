@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+medina-tx-overture-16178b66,Natalia Food Bank,meal,"405 5th St W, Natalia",29.188817977905273,-98.85865020751953,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+medina-tx-overture-60a00585,Medina County Food Pantry,meal,"502 Arnold, Hondo",29.35654067993164,-99.16548156738281,+18304264847,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+medina-tx-overture-02d4642f,Medina County Food Pantry,meal,"1031 Avenue Y, Hondo",29.354747772216797,-99.15532684326172,+18307419291,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

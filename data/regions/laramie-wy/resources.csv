@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+laramie-wy-overture-47672d98,Comea Shelter,shelter,"1421 W Lincolnway, Cheyenne",41.126792907714844,-104.82966613769531,+13076323174,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://comeashelter.org/
+laramie-wy-overture-559948f2,Family Promise Of Cheyenne,shelter,"2950 Spruce Dr, Cheyenne",41.14286422729492,-104.77812957763672,13077728770,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://familypromiseofcheyenne.org
+laramie-wy-overture-d1865ff3,Friday Food Bag Foundation,meal,"2003 S Greeley Hwy A, Cheyenne",41.099632263183594,-104.79959869384766,+13072873315,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.instagram.com/fridayfoodbagfoundation?igsh=eDNzOG03MmlrcDZi

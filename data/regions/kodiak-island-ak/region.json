@@ -1,0 +1,12 @@
+{
+  "slug": "kodiak-island-ak",
+  "name": "Kodiak Island, AK",
+  "country": "US",
+  "timezone": "America/Anchorage",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "02150",
+  "timezone_derived_from": "state"
+}

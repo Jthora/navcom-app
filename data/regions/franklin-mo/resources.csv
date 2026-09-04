@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+franklin-mo-overture-70c93102,Union Food Pantry,meal,"115 W Locust St, Union",38.44485855102539,-91.00965881347656,+16365847050,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.unionfirstpresby.org/ministries
+franklin-mo-overture-89793898,Meramec Community Mission,meal,"200 W Main St, Sullivan",38.20905303955078,-91.1607666015625,+15734685813,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.sullivanmission.org/
+franklin-mo-overture-b4edecc9,Second Blessings Food Pantry,meal,"105 E Main St, Union",38.44584655761719,-91.00743865966797,+16366494545,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://secondblessingspantry.org/
+franklin-mo-overture-f79579bc,Grace's Place Crisis Nursery,shelter,"219 N Christina Ave, Union",38.44739532470703,-91.01155090332031,+16364321313,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.gracesplacecrisisnursery.com/
+franklin-mo-overture-55325e19,Saint Francis Borgia Food Pantry,meal,"314 W 2nd St, Washington",38.56019592285156,-91.01473999023438,16362396701,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+franklin-mo-overture-1089137f,House of hope pantry,meal,"112 Elm St, Sullivan",38.21258544921875,-91.16168975830078,+15734680107,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://carlduffministries.com/

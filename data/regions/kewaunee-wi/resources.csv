@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+kewaunee-wi-overture-02a08631,Kewaunee County Food Pantry,meal,"1528 Sunset Ave, Algoma",44.59872055053711,-87.45417022705078,+19204873663,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.kcfpantry.org/
+kewaunee-wi-overture-79373f78,Lakeshore Community Pantry,meal,"521 Juneau St, Kewaunee",44.457706451416016,-87.50606536865234,+19203889050,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.lakeshorecommunitypantry.org/

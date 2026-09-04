@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+woodbury-ia-overture-3b4e9b6c,Siouxland Coalition To End Homelessness,shelter,"405 6th St, Sioux City",42.496646881103516,-96.40599060058594,17122245247,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://siouxlandhomeless.org
+woodbury-ia-overture-f0dfa673,Crossroads Homeless Shelter,shelter,"1307 Court St, Sioux City",42.50437545776367,-96.39688110351562,+17122930283,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://caasiouxland.org
+woodbury-ia-overture-b7a75c01,Food Bank of Siouxland,meal,"1313 11th St #1, Sioux City",42.50228500366211,-96.39269256591797,+17122559741,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.siouxlandfoodbank.org/
+woodbury-ia-overture-d09ed4f2,Warming Shelter,shelter,"916 Nebraska St, Sioux City",42.50018310546875,-96.40345001220703,+17122550084,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.thewarmingshelter.com/
+woodbury-ia-overture-e5a44525,The Sanctuary,shelter,"3300 W 4th St, Sioux City",42.498226165771484,-96.45156860351562,+17122020957,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+woodbury-ia-overture-80e1dc67,The Gospel Mission,shelter,"500 Bluff St, Sioux City",42.49794387817383,-96.41210174560547,+17122551769,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://thegospelmission.org/

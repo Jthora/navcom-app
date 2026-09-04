@@ -1,0 +1,12 @@
+{
+  "slug": "mcduffie-ga",
+  "name": "McDuffie, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13189",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+howell-mo-overture-f37c4291,MUNCH,meal,"811 E Main St, Willow Springs",36.98815155029297,-91.9609603881836,+14174693221,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://munchbrothers.org
+howell-mo-overture-227f44ff,Samaritan Outreach Center,shelter,"715 Missouri Ave, West Plains",36.74215316772461,-91.84176635742188,14172577792,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://samaritanoutreachcenter.com

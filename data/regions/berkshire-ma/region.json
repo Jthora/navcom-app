@@ -1,0 +1,12 @@
+{
+  "slug": "berkshire-ma",
+  "name": "Berkshire, MA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "25003",
+  "timezone_derived_from": "state"
+}

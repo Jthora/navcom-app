@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+island-wa-overture-2305269b,North Whidbey Help House,meal,"1091 SE Hathaway St, Oak Harbor",48.28956985473633,-122.64752197265625,+13606750681,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.northwhidbeyhelphouse.org/
+island-wa-overture-ffd23865,Ryan's House For Youth,shelter,"19777 State Route 20, Coupeville",48.207313537597656,-122.64147186279297,+13606822748,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.ryanshouseforyouth.org/
+island-wa-overture-1f434767,WindMasters Foundation Inc,shelter,"4863 Mutiny Bay Rd, Freeland",48.03374481201172,-122.5644302368164,+13606322117,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://apexspirit.wordpress.com/

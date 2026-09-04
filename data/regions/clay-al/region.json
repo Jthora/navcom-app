@@ -1,0 +1,12 @@
+{
+  "slug": "clay-al",
+  "name": "Clay, AL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "01027",
+  "timezone_derived_from": "state"
+}

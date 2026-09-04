@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+goodhue-mn-overture-a7cdac3d,Pine Island Sharing Shelves,meal,"611 N Main St, Pine Island",44.20915603637695,-92.64598846435547,+15077221331,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.pisharingshelves.org/
+goodhue-mn-overture-3b9e3d75,Zumbrota Area Emergency Food Shelf,meal,"242 S Main St, Zumbrota",44.29460144042969,-92.66936492919922,+15077327330,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://zumbrotaareafoodshelf.weebly.com/
+goodhue-mn-overture-196e78b6,Red Wing Food Shelf,meal,"1755 Old West Main St, Red Wing",44.5631217956543,-92.55306243896484,+16513889302,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.redwingfoodshelf.org/

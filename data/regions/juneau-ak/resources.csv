@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+juneau-ak-overture-7ddd1874,Smith Hall,shelter,"8619 Teal St, Juneau",58.36017990112305,-134.5765838623047,+19077895535,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://svdpjuneau.org/housing/smith-hall
+juneau-ak-overture-d1012ba9,Warmingshelter,shelter,"1325 Eastaugh Way, Juneau",58.288978576660156,-134.38723754882812,+19075002222,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://svdpjuneau.org/get-support/cold-weather-emergency-shelter/
+juneau-ak-overture-89625d0c,Family Promise of Juneau,shelter,"Stikine Region, 2221 Jordan Ave, Juneau",58.3647346496582,-134.5796356201172,+19075003032,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.familypromisejuneau.org/
+juneau-ak-overture-3a1a9085,Glory Hall,shelter,"8715 Teal St, Juneau",58.36016845703125,-134.5778045654297,+19075864159,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.housejuneau.org/
+juneau-ak-overture-bba9c358,Southeast Alaska Food Bank,meal,"10020 Crazy Horse Dr, Juneau",58.36665344238281,-134.60926818847656,+19077896184,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://seafb.org/

@@ -1,0 +1,12 @@
+{
+  "slug": "dodge-ga",
+  "name": "Dodge, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13091",
+  "timezone_derived_from": "state"
+}

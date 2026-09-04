@@ -1,0 +1,12 @@
+{
+  "slug": "skagit-wa",
+  "name": "Skagit, WA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "53057",
+  "timezone_derived_from": "state"
+}

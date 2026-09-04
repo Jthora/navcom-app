@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+ouachita-ar-overture-24a05e55,Heart-To-Heart Food Pantry,meal,"330 Jackson St SW, Camden",33.58341979980469,-92.83267211914062,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+ouachita-ar-overture-9bd7f8b4,Ruby Snider Ministry Center,meal,"133 Haynes Ave NW, Camden",33.585853576660156,-92.84828186035156,+18702315277,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.libertybaptistassociation.org/copy-of-community-garden
+ouachita-ar-overture-4737f9fb,Stephens Community Outreach Center,meal,"116 Ruby St, Stephens",33.41059875488281,-93.07109832763672,+18707865576,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

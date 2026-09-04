@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+sanilac-mi-overture-c6a2d001,Michigan House of Hope,shelter,"262 Margaret St, Sandusky",43.415470123291016,-82.82337951660156,+18003934322,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.mihouseofhope.com/
+sanilac-mi-overture-f6ae860f,Mamas Mission INC.,meal,"122 Croswell Ave, Croswell",43.26775360107422,-82.62650299072266,+18103340095,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+sanilac-mi-overture-7b8b3ec0,Snover Food Pantry,meal,"1494 Ubly Rd, Moore Twp",43.461910247802734,-82.93077850341797,+18102472355,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

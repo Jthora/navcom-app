@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+kent-ri-overture-807eda92,East Greenwich Interfaith Food Cupboard,meal,"99 Peirce St, East Greenwich",41.66109085083008,-71.4515609741211,+14018844116,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+kent-ri-overture-d0d4ea52,North Kingstown Food Pantry,meal,"445 School St, North Kingstown",41.615272521972656,-71.4711685180664,+14018853663,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.nkfoodpantry.org/
+kent-ri-overture-cae72502,Warwick Housing,shelter,"2220 Warwick Ave, Warwick",41.71778869628906,-71.39897155761719,+14017379852,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+kent-ri-overture-6b3761a8,Westbay Community Action Food Pantry,meal,"487 Jefferson Blvd, Warwick",41.73506546020508,-71.44165802001953,+14017324660,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.westbaycap.org

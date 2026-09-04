@@ -1,0 +1,12 @@
+{
+  "slug": "lake-oh",
+  "name": "Lake, OH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "39085",
+  "timezone_derived_from": "state"
+}

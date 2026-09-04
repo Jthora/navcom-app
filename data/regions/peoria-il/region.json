@@ -1,0 +1,12 @@
+{
+  "slug": "peoria-il",
+  "name": "Peoria, IL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "17143",
+  "timezone_derived_from": "state"
+}

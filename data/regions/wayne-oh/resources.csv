@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+wayne-oh-overture-ed24ee81,Wooster Hope Center,meal,"807 Spruce St, Wooster",40.79005432128906,-81.94058227539062,+13306832242,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://woosterhopecenter.org/
+wayne-oh-overture-3dd5e9ca,Doylestown Food Cupboard,meal,"153 Church St, Doylestown",40.9694938659668,-81.693359375,+12162364747,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://dtownumc.com
+wayne-oh-overture-2e51a744,Homeward Bound,shelter,"981 Grosjean Rd, Wooster",40.78870391845703,-81.93741607666016,+13304392990,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://linktr.ee/HomewardBoundWWC

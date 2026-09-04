@@ -1,0 +1,12 @@
+{
+  "slug": "dodge-ne",
+  "name": "Dodge, NE",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "31053",
+  "timezone_derived_from": "state"
+}

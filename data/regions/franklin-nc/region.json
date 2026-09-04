@@ -1,0 +1,12 @@
+{
+  "slug": "franklin-nc",
+  "name": "Franklin, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37069",
+  "timezone_derived_from": "state"
+}

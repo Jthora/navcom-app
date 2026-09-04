@@ -1,0 +1,12 @@
+{
+  "slug": "san-patricio-tx",
+  "name": "San Patricio, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48409",
+  "timezone_derived_from": "state"
+}

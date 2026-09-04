@@ -1,0 +1,12 @@
+{
+  "slug": "pipestone-mn",
+  "name": "Pipestone, MN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "27117",
+  "timezone_derived_from": "state"
+}

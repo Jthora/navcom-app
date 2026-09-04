@@ -1,0 +1,12 @@
+{
+  "slug": "randolph-nc",
+  "name": "Randolph, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37151",
+  "timezone_derived_from": "state"
+}

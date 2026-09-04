@@ -1,0 +1,10 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+cabell-wv-overture-62194d8f,Hovah Underwood Children's Home,shelter,"2586 Grant Gardens Rd, Ona",38.43569564819336,-82.20081329345703,+13047432345,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://childhswv.org
+cabell-wv-overture-6ed2ee6a,Huntington West VA Housing Authority,shelter,"225 Short St, Huntington",38.42794418334961,-82.38509368896484,+13045264412,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+cabell-wv-overture-96d14163,Huntington City Mission,shelter,"624 10th St, Huntington",38.417442321777344,-82.44086456298828,+13045230293,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.huntingtoncitymission.org/
+cabell-wv-overture-59f4d4d3,Facing Hunger,meal,"1327 7th Ave, Huntington",38.41767501831055,-82.43492889404297,13045236029,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://facinghunger.org
+cabell-wv-overture-4fc6d4e9,Eccho,meal,"1038 Smith St, Milton",38.43537902832031,-82.13276672363281,+13047439238,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.eccho.org
+cabell-wv-overture-58b9d148,reGen Grab and Go,meal,"68 Holley Ave, Huntington",38.4034309387207,-82.38662719726562,+13043970729,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.regenerationwv.com/
+cabell-wv-overture-9d247518,"Huntington Area Food Bank, Inc. - Food Distribution Center",meal,"1661 7th Ave, Huntington",38.419189453125,-82.4275894165039,13045236029,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://facinghunger.org
+cabell-wv-overture-0e82ee8b,Cridlin Food and Clothing Pantry,meal,"1038 6th Ave, Huntington",38.41864776611328,-82.44036102294922,+13045294740,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://cridlinpantry.org/
+cabell-wv-overture-ffe4cffa,Harmony House,shelter,"627 4th Ave, Huntington",38.4200439453125,-82.44766998291016,+13045232764,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.harmonyhousewv.com/

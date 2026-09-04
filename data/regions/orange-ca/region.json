@@ -1,0 +1,12 @@
+{
+  "slug": "orange-ca",
+  "name": "Orange, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06059",
+  "timezone_derived_from": "state"
+}

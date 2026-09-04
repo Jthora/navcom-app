@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+randolph-nc-overture-609b512d,Ramseur Food Pantry,meal,"724 Liberty St, Ramseur",35.73301315307617,-79.65361785888672,+13368248045,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.jordanmemorialumc.org/baseball/outreach/ramseur-food-pantry
+randolph-nc-overture-16bb5bc8,Brandie's Pantry,meal,"1063 Walden Rd, Asheboro",35.66254806518555,-79.7882080078125,+13362674623,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+randolph-nc-overture-7e5c2f1a,Lydia's Place,shelter,"114 Francis St, Asheboro",35.74755096435547,-79.8053207397461,+13366280659,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.lydiasplacenc.org/

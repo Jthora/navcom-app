@@ -1,0 +1,12 @@
+{
+  "slug": "pike-mo",
+  "name": "Pike, MO",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "29163",
+  "timezone_derived_from": "state"
+}

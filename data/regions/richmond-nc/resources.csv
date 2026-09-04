@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+richmond-nc-overture-4996e37c,Feed A Family Center,meal,"560 Airport Rd, Rockingham",34.90062713623047,-79.76223754882812,+19109979599,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+richmond-nc-overture-c1401c6a,The Hamlet Dream Center,shelter,"977 Airport Rd, Rockingham",34.875518798828125,-79.74217224121094,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+richmond-nc-overture-17bdd971,Our Daily Bread Food Ministry,meal,"108 S Randolph St, Rockingham",34.939056396484375,-79.77105712890625,+19108953536,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

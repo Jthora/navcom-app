@@ -1,0 +1,12 @@
+{
+  "slug": "salt-lake-ut",
+  "name": "Salt Lake, UT",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "49035",
+  "timezone_derived_from": "state"
+}

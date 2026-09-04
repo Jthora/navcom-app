@@ -1,0 +1,12 @@
+{
+  "slug": "lee-ar",
+  "name": "Lee, AR",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "05077",
+  "timezone_derived_from": "state"
+}

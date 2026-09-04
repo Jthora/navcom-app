@@ -1,0 +1,12 @@
+{
+  "slug": "powell-mt",
+  "name": "Powell, MT",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "30077",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "frederick-va",
+  "name": "Frederick, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51069",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "somervell-tx",
+  "name": "Somervell, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48425",
+  "timezone_derived_from": "state"
+}

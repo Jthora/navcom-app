@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+lenoir-nc-overture-6fcd20f8,Friends - The Homeless Shelter,shelter,"112 N Independence St, Kinston",35.26118850708008,-77.57789611816406,+12525222788,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://friendsofthehomeless.org
+lenoir-nc-overture-9ce55b6f,Kinston Housing Authority,shelter,"511 N Queen St, Kinston",35.26563262939453,-77.58052825927734,+12525231195,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.kinston.com

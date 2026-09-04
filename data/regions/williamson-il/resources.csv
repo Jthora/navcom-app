@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+williamson-il-overture-00f4a0c3,Lighthouse Shelter,shelter,"1101 N Madison St, Marion",37.73942565917969,-88.92591094970703,+16189938180,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.thelighthouseshelter.com/
+williamson-il-overture-1d530b4e,Williamson County Housing Authority,shelter,"300 Hickory St, Carterville",37.762908935546875,-89.076171875,+16189852422,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://williamsoncountyhousingauth.placeweb.site
+williamson-il-overture-eb4f0b06,The Promise,meal,"818 W Main St, Marion",37.73100280761719,-88.9337387084961,+16189224496,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.thepromisemission.com

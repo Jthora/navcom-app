@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+washington-ri-overture-49b39a36,Warm Shelter Inc,shelter,"56 Spruce St, Westerly",41.382080078125,-71.8233642578125,+14015969276,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.warmcenter.org/donate
+washington-ri-overture-ba337228,Personalized Care Coordination LLC,shelter,"PO Box 154, Charlestown",41.47652053833008,-71.65937805175781,(401) 360-4242,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.personalizedcarecoord.com
+washington-ri-overture-1ad3fc4d,South County Women's Resource Center - Food Distribution Center,meal,"61 Main St, Wakefield",41.44148254394531,-71.4908447265625,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: dvrcsc.org
+washington-ri-overture-6592370c,Jonnycake Center Food Pantry,meal,"22 Kersey Rd, South Kingstown",41.45283889770508,-71.49750518798828,14017891559,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.jonnycakecenter.org
+washington-ri-overture-6a05f50d,Pantry On The Lane,meal,"7 N Main St, Westerly",41.404842376708984,-71.74922943115234,+14014657745,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://JoyfellowshipRI.org/

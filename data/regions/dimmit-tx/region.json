@@ -1,0 +1,12 @@
+{
+  "slug": "dimmit-tx",
+  "name": "Dimmit, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48127",
+  "timezone_derived_from": "state"
+}

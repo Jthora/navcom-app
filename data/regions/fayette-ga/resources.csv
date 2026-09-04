@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+fayette-ga-overture-e1e8d8f0,Real Life Center,meal,"975 GA-74 N, Tyrone",33.452476501464844,-84.58592224121094,+17706319334,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.reallifecenter.org/
+fayette-ga-overture-18758879,City Bridges Food Pantry - Ptc,meal,"320 Dividend Dr, Peachtree City",33.38212203979492,-84.58222961425781,17709642138,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.citybridges.org
+fayette-ga-overture-59bd97d2,Midwest Food Bank -- Georgia Division,meal,"220 Parkade Ct, Peachtree City",33.3541259765625,-84.55230712890625,17704861103,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.midwestfoodbank.org

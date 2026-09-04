@@ -1,0 +1,12 @@
+{
+  "slug": "morgan-ga",
+  "name": "Morgan, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13211",
+  "timezone_derived_from": "state"
+}

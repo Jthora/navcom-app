@@ -1,0 +1,12 @@
+{
+  "slug": "alachua-fl",
+  "name": "Alachua, FL",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "12001",
+  "timezone_derived_from": "state"
+}

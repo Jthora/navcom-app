@@ -1,0 +1,12 @@
+{
+  "slug": "utah-ut",
+  "name": "Utah, UT",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "49049",
+  "timezone_derived_from": "state"
+}

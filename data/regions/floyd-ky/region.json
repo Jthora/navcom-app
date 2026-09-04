@@ -1,0 +1,12 @@
+{
+  "slug": "floyd-ky",
+  "name": "Floyd, KY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "21071",
+  "timezone_derived_from": "state"
+}

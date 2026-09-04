@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+waupaca-wi-overture-1dd79d0f,Ruby's Pop-up Pantry - Food Pantry,meal,"E2249 King Rd, Waupaca",44.33657455444336,-89.11536407470703,13206297400,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: rubyspantry.org
+waupaca-wi-overture-1a74a190,Waupaca Area Food Pantry,meal,"800 Churchill St, Waupaca",44.3498420715332,-89.07237243652344,+17152561645,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+waupaca-wi-overture-534e10dc,Rubys Pantry - Food Distribution Center,meal,"138 S Oborn St, Waupaca",44.356544494628906,-89.07503509521484,13206297400,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: rubyspantry.org
+waupaca-wi-overture-e2db59fe,Weymont Food Pantry,meal,"108 E Main St, Weyauwega",44.3215217590332,-88.93352508544922,+19208673026,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.dhs.wisconsin.gov/nutrition/tefap/index.htm
+waupaca-wi-overture-874b8198,Ruby's Pantry,meal,"717 10th St, Waupaca",44.35029602050781,-89.07319641113281,6516740009,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: rubyspantry.org
+waupaca-wi-overture-457da903,Manawa Food Pantry,meal,"114 2nd St, Manawa",44.46343231201172,-88.91941833496094,+19205963744,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

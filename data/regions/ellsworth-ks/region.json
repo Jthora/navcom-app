@@ -1,0 +1,12 @@
+{
+  "slug": "ellsworth-ks",
+  "name": "Ellsworth, KS",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "20053",
+  "timezone_derived_from": "state"
+}

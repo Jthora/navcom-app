@@ -1,0 +1,12 @@
+{
+  "slug": "henry-ga",
+  "name": "Henry, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13151",
+  "timezone_derived_from": "state"
+}

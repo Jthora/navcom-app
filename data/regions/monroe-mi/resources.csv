@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+monroe-mi-overture-3633e041,St. John Food Pantry,meal,"511 S Monroe St, Monroe",41.9119987487793,-83.4010238647461,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://stjohnmonroe.com/
+monroe-mi-overture-75a3bf77,Family Counseling & Shelter Services,shelter,"14930 Laplaisance Rd Ste 106, Monroe",41.88787078857422,-83.3929214477539,+17342410180,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.fcssmc.org/
+monroe-mi-overture-e6ee994a,Philadelphia House,shelter,"218 Washington St, Monroe",41.91377639770508,-83.39826202392578,+17342424266,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

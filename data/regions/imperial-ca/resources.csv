@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+imperial-ca-overture-67a6458a,Imperial Valley Food Bank,meal,"486 W Aten Rd, Imperial",32.82600784301758,-115.57765197753906,+17603700966,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.ivfoodbank.org/
+imperial-ca-overture-4fe4558c,Our Lady of Guadalupe Shelter,shelter,"545 Encinas Ave, Calexico",32.6713981628418,-115.48855590820312,+17603570894,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.ccdsd.org
+imperial-ca-overture-60acaf73,House of Hope Women's Shelter,shelter,"1948 W Orange Ave, El Centro",32.788978576660156,-115.57813262939453,+17603521182,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.ww5.catholiccharties.org

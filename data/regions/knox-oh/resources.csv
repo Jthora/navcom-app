@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+knox-oh-overture-cad742a1,Center of Hope,meal,"25843 New Guilford Rd, Bladensburg",40.28510665893555,-82.28607940673828,+17402000689,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://hopeinohio.org/
+knox-oh-overture-4a440703,Food For The Hungry,meal,"1684 Venture Dr, Mount Vernon",40.398372650146484,-82.43846130371094,17404812444,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.foodforthehungrycares.org
+knox-oh-overture-d82b8c3d,Kno Ho Co Emergency Shelter,shelter,"309 S Main St, Mt Vernon",40.390506744384766,-82.48587036132812,+17403933545,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.knohoco.org/
+knox-oh-overture-4e740289,The Winter Sanctuary Homeless Shelter,shelter,"120 S Norton St, Mt Vernon",40.39127731323242,-82.49127197265625,+17403929277,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://thewintersanctuary.com/

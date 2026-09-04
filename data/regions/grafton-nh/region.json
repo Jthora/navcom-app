@@ -1,0 +1,12 @@
+{
+  "slug": "grafton-nh",
+  "name": "Grafton, NH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "33009",
+  "timezone_derived_from": "state"
+}

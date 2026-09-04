@@ -1,0 +1,12 @@
+{
+  "slug": "archer-tx",
+  "name": "Archer, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48009",
+  "timezone_derived_from": "state"
+}

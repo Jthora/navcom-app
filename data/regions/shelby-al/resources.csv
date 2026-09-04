@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+shelby-al-overture-98afacde,Manna Ministries,meal,"333 Smokey Rd, Alabaster",33.20111083984375,-86.82164001464844,+12059535001,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://mannaofalabaster.com/
+shelby-al-overture-5b428f60,King's Home,shelter,"221 Kings Home Dr, Chelsea",33.32432556152344,-86.63199615478516,+12056788331,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://linktr.ee/KingsHome

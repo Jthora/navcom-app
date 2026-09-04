@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+branch-mi-overture-16092e3b,Branch Area Food Pantry,meal,"22 Pierson St, Coldwater",41.94247817993164,-85.0074462890625,+15172790966,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.branchareafoodpantry.com/
+branch-mi-overture-eab46cc9,Son-shine Ministries Union - Food Distribution Center,meal,"8 Fulton St, Quincy",41.9443359375,-84.88105010986328,15176399545,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.myunionchurch.org
+branch-mi-overture-5501319b,Bronson Community Food Pantry,meal,"204 E Chicago St, Bronson",41.87248611450195,-85.19342803955078,+15173699226,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+branch-mi-overture-225269fc,Branch Safe Haven,shelter,"42 W Chicago St, Coldwater",41.94124221801758,-85.00289154052734,+15176176166,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

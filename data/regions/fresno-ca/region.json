@@ -1,0 +1,12 @@
+{
+  "slug": "fresno-ca",
+  "name": "Fresno, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06019",
+  "timezone_derived_from": "state"
+}

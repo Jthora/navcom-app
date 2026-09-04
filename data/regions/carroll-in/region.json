@@ -1,0 +1,12 @@
+{
+  "slug": "carroll-in",
+  "name": "Carroll, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18015",
+  "timezone_derived_from": "state"
+}

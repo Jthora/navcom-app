@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+cleburne-ar-overture-cdec4ee3,Cleburne County Cares,meal,"747 S 7th St, Heber Springs",35.48454666137695,-92.03585052490234,+15013628486,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://cleburnecountycares.com/
+cleburne-ar-overture-43d034ce,The Storehouse Food Pantry,meal,"8305 Edgemont Rd Suite E, Greers Ferry",35.56705093383789,-92.17936706542969,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+cleburne-ar-overture-79466ec5,God's Grace Food Pantry,meal,"10199 Heber Springs Rd N, Concord",35.666358947753906,-91.86934661865234,+13343606310,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

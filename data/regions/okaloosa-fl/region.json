@@ -1,0 +1,12 @@
+{
+  "slug": "okaloosa-fl",
+  "name": "Okaloosa, FL",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "12091",
+  "timezone_derived_from": "state"
+}

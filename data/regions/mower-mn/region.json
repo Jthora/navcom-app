@@ -1,0 +1,12 @@
+{
+  "slug": "mower-mn",
+  "name": "Mower, MN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "27099",
+  "timezone_derived_from": "state"
+}

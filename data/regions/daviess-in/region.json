@@ -1,0 +1,12 @@
+{
+  "slug": "daviess-in",
+  "name": "Daviess, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18027",
+  "timezone_derived_from": "state"
+}

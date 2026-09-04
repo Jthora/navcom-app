@@ -1,0 +1,12 @@
+{
+  "slug": "cabell-wv",
+  "name": "Cabell, WV",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "54011",
+  "timezone_derived_from": "state"
+}

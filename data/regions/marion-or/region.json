@@ -1,0 +1,12 @@
+{
+  "slug": "marion-or",
+  "name": "Marion, OR",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "41047",
+  "timezone_derived_from": "state"
+}

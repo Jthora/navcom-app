@@ -1,0 +1,12 @@
+{
+  "slug": "camden-ga",
+  "name": "Camden, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13039",
+  "timezone_derived_from": "state"
+}

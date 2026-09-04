@@ -1,0 +1,12 @@
+{
+  "slug": "jefferson-davis-la",
+  "name": "Jefferson Davis, LA",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "22053",
+  "timezone_derived_from": "state"
+}

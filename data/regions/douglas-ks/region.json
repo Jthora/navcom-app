@@ -1,0 +1,12 @@
+{
+  "slug": "douglas-ks",
+  "name": "Douglas, KS",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "20045",
+  "timezone_derived_from": "state"
+}

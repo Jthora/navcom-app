@@ -1,0 +1,12 @@
+{
+  "slug": "benton-mo",
+  "name": "Benton, MO",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "29015",
+  "timezone_derived_from": "state"
+}

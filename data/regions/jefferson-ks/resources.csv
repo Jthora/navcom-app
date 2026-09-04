@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+jefferson-ks-overture-c0343cb5,Jefferson County Service Organization,meal,"410 Liberty St, Oskaloosa",39.21696090698242,-95.31442260742188,7858632637,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+jefferson-ks-overture-6a1bde4a,Pantry of Hope,meal,"329 Elm St, Nortonville",39.414730072021484,-95.3336181640625,+19134265483,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

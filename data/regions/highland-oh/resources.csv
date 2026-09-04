@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+highland-oh-overture-2f78e332,Highland County Homeless Shelter,shelter,"145 Homestead Ave, Hillsboro",39.23774719238281,-83.61869049072266,+19373930634,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://highlandcountyhomelessshelter.com/
+highland-oh-overture-80037240,Because He Lives Food Pantry,meal,"111 Main St, Lynchburg",39.24288558959961,-83.79240417480469,+19375795210,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.becausehelivesfoodpantry.com
+highland-oh-overture-92ba74e9,Samaritan Outreach Services,meal,"537 N East St, Hillsboro",39.20797348022461,-83.60794830322266,+19379392060,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.samaritanoutreachservices.com

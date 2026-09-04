@@ -1,0 +1,12 @@
+{
+  "slug": "johnson-in",
+  "name": "Johnson, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18081",
+  "timezone_derived_from": "state"
+}

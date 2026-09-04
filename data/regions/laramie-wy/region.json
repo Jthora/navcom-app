@@ -1,0 +1,12 @@
+{
+  "slug": "laramie-wy",
+  "name": "Laramie, WY",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "56021",
+  "timezone_derived_from": "state"
+}

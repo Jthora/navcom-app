@@ -1,0 +1,12 @@
+{
+  "slug": "martin-in",
+  "name": "Martin, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18101",
+  "timezone_derived_from": "state"
+}

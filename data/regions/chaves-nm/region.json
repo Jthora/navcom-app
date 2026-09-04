@@ -1,0 +1,12 @@
+{
+  "slug": "chaves-nm",
+  "name": "Chaves, NM",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "35005",
+  "timezone_derived_from": "state"
+}

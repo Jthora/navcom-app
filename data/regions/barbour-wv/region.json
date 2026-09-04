@@ -1,0 +1,12 @@
+{
+  "slug": "barbour-wv",
+  "name": "Barbour, WV",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "54001",
+  "timezone_derived_from": "state"
+}

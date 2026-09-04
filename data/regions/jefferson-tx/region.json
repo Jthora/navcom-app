@@ -1,0 +1,12 @@
+{
+  "slug": "jefferson-tx",
+  "name": "Jefferson, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48245",
+  "timezone_derived_from": "state"
+}

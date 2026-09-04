@@ -1,0 +1,12 @@
+{
+  "slug": "bracken-ky",
+  "name": "Bracken, KY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "21023",
+  "timezone_derived_from": "state"
+}

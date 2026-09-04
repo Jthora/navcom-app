@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+charlottesville-va-overture-ab56ff41,Thomas Jefferson Area Food Bank,meal,"1207 Harris St, Charlottesville",38.03969192504883,-78.48094940185547,+14342963663,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+charlottesville-va-overture-b1b0fb90,The Haven,shelter,"112 W Market St, Charlottesville",38.03134536743164,-78.48155212402344,+14349731234,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.thehaven.org/
+charlottesville-va-overture-ebde7096,Pacem,shelter,"500 Park St, Charlottesville",38.03305435180664,-78.47579956054688,+14344651391,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://pacemshelter.org

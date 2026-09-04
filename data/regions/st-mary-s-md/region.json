@@ -1,0 +1,12 @@
+{
+  "slug": "st-mary-s-md",
+  "name": "St. Mary's, MD",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "24037",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+jackson-il-overture-58ac062e,Murphysboro Food Pantry,meal,"906 N 14th St, Murphysboro",37.774688720703125,-89.33794403076172,+16186848258,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.murphysboro.com
+jackson-il-overture-e7ac7f4a,Southern Illinois Food Bank,meal,"1344 N 7th St, Murphysboro",37.781333923339844,-89.33155822753906,+16186845573,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+jackson-il-overture-070fd2f5,Carbondale Warming Center,shelter,"608 E College St, Carbondale",37.722721099853516,-89.20692443847656,+13143122539,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://cwcentered.org/

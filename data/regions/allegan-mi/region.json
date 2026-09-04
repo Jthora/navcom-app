@@ -1,0 +1,12 @@
+{
+  "slug": "allegan-mi",
+  "name": "Allegan, MI",
+  "country": "US",
+  "timezone": "America/Detroit",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "26005",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "bradley-tn",
+  "name": "Bradley, TN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "47011",
+  "timezone_derived_from": "state"
+}

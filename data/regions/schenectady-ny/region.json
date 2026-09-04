@@ -1,0 +1,12 @@
+{
+  "slug": "schenectady-ny",
+  "name": "Schenectady, NY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "36093",
+  "timezone_derived_from": "state"
+}

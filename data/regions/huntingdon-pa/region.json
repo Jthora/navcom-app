@@ -1,0 +1,12 @@
+{
+  "slug": "huntingdon-pa",
+  "name": "Huntingdon, PA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "42061",
+  "timezone_derived_from": "state"
+}

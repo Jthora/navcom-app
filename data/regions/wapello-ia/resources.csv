@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+wapello-ia-overture-37b5951b,Food Bank of Iowa - Ottumwa Distribution Center,meal,"705 W Main St, Ottumwa",41.023963928222656,-92.42064666748047,+16416823403,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+wapello-ia-overture-9c16f15c,Lord's Cupboard,meal,"101B N Court St, Ottumwa",41.01892852783203,-92.41194152832031,+16417778671,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+wapello-ia-overture-def71499,Emergency Shelter Care,shelter,"6941 Ashland Rd, Agency",40.98760223388672,-92.29744720458984,+16419375272,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.ahfa.org/wordpress
+wapello-ia-overture-dd67201a,Eddyville Community Food Pantry,meal,"1001 Main St, Eddyville",41.15801239013672,-92.627685546875,+16416603584,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+wapello-ia-overture-7838ea43,Food Bank Of Southern Iowa Inc,meal,"225 S Benton St, Ottumwa",41.024810791015625,-92.42413330078125,6416823403,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://foodbankofsouthern.org/

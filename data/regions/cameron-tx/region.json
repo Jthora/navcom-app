@@ -1,0 +1,12 @@
+{
+  "slug": "cameron-tx",
+  "name": "Cameron, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48061",
+  "timezone_derived_from": "state"
+}

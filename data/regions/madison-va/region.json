@@ -1,0 +1,12 @@
+{
+  "slug": "madison-va",
+  "name": "Madison, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51113",
+  "timezone_derived_from": "state"
+}

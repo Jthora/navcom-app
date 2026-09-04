@@ -1,0 +1,12 @@
+{
+  "slug": "berrien-mi",
+  "name": "Berrien, MI",
+  "country": "US",
+  "timezone": "America/Detroit",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "26021",
+  "timezone_derived_from": "state"
+}

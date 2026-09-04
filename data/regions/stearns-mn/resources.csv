@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+stearns-mn-overture-fd2e5545,St. Joseph Community Food Shelf,meal,"18 E Birch St, St Joseph",45.56715774536133,-94.31815338134766,+14782132700,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://st-joseph-community-food-shelf.square.site/
+stearns-mn-overture-acb7cc28,Kimball Area Food Shelf,meal,"441 Hazel Ave E, Kimball",45.313270568847656,-94.29447937011719,+13203983415,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://kimballfoodshelf.com/
+stearns-mn-overture-ffa52beb,Rocori Area Food Shelf - Food Distribution Center,meal,"217 Main St, Cold Spring",45.456077575683594,-94.42707061767578,13206858785,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://rocoriareafoodshelf.org

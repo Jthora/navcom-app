@@ -57,28 +57,206 @@ function proseOutsideFieldSlots(el: HTMLElement): string {
 }
 
 let pages: Page[] = [];
-/** Every element carrying data-record, on any page: one rendered record. */
-let rendered: { page: Page; el: HTMLElement; id: string }[] = [];
+/** Every built page path. Strings only — the corpus is far too large to hold as DOMs. */
+let paths: string[] = [];
+/** How many elements carried data-record, across the whole build. */
+let recordCount = 0;
+/** Volatile fields rendered as a deliberate suppression — see the rule 1 vacancy note. */
+let suppressedVolatile = 0;
 
-beforeAll(() => {
+/**
+ * Failures collected during the single streaming pass, one bucket per corpus-wide rule.
+ *
+ * The suite used to parse all 12,329 pages into DOMs at once and hold them for the whole
+ * run, which exhausted the heap the moment the directory went national — a test that dies
+ * of the data it guards is indistinguishable from the bug it guards against. Every
+ * corpus-wide rule now runs inside one pass, keeps only its failure messages, and lets each
+ * document be collected immediately. Memory is flat in the size of the build.
+ */
+const failures: Record<string, string[]> = {
+  rule1: [], rule2: [], rule2words: [], rule3: [], rule5: [], rule6: [], verdicts: [],
+  noScript: [], titled: [], oneH1: [], deadDocLink: [], headingSkip: []
+};
+
+/**
+ * Pages a targeted test looks at directly, and nothing else.
+ *
+ * Every predicate below answers a `pages.find`/`pages.filter` further down this file. A
+ * lookup added later without a matching clause here gets `undefined` rather than a page —
+ * which is why `retainedFor` is asserted non-empty before the suite runs, instead of
+ * failing as a confusing `undefined` deep inside an unrelated test.
+ */
+const ST_LOUIS_SAMPLES = 3;
+function retain(path: string, kept: Record<string, number>): boolean {
+  if (path.includes('/terminal/') || path.includes('/status/')) return true;
+  if (path.endsWith('/build/index.html')) return true;
+  if (path.endsWith('directory/index.html')) return true;
+  if (path.includes('/directory/st-louis-')) {
+    kept['stl'] = (kept['stl'] ?? 0) + 1;
+    return kept['stl'] <= ST_LOUIS_SAMPLES;
+  }
+  return false;
+}
+
+/** The targeted lookups this file makes, so a missing retain clause fails loudly and early. */
+const retainedFor: Record<string, (p: string) => boolean> = {
+  status: (p) => p.includes('/status/'),
+  terminalIndex: (p) => p.endsWith('/terminal/index.html'),
+  terminalScreens: (p) => p.includes('/terminal/'),
+  stLouisRecord: (p) => p.includes('/directory/st-louis-'),
+  directoryIndex: (p) => p.endsWith('directory/index.html')
+};
+
+beforeAll(async () => {
   const files = htmlFiles(BUILD);
   if (files.length === 0) {
     throw new Error('No build output. Run `npm run build` before these tests.');
   }
-  pages = files.map((path) => {
+  paths = files;
+
+  const records = new Map(loadDirectory().map((r) => [r.id, r]));
+  const now = new Date();
+  const kept: Record<string, number> = {};
+
+  // Every doc slug actually built, resolved once. The dead-link rule used to scan all
+  // 12,329 paths for every /docs/ link on every page.
+  const publishedDocs = new Set<string>();
+  for (const p of files) {
+    const m = p.match(/\/docs\/(.+)\/[^/]*$/);
+    if (m?.[1]) publishedDocs.add(m[1]);
+  }
+
+  for (let i = 0; i < files.length; i++) {
+    const path = files[i]!;
+    // Yield to the worker's event loop so it can answer Vitest's RPC heartbeat. A pass this
+    // long ran to completion but starved the reporter, which then failed the whole file.
+    if (i % 250 === 0) await new Promise((r) => setImmediate(r));
     const raw = readFileSync(path, 'utf8');
     const doc = parse(raw);
-    return { path, doc, raw, bodyText: doc.querySelector('body')?.structuredText ?? '' };
-  });
+    const bodyText = doc.querySelector('body')?.structuredText ?? '';
 
-  rendered = pages.flatMap((page) =>
-    page.doc.querySelectorAll('[data-record]').map((el) => ({
-      page,
-      el,
-      id: el.getAttribute('data-record') as string
-    }))
-  );
-});
+    if (retain(path, kept)) pages.push({ path, doc, raw, bodyText });
+
+    // ---- page-level rules -------------------------------------------------
+    for (const el of doc.querySelectorAll('[data-display="value"][data-class="volatile"]')) {
+      examined.rule1++;
+      if (!el.querySelector('[data-age]')) {
+        failures['rule1']!.push(
+          `${path}: volatile field "${el.getAttribute('data-field')}" rendered without an age`
+        );
+      }
+    }
+
+    for (const el of doc.querySelectorAll('[data-display="call-first"]')) {
+      if (!el.structuredText.toLowerCase().includes('call first')) failures['rule2words']!.push(path);
+    }
+    suppressedVolatile += doc.querySelectorAll(
+      '[data-display="call-first"][data-class="volatile"]'
+    ).length;
+
+    for (const el of doc.querySelectorAll('[data-display="unknown"]')) {
+      examined.rule5++;
+      const text = el.structuredText.trim().toLowerCase();
+      if (text !== 'unknown') failures['rule5']!.push(`${path}: rendered "${text}", not "unknown"`);
+    }
+
+    const isTerminal = path.includes('/terminal/') || path.endsWith('/build/index.html');
+    if (!isTerminal) {
+      if (doc.querySelectorAll('script').length > 0) failures['noScript']!.push(`${path} has a script tag`);
+      if (doc.querySelectorAll('link[rel="modulepreload"]').length > 0) {
+        failures['noScript']!.push(`${path} preloads a module`);
+      }
+    }
+
+    if (!doc.querySelector('title')?.structuredText.trim()) failures['titled']!.push(`${path} has no title`);
+    if (!doc.querySelector('meta[name="description"]')) failures['titled']!.push(`${path} has no meta description`);
+
+    const h1s = doc.querySelectorAll('h1').length;
+    if (h1s !== 1) failures['oneH1']!.push(`${path} has ${h1s} h1 elements`);
+
+    for (const a of doc.querySelectorAll('a[href^="/docs/"]')) {
+      const href = (a.getAttribute('href') ?? '').split('#')[0]!.replace(/\/$/, '');
+      if (href === '/docs') continue;
+      const target = href.replace(/^\/docs\//, '');
+      if (!publishedDocs.has(target)) {
+        failures['deadDocLink']!.push(`${path} links to ${href}, which is not published`);
+      }
+    }
+
+    const levels = doc.querySelectorAll('h1, h2, h3, h4, h5, h6').map((h) => Number(h.tagName[1]));
+    for (let i = 1; i < levels.length; i++) {
+      if (levels[i]! - levels[i - 1]! > 1) {
+        failures['headingSkip']!.push(`${path}: h${levels[i - 1]} is followed by h${levels[i]}`);
+      }
+    }
+
+    // ---- record-level rules -----------------------------------------------
+    const pageFlag = doc.querySelector('[data-flag]');
+    const pageWarn = doc.querySelector('.notice--warn');
+
+    for (const el of doc.querySelectorAll('[data-record]')) {
+      recordCount++;
+      const id = el.getAttribute('data-record') as string;
+      const record = records.get(id);
+      if (!record) continue;
+
+      for (const cf of el.querySelectorAll('[data-display="call-first"]')) {
+        const field = cf.getAttribute('data-field') as ResourceField;
+        const suppressed = record[field];
+        if (typeof suppressed !== 'string' || suppressed.trim() === '') continue;
+        examined.rule2++;
+
+        const shownForField = el
+          .querySelectorAll(`[data-display="value"][data-field="${field}"]`)
+          .map((v) => v.structuredText.trim());
+        if (shownForField.some((s) => s.includes(suppressed))) {
+          failures['rule2']!.push(
+            `${path}: suppressed "${field}" value "${suppressed}" is rendered as a value`
+          );
+        }
+        if (proseOutsideFieldSlots(el).includes(suppressed)) {
+          failures['rule2']!.push(
+            `${path}: suppressed "${field}" value "${suppressed}" is printed as prose on ${id}`
+          );
+        }
+      }
+
+      if (el.getAttribute('data-flagged') === 'true') {
+        examined.rule3++;
+        const flag = el.querySelector('[data-flag]') ?? pageFlag;
+        if (!flag) {
+          failures['rule3']!.push(`${path}: no flag rendered for flagged record ${id}`);
+        } else {
+          const flagAt = bodyText.indexOf(flag.structuredText.trim().split('\n')[0]!);
+          const nameAt = bodyText.indexOf(record.name);
+          if (nameAt <= -1) failures['rule3']!.push(`${path}: record name not found in body`);
+          else if (flagAt >= nameAt) {
+            failures['rule3']!.push(`${path}: flag must be read before the name of ${id}`);
+          }
+        }
+      }
+
+      if (el.getAttribute('data-seeded') === 'true') {
+        examined.rule6++;
+        if (!(el.querySelector('[data-seeded-note]') ?? pageWarn)) {
+          failures['rule6']!.push(`${path}: seeded record with no visible marker`);
+        }
+      }
+
+      for (const field of el.querySelectorAll('[data-display][data-field]')) {
+        const name = field.getAttribute('data-field') as ResourceField;
+        const expected = displayField(record, name, now).kind;
+        examined.verdicts++;
+        const actual = field.getAttribute('data-display');
+        if (actual !== expected) {
+          failures['verdicts']!.push(
+            `${path}: "${name}" on ${id} rendered as ${actual}, logic says ${expected}`
+          );
+        }
+      }
+    }
+  }
+}, 240_000);
 
 /**
  * How many real cases each rule actually looked at.
@@ -90,135 +268,52 @@ beforeAll(() => {
  */
 const examined = { rule1: 0, rule2: 0, rule3: 0, rule5: 0, rule6: 0, verdicts: 0 };
 
+describe('the streaming pass itself', () => {
+  it('retained a page for every targeted lookup this file makes', () => {
+    // The corpus is streamed and discarded; only a handful of pages are kept. If a lookup
+    // below gains a new pattern and `retain` is not taught about it, the test that uses it
+    // would silently receive `undefined`. This turns that into one clear failure here.
+    for (const [name, matches] of Object.entries(retainedFor)) {
+      expect(paths.some(matches), `no built page matches the ${name} lookup at all`).toBe(true);
+      expect(
+        pages.some((pg) => matches(pg.path)),
+        `${name} is looked up but retain() does not keep it`
+      ).toBe(true);
+    }
+  });
+});
+
 describe('rendered display rules', () => {
   it('has rendered some records', () => {
-    expect(rendered.length).toBeGreaterThan(0);
+    expect(recordCount).toBeGreaterThan(0);
   });
 
   it('rule 1 — every rendered volatile value carries an age', () => {
-    for (const { path, doc } of pages) {
-      for (const el of doc.querySelectorAll('[data-display="value"][data-class="volatile"]')) {
-        examined.rule1++;
-        expect(
-          el.querySelector('[data-age]'),
-          `${path}: volatile field "${el.getAttribute('data-field')}" rendered without an age`
-        ).not.toBeNull();
-      }
-    }
+    expect(failures['rule1']).toEqual([]);
   });
 
   it('rule 2 — a suppressed value is never rendered as a value anywhere on the page', () => {
-    const records = loadDirectory();
-
-    for (const { page, el, id } of rendered) {
-      const record = records.find((r) => r.id === id);
-      if (!record) continue;
-
-      for (const cf of el.querySelectorAll('[data-display="call-first"]')) {
-        const field = cf.getAttribute('data-field') as ResourceField;
-        const suppressed = record[field];
-        if (typeof suppressed !== 'string' || suppressed.trim() === '') continue;
-
-        examined.rule2++;
-
-        // Two checks, because the value can leak two ways and a single one misses one.
-        //
-        // (a) Rendered as a value for the SAME field — the summary-card-versus-detail-row
-        //     leak. This used to be compared against every rendered value on the page,
-        //     which false-failed the moment the terminal put many records on one page: a
-        //     record with a suppressed `hours` of "unknown" also renders `sex_offender_ok`
-        //     as the value "unknown", a legitimate enum member of a different field.
-        const shownForField = el
-          .querySelectorAll(`[data-display="value"][data-field="${field}"]`)
-          .map((v) => v.structuredText.trim());
-
-        expect(
-          shownForField.some((s) => s.includes(suppressed)),
-          `${page.path}: suppressed "${field}" value "${suppressed}" is rendered as a value`
-        ).toBe(false);
-
-        // (b) Printed as ordinary prose somewhere in the record, outside the field slots
-        //     entirely. Narrowing (a) to one field removed this case, which is the leak a
-        //     new component is most likely to introduce — and the terminal's own directory
-        //     screen had it in its first draft, printing record.address into a <p>.
-        expect(
-          proseOutsideFieldSlots(el).includes(suppressed),
-          `${page.path}: suppressed "${field}" value "${suppressed}" is printed as prose on ${id}`
-        ).toBe(false);
-      }
-    }
+    expect(failures['rule2']).toEqual([]);
   });
 
   it('rule 2 — call-first elements say so in words', () => {
-    for (const { path, doc } of pages) {
-      for (const el of doc.querySelectorAll('[data-display="call-first"]')) {
-        expect(el.structuredText.toLowerCase(), path).toContain('call first');
-      }
-    }
+    expect(failures['rule2words']).toEqual([]);
   });
 
   it('rule 3 — a flagged record shows its flag before its own name', () => {
-    const records = loadDirectory();
-
-    for (const { page, el, id } of rendered) {
-      if (el.getAttribute('data-flagged') !== 'true') continue;
-      const record = records.find((r) => r.id === id);
-      if (!record) continue;
-
-      // The flag sits inside the card on the list page and above the header on the detail
-      // page, so compare rendered reading order rather than DOM containment. Body text
-      // only: <title> repeats the record name and would put it spuriously first.
-      examined.rule3++;
-      const flag = el.querySelector('[data-flag]') ?? page.doc.querySelector('[data-flag]');
-      expect(flag, `${page.path}: no flag rendered for flagged record ${id}`).not.toBeNull();
-
-      const flagAt = page.bodyText.indexOf(flag!.structuredText.trim().split('\n')[0]);
-      const nameAt = page.bodyText.indexOf(record.name);
-
-      expect(nameAt, `${page.path}: record name not found in body`).toBeGreaterThan(-1);
-      expect(flagAt, `${page.path}: flag must be read before the name of ${id}`)
-        .toBeLessThan(nameAt);
-    }
+    expect(failures['rule3']).toEqual([]);
   });
 
   it('rule 5 — unknown renders the word, never an empty cell', () => {
-    for (const { path, doc } of pages) {
-      for (const el of doc.querySelectorAll('[data-display="unknown"]')) {
-        examined.rule5++;
-        expect(el.structuredText.trim().toLowerCase(), path).toBe('unknown');
-      }
-    }
+    expect(failures['rule5']).toEqual([]);
   });
 
   it('rule 6 — a seeded record carries its visible marker', () => {
-    for (const { page, el } of rendered) {
-      if (el.getAttribute('data-seeded') !== 'true') continue;
-      examined.rule6++;
-      const marker =
-        el.querySelector('[data-seeded-note]') ?? page.doc.querySelector('.notice--warn');
-      expect(marker, `${page.path}: seeded record with no visible marker`).not.toBeNull();
-    }
+    expect(failures['rule6']).toEqual([]);
   });
 
   it('renders the same verdict the logic produces, for every field of every record', () => {
-    const records = loadDirectory();
-    const now = new Date();
-
-    for (const { page, el, id } of rendered) {
-      const record = records.find((r) => r.id === id);
-      if (!record) continue;
-
-      // Scoped to this record's own element — a list page holds several.
-      for (const field of el.querySelectorAll('[data-display][data-field]')) {
-        const name = field.getAttribute('data-field') as ResourceField;
-        const expected = displayField(record, name, now).kind;
-        examined.verdicts++;
-        expect(
-          field.getAttribute('data-display'),
-          `${page.path}: "${name}" on ${id} rendered as ${field.getAttribute('data-display')}, logic says ${expected}`
-        ).toBe(expected);
-      }
-    }
+    expect(failures['verdicts']).toEqual([]);
   });
 
   it('actually examined a real case of every rule — a guard that checks nothing passes', () => {
@@ -245,11 +340,7 @@ describe('rendered display rules', () => {
          * a renderer that stopped emitting volatile fields at all. So zero is accepted only
          * alongside proof that every volatile field was rendered and deliberately suppressed.
          */
-        const suppressed = pages.reduce(
-          (count, { doc }) =>
-            count + doc.querySelectorAll('[data-display="call-first"][data-class="volatile"]').length,
-          0
-        );
+        const suppressed = suppressedVolatile;
         expect(
           suppressed,
           'no volatile field was rendered at all — that is the renderer, not the calendar'
@@ -285,37 +376,22 @@ describe('rendered display rules', () => {
 describe('the public surface', () => {
   it('delivers no JavaScript to any PUBLIC page', () => {
     // Strict, and scoped rather than relaxed: the site is a document and must stay readable
-    // with scripting off. The terminal is an application, checked separately below.
+    // with scripting off. The terminal is an application, checked separately below. The root
+    // console is the other deliberate exception — a real search over the real directory,
+    // working with nothing sent anywhere. See `routes/+page.svelte`.
     //
     // Asserts the real property rather than a proxy for it — SvelteKit loads a client entry
     // through <link rel="modulepreload"> plus one inline module, so counting only
     // `script[src]` would pass a page that shipped both.
-    for (const { path, doc } of pages) {
-      // The root console is the one other deliberate exception — a real search over the real
-      // directory, working with nothing sent anywhere. See `routes/+page.svelte`.
-      if (path.includes('/terminal/') || path.endsWith('/build/index.html')) continue;
-      expect(doc.querySelectorAll('script').length, `${path} has a script tag`).toBe(0);
-      expect(
-        doc.querySelectorAll('link[rel="modulepreload"]').length,
-        `${path} preloads a module`
-      ).toBe(0);
-    }
+    expect(failures['noScript']).toEqual([]);
   });
 
   it('gives every page a title and a description', () => {
-    for (const { path, doc } of pages) {
-      expect(doc.querySelector('title')?.structuredText.trim(), path).toBeTruthy();
-      expect(
-        doc.querySelector('meta[name="description"]'),
-        `${path} has no meta description`
-      ).not.toBeNull();
-    }
+    expect(failures['titled']).toEqual([]);
   });
 
   it('gives every page exactly one h1', () => {
-    for (const { path, doc } of pages) {
-      expect(doc.querySelectorAll('h1').length, path).toBe(1);
-    }
+    expect(failures['oneH1']).toEqual([]);
   });
 });
 
@@ -352,37 +428,17 @@ describe('the status page', () => {
 
 describe('reader-facing documents are actually published', () => {
   it('publishes CONTRIBUTING and LICENSING, not just docs/', () => {
-    const slugs = pages.map((p) => p.path);
+    const slugs = paths;
     expect(slugs.some((p) => p.includes('/docs/contributing/')), 'CONTRIBUTING is unpublished').toBe(true);
     expect(slugs.some((p) => p.includes('/docs/licensing/')), 'LICENSING is unpublished').toBe(true);
   });
 
   it('does not leave a dead link where a published document exists', () => {
-    for (const { path, doc } of pages) {
-      for (const a of doc.querySelectorAll('a[href^="/docs/"]')) {
-        const href = (a.getAttribute('href') ?? '').split('#')[0].replace(/\/$/, '');
-        if (href === '/docs') continue;
-        const target = href.replace(/^\/docs\//, '');
-        expect(
-          pages.some((p) => p.path.includes(`/docs/${target}/`)),
-          `${path} links to ${href}, which is not published`
-        ).toBe(true);
-      }
-    }
+    expect(failures['deadDocLink']).toEqual([]);
   });
 
   it('never skips a heading level', () => {
-    for (const { path, doc } of pages) {
-      const levels = doc
-        .querySelectorAll('h1, h2, h3, h4, h5, h6')
-        .map((h) => Number(h.tagName[1]));
-      for (let i = 1; i < levels.length; i++) {
-        expect(
-          levels[i] - levels[i - 1],
-          `${path}: h${levels[i - 1]} is followed by h${levels[i]}`
-        ).toBeLessThanOrEqual(1);
-      }
-    }
+    expect(failures['headingSkip']).toEqual([]);
   });
 });
 

@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+coffee-ga-overture-da14a2e7,Second Harvest Food Bank,meal,"534 Thompson Dr, Douglas",31.50359344482422,-82.88330078125,+19126320363,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://feedingsga.org/event/annual-agency-meeting-3
+coffee-ga-overture-bff28a6e,The Salvation Army,shelter,"110 Gaskin Ave S, Douglas",31.50837516784668,-82.84498596191406,+19128258041,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://southernusa.salvationarmy.org/douglas/
+coffee-ga-overture-80ee7766,Coffee County Food Bank,meal,"611 W Baker Hwy, Douglas",31.501192092895508,-82.85693359375,+19123311441,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.coffeecountyfoodbank.org/
+coffee-ga-overture-8dbdae1d,Housing Authority,shelter,"631 Bryan St W, Douglas",31.506942749023438,-82.85794067382812,+19123841218,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.crossinghealthcare.org

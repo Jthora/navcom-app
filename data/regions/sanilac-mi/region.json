@@ -1,0 +1,12 @@
+{
+  "slug": "sanilac-mi",
+  "name": "Sanilac, MI",
+  "country": "US",
+  "timezone": "America/Detroit",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "26151",
+  "timezone_derived_from": "state"
+}

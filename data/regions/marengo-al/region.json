@@ -1,0 +1,12 @@
+{
+  "slug": "marengo-al",
+  "name": "Marengo, AL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "01091",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "midland-tx",
+  "name": "Midland, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48329",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "rutherford-nc",
+  "name": "Rutherford, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37161",
+  "timezone_derived_from": "state"
+}

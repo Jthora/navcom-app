@@ -1,0 +1,12 @@
+{
+  "slug": "des-moines-ia",
+  "name": "Des Moines, IA",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "19057",
+  "timezone_derived_from": "state"
+}

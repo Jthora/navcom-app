@@ -1,0 +1,12 @@
+{
+  "slug": "fillmore-ne",
+  "name": "Fillmore, NE",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "31059",
+  "timezone_derived_from": "state"
+}

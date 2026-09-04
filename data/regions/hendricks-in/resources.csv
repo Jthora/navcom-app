@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+hendricks-in-overture-95b344d1,Shared Blessings Food Pantry,meal,"820 W Mill St, Danville",39.75775909423828,-86.53651428222656,+13175152025,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://danvilleumc.org/
+hendricks-in-overture-6cf1e235,Family Promise of Hendricks County,shelter,"238 N Vine St, Plainfield",39.70539855957031,-86.40274810791016,+13172963742,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://familypromisehendrickscounty.org/
+hendricks-in-overture-0aa51303,Camp Camby Conference & Retreat,shelter,"10740 E County Rd 700 S, Camby",39.66306686401367,-86.33197784423828,+13178566055,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.campcamby.com
+hendricks-in-overture-258d1dd5,Mary Lee Maier Community Pantry,meal,"174 S Avon Ave, Avon",39.75988006591797,-86.40227508544922,+13175445807,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.avon-schools.org/domain/4765

@@ -1,0 +1,12 @@
+{
+  "slug": "delaware-in",
+  "name": "Delaware, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18035",
+  "timezone_derived_from": "state"
+}

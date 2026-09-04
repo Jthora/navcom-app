@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+carter-tn-overture-df9f3792,Vandeventer Shelter,shelter,"Appalachian Trl, Carter County",36.36708068847656,-82.05880737304688,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+carter-tn-overture-3dcdbf93,Arm Inc,meal,"714 W C St, Elizabethton",36.34764862060547,-82.23717498779297,+14235420919,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.armfoodpantry.com/

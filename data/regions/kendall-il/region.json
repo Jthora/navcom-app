@@ -1,0 +1,12 @@
+{
+  "slug": "kendall-il",
+  "name": "Kendall, IL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "17093",
+  "timezone_derived_from": "state"
+}

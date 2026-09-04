@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+greene-tn-overture-cdd65456,Greeneville Community Ministry,meal,"107 N Cutler St, Greeneville",36.165802001953125,-82.83483123779297,+14236381667,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.greenevillesun.com/news/local_news/donations-keep-rising-as-years-end-nears/article_ef2876ef-d3aa-5b78-abe4-d2c96287f6c6.html
+greene-tn-overture-fe1e8d51,Spring Mountain Shelter,shelter,Greene County,35.951839447021484,-82.79010772705078,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

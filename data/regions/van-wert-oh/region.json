@@ -1,0 +1,12 @@
+{
+  "slug": "van-wert-oh",
+  "name": "Van Wert, OH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "39161",
+  "timezone_derived_from": "state"
+}

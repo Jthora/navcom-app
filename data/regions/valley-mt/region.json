@@ -1,0 +1,12 @@
+{
+  "slug": "valley-mt",
+  "name": "Valley, MT",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "30105",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "mercer-pa",
+  "name": "Mercer, PA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "42085",
+  "timezone_derived_from": "state"
+}

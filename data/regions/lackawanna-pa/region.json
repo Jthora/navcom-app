@@ -1,0 +1,12 @@
+{
+  "slug": "lackawanna-pa",
+  "name": "Lackawanna, PA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "42069",
+  "timezone_derived_from": "state"
+}

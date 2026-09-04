@@ -1,0 +1,12 @@
+{
+  "slug": "anson-nc",
+  "name": "Anson, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37007",
+  "timezone_derived_from": "state"
+}

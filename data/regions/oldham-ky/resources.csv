@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+oldham-ky-overture-43bc76da,Good News Homes,shelter,"115 E Adams St, La Grange",38.40562438964844,-85.37660217285156,+15022250351,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.goodnewshomesky.org/
+oldham-ky-overture-8f5f4741,Bread of Life Food Pantry,meal,"11952 W Hwy 42, Goshen",38.40177536010742,-85.5749740600586,+15022280650,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://kyfoodpantry.org/

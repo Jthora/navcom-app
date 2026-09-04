@@ -1,0 +1,12 @@
+{
+  "slug": "hillsborough-nh",
+  "name": "Hillsborough, NH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "33011",
+  "timezone_derived_from": "state"
+}

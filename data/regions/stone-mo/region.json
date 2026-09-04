@@ -1,0 +1,12 @@
+{
+  "slug": "stone-mo",
+  "name": "Stone, MO",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "29209",
+  "timezone_derived_from": "state"
+}

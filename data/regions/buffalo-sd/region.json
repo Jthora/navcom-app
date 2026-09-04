@@ -1,0 +1,12 @@
+{
+  "slug": "buffalo-sd",
+  "name": "Buffalo, SD",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "46017",
+  "timezone_derived_from": "state"
+}

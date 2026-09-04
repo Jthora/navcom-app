@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+anderson-sc-overture-22359f68,Faith Food Bank,meal,"308 Williams St, Williamston",34.617149353027344,-82.47582244873047,18645181477,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.faithpresbyteriansc.com
+anderson-sc-overture-23f40f6e,The Stringer Emergency Lodge,shelter,"106 906, Anderson",34.50210952758789,-82.65438842773438,+18642269340,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+anderson-sc-overture-294f4ddc,Piedmont Emergency Relief Center,meal,"3A Main St, Piedmont",34.703155517578125,-82.46098327636719,18648455535,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://perccares.org
+anderson-sc-overture-f4a810c4,Operation Care,meal,"3 Middleton Blvd, Williamston",34.627994537353516,-82.4757080078125,+18648477090,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://operation-care.net
+anderson-sc-overture-9aa6aad0,"Haven of Rest Ministries, Inc.",shelter,"219 W Whitner St, Anderson",34.50273513793945,-82.65296936035156,+18642266193,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.havenofrest.cc/
+anderson-sc-overture-afb20d83,Good Neighbor Cupboard,meal,"313 S Towers St # 113, Anderson",34.50117492675781,-82.65245056152344,+18642241701,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://Thegoodneighborcupboard.org/

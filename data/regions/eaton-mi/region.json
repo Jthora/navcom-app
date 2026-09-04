@@ -1,0 +1,12 @@
+{
+  "slug": "eaton-mi",
+  "name": "Eaton, MI",
+  "country": "US",
+  "timezone": "America/Detroit",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "26045",
+  "timezone_derived_from": "state"
+}

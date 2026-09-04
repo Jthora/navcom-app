@@ -1,0 +1,12 @@
+{
+  "slug": "ravalli-mt",
+  "name": "Ravalli, MT",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "30081",
+  "timezone_derived_from": "state"
+}

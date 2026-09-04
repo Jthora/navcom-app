@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+boone-ky-overture-1013512c,Abraham's Pantry,meal,"10259 US-42, Union",38.93778991699219,-84.67623901367188,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.abrahamspantry.org/
+boone-ky-overture-24ed93a2,GO Pantry,meal,"7453 Empire Dr SUITE 300, Florence",38.97041320800781,-84.62789916992188,+18595385304,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.GOPantry.org/
+boone-ky-overture-3fa5f6ff,Hope Ministries of Northern Kentucky,meal,"7110 Dixie Hwy, Florence",39.00004196166992,-84.62557983398438,+18593711887,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.hopenky.org/
+boone-ky-overture-ee91ca12,Food Mission Pantry at Immanuel United Methodist Church Boone Campus,meal,"1440 Boone Aire Rd, Florence",39.013248443603516,-84.67398071289062,+18593340053,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+boone-ky-overture-07b5d83b,Master Provisions,meal,"10205 Toebben Dr, Independence",38.95206069946289,-84.61722564697266,+18594740467,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.masterprovisions.org/
+boone-ky-overture-241bf2fd,Hebron Baptist Church - Food Distribution Center,meal,"3140 Limaburg Rd, Hebron",39.062950134277344,-84.69857025146484,8596897282,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://hebronbaptist.org

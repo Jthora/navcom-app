@@ -1,0 +1,12 @@
+{
+  "slug": "leavenworth-ks",
+  "name": "Leavenworth, KS",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "20103",
+  "timezone_derived_from": "state"
+}

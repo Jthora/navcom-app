@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+fremont-wy-overture-c208db45,God’s Pantry,meal,"101 E 3rd St, Hudson",42.903690338134766,-108.58309173583984,+13078404205,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+fremont-wy-overture-a70aa96b,Foundations For Nations Food Pantry,meal,"702 E Monroe Ave, Riverton",43.019622802734375,-108.38170623779297,+13077090054,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+fremont-wy-overture-ab5693bc,Lander Care & Share Food Bank,meal,"281 Garfield St, Lander",42.83185958862305,-108.73133850097656,+13073327364,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://landerfoodbank.org/

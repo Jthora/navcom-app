@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+caldwell-nc-overture-42487b4d,Lenoir Homeless Emergency Outreach,shelter,"1129 West Ave, Lenoir",35.91278076171875,-81.5442123413086,+18287263634,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+caldwell-nc-overture-9892808c,Lenoir Housing Authority Commnity Bldg,shelter,"1711 Poplar St, Lenoir",35.9089469909668,-81.55780792236328,+18285721613,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

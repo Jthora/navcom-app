@@ -1,0 +1,12 @@
+{
+  "slug": "wicomico-md",
+  "name": "Wicomico, MD",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "24045",
+  "timezone_derived_from": "state"
+}

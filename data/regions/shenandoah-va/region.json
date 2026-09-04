@@ -1,0 +1,12 @@
+{
+  "slug": "shenandoah-va",
+  "name": "Shenandoah, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51171",
+  "timezone_derived_from": "state"
+}

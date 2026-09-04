@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+rapides-la-overture-ca42a16f,Hope House,shelter,"5115 S MacArthur Dr, Alexandria",31.25490951538086,-92.43936157226562,13184872061,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://cenlahopehouse.org
+rapides-la-overture-76d5122b,GIM Ron’s House,shelter,"86 Bolton Ave, Alexandria",31.30937957763672,-92.46028900146484,+13185288225,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.ronshouse.org/
+rapides-la-overture-891a87fc,Food Bank of Central Louisiana,meal,"3223 Baldwin Ave, Alexandria",31.270055770874023,-92.45304870605469,+13184452773,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.fbcenla.org/
+rapides-la-overture-78b0e02d,Alexandria Mega Shelter,shelter,"8125 US-71, Alexandria",31.169958114624023,-92.41510009765625,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+rapides-la-overture-840e7742,Central Louisiana Homeless Coalition,shelter,"1515 Jackson St, Alexandria",31.305654525756836,-92.45307922363281,3184430500,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.cenlahomeless.org/

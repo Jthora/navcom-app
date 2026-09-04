@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+smith-tx-overture-5257bb24,The King's Storehouse Food Bank,meal,"422 E Oakwood St, Tyler",32.35483932495117,-95.29661560058594,+19035955097,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.amazon.com/hz/wishlist/ls/3C8UBN907NU68?ref=cm_sw_em_r_un_un_2uZlzxiPQwBfR
+smith-tx-overture-5e24c587,West Erwin Benevolence Center,meal,"215 S Bonner Ave, Tyler",32.349098205566406,-95.3061294555664,+19035920809,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+smith-tx-overture-a753196c,East Texas Food Bank,meal,"3201 Robertson Rd, Tyler",32.33336639404297,-95.33467864990234,+19035973663,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://EastTexasFoodBank.org/
+smith-tx-overture-5566f564,Triumph Village,shelter,"12781 State Hwy 64, Tyler",32.35894012451172,-95.37872314453125,+19036305366,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+smith-tx-overture-a11e3ec6,Swan Food Pantry,meal,"11364 US Highway 69 N, Tyler",32.431007385253906,-95.36483764648438,+19037059170,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://Fbcswan.net/
+smith-tx-overture-b708bd97,Highway 80 Rescue Mission,shelter,"601 E Valentine St, Tyler",32.35895538330078,-95.29486846923828,19033639265,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.hiway80rm.org

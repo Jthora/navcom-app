@@ -1,0 +1,12 @@
+{
+  "slug": "hampshire-ma",
+  "name": "Hampshire, MA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "25015",
+  "timezone_derived_from": "state"
+}

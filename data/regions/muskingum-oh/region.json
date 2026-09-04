@@ -1,0 +1,12 @@
+{
+  "slug": "muskingum-oh",
+  "name": "Muskingum, OH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "39119",
+  "timezone_derived_from": "state"
+}

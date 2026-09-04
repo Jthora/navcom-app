@@ -1,0 +1,12 @@
+{
+  "slug": "whatcom-wa",
+  "name": "Whatcom, WA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "53073",
+  "timezone_derived_from": "state"
+}

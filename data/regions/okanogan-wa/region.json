@@ -1,0 +1,12 @@
+{
+  "slug": "okanogan-wa",
+  "name": "Okanogan, WA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "53047",
+  "timezone_derived_from": "state"
+}

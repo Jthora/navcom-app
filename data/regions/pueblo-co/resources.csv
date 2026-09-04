@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+pueblo-co-overture-97b394af,The Pueblo Shelter,shelter,"728 W 4th St, Pueblo",38.270416259765625,-104.61752319335938,+17199248413,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.safesiderecovery.com/
+pueblo-co-overture-5a02254e,Posada,shelter,"827 E 4th St, Pueblo",38.27122116088867,-104.59549713134766,17195458776,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://posadapueblo.org
+pueblo-co-overture-174a1399,Care and Share Food Bank for Southern Colorado,meal,"100 Greenhorn Dr #100, Pueblo",38.20989990234375,-104.62691497802734,+17192966995,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://careandshare.org
+pueblo-co-overture-b81fac69,Pueblo Rescue Mission,shelter,"728 W 4th St, Pueblo",38.27029800415039,-104.61744689941406,7199248413,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.thepueblorescuemission.org/
+pueblo-co-overture-3523b8ae,Posada,shelter,"501 Belmont Ave, Pueblo",38.25846862792969,-104.63864135742188,+17195458776,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://posadapueblo.org/
+pueblo-co-overture-2cef7b64,Colorado Division Of Housing - Food Distribution Center,meal,"132 W B St, Pueblo",38.2628059387207,-104.61722564697266,17195442466,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.colorado.gov/dora

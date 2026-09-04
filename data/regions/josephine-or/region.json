@@ -1,0 +1,12 @@
+{
+  "slug": "josephine-or",
+  "name": "Josephine, OR",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "41033",
+  "timezone_derived_from": "state"
+}

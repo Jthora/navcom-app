@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+nevada-ca-overture-dd639e3d,Interfaith Food Ministry,meal,"440 Henderson St, Grass Valley",39.21405029296875,-121.05680084228516,15302738132,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.interfaithfoodministry.org
+nevada-ca-overture-3cfffb82,Hospitality House,shelter,"1262 Sutton Way, Grass Valley",39.239845275878906,-121.03311157226562,+15302717144,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.hhshelter.org/
+nevada-ca-overture-923b9605,Food Bank of Nevada County,meal,"310 Railroad Ave STE 100, Grass Valley",39.21933364868164,-121.05046844482422,+15302723796,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.foodbankofnc.org/

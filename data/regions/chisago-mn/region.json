@@ -1,0 +1,12 @@
+{
+  "slug": "chisago-mn",
+  "name": "Chisago, MN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "27025",
+  "timezone_derived_from": "state"
+}

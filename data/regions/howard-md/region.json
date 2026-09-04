@@ -1,0 +1,12 @@
+{
+  "slug": "howard-md",
+  "name": "Howard, MD",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "24027",
+  "timezone_derived_from": "state"
+}

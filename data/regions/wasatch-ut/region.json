@@ -1,0 +1,12 @@
+{
+  "slug": "wasatch-ut",
+  "name": "Wasatch, UT",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "49051",
+  "timezone_derived_from": "state"
+}

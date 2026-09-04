@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+fremont-co-overture-18dea120,My Neighbor's Cupboard,meal,"409 Broadway St, Penrose",38.424949645996094,-105.02181243896484,+17194946584,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.myneighborscupboard.org/
+fremont-co-overture-93aaa656,Journey Home,shelter,"250 Justice Center Rd, Canon City",38.44300842285156,-105.18250274658203,+17194581929,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://lfministries.org
+fremont-co-overture-5c680600,The Pantry of Fremont,meal,"312 S 9th St, Canon City",38.441383361816406,-105.23323059082031,+17194589252,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

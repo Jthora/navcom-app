@@ -1,0 +1,12 @@
+{
+  "slug": "gregg-tx",
+  "name": "Gregg, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48183",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "silver-bow-mt",
+  "name": "Silver Bow, MT",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "30093",
+  "timezone_derived_from": "state"
+}

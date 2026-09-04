@@ -1,0 +1,12 @@
+{
+  "slug": "indiana-pa",
+  "name": "Indiana, PA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "42063",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "gwinnett-ga",
+  "name": "Gwinnett, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13135",
+  "timezone_derived_from": "state"
+}

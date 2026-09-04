@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+paulding-ga-overture-5a6bd43d,Chosen Vessels of God Ministries,meal,"1038 Merchants Dr, Dallas",33.90925216674805,-84.81206512451172,+17704998810,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.cvogministries.com/
+paulding-ga-overture-b66ca46b,A Hand Up Homless Outreach Of Georgia,meal,"2156 Buchanan Hwy, Dallas",33.89467239379883,-84.88275146484375,+16782749663,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.paypal.me/ahandupoutreach?locale.x=en_US
+paulding-ga-overture-2890c84e,Dallas Housing Authority,shelter,"434 Paulding Ln, Dallas",33.91376876831055,-84.83690643310547,+17704453758,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://dhadal.com

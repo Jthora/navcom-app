@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+bibb-ga-overture-55f2c79f,Tindall Heights Homes,shelter,"985 Plant St, Macon",32.824275970458984,-83.64985656738281,+14787525002,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.maconhousing.com
+bibb-ga-overture-6b8cab33,Mission To Bless,meal,"4205 Ocmulgee East Blvd, Macon",32.813026428222656,-83.56964111328125,+14044069878,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.missiontobless.org/
+bibb-ga-overture-cb3f0109,Middle Georgia Community Food Bank,meal,"4490 Ocmulgee E Blvd, Macon",32.805274963378906,-83.56641387939453,+14787423958,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://mgcfb.org/
+bibb-ga-overture-0481043a,Grove Park Village Inc,shelter,"1505 Clinton Rd #1, Macon",32.861148834228516,-83.6175537109375,+14787410031,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.infillhousing.net
+bibb-ga-overture-d23d62a0,Trooppy Pantry Inc,meal,"7331 Bethel Church Rd, Lizella",32.78141784667969,-83.78610229492188,14782175733,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.trooppypantry.com/contact
+bibb-ga-overture-fd9383b5,Home Port Veterans Transition Home,shelter,"5009 Harrison Rd, Macon",32.81166076660156,-83.7244873046875,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

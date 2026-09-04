@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+crook-or-overture-7b707910,Regeneration House Men's Shelter,shelter,"970 NW Madras Hwy, Prineville",44.30868148803711,-120.8652114868164,+15419030547,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+crook-or-overture-f357982e,St. Vincent de Paul of Crook County Food Pantry,meal,"937 NW Madras Hwy, Prineville",44.30767059326172,-120.86480712890625,+15414477662,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.svdpofcc.org/
+crook-or-overture-31620044,Redemption House Ministries,shelter,"780 E 1st St, Prineville",44.300819396972656,-120.83928680419922,+15413625642,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.instagram.com/redemptionhouseprineville/

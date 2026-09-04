@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+clark-in-overture-8ad1426e,Catalyst Rescue Mission,shelter,"1727 DL Motley Way, Jeffersonville",38.28908157348633,-85.74761962890625,+18122851197,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.catalystrescuemission.org/
+clark-in-overture-de3291c7,Evangel North Church,meal,"1732 Thames Dr, Clarksville",38.32265090942383,-85.77088165283203,+15024388541,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://northchurch.me/
+clark-in-overture-fbe2549e,North Clark Outreach Center,meal,"240 Harrison St, Charlestown",38.44379806518555,-85.6587905883789,+15027737474,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

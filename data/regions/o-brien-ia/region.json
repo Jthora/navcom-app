@@ -1,0 +1,12 @@
+{
+  "slug": "o-brien-ia",
+  "name": "O'Brien, IA",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "19141",
+  "timezone_derived_from": "state"
+}

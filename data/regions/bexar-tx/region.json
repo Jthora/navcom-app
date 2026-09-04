@@ -1,0 +1,12 @@
+{
+  "slug": "bexar-tx",
+  "name": "Bexar, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48029",
+  "timezone_derived_from": "state"
+}

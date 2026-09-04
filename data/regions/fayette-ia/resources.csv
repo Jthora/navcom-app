@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+fayette-ia-overture-cb3b4e3a,The Plentiful Pantry,meal,"26 W Charles St, Oelwein",42.67818069458008,-91.91466522216797,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+fayette-ia-overture-1e63bbab,His Hands Food Pantry,meal,"5002 Main St, Oran",42.70037078857422,-92.0748062133789,+13196384357,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.saintsinmission.org/hishands.html
+fayette-ia-overture-ee346d42,Fayette County Food Shelf,meal,"107 E Water St, Fayette",42.84461212158203,-91.8012924194336,+15634253399,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://paypal.com/

@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+chesterfield-sc-overture-70bd7827,Chesterfield Food Bank,meal,"103 S Page St, Chesterfield",34.73553466796875,-80.08827209472656,+18432873608,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+chesterfield-sc-overture-93d855ff,McArn Food Bank,meal,"131 2nd St, Cheraw",34.69589614868164,-79.88219451904297,+18435370642,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

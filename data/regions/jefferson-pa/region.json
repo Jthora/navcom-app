@@ -1,0 +1,12 @@
+{
+  "slug": "jefferson-pa",
+  "name": "Jefferson, PA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "42065",
+  "timezone_derived_from": "state"
+}

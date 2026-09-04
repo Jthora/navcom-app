@@ -1,0 +1,12 @@
+{
+  "slug": "galax-va",
+  "name": "Galax, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51640",
+  "timezone_derived_from": "state"
+}

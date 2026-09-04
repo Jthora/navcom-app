@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+gaston-nc-overture-acf12b43,With Friends,shelter,"2098 Keith Dr, Gastonia",35.2928352355957,-81.16548919677734,17046917116,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.withfriendsinc.com
+gaston-nc-overture-0e5d8bdc,The Cathy Mabry Cloninger Center,shelter,"330 Dr M.L.K. Jr. Way, Gastonia",35.26609420776367,-81.18135833740234,+17048526000,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://hopeunitedgaston.com/theshelter/
+gaston-nc-overture-c72ceefb,Bread Inc,meal,"3803 Old York Rd, Gastonia",35.21049880981445,-81.2020492553711,+17048549221,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.breadfoodbank.com/
+gaston-nc-overture-beb7dbb2,Gastonia Street Ministries,shelter,"416 W Main Ave, Gastonia",35.263980865478516,-81.18856811523438,17046053173,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://gastoniastreetministry.com
+gaston-nc-overture-739576e3,Phoenix Community Outreach Center,shelter,"805 W Airline Ave, Gastonia",35.2651252746582,-81.19417572021484,17048626079,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+gaston-nc-overture-0bf8f2f5,Catherine's House,shelter,"141 Mercy Dr, Belmont",35.24977111816406,-81.03987884521484,+17048259599,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://catherineshouseinc.org/

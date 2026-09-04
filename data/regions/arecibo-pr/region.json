@@ -1,0 +1,12 @@
+{
+  "slug": "arecibo-pr",
+  "name": "Arecibo, PR",
+  "country": "US",
+  "timezone": "America/Puerto_Rico",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "72013",
+  "timezone_derived_from": "state"
+}

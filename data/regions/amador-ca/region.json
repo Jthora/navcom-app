@@ -1,0 +1,12 @@
+{
+  "slug": "amador-ca",
+  "name": "Amador, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06005",
+  "timezone_derived_from": "state"
+}

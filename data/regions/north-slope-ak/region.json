@@ -1,0 +1,12 @@
+{
+  "slug": "north-slope-ak",
+  "name": "North Slope, AK",
+  "country": "US",
+  "timezone": "America/Anchorage",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "02185",
+  "timezone_derived_from": "state"
+}

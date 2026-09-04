@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+tarrant-tx-overture-79768bc5,Lunch Box of Love,meal,"504 SW 23rd St, Grand Prairie",32.736331939697266,-97.03620910644531,+12149039623,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.lunchboxoflove.org/
+tarrant-tx-overture-33b36a6e,Feeding Children Everywhere,meal,"2520 N Great SW Pkwy #108, Grand Prairie",32.792049407958984,-97.0456314086914,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+tarrant-tx-overture-88e6de67,Crowley House of Hope,meal,"200 N Magnolia St, Crowley",32.57964324951172,-97.35940551757812,+18172976400,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.crowleyhouseofhope.org/
+tarrant-tx-overture-6db45197,Harvesting in Mansfield Food Bank,meal,"150 S 6th Ave, Mansfield",32.55832290649414,-97.15684509277344,+18174533663,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.himfoodbank.org/
+tarrant-tx-overture-d82a5617,Life & Liberty Food Pantry,meal,"133 E Main St, Azle",32.89057922363281,-97.54163360595703,+18179193655,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+tarrant-tx-overture-52d3936e,Help Out Center - Food Pantry,meal,"11301 N Riverside Dr, Fort Worth",32.93743896484375,-97.30838012695312,18173794638,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.helpoutcenter.org

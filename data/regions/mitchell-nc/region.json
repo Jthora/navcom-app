@@ -1,0 +1,12 @@
+{
+  "slug": "mitchell-nc",
+  "name": "Mitchell, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37121",
+  "timezone_derived_from": "state"
+}

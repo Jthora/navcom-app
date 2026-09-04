@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+ohio-wv-overture-b8d59f9d,House of the Carpenter,meal,"200 S Front St, Wheeling",40.068702697753906,-80.72885131835938,+13042334640,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.houseofthecarpenter.com/
+ohio-wv-overture-b01aeec1,Driehorst Shelter,shelter,"72 Forsythia Wy, Wheeling",40.100128173828125,-80.65644836425781,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+ohio-wv-overture-e6db68a6,Mid Ohio Food Bank,meal,"611 Walnut St, Martins Ferry",40.09663391113281,-80.72672271728516,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.midohiofoodbank.org

@@ -1,0 +1,12 @@
+{
+  "slug": "kern-ca",
+  "name": "Kern, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06029",
+  "timezone_derived_from": "state"
+}

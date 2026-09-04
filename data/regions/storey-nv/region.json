@@ -1,0 +1,12 @@
+{
+  "slug": "storey-nv",
+  "name": "Storey, NV",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "32029",
+  "timezone_derived_from": "state"
+}

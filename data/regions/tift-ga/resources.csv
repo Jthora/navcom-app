@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+tift-ga-overture-dac1cebb,Tiftarea Community Food Bank,meal,"1705 Ridge Ave S, Tifton",31.4429874420166,-83.51942443847656,+12293864322,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://tiftareacommunityfoodbankinc.business.site
+tift-ga-overture-82a7d793,Brother Charlie Rescue Center,shelter,"326 Beech St, Tifton",31.444578170776367,-83.50332641601562,+12293820577,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://brothercharlies.com/
+tift-ga-overture-84f4363f,Tiftarea House of Hope,shelter,"602 W 3rd St, Tifton",31.452632904052734,-83.51972198486328,+12293965990,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.tiftareahouseofhope.org/

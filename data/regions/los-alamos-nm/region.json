@@ -1,0 +1,12 @@
+{
+  "slug": "los-alamos-nm",
+  "name": "Los Alamos, NM",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "35028",
+  "timezone_derived_from": "state"
+}

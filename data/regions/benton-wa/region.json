@@ -1,0 +1,12 @@
+{
+  "slug": "benton-wa",
+  "name": "Benton, WA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "53005",
+  "timezone_derived_from": "state"
+}

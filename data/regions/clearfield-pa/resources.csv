@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+clearfield-pa-overture-70c381b0,Good Samaritan Center,shelter,"11 N Front St, Clearfield",41.022789001464844,-78.43962097167969,18147687229,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+clearfield-pa-overture-c59f26b9,Lanse Free Fridge,meal,"255 Cotohisc Rd, Cooper Twp",40.98820495605469,-78.13970184326172,+18145904455,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://lansefree.org/visit/ministries/
+clearfield-pa-overture-8a195260,Haven House Shelter,shelter,"202 W Dubois Ave, Dubois",41.12858963012695,-78.76031494140625,+18143710333,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+clearfield-pa-overture-d8dbe785,"Central Pennsylvania Community Action, Inc. - Food Distribution Center",meal,"207 E Cherry St, Clearfield",41.02082061767578,-78.43767547607422,18147651551,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.cpcaa.net
+clearfield-pa-overture-bea62411,DuBois Area Food Pantry,meal,"228 First St, Dubois",41.13002395629883,-78.75746154785156,+18149132100,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

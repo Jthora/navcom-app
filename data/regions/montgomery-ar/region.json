@@ -1,0 +1,12 @@
+{
+  "slug": "montgomery-ar",
+  "name": "Montgomery, AR",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "05097",
+  "timezone_derived_from": "state"
+}

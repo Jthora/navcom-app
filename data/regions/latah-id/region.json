@@ -1,0 +1,12 @@
+{
+  "slug": "latah-id",
+  "name": "Latah, ID",
+  "country": "US",
+  "timezone": "America/Boise",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "16057",
+  "timezone_derived_from": "state"
+}

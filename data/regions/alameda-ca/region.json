@@ -1,0 +1,12 @@
+{
+  "slug": "alameda-ca",
+  "name": "Alameda, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06001",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "kittitas-wa",
+  "name": "Kittitas, WA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "53037",
+  "timezone_derived_from": "state"
+}

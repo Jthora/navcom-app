@@ -1,0 +1,12 @@
+{
+  "slug": "morgan-in",
+  "name": "Morgan, IN",
+  "country": "US",
+  "timezone": "America/Indiana/Indianapolis",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "18109",
+  "timezone_derived_from": "state"
+}

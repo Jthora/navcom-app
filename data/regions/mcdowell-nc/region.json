@@ -1,0 +1,12 @@
+{
+  "slug": "mcdowell-nc",
+  "name": "McDowell, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37111",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+christian-mo-overture-c881e789,Least Of These,meal,"1720 James River Rd, Ozark",37.07168197631836,-93.22574615478516,14177242500,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.leastofthesefoodpantry.org
+christian-mo-overture-aaf0cb1a,The Foster House,shelter,"1400 W Hall St, Ozark",37.02196502685547,-93.2197494506836,+14178495182,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://fosterhouseministries.weebly.com/

@@ -1,0 +1,12 @@
+{
+  "slug": "baldwin-ga",
+  "name": "Baldwin, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13009",
+  "timezone_derived_from": "state"
+}

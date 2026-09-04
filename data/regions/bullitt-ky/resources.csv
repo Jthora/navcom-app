@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+bullitt-ky-overture-e46b020c,Shepherdsville First Church of the Nazarene,meal,"244 N Maple St, Shepherdsville",38.00096893310547,-85.69523620605469,+15025432083,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://shep1nazarene.com/
+bullitt-ky-overture-57952413,New Hope Foster Homes,shelter,"2980 KY-44, Shepherdsville",38.00807189941406,-85.67030334472656,+15025431497,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.newhopehomes.org

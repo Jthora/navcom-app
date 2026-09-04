@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+benton-or-overture-57583afa,Corvallis Men's Shelter,shelter,"211 SE Chapman Pl, Corvallis",44.55454635620117,-123.26404571533203,15417916691,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.unityshelter.org
+benton-or-overture-ee4385f7,South Benton Food Pantry,meal,"648 Orchard St, Monroe",44.31396484375,-123.29932403564453,+15417458759,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.sbrcenter.org/
+benton-or-overture-00c7d64f,Alsea Valley Gleaners,meal,"18889 Haines Rd, Alsea",44.36273956298828,-123.60276794433594,+15414874717,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.AlseaValleyGleaners.org/
+benton-or-overture-ed5d9f86,Linn Benton Food Share,meal,"101 Sw Western Blvd  Ste 102, Corvallis",44.55931854248047,-123.26139068603516,15417582609,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.communityservices.us
+benton-or-overture-def6af46,Alsea Food Bank,meal,"18595 Alsea Hwy, Alsea",44.38357162475586,-123.61589813232422,+15414873663,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+benton-or-overture-1410c3d7,South Corvallis Food Bank,meal,"1750 SW 3rd St, Corvallis",44.54669189453125,-123.26759338378906,+15417534263,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.southcorvallisfoodbank.org/

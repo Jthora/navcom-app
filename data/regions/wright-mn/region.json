@@ -1,0 +1,12 @@
+{
+  "slug": "wright-mn",
+  "name": "Wright, MN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "27171",
+  "timezone_derived_from": "state"
+}

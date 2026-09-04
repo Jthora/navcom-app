@@ -1,0 +1,12 @@
+{
+  "slug": "jasper-sc",
+  "name": "Jasper, SC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "45053",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "clayton-ia",
+  "name": "Clayton, IA",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "19043",
+  "timezone_derived_from": "state"
+}

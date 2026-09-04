@@ -16,9 +16,10 @@
   import '$lib/terminal/panel.css';
   import { Panel, Slot, Readout, Why } from '$lib/components/panel';
   import { search, type ConsoleHit } from '$lib/console/search';
-  import type { ConsoleRecordEntry } from '$lib/console/types';
+  import type {
+    ConsoleRecordEntry, ConsoleCentroid, ConsoleRegionFigures
+  } from '$lib/console/types';
   import { locateOnce, nearest } from '$lib/console/position-once';
-  import type { ConsoleCentroid } from '$lib/console/types';
   import { get, set } from '$lib/terminal/storage';
 
   /**
@@ -53,6 +54,20 @@
   let loaded = $state<{ region: string; name: string; entries: ConsoleRecordEntry[] } | null>(null);
 
   /**
+   * Centroids and figures, fetched rather than embedded.
+   *
+   * Neither is needed for the first keystroke -- a centroid only once a location fix returns,
+   * figures only once a region is focused. At 1,912 regions they were 402 kB of inline data
+   * on a page with a 120 kB budget. `regionList` (slug and name) stays in the page so search
+   * works immediately; this arrives a moment later.
+   *
+   * A failed fetch is a silent no-op: search still works, the Network panel simply stays
+   * network-wide instead of narrowing to one area.
+   */
+  let centroids = $state<ConsoleCentroid[]>([]);
+  let figures = $state<Record<string, ConsoleRegionFigures>>({});
+
+  /**
    * Fetch one region's records so the search can see them.
    *
    * Driven by whichever of the two ways the visitor told us where they are -- the one-shot
@@ -81,8 +96,18 @@
     if (r) void loadRegionIndex(r.region, r.name);
   });
   /** `regionFigures` is keyed by slug; the search wants them in a stable order. */
+  /*
+   * Search runs off the embedded [slug, name] pairs; `records` comes from `figures` once it
+   * lands, and reads 0 until then rather than blocking the search on a fetch.
+   */
   const regionList = $derived(
-    Object.values(data.regionFigures).sort((a, b) => a.name.localeCompare(b.name))
+    (data.regionList as [string, string][]).map(([region, name]) => ({
+      region, name,
+      records: figures[region]?.records ?? 0,
+      confirmedByPerson: figures[region]?.confirmedByPerson ?? 0,
+      freshest: figures[region]?.freshest ?? null,
+      languages: figures[region]?.languages ?? ['en']
+    }))
   );
   const typed = $derived(search({ regions: regionList, loaded }, query));
 
@@ -110,7 +135,7 @@
   /** For when geolocation is denied or absent and nothing has been typed yet. */
   let manualRegion = $state('');
   const regionOptions = $derived(
-    Object.values(data.regionFigures).sort((a, b) => a.name.localeCompare(b.name))
+    Object.values(figures).sort((a, b) => a.name.localeCompare(b.name))
   );
 
   /**
@@ -125,7 +150,7 @@
     return null;
   });
   const focusedFigures = $derived(
-    focusedRegionSlug ? (data.regionFigures[focusedRegionSlug] ?? null) : null
+    focusedRegionSlug ? (figures[focusedRegionSlug] ?? null) : null
   );
 
   interface Health {
@@ -165,8 +190,24 @@
     // landed back on / (the brand link, a bookmark) silently lost it here.
     sig = readSignature();
     applySignature(sig);
+    void (async () => {
+      try {
+        const res = await fetch('/console-regions.json');
+        if (res.ok) {
+          const j = (await res.json()) as {
+            centroids: ConsoleCentroid[];
+            figures: Record<string, ConsoleRegionFigures>;
+          };
+          centroids = j.centroids;
+          figures = j.figures;
+        }
+      } catch {
+        /* offline or blocked: search still works off the embedded list */
+      }
+    })();
+
     void locateOnce().then(async (fix) => {
-      if (fix) nearRegion = nearest(fix, data.centroids);
+      if (fix) nearRegion = nearest(fix, centroids);
       /*
        * Load the one region's records the visitor is most likely to test us on.
        *

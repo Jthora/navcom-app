@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+anderson-tx-overture-7ef22712,First Resource Center,meal,"2130 Country Club Rd, Palestine",31.795639038085938,-95.62995147705078,+19037319270,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.facebook.com/firstresourcecenter
+anderson-tx-overture-a81fa054,Rainbow House Food Pantry,meal,"161 S Weldon St, Frankston",32.05036163330078,-95.50484466552734,+19038762235,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+anderson-tx-overture-dbfe3342,Elkhart Food Pantry,shelter,"424 W Parker St, Elkhart",31.621891021728516,-95.58513641357422,+19037645110,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://fbcelkhart.net/

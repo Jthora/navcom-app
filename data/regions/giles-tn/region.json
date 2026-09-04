@@ -1,0 +1,12 @@
+{
+  "slug": "giles-tn",
+  "name": "Giles, TN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "47055",
+  "timezone_derived_from": "state"
+}

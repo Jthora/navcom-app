@@ -1,0 +1,2 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+custer-mt-overture-f64ab9b1,Custer County Food Bank Inc,meal,"15 N 8th St, Miles City",46.40752410888672,-105.84886169433594,+14062343663,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.usda.gov/sites/default/files/documents/ad-475a.pdf

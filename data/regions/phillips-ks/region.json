@@ -1,0 +1,12 @@
+{
+  "slug": "phillips-ks",
+  "name": "Phillips, KS",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "20147",
+  "timezone_derived_from": "state"
+}

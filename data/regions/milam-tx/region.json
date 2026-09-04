@@ -1,0 +1,12 @@
+{
+  "slug": "milam-tx",
+  "name": "Milam, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48331",
+  "timezone_derived_from": "state"
+}

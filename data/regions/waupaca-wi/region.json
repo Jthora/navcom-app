@@ -1,0 +1,12 @@
+{
+  "slug": "waupaca-wi",
+  "name": "Waupaca, WI",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "55135",
+  "timezone_derived_from": "state"
+}

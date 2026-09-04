@@ -1,0 +1,12 @@
+{
+  "slug": "madison-oh",
+  "name": "Madison, OH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "39097",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "san-juan-pr",
+  "name": "San Juan, PR",
+  "country": "US",
+  "timezone": "America/Puerto_Rico",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "72127",
+  "timezone_derived_from": "state"
+}

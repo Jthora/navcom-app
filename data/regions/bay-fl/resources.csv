@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+bay-fl-overture-a9b679b4,House of Hope Outreach Ministry,shelter,"1700 E 11th St, Panama City",30.167558670043945,-85.63719940185547,+18502575239,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.houseofhopepc.com/
+bay-fl-overture-2fe67e02,Food4kidz,meal,"16610 Front Beach Rd, Panama City Beach",30.219242095947266,-85.88282775878906,18502495439,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://food4kidz.org
+bay-fl-overture-e75b20bb,undivided attention,shelter,"1401 Transmitter Rd, Springfield",30.173364639282227,-85.60867309570312,+14482174020,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+bay-fl-overture-2997cad5,Beach Care Services,meal,"6816 Thomas Dr, Panama City Beach",30.15584373474121,-85.77064514160156,+18502353002,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.beachcareservices.org

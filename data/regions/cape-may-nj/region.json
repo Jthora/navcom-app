@@ -1,0 +1,12 @@
+{
+  "slug": "cape-may-nj",
+  "name": "Cape May, NJ",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "34009",
+  "timezone_derived_from": "state"
+}

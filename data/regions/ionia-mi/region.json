@@ -1,0 +1,12 @@
+{
+  "slug": "ionia-mi",
+  "name": "Ionia, MI",
+  "country": "US",
+  "timezone": "America/Detroit",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "26067",
+  "timezone_derived_from": "state"
+}

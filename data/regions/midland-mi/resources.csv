@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+midland-mi-overture-8e935ea1,Midland's Open Door,shelter,"412 Buttles St W, Midland",43.61719512939453,-84.24583435058594,+19898352291,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.midlandopendoor.org
+midland-mi-overture-205689b0,Midland County Food Assistance Network (MCFAN),meal,"503 S Saginaw Rd, Midland",43.62329864501953,-84.22330474853516,+19894869393,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://midlandcountyfan.org/
+midland-mi-overture-11971c4a,Reece Community Endeavor,shelter,"2723 Jefferson Ave, Midland",43.62285614013672,-84.22705841064453,+19898359700,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.reeceendeavor.org/

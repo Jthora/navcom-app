@@ -1,0 +1,12 @@
+{
+  "slug": "monongalia-wv",
+  "name": "Monongalia, WV",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "54061",
+  "timezone_derived_from": "state"
+}

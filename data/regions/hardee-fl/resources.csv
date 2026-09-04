@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+hardee-fl-overture-824e03ed,Hannah's House Complex,shelter,"1919 S Florida Ave, Wauchula",27.512998580932617,-81.8166732788086,+18637735717,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.aofm-hannahshouse.org/
+hardee-fl-overture-1e78292f,"Cutting Edge Ministries, Inc.",meal,"701 N 7th Ave, Wauchula",27.554365158081055,-81.81412506103516,18637732484,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://cedgemin.com

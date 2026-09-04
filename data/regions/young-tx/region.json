@@ -1,0 +1,12 @@
+{
+  "slug": "young-tx",
+  "name": "Young, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48503",
+  "timezone_derived_from": "state"
+}

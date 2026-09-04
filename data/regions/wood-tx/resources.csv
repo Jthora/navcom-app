@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+wood-tx-overture-6879aafd,Kindness Kottage,meal,"316 E Broad St, Mineola",32.6627197265625,-95.48615264892578,+19035699197,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.kindnesskottage.com/
+wood-tx-overture-ddce01de,Alba-Golden Food Pantry,meal,"245 Holley St, Alba",32.793006896972656,-95.63175964355469,+19037652471,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.fbcalba.com/
+wood-tx-overture-74eecbc9,Winnsboro Community Resource Center - Food Pantry,meal,"115 W Broadway St, Winnsboro",32.95731735229492,-95.29122924804688,19033423287,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: wcrcfoodpantry.org
+wood-tx-overture-813a0c9f,Rose Hill Community Food Pantry,meal,"110 Private Rd 6882, West Mineola",32.67522048950195,-95.53575897216797,+19033123256,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.rhcommunityfp.org/
+wood-tx-overture-a56a89bd,Winnsboro Community Resource Center and Food Pantry,meal,"719 W Coke Rd Bldg. 4, Winnsboro",32.9459114074707,-95.30764770507812,+19033423287,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.wcrcfoodpantry.org/

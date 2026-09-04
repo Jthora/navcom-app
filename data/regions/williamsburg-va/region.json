@@ -1,0 +1,12 @@
+{
+  "slug": "williamsburg-va",
+  "name": "Williamsburg, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51830",
+  "timezone_derived_from": "state"
+}

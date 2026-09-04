@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+benton-wa-overture-7fea0f2f,Tri-Cities Food Bank,meal,"420 W Deschutes Ave, Kennewick",46.213226318359375,-119.12300872802734,+15095860688,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://tri-citiesfoodbanks.org/
+benton-wa-overture-0b7a48fe,Tri-Cities Food Banks,meal,"321 Wellsian Way, Richland",46.26814270019531,-119.28536987304688,+15099432795,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.tricitiesfoodbank.org/locations
+benton-wa-overture-06ce8d66,Second Harvest Food Bank,meal,"810 E Chemical Dr, Kennewick",46.20521545410156,-119.10514831542969,+15095853924,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+benton-wa-overture-5ddbd2c0,Tri Cities Food Banks,meal,"712 10th St, Benton City",46.26567077636719,-119.48869323730469,+15095885454,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.tricitiesfoodbank.org
+benton-wa-overture-565b515d,Elijah Family Homes,shelter,"921 S Auburn St, Kennewick",46.198368072509766,-119.11797332763672,+15099436610,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.elijahfamilyhomes.org/

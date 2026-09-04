@@ -1,0 +1,7 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+natrona-wy-overture-ccec6f3a,Food for Thought Kitchens,meal,"420 W 1st St, Casper",42.85014724731445,-106.33016204833984,+13073371703,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.wygoodfoodhub.com/
+natrona-wy-overture-b8469c46,Wyoming Food Bank,meal,"5150 Reserve Drive, Evansville",42.850929260253906,-106.24882507324219,+13072652172,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://wyomingfoodbank.org/
+natrona-wy-overture-ffda2f95,Wyoming Food Bank Of The Rockies,meal,"4976 Paige St, Mills",42.85865020751953,-106.38907623291016,+13072652172,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://wyoming.graceslist.org
+natrona-wy-overture-33db1ac8,Wyoming Food Bank,meal,"315 N Wolcott St, Casper",42.8527946472168,-106.32337951660156,3073373946,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://wyomingfoodbank.org
+natrona-wy-overture-50620bce,Wyoming Rescue Mission WRM,shelter,"230 N Park St, Casper",42.85215759277344,-106.31824493408203,+13072652251,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://wyomission.org/
+natrona-wy-overture-04f7d524,Seton House,shelter,"333 E H St, Casper",42.85946273803711,-106.3221435546875,+13075778026,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.setonhousecasper.org/

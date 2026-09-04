@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+berkeley-sc-overture-600d6022,LifeForce Housing First,shelter,"302 Commons Way, Goose Creek",33.00599670410156,-80.06278991699219,+18436707374,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.lifeforcehousingfirst.com/about-5-1
+berkeley-sc-overture-6e37980c,Blessed Hands Food Pantry,meal,"931 Old Back River Rd, Goose Creek",32.98573684692383,-80.01054382324219,+18437640793,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.blessedhandsfoodpantry.org/
+berkeley-sc-overture-0944ef27,Helping Hands of Goose Creek,meal,"104 Commerce Pl, Goose Creek",33.00712585449219,-80.0418930053711,+18435537132,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.helpinghandsofgoosecreek.org/

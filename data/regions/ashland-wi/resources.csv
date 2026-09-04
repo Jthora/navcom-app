@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+ashland-wi-overture-49d4f928,Mellen's Helping Hands Food Shelf,meal,"Mellen City Hall, 102 Bennett St, Mellen",46.326908111572266,-90.6601791381836,+17156827425,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://thebrickcares.org/
+ashland-wi-overture-1856a22e,New Day Advocacy Center,shelter,"301 Ellis Ave S, Ashland",46.59035873413086,-90.88268280029297,+17156829566,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.ndshelter.org/
+ashland-wi-overture-794da165,Ashland Community Shelter,shelter,"2300 Lake Shore Dr W, Ashland",46.58190155029297,-90.9140396118164,+17152926115,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://northwest-csa.org/

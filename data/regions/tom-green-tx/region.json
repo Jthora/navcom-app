@@ -1,0 +1,12 @@
+{
+  "slug": "tom-green-tx",
+  "name": "Tom Green, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48451",
+  "timezone_derived_from": "state"
+}

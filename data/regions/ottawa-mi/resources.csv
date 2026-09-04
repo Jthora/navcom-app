@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+ottawa-mi-overture-ba59be15,St. Vincent De Paul Center Food Pantry - A Ministry of Saint Frances De Sales,meal,"170 W 13th St, Holland",42.785545349121094,-86.1150894165039,+16163940676,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.stfrancisholland.org/svdp
+ottawa-mi-overture-36dbce70,Gateway Mission Women & Children's Center,shelter,"356 Fairbanks Ave, Holland",42.78422164916992,-86.09376525878906,16163962200,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: www.hopefoundhere.org
+ottawa-mi-overture-48c14c9f,Saint Patrick Food Pantry (love In Action),meal,"920 Fulton Ave, Grand Haven",43.06216049194336,-86.21927642822266,16168420001,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://stpatsgh.org

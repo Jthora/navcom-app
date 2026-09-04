@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+comanche-ok-overture-df36f25e,Cache Housing Authority,shelter,"111 S 7th St, Cache",34.62984848022461,-98.63178253173828,+15804293405,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+comanche-ok-overture-c0e279bd,Great Plains Improvement Foundation,meal,"2 Se Lee Blvd  Ste 200, Lawton",34.594730377197266,-98.38683319091797,15803532364,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://gpif-ok.com
+comanche-ok-overture-4a20ea28,Lawton Food Bank,meal,"1819 SW Sheridan Rd, Lawton",34.589195251464844,-98.4227066040039,15803537994,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://lawtonfoodbank.org
+comanche-ok-overture-ce5298f4,Salvation Army - Lawton - Food Distribution Center,meal,"1306 SW E Ave, Lawton",34.60248947143555,-98.40833282470703,15803551802,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.southernusa.salvationarmy.org

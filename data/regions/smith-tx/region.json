@@ -1,0 +1,12 @@
+{
+  "slug": "smith-tx",
+  "name": "Smith, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48423",
+  "timezone_derived_from": "state"
+}

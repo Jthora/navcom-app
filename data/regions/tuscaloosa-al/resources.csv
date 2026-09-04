@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+tuscaloosa-al-overture-0472d496,West Alabama Food Bank,meal,"401 65th St, Tuscaloosa",33.14942932128906,-87.54200744628906,+12053335353,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.westalabamafoodbank.org/
+tuscaloosa-al-overture-d93f2661,The Little Closet Community Food Pantry,meal,"13222 Fondren Rd, Northport",33.48947525024414,-87.63826751708984,+12052333794,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.thelittlecloset.org/home.html
+tuscaloosa-al-overture-b4e026c6,West Alabama Food Bank,meal,"3160 McFarland Blvd E, Tuscaloosa",33.19816970825195,-87.56195831298828,+12053335353,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.alfoodbanks.org
+tuscaloosa-al-overture-6a928a6c,Table Of Grace,meal,"201 Hargrove Rd, Tuscaloosa",33.18947982788086,-87.53831481933594,12054697811,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

@@ -1,0 +1,12 @@
+{
+  "slug": "unicoi-tn",
+  "name": "Unicoi, TN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "47171",
+  "timezone_derived_from": "state"
+}

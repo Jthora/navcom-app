@@ -1,0 +1,12 @@
+{
+  "slug": "wyoming-pa",
+  "name": "Wyoming, PA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "42131",
+  "timezone_derived_from": "state"
+}

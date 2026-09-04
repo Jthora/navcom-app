@@ -1,0 +1,12 @@
+{
+  "slug": "bulloch-ga",
+  "name": "Bulloch, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13031",
+  "timezone_derived_from": "state"
+}

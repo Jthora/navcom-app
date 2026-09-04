@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+scott-mo-overture-b4b22e84,SEMO Food Bank,meal,"600 State Highway H, Sikeston",36.90620040893555,-89.5380859375,+15734711818,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.semofoodbank.org/
+scott-mo-overture-1e183787,Southeast Missouri Food Bank,meal,"3920 Nash Rd, Scott City",37.24120330810547,-89.572509765625,+15736510400,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.semofoodbank.org/about-us
+scott-mo-overture-931c915b,The Phoenix Veteran's Pantry,meal,"2022 E Malone Ave, Sikeston",36.88738250732422,-89.55303192138672,+15734758112,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+scott-mo-overture-e4f04126,Jesus in Disguise Food Pantry,meal,"115 N Winchester, Benton",37.096073150634766,-89.56336212158203,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+scott-mo-overture-30bc92b2,Daeoc Homeless Shelter,shelter,"820 Anderson St, Sikeston",36.883155822753906,-89.57910919189453,+15734716014,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.daeoc.com/

@@ -1,0 +1,12 @@
+{
+  "slug": "dekalb-ga",
+  "name": "DeKalb, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13089",
+  "timezone_derived_from": "state"
+}

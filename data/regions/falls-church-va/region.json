@@ -1,0 +1,12 @@
+{
+  "slug": "falls-church-va",
+  "name": "Falls Church, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51610",
+  "timezone_derived_from": "state"
+}

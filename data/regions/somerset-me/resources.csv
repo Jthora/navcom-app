@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+somerset-me-overture-02fcaa28,Skowhegan Community Food Cupboard,meal,"16 Cariani St, Skowhegan",44.76205062866211,-69.71489715576172,+12074749249,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.skowhegan.org
+somerset-me-overture-eeec5051,Shelter By Jesus - Food Pantry & Soup Kitchen,meal,"12 McLellan St, Skowhegan",44.75856399536133,-69.72382354736328,12074748833,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: sheltersbyjesus.com
+somerset-me-overture-c3280138,New Hope Women's Shelter,shelter,"111 S Main St, Solon",44.9438362121582,-69.85277557373047,+12076436015,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.newhopeshelter.com/
+somerset-me-overture-d7c98673,Shelters By Jesus Inc.,shelter,"12 McClellan St, Skowhegan",44.758670806884766,-69.72420501708984,+12074748833,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://sheltersbyjesus.com/

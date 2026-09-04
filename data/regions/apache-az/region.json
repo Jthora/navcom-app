@@ -1,0 +1,12 @@
+{
+  "slug": "apache-az",
+  "name": "Apache, AZ",
+  "country": "US",
+  "timezone": "America/Phoenix",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "04001",
+  "timezone_derived_from": "state"
+}

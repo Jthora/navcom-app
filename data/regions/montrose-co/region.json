@@ -1,0 +1,12 @@
+{
+  "slug": "montrose-co",
+  "name": "Montrose, CO",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "08085",
+  "timezone_derived_from": "state"
+}

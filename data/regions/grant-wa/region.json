@@ -1,0 +1,12 @@
+{
+  "slug": "grant-wa",
+  "name": "Grant, WA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "53025",
+  "timezone_derived_from": "state"
+}

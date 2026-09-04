@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+herkimer-ny-overture-3215bfec,Loaves and Fishes Warming Center,shelter,"108 Park Ave, Herkimer",43.02647399902344,-74.987548828125,+13158689073,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.loavesandfisheswc.org/
+herkimer-ny-overture-33a4cafa,Kuyahoora Food Pantry,meal,"8202 NY-28, Newport",43.2004280090332,-75.03265380859375,+13158453663,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.facebook.com/share/19crX2gBZj/
+herkimer-ny-overture-19b61a90,Little Falls Housing Authority,shelter,"Valley View Dr, Little Falls",43.05436706542969,-74.85371398925781,+13158234729,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

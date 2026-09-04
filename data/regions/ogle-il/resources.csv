@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+ogle-il-overture-eecc4bf2,Rochelle Christian Food Pantry,meal,"770 Lincoln Ave, Rochelle",41.92147445678711,-89.06985473632812,+18155626654,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://givebutter.com/LUGmbQ
+ogle-il-overture-fe359752,Polo Lifeline Food & Self Help Project,meal,"113 N Green Ave # A, Polo",41.986637115478516,-89.57632446289062,+18159462552,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+ogle-il-overture-5dfc8bef,Loaves and Fish Food Pantry,meal,"409 W Brayton Rd, Mt Morris",42.04444885253906,-89.44019317626953,+18157344573,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.loavesandfishmm.com/
+ogle-il-overture-4ea6e6d3,Rochelle Rescue Mission,shelter,"805 W Lincoln Ave, Rochelle",41.92169952392578,-89.0703353881836,+18155612731,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.rochellerescuemission.org/

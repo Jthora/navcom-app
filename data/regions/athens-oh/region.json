@@ -1,0 +1,12 @@
+{
+  "slug": "athens-oh",
+  "name": "Athens, OH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "39009",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+stephens-ok-overture-3ff79604,Christians Concerned,meal,"1005 S 9th St, Duncan",34.491275787353516,-97.95977020263672,5802529120,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.ccfpduncan.org/
+stephens-ok-overture-1735fb22,Duncan Rescue Mission,shelter,"102 N 5th St, Duncan",34.50262451171875,-97.95230102539062,+15802554679,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.sundaybreakfast.org

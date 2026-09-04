@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+washington-oh-overture-65b3421a,Greater Marietta Community Food Pantry,meal,"635C SR 821, Complex #1, Building #3, Marietta",39.45794677734375,-81.44969177246094,+17403735741,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.gmcommunityfoodpantry.org/
+washington-oh-overture-d14a94e1,Gospel Mission Food Pantry,meal,"309 Lancaster St, Marietta",39.414817810058594,-81.4628677368164,+17403504417,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://personaldignity.wixsite.com/gospelmissionpantry
+washington-oh-overture-e1783100,Harvest of Hope,meal,"301 Wooster St, Marietta",39.42011260986328,-81.45729064941406,+17407061244,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.wchoh.org/

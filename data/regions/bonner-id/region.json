@@ -1,0 +1,12 @@
+{
+  "slug": "bonner-id",
+  "name": "Bonner, ID",
+  "country": "US",
+  "timezone": "America/Boise",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "16017",
+  "timezone_derived_from": "state"
+}

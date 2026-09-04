@@ -1,0 +1,12 @@
+{
+  "slug": "san-joaquin-ca",
+  "name": "San Joaquin, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06077",
+  "timezone_derived_from": "state"
+}

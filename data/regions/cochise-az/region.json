@@ -1,0 +1,12 @@
+{
+  "slug": "cochise-az",
+  "name": "Cochise, AZ",
+  "country": "US",
+  "timezone": "America/Phoenix",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "04003",
+  "timezone_derived_from": "state"
+}

@@ -1,0 +1,12 @@
+{
+  "slug": "amelia-va",
+  "name": "Amelia, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51007",
+  "timezone_derived_from": "state"
+}

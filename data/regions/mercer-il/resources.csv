@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+mercer-il-overture-1c59b0e5,Churches of Mercer County Food Pantry - Illinois,meal,"1200 S College Ave, Aledo",41.1916389465332,-90.74932861328125,+13095824265,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://mercofoodpantry.org/
+mercer-il-overture-b8b564bd,Sherrard Food Pantry,meal,"203 4th Ave, Sherrard",41.31937789916992,-90.50630187988281,+13092309202,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.facebook.com/Sherrardfoodpantry/
+mercer-il-overture-e680212e,Community Food Pantry,meal,"1407 18th Ave, Viola",41.202213287353516,-90.58503723144531,+13097372995,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.umc.org/find-a-church/church/47726

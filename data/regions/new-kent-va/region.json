@@ -1,0 +1,12 @@
+{
+  "slug": "new-kent-va",
+  "name": "New Kent, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51127",
+  "timezone_derived_from": "state"
+}

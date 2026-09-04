@@ -1,0 +1,12 @@
+{
+  "slug": "la-plata-co",
+  "name": "La Plata, CO",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "08067",
+  "timezone_derived_from": "state"
+}

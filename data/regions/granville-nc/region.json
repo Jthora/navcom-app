@@ -1,0 +1,12 @@
+{
+  "slug": "granville-nc",
+  "name": "Granville, NC",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "37077",
+  "timezone_derived_from": "state"
+}

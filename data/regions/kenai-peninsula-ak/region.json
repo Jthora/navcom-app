@@ -1,0 +1,12 @@
+{
+  "slug": "kenai-peninsula-ak",
+  "name": "Kenai Peninsula, AK",
+  "country": "US",
+  "timezone": "America/Anchorage",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "02122",
+  "timezone_derived_from": "state"
+}

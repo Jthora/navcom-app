@@ -1,0 +1,12 @@
+{
+  "slug": "todd-mn",
+  "name": "Todd, MN",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "27153",
+  "timezone_derived_from": "state"
+}

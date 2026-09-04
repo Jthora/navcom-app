@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+greenwood-sc-overture-6c2e3615,Food Bank Of Greenwood County,meal,"929 Phoenix St, Greenwood",34.183006286621094,-82.15408325195312,+18642271556,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.gwdfoodbank.org
+greenwood-sc-overture-17618005,Food Pantry of Ware Shoals,meal,"2 Mill St, Ware Shoals",34.396663665771484,-82.24500274658203,+18648248434,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://foodpantryofwareshoals.org/
+greenwood-sc-overture-3c1af362,Greenwood Pathway House,shelter,"310 Panola Ave, Greenwood",34.17232131958008,-82.14915466308594,+18642234460,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.gwdpathway.org/
+greenwood-sc-overture-11094fa9,Food Bank of Greenwood County,meal,"222 East Ave, Greenwood",34.183292388916016,-82.1539535522461,+18642271556,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://gwdfoodbank.org/

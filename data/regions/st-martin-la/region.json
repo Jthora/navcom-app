@@ -1,0 +1,12 @@
+{
+  "slug": "st-martin-la",
+  "name": "St. Martin, LA",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "22099",
+  "timezone_derived_from": "state"
+}

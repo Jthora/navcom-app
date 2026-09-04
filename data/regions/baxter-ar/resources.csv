@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+baxter-ar-overture-ce5083d4,Food Bank of North Central Arkansas,meal,"1042 Highland Cir, Mountain Home",36.34781265258789,-92.3690185546875,+18704997565,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.foodbanknca.org/
+baxter-ar-overture-32c78cb8,Sparks Gamma House,shelter,"104 E 10th St, Mountain Home",36.33124923706055,-92.3844223022461,+18704259186,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.paypal.com/donate/?hosted_button_id=SF5ZTPTKHGPZS
+baxter-ar-overture-2e3a324e,Serenity,shelter,"1015 Hwy 62 E W, Mountain Home",36.331424713134766,-92.38739013671875,+18704247576,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://PayPal.me/Serenityinc
+baxter-ar-overture-72dc2f50,BOB DAVIS Veterans Center,shelter,"421 E 9th St, Mountain Home",36.333091735839844,-92.3800048828125,+18702320976,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.bobdavisveteranscenter.com/

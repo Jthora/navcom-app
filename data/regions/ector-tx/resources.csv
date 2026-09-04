@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+ector-tx-overture-d263b058,West Texas Food Bank,meal,"411 S Pagewood Ave, Odessa",31.860994338989258,-102.32296752929688,+14325806333,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://wtxfoodbank.org/
+ector-tx-overture-374e1942,West Texas Food Bank,meal,"1008 E 2nd St, Odessa",31.850595474243164,-102.3591537475586,+14325806333,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.wtxfoodbank.org

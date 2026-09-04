@@ -1,0 +1,12 @@
+{
+  "slug": "lebanon-pa",
+  "name": "Lebanon, PA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "42075",
+  "timezone_derived_from": "state"
+}

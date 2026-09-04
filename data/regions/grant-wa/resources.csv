@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+grant-wa-overture-5e542720,Ephrata Food Bank,meal,"1010 A St SE, Ephrata",47.3107795715332,-119.55486297607422,+15097545772,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://ephrata.org
+grant-wa-overture-78fc41f1,Community Services of Moses Lake,meal,"9299 Beacon Rd NE, Moses Lake",47.150142669677734,-119.2933120727539,+15097658101,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.mlfood.org/
+grant-wa-overture-210a7071,Quincy Community Food Bank,meal,"210 1st Ave SE, Quincy",47.235897064208984,-119.85157775878906,+15097874963,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+grant-wa-overture-bcb64cd2,Warden Food Bank,meal,"301 E 5th St, Warden",46.965553283691406,-119.03739929199219,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

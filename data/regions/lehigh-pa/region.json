@@ -1,0 +1,12 @@
+{
+  "slug": "lehigh-pa",
+  "name": "Lehigh, PA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "42077",
+  "timezone_derived_from": "state"
+}

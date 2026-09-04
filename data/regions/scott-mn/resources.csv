@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+scott-mn-overture-b90d45b9,Jordan Area Food Shelf,meal,"312 Water St, Jordan",44.66514587402344,-93.62537384033203,+19522928759,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.zeffy.com/en-US/donation-form/donate-to-fight-hunger
+scott-mn-overture-cd77c3f2,Peace Center,meal,"313 Columbus Ave N, New Prague",44.546993255615234,-93.57341003417969,+19527584688,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.mayoclinichealthsystem.org/locations/new-prague/the-peace-center
+scott-mn-overture-bf9ee882,Belle Plaine Food Shelf,meal,"128 N Meridian St, Belle Plaine",44.62383270263672,-93.76863098144531,16127519923,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.bpareafoodshelf.org

@@ -1,0 +1,12 @@
+{
+  "slug": "teton-id",
+  "name": "Teton, ID",
+  "country": "US",
+  "timezone": "America/Boise",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "16081",
+  "timezone_derived_from": "state"
+}

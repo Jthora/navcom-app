@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+dodge-wi-overture-70eb70f0,Beaver Dam Loaves and Fishes,meal,"311 W Mackie St, Beaver Dam",43.4603385925293,-88.84040832519531,+19203821518,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://amzn.to/3DXJGu9
+dodge-wi-overture-3011a11e,Lomira Area Food Pantry,meal,"300 Church St, Lomira",43.5877799987793,-88.434814453125,+19202694411,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://lomiraareafoodpantry.com/
+dodge-wi-overture-0607fc46,New Beginnings Homeless Shelter of Dodge County,shelter,"407 Beaver St, Beaver Dam",43.459930419921875,-88.84111785888672,+19208853999,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+dodge-wi-overture-5e70a118,The Gathering Source,meal,"W7115 WI-16 #60, Clyman",43.327884674072266,-88.7471923828125,+19209271702,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://thegatheringsource.org/

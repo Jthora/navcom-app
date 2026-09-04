@@ -1,0 +1,12 @@
+{
+  "slug": "evans-ga",
+  "name": "Evans, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13109",
+  "timezone_derived_from": "state"
+}

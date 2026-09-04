@@ -1,0 +1,12 @@
+{
+  "slug": "pierce-wi",
+  "name": "Pierce, WI",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "55093",
+  "timezone_derived_from": "state"
+}

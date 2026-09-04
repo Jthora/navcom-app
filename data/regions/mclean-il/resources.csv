@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+mclean-il-overture-cbf256be,Midwest Food Bank,meal,"2031 Warehouse Rd, Normal",40.54618835449219,-88.98997497558594,+13096635350,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.midwestfoodbank.org/
+mclean-il-overture-c860624e,The Salvation Army Bloomington Safe Harbor Shelter,shelter,"208 N Oak St, Bloomington",40.4801025390625,-88.99896240234375,13098299476209,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://centralusa.salvationarmy.org/indiana
+mclean-il-overture-01d16b68,Home Sweet Home Ministries,shelter,"303 E Oakland Ave, Bloomington",40.4732666015625,-88.99044799804688,13098287356,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.hshministries.org
+mclean-il-overture-973ce3f8,Mission Mart,shelter,"301 E Oakland Ave, Bloomington",40.47382354736328,-88.99066162109375,3098281530,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.missionmart.org/
+mclean-il-overture-ae8d85a7,School Street Food Pantry,meal,"211 N School St, Normal",40.51215362548828,-88.99004364013672,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://schoolstreetfoodpantry.org/

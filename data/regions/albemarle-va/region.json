@@ -1,0 +1,12 @@
+{
+  "slug": "albemarle-va",
+  "name": "Albemarle, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51003",
+  "timezone_derived_from": "state"
+}

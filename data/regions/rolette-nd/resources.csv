@@ -1,0 +1,2 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+rolette-nd-overture-ff28cb1e,Turtle Mountain Chippewa's Food Pantry,meal,"1023 Chief Little Shell St NE, Belcourt",48.83836364746094,-99.74596405029297,+17013944272,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

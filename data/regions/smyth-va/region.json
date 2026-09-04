@@ -1,0 +1,12 @@
+{
+  "slug": "smyth-va",
+  "name": "Smyth, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51173",
+  "timezone_derived_from": "state"
+}

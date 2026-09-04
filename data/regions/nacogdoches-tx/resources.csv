@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+nacogdoches-tx-overture-02c795a2,Harvest House Food Pantry,meal,"3914 North St, Nacogdoches",31.640846252441406,-94.65303802490234,+19365642471,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.northstreetchurch.com/
+nacogdoches-tx-overture-6a708105,Food for Thought food pantry at SFA,meal,"1936 North St, Nacogdoches",31.62093734741211,-94.6490249633789,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.sfasu.edu/
+nacogdoches-tx-overture-84fbf55b,The Village Nac,shelter,"1188 Co Rd 823, Nacogdoches",31.640554428100586,-94.72783660888672,+19366153899,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.thevillagenac.com/

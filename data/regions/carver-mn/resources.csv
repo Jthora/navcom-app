@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+carver-mn-overture-e69b782c,Southwest Carver County Food Shelf,meal,"102 Main St E, Norwood Young America",44.783504486083984,-93.914794921875,19524671870,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.southwestcarvercountyfoodshelf.com
+carver-mn-overture-08be673e,Hope House,shelter,"3010 W 78th St, Excelsior",44.86747360229492,-93.59777069091797,+16129002077,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.180degrees.org/hope-house
+carver-mn-overture-c94b22a0,Bountiful Basket Food Shelf Chaska,meal,"1600 Bavaria Rd, Chaska",44.80698013305664,-93.61236572265625,+19525560244,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.bountifulbasketfoodshelf.org/

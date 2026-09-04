@@ -1,0 +1,12 @@
+{
+  "slug": "eddy-nm",
+  "name": "Eddy, NM",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "35015",
+  "timezone_derived_from": "state"
+}

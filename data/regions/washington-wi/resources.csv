@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+washington-wi-overture-4bb9fd05,Slinger Community Food Pantry,meal,"119 Kettle Moraine Dr S, Slinger",43.333885192871094,-88.28621673583984,+12626440507,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+washington-wi-overture-c503829e,Full Shelf Food Pantry,meal,"231 Municipal Dr, West Bend",43.423980712890625,-88.1500244140625,+12623350685,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://fullshelffoodpantry.com/about
+washington-wi-overture-34c286e7,Kewaskum Community Pantry,meal,"1504 Reigle Dr, Kewaskum",43.52268981933594,-88.22650909423828,+12626264448,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+washington-wi-overture-894dddf1,Hartford Food Pantry,meal,"24 N Johnson St, Hartford",43.31810760498047,-88.3791732788086,+12626735747,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://hartfordfoodpantry.org/
+washington-wi-overture-845ace42,Slinger Community Food Pantry,meal,"321 E Washington St, Slinger",43.330345153808594,-88.27954864501953,12626440507,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+cabarrus-nc-overture-cd1d6817,HCAM Food Pantry,meal,"7940 Rocky River Rd, Concord",35.30917739868164,-80.59977722167969,+17049578629,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://app.clovergive.com/App/Form/8970fbdd-853c-4878-9705-f861627b8738
+cabarrus-nc-overture-cf565ca3,My Father's House,shelter,"769 Sunderland Rd SW, Concord",35.38964080810547,-80.60276794433594,17049181269,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: mu.com.uy
+cabarrus-nc-overture-7863a2fc,Mt Pleasant Food Ministry,meal,"8615 Park Dr, Mt Pleasant",35.400596618652344,-80.43318939208984,+19806218634,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

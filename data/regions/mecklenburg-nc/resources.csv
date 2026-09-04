@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+mecklenburg-nc-overture-ca9610b8,Angels & Sparrows Community Table,meal,"514 N Old Statesville Rd, Huntersville",35.41962432861328,-80.84075927734375,7049180122,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://angelsandsparrows.org/
+mecklenburg-nc-overture-96e5e864,Hope House Foundation,shelter,"15604 Northcross Dr, Huntersville",35.42976760864258,-80.8737564086914,+17049921902,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://hopehousefoundation.org/

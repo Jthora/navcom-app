@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+muhlenberg-ky-overture-aa1b658c,Hope 2 All Food Pantry,meal,"307 W Mose Rager Blvd, Drakesboro",37.21683883666992,-87.05096435546875,+12704765190,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.foodbanks.net
+muhlenberg-ky-overture-10e89fbc,Job's Table Food Pantry,meal,"804 Federal St, Central City",37.31193542480469,-87.12970733642578,+12705438345,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://centralcitycog.org/jobs-table-food-pantry/

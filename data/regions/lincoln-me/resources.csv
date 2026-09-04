@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+lincoln-me-overture-c63deebe,Whitefield Food Pantry,meal,"150 Grand Army Rd, Whitefield",44.222564697265625,-69.60191345214844,+12075497014,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://whitefieldfoodpantry.site123.me/
+lincoln-me-overture-b9eb1930,Boothbay V.E.T.S inc,shelter,"752 Wiscasset Rd, Boothbay",43.89312744140625,-69.62794494628906,+12072429310,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://boothbay-vets.com/
+lincoln-me-overture-38e20fb8,New Harbor Food Pantry,meal,"8 Southside Rd, New Harbor",43.87342071533203,-69.50000762939453,+12075292501,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+lincoln-me-overture-84f8ac54,Jefferson Area Community Food Pantry,meal,"72 Gardiner Rd, Jefferson",44.19969177246094,-69.49185180664062,+12073151134,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+lincoln-me-overture-71bda1e9,Waldoboro Food Pantry,meal,"124 Friendship Rd, Waldoboro",44.09233474731445,-69.37318420410156,+12075423855,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://Waldoborofoodpantry.org/

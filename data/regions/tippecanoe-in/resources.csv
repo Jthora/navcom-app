@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+tippecanoe-in-overture-109a53dd,Group Homes For Children,shelter,"3307 Longlois Dr, Lafayette",40.43294143676758,-86.86283111572266,+17654477410,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.grouphomesforchildren.org/
+tippecanoe-in-overture-ae0f34ad,Harvest Chapel,meal,"1019 Wabash Ave, Lafayette",40.4085578918457,-86.90033721923828,7654298453,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+tippecanoe-in-overture-bcf5cb70,LUM Emergency Shelter,shelter,"525 N 4th St, Lafayette",40.42247009277344,-86.89293670654297,+17652694132,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://lafayetteurbanministry.org
+tippecanoe-in-overture-3100066d,Community Cancer Network - Food Distribution Center,meal,"2550 Greenbush St, Lafayette",40.43256759643555,-86.86837768554688,17654465464,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.communitycancernetwork.net

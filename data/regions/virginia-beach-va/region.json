@@ -1,0 +1,12 @@
+{
+  "slug": "virginia-beach-va",
+  "name": "Virginia Beach, VA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "51810",
+  "timezone_derived_from": "state"
+}

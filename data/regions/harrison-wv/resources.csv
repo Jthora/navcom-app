@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+harrison-wv-overture-21e32270,Clarksburg Mustard Seed,meal,"444 E Pike St, Clarksburg",39.279747009277344,-80.32600402832031,+13046230859,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.clarksburgmustardseed.org/
+harrison-wv-overture-cfe45a5e,Wv Coalition To End Homelessness,shelter,"110 Cambridge Pl, Bridgeport",39.28588104248047,-80.27063751220703,13048429522,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://wvceh.org
+harrison-wv-overture-3ca756da,The Lord's Pantry,meal,"77 Church Ct, Shinnston",39.395687103271484,-80.2987060546875,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://thelordspantry.org

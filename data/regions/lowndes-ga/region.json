@@ -1,0 +1,12 @@
+{
+  "slug": "lowndes-ga",
+  "name": "Lowndes, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13185",
+  "timezone_derived_from": "state"
+}

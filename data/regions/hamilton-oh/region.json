@@ -1,0 +1,12 @@
+{
+  "slug": "hamilton-oh",
+  "name": "Hamilton, OH",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "39061",
+  "timezone_derived_from": "state"
+}

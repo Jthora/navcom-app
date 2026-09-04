@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+morgan-al-overture-4588c0f5,Carpenters Cabinet,meal,"44 Railroad Ave, Falkville",34.36500930786133,-86.90664672851562,+12567845311,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.thecarpenterscabinet.org
+morgan-al-overture-d9147da0,Faith House,meal,"210 Hickory St SE, Hartselle",34.4433479309082,-86.93102264404297,+12567511347,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.fumchartselle.org/
+morgan-al-overture-34345ff1,Hartselle Housing Authority,shelter,"906 Roberts Ct, Hartselle",34.4341926574707,-86.92761993408203,+12565028444,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+morgan-al-overture-a9321a19,Feeding Families of Alabama,meal,"373 Mt Tabor Rd, Hartselle",34.43812942504883,-86.86750793457031,+12567545020,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.feedingfamiliesal.org/
+morgan-al-overture-b092a195,Community Action Partnership of North Alabama,meal,"1510 4th Ave SE, Decatur",34.583431243896484,-86.98286437988281,+12563557843,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.capna.org/

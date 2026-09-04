@@ -1,0 +1,12 @@
+{
+  "slug": "hancock-ms",
+  "name": "Hancock, MS",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "28045",
+  "timezone_derived_from": "state"
+}

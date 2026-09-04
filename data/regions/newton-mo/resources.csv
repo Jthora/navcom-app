@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+newton-mo-overture-57cfc461,Lafayette House,shelter,"118 W Spring St, Neosho",36.8697624206543,-94.36917877197266,+14174516106,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.lafayettehouse.org
+newton-mo-overture-24cb9b5d,Newton County Senior Citizens Nutrition Site,meal,"1017 Carl Sweeney Pkwy, Neosho",36.85719299316406,-94.35343170166016,+14174510981,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://neoshomo.org
+newton-mo-overture-fc205ae7,Seneca Food Pantry,meal,"1316 Cherokee Ave, Seneca",36.844261169433594,-94.61088562011719,+14177764650,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.senecafoodpantry.com
+newton-mo-overture-32bd0647,White Cross Food Pantry,meal,"5505 Gateway Dr, Joplin",36.98982620239258,-94.46235656738281,+14177589712,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.whitecrossfoodpantry.com/

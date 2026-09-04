@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+cherokee-ga-overture-a2ccdc62,MUST - Ministries United for Service and Training Food Pantry,meal,"111 Brown Industrial Pkwy, Canton",34.237457275390625,-84.4700927734375,+17704795397,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.mustministries.org/
+cherokee-ga-overture-bfa8de0a,Never Alone Food Pantry,meal,"291 Rope Mill Rd, Woodstock",34.11565017700195,-84.52908325195312,+14703024055,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://bit.ly/m/NeverAlone
+cherokee-ga-overture-157f8d2c,Acorn Food Group,meal,"1665 Ball Ground Hwy, Canton",34.25969696044922,-84.46366119384766,,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://newsroom.bojangles.com
+cherokee-ga-overture-7b4ca336,The Salvation Army,shelter,"251 Marietta Rd, Canton",34.23073959350586,-84.4915542602539,+17707204316,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.salvationarmyusa.org/
+cherokee-ga-overture-2a5927aa,SERV International,meal,"3145 Marietta Hwy, Canton",34.20508575439453,-84.50557708740234,+17705161108,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.servone.org/

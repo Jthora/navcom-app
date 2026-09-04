@@ -1,0 +1,12 @@
+{
+  "slug": "cleveland-ok",
+  "name": "Cleveland, OK",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "40027",
+  "timezone_derived_from": "state"
+}

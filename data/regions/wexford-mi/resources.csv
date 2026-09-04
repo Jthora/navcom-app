@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+wexford-mi-overture-a5345d50,King's Storehouse Food Pantry,meal,"125 Stimson St, Cadillac",44.247825622558594,-85.39691162109375,+12317755629,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://firstbaptistcadillac.org/
+wexford-mi-overture-a3514e7f,New Hope Center,shelter,"1125 Lincoln St, Cadillac",44.254974365234375,-85.37955474853516,+12314682022,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://linktr.ee/newhopeshelter
+wexford-mi-overture-ae235a0d,The Buckley Food Pantry,meal,"205 E Wexford Ave, Buckley",44.5045280456543,-85.67540740966797,+12316334720,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://thetabchurch.com/
+wexford-mi-overture-4e7206b5,Oasis Family Resource Center,shelter,"118 S Mitchell St, Cadillac",44.24961853027344,-85.3990707397461,+12317757233,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.cadillacoasis-frc.org/

@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+sagadahoc-me-overture-f2086a77,Salvation Army - Food Pantry,meal,"25 Congress Ave, Bath",43.909698486328125,-69.83379364013672,12074433611,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://nne.salvationarmy.org/portland-me
+sagadahoc-me-overture-0fff55a9,Bath Area Food Bank,meal,"807 Middle St, Bath",43.9134521484375,-69.81775665283203,+12074420754,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://Bathfoodbank.org/
+sagadahoc-me-overture-c4a88e91,"Dogwill, Inc.",meal,"1328 Washington St, Bath",43.93049621582031,-69.81455993652344,+12075221018,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+sagadahoc-me-overture-6837f176,Bowdoinham Food Pantry,meal,"9 Main St, Bowdoinham",44.008609771728516,-69.89533996582031,+12077517779,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://bowdoinhamfoodpantry.org/
+sagadahoc-me-overture-ffcb6860,Richmond Area Food Pantry,meal,"15 Spruce St, Richmond",44.08445358276367,-69.80441284179688,+12073806098,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.richmondareafoodpantry.org/

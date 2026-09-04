@@ -1,0 +1,12 @@
+{
+  "slug": "hardin-ky",
+  "name": "Hardin, KY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "21093",
+  "timezone_derived_from": "state"
+}

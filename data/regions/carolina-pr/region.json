@@ -1,0 +1,12 @@
+{
+  "slug": "carolina-pr",
+  "name": "Carolina, PR",
+  "country": "US",
+  "timezone": "America/Puerto_Rico",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "72031",
+  "timezone_derived_from": "state"
+}

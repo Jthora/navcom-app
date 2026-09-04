@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+franklin-ky-overture-3a1d035c,Fresh Start Frankfort,shelter,"303 E 3rd St, Frankfort",38.19306182861328,-84.87110137939453,+15023522843,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.freshstartfrankfort.org/
+franklin-ky-overture-ba61b4e4,Simon House,shelter,"208 W Campbell St, Frankfort",38.191158294677734,-84.87699890136719,+15022232138,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.simonhouseky.org/

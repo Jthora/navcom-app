@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+bristol-ri-overture-11404cc7,East Bay Food Pantry,meal,"150 Franklin St, Bristol",41.67451477050781,-71.27204895019531,+14013969490,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.eastbayfoodpantry.org/
+bristol-ri-overture-07a1fe9d,St. Mary of the Bay Food Pantry,meal,"645 Main St, Warren",41.725975036621094,-71.2818603515625,+14012457000,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://stmaryofthebay.org/smb-serves/
+bristol-ri-overture-9900703e,Tapln,meal,"281 County Rd, Barrington",41.74056625366211,-71.30738067626953,+14012471444,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://tapinri.org/

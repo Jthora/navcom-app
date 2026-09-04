@@ -1,0 +1,12 @@
+{
+  "slug": "kings-ca",
+  "name": "Kings, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06031",
+  "timezone_derived_from": "state"
+}

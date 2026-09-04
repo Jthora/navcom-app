@@ -1,0 +1,12 @@
+{
+  "slug": "blanco-tx",
+  "name": "Blanco, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48031",
+  "timezone_derived_from": "state"
+}

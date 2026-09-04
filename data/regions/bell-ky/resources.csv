@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+bell-ky-overture-b1d2db0d,Cooperative Christian Ministry - CCM,meal,"2124 Cumberland Ave, Middlesboro",36.60713195800781,-83.7168197631836,+16062488022,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://www.paypal.com/donate/?hosted_button_id=5A8LYBGP5RPSG
+bell-ky-overture-871cc020,Safe Haven Shelter - Battered Women and Children's Center,shelter,"117 S Pine St, Pineville",36.76138687133789,-83.69544219970703,+16063379736,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

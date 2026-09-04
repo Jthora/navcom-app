@@ -1,0 +1,12 @@
+{
+  "slug": "grand-traverse-mi",
+  "name": "Grand Traverse, MI",
+  "country": "US",
+  "timezone": "America/Detroit",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "26055",
+  "timezone_derived_from": "state"
+}

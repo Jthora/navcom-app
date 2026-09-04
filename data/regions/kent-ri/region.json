@@ -1,0 +1,12 @@
+{
+  "slug": "kent-ri",
+  "name": "Kent, RI",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "44003",
+  "timezone_derived_from": "state"
+}

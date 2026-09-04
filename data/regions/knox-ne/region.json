@@ -1,0 +1,12 @@
+{
+  "slug": "knox-ne",
+  "name": "Knox, NE",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "31107",
+  "timezone_derived_from": "state"
+}

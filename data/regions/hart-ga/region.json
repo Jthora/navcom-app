@@ -1,0 +1,12 @@
+{
+  "slug": "hart-ga",
+  "name": "Hart, GA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "13147",
+  "timezone_derived_from": "state"
+}

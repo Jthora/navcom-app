@@ -1,0 +1,12 @@
+{
+  "slug": "bradford-pa",
+  "name": "Bradford, PA",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "42015",
+  "timezone_derived_from": "state"
+}

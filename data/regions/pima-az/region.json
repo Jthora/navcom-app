@@ -1,0 +1,12 @@
+{
+  "slug": "pima-az",
+  "name": "Pima, AZ",
+  "country": "US",
+  "timezone": "America/Phoenix",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "04019",
+  "timezone_derived_from": "state"
+}

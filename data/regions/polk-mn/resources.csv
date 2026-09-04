@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+polk-mn-overture-5bafa923,Northlands Rescue Mission,shelter,"420 Division Ave, Grand Forks",47.92167282104492,-97.02839660644531,+17017726600,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.northlandsrescuemission.org/
+polk-mn-overture-837861a3,East Grand Forks Food Shelf,meal,"1715 3rd Ave NW, East Grand Forks",47.9425163269043,-97.02320861816406,+12187738083,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://egffs.org/
+polk-mn-overture-7ef4c520,Grace Community Food Shelf,meal,"332 Vance Ave S, Erskine",47.66435623168945,-96.01223754882812,+12186872250,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+polk-mn-overture-b6d99072,North Country Food Bank,meal,"1011 11th Ave NE, East Grand Forks",47.93536376953125,-96.99928283691406,+12183997356,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.northcountryfoodbank.org/

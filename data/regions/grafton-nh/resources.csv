@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+grafton-nh-overture-2ef03bb3,Bridge House,shelter,"260 Highland St, Plymouth",43.76752471923828,-71.71480560302734,+16035367631,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.tbhshelter.org/
+grafton-nh-overture-dd22f31e,Lincoln-Woodstock Food Pantry,meal,"194 Pollard Rd, Lincoln",44.0457649230957,-71.67513275146484,+16037458958,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.lincolnnh.org/
+grafton-nh-overture-10703197,Plymouth Area Community Closet,meal,"5 Main St, Plymouth",43.75289535522461,-71.68743133544922,16035361101,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://paccnh.org
+grafton-nh-overture-6dc99d29,Good Shepherd Ecumenical Food Pantry,meal,"65 S Court St, Haverhill",44.147464752197266,-72.0392074584961,+16032430327,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

@@ -1,0 +1,4 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+williams-oh-overture-a172c28c,Open Hands Caring Hearts,meal,"14451 County Road C, Bryan",41.456443786621094,-84.5440673828125,+14196365036,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://ohchfoodpantry.com/
+williams-oh-overture-54593220,Sanctuary Homeless Shelter,shelter,"210 S Main St, Bryan",41.4729118347168,-84.5511703491211,+14196362460,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://sanctuaryhomeless.org/
+williams-oh-overture-ea75a856,Helping Hands Food Pantry,meal,"309 W Washington St, Montpelier",41.58570098876953,-84.61004638671875,+14194855575,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

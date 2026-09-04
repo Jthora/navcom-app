@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+craighead-ar-overture-979202cd,Food Bank of Northeast Arkansas,meal,"3414 1st Pl, Jonesboro",35.803199768066406,-90.69741821289062,8709323663,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.foodbankofnea.org/
+craighead-ar-overture-7c727bb7,Food Bank of Northeast Arkansas,meal,"3414 One Pl, Jonesboro",35.80385208129883,-90.64800262451172,+18709323663,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.foodbankofnea.org/
+craighead-ar-overture-4c96d7e5,BUMC Food Bank,meal,"301 W Matthews St, Brookland",35.901607513427734,-90.58441162109375,+18702153083,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://brooklandmethodist.org/food-pantry
+craighead-ar-overture-74c6d29b,Souled Out Ministries,shelter,"Co Rd 475, Jonesboro",35.72109603881836,-90.67681884765625,+18705653291,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://Souled-Out-Ministries.com/
+craighead-ar-overture-4a525ea6,Deliverance Family Worship,meal,"406 Scott St, Jonesboro",35.84977340698242,-90.68628692626953,+18709315453,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

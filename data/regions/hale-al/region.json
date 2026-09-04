@@ -1,0 +1,12 @@
+{
+  "slug": "hale-al",
+  "name": "Hale, AL",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "01065",
+  "timezone_derived_from": "state"
+}

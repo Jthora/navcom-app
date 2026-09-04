@@ -1,0 +1,12 @@
+{
+  "slug": "niagara-ny",
+  "name": "Niagara, NY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "36063",
+  "timezone_derived_from": "state"
+}

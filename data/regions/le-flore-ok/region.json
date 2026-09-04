@@ -1,0 +1,12 @@
+{
+  "slug": "le-flore-ok",
+  "name": "Le Flore, OK",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "40079",
+  "timezone_derived_from": "state"
+}

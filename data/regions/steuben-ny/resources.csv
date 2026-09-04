@@ -1,0 +1,5 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+steuben-ny-overture-8579527e,Painted Post Food Pantry,meal,"201 N Hamilton St, Painted Post",42.15914535522461,-77.0919189453125,+16079621455,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+steuben-ny-overture-a82c9959,Corning Community Food Pantry,meal,"11715 East Corning Rd, Corning",42.120853424072266,-77.00296020507812,+16079626750,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.corningfoodpantry.com/
+steuben-ny-overture-8f8696bd,Loaves and Fishes Food Pantry,meal,"78 Shethar St, Hammondsport",42.40877151489258,-77.2258071899414,+16075422445,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+steuben-ny-overture-0551c632,Pantry of Angels,meal,"682 County Rd 115, Lindley",42.02936935424805,-77.13899230957031,+16073686708,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

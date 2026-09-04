@@ -1,0 +1,2 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+giles-va-overture-9e84535b,Hope House - The Giles County Homeless Shelter,shelter,"138 Virginia Ave, Narrows",37.33729934692383,-80.80821990966797,+15409213843,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://gilescounty.org/hopehouse.html

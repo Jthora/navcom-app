@@ -1,0 +1,12 @@
+{
+  "slug": "hardeman-tx",
+  "name": "Hardeman, TX",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "48197",
+  "timezone_derived_from": "state"
+}

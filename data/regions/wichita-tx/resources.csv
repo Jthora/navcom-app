@@ -1,0 +1,6 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+wichita-tx-overture-a5690c36,Base Camp Lindsey,shelter,"1908 6th St, Wichita Falls",33.90826416015625,-98.5091552734375,+19406133172,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://basecamplindsey.org/
+wichita-tx-overture-ed4d576c,Wichita Falls Faith Mission,shelter,"1300 Travis St, Wichita Falls",33.90531921386719,-98.4901351928711,+19407235663,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://faithmissionwf.org/
+wichita-tx-overture-8c17b329,Faith Refuge Shelter for Women and Children,shelter,"710 E Hatton Rd, Wichita Falls",33.86800765991211,-98.47288513183594,+19403224673,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://www.faithmissionwf.org
+wichita-tx-overture-9688e704,North Texas Pantry,meal,"903 Tyler St, Wichita Falls",33.903446197509766,-98.51333618164062,+19407237151,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+wichita-tx-overture-52352958,Wichita Falls Area Food Bank,meal,"1230 Midwestern Pkwy, Wichita Falls",33.87737274169922,-98.48793029785156,+19407662322,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: http://wfafb.org/cc

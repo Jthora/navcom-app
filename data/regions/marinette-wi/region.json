@@ -1,0 +1,12 @@
+{
+  "slug": "marinette-wi",
+  "name": "Marinette, WI",
+  "country": "US",
+  "timezone": "America/Chicago",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "55075",
+  "timezone_derived_from": "state"
+}

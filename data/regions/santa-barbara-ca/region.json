@@ -1,0 +1,12 @@
+{
+  "slug": "santa-barbara-ca",
+  "name": "Santa Barbara, CA",
+  "country": "US",
+  "timezone": "America/Los_Angeles",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "06083",
+  "timezone_derived_from": "state"
+}

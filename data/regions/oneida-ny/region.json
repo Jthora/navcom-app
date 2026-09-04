@@ -1,0 +1,12 @@
+{
+  "slug": "oneida-ny",
+  "name": "Oneida, NY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "36065",
+  "timezone_derived_from": "state"
+}

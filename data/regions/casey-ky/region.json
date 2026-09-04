@@ -1,0 +1,12 @@
+{
+  "slug": "casey-ky",
+  "name": "Casey, KY",
+  "country": "US",
+  "timezone": "America/New_York",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "21045",
+  "timezone_derived_from": "state"
+}

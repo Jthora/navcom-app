@@ -1,0 +1,12 @@
+{
+  "slug": "pueblo-co",
+  "name": "Pueblo, CO",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "08101",
+  "timezone_derived_from": "state"
+}

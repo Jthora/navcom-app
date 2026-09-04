@@ -1,0 +1,3 @@
+id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+shoshone-id-overture-e3518c0d,Shoshone County Food Bank,meal,"311 S Main St, Kellogg",47.53426742553711,-116.12226867675781,12087834901,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/
+shoshone-id-overture-fa8b4c6e,The Wallace Food Bank,meal,"215 4th St, Wallace",47.47338104248047,-115.92672729492188,+15099035989,,,,,,,,,,,,,,,,,,2026-09-03,,website,ok,Source: https://overturemaps.org/

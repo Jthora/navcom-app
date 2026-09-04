@@ -1,0 +1,12 @@
+{
+  "slug": "chaffee-co",
+  "name": "Chaffee, CO",
+  "country": "US",
+  "timezone": "America/Denver",
+  "languages": [
+    "en"
+  ],
+  "status": "seeded",
+  "fips": "08015",
+  "timezone_derived_from": "state"
+}
