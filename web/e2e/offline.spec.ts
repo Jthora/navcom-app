@@ -65,7 +65,10 @@ test('the cached directory is readable with no signal', async ({ page, context }
   // navigation that fetches this page's data and never its HTML. The page asks the worker
   // to save the document; this waits for that to land before cutting the network, because
   // testing the race would just make the test flaky rather than the app correct.
-  await page.getByRole('link', { name: /st\. louis/i }).click();
+  // Anchored on "metro". Going national added `st-louis-mn` ("St. Louis, MN") and
+  // `st-louis-mo` ("St. Louis, MO"), so /st\. louis/i began matching three links and failed
+  // on strict mode. Only the seeded metro this test is about carries the word.
+  await page.getByRole('link', { name: /st\. louis metro/i }).click();
   await expect(page.locator('[data-record]').first()).toBeVisible();
   await page.waitForFunction(async () => {
     for (const name of await caches.keys()) {

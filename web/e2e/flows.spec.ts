@@ -80,7 +80,10 @@ test('an export carries the operator and nobody else', async ({ page }) => {
 
 test('the directory is browsable and every field says what it is', async ({ page }) => {
   await open(page, '/terminal/directory/');
-  await page.getByRole('link', { name: /st\. louis/i }).click();
+  // Anchored on "metro". Going national added `st-louis-mn` ("St. Louis, MN") and
+  // `st-louis-mo` ("St. Louis, MO"), so /st\. louis/i began matching three links and failed
+  // on strict mode. Only the seeded metro this test is about carries the word.
+  await page.getByRole('link', { name: /st\. louis metro/i }).click();
 
   await expect(page.locator('[data-record]').first()).toBeVisible();
 

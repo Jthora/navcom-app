@@ -134,8 +134,22 @@
 
   /** For when geolocation is denied or absent and nothing has been typed yet. */
   let manualRegion = $state('');
+  /*
+   * From the embedded list, not from `figures`.
+   *
+   * This derived from `figures`, which arrives by `fetch` — so the picker shipped in the
+   * prerendered HTML containing nothing but "Not now", under a label asking the reader to
+   * *"pick a region"*. It filled in a moment later if the fetch succeeded, and never if it
+   * did not. A control offered to somebody with no options in it is the failure this project
+   * names after `panicWipe`, introduced here while fixing a budget problem: moving the
+   * figures out of the page was right, and this rode along with it.
+   *
+   * `regionList` is the [slug, name] pairs that stay embedded precisely so search works with
+   * nothing fetched, and slug and name are all a picker needs. Records and freshness still
+   * come from `figures` when they arrive; choosing a region does not wait on them.
+   */
   const regionOptions = $derived(
-    Object.values(figures).sort((a, b) => a.name.localeCompare(b.name))
+    [...regionList].sort((a, b) => a.name.localeCompare(b.name))
   );
 
   /**

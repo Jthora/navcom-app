@@ -44,7 +44,10 @@ test.describe('with nothing at all', () => {
   test('the directory works before anything is configured', async ({ page }) => {
     await seedDevice(page);
     await open(page, '/terminal/directory/');
-    await expect(page.getByRole('link', { name: /st\. louis/i })).toBeVisible();
+    // Anchored on "metro". Going national added `st-louis-mn` ("St. Louis, MN") and
+    // `st-louis-mo` ("St. Louis, MO"), so /st\. louis/i began matching three links and failed
+    // on strict mode. Only the seeded metro this test is about carries the word.
+    await expect(page.getByRole('link', { name: /st\. louis metro/i })).toBeVisible();
   });
 });
 
