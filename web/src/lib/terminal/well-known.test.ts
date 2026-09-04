@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { REFUSALS, PERMITTED, BROADCAST } from '@navcom/core';
 // Plain .mjs, deliberately: this is the file node runs during a build, long after the
 // TypeScript is gone, and testing the thing that actually runs is the point.
-import { refusalsDocument, healthDocument, metroFigures, nodeIdentity } from '../../../scripts/well-known.mjs';
+import { refusalsDocument, healthDocument, metroFigures, nodeIdentity, intelDocument } from '../../../scripts/well-known.mjs';
 
 /**
  * The descriptor cannot drift.
@@ -173,5 +173,51 @@ describe('the node identity a peer verifies instead of trusting a message', () =
     // And exactly one thing it does sign — a key with an open-ended scope is one nobody can audit.
     expect(identity.signs).toHaveLength(1);
     expect(identity.signs[0].kind).toBe(30078);
+  });
+});
+
+describe('the intel declaration', () => {
+  const doc = () => intelDocument();
+  const kindsSrc = () =>
+    readFileSync(new URL('../../../../packages/core/src/events/kinds.ts', import.meta.url), 'utf8');
+
+  it('does not claim a kind somebody else already allocated', () => {
+    // NavCom is the authority for intel on the grid, which makes an accidental collision
+    // *our* fault rather than a negotiation. Every allocated kind is in one file; 1911 must
+    // not be among them until it is this one.
+    const allocated = [...kindsSrc().matchAll(/KIND_(\w+)\s*=\s*(\d+)/g)]
+      .map(([, name, n]) => ({ name, kind: Number(n) }));
+    const claimed = doc().defines.map((d) => d.kind);
+    for (const k of claimed) {
+      const clash = allocated.find((a) => a.kind === k && a.name !== 'OBSERVATION');
+      expect(clash, `kind ${k} is already KIND_${clash?.name}`).toBeUndefined();
+    }
+  });
+
+  it('says it is unimplemented for exactly as long as it is', () => {
+    // The failure this exists to prevent: a published contract telling Starcom we emit
+    // something we do not, or still calling itself a plan after it ships. The status page
+    // already drifted this way once, which is why it is derived rather than written.
+    const declared = /KIND_OBSERVATION\s*=\s*1911/.test(kindsSrc());
+    expect(doc().status.startsWith(declared ? 'implemented' : 'specified, not implemented')).toBe(true);
+  });
+
+  it('publishes a vocabulary read out of the spec, not retyped', () => {
+    // Parsed from raw-intel.md. If the fenced block is renamed or reshaped this empties out,
+    // and an empty vocabulary would tell a consumer every tag is unknown.
+    const tags = Object.values(doc().vocabulary.tags).flat();
+    expect(tags.length).toBeGreaterThan(0);
+    expect(tags).toContain('nothing_observed');
+  });
+
+  it('never promises a field the schema forbids', () => {
+    const d = doc();
+    const forbidden = d.never.join(' ').toLowerCase();
+    expect(forbidden).toContain('descriptor');
+    expect(forbidden).toContain('free text');
+    // The required list is the whole payload. A free-text field appearing here would be the
+    // single change that undoes both hard prohibitions at once.
+    expect(d.defines[0].required).not.toContain('note');
+    expect(d.defines[0].required).not.toContain('description');
   });
 });

@@ -1,5 +1,23 @@
 # Raw Intel — the observation object
 
+**Version 0.1.0. NavCom is the authority for this object.**
+
+Starcom *refines* raw intel; it does not mint it. So the shape of what enters the grid is
+defined here and implemented downstream — a consumer conforms to this document rather than
+negotiating with it, and changes are announced by version. That is not a claim of seniority.
+It follows from where the object is born: only the application with somebody standing in the
+actual place can say what being there produced.
+
+A machine-readable form is published at **`/.well-known/navcom-intel.json`**, so conformance
+never requires reading prose. It carries the kind, the required fields, the vocabulary, the
+obligations on a consumer, and the list of things that will never appear. Its vocabulary and
+its status are *derived* — read out of this file and out of `kinds.ts` rather than retyped —
+because a declaration maintained by hand is a declaration that drifts.
+
+**Nothing emits kind `1911` yet**, and the declaration says so in those words until something
+does. A published contract claiming a capability that does not exist is the failure this
+project has already had once, on the status page.
+
 **Normative for the object.** Deliberately *not* in [`docs/spec/`](../spec/README.md): that
 set is scoped to the MVP loop plus the safety-critical ladder, and its README is right that
 "specs written before the loop is proven are guesses in a more confident format." This

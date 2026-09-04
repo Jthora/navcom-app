@@ -285,6 +285,83 @@ function nodeIdentity(env = process.env) {
   };
 }
 
+/**
+ * What NavCom defines for the intelligence grid, and what a consumer must do about it.
+ *
+ * NavCom is the authority for intel produced onto the grid — Starcom refines raw intel and
+ * does not mint it, so the shape is declared here and implemented downstream rather than
+ * negotiated. This file exists so conformance does not require reading prose.
+ *
+ * The vocabulary and the status are read out of the spec and the code rather than retyped,
+ * because a declaration maintained by hand is a declaration that drifts. `status` in
+ * particular may not say "implemented" while nothing implements it, and may not go on saying
+ * "specified" once something does.
+ */
+export function intelDocument(root = ROOT) {
+  const spec = readFileSync(join(root, 'docs/product/raw-intel.md'), 'utf8');
+  const kinds = readFileSync(join(root, 'packages/core/src/events/kinds.ts'), 'utf8');
+
+  const block = spec.match(/```\n([\s\S]*?)```/)?.[1] ?? '';
+  /** @type {Record<string, string[]>} */
+  const vocabulary = {};
+  for (const line of block.split('\n')) {
+    const m = line.match(/^(\w+)\s+(.+)$/);
+    if (m) vocabulary[m[1]] = m[2].split('\u00b7').map((t) => t.trim()).filter(Boolean);
+  }
+
+  const emitted = /KIND_OBSERVATION\s*=\s*1911/.test(kinds);
+
+  return {
+    spec: 'navcom-intel',
+    version: '0.1.0',
+    document: 'https://navcom.app/docs/product/raw-intel/',
+    /* The sentence most likely to be assumed away: this is not a proposal to Starcom. */
+    authority:
+      'NavCom defines what raw intel is on this grid. A consumer conforms to this document; ' +
+      'it does not negotiate with it. Changes are announced here, by version.',
+    status: emitted
+      ? 'implemented — the observation kind is declared in packages/core'
+      : 'specified, not implemented — nothing emits kind 1911 yet, and no observation exists',
+    defines: [
+      {
+        kind: 1911,
+        name: 'observation',
+        range: 'regular (1000-9999) — stored, immutable, superseded but never edited',
+        signed_by: 'contact key, or anonymous. Never the operational key',
+        required: ['anchor', 'observed_at', 'tags', 'method', 'callsign', 'precision'],
+        method: ['saw', 'told', 'inferred'],
+        precision: ['area', 'exact']
+      }
+    ],
+    /** Obligations on whoever consumes this. Each is a way the exchange stops compounding. */
+    requires: [
+      'Preserve the chain: a refined report cites the event ids it was built from, so a third party can walk it back without asking either of us',
+      'Grade downstream. NavCom carries method, which is a fact; it never grades its own operators, which would be a reputation system by another name',
+      'Treat an unknown tag as unknown. Never infer meaning from a tag absent from this vocabulary',
+      'Expect no free text. There is none, by construction — a parser hoping for some is a parser waiting for a descriptor',
+      'F6 is a valid grade. There is no quality bar at submission, so low-confidence intel is the normal case and not an error'
+    ],
+    /** What will never appear, so nobody builds a field expecting it. */
+    never: [
+      'physical descriptors of any person — race, clothing, build, vehicle',
+      'the location of people being served, including encampments and rough sleeping',
+      'free text of any kind',
+      'photographs (deferred, not forgotten)',
+      'anything signed by an operational key'
+    ],
+    parameters: {
+      precision_delay_hours: 48,
+      expiry_days: 90,
+      expiry_rule: 'uncorroborated and uncited observations expire; cited ones are pinned'
+    },
+    vocabulary: {
+      status: 'stub — needs local knowledge, and is deliberately not generated',
+      tags: vocabulary
+    },
+    refuses: '/.well-known/navcom-refusals.json'
+  };
+}
+
 /** @param {string} name @param {unknown} doc */
 function write(name, doc) {
   const dir = join(BUILD, '.well-known');
@@ -304,7 +381,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
   const identity = nodeIdentity();
 
+  const intel = intelDocument();
+
   write('navcom-refusals.json', refusals);
+  write('navcom-intel.json', intel);
   write('navcom-health.json', health);
   write('navcom-node.json', identity);
 
