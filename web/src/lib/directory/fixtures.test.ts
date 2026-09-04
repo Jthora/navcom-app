@@ -62,19 +62,25 @@ describe('fixture data never reaches a reader', () => {
   });
 
   /*
-   * Ninety seconds, declared rather than inherited.
+   * Five minutes, declared rather than inherited.
    *
-   * This scans the entire built site -- 26,503 files and 303 MB -- because that is the
+   * This scans the entire built site -- 26,634 files and 297 MB -- because that is the
    * assertion: not "the loader filters fixtures" (the test above covers that) but "no path out
    * of the data reintroduced one". `grep` does it in about eight seconds, which no amount of
    * tuning brings under vitest's five-second default.
+   *
+   * It was ninety, and that was measured against an idle machine. The same grep takes **38
+   * seconds at load average 16** -- which is what committing 1,836 region directories does to
+   * a laptop while Spotlight indexes them. Eight seconds of work with 90 allowed sounds like
+   * ample margin and is 2.4x; the observed penalty is 4.75x. The budget is now set against the
+   * loaded case, because that is the case a developer actually runs it in.
    *
    * It was failing as a **timeout**, which in this file reads exactly like a fixture leak --
    * the one thing it exists to detect. A guard whose failure mode is indistinguishable from
    * the bug it guards against is worse than a slow one, so the cost is stated here instead of
    * being discovered at 2am.
    */
-  it('appears nowhere in the built site — no page, no index, no export', { timeout: 90_000 }, async () => {
+  it('appears nowhere in the built site — no page, no index, no export', { timeout: 300_000 }, async () => {
     /*
      * The assertion that matters. A loader filter is easy to add and easy to bypass: the
      * console builds its own search index in `+page.server.ts`, `directory.json` is emitted by

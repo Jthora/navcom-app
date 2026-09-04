@@ -8,6 +8,7 @@ import { CALLSIGN_MAX, FIELDS_MAX, VALUE_MAX, withinLimit } from '../limits.js';
 import type { Confidence, Method, ResourceField, ResourceRecord } from './types.js';
 import { FIELD_CLASS } from './volatility.js';
 import { isValidIsoDate } from './iso-date.js';
+import { isConfidential, isLocating } from './confidential.js';
 
 /**
  * What an operator learned, on the way back from the block they learned it on.
@@ -317,6 +318,23 @@ export function mergeCorrections(
   for (const field of CORRECTABLE) {
     // A flag is a report about a record, not a value to overwrite. Handled above.
     if (field === 'flag') continue;
+
+    /*
+     * The one field a correction may not carry onto a refuge.
+     *
+     * `CORRECTABLE` already excludes coordinates — a correction is about what a place does,
+     * not where it is — but `address` is a string like any other and was correctable. So a
+     * `dv` record that shipped clean could have an address added to it afterwards, by anyone,
+     * over a relay, and every device carrying that area would merge it at read time. That is
+     * the published-refuge failure arriving through the one door a CSV check cannot watch.
+     *
+     * Dropped here rather than refused in `buildCorrection`, because that function knows only
+     * the record id: the base record, and therefore its type, is not in scope until this
+     * merge. Dropped rather than raised, too — there is nobody to appeal to [declined.md], and
+     * a correction that never applies is indistinguishable from one that was never sent, which
+     * is how this merge already treats every other claim it declines.
+     */
+    if (isLocating(field) && isConfidential(base.type)) continue;
 
     const candidates = mine.filter((c) => typeof c.fields[field] === 'string');
     if (candidates.length === 0) continue;

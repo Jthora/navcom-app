@@ -7,6 +7,7 @@ import { KIND_PLACE } from '../events/kinds.js';
 import { CALLSIGN_MAX, VALUE_MAX, withinLimit } from '../limits.js';
 import { RESOURCE_TYPES, type Method, type ResourceRecord, type ResourceType } from './types.js';
 import { isValidIsoDate } from './iso-date.js';
+import { isConfidential } from './confidential.js';
 
 /**
  * A place the published directory does not have.
@@ -144,6 +145,25 @@ function checkPlace(place: Place): void {
   if (CONTROL.test(address)) throw new PlaceError('An address cannot contain control characters.');
 
   if (!RESOURCE_TYPES.includes(place.type)) throw new PlaceError('Unknown type.');
+  /*
+   * A refuge cannot be added this way, and the reason is a collision rather than a policy.
+   *
+   * An address is *required* above — the id is derived from name and address, and `readPlace`
+   * re-derives it to check the event, so the address cannot simply be omitted or stripped
+   * without breaking verification for every reader. But a refuge's address is exactly the
+   * thing that must never be published [invariant 1]. The two rules cannot both hold in one
+   * event, so this path refuses the type outright instead of shipping a shape that satisfies
+   * neither.
+   *
+   * Routed the same way the `website` method is routed, three checks below: to the people who
+   * can phone the service and confirm what it wants published, which for a refuge is a
+   * conversation and not a form.
+   */
+  if (isConfidential(place.type)) {
+    throw new PlaceError(
+      'A refuge cannot be added from the field. Its address is the protection, and a place here must carry one — so this goes to the maintainers, who can ask the service what it wants listed.'
+    );
+  }
   if (!withinLimit(place.verified_by, CALLSIGN_MAX)) {
     throw new PlaceError(`A place needs a callsign of ${CALLSIGN_MAX} characters or fewer, or \`anonymous\`.`);
   }

@@ -11,6 +11,7 @@ import {
 } from './types.js';
 import type { ResourceRecord } from './types.js';
 import { isValidIsoDate } from './iso-date.js';
+import { confidentialRefusal, locatingLeaks } from './confidential.js';
 
 export interface ParseIssue {
   row: number;
@@ -152,7 +153,7 @@ export function parseDirectory(csv: string): ParseResult {
     const flag = blank(rawFlag) ? 'ok' : enumOf(FLAG, rawFlag, 'flag', rowNo, issues);
     if (!flag) continue;
 
-    records.push({
+    const record: ResourceRecord = {
       id,
       name,
       type,
@@ -188,7 +189,32 @@ export function parseDirectory(csv: string): ParseResult {
       flag,
 
       notes: str(get('notes'))
-    });
+    };
+
+    /*
+     * A refuge that shipped with its address on it.
+     *
+     * Reported *and* stripped, which looks like belt and braces and is not. The issue is what
+     * matters for committed data: this file is in git, a maintainer has to remove the address
+     * from the row rather than have a parser quietly paper over it on every build, and
+     * `parseDirectoryOrThrow` turns the issue into a failed build. The strip is for the other
+     * caller — `parseDirectory` hands back records *and* issues, and nothing forces a reader
+     * to look at the second one. A caller that ignores issues gets a safe record anyway.
+     *
+     * Deliberately not `continue`: dropping the row would remove a refuge from the directory
+     * because somebody filled in one field too many, and a service nobody can find is its own
+     * harm. The region and the phone survive, which is what a person at 11pm actually needs.
+     */
+    for (const field of locatingLeaks(record)) {
+      issues.push({
+        row: rowNo,
+        column: field,
+        message: confidentialRefusal(record.type, [field])
+      });
+      record[field] = undefined;
+    }
+
+    records.push(record);
   }
 
   return { records, issues };

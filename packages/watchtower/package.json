@@ -27,7 +27,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit -p tsconfig.check.json",
-    "verify": "npm run typecheck && npm test"
+    "verify": "npm run typecheck && npm test",
+    "conformance": "tsx src/relay/index.ts"
   },
   "dependencies": {
     "@navcom/core": "file:../core",

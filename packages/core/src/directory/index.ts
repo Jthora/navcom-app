@@ -3,6 +3,7 @@ export * from './iso-date.js';
 export * from './volatility.js';
 export * from './confidence.js';
 export * from './display.js';
+export * from './confidential.js';
 export * from './parse.js';
 export * from './export.js';
 export * from './fields.js';

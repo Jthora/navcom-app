@@ -63,6 +63,8 @@ let paths: string[] = [];
 let recordCount = 0;
 /** Volatile fields rendered as a deliberate suppression — see the rule 1 vacancy note. */
 let suppressedVolatile = 0;
+/** How many records render an address AS A VALUE anywhere — proof the refuge selector is live. */
+let addressValues = 0;
 
 /**
  * Failures collected during the single streaming pass, one bucket per corpus-wide rule.
@@ -72,10 +74,15 @@ let suppressedVolatile = 0;
  * of the data it guards is indistinguishable from the bug it guards against. Every
  * corpus-wide rule now runs inside one pass, keeps only its failure messages, and lets each
  * document be collected immediately. Memory is flat in the size of the build.
+ *
+ * The hook budget is deliberately far above the ~90s this takes on an idle machine. It is not
+ * a performance target: it is the point at which we would rather see a red test than wait. A
+ * tighter one failed the whole file on a loaded laptop, and a corpus scan that fails when the
+ * machine is busy teaches everybody to re-run rather than to read.
  */
 const failures: Record<string, string[]> = {
   rule1: [], rule2: [], rule2words: [], rule3: [], rule5: [], rule6: [], verdicts: [],
-  noScript: [], titled: [], oneH1: [], deadDocLink: [], headingSkip: []
+  noScript: [], titled: [], oneH1: [], deadDocLink: [], headingSkip: [], refuge: []
 };
 
 /**
@@ -236,6 +243,28 @@ beforeAll(async () => {
         }
       }
 
+      /*
+       * A refuge's location, in the output rather than in the data.
+       *
+       * parse.ts strips `address`, `lat` and `lon` from a `dv` row and corrections refuse to
+       * add them back, so by the time a record reaches here it should carry none. This checks
+       * the page anyway, because the logic honouring a rule and the output honouring it have
+       * come apart three times in this repo. A component reading the raw CSV, or a future
+       * change that drops the strip, would show up here and nowhere else.
+       */
+      const addressShown = el.querySelectorAll('[data-display="value"][data-field="address"]');
+      addressValues += addressShown.length;
+
+      if (record.type === 'dv') {
+        examined.refuge++;
+        for (const f of ['address', 'lat', 'lon']) {
+          const shown = el.querySelectorAll(`[data-display="value"][data-field="${f}"]`);
+          if (shown.length > 0) {
+            failures['refuge']!.push(`${path}: refuge ${id} renders its ${f}`);
+          }
+        }
+      }
+
       if (el.getAttribute('data-seeded') === 'true') {
         examined.rule6++;
         if (!(el.querySelector('[data-seeded-note]') ?? pageWarn)) {
@@ -256,7 +285,7 @@ beforeAll(async () => {
       }
     }
   }
-}, 240_000);
+}, 600_000);
 
 /**
  * How many real cases each rule actually looked at.
@@ -266,7 +295,7 @@ beforeAll(async () => {
  * checking an empty set — and nothing about the output would look different. These counters
  * make silence fail.
  */
-const examined = { rule1: 0, rule2: 0, rule3: 0, rule5: 0, rule6: 0, verdicts: 0 };
+const examined = { rule1: 0, rule2: 0, rule3: 0, rule5: 0, rule6: 0, refuge: 0, verdicts: 0 };
 
 describe('the streaming pass itself', () => {
   it('retained a page for every targeted lookup this file makes', () => {
@@ -308,6 +337,26 @@ describe('rendered display rules', () => {
     expect(failures['rule5']).toEqual([]);
   });
 
+  it('a refuge never renders its address or coordinates', () => {
+    expect(failures['refuge']).toEqual([]);
+  });
+
+  it('and that rule is looking at markup that actually exists', () => {
+    /*
+     * The rule above passes today because there are no refuges. It would also pass forever if
+     * the selector were simply wrong — a `[data-field="address"]` that never matches anything
+     * is a guard shaped like a guard.
+     *
+     * So: some record, somewhere in the build, must render an address as a value through the
+     * exact selector the refuge rule uses. That is what makes the refuge rule's silence mean
+     * "no refuge leaked" rather than "nothing was ever inspected".
+     */
+    expect(
+      addressValues,
+      'no record anywhere renders an address value — the refuge rule cannot be looking at the right markup'
+    ).toBeGreaterThan(0);
+  });
+
   it('rule 6 — a seeded record carries its visible marker', () => {
     expect(failures['rule6']).toEqual([]);
   });
@@ -345,6 +394,26 @@ describe('rendered display rules', () => {
           suppressed,
           'no volatile field was rendered at all — that is the renderer, not the calendar'
         ).toBeGreaterThan(0);
+        continue;
+      }
+      if (rule === 'refuge' && n === 0) {
+        /*
+         * The third legitimate zero, and the only one that is a fact about the world rather
+         * than about this dataset.
+         *
+         * OSM and Overture do not tag domestic-violence refuges, and they should not — so the
+         * importer has never produced a `dv` record and this rule has nothing to examine. That
+         * absence is exactly why the guard was written: the protection was luck, not design.
+         *
+         * Zero is therefore accepted only alongside proof that the directory really holds no
+         * refuge. The day one is added, this rule starts examining it, and if it examines
+         * nothing while a refuge exists, that is the renderer and this fails.
+         */
+        const refuges = loadDirectory().filter((r) => r.type === 'dv');
+        expect(
+          refuges.map((r) => r.id),
+          'a refuge is in the directory and the render rule examined none of them'
+        ).toEqual([]);
         continue;
       }
       if (rule === 'rule3' && n === 0) {

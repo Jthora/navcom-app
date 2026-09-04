@@ -208,15 +208,21 @@ describe('the sidecar describes what the identifier is of', () => {
       // read correctly.
       //
       // Given an explicit timeout rather than the vitest default. This packs the whole real
-      // directory through the real encoder — 338 files today — and that measured at ~3.3s on
-      // its own, against a 5000ms default with almost no margin. That is not environmental
-      // noise to blame on a busy machine: it is real work that grows as regions fill in, against
-      // a generic timeout nobody had tuned for it. The number here is set well above what the
-      // directory packs in today, not to the minimum that happens to pass.
+      // directory through the real encoder, and it is real work that grows as regions fill in.
+      //
+      // The prediction in this comment came true, which is why the numbers below are dated.
+      // At 338 files it measured ~3.3s and was given 20s. At 1,904 regions and ~3,800 files it
+      // measures ~16.1s, so that 20s had quietly become a 1.2x margin — and it duly failed in
+      // a full run while passing in isolation, which is the worst way for a guard to behave.
+      //
+      // Set well above today's cost *and* above what a loaded laptop does to it: the same run
+      // that measured 16.1s idle was part of a suite where a 297MB grep went from 8s to 38s
+      // under Spotlight. A budget is not a performance target. It is the point at which we
+      // would rather see a red test than keep waiting.
       const { files } = await packDirectory();
       expect(files.some((f: string) => f.endsWith('region.json'))).toBe(true);
       expect(files.some((f: string) => f.endsWith('resources.csv'))).toBe(true);
     },
-    20_000
+    120_000
   );
 });
