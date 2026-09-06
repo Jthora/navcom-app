@@ -250,6 +250,11 @@ describe('the intel declaration', () => {
     // The direction is the rule. Restrictive degradation drops valid observations silently.
     expect(c.on_stale.toLowerCase()).toContain('shape');
     expect(c.note.toLowerCase()).toContain('does not bump');
+    // The published ttl must sit inside the bounds the same document declares. A contract
+    // that can instruct a consumer to DoS its publisher should not be able to do so by typo.
+    expect(c.ttl_seconds).toBeGreaterThanOrEqual(c.ttl_seconds_min);
+    expect(c.ttl_seconds).toBeLessThanOrEqual(c.ttl_seconds_max);
+    expect(c.ttl_seconds_min).toBeGreaterThan(0);
   });
 
   it('obliges a consumer to replace on refine, not add', () => {

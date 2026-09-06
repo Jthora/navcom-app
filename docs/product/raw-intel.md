@@ -262,6 +262,12 @@ like malformed input — the worst failure available here, because it is silent 
 the thing the network is shortest of. Accepting a tag you cannot verify is a mild correctness
 cost that shows up in analysis. Prefer the visible error to the invisible loss.
 
+**Bounds: `ttl_seconds` is never below 60 or above 86400.** A consumer that reads a value
+outside them should refuse it and use its own default, because a ttl of zero means *refetch on
+every call* — a denial of service against us, published by us. Starcom had to invent that check
+unprompted; a contract able to instruct a consumer to hurt its publisher should state what it
+will never ask for rather than leaving every consumer to guess a floor.
+
 **A vocabulary change does not bump the contract version.** The list is data, the version
 covers the shape, and the two move independently — so a consumer that refetches only when the
 version changes would never refetch at all. This is the sentence most likely to be assumed

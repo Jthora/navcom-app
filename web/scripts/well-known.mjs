@@ -392,6 +392,17 @@ export function intelDocument(root = ROOT) {
       cache: {
         ttl_seconds: 3600,
         max_stale_seconds: 86400,
+        /*
+         * Bounds, so a consumer does not have to invent a sanity check.
+         *
+         * Starcom had to refuse a non-positive ttl on its own initiative — zero means refetch
+         * on every call, which is a denial of service against us, published by us. A contract
+         * that can instruct a consumer to hurt its publisher should say what it will never
+         * ask for, rather than leaving each consumer to guess a floor.
+         */
+        ttl_seconds_min: 60,
+        ttl_seconds_max: 86400,
+        on_out_of_range: 'refuse the value and use your own default. A ttl outside these bounds is a defect in this document, not an instruction',
         on_stale: 'validate tag SHAPE only, and say so in the drop reason. Never enforce a list you cannot confirm is current',
         note: 'A vocabulary change does NOT bump this contract version — the list is data, the version covers the shape. A consumer refetching only on a version change would never refetch.'
       },
