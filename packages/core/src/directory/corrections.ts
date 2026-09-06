@@ -9,6 +9,7 @@ import type { Confidence, Method, ResourceField, ResourceRecord } from './types.
 import { FIELD_CLASS } from './volatility.js';
 import { isValidIsoDate } from './iso-date.js';
 import { isConfidential, isLocating } from './confidential.js';
+import { isDecisive } from './decisive.js';
 
 /**
  * What an operator learned, on the way back from the block they learned it on.
@@ -242,6 +243,14 @@ export interface FieldSource {
   /** `null` when the published record still holds the field. */
   correction: (Correction & { by: string }) | null;
   confidence: Confidence;
+  /**
+   * What the published record said before this correction won, when it said anything.
+   *
+   * Recorded as a fact rather than as a verdict — the merge does not decide what a
+   * disagreement means, it only says there was one. `displayMerged` reads this to detect a
+   * contradiction on a decisive field; a caller wanting to show what changed can use it too.
+   */
+  replaced?: string;
 }
 
 export interface MergedRecord {
@@ -381,8 +390,15 @@ export function mergeCorrections(
     }
 
     if (winner) {
+      // Captured before the write, because after it the base value is gone. A disagreement is
+      // only visible while both halves are still in scope.
+      const was = base[field];
       record[field] = winner.fields[field] as never;
-      sources[field] = { correction: winner, confidence: bestConfidence };
+      sources[field] = {
+        correction: winner,
+        confidence: bestConfidence,
+        ...(typeof was === 'string' && was.trim() !== '' ? { replaced: was } : {})
+      };
     }
   }
 
@@ -416,6 +432,34 @@ export function displayMerged(
   }
 
   const c = source.correction;
+
+  /*
+   * A decisive field two people disagree about is a field we do not know.
+   *
+   * `method` is self-asserted — nothing verifies anybody stood anywhere — and `in_person`
+   * outranks the `website` that every published record carries. So resolving in favour of the
+   * better-attested claim means a single unverifiable assertion decides whether somebody walks
+   * across a city, which is the Medic's kill trigger with no scale required.
+   *
+   * Not resolved, then. Rendered `call first`, which is [invariant 9] applied to disagreement
+   * rather than to age. An attacker can still push a field here; they can no longer push it to
+   * a *specific wrong value*, which turns the harm into an inconvenience.
+   *
+   * Only where the record actually said something else — a correction filling a blank is new
+   * information, not a contradiction, and softening it would punish the ordinary case.
+   */
+  if (isDecisive(field) && source.replaced !== undefined && c.fields[field] !== source.replaced) {
+    return {
+      display: {
+        kind: 'call-first',
+        confidence: source.confidence,
+        cls: FIELD_CLASS[field],
+        because: 'contested'
+      },
+      by: c
+    };
+  }
+
   // The winning attestation's own author, method and date -- which is what the confidence
   // rules are supposed to be weighing.
   const asRecord = {

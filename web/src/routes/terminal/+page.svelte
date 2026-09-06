@@ -378,6 +378,51 @@
   stops reading. Rule 5: one lit action. Rule 3: every sentence that used to be on this screen
   is still here, word for word, behind `Why`.
 -->
+<!--
+  Above the Status panel, not below it, and the move is the whole of the fix.
+
+  Measured against the built site: at 375x667 this sat at 831-887px — **220px below the fold**,
+  reachable only by scrolling for it. At 393x851 it was clipped by 13px. It was fully visible
+  only on a 6.7" screen, and the stated device floor is a prepaid Android 8, which is a small
+  phone. The alarm was legible on the flagship and off-screen on the target.
+
+  Thumb reach was never the problem — 28-44mm from the pivot, comfortably easy for either hand
+  on all three sizes. A control placed perfectly inside the thumb arc is worth nothing when it
+  is not on the screen. It sat at the end of the document because that is the order it was
+  written in, and nothing measured it until something did.
+
+  Placed after the two conditional panels above, deliberately: a wrong clock and a rewritten
+  log are things to *read* before trusting anything here, and Distress is the thing to *do*.
+  On an ordinary night neither of those renders and this is the first element on the page.
+-->
+<!--
+  Distress is not the lit action and it is not on the rail.
+
+  It sits on its own in every state, because needing help does not wait for paperwork and
+  because with no watch it terminates in the operator's own person — which `contact.ts` calls
+  "not the third rung of anything. It is the whole safety net."
+-->
+<!--
+  The same control, twice, and only ever one of them on screen.
+
+  This one is prerendered and hidden, and `hooks.server.ts` reveals it before the bundle
+  loads if this device has an identity. The one below is the real `Action` and replaces it on
+  mount. Without the pair, the most urgent control in the app was behind roughly three seconds
+  of hydration on the phone this app is written for — while `hooks.server.ts` already existed
+  to solve exactly that problem one screen deeper.
+
+  Markup matched to `Action`'s own output so the swap is invisible.
+-->
+<div id="distress-early" hidden>
+  <a class="nc-act" data-act data-tone="alarm" href="/terminal/distress/">
+    <span class="nc-act-label">Distress</span>
+  </a>
+</div>
+
+{#if identity}
+  <Action label="Distress" tone="alarm" href="/terminal/distress/" />
+{/if}
+
 <Panel label="Status" post={post.label} data-state={s.state} data-post={post.id}>
   <!-- Rule 5. One lit action, and it is the thing this post actually does. -->
   {#snippet action()}
@@ -756,33 +801,6 @@
   </section>
 {/if}
 
-<!--
-  Distress is not the lit action and it is not on the rail.
-
-  It sits on its own in every state, because needing help does not wait for paperwork and
-  because with no watch it terminates in the operator's own person — which `contact.ts` calls
-  "not the third rung of anything. It is the whole safety net."
--->
-<!--
-  The same control, twice, and only ever one of them on screen.
-
-  This one is prerendered and hidden, and `hooks.server.ts` reveals it before the bundle
-  loads if this device has an identity. The one below is the real `Action` and replaces it on
-  mount. Without the pair, the most urgent control in the app was behind roughly three seconds
-  of hydration on the phone this app is written for — while `hooks.server.ts` already existed
-  to solve exactly that problem one screen deeper.
-
-  Markup matched to `Action`'s own output so the swap is invisible.
--->
-<div id="distress-early" hidden>
-  <a class="nc-act" data-act data-tone="alarm" href="/terminal/distress/">
-    <span class="nc-act-label">Distress</span>
-  </a>
-</div>
-
-{#if identity}
-  <Action label="Distress" tone="alarm" href="/terminal/distress/" />
-{/if}
 
 {#if session}
   <nav class="nc-rail" data-rail="out">

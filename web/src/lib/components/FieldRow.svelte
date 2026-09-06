@@ -30,7 +30,9 @@
       -->
       <span class="call-first">Call first</span>
       <span class="why">
-        {display.because === 'weather-activated'
+        {display.because === 'contested'
+          ? 'somebody reported this differently — nobody has settled it'
+          : display.because === 'weather-activated'
           ? 'only opens when the city activates it'
           : display.because === 'out-of-season'
             ? 'out of season — these are last season\'s hours'

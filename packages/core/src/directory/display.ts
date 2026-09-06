@@ -49,8 +49,13 @@ export type FieldDisplay =
        * difference between *"nobody has checked this in a month"* and *"this only opens
        * when the city calls it"*. The first might still be right; the second is a coin
        * flip tonight regardless of how recently it was verified.
+       *
+       * `contested` is the third: somebody has asserted a different value for a field that
+       * decides whether a person is turned away. Set by `displayMerged`, never by staleness —
+       * see `decisive.ts` for why a disagreement there is not resolved in favour of the
+       * better-attested claim.
        */
-      because?: 'weather-activated' | 'out-of-season';
+      because?: 'weather-activated' | 'out-of-season' | 'contested';
     }
   /** Rule 1. A volatile value always carries its age; `age` is non-null when volatile. */
   | {

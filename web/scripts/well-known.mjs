@@ -39,13 +39,13 @@ import { createHash } from 'node:crypto';
 import { CID } from 'multiformats/cid';
 import * as Digest from 'multiformats/hashes/digest';
 import { getPublicKey } from 'nostr-tools/pure';
-import { PERMITTED, BROADCAST, REFUSALS } from '@navcom/core';
+import { PERMITTED, BROADCAST, REFUSALS, DECISIVE_FIELDS } from '@navcom/core';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const BUILD = fileURLToPath(new URL('../build/', import.meta.url));
 
 /** Fields that decide whether a person gets a bed. A record missing these is a record. */
-const DECISIVE = ['intake_hours', 'pets', 'id_required', 'capacity_signal', 'sobriety', 'accepts', 'curfew'];
+const DECISIVE = DECISIVE_FIELDS;
 
 /**
  * Minimal CSV, quotes included, because these files contain commas in addresses.
