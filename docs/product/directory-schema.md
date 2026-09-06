@@ -161,6 +161,29 @@ past its window                                → stale
 flag != ok                                     → suspect (overrides all)
 ```
 
+### `method` is a self-report, and the whole ranking rests on it
+
+Nothing verifies that anybody stood anywhere. `corrections.ts` checks only that the value is
+one of the five; there is no mechanism that could do more, and there should not be — a
+directory that demanded proof of presence would be a directory nobody contributes to.
+
+Say it plainly because the consequence is not obvious. `in_person` ranks **high** and every
+record in the published directory is `website`, which ranks **low**, so the bar to outrank
+anything here is one sentence: *claim you were there*. That is survivable on most fields and
+is the Medic's kill trigger on a field somebody is turned away over — and it needs no scale at
+all, which is the part that surprises people. One claim, one shelter, one cold night.
+
+Two things answer it, and neither is verification:
+
+- **A disagreement on a decisive field is not resolved.** See `decisive.ts`. It renders *call
+  first*, which is display rule 2 applied to disagreement instead of to age. An attacker can
+  push a decisive field there; they cannot push it to a specific wrong value
+- **Provenance travels with the claim.** A reader sees who said it, how, and when, which is
+  what every rule on this page is ultimately for
+
+Any consumer weighing `method` — Starcom included, which grades on it — should know it is an
+assertion rather than an attestation.
+
 ### Display rules
 
 These exist because of one failure mode: a confident wrong answer that sends someone

@@ -51,7 +51,7 @@ The shared core is extracted (`packages/core`), and the Status screen ships with
 **The directory can now be seeded from the field.** An operator can add a place the published
 directory does not have (`docs/product/directory-schema.md` §5) — the fix for a cold start
 that otherwise waited on a maintainer with local knowledge nobody has. Every region is
-prerendered now, including the thirty-five that ship empty, because until this they had no
+prerendered now, including the eight that ship empty, because until this they had no
 page at all.
 
 **The about page now points at the community's own hubs** — and, where one has been shut down
@@ -99,8 +99,8 @@ key-shaped here is hex, so there is no capital `O` to confuse with `0`.
 Sequence and gates in [`docs/build-order.md`](docs/build-order.md). Surfaces and budgets in
 [`docs/delivery.md`](docs/delivery.md).
 
-`navcom.app` runs in parallel and is ungated — it is live and seeded for the St. Louis metro.
-The root itself is a small, real console (Nav + Com, fused, ~50 KB of its own script budget)
+`navcom.app` runs in parallel and is ungated — it is live and seeded nationally — 8,430 records across 1,912 regions, 8 of them still empty.
+The root itself is a small, real console (Nav + Com, fused, 60 kB of its own script budget and currently at 53.5)
 that searches the directory instantly and shows the network's actual state, with one link
 into the full Field Terminal; `directory/`, `docs/`, `status/` and `about/` remain static and
 zero-JavaScript.

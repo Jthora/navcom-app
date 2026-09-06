@@ -40,9 +40,17 @@ changes that.** What changes it is what the console searches:
   field terminal cannot
 
 The first is simpler and matches how somebody arrives: they know what city they are in. The
-second keeps the front page's most compelling behaviour. **It is a product decision and it is
-not the seeder's to make** — but it is the thing standing between this directory and national
-coverage, and the number is 4,600.
+second keeps the front page's most compelling behaviour.
+
+**Both were taken, and the directory went national.** The console embeds `[slug, name]` pairs
+for every region — search works on the first keystroke with nothing fetched — and fetches one
+region's records on demand from `/console-index/<region>.json` once a location fix or a manual
+pick says which region matters. So the front page kept record search *and* stopped carrying
+the corpus.
+
+The directory now holds **8,430 records across 1,912 regions** and the console page measures
+94.5 kB of its 120 kB budget. The 4,600 ceiling was real and is gone; this section is kept
+because the analysis that produced both options is what made choosing between them cheap.
 
 ## navcom.app — three surfaces
 

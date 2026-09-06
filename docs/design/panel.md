@@ -136,13 +136,21 @@ Already good: `--t-ground: #0B0E12`, `--t-raised`, `--t-sunk`, and semantic stat
 (`section p`, `.cost`, `.note`) is deprecated as new-screen vocabulary and removed per screen
 as each is converted.
 
-### Typography decision — **needs a human**
+### Typography decision — **closed: the system stack stays, and no webfont ships**
 
-Rule 8 wants a condensed face for labels and tabular numerals for data. The terminal currently
-ships **no webfont at all** (system stack), and the worst page is at **66% of the 220 KB
-script budget** with a 260 KB page total.
+Decided, and kept below because the options were the useful part. Rule 8 wants a condensed
+face for labels and tabular numerals for data. The terminal ships **no webfont at all**
+(system stack), and the worst page measures **61% of the 220 KB script budget**.
 
-Three options, and this is a decision rather than a recommendation:
+**It was never a budget question** — 8–25 KB fits inside the headroom. It is that a webfont
+which has not loaded yet is text that is not there, and the budget script models a cold first
+load on a congested cell at ~3.1s to interactive. `font-display: swap` turns that into a flash
+of fallback and then a reflow, and a reflow while somebody is reaching for `Distress` moves
+the layout under their thumb at the worst available moment. The usual counter — glyph
+legibility in codes — does not apply here: everything key-shaped is hex, so there is no
+capital `O` to confuse with `0`.
+
+The three options as they stood:
 
 - **System stack only.** Zero bytes. `font-variant-numeric: tabular-nums` works in system
   fonts; a true condensed does not. Labels get letter-spacing instead of condensation

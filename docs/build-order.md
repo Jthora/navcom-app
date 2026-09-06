@@ -439,7 +439,7 @@ signal, and has a record of their own night.
 
 | | Item | Owner | Cost of not doing it |
 |---|---|---|---|
-| 1.1 | ~~The scraper~~ | **done** | 479 records across 67 metros. Public half only, and it taught that a source which cannot distinguish what matters must not be used for that category |
+| 1.1 | ~~The scraper~~ | **done** | 8,430 records across 1,912 regions. Public half only, and it taught that a source which cannot distinguish what matters must not be used for that category |
 | 1.2 | **Intake rules for places you know** | **human, local** | The half no scraper produces, and the half the directory exists for. Ten records done properly beats a thousand skeletons |
 | 1.3 | ~~Your own patrol record~~ | **done** | Local by default and by design — nothing in it reaches a watch, a relay or a peer. Export carries no coordinates and nobody but the operator |
 | 1.4 | ~~Coming home~~ | **done** | Confirmed by name where somebody was watching, and confirmed anyway where nobody was |
@@ -508,7 +508,7 @@ ships** — the status page states what is built.
 
 | | Item | Owner |
 |---|---|---|
-| 5.1 | ~~Post-quantum hybrid sealing~~ — ML-KEM-768 beside the classical exchange | **done** | Key distribution solved by a published `10912` bundle, so the pairing QR is unchanged. Fallback allowed and reported as a note rather than a warning. **Bundle now at 99% of budget** |
+| 5.1 | ~~Post-quantum hybrid sealing~~ — ML-KEM-768 beside the classical exchange | **done** | Key distribution solved by a published `10912` bundle, so the pairing QR is unchanged. Fallback allowed and reported as a note rather than a warning. Drove the budget re-derivation below |
 | 5.2 | **Anchor the log root to Bitcoin** — OpenTimestamps, daily | **deferred** | Blocked on a trustworthy implementation. See below |
 | 5.3 | ~~Saying no to an `Assist`~~ | **done** | A `declined` response — *"nobody is coming"*. Refused for `Distress` in core, so no client can offer a button that ends one with a tap [invariant 2] |
 | 5.4 | ~~Weather-activated warming and cooling centres~~ | **done** | **Display rule 7**, not a weather API. The case rules 1–2 miss: the data is fresh and the answer is still wrong. No network call, no third party, no content generated |
@@ -529,15 +529,20 @@ Both stated blockers turned out to be wrong, and the real ones were solvable:
   no key still sends, and the operator is told. See `signals.spec.md` for the wording rules,
   which are as normative as the mechanism
 
-**JavaScript is now at 139.1 kB of a 140.0 kB budget — 99%.** That is a real constraint doing
-its job rather than a problem to route around, and the next addition of any size breaks it.
-There is no cheap split available: the crypto sits in the shared chunk and nearly every
-terminal screen seals something, so splitting does not move the *worst* page, which is what
-the budget measures.
+**Decided, and this paragraph is kept because the reasoning still holds.** At the time the
+terminal sat at 139.1 kB of a 140.0 kB budget — 99% — with no cheap split available: the
+crypto sits in the shared chunk and nearly every terminal screen seals something, so splitting
+does not move the *worst* page, which is what the budget measures.
 
-**This needs a decision before the next feature**, and the options are honest ones: re-derive
-the number from what a prepaid Android 8 on a slow network can actually afford, or keep 140 kB
-as a hard stop that forces something to come out before anything goes in.
+The two honest options were to re-derive the number from what a prepaid Android 8 on a slow
+network can actually afford, or keep 140 kB as a hard stop. **The first was taken.** The
+budget is now 220 kB with a 160 kB warning ratchet, derived in `budget.mjs` from a cold load
+on a congested cell at 0.8 Mbps, and the worst terminal page measures **133.3 kB — 61%**.
+
+Recorded rather than deleted, because this page said in writing that the figure "will drift
+from this file", and it did: the 99% claim stayed on the published docs surface for weeks
+after the decision, telling every reader — and every agent — that the terminal was one feature
+from breaking a constraint that no longer existed.
 
 ### 5.2 — deferred, because an anchor nobody can verify is worse than none
 
@@ -765,7 +770,7 @@ somebody notices the day it changes.
 **Done when:** somebody looking for a bed tonight can use `navcom.app` themselves, in their
 own language, without being an operator or installing anything.
 
-**Gated on Milestone 6.** A person-facing path over 479 scraped skeletons is *worse* than
+**Gated on Milestone 6.** A person-facing path over 8,430 scraped skeletons is *worse* than
 none: the operator who gets bad data is inconvenienced, and the person who gets it is turned
 away at 11pm with nowhere else to be. The first draft listed these as independent, which was
 the most dangerous mistake in it.
@@ -888,7 +893,7 @@ components against twenty routes**.
 | P5 | ~~Low signature~~ | **done** | No white, luminance at the floor, amber-dominant, document mode one tap from every screen and persisting in the accruing tier. State is carried by **brightness and wording rather than hue**, with red kept for the alarm channel — a stated trade, not a free win. Contrast tested in both modes: ink 6.8:1, muted 4.6:1, faint 3.0:1 for uppercase labels only |
 | P6 | ~~The moments~~ | **done** | `Elapsed` on Distress (it had never been used on the screen it was built for), coming home showing the line that was written, `Present` for the other person to read — `presentable()` was imported and never called — and a handover read-back with a held threshold. **Found a real bug**: all three holds completed from inside a `requestAnimationFrame` loop, and rAF is throttled or paused in a power-saving page, so a hold could fail to fire on the phone this is written for. Fill is animation, firing is a timer |
 | P7 | ~~Haptic~~ | **done** | **Two** patterns, not three. The roster's `acknowledged` pulse is **declined** — it fires on arrival, and the field terminal is silent; see [`declined.md`](declined.md). What ships confirms a press in the moment it is made, including when a held threshold fires, which is the one thing an operator cannot otherwise learn without looking. Feature-detected, quiet under `prefers-reduced-motion`, and nothing depends on it |
-| P8 | **Typography decision** | **human** | System stack, one subset variable font (~18–25 KB), or condensed-only (~8–12 KB). Default is system stack. See `design/panel.md` |
+| P8 | ~~Typography decision~~ | **closed** | **System stack. No webfont ships.** Never a budget question — 8–25 KB fits the headroom. A webfont that has not loaded yet is text that is not there, and `font-display: swap` reflows the layout under a thumb reaching for `Distress`. See CLAUDE.md |
 | P9 | ~~Low-signature default~~ | **decided** | **On once there is a callsign, not before.** A timer is ruled out by the terminal's own muscle-memory commitment; the failure modes are asymmetric (a bright phone on a dark street is invisible to the person paying for it, a dim screen indoors is one tap from fixed); and a newcomer must not meet something that reads as degraded. `prefers-contrast: more` outranks it, and the setup screen explains it where it happens. See `design/panel.md` |
 | P10 | ~~The remaining 15 screens~~ | **done** | Per-screen judgement, not a sweep: query, directory index, assist, resupply, setup, backup, card, peers, find and patrols got no-watch/state prose converted to `Slot`+`Readout` and genuine asides moved to `Why`, leaving safety and irreversibility prose visible verbatim; on-call and funding got only their clean state readouts, prose left as-is per audit; wipe converged its hand-rolled hold button onto `Action` (the second of the two `Action.svelte` named as duplicated, after distress, which is still open); log got its first-ever browser coverage (three verdict states, zero test risk before) before converting. The region-detail screen got only its one isolated, zero-risk section — see the open item above |
 
