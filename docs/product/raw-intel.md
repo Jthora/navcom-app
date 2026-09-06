@@ -85,6 +85,29 @@ consequence: **a future change that "improves" anonymity to a throwaway key per 
 reopens the correlated-fabrication hole across the whole grid**, in a system whose analysis
 layer has been told it can trust source independence.
 
+**And there is a third consequence, which is a cost to the operator rather than a benefit to
+the network.** One property, three effects: it preserves `supersedes`, it makes Sybil
+arithmetically unavailable — and it means **an operator publishing under `anonymous` is
+pseudonymous, not unlinkable.** Every observation they have ever filed joins on that pubkey,
+for anyone reading a relay, not only for Starcom.
+
+That is not a small caveat. [The Doxxer](../research/ecosystem-roster.md) correlates timing and
+coarse position to unmask an operator, and an `anonymous` observation set is exactly that
+material: linkable, timestamped, location-bearing, and *larger* than the operator believes it
+to be because they chose the option named after not being identified.
+
+**The name is the defect.** `anonymous` promises something the field does not deliver. It
+omits a callsign; it does not sever a history. A value that described the act — no name
+attached — would not invite the belief. Renaming it changes the wire format and therefore the
+contract version, so it is not done here; it is recorded as the thing to fix in `0.2.0`, and
+in the meantime the sentence an operator must actually see is:
+
+> **Anonymous means no name. It does not mean no history.**
+
+This is the same failure as the terminal's signature toggle, which reads `DOCUMENT` while the
+mode is low signature: **a control labelled with a promise it does not keep.** Found there by
+measurement and here by Starcom, and worth noticing that the project produced it twice.
+
 ## 3. Fields
 
 | Field | Required | Notes |
@@ -220,6 +243,29 @@ nil         nothing_observed
 
 **Failure is safe by construction:** what the vocabulary cannot express does not publish and
 stays on the device. Nothing is lost, and nobody is blocked waiting for a maintainer.
+
+### Fetching it — cache **3600 seconds**, and degrade permissive
+
+The list is published at `/.well-known/navcom-intel.json` under `vocabulary.tags`. A consumer
+fetches it; it is never vendored into fixtures, because these twenty are a placeholder and the
+real list arrives the day somebody with local knowledge writes it.
+
+| | |
+|---|---|
+| Cache TTL | **3600 s** — it is a static file; refetching is free |
+| Stale ceiling | **86400 s**, after which the list must not be enforced at all |
+| On expiry or fetch failure | fall back to **shape-only** validation, and say so in the drop reason |
+
+**Degrade permissive, not restrictive, and that direction is the whole rule.** Enforcing a
+list you cannot confirm is current rejects *valid* observations and they vanish looking exactly
+like malformed input — the worst failure available here, because it is silent and it discards
+the thing the network is shortest of. Accepting a tag you cannot verify is a mild correctness
+cost that shows up in analysis. Prefer the visible error to the invisible loss.
+
+**A vocabulary change does not bump the contract version.** The list is data, the version
+covers the shape, and the two move independently — so a consumer that refetches only when the
+version changes would never refetch at all. This is the sentence most likely to be assumed
+away by whoever wires it up.
 
 ## 8. `method`, and why NavCom never grades
 

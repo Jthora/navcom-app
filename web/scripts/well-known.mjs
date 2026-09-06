@@ -382,6 +382,19 @@ export function intelDocument(root = ROOT) {
     },
     vocabulary: {
       status: 'stub — needs local knowledge, and is deliberately not generated',
+      /*
+       * Cache policy, because staleness here rejects valid data rather than serving old data.
+       *
+       * Degrade PERMISSIVE. A list you cannot confirm is current must not be enforced: doing
+       * so drops real observations that then look exactly like malformed input, which is the
+       * worst failure available — silent, and it discards what the network is shortest of.
+       */
+      cache: {
+        ttl_seconds: 3600,
+        max_stale_seconds: 86400,
+        on_stale: 'validate tag SHAPE only, and say so in the drop reason. Never enforce a list you cannot confirm is current',
+        note: 'A vocabulary change does NOT bump this contract version — the list is data, the version covers the shape. A consumer refetching only on a version change would never refetch.'
+      },
       tags: vocabulary
     },
     refuses: '/.well-known/navcom-refusals.json'

@@ -236,6 +236,22 @@ describe('the intel declaration', () => {
     expect(doc().parameters.area_geohash_chars).toBe(Number(stated));
   });
 
+  it('states the same vocabulary TTL the spec does, and degrades permissive', () => {
+    // Same shape as the geohash guard, for the same reason: two homes for one number is how
+    // the last eight-fold disagreement happened.
+    const spec = readFileSync(
+      fileURLToPath(new URL('../../../../docs/product/raw-intel.md', import.meta.url)), 'utf8'
+    );
+    const stated = spec.match(/cache \*\*(\d+) seconds\*\*/)?.[1];
+    expect(stated, 'the spec no longer states a cache TTL').toBeTruthy();
+    const c = doc().vocabulary.cache;
+    expect(c.ttl_seconds).toBe(Number(stated));
+    expect(c.max_stale_seconds).toBeGreaterThan(c.ttl_seconds);
+    // The direction is the rule. Restrictive degradation drops valid observations silently.
+    expect(c.on_stale.toLowerCase()).toContain('shape');
+    expect(c.note.toLowerCase()).toContain('does not bump');
+  });
+
   it('obliges a consumer to replace on refine, not add', () => {
     // Without this the same observation lands twice, ~20km apart, corroborating itself.
     const req = doc().requires.join(' ').toLowerCase();
