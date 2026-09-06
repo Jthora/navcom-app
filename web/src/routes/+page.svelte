@@ -532,10 +532,18 @@
     terminal] — this page is another screen of the same app now, not a separate site, so the
     same rule applies here.
   -->
+  <!--
+    Same fix as the terminal's, because this was the same defect copied.
+
+    `aria-pressed` tracked low-signature while the label named the destination, so a screen
+    reader announced "DOCUMENT, toggle button, pressed" while the page was in low signature —
+    the two halves contradicting each other, each individually valid, which is why an
+    automated pass cannot find it.
+  -->
   <button
     class="signature"
     data-signature-toggle
-    aria-pressed={sig === 'low'}
+    aria-label={sig === 'low' ? 'Switch to document mode' : 'Switch to low signature'}
     onclick={() => {
       sig = sig === 'low' ? 'document' : 'low';
       setSignature(sig);

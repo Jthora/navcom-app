@@ -74,10 +74,24 @@
       watching a board, so getting back to document mode has to be one tap from wherever you
       are.
     -->
+    <!--
+      An action, not a state — and it must not claim to be both.
+
+      This carried `aria-pressed={sig === 'low'}` while the label named the *destination*, so
+      at rest in low signature a screen reader announced "DOCUMENT, toggle button, pressed":
+      the label said one mode, the state said the other, and the two together said document
+      mode was on when it was not. Both halves were individually valid, which is exactly why
+      axe could not see it.
+
+      Resolved toward the action, because the label naming where a tap goes is the deliberate
+      choice recorded above — getting back to document mode has to be one tap from wherever
+      you are. So the pressed state goes, and the accessible name says the whole thing rather
+      than half of it. A button that only performs makes no claim about state to contradict.
+    -->
     <button
       class="signature"
       data-signature-toggle
-      aria-pressed={sig === 'low'}
+      aria-label={sig === 'low' ? 'Switch to document mode' : 'Switch to low signature'}
       onclick={() => {
         sig = sig === 'low' ? 'document' : 'low';
         setSignature(sig);

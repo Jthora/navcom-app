@@ -406,7 +406,18 @@
       reach — here, behind the report control itself. The rule holds again, and for the usual
       reason: what a report can and cannot do is read before somebody makes one, not after.
     -->
-    <strong>You can report a problem with any listing below.</strong> It goes out under your
+    <!--
+      Worded for both states, because the block above it is deliberately unconditional.
+
+      "any listing below" shipped on the eight regions that hold nothing, inviting a report
+      against a list that was not there. The block stays hoisted for the reason the comment
+      above gives; what changes is a claim that was only true when the page had content.
+    -->
+    <strong>
+      {shown.length > 0
+        ? 'You can report a problem with any listing below.'
+        : 'Where there are listings, you can report a problem with one.'}
+    </strong> It goes out under your
     callsign, or anonymously if you have not picked one, and <strong>adds</strong> what you
     saw — it cannot delete this listing or overrule anybody, and nobody has to approve it.
     Reporting is meant to be easier than fixing.

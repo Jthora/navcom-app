@@ -105,14 +105,42 @@ const DIALLING: Record<string, { cc: string; trunk?: string; national: number[] 
 export function normalisePhone(raw: string | undefined, country = "US"): string | undefined {
   if (!raw) return undefined;
 
+  /*
+   * One number, before anything else touches it.
+   *
+   * OSM separates multiple values with `;`, and stripping non-digits welded them into a
+   * single impossible number: `+1-215-848-5658;+1-215-848-9660` became
+   * `+1215848565812158489660`, which nine records shipped with. A `tel:` link on that dials
+   * nothing, and it is the most-used field on the surface at 11pm.
+   *
+   * The first is taken rather than all of them, because the schema holds one number and the
+   * first is conventionally the main line. Dropping the rest loses something; emitting a
+   * number nobody can dial loses more.
+   */
+  const first = raw.split(/[;,]|\bor\b/i)[0]?.trim();
+  if (!first) return undefined;
+
   // Drop extensions before counting digits: "555-0100 x23" is a 7-digit number, not 9.
-  const trunk = raw.split(/\s(?:x|ext\.?|extension)\s*/i)[0] ?? raw;
+  const trunk = first.split(/\s(?:x|ext\.?|extension)\s*/i)[0] ?? first;
   const digits = trunk.replace(/\D/g, "");
   if (digits.length === 0) return undefined;
 
+  /*
+   * E.164 caps a telephone number at 15 digits, worldwide, and 7 is shorter than any real
+   * national number plus its country code. The domestic branches below already check length
+   * against the dialling plan; these two did not, so an already-international value was
+   * emitted whatever it said.
+   *
+   * Returns undefined rather than a best guess. A blank phone renders as *unknown*, which is
+   * true and sends nobody anywhere. A wrong one sends somebody to a dead line at 2am, and
+   * this schema's whole position is that a wrong answer is worse than no answer.
+   */
+  const dialable = (d: string): string | undefined =>
+    d.length >= 7 && d.length <= 15 ? "+" + d : undefined;
+
   // Already international, whoever wrote it. Nothing to infer.
-  if (raw.trim().startsWith("+")) return "+" + digits;
-  if (digits.startsWith("00")) return "+" + digits.slice(2);
+  if (first.startsWith("+")) return dialable(digits);
+  if (digits.startsWith("00")) return dialable(digits.slice(2));
 
   const plan = DIALLING[country];
   if (!plan) return undefined;

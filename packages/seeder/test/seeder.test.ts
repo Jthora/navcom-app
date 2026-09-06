@@ -752,3 +752,38 @@ describe("Overture, the second source", () => {
     ])).toEqual([]);
   });
 });
+
+describe("a phone number nobody can dial", () => {
+  /**
+   * Nine records shipped with one. OSM separates multiple values with `;` and the normaliser
+   * stripped non-digits before splitting, welding two numbers into one:
+   * `+1-215-848-5658;+1-215-848-9660` became `+1215848565812158489660`.
+   *
+   * The most-used field on the surface at 11pm, and a `tel:` link on that dials nothing.
+   */
+  it("takes the first of a multi-value field rather than concatenating them", () => {
+    expect(normalisePhone("+1-215-848-5658;+1-215-848-9660", "US")).toBe("+12158485658");
+    expect(normalisePhone("+1-801-588-0139;+1-877-388-5778;+1-801-721-2641", "US"))
+      .toBe("+18015880139");
+    expect(normalisePhone("+44 121 327 2974; +44 121 359 0801", "GB")).toBe("+441213272974");
+  });
+
+  it("handles the other separators sources actually use", () => {
+    expect(normalisePhone("+1 314 802 0700, +1 314 802 0701", "US")).toBe("+13148020700");
+    expect(normalisePhone("+1 314 802 0700 or +1 314 802 0701", "US")).toBe("+13148020700");
+  });
+
+  it("refuses an impossible number rather than emitting a best guess", () => {
+    // E.164 caps a number at 15 digits. Blank renders as `unknown`, which is true and sends
+    // nobody anywhere; a wrong number sends somebody to a dead line at 2am.
+    expect(normalisePhone("+1215848565812158489660", "US")).toBeUndefined();
+    expect(normalisePhone("+12345", "US")).toBeUndefined();
+    expect(normalisePhone("00" + "9".repeat(20), "US")).toBeUndefined();
+  });
+
+  it("still normalises the ordinary cases it always did", () => {
+    expect(normalisePhone("(314) 802-0700", "US")).toBe("+13148020700");
+    expect(normalisePhone("020 7946 0958", "GB")).toBe("+442079460958");
+    expect(normalisePhone("+1 314 802 0700 x23", "US")).toBe("+13148020700");
+  });
+});
