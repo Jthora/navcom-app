@@ -35,6 +35,9 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { createHash } from 'node:crypto';
+import { CID } from 'multiformats/cid';
+import * as Digest from 'multiformats/hashes/digest';
 import { getPublicKey } from 'nostr-tools/pure';
 import { PERMITTED, BROADCAST, REFUSALS } from '@navcom/core';
 
@@ -297,6 +300,40 @@ function nodeIdentity(env = process.env) {
  * particular may not say "implemented" while nothing implements it, and may not go on saying
  * "specified" once something does.
  */
+/**
+ * The bytes a vocabulary CID is taken over, and the only definition of them.
+ *
+ * Canonical because a consumer has to reproduce it exactly: namespaces sorted, members sorted
+ * inside each, no whitespace. Anything else and the hash is ours alone, which is the same as
+ * not having one.
+ *
+ * @param {Record<string, readonly string[]>} tags
+ * @returns {Buffer}
+ */
+export function canonicalVocabulary(tags) {
+  /** @type {Record<string, string[]>} */
+  const sorted = {};
+  for (const ns of Object.keys(tags).sort()) sorted[ns] = [...tags[ns]].sort();
+  return Buffer.from(JSON.stringify(sorted), 'utf8');
+}
+
+/**
+ * A raw CIDv1 over those bytes, computed synchronously.
+ *
+ * Raw rather than UnixFS: a consumer must be able to recompute this from the JSON they already
+ * fetched, with a sha256 and a multihash and nothing else. A directory-wrapped identifier would
+ * require them to run our encoder, which makes the check depend on agreeing about a library
+ * rather than about the content.
+ *
+ * @param {Record<string, readonly string[]>} tags
+ * @returns {string}
+ */
+export function vocabularyCid(tags) {
+  const bytes = canonicalVocabulary(tags);
+  const mh = Digest.create(0x12, createHash('sha256').update(bytes).digest());
+  return CID.create(1, 0x55, mh).toString();
+}
+
 export function intelDocument(root = ROOT) {
   const spec = readFileSync(join(root, 'docs/product/raw-intel.md'), 'utf8');
 
@@ -406,7 +443,34 @@ export function intelDocument(root = ROOT) {
         on_stale: 'validate tag SHAPE only, and say so in the drop reason. Never enforce a list you cannot confirm is current',
         note: 'A vocabulary change does NOT bump this contract version — the list is data, the version covers the shape. A consumer refetching only on a version change would never refetch.'
       },
+      /*
+       * Signed out-of-band, because this file is a supply-chain surface.
+       *
+       * Compromise the origin and you choose what a consumer accepts — an attacker's allowlist,
+       * enforced by us. The staleness ceiling caps that at 24 hours; this closes it. The same
+       * CID is announced as kind 30078 under `d: navcom:intel-vocabulary`, signed by the node
+       * key, on relays the web origin does not control. A consumer recomputes it from
+       * `vocabulary.tags` and compares against the relay copy. They must not take this field's
+       * word for itself — a CID published beside the thing it describes proves nothing alone.
+       */
+      cid: vocabularyCid(vocabulary),
+      cid_announced_as: { kind: 30078, d: 'navcom:intel-vocabulary' },
+      cid_over: 'JSON.stringify of vocabulary.tags with namespaces sorted and members sorted within each, utf8, no whitespace. Raw CIDv1, sha2-256.',
       tags: vocabulary
+    },
+    /**
+     * What a normal publication rate looks like, so anomaly detection can be distributed.
+     *
+     * Proposed by NavCom and then not implemented for several rounds. Stated publicly it costs
+     * nobody a staffed watch: a relay operator, a consumer or a bystander can all notice a rate
+     * that is not a person, without either of us telling them what to look for.
+     */
+    volume: {
+      shape: 'An observation is a human act at human rate. It is produced by somebody standing somewhere.',
+      per_operator_per_patrol: 'single digits typically; tens is a very busy night',
+      per_operator_per_day_max_plausible: 50,
+      abnormal: 'A sustained rate above this from one key is not a person on foot. It is not proof of bad faith — a scripted importer would look the same — but nothing in NavCom produces it, so it did not come from the app.',
+      note: 'These are expectations, not limits. NavCom enforces no rate; it has no server that could.'
     },
     refuses: '/.well-known/navcom-refusals.json'
   };

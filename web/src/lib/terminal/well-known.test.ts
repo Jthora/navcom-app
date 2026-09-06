@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { REFUSALS, PERMITTED, BROADCAST } from '@navcom/core';
 // Plain .mjs, deliberately: this is the file node runs during a build, long after the
 // TypeScript is gone, and testing the thing that actually runs is the point.
-import { refusalsDocument, healthDocument, metroFigures, nodeIdentity, intelDocument } from '../../../scripts/well-known.mjs';
+import { refusalsDocument, healthDocument, metroFigures, nodeIdentity, intelDocument, vocabularyCid, canonicalVocabulary } from '../../../scripts/well-known.mjs';
 
 /**
  * The descriptor cannot drift.
@@ -255,6 +255,33 @@ describe('the intel declaration', () => {
     expect(c.ttl_seconds).toBeGreaterThanOrEqual(c.ttl_seconds_min);
     expect(c.ttl_seconds).toBeLessThanOrEqual(c.ttl_seconds_max);
     expect(c.ttl_seconds_min).toBeGreaterThan(0);
+  });
+
+  it('publishes a vocabulary CID a consumer can actually recompute', () => {
+    /*
+     * The whole value is reproducibility by somebody else. If the canonical form drifts — a key
+     * order, a space — the hash becomes ours alone, which is the same as not having one, except
+     * it looks like a check.
+     */
+    const d = doc();
+    expect(d.vocabulary.cid).toMatch(/^b[a-z2-7]{20,}$/);
+    expect(vocabularyCid(d.vocabulary.tags)).toBe(d.vocabulary.cid);
+    // Order-independent: a consumer serialising in a different order must land on the same bytes.
+    const shuffled: Record<string, string[]> = {};
+    for (const k of Object.keys(d.vocabulary.tags).reverse()) {
+      shuffled[k] = [...d.vocabulary.tags[k]].reverse();
+    }
+    expect(vocabularyCid(shuffled)).toBe(d.vocabulary.cid);
+    expect(canonicalVocabulary(d.vocabulary.tags).toString('utf8')).not.toMatch(/\s/);
+    // And it must say where the signed copy lives, or the CID proves nothing about origin.
+    expect(d.vocabulary.cid_announced_as).toEqual({ kind: 30078, d: 'navcom:intel-vocabulary' });
+  });
+
+  it('states a publication rate, so anomaly detection is not ours to staff', () => {
+    const v = doc().volume;
+    expect(v.per_operator_per_day_max_plausible).toBeGreaterThan(0);
+    // It must not read as a limit NavCom enforces — there is no server that could.
+    expect(v.note.toLowerCase()).toContain('enforces no rate');
   });
 
   it('obliges a consumer to replace on refine, not add', () => {

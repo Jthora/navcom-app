@@ -37,6 +37,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildAnnouncement } from '@navcom/core';
+import { intelDocument } from './well-known.mjs';
 
 const OUT = fileURLToPath(new URL('../build/_ipfs/', import.meta.url));
 
@@ -145,6 +146,31 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     ? { relay, at: new Date().toISOString(), event: event.id }
     : { relay, at: new Date().toISOString(), failed: detail || 'refused without saying why' };
   writeFileSync(sidecarPath, JSON.stringify(sidecar, null, 2) + '\n');
+
+  /*
+   * The vocabulary, announced separately and for a different reason.
+   *
+   * The directory announcement says "this archive exists and here is its hash". This one closes
+   * a supply-chain hole: /.well-known/navcom-intel.json decides what a consumer accepts, so
+   * whoever controls the origin controls their allowlist. A CID signed by the node key and
+   * carried on a relay the origin does not control lets a consumer detect that — they recompute
+   * from the JSON they fetched and compare against this.
+   *
+   * Published even when the directory announcement failed. They are independent claims and a
+   * relay refusing one is no reason to withhold the other.
+   */
+  const intel = intelDocument();
+  const vocabEvent = buildAnnouncement(
+    secret,
+    { artifact: 'navcom:intel-vocabulary', cid: intel.vocabulary.cid },
+    Math.floor(Date.now() / 1000)
+  );
+  const vocab = await publish(relay, vocabEvent);
+  console.log(
+    vocab.ok
+      ? `[announce] vocabulary ${intel.vocabulary.cid} → ${relay}`
+      : `[announce] vocabulary refused: ${vocab.detail || 'no reason given'}`
+  );
 
   if (ok) {
     console.log(`[announce] ${sidecar.cid} → ${relay}`);

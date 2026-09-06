@@ -268,6 +268,37 @@ every call* — a denial of service against us, published by us. Starcom had to 
 unprompted; a contract able to instruct a consumer to hurt its publisher should state what it
 will never ask for rather than leaving every consumer to guess a floor.
 
+### Verifying the vocabulary came from us
+
+This file decides what a consumer accepts, so **whoever controls the origin controls their
+allowlist** — a compromise here means a consumer enforcing an attacker's list, believing it is
+ours. The staleness ceiling caps that at 24 hours. This closes it.
+
+`vocabulary.cid` is a raw CIDv1 (sha2-256) over the canonical bytes, and the same CID is
+announced as **kind `30078`, `d: navcom:intel-vocabulary`**, signed by the node key whose
+pubkey is at `/.well-known/navcom-node.json`, published to relays the web origin does not
+control.
+
+```
+1. fetch /.well-known/navcom-intel.json
+2. canonical = JSON.stringify(vocabulary.tags) with namespaces sorted,
+   members sorted within each, utf8, no whitespace
+3. recompute raw CIDv1(sha2-256) over those bytes
+4. fetch kind 30078, d=navcom:intel-vocabulary, from a relay
+5. verify its signature against the node pubkey — pinned, or learned once
+6. the two CIDs must match
+```
+
+**Do not take `vocabulary.cid` as evidence of itself.** A hash published beside the thing it
+describes proves nothing: an attacker rewriting the vocabulary rewrites the hash in the same
+request. The check is only worth anything against the relay copy, which requires the node key,
+which the origin does not hold. And step 5 is the one that carries it — a pubkey read from the
+same compromised origin is no better than no check at all.
+
+The node key's authority is unchanged and is stated in its own descriptor: *"this key attests
+origin, never truth."* It says this vocabulary came from NavCom's build. It says nothing about
+whether the vocabulary is any good.
+
 **A vocabulary change does not bump the contract version.** The list is data, the version
 covers the shape, and the two move independently — so a consumer that refetches only when the
 version changes would never refetch at all. This is the sentence most likely to be assumed
