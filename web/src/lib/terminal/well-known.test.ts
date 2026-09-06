@@ -218,6 +218,37 @@ describe('the intel declaration', () => {
     expect(tags).toContain('nothing_observed');
   });
 
+  it('pins the geohash length to the same number the spec does', () => {
+    /*
+     * The exact drift this catches happened. The prose said "coarse (~20 km)" — four
+     * characters — and gave a five-character example, which is +/-2.4 km. An eight-fold
+     * disagreement inside the one field whose only job is preventing an operator from being
+     * located, and a consumer builds against the example.
+     *
+     * So the number is read out of the spec's own table rather than compared to a literal
+     * here, which would just be a third place for it to disagree.
+     */
+    const spec = readFileSync(
+      fileURLToPath(new URL('../../../../docs/product/raw-intel.md', import.meta.url)), 'utf8'
+    );
+    const stated = spec.match(/geohash, exactly (\d+) characters/)?.[1];
+    expect(stated, 'the spec no longer states a geohash character count').toBeTruthy();
+    expect(doc().parameters.area_geohash_chars).toBe(Number(stated));
+  });
+
+  it('obliges a consumer to replace on refine, not add', () => {
+    // Without this the same observation lands twice, ~20km apart, corroborating itself.
+    const req = doc().requires.join(' ').toLowerCase();
+    expect(req).toContain('refines');
+    expect(req).toMatch(/replac/);
+  });
+
+  it('commits to an overlap window, so a version bump cannot starve a consumer', () => {
+    const v = doc().versioning;
+    expect(v.overlap_days).toBeGreaterThan(0);
+    expect(doc().version).toMatch(/^\d+\.\d+\.\d+$/);
+  });
+
   it('never promises a field the schema forbids', () => {
     const d = doc();
     const forbidden = d.never.join(' ').toLowerCase();

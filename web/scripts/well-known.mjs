@@ -347,7 +347,10 @@ export function intelDocument(root = ROOT) {
       'Grade downstream. NavCom carries method, which is a fact; it never grades its own operators, which would be a reputation system by another name',
       'Treat an unknown tag as unknown. Never infer meaning from a tag absent from this vocabulary',
       'Expect no free text. There is none, by construction — a parser hoping for some is a parser waiting for a descriptor',
-      'F6 is a valid grade. There is no quality bar at submission, so low-confidence intel is the normal case and not an error'
+      'F6 is a valid grade. There is no quality bar at submission, so low-confidence intel is the normal case and not an error',
+      'Treat a `refines` event as REPLACING the observation it names, never as a second one. The two must never corroborate each other — dedup on event id is correct and does not catch this, because they are genuinely distinct events',
+      'Honour `precision`. An `area` observation is a 4-character geohash and must render as an area; drawing it as a point asserts a location the operator deliberately withheld, which is usually a real address belonging to someone uninvolved',
+      'Do not alias `method` onto an existing vocabulary. `saw` and `told` are not the nearest words in your taxonomy — `told` in particular cannot name who told them, because that would be a person the anchor rule forbids, so it is unverifiable by construction rather than merely unverified'
     ],
     /** What will never appear, so nobody builds a field expecting it. */
     never: [
@@ -359,8 +362,23 @@ export function intelDocument(root = ROOT) {
     ],
     parameters: {
       precision_delay_hours: 48,
+      /* A count, not a distance. "Coarse" is not a specification and an earlier draft's
+         adjective and example disagreed by eight-fold. The privacy claim is a function of
+         this number, so it is normative and pinned. */
+      area_geohash_chars: 4,
       expiry_days: 90,
-      expiry_rule: 'uncorroborated and uncited observations expire; cited ones are pinned'
+      expiry_rule: 'uncorroborated and uncited observations are dropped from local stores; cited ones are kept. Not a property of the event — a relay that keeps everything is not in violation'
+    },
+    /**
+     * How this contract changes, so a bump cannot silently stop ingestion.
+     *
+     * A consumer is told to fail closed on an unrecognised version, which is right and makes
+     * a surprise bump NavCom's failure rather than theirs.
+     */
+    versioning: {
+      policy: 'semver. A breaking change increments major and is announced here before it ships',
+      overlap_days: 90,
+      commitment: 'Both versions are emitted during the overlap. A consumer failing closed on an unknown version will never be starved without warning'
     },
     vocabulary: {
       status: 'stub — needs local knowledge, and is deliberately not generated',

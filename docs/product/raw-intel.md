@@ -74,6 +74,17 @@ key per observation, which forfeits `supersedes` entirely, since supersession is
 author's own account. An operator who wants no linkage at all between two observations must
 also accept that neither can correct the other.
 
+**And it is load-bearing for something it was not chosen for.** Because the event is still
+signed with one contact key, two `anonymous` observations from the same operator **share a
+pubkey and are detectably one source**. Starcom's weight model relies on exactly this: an
+anonymous observation is floored rather than excluded, and *cannot corroborate itself*.
+
+Key-level anonymity would break that silently — one actor would present as N independent
+sources, and Sybil corroboration becomes free. So this is recorded here rather than left as a
+consequence: **a future change that "improves" anonymity to a throwaway key per observation
+reopens the correlated-fabrication hole across the whole grid**, in a system whose analysis
+layer has been told it can trust source independence.
+
 ## 3. Fields
 
 | Field | Required | Notes |
@@ -106,6 +117,36 @@ whose horizon is campaigns and patterns — effectively nothing.
 observations over time; the event carries `observed_at`, so nothing about *when* is hidden.
 That threat is answered by §9 instead. **Two threats, two mechanisms, and neither substitutes
 for the other.**
+
+### The encoding, pinned
+
+| `precision` | Encoding | Cell |
+|---|---|---|
+| `area` | **geohash, exactly 4 characters** | ±20 km |
+| `exact` | full coordinates | — |
+
+**Four characters, stated as a count rather than a distance.** An earlier draft said "coarse
+(~20 km)" and gave a five-character example, which is ±2.4 km — an eight-fold disagreement
+inside the one field whose entire job is preventing an operator from being located. A consumer
+builds against the example, not the adjective. *"Coarse" is not a specification*, and the
+privacy claim here is a function of the character count, so the count is normative.
+
+### The refinement replaces the observation. It never adds one.
+
+The `exact` event carries `["refines", "<event id of the area event>"]`, and a consumer
+**MUST** treat the pair as one observation: the refinement supersedes the original's position
+and **the two never corroborate each other**.
+
+Spelled out because the obvious reading is wrong and dangerous. Dedup on event id is correct
+and does not catch this — the two events are genuinely distinct. Without this rule, one
+operator reporting one thing once produces two observations ~20 km apart that
+**confirm each other**, which is the correlated-fabrication failure arriving through a
+mechanism built for privacy.
+
+`refines` is deliberately not `supersedes`. Supersession means *the author changed their
+account*; refinement means *the same account, at a resolution that was withheld on purpose*.
+A consumer that conflated them would treat added precision as a correction and, worse, treat a
+correction as merely more precise.
 
 ## 5. The anchor rule
 
