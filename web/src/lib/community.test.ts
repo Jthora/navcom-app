@@ -35,16 +35,23 @@ function htmlFiles(dir: string): string[] {
 /** Every `href` on every built page, with the page it came from. */
 let hrefs: { path: string; href: string }[] = [];
 
-beforeAll(() => {
+beforeAll(async () => {
   const files = htmlFiles(BUILD);
   if (files.length === 0) {
     throw new Error('No build output. Run `npm run build` before these tests.');
   }
-  hrefs = files.flatMap((path) =>
-    parse(readFileSync(path, 'utf8'))
-      .querySelectorAll('a[href]')
-      .map((a) => ({ path, href: a.getAttribute('href') as string }))
-  );
+  /*
+   * Yielded, for the reason rtl.test.ts records: parsing 12,329 documents in one synchronous
+   * pass holds the event loop long enough that Vitest's reporter heartbeat times out, and the
+   * run fails with an unhandled error while every test in it passed.
+   */
+  hrefs = [];
+  for (const [i, path] of files.entries()) {
+    if (i % 250 === 0) await new Promise((r) => setImmediate(r));
+    for (const a of parse(readFileSync(path, 'utf8')).querySelectorAll('a[href]')) {
+      hrefs.push({ path, href: a.getAttribute('href') as string });
+    }
+  }
   // Deliberately site-wide: the guard's whole point is that *nothing* anywhere links to a
   // squatted domain. Memory is fine — each document is collectable once its hrefs are out —
   // but scanning 12,329 pages does not fit the 10s hook default.

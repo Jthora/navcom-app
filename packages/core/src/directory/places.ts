@@ -60,12 +60,17 @@ export type PlaceMethod = (typeof PLACE_METHODS)[number];
  * Extra fields a place may carry when it is created.
  *
  * Kept to what somebody standing outside can read off the building or was told on the phone.
+ * `notes` was here and is gone. It is free text, and the descriptor ban is enforced by there
+ * being nowhere to put one rather than by a rule saying not to — an unbounded field a relay can
+ * publish into is that mechanism failing, whatever the rule says. The field still exists on a
+ * record, curated in the repository; what a place may not do is carry one in from outside.
+ *
  * The decisive fields — pets, ID, sobriety, curfew, intake hours, who they accept — are
  * **deliberately absent**: they are not knowable from a doorway, and a creation form that
  * invited them would collect guesses with an operator's name attached. They arrive later, as
  * corrections, from somebody who asked.
  */
-export const PLACE_EXTRAS = ['phone', 'hours', 'notes'] as const;
+export const PLACE_EXTRAS = ['phone', 'hours'] as const;
 export type PlaceExtra = (typeof PLACE_EXTRAS)[number];
 
 export interface Place {

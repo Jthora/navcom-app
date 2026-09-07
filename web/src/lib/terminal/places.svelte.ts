@@ -158,7 +158,11 @@ export const places = {
    */
   async add(
     region: string,
-    draft: { name: string; type: ResourceRecord['type']; address: string; phone?: string; hours?: string; notes?: string },
+    // `notes` was accepted here and never supplied — the form collects name, address, type,
+    // method, phone and hours. Dead plumbing for a field that is now refused at the core:
+    // free text publishable from outside defeats the mechanism the descriptor ban rests on,
+    // which is that there is nowhere to put one.
+    draft: { name: string; type: ResourceRecord['type']; address: string; phone?: string; hours?: string },
     method: PlaceMethod = 'in_person'
   ): Promise<string> {
     const urls = relays();
@@ -168,7 +172,6 @@ export const places = {
     const fields: Place['fields'] = {};
     if (draft.phone?.trim()) fields.phone = draft.phone.trim();
     if (draft.hours?.trim()) fields.hours = draft.hours.trim();
-    if (draft.notes?.trim()) fields.notes = draft.notes.trim();
 
     const place: Place = {
       id: '',

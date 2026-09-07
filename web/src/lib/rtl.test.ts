@@ -83,7 +83,7 @@ describe('right-to-left is not broken by the stylesheet', () => {
 });
 
 describe('the document states its direction', () => {
-  it('sets lang and dir on every prerendered page', () => {
+  it('sets lang and dir on every prerendered page', async () => {
     // Logical properties are inert without this. `border-inline-start` resolves to the left
     // in `ltr` and the right in `rtl`, so a page that states no direction gets the
     // left-hand layout regardless of what language it is written in -- which is the exact
@@ -104,7 +104,17 @@ describe('the document states its direction', () => {
     // than the whole document: two expect() calls against 15kB of HTML, 12,329 times over,
     // took 24s and timed out. Same offenders-list shape the tests above already use.
     const offenders: string[] = [];
-    for (const page of pages) {
+    for (const [i, page] of pages.entries()) {
+      /*
+       * Yielded, because passing is not the same as behaving.
+       *
+       * This scan stays inside its budget and still starved Vitest's reporter: a tight
+       * synchronous loop over 12,329 files holds the event loop for ~45s, the `onTaskUpdate`
+       * RPC heartbeat goes unanswered, and the run fails with an unhandled error while every
+       * test in it passed. A timeout stops a test dying on the clock; it does nothing about a
+       * test that never lets the runner speak.
+       */
+      if (i % 500 === 0) await new Promise((r) => setImmediate(r));
       const head = readFileSync(page, 'utf8').slice(0, 2048);
       const tag = head.match(/<html[^>]*>/)?.[0] ?? '';
       if (!/\blang=/.test(tag)) offenders.push(`${page.replace(BUILD, '')}: no lang`);

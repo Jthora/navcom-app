@@ -57,11 +57,35 @@ import { isDecisive } from './decisive.js';
  * by type** — a field added to the schema appears here without anybody remembering to add it,
  * and a hand-kept list is exactly the thing that drifts.
  *
- * Coordinates are excluded. A correction is about what a place does, not where it is, and the
- * position of a building is not something an operator learns by being turned away at the door.
+ * Each exclusion carries its reason, because a bare list of literals is the thing that grows
+ * without anybody being able to say why.
  */
+const NOT_CORRECTABLE: Partial<Record<ResourceField, string>> = {
+  lat: 'a correction is about what a place does, not where it is, and the position of a building is not something an operator learns by being turned away at the door',
+  lon: 'the same',
+  /*
+   * The one that was open, and it was open in shipped code rather than in a design.
+   *
+   * `notes` is free text. A correction carrying it is published, signed and attributed, and a
+   * hand-rolled client could put anything in it — `readCorrection`'s own note says such a
+   * client is the ordinary case on an open protocol, not the hostile one. Verified before
+   * removing: a correction asserting *"white male, 30s, red jacket, seen near the corner"* was
+   * accepted and read back intact.
+   *
+   * Which defeats the mechanism the descriptor ban and the refuge-location ban both rest on.
+   * That argument is not "we forbid descriptors" — it is **there is nowhere to put one**, and
+   * it stops being true the moment one unbounded field is publishable from a relay.
+   *
+   * The field itself stays: 8,187 records carry `Source: <url>` provenance and 241 carry
+   * maintainer prose, and that is curated data in a repository somebody reviews. What is
+   * refused is *publishing into it from outside*. No UI offered this, so nothing reachable
+   * changes — which is why it survived unnoticed.
+   */
+  notes: 'free text cannot be policed, and the no-descriptor rule is enforced by there being nowhere to put one rather than by a prohibition'
+};
+
 const CORRECTABLE: readonly ResourceField[] = (Object.keys(FIELD_CLASS) as ResourceField[]).filter(
-  (f) => f !== 'lat' && f !== 'lon'
+  (f) => !(f in NOT_CORRECTABLE)
 );
 
 export interface Correction {
