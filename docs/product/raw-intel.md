@@ -173,38 +173,54 @@ correction as merely more precise.
 
 ## 5. The anchor rule
 
-> **A report MUST name an entity that could, in principle, respond.**
+> **A report MUST name a thing that is already a matter of public record.**
 
-| | |
-|---|---|
-| ✓ | St Patrick's — an organisation |
-| ✓ | 4th & Vine streetlight — infrastructure with an owner |
-| ✓ | The lot at 212 Elm — a parcel |
-| ✗ | An encampment behind the Home Depot |
-| ✗ | People sleeping under the overpass |
+| | | |
+|---|---|---|
+| ✓ | St Patrick's | an organisation, on record |
+| ✓ | 4th & Vine streetlight | infrastructure, owned by somebody on record |
+| ✓ | The lot at 212 Elm | a parcel, on record |
+| ✗ | An encampment behind the Home Depot | on no record; constituted by the people in it |
+| ✗ | People sleeping under the overpass | the same, said plainly |
 
-This is invariant 1 — *nothing is recorded about the people being served* — reaching a case
-it had always covered and nobody had noticed: **an encampment location is information about
-people being served, expressed as coordinates.** Geography is a descriptor when the subject
-is a population.
+### Why this wording, and not the one it replaces
 
-It is also the ethical asymmetry made structural. An institution can dispute a report about
-itself; a patch of ground cannot, and neither can the people on it. **So institutions are
-reportable and ground is not.**
+It read *"an entity that could, in principle, respond"*, and that was a proxy dressed as a
+principle. **Nothing responds.** A streetlight does not; the city that owns it does. A shelter
+does not; the organisation does. Applied honestly the old rule excluded almost everything,
+and applied loosely it excluded nothing.
 
-**The anchor path must not carry `notes`.** The rule above is enforced by there being no
-free-text field to put a descriptor in — and the place-creation path has one.
-`PLACE_EXTRAS = ['phone', 'hours', 'notes']`, and `notes` is free text. An observation that
-creates its anchor could therefore publish exactly what §6 exists to prevent, through the door
-standing next to it. The observation flow must not expose `notes`, and must say so in the
-docblock the way `places.ts` already names the decisive fields it deliberately omits — so the
-next person does not restore it as an oversight.
+The property actually being reached for is: **does naming this reveal where people are?** An
+encampment is *constituted by* the people — remove them and it does not exist. A streetlight
+exists regardless of who is standing near it. That is invariant 1 served directly rather than
+through a proxy, and it separates the cases without argument.
 
-**An anchor may be created by the observation**, through the existing operator-added place
-path in [`directory-schema.md`](directory-schema.md) §5 — which already demands a `method`
-of `in_person`, `staff_confirmed` or `phone`, and already marks the row as never having been
-through a maintainer. That path also enforces this rule for free: a new place needs a type
-from the directory taxonomy, and there is no type an encampment can be filed under.
+*Public record* is the schema-checkable version of it. A building, a parcel, a streetlight and
+an organisation all have an owner of record; an encampment has none, and that absence is
+exactly what makes naming it an act of exposure rather than of description. It also explains
+the refuge exception without special-casing: **a refuge is on public record — what is withheld
+is its address**, which is §6's job, not this one.
+
+### An anchor is not a place, and routing it through one was a category error
+
+An earlier draft said an anchor may be created through the operator-added place path, and
+claimed that path enforced this rule for free. It does not, and the reasoning was backwards.
+
+A *place* carries a `type` from `RESOURCE_TYPES` because the directory promises help and the
+type says what kind. An *anchor* only has to identify what an observation is about. Borrowing
+the service taxonomy for that inherits a vocabulary built to answer a different question — so
+two of the three examples above cannot be filed at all, because there is no directory type for
+a streetlight or a parcel, and there should not be: a directory whose meaning is *places that
+help somebody at 11pm* does not improve by listing street furniture.
+
+**So anchors need their own object** — a name, a location, and a type from a small closed list
+whose only job is that no category describes people. Deliberately lighter than a place: no
+hours, no phone, no method-of-knowing about services, because an anchor makes no promise to
+anybody. Some anchors coincide with a directory record; most do not.
+
+That object is not built, and its type list needs local knowledge in the same way the tag
+vocabulary does. **Until it exists, an observation can only anchor to a directory record that
+already exists** — which is a real limit and is stated here rather than discovered later.
 
 ## 6. No free text leaves the device
 
@@ -214,12 +230,37 @@ and says to guide rather than pretend. So it is not policed — **it is not publ
 An operator's own notes stay in the **Wipeable** tier, on the device, destroyed by panic
 wipe, exactly as now. A published observation is composed entirely of selected values.
 
-This single mechanism enforces both hard prohibitions at once:
+This single mechanism carries both hard prohibitions:
 
 - **No physical descriptors.** Race, clothing, build, vehicle — the machinery of profiling,
-  and what turned Citizen and Nextdoor into instruments of harm. There is no field to put
-  one in.
+  and what turned Citizen and Nextdoor into instruments of harm. The observation has no field
+  to put one in.
 - **No locating vulnerable people.** §5 refuses the anchor; §6 refuses the phrasing.
+
+### The limit, because the claim above has one
+
+**An anchor has a name, and a name is free text.** It has to be — there is no directory
+without names — so this is a limit rather than a hole, and it cannot be closed the way
+`notes` was. Verified rather than assumed: a place named *"camp behind Home Depot — white
+male 30s red jacket"* is accepted today.
+
+So the honest statement of what the schema buys, which is narrower than earlier drafts of
+this page claimed:
+
+| | |
+|---|---|
+| The observation carries no free text | **true, and structural** |
+| Nothing anywhere in the chain carries free text | **false** — the anchor it references has a name |
+| No *category* exists for locating people | **true** — you cannot file a class of thing |
+| No individual can lie in a name field | **false, and unachievable** |
+
+**The schema prevents a system for finding people. It cannot prevent one person lying once.**
+That difference is the whole of what is defensible here, and stating the stronger version — as
+this document did — is the kind of overclaim that collapses on one adversarial reading.
+
+What answers the residue is not structure: a deceptive anchor name is one signed, attributed,
+correctable row rather than a capability, and the additive-only merge means it can be
+contradicted but never used to delete anything.
 
 **Cost, stated plainly:** with a closed vocabulary this is not fully *raw* intel. It is
 structured field observation, which is the safe subset. Roughly a third of the value of

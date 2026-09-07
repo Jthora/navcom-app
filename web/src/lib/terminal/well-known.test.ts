@@ -297,6 +297,27 @@ describe('the intel declaration', () => {
     expect(doc().version).toMatch(/^\d+\.\d+\.\d+$/);
   });
 
+  it('does not claim the chain is free of free text, because it is not', () => {
+    /*
+     * This file said "never: free text of any kind", and a place name accepts anything —
+     * verified: "camp behind Home Depot — white male 30s red jacket" is a valid place name
+     * today. A directory cannot exist without names, so that is a limit rather than a hole,
+     * and the claim had to narrow rather than the schema tighten.
+     *
+     * Guarded because the overclaim is the comfortable sentence. It reads better, it was
+     * written twice, and it is the one an adversarial reader breaks first.
+     */
+    const d = doc();
+    const freeText = d.never.find((n: string) => n.toLowerCase().includes('free text')) ?? '';
+    expect(freeText, 'the contract no longer mentions free text at all').toBeTruthy();
+    expect(
+      freeText.toLowerCase(),
+      'the free-text claim must scope itself to the observation'
+    ).toContain('observation');
+    expect(d.anchor_names_are_free_text?.claim.toLowerCase()).toContain('anchor');
+    expect(d.anchor_names_are_free_text?.consumer_should.toLowerCase()).toContain('unstructured');
+  });
+
   it('never promises a field the schema forbids', () => {
     const d = doc();
     const forbidden = d.never.join(' ').toLowerCase();

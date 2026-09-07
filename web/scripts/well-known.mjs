@@ -389,11 +389,30 @@ export function intelDocument(root = ROOT) {
       'Honour `precision`. An `area` observation is a 4-character geohash and must render as an area; drawing it as a point asserts a location the operator deliberately withheld, which is usually a real address belonging to someone uninvolved',
       'Do not alias `method` onto an existing vocabulary. `saw` and `told` are not the nearest words in your taxonomy — `told` in particular cannot name who told them, because that would be a person the anchor rule forbids, so it is unverifiable by construction rather than merely unverified'
     ],
+    /*
+     * The limit on the claim above, published because an earlier version of this file made the
+     * stronger one and a consumer may have built against it.
+     *
+     * An anchor has a name and a name is free text — there is no directory without names, so
+     * it cannot be closed the way a notes field was. The observation carries none; the record
+     * it points at carries one. A consumer resolving an anchor is therefore handling
+     * unstructured text and should treat it as such, whatever this document says about
+     * observations.
+     *
+     * What the schema does buy is narrower and still worth having: no CATEGORY exists for
+     * locating people, so there is no way to file a class of thing. It prevents a system for
+     * finding people. It does not prevent one person lying once.
+     */
+    anchor_names_are_free_text: {
+      claim: 'The observation carries no free text. The anchor it references has a name, which does.',
+      consumer_should: 'Treat a resolved anchor name as unstructured text. Do not infer from this document that nothing in the chain is free-form.',
+      why_not_closed: 'There is no directory without names. This is a limit, not a hole.'
+    },
     /** What will never appear, so nobody builds a field expecting it. */
     never: [
       'physical descriptors of any person — race, clothing, build, vehicle',
       'the location of people being served, including encampments and rough sleeping',
-      'free text of any kind',
+      'free text of any kind IN THE OBSERVATION — but see `anchor_names_are_free_text` below, because the thing it references is not so constrained',
       'photographs (deferred, not forgotten)',
       'anything signed by an operational key'
     ],
