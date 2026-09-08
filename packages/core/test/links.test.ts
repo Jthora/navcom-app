@@ -68,7 +68,7 @@ function readCardAsOldClientWould(event: Event): Card | null {
 describe('the outage this avoids', () => {
   it('a card with links is still readable by a client that has never heard of links', () => {
     const linked = overRelay(
-      buildCard(contact, card, T, [link('tiktok', 'raven'), link('bluesky', 'raven.bsky.social')])
+      buildCard(contact, card, T, { links: [link('tiktok', 'raven'), link('bluesky', 'raven.bsky.social')] })
     );
 
     const old = readCardAsOldClientWould(linked);
@@ -78,13 +78,13 @@ describe('the outage this avoids', () => {
   });
 
   it('puts nothing new in content — which is the mechanism, not a side effect', () => {
-    const linked = buildCard(contact, card, T, [link('youtube', 'raven')]);
+    const linked = buildCard(contact, card, T, { links: [link('youtube', 'raven')] });
     const keys = Object.keys(JSON.parse(linked.content) as Record<string, unknown>);
     for (const key of keys) expect(CARD_FIELDS as readonly string[]).toContain(key);
   });
 
   it('puts them in tags, in the NIP-39 shape', () => {
-    const linked = buildCard(contact, card, T, [link('github', 'raven', 'abc123')]);
+    const linked = buildCard(contact, card, T, { links: [link('github', 'raven', 'abc123')] });
     expect(linked.tags).toContainEqual(['i', 'github:raven', 'abc123']);
     // The region tag is still first and still the thing a board subscribes by.
     expect(linked.tags[0]).toEqual(['d', 'st-louis']);
@@ -99,11 +99,11 @@ describe('the outage this avoids', () => {
 describe('reading links back', () => {
   it('round-trips through a relay in the order they were published', () => {
     const event = overRelay(
-      buildCard(contact, card, T, [
+      buildCard(contact, card, T, { links: [
         link('tiktok', 'raven'),
         link('instagram', 'raven.stl'),
         link('bluesky', 'raven.bsky.social')
-      ])
+      ] })
     );
     const read = readCard(event);
     expect(read).not.toBeNull();
@@ -124,7 +124,7 @@ describe('reading links back', () => {
   });
 
   it('strips a leading @ so both spellings of a handle agree', () => {
-    const read = readCard(overRelay(buildCard(contact, card, T, [link('tiktok', '@raven')])));
+    const read = readCard(overRelay(buildCard(contact, card, T, { links: [link('tiktok', '@raven')] })));
     expect(read!.links[0]!.handle).toBe('raven');
   });
 });
@@ -142,7 +142,7 @@ describe('a bad link costs its own row and never the card', () => {
 
   for (const [what, bad] of cases) {
     it(`drops ${what}, and still publishes the card`, () => {
-      const read = readCard(overRelay(buildCard(contact, card, T, [bad, link('bluesky', 'raven.bsky.social')])));
+      const read = readCard(overRelay(buildCard(contact, card, T, { links: [bad, link('bluesky', 'raven.bsky.social')] })));
       expect(read, 'the card must survive a bad link').not.toBeNull();
       expect(read!.card.callsign).toBe('Raven');
       expect(read!.links.map((l) => l.platform)).toEqual(['bluesky']);
@@ -150,7 +150,7 @@ describe('a bad link costs its own row and never the card', () => {
   }
 
   it('ignores a malformed i tag a relay invented', () => {
-    const event = overRelay(buildCard(contact, card, T, [link('tiktok', 'raven')]));
+    const event = overRelay(buildCard(contact, card, T, { links: [link('tiktok', 'raven')] }));
     const tampered = { ...event, tags: [...event.tags, ['i'], ['i', 'nocolon'], ['i', ':empty', '']] };
     // Read the tags directly: the signature no longer holds, and that is a different test.
     expect(readLinks(tampered.tags).map((l) => l.platform)).toEqual(['tiktok']);
@@ -167,7 +167,7 @@ describe('a bad link costs its own row and never the card', () => {
   it('stops at the cap rather than carrying an unbounded list onto somebody else’s board', () => {
     const many = PLATFORMS.slice(0, LINKS_MAX + 4).map((p) => link(p.id, 'raven'));
     expect(many.length).toBeGreaterThan(LINKS_MAX);
-    const read = readCard(overRelay(buildCard(contact, card, T, many)));
+    const read = readCard(overRelay(buildCard(contact, card, T, { links: many })));
     expect(read!.links).toHaveLength(LINKS_MAX);
   });
 });

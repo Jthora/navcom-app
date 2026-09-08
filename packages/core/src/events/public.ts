@@ -4,6 +4,13 @@ import type { SecretKey } from '../crypto/keys.js';
 import { KIND_CARD, KIND_PUBLIC_PRESENCE } from './kinds.js';
 import { CALLSIGN_MAX, withinLimit } from '../limits.js';
 import { linkTags, readLinks, type CardLink } from './links.js';
+import {
+  DEFAULT_VISIBILITY,
+  doesTags,
+  readDoes,
+  readVisibility,
+  type Visibility
+} from './profile.js';
 
 /**
  * An operator's public face — the card, and *"I am out tonight."*
@@ -104,18 +111,28 @@ export class CardError extends Error {}
  * Replaceable: publishing again replaces it, so an operator has one card rather than a
  * history of cards.
  */
+/**
+ * Everything about a card that rides in tags rather than in content.
+ *
+ * An options object rather than more positional arguments, because `Card` is exactly what
+ * gets serialised into `content` and that allowlist must stay closed -- so everything added
+ * from here on arrives beside it, not inside it. See `links.ts` for why that distinction is
+ * the difference between an addition and an outage.
+ */
+export interface CardOptions {
+  /** Where else this operator can be found, in rank order. */
+  links?: readonly CardLink[];
+  /** Whether the card appears on its region's board. Defaults to appearing. */
+  visibility?: Visibility;
+  /** What they say they do. A closed vocabulary; unknown terms are dropped. */
+  does?: readonly string[];
+}
+
 export function buildCard(
   contactSecret: SecretKey,
   card: Card,
   createdAt: number,
-  /**
-   * Where else this operator can be found, in rank order.
-   *
-   * A separate argument rather than a field on `Card`, because `Card` is exactly what gets
-   * serialised into `content` and the allowlist there must stay closed. Links ride in tags
-   * -- see `links.ts` for why that is the difference between an addition and an outage.
-   */
-  links: readonly CardLink[] = []
+  options: CardOptions = {}
 ): Event {
   const callsign = card.callsign.trim();
   if (!withinLimit(callsign, CALLSIGN_MAX)) {
@@ -141,7 +158,18 @@ export function buildCard(
       created_at: createdAt,
       // Unencrypted, and tagged by region so a client can ask one relay for one metro
       // rather than pulling every card on the network to filter locally.
-      tags: [['d', card.region], ...linkTags(links)],
+      /*
+       * The `d` tag is a query filter, not this event's identity -- kind 10911 is
+       * replaceable, keyed by pubkey and kind. Omitting it is what `address` visibility
+       * *is*: a card that cannot match any board's `#d` filter, while staying readable by
+       * anyone who fetches it by author. Delisting is the absence of a tag rather than a
+       * flag somebody else has to honour.
+       */
+      tags: [
+        ...((options.visibility ?? DEFAULT_VISIBILITY) === 'board' ? [['d', card.region]] : []),
+        ...linkTags(options.links ?? []),
+        ...doesTags(options.does ?? [])
+      ],
       content: JSON.stringify(content)
     },
     contactSecret
@@ -161,6 +189,15 @@ export interface PublishedCard {
    * it carries a proof that a reader has actually checked.
    */
   links: CardLink[];
+  /**
+   * Whether this card was published onto its region's board.
+   *
+   * Read from the event rather than from a claim inside it, so it cannot disagree with what
+   * a relay will actually serve to a board's filter.
+   */
+  visibility: Visibility;
+  /** What they say they do. Self-asserted, and rendered as such. */
+  does: string[];
   at: number;
 }
 
@@ -205,7 +242,14 @@ export function readCard(event: Event): PublishedCard | null {
   if (c.lightning) card.lightning = String(c.lightning);
   // Never null and never throwing: a malformed link is dropped, and one of those must not
   // cost an operator their place on a board.
-  return { contact: event.pubkey, card, links: readLinks(event.tags), at: event.created_at };
+  return {
+    contact: event.pubkey,
+    card,
+    links: readLinks(event.tags),
+    visibility: readVisibility(event.tags),
+    does: readDoes(event.tags),
+    at: event.created_at
+  };
 }
 
 /**

@@ -54,6 +54,29 @@
 }
 .terminal textarea { min-height: 5rem; }
 
+/*
+ * Checkboxes and radios are not text fields, and the rule above is about text fields.
+ *
+ * It sets `width: 100%` and a 3.2rem min-height so a thumb can hit an input on a cheap
+ * phone. Applied to a checkbox that produces a control the width of the screen with no room
+ * left for its own label -- which is exactly what shipped on the card screen: two enormous
+ * circles and no readable text beside them, while every test passed because the text was in
+ * the DOM and the control was, technically, visible.
+ *
+ * Sized here rather than on the one screen that hit it, because this file exists so a screen
+ * does not restate input styling and the next screen with a checkbox would hit it too. The
+ * 44px target comes from the label wrapping it, not from the box.
+ */
+.terminal input[type='checkbox'],
+.terminal input[type='radio'] {
+  width: 1.3rem;
+  height: 1.3rem;
+  min-height: 0;
+  padding: 0;
+  flex: 0 0 auto;
+  accent-color: var(--t-station);
+}
+
 .terminal .note { font-size: .9rem; color: var(--t-faint); margin: 0 0 .3rem; line-height: 1.5; }
 .terminal .cost { color: var(--t-faint); font-size: .93rem; }
 

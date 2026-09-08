@@ -196,7 +196,10 @@ export async function publishCard(card: MyCard): Promise<void> {
       // choices, and publishing a card must not quietly enable the other.
       ...(address() ? { lightning: address()! } : {})
     },
-    Math.floor(Date.now() / 1000)
+    Math.floor(Date.now() / 1000),
+    // Beside the content rather than inside it -- see `events/links.ts` for why that is the
+    // difference between an addition and every older client dropping this operator.
+    { visibility: card.visibility, does: card.does, links: card.links }
   );
   saveCard(card);
   await Promise.allSettled(pool().publish(urls, event));

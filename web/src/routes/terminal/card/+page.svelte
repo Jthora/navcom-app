@@ -8,7 +8,18 @@
    */
   import { onMount } from 'svelte';
   import { Slot, Readout, Why } from '$lib/components/panel';
-  import { DOING_MAX } from '@navcom/core';
+  import {
+    DOES,
+    DOES_MAX,
+    DOING_MAX,
+    layout,
+    LINKS_MAX,
+    PLATFORMS,
+    platform as platformOf,
+    VISIBILITY_CHOICES,
+    type CardLink,
+    type Visibility
+  } from '@navcom/core';
   import { contactPubkey, listed, myCard, setListed, withdrawCard, type MyCard } from '$lib/terminal/card';
   import { loadIdentity } from '$lib/terminal/identity';
   import { publishCard } from '$lib/terminal/public.svelte';
@@ -24,6 +35,12 @@
   let busy = $state(false);
   let confirming = $state(false);
 
+  let visibility = $state<Visibility>('board');
+  let does = $state<string[]>([]);
+  let links = $state<CardLink[]>([]);
+  let newPlatform = $state('');
+  let newHandle = $state('');
+
   onMount(() => {
     published = myCard();
     contact = contactPubkey();
@@ -32,6 +49,9 @@
     if (published) {
       region = published.region;
       doing = published.doing ?? '';
+      visibility = published.visibility ?? 'board';
+      does = [...(published.does ?? [])];
+      links = [...(published.links ?? [])];
     }
   });
 
@@ -41,7 +61,13 @@
     if (!region || busy) return;
     busy = true;
     try {
-      await publishCard({ region, doing: doing.trim() || undefined });
+      await publishCard({
+        region,
+        doing: doing.trim() || undefined,
+        visibility,
+        does: [...does],
+        links: [...links]
+      });
       published = myCard();
       contact = contactPubkey();
     } finally {
@@ -57,6 +83,56 @@
     confirming = false;
     region = '';
     doing = '';
+    withdrawExtras();
+  }
+
+  /** At most `DOES_MAX`. Choosing is an act, so the cap is felt rather than explained. */
+  function toggleDoes(id: string) {
+    if (does.includes(id)) does = does.filter((d) => d !== id);
+    else if (does.length < DOES_MAX) does = [...does, id];
+  }
+
+  const shape = $derived(layout(links));
+
+  /** What this link's position currently means. Shown so the ordering teaches itself. */
+  function rankOf(link: CardLink): string {
+    if (shape.feature?.platform === link.platform) return 'Featured';
+    if (shape.beside.some((b) => b.platform === link.platform)) return 'Beside it';
+    return 'Listed';
+  }
+
+  const canAdd = $derived(
+    newPlatform !== '' &&
+      newHandle.trim() !== '' &&
+      links.length < LINKS_MAX &&
+      !links.some((l) => l.platform === newPlatform)
+  );
+
+  function addLink() {
+    if (!canAdd) return;
+    links = [...links, { platform: newPlatform, handle: newHandle.trim() }];
+    newPlatform = '';
+    newHandle = '';
+  }
+
+  function removeLink(id: string) {
+    links = links.filter((l) => l.platform !== id);
+  }
+
+  /** Rank is position, so reordering is the only way to change it. */
+  function move(id: string, by: -1 | 1) {
+    const at = links.findIndex((l) => l.platform === id);
+    const to = at + by;
+    if (at < 0 || to < 0 || to >= links.length) return;
+    const next = [...links];
+    [next[at], next[to]] = [next[to]!, next[at]!];
+    links = next;
+  }
+
+  function withdrawExtras() {
+    visibility = 'board';
+    does = [];
+    links = [];
   }
 
   function toggleListed() {
@@ -131,6 +207,97 @@
       people.
     </p>
 
+    <fieldset class="pick">
+      <legend>Who can find you</legend>
+      {#each VISIBILITY_CHOICES as choice (choice.value)}
+        <label class="opt">
+          <input type="radio" name="visibility" value={choice.value} bind:group={visibility} />
+          <span>
+            <strong>{choice.label}</strong>
+            <!--
+              The audience, not a category name. A category can be believed to mean more than
+              it does; a sentence about who can see something cannot. `address` says out loud
+              that the card is still published, because there is no server here to enforce
+              anything stronger and implying one is the failure invariant 4 exists to forbid.
+            -->
+            <em>{choice.audience}</em>
+          </span>
+        </label>
+      {/each}
+    </fieldset>
+
+    <fieldset class="pick">
+      <legend>What you do</legend>
+      <p class="cost">
+        Optional. <strong>Nobody checks any of this</strong> — it says what you do, never what
+        you are qualified for. {DOES_MAX - does.length} left.
+      </p>
+      {#each DOES as d (d.id)}
+        <label class="opt">
+          <input
+            type="checkbox"
+            checked={does.includes(d.id)}
+            disabled={!does.includes(d.id) && does.length >= DOES_MAX}
+            onchange={() => toggleDoes(d.id)}
+          />
+          <span><strong>{d.label}</strong> <em>{d.means}</em></span>
+        </label>
+      {/each}
+    </fieldset>
+
+    <fieldset class="pick">
+      <legend>Where else to find you</legend>
+      <p class="cost">
+        Optional, and off unless you add one. <strong>This is permanent and it is a
+        join</strong> — anybody reading your card can connect this callsign to that account
+        from now on, including after you remove it here, because relays keep what they were
+        given.
+      </p>
+      <Why summary="Why the first one is bigger">
+        <p>
+          The first is shown as a feed, the next two beside it, the rest as links. Move them
+          to change that. Some platforms refuse to be shown at all, so those stay links
+          however you order them — better that than a panel that never fills.
+        </p>
+      </Why>
+
+      {#each links as l (l.platform)}
+        <div class="link">
+          <p class="who">
+            <strong>{platformOf(l.platform)?.label ?? l.platform}</strong>
+            <em>{l.handle}</em>
+          </p>
+          <!--
+            Rank and controls on their own line. On a 390px screen the one-line version wrapped
+            the remove button onto a row of its own, which read as belonging to the next link.
+          -->
+          <p class="controls">
+            <span class="rank">{rankOf(l)}</span>
+            <span class="buttons">
+              <button class="tiny" onclick={() => move(l.platform, -1)} disabled={links.indexOf(l) === 0} aria-label="Move {platformOf(l.platform)?.label} up">↑</button>
+              <button class="tiny" onclick={() => move(l.platform, 1)} disabled={links.indexOf(l) === links.length - 1} aria-label="Move {platformOf(l.platform)?.label} down">↓</button>
+              <button class="tiny" onclick={() => removeLink(l.platform)} aria-label="Remove {platformOf(l.platform)?.label}">✕</button>
+            </span>
+          </p>
+        </div>
+      {/each}
+
+      {#if links.length < LINKS_MAX}
+        <div class="add">
+          <label class="sr" for="platform">Platform</label>
+          <select id="platform" bind:value={newPlatform}>
+            <option value="">Add a platform</option>
+            {#each PLATFORMS as p (p.id)}
+              <option value={p.id} disabled={links.some((l) => l.platform === p.id)}>{p.label}</option>
+            {/each}
+          </select>
+          <label class="sr" for="handle">Handle</label>
+          <input id="handle" bind:value={newHandle} placeholder="your handle" autocomplete="off" />
+          <button onclick={addLink} disabled={!canAdd}>Add</button>
+        </div>
+      {/if}
+    </fieldset>
+
     <button onclick={publish} disabled={!region || busy}>
       {published ? 'Replace your card' : 'Publish your card'}
     </button>
@@ -189,4 +356,38 @@
   .act { gap: .6rem; }
   select, textarea { width: 100%; }
   .danger { border-color: var(--t-alarm); color: var(--t-alarm); }
+
+  .pick { border: 1px solid var(--t-line); border-radius: 4px; padding: .55rem .7rem; margin: 0; }
+  .pick legend { padding: 0 .35rem; font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; }
+  /* A row a thumb can hit, with the consequence on the same line as the choice. */
+  .opt { display: flex; gap: .55rem; align-items: baseline; padding: .4rem 0; min-height: 2.75rem; }
+  .opt em { display: block; font-style: normal; opacity: .78; font-size: .86rem; }
+  .opt input { margin-top: .2rem; }
+
+  /* Two lines, always. Never a wrap that orphans a control under the wrong link. */
+  .link { padding: .5rem 0; border-bottom: 1px solid var(--t-line); }
+  .link:last-of-type { border-bottom: 0; }
+  .link .who { margin: 0 0 .3rem; overflow-wrap: anywhere; }
+  .link .who em { font-style: normal; opacity: .78; }
+  .link .controls { margin: 0; display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+  .link .buttons { display: flex; gap: .35rem; flex: 0 0 auto; }
+  .rank { font-size: .74rem; text-transform: uppercase; letter-spacing: .07em; opacity: .7; }
+  /* Still 44px of target: the glyph is small, the button is not. */
+  .tiny { min-width: 2.75rem; min-height: 2.75rem; padding: 0; }
+  .tiny:disabled { opacity: .35; }
+
+  /*
+   * Add gets its own full-width row rather than sitting at the end of the handle field.
+   *
+   * The signature toggle is `position: fixed` in the bottom-right corner, and a compact Add
+   * button landed underneath it -- measured overlapping by 60 x 44px. Playwright still
+   * clicked it, because it re-scrolls before clicking; a thumb does not, and would have hit
+   * the toggle instead. Full width puts the button's centre well clear of that corner.
+   */
+  .add { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; }
+  .add select { flex: 1 1 100%; width: 100%; }
+  .add input { flex: 1 1 100%; min-width: 0; }
+  .add button { flex: 1 1 100%; }
+
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 </style>

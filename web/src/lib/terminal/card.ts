@@ -21,7 +21,15 @@
  * republishing under a new key while the old one sits there looking live.
  */
 
-import { newSecretKey, publicKeyOf, secretFromHex, secretToHex, type SecretKey } from '@navcom/core';
+import {
+  newSecretKey,
+  publicKeyOf,
+  secretFromHex,
+  secretToHex,
+  type CardLink,
+  type SecretKey,
+  type Visibility
+} from '@navcom/core';
 import { clearField, get, set } from './storage';
 
 const SECRET = 'contact_secret';
@@ -33,6 +41,22 @@ export interface MyCard {
   region: string;
   /** One line, optional, in the operator's own words. */
   doing?: string;
+  /**
+   * Whether the card goes onto its region's board.
+   *
+   * Stored so the choice survives a replace -- an operator who went address-only and then
+   * edited their line must not be quietly put back on the board by the edit.
+   */
+  visibility?: Visibility;
+  /** What they say they do. At most `DOES_MAX`, from a closed vocabulary. */
+  does?: string[];
+  /**
+   * Where else they can be found, in rank order.
+   *
+   * Held here rather than derived from the published event because an operator editing their
+   * card offline still has to see what they published.
+   */
+  links?: CardLink[];
 }
 
 /** The contact key, or null for an operator who has never published a card. */
