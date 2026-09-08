@@ -11,7 +11,7 @@
    */
   import { onMount } from 'svelte';
   import { Slot, Readout } from '$lib/components/panel';
-  import { NOTE_MAX } from '@navcom/core';
+  import { does, NOTE_MAX, platform as platformOf } from '@navcom/core';
   import { board } from '$lib/terminal/public.svelte';
   import { invite } from '$lib/terminal/invites.svelte';
   import { loadIdentity } from '$lib/terminal/identity';
@@ -154,6 +154,32 @@
               {#if e.out}<span class="badge">out tonight</span>{/if}
             </div>
             {#if e.doing}<p class="doing">{e.doing}</p>{/if}
+            {#if e.does.length > 0}
+              <!--
+                Their words, not a badge and not a qualification. Nobody checks a card, so
+                these are claims with the same standing as a directory record nobody has
+                visited -- and there is deliberately nothing here to filter or sort by, since
+                a board filterable by claimed capability rewards claiming more of them.
+              -->
+              <p class="does">{e.does.map((d) => does(d)?.label ?? d).join(' · ')}</p>
+            {/if}
+            {#if e.links.length > 0}
+              <!--
+                Links, not embeds. The board is a list; `who/[contact]` is the surface that
+                renders a feed. `no-referrer` because which operator's card somebody was
+                reading is not TikTok's business.
+              -->
+              <p class="elsewhere">
+                {#each e.links as l (l.platform)}
+                  <a
+                    href={platformOf(l.platform)?.url(l.handle)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    referrerpolicy="no-referrer"
+                  >{platformOf(l.platform)?.label ?? l.platform}</a>
+                {/each}
+              </p>
+            {/if}
             {#if e.lightning}
               <!--
                 A string to copy, and nothing that looks like a checkout. No amount, no
@@ -196,6 +222,12 @@
 {/if}
 
 <style>
+  /* Their claims, set quieter than their own words in `doing`. */
+  .does { margin: .15rem 0 0; font-size: .82rem; color: var(--t-muted); }
+  .elsewhere { margin: .3rem 0 0; display: flex; flex-wrap: wrap; gap: .5rem; }
+  /* 44px of target even though the text is small -- these sit in a dense list. */
+  .elsewhere a { font-size: .82rem; min-height: 2.75rem; display: inline-flex; align-items: center; }
+
   .act { gap: .6rem; }
   select, textarea { width: 100%; }
   .board { list-style: none; margin: 0; padding: 0; }

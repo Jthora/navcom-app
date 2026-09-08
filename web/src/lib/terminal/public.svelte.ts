@@ -26,6 +26,7 @@ import {
   KIND_PUBLIC_PRESENCE,
   readCard,
   readPublicPresence,
+  type CardLink,
   type PublishedCard
 } from '@navcom/core';
 import { contactKey, ensureContactKey, listed, myCard, saveCard, type MyCard } from './card';
@@ -52,6 +53,23 @@ export interface BoardEntry {
   doing?: string;
   /** A string to copy. Never an amount, and never a total. */
   lightning?: string;
+  /**
+   * What they say they do. **Self-asserted, and shown as their words rather than a badge.**
+   *
+   * Nobody checks a card, so these are claims -- the same standing as a directory record
+   * that says nobody has been. They must never be rendered as a qualification, and there is
+   * deliberately no way to filter or sort the board by them: a board that can be filtered by
+   * claimed capability rewards claiming more of them.
+   */
+  does: string[];
+  /**
+   * Where else they say they can be found.
+   *
+   * Carried here so the board can show that a card *has* somewhere to go, without the board
+   * itself becoming a page of embeds -- see `who/[contact]` for the surface that renders them
+   * properly.
+   */
+  links: CardLink[];
   /** Whether this operator is publishing *"out tonight"* right now. */
   out: boolean;
 }
@@ -99,6 +117,8 @@ export const board = {
         callsign: c.card.callsign,
         doing: c.card.doing,
         lightning: c.card.lightning,
+        does: c.does,
+        links: c.links,
         out: (outNow[c.contact] ?? 0) >= live
       }))
       .sort((a, b) => a.callsign.localeCompare(b.callsign));
