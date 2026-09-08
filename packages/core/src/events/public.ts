@@ -3,6 +3,7 @@ import type { Event } from 'nostr-tools/core';
 import type { SecretKey } from '../crypto/keys.js';
 import { KIND_CARD, KIND_PUBLIC_PRESENCE } from './kinds.js';
 import { CALLSIGN_MAX, withinLimit } from '../limits.js';
+import { linkTags, readLinks, type CardLink } from './links.js';
 
 /**
  * An operator's public face — the card, and *"I am out tonight."*
@@ -103,7 +104,19 @@ export class CardError extends Error {}
  * Replaceable: publishing again replaces it, so an operator has one card rather than a
  * history of cards.
  */
-export function buildCard(contactSecret: SecretKey, card: Card, createdAt: number): Event {
+export function buildCard(
+  contactSecret: SecretKey,
+  card: Card,
+  createdAt: number,
+  /**
+   * Where else this operator can be found, in rank order.
+   *
+   * A separate argument rather than a field on `Card`, because `Card` is exactly what gets
+   * serialised into `content` and the allowlist there must stay closed. Links ride in tags
+   * -- see `links.ts` for why that is the difference between an addition and an outage.
+   */
+  links: readonly CardLink[] = []
+): Event {
   const callsign = card.callsign.trim();
   if (!withinLimit(callsign, CALLSIGN_MAX)) {
     throw new CardError(`A card needs a callsign of ${CALLSIGN_MAX} characters or fewer.`);
@@ -128,7 +141,7 @@ export function buildCard(contactSecret: SecretKey, card: Card, createdAt: numbe
       created_at: createdAt,
       // Unencrypted, and tagged by region so a client can ask one relay for one metro
       // rather than pulling every card on the network to filter locally.
-      tags: [['d', card.region]],
+      tags: [['d', card.region], ...linkTags(links)],
       content: JSON.stringify(content)
     },
     contactSecret
@@ -139,6 +152,15 @@ export interface PublishedCard {
   /** The contact key that signed it. What an invite is addressed to. */
   contact: string;
   card: Card;
+  /**
+   * Where else they say they can be found, in the order they published.
+   *
+   * Empty for every card written before this existed, and for every operator who chose not
+   * to say -- which is the default and is not an incomplete card. **Each one is a claim**:
+   * a handle here means the holder of this contact key typed it, and nothing more, unless
+   * it carries a proof that a reader has actually checked.
+   */
+  links: CardLink[];
   at: number;
 }
 
@@ -181,7 +203,9 @@ export function readCard(event: Event): PublishedCard | null {
   const card: Card = { callsign: c.callsign.trim(), region: c.region };
   if (c.doing) card.doing = c.doing;
   if (c.lightning) card.lightning = String(c.lightning);
-  return { contact: event.pubkey, card, at: event.created_at };
+  // Never null and never throwing: a malformed link is dropped, and one of those must not
+  // cost an operator their place on a board.
+  return { contact: event.pubkey, card, links: readLinks(event.tags), at: event.created_at };
 }
 
 /**
