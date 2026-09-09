@@ -117,3 +117,60 @@ export function elapsedLabel(seconds: number): string {
  * failure means somebody is hurt.
  */
 export type Tone = 'neutral' | 'good' | 'warn' | 'cold' | 'alarm';
+
+/**
+ * The shape a tone is drawn as, beside the word it already says.
+ *
+ * ## Why a glyph at all, when the word is right there
+ *
+ * Not to save translation strings — it saves none. A glyph needs an accessible name, and that
+ * name gets translated exactly as the visible word did. What it buys is the two things a word
+ * cannot: it is **one em wide in every language**, so a panel laid out in English does not
+ * reflow when `DARK` becomes `DUNKEL` or `پنهان`; and it is **legible before it is read**, so
+ * an operator sweeping a panel at 2am finds the row that needs them without parsing five
+ * words in a language they may be reading as a second one.
+ *
+ * ## Why these shapes and not a tick and a cross
+ *
+ * Every icon in the tick/shield/badge family carries one prior — *somebody checked this* —
+ * and this application's most load-bearing sentence is that **nobody has**. A tick on `good`
+ * would quietly assert vetting on a screen built to deny it, so there is none here. `good`
+ * means *in place* — `Saved`, `Published`, `Registered` — and the honest drawing of that is a
+ * mark that is simply present.
+ *
+ * ## The system, which is the point
+ *
+ * |  | round | triangular |
+ * |---|---|---|
+ * | **hollow** | `cold` — nothing here | `warn` — wants attention |
+ * | **filled** | `good` — in place | `alarm` — asserted, rule 7 |
+ *
+ * Shape carries the category and fill carries the intensity, so **no two tones differ by
+ * colour alone**. That is not politeness: red/green colour blindness affects around 8% of men,
+ * `alarm` and `good` are the two tones it collapses, and one of them is sealed to `Distress`.
+ * A test holds the distinctness rather than this comment claiming it.
+ *
+ * `neutral` deliberately has none. It makes no state claim — it carries a count, an area, a
+ * duration — and a mark on every readout is a mark that distinguishes nothing. The gutter is
+ * still reserved for it in CSS so the column does not go ragged, which is rule 4.
+ */
+export type GlyphShape = 'disc' | 'triangle';
+
+export interface Glyph {
+  shape: GlyphShape;
+  /** Filled reads as asserted; hollow reads as absent or unresolved. */
+  filled: boolean;
+}
+
+export const GLYPHS: Record<Tone, Glyph | null> = {
+  good: { shape: 'disc', filled: true },
+  cold: { shape: 'disc', filled: false },
+  alarm: { shape: 'triangle', filled: true },
+  warn: { shape: 'triangle', filled: false },
+  neutral: null
+};
+
+/** The shape for a tone, or null where the tone makes no state claim. */
+export function glyphFor(tone: Tone): Glyph | null {
+  return GLYPHS[tone];
+}

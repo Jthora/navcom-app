@@ -8,12 +8,15 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
+  GLYPHS,
   READOUT_WORD_LIMIT,
   elapsedLabel,
   elapsedState,
+  glyphFor,
   isOverlong,
   wordCount,
-  windowState
+  windowState,
+  type Tone
 } from './panel';
 
 describe('rule 2 — a readout fits in five words', () => {
@@ -198,5 +201,43 @@ describe('the panel stylesheet against the device floor', () => {
       }
     }
     expect(missing, `no fallback before: ${missing.join(', ')}`).toEqual([]);
+  });
+});
+
+describe('the tone mark says what the colour says, without the colour', () => {
+  /*
+   * The reason this is a test and not a comment.
+   *
+   * A mark that differs from another mark only by colour is not a second channel, it is the
+   * same channel drawn twice. Red/green colour blindness affects roughly 8% of men and the two
+   * tones it collapses are `good` and `alarm` -- one of which is sealed to `Distress` by rule
+   * 7. So the distinctness these shapes are chosen for is asserted here, where changing one to
+   * match another fails, rather than trusted to whoever edits the map next.
+   */
+  const TONES: Tone[] = ['neutral', 'good', 'warn', 'cold', 'alarm'];
+
+  it('has a decision recorded for every tone, and no tone it does not know', () => {
+    expect(Object.keys(GLYPHS).sort()).toEqual([...TONES].sort());
+  });
+
+  it('draws no two tones the same', () => {
+    const drawn = TONES.map((t) => GLYPHS[t]).filter((g) => g !== null);
+    const shapes = drawn.map((g) => `${g!.shape}:${g!.filled}`);
+    expect(new Set(shapes).size, `two tones draw identically: ${shapes.join(', ')}`).toBe(
+      shapes.length
+    );
+  });
+
+  it('separates good from alarm by shape, not only by fill', () => {
+    // The pair a red/green reader cannot tell apart by colour. Fill alone would leave them
+    // distinguished by weight on a screen that may be dimmed to nothing at 2am.
+    expect(GLYPHS.good!.shape).not.toBe(GLYPHS.alarm!.shape);
+  });
+
+  it('leaves neutral unmarked, because it claims no state', () => {
+    // A count, an area, a duration. A mark on every readout is a mark that distinguishes
+    // nothing -- and the CSS still reserves its gutter, so the column does not go ragged.
+    expect(glyphFor('neutral')).toBeNull();
+    for (const t of TONES.filter((x) => x !== 'neutral')) expect(glyphFor(t)).not.toBeNull();
   });
 });

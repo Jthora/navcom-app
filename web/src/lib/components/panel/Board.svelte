@@ -18,6 +18,11 @@
    * one implementation of what "overdue" means rather than a second one drifting in a component.
    */
   import { flip } from 'svelte/animate';
+  // The component rather than a hand-rolled `.nc-readout`, which is what this was: it kept
+  // its own copy of the markup and so was the one readout in the app that no tone mark
+  // could reach. `watch/+page.svelte` already wraps a `Readout` in the `data-` attribute a
+  // test looks for, and this now matches it.
+  import Readout from './Readout.svelte';
 
   interface Row {
     operator: string;
@@ -42,7 +47,7 @@
 {#if entries.length === 0}
   <!-- Rule 6. Silence is a positive readout: nothing has been heard, which differs from
        nothing being wrong and differs again from the app being broken. -->
-  <p class="nc-readout" data-tone="cold" data-readout data-empty-board>{empty}</p>
+  <p data-empty-board><Readout value={empty} tone="cold" /></p>
 {:else}
   <div class="nc-floor" data-floor>
     {#each entries as e (e.operator)}

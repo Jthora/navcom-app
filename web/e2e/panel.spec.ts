@@ -131,3 +131,130 @@ test.describe('rule 2, against the built artifact', () => {
     }
   });
 });
+
+test.describe('the tone mark, against the built artifact', () => {
+  /*
+   * `panel.test.ts` holds the shapes and their distinctness. This holds the three things only
+   * a browser can answer: that the mark reached the screen, that it is actually drawn there,
+   * and that it did not join the text of the page on its way.
+   *
+   * The third one is the reason the mark is an `<svg>` and not a CSS `content:`. Eight specs
+   * in this directory assert on `body.innerText()` -- `funding`, `public-roster`,
+   * `capabilities`, `story-alone`, `story-doorway`, `print` and `link-colour` among them --
+   * and a generated glyph would have quietly prepended a character to every readout in all of
+   * them. That is exactly the class of failure `panel.css` already carries a scar from, when
+   * `text-transform: uppercase` reached a `<pre>` holding a watch key and nineteen tests fell
+   * over at once.
+   */
+  const STATES = [
+    { state: 'dark', holder: null, holder_kind: null, oncall: [] },
+    { state: 'station', holder: 'Owl', holder_kind: 'human', oncall: [] },
+    { state: 'automated', holder: 'nightwatch', holder_kind: 'agent', oncall: [oncall('Raven')] }
+  ];
+
+  test('every readout that claims a state carries its mark, and neutral carries none', async ({
+    page
+  }) => {
+    for (const s of STATES) {
+      await under(page, s);
+      await expect(page.locator('[data-readout]').first()).toBeVisible({ timeout: 10_000 });
+
+      const readouts = await page.locator('[data-readout]').all();
+      expect(readouts.length, `no readouts at all in state ${s.state}`).toBeGreaterThan(3);
+
+      for (const r of readouts) {
+        const tone = (await r.getAttribute('data-tone')) ?? '(none)';
+        const value = (await r.locator('[data-readout-value]').innerText()).trim();
+        const marks = await r.locator('svg[data-glyph]').count();
+        if (tone === 'neutral') {
+          expect(marks, `"${value}" is neutral and should carry no mark`).toBe(0);
+        } else {
+          expect(marks, `"${value}" is ${tone} and is missing its mark`).toBe(1);
+        }
+      }
+    }
+  });
+
+  test('and the mark is drawn, not merely present in the markup', async ({ page }) => {
+    /*
+     * A mechanism nobody can reach is not built. An `<svg>` with no intrinsic size renders at
+     * nothing at all while still satisfying every assertion about its existence -- so the
+     * question this asks is the one an operator would: is there a mark on the screen.
+     */
+    await under(page, STATES[0]);
+    const mark = page.locator('[data-readout][data-tone="cold"] svg[data-glyph]').first();
+    await expect(mark).toBeVisible({ timeout: 10_000 });
+
+    const box = await mark.boundingBox();
+    expect(box, 'the mark has no box at all').not.toBeNull();
+    expect(box!.width, 'the mark is too small to see').toBeGreaterThan(6);
+    expect(box!.height, 'the mark is too small to see').toBeGreaterThan(6);
+
+    // Hidden from assistive technology on purpose: the word beside it is the accessible name,
+    // and announcing both makes a screen reader say every state twice.
+    await expect(mark).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  test('at the size of the words it sits beside, and on their centre', async ({ page }) => {
+    /*
+     * Written after looking at a screenshot, because nothing else here could see it.
+     *
+     * The first version drew a mark about 0.73x the cap height beside it, and every assertion
+     * passed: it existed, it was visible, its box was wider than six pixels. On the screen it
+     * read as a small mark floating above the word rather than a peer of it. The diagnosis by
+     * eye -- "it sits too high" -- was then wrong twice over: measuring put its centre 0.3px
+     * from where it is now, so it was never misaligned, and a first attempt at this guard
+     * measured a probe span's line height and called it cap height.
+     *
+     * Hence the two things it is careful about. Cap height comes from canvas `TextMetrics`,
+     * which reports real ink. And the mark's extent adds the stroke back on, because
+     * `getBoundingClientRect` on an SVG shape returns geometry only -- the number that made a
+     * stroked circle and a stroked triangle look 20% apart while both measured "fine".
+     */
+    await under(page, STATES[0]);
+    await expect(page.locator('[data-readout]').first()).toBeVisible({ timeout: 10_000 });
+
+    const rows = await page.evaluate(() => {
+      const out: { text: string; ratio: number; offBy: number }[] = [];
+      for (const r of document.querySelectorAll('[data-readout]')) {
+        const svg = r.querySelector('svg[data-glyph]');
+        const shape = svg?.firstElementChild;
+        const v = r.querySelector('[data-readout-value]');
+        if (!svg || !shape || !v) continue;
+
+        const cs = getComputedStyle(v as Element);
+        const ctx = document.createElement('canvas').getContext('2d')!;
+        ctx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+        const m = ctx.measureText('H');
+        const cap = m.actualBoundingBoxAscent + Math.max(0, m.actualBoundingBoxDescent);
+
+        // Geometry plus stroke: what an eye actually sees.
+        const box = svg.getBoundingClientRect();
+        const perUnit = box.height / 16;
+        const stroke = parseFloat(shape.getAttribute('stroke-width') ?? '0') * perUnit;
+        const sb = shape.getBoundingClientRect();
+        const vb = (v as Element).getBoundingClientRect();
+
+        out.push({
+          text: (v.textContent || '').trim().slice(0, 20),
+          ratio: (sb.height + stroke) / cap,
+          offBy: sb.top + sb.height / 2 - (vb.top + vb.height / 2)
+        });
+      }
+      return out;
+    });
+
+    expect(rows.length, 'no marked readouts to measure').toBeGreaterThan(0);
+    for (const r of rows) {
+      const how = `the mark beside "${r.text}" is ${r.ratio.toFixed(2)}x its cap height`;
+      // Below 0.80 is the version that looked wrong. Above 1.15 the mark starts shouting over
+      // the word, and rule 1 is that the word is the readout.
+      expect(r.ratio, how).toBeGreaterThan(0.8);
+      expect(r.ratio, how).toBeLessThan(1.15);
+      expect(
+        Math.abs(r.offBy),
+        `the mark beside "${r.text}" is ${r.offBy.toFixed(2)}px off the line it sits on`
+      ).toBeLessThan(2);
+    }
+  });
+});

@@ -95,6 +95,17 @@
   line-height: 1.2;
   color: var(--t-ink);
   font-variant-numeric: tabular-nums;
+  /*
+   * The gutter the tone mark sits in, reserved for every tone -- including `neutral`, which
+   * has no mark. Rule 4 is spatial memory, and a value column that indents only when a mark
+   * happens to be present is a column nobody can learn the position of.
+   *
+   * Logical, not `padding-left`. `rtl.test.ts` reads the built CSS and fails on the physical
+   * properties: Arabic, Hebrew, Urdu and Persian read the other way, and a gutter on the
+   * wrong side puts the mark after the word it marks.
+   */
+  position: relative;
+  padding-inline-start: 1.4rem;
 }
 .terminal .nc-readout-sub {
   display: block;
@@ -111,6 +122,33 @@
 .terminal .nc-readout[data-tone='warn'] { color: var(--t-oncall); }
 .terminal .nc-readout[data-tone='cold'] { color: var(--t-muted); }
 .terminal .nc-readout[data-tone='alarm'] { color: var(--t-alarm); }
+
+/*
+ * The mark, drawn in the tone's own colour.
+ *
+ * `currentColor` and nothing else -- the four rules above are the single source of the colour,
+ * so a tone whose colour changes can never leave its mark behind on the old one.
+ *
+ * Sized in `em` so it tracks the readout's own type rather than a fixed pixel that would drift
+ * the moment anything sets a different font-size. Out of flow, so the value and its `sub` line
+ * up exactly as they did before the mark existed.
+ */
+.terminal .nc-readout-glyph {
+  position: absolute;
+  inset-inline-start: 0;
+  /*
+   * Centred on the cap height, not on the line box.
+   *
+   * The first version set this by eye from the numbers and the mark rode visibly high above
+   * `DARK` -- correct in every assertion and wrong on the screen, which is the failure mode
+   * this project keeps finding. The readout is uppercase at 1.05rem with a 1.2 line box, so
+   * the caps run roughly 0.24em to 0.96em from the top and their centre is near 0.6em; a
+   * 0.92em box at 0.14em puts the mark's centre at 0.6em to match.
+   */
+  top: 0.14em;
+  width: 0.92em;
+  height: 0.92em;
+}
 
 /*
  * Rule 2, made visible rather than trusted.
