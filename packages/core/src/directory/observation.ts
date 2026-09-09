@@ -37,6 +37,8 @@ import type { Event } from 'nostr-tools/core';
 import type { SecretKey } from '../crypto/keys.js';
 import { KIND_OBSERVATION } from '../events/kinds.js';
 import { CALLSIGN_MAX, withinLimit } from '../limits.js';
+import { geohash } from './geohash.js';
+import type { ResourceRecord } from './types.js';
 
 /**
  * Exactly what an observation may carry.
@@ -102,14 +104,24 @@ const GEOHASH = /^[0-9bcdefghjkmnpqrstuvwxyz]+$/;
  * shipping a placeholder is honest here and would not be somewhere the gap silently drops
  * data.
  */
-export const OBSERVATION_TAGS = [
-  'fenced', 'locked', 'demolished', 'rebuilt', 'blocked',
-  'closed', 'moved', 'hours_changed', 'capacity_full', 'reopened',
-  'light_out', 'camera_new', 'barrier_new', 'transit_changed',
-  'flyer_posted', 'notice_posted', 'sticker_qr',
-  'scam_targeting_community', 'predatory_operation',
-  'nothing_observed'
-] as const;
+export const OBSERVATION_VOCABULARY: Record<string, readonly string[]> = {
+  access: ['fenced', 'locked', 'demolished', 'rebuilt', 'blocked'],
+  service: ['closed', 'moved', 'hours_changed', 'capacity_full', 'reopened'],
+  infra: ['light_out', 'camera_new', 'barrier_new', 'transit_changed'],
+  artifact: ['flyer_posted', 'notice_posted', 'sticker_qr'],
+  threat: ['scam_targeting_community', 'predatory_operation'],
+  nil: ['nothing_observed']
+};
+
+/**
+ * Every term, flat, for validation.
+ *
+ * The groups are not decoration and were not mine to drop: `/.well-known/navcom-intel.json`
+ * publishes `vocabulary.tags` as `Record<string, string[]>`, so grouping is part of the
+ * contract a consumer already receives. Shipping a flat list here made core disagree with its
+ * own wire format, and made a picker that was twenty undifferentiated buttons tall.
+ */
+export const OBSERVATION_TAGS: readonly string[] = Object.values(OBSERVATION_VOCABULARY).flat();
 
 const TAG_SET = new Set<string>(OBSERVATION_TAGS);
 
@@ -303,6 +315,54 @@ function checkObservation(o: Observation, where: Where): Record<string, unknown>
   };
   if (o.supersedes) content.supersedes = o.supersedes;
   return content;
+}
+
+/**
+ * What an observation can be filed against, derived from a directory record.
+ *
+ * The interim form of §5's anchor rule. The anchor object does not exist, so the only thing
+ * an observation may name is a record the published directory already has — which satisfies
+ * *"a thing that is already a matter of public record"* by construction, because being in the
+ * directory is what being on record means here.
+ *
+ * ## The area is the anchor's, never the operator's
+ *
+ * Worth stating because the opposite is the obvious implementation and it is the one that
+ * gets somebody hurt. The cell published is a coarsening of **where the thing observed is** —
+ * a shelter whose address is already in the directory. It is not a reading from this phone,
+ * and nothing in this path touches the operator's position at any precision.
+ *
+ * What the coarseness still buys is timing: `saw` on a record implies the author was near it
+ * recently, and ±20 km makes *which* of the places in that cell unresolvable until the
+ * refinement lands two days later.
+ *
+ * ## Refusals fall out rather than being added
+ *
+ * A refuge carries no coordinates in this directory — `confidential.ts` strips them at parse
+ * and again at read — so it cannot produce a cell and is refused here without a rule of its
+ * own. That is the good kind of protection: one already in force, doing a second job.
+ */
+export type AnchorFor =
+  | { ok: true; anchor: string; where: Where }
+  | { ok: false; because: string };
+
+export function anchorFromRecord(record: ResourceRecord): AnchorFor {
+  if (typeof record.id !== 'string' || record.id.trim() === '') {
+    return { ok: false, because: 'That record has no id to file against.' };
+  }
+  if (typeof record.lat !== 'number' || typeof record.lon !== 'number') {
+    // A refuge reaches this branch, and so does any record nobody has placed yet.
+    return { ok: false, because: 'Nothing can be filed against a place with no position on record.' };
+  }
+  try {
+    return {
+      ok: true,
+      anchor: record.id.trim(),
+      where: { precision: 'area', geohash: geohash(record.lat, record.lon, AREA_GEOHASH_CHARS) }
+    };
+  } catch {
+    return { ok: false, because: 'That record\'s position is not a position.' };
+  }
 }
 
 export interface PublishedObservation {

@@ -14,6 +14,7 @@ import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import type { Event } from 'nostr-tools/core';
 import {
   ANONYMOUS,
+  anchorFromRecord,
   AREA_GEOHASH_CHARS,
   buildObservation,
   buildRefinement,
@@ -248,6 +249,57 @@ describe('what it refuses outright', () => {
     const event = build();
     const forged = overRelay({ ...event, content: JSON.stringify({ ...JSON.parse(event.content), callsign: 'Wren' }) });
     expect(readObservation(forged)).toBeNull();
+  });
+});
+
+describe('what an observation may be filed against', () => {
+  const place = (over: Record<string, unknown> = {}) =>
+    ({ id: 'st-louis/st-patrick-center', name: "St Patrick's", type: 'shelter',
+       lat: 38.627, lon: -90.1994, ...over }) as never;
+
+  it('coarsens the anchor’s own position, never the operator’s', () => {
+    const a = anchorFromRecord(place());
+    expect(a.ok).toBe(true);
+    if (!a.ok) return;
+    expect(a.anchor).toBe('st-louis/st-patrick-center');
+    // Cross-checked against an independent implementation rather than taken from this one --
+    // the first version of this line was a guess and disagreed with both.
+    expect(a.where).toEqual({ precision: 'area', geohash: '9yzg' });
+    expect(a.where.precision === 'area' && a.where.geohash).toHaveLength(AREA_GEOHASH_CHARS);
+  });
+
+  it('refuses a refuge, because a refuge has no coordinates to coarsen', () => {
+    /*
+     * Not a rule of its own. `confidential.ts` strips lat/lon from a `dv` record at parse and
+     * again at read, so it arrives here without a position and is refused for that -- one
+     * protection already in force, doing a second job.
+     */
+    const refuge = place({ type: 'dv', lat: undefined, lon: undefined });
+    const a = anchorFromRecord(refuge);
+    expect(a.ok).toBe(false);
+    if (a.ok) return;
+    expect(a.because).toMatch(/no position on record/i);
+  });
+
+  it('refuses a record nobody has placed yet, rather than inventing a cell', () => {
+    expect(anchorFromRecord(place({ lat: undefined })).ok).toBe(false);
+    expect(anchorFromRecord(place({ lon: undefined })).ok).toBe(false);
+  });
+
+  it('refuses a position that is not a position', () => {
+    expect(anchorFromRecord(place({ lat: 91 })).ok).toBe(false);
+    expect(anchorFromRecord(place({ lon: 200 })).ok).toBe(false);
+  });
+
+  it('builds an observation that reads back, end to end', () => {
+    const a = anchorFromRecord(place());
+    if (!a.ok) throw new Error(a.because);
+    const event = overRelay(
+      buildObservation(contact, seen({ anchor: a.anchor }), a.where, T)
+    );
+    const read = readObservation(event)!;
+    expect(read.observation.anchor).toBe('st-louis/st-patrick-center');
+    expect(read.where).toEqual(a.where);
   });
 });
 

@@ -25,6 +25,8 @@
   import { displayMerged, mergeCorrections, needsChecking, CORRECTABLE_FIELDS, FIELD_OPTIONS,
     isAddedPlace, isSeeded, withPlaces, PlaceError } from '@navcom/core';
   import { corrections } from '$lib/terminal/corrections.svelte';
+  import LogWhatYouSaw from '$lib/components/LogWhatYouSaw.svelte';
+  import { anchorFromRecord } from '@navcom/core';
   import { locateOnce, metresApart, type Fix } from '$lib/console/position-once';
   import { places } from '$lib/terminal/places.svelte';
   import { Slot, Readout, Why, Heartbeat } from '$lib/components/panel';
@@ -77,6 +79,13 @@
   let reporting = $state<string | null>(null);
   /** Which field is being corrected, once somebody has picked one. */
   let correcting = $state<ResourceField | null>(null);
+  /**
+   * Which record is having an observation filed against it.
+   *
+   * Separate state from `reporting`, which drives the correction panel. Two objects, two
+   * lifetimes, two controls -- see `raw-intel.md` §1 and `LogWhatYouSaw.svelte`.
+   */
+  let logging = $state<string | null>(null);
   let typed = $state('');
   /**
    * Whether the value about to be sent is flagged as weakly backed despite the method used.
@@ -797,10 +806,30 @@
               </div>
               <p class="cost">Goes out under your callsign, or anonymously if you have not picked one.</p>
               <button class="drop" onclick={() => (reporting = null)}>Cancel</button>
+            {:else if logging === record.id}
+              <!--
+                An observation, not a correction. A correction says what *is* and rots; this
+                says what somebody *saw* and stays true. Its own control, because conflating
+                them is the failure `raw-intel.md` §1 names.
+              -->
+              <LogWhatYouSaw {record} onclose={() => (logging = null)} />
             {:else}
-              <button class="drop" data-report-open onclick={() => { reporting = record.id; correcting = null; }}>
-                Report a problem
-              </button>
+              <div class="row">
+                <button class="drop" data-report-open onclick={() => { reporting = record.id; correcting = null; }}>
+                  Report a problem
+                </button>
+                {#if anchorFromRecord(record).ok}
+                  <!--
+                    Only where an observation could actually be filed. A record nobody has
+                    placed yet has no position to coarsen, so this control could only ever
+                    refuse -- and a control that always refuses is worse than its absence.
+                    Correcting still works, which is the right thing for a record missing data.
+                  -->
+                  <button class="drop" data-log-open onclick={() => { logging = record.id; reporting = null; }}>
+                    Log what you saw
+                  </button>
+                {/if}
+              </div>
             {/if}
           </article>
         {/each}
