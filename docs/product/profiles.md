@@ -55,7 +55,7 @@ So the tiers are:
 |---|---|---|
 | **On the board** | Anyone browsing your area finds you | the `d` region tag is published |
 | **Address only** | Only somebody you give your address to | the `d` tag is absent |
-| *Sealed* | Only people you have accepted | **not built** — see §6 |
+| *Sealed* | Only people you have accepted | **not built** — see §7 |
 
 **Address-only is real, and the mechanism was already here.** Kind 10911 is replaceable, keyed
 by pubkey and kind — the `d` tag is not part of its identity, it is a query filter, and
@@ -109,7 +109,96 @@ alike.
 Three is the cap because a card claiming nine things says nothing, and an unbounded list is
 how a self-asserted vocabulary becomes a keyword-stuffing surface.
 
-## 6. Open
+## 6. Qualifications, and the three rungs of checkability
+
+A qualification claim is only worth anything if the reader can check it. That single rule
+sorts everything here, and NavCom already has two rungs of it:
+
+| | Says | Checked by | Where |
+|---|---|---|---|
+| Activity tag | *carries a kit* | nothing — it is not a qualification | `events/profile.ts` §5 |
+| Peer credential | *I vouch for the holder as a medic* | a signature, offline | `events/endorsement.ts` |
+| **Institutional** | *RN, licensed by this board* | a public lookup | **not built — see below** |
+
+The activity vocabulary deliberately never claims competence, because it is self-asserted and
+self-assertion is not a check. `SCOPES` already includes `medic`, vouched by a peer and
+verifiable by anyone holding the credential. The third rung is the one that does not exist.
+
+### The existing primitive cannot carry it, and not for a small reason
+
+A NavCom credential is a **bearer token**: *"I vouch for the holder of this"*, carrying a scope
+and a date and no subject at all, binding to whatever persona claims it. That is right for peer
+vouching — you hand it to the person, and the absence of a subject is why no social graph of
+this network exists to breach.
+
+It is wrong for a licence. **A licence that transfers to whoever holds it is not a licence.**
+Making one subject-bound needs a subject identifier, which needs a legal name or a DID, which
+is invariant 8 and the whole bearer design at once. This is a shape mismatch, not a gap.
+
+### A licence number is a legal name with extra steps
+
+The obvious workaround — store the issuing body and the number, never the name, let the reader
+look it up — sounds like it respects invariant 8 and does not.
+
+*RN, Missouri, #12345* published on a public relay resolves in one free public hop to a legal
+name, a city of record, disciplinary history and often an employer. Describing that as "we
+store no name" is true about the field and false about the effect. It is the same error as
+calling an address-only card private: **judge a field by what it reveals, not by what it
+literally holds.**
+
+Invariant 8 already carries one opt-in exception — *"contact details only where an operator
+opted in for themselves"* — so the honest framing is that institutional credentials would
+**widen that exception from contact details to identity documents.** That is a real widening
+and has to be decided as one, not reached by a clever reading of the letter.
+
+### Three questions, none of them technical
+
+- **Does invariant 8's opt-in clause widen to identity documents?** See above.
+- **Does displaying credentials pull NavCom toward coordinating care?** A roster showing a
+  verified clinician invites *"get the clinician"* — dispatch by social pressure rather than by
+  button, against invariant 6. And the Medic's kill trigger is confident wrong guidance; a
+  credential makes guidance more likely to be sought here, which is a direction this project
+  has refused elsewhere by declining to write playbook content.
+- **Is NavCom *for* people without an institution, or merely usable by people with one?**
+  `CLAUDE.md` says *"everyone here works without an institution behind them, so the only thing
+  that can carry belief is what they can show"*, and describes the whole system as
+  infrastructure for **acting without authority**. Institutional credentials are the
+  presentation of authority. Not fatal — a nursing licence does not authorise street outreach
+  either — but it is positioning, and positioning is not an engineering call.
+
+### What is actually being asked for is narrower than it looks
+
+**Nobody is blocked.** A social worker, a street medic or a lawyer can publish a card, record
+patrols and file corrections today; none of that is gated on being RLSH. The only missing
+capability is *proving an institutional qualification*, which is presentation, not access.
+
+### Two costs, if it is built anyway
+
+- **It ends pseudonymity permanently, and more completely than a handle does.** A handle links
+  an operator to an account they control; a licence links them to a government record they do
+  not. The warning has to be at least as blunt as the handle join's, and it is a larger step.
+- **It must never render as a tier.** An operator working pseudonymously cannot obtain
+  institutional credentials by definition, so a badge would rank them permanently below a
+  credentialed professional for reasons unrelated to the work — against the board's standing
+  refusal to rank anything. Same treatment as activity tags: no badge, no checkmark, and no
+  way to sort or filter by it.
+
+### Recommendation: write it down, do not build it
+
+`declined.md` set this exact test for crew federation — *"there is no allied agency; building
+federation before anyone asks is designing against an imagined counterparty"* — and that entry
+was **reversed on 2026-09-03 the day Archangel actually asked**, with the counterparty real and
+the shape designable against them. The test works.
+
+No credentialed professional has asked for this. When one does, the shape they need will be
+decided by who they turn out to be, and this section is what they will be designed against.
+
+**Meanwhile the cheaper thing already works:** a nurse who does three nights with a crew can be
+vouched for by that crew, on the existing peer credential, checkable by signature, naming
+nobody. It measures demonstrated competence in this context rather than institutional training
+in another — which is arguably the better signal here, and needs no invariant changed.
+
+## 7. Open
 
 - **Sealed cards.** A genuinely private card is an encrypted one, addressed to a holder set —
   the machinery `transport.ts` already has for signals. Named here so the gap stays visible
@@ -121,6 +210,9 @@ how a self-asserted vocabulary becomes a keyword-stuffing surface.
 - **A global roster.** Cards are only ever subscribed one region at a time
   (`{kinds: [10911], '#d': [region]}`). There is no "everyone on NavCom" view and no way to
   ask for one, which is a deliberate absence to re-decide rather than a gap to fill.
+- **Institutional credentials.** §6. Written down, not built, and reversible the day a
+  credentialed professional actually asks — the test `declined.md` set for crew federation and
+  which that entry passed on 2026-09-03.
 - **Handle proofs.** `i` tags carry a NIP-39 proof field and almost nothing fills it, because
   verifying one means fetching it and most platforms refuse unauthenticated reads. Until then
   a handle is a claim, and is rendered as one.
