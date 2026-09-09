@@ -82,6 +82,29 @@ export interface Platform {
   at?: HandlePosition;
   /** The page a handle opens to. */
   url: (handle: string) => string;
+  /**
+   * A URL that renders this operator's own page **inside an iframe**, where the platform has
+   * one that needs no key.
+   *
+   * Every entry here was rendered and measured rather than read about, and each is a plain
+   * frame: **no platform script runs in our document.** TikTok is the one worth naming,
+   * because the documented route is a `<blockquote>` upgraded by `embed.js` -- which does run
+   * in our page. `tiktok.com/embed/@handle` reaches the same creator view as a frame instead.
+   *
+   * `host` is the page's own hostname, for platforms that verify where they are being framed.
+   */
+  embed?: (handle: string, host: string) => string;
+  /**
+   * How tall the frame should be, in `rem`.
+   *
+   * A property of the platform rather than of our layout, because each decides what goes in
+   * the box: a profile grid is tall, a video player is an aspect ratio, an audio player is a
+   * strip. One shared height left ~200px of white below Instagram's content — a bright
+   * rectangle on a dark screen, which is the thing low signature exists to avoid.
+   *
+   * Values measured by rendering each at a 390px viewport, not guessed.
+   */
+  frameRem?: number;
 }
 
 /**
@@ -128,16 +151,40 @@ const userOf = (h: string): string => (h.split('/')[1] ?? '').replace(/^@/, '');
 
 export const PLATFORMS: readonly Platform[] = [
   // Profile-level embeds, no key. Verified 2026-09-08.
-  { id: 'facebook', label: 'Facebook', shows: 'embed', url: (h) => `https://www.facebook.com/${h}` },
-  { id: 'instagram', label: 'Instagram', shows: 'embed', url: (h) => `https://www.instagram.com/${h}/` },
-  { id: 'tiktok', label: 'TikTok', shows: 'embed', url: (h) => `https://www.tiktok.com/@${h}` },
+  { id: 'facebook', label: 'Facebook', shows: 'embed', url: (h) => `https://www.facebook.com/${h}`,
+    // Documented, supported, and the platform the community's back catalogue lives on.
+    embed: (h) => `https://www.facebook.com/plugins/page.php?href=${encodeURIComponent(`https://www.facebook.com/${h}`)}&tabs=timeline&adapt_container_width=true`,
+    /** timeline, which is the tallest of these */
+    frameRem: 32 },
+  { id: 'instagram', label: 'Instagram', shows: 'embed', url: (h) => `https://www.instagram.com/${h}/`,
+    // Undocumented. Degrade to the facade if it ever stops answering, rather than a hole.
+    embed: (h) => `https://www.instagram.com/${h}/embed/`,
+    /** six-post grid plus header */
+    frameRem: 26 },
+  { id: 'tiktok', label: 'TikTok', shows: 'embed', url: (h) => `https://www.tiktok.com/@${h}`,
+    embed: (h) => `https://www.tiktok.com/embed/@${h}`,
+    /** header, bio and a video carousel */
+    frameRem: 30 },
   { id: 'youtube', label: 'YouTube', shows: 'embed', url: (h) => `https://www.youtube.com/@${h}` },
-  { id: 'twitch', label: 'Twitch', shows: 'embed', url: (h) => `https://www.twitch.tv/${h}` },
-  { id: 'kick', label: 'Kick', shows: 'embed', url: (h) => `https://kick.com/${h}` },
-  { id: 'odysee', label: 'Odysee', shows: 'embed', url: (h) => `https://odysee.com/@${h}` },
+  { id: 'twitch', label: 'Twitch', shows: 'embed', url: (h) => `https://www.twitch.tv/${h}`,
+    // Verifies where it is framed, so a preview deploy on another host shows a refusal.
+    embed: (h, host) => `https://player.twitch.tv/?channel=${h}&parent=${host}&muted=true`,
+    /** a 16:9 player at phone width */
+    frameRem: 14 },
+  { id: 'kick', label: 'Kick', shows: 'embed', url: (h) => `https://kick.com/${h}`,
+    embed: (h) => `https://player.kick.com/${h}`,
+    /** a 16:9 player */
+    frameRem: 14 },
+  { id: 'odysee', label: 'Odysee', shows: 'embed', url: (h) => `https://odysee.com/@${h}`,
+    embed: (h) => `https://odysee.com/$/embed/@${h}`,
+    /** a 16:9 player */
+    frameRem: 14 },
   { id: 'telegram', label: 'Telegram', shows: 'embed', url: (h) => `https://t.me/${h}` },
   { id: 'tumblr', label: 'Tumblr', shows: 'embed', at: 'subdomain', url: (h) => `https://${h}.tumblr.com` },
-  { id: 'soundcloud', label: 'SoundCloud', shows: 'embed', url: (h) => `https://soundcloud.com/${h}` },
+  { id: 'soundcloud', label: 'SoundCloud', shows: 'embed', url: (h) => `https://soundcloud.com/${h}`,
+    embed: (h) => `https://w.soundcloud.com/player/?url=${encodeURIComponent(`https://soundcloud.com/${h}`)}`,
+    /** an audio strip */
+    frameRem: 10 },
   { id: 'bandcamp', label: 'Bandcamp', shows: 'embed', at: 'subdomain', url: (h) => `https://${h}.bandcamp.com` },
   { id: 'vimeo', label: 'Vimeo', shows: 'embed', url: (h) => `https://vimeo.com/${h}` },
   { id: 'pinterest', label: 'Pinterest', shows: 'embed', url: (h) => `https://www.pinterest.com/${h}/` },
@@ -177,6 +224,23 @@ export const PLATFORMS: readonly Platform[] = [
 ] as const;
 
 const BY_ID = new Map(PLATFORMS.map((p) => [p.id, p]));
+
+/**
+ * The frame URL for a link, or null when this platform has no keyless embed.
+ *
+ * Null is the ordinary answer, not a failure: most platforms refuse framing entirely, and a
+ * reader that treated a missing embed as an error would render a hole where a link belongs.
+ */
+export function embedUrl(link: CardLink, host: string): string | null {
+  const p = BY_ID.get(link.platform);
+  return p?.embed ? p.embed(link.handle, host) : null;
+}
+
+/** How tall this platform's frame wants to be, in rem. */
+export const frameHeight = (id: string): number => BY_ID.get(id)?.frameRem ?? 26;
+
+/** Whether anything can be framed for this platform at all. */
+export const canEmbed = (id: string): boolean => BY_ID.get(id)?.embed !== undefined;
 
 /** The platform, or undefined for one this build has never heard of. */
 export const platform = (id: string): Platform | undefined => BY_ID.get(id);

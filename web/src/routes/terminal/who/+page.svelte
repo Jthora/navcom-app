@@ -20,19 +20,34 @@
   import { onMount } from 'svelte';
   import { page } from '$app/state';
   import { Slot, Readout, Why } from '$lib/components/panel';
-  import { does, layout, platform as platformOf } from '@navcom/core';
+  import { does, embedUrl, frameHeight, layout, platform as platformOf } from '@navcom/core';
   import { profile } from '$lib/terminal/public.svelte';
+  import { isLean } from '$lib/terminal/lean';
 
   let key = $state('');
+  /** Decided once, on mount, by the phone rather than by asking the reader. */
+  let lean = $state(false);
+  let host = $state('');
 
   onMount(() => {
     key = page.url.searchParams.get('k') ?? '';
+    lean = isLean();
+    host = location.hostname;
     if (key) profile.watch(key);
     return () => profile.stop();
   });
 
   const card = $derived(profile.card);
   const shape = $derived(layout(card?.links ?? []));
+  /**
+   * The frame for the featured platform, or null.
+   *
+   * Null on a lean connection, so a phone that asked for less gets the facade and the same
+   * link -- the page is never missing anything, only lighter.
+   */
+  const frame = $derived(
+    !lean && shape.feature && host ? embedUrl(shape.feature, host) : null
+  );
   const url = (p: string, h: string) => platformOf(p)?.url(h) ?? '#';
   const name = (p: string) => platformOf(p)?.label ?? p;
 </script>
@@ -64,11 +79,13 @@
       claims more than we know.
     -->
     <Slot k="Card"><Readout value="Nothing here" tone="cold" sub="no relay we asked has a card for this address" /></Slot>
-    <p class="cost">
-      That address may never have published one, or may have withdrawn it, or the relays this
-      phone knows may simply not have it. <strong>These are different things and this screen
-      cannot tell them apart.</strong>
-    </p>
+    <Why summary="Why that is not the same as no card">
+      <p>
+        That address may never have published one, or may have withdrawn it, or the relays this
+        phone knows may simply not have it. <strong>These are different things and this screen
+        cannot tell them apart.</strong>
+      </p>
+    </Why>
   </section>
 {:else}
   <section class="act">
@@ -89,15 +106,23 @@
       <p class="does">{card.does.map((d) => does(d)?.label ?? d).join(' · ')}</p>
     {/if}
 
-    <p class="cost">
-      <!--
-        Said before the links rather than under them. A page shaped like a profile invites the
-        belief that somebody vetted it, and nobody did -- the same claim every one of the 8,430
-        directory records carries.
-      -->
-      <strong>Nobody has checked any of this.</strong> Everything here was published by the
-      holder of this address about themselves.
-    </p>
+    <!--
+      A readout and a Why, not a paragraph. The claim still comes before the links and still
+      says the same thing; `panel.md` sets a 40-word target for what is read before anything is
+      opened, and this screen was over it. `Why` takes the prose as a slot and changes none of
+      it, which is the mechanism this project already chose for exactly this.
+    -->
+    <Slot k="Checked">
+      <Readout value="By nobody" tone="cold" sub="published by its holder" />
+    </Slot>
+    <Why summary="What that means">
+      <p>
+        Everything on this page was published by the holder of this address, about themselves.
+        No part of it has been checked by anybody — the same claim every one of the 8,430
+        directory records carries, said here because a page shaped like a profile invites the
+        belief that somebody vetted it.
+      </p>
+    </Why>
 
     {#if card.card.lightning}
       <Slot k="Support">
@@ -119,11 +144,33 @@
 
       {#if shape.feature}
         {@const f = shape.feature}
-        <a class="face lead" href={url(f.platform, f.handle)} target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">
-          <span class="p">{name(f.platform)}</span>
-          <span class="h">{f.handle}</span>
-          <span class="go">Opens {name(f.platform)} →</span>
-        </a>
+        {#if frame}
+          <!--
+            A frame, not a script. Every platform here has a keyless iframe, so nothing of
+            theirs executes in this document -- TikTok's documented route is a blockquote
+            upgraded by `embed.js`, and `tiktok.com/embed/@handle` reaches the same view
+            without it. Sandboxed, lazy, and told nothing about where it is.
+          -->
+          <iframe
+            class="frame"
+            style="height: {frameHeight(f.platform)}rem"
+            title="{name(f.platform)} — {f.handle}"
+            src={frame}
+            loading="lazy"
+            referrerpolicy="no-referrer"
+            sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms"
+            allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+          ></iframe>
+          <p class="listed">
+            <a href={url(f.platform, f.handle)} target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">Open {name(f.platform)} →</a>
+          </p>
+        {:else}
+          <a class="face lead" href={url(f.platform, f.handle)} target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">
+            <span class="p">{name(f.platform)}</span>
+            <span class="h">{f.handle}</span>
+            <span class="go">Opens {name(f.platform)} →</span>
+          </a>
+        {/if}
       {/if}
 
       {#if shape.beside.length > 0}
@@ -171,7 +218,11 @@
   .face.lead .p { font-size: 1.15rem; }
   .face .go { display: block; margin-top: .45rem; font-size: .74rem; letter-spacing: .06em; text-transform: uppercase; color: var(--t-faint); }
 
-  .beside { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+  /* Full width, its own aspect. The platform decides what goes in it; we decide how big. */
+  .frame { width: 100%; border: 1px solid var(--t-line); border-radius: 4px; background: var(--t-sunk); }
+
+  /* Two up, but one on its own fills the row rather than sitting in half of it. */
+  .beside { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: .5rem; }
   .listed { display: flex; flex-wrap: wrap; gap: .5rem; margin: .2rem 0 0; }
   .listed a { font-size: .86rem; min-height: 2.75rem; display: inline-flex; align-items: center; }
 </style>

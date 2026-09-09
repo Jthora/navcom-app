@@ -152,11 +152,7 @@
 </header>
 
 <section>
-  <p>
-    A card lets somebody in your area find you and ask to pair, without either of you
-    knowing the other first. <strong>You have no card unless you publish one</strong>, and
-    the app works exactly the same without it.
-  </p>
+  <p><strong>You have no card unless you publish one</strong>, and the app works the same without it.</p>
   <Why summary="What publishing does and doesn't expose">
     <p>
       <!--
@@ -172,13 +168,21 @@
       not a coarse pin. There is nowhere in it to put one.
     </p>
   </Why>
-  <p class="cost">
-    <!-- Reducing exposure is never symmetrical with increasing it. Saying so is the rule. -->
-    <strong>Publishing cannot be undone.</strong> Withdrawing throws away the key that signs
-    your card, so nobody can reach you at it again and no invite sent to it arrives — but
-    relays that already have the card may keep serving it. Nothing can unpublish it, and
-    anything claiming otherwise would be lying to you.
-  </p>
+  <!--
+    Reducing exposure is never symmetrical with increasing it, and saying so is the rule. The
+    force of it is in the first four words; the other forty-nine explain, and explanation is
+    what `Why` is for. Kept word for word, one tap away.
+  -->
+  <p class="cost"><strong>Publishing cannot be undone.</strong></p>
+  <Why summary="What withdrawing can and cannot do">
+    <p>
+      A card lets somebody in your area find you and ask to pair, without either of you knowing
+      the other first. Withdrawing throws away the key that signs your card, so nobody can reach
+      you at it again and no invite sent to it arrives — but relays that already have the card
+      may keep serving it. Nothing can unpublish it, and anything claiming otherwise would be
+      lying to you.
+    </p>
+  </Why>
 </section>
 
 {#if !callsign}
@@ -201,11 +205,13 @@
     <label for="doing">What you do</label>
     <textarea id="doing" bind:value={doing} rows="2" maxlength={DOING_MAX}
       placeholder="Water and socks, Thursdays."></textarea>
-    <p class="cost">
-      Optional, and often the most useful part. {left} characters left.
-      <strong>Nothing about anybody you have helped</strong> — write about the work, not the
-      people.
-    </p>
+    <p class="cost">Optional. {left} characters left.</p>
+    <Why summary="What not to write here">
+      <p>
+        <strong>Nothing about anybody you have helped</strong> — write about the work, not the
+        people.
+      </p>
+    </Why>
 
     <fieldset class="pick">
       <legend>Who can find you</legend>
@@ -228,10 +234,13 @@
 
     <fieldset class="pick">
       <legend>What you do</legend>
-      <p class="cost">
-        Optional. <strong>Nobody checks any of this</strong> — it says what you do, never what
-        you are qualified for. {DOES_MAX - does.length} left.
-      </p>
+      <p class="cost">Optional. {DOES_MAX - does.length} left.</p>
+      <Why summary="Nobody checks this">
+        <p>
+          <strong>Nobody checks any of this</strong> — it says what you do, never what you are
+          qualified for.
+        </p>
+      </Why>
       {#each DOES as d (d.id)}
         <label class="opt">
           <input
@@ -247,12 +256,14 @@
 
     <fieldset class="pick">
       <legend>Where else to find you</legend>
-      <p class="cost">
-        Optional, and off unless you add one. <strong>This is permanent and it is a
-        join</strong> — anybody reading your card can connect this callsign to that account
-        from now on, including after you remove it here, because relays keep what they were
-        given.
-      </p>
+      <p class="cost">Optional, and off unless you add one.</p>
+      <Why summary="This is permanent, and it is a join">
+        <p>
+          Anybody reading your card can connect this callsign to that account from now on,
+          <strong>including after you remove it here</strong>, because relays keep what they
+          were given.
+        </p>
+      </Why>
       <Why summary="Why the first one is bigger">
         <p>
           The first is shown as a feed, the next two beside it, the rest as links. Move them
@@ -306,21 +317,25 @@
       <Slot k="Card">
         <Readout value="Published" tone="good" sub="as {callsign}" />
       </Slot>
-      <p class="cost">
-        Anybody browsing that area can see it and ask to pair. You decide who to accept, and
-        ignoring somebody sends them nothing.
-      </p>
+      <Why summary="Who can see it">
+        <p>
+          Anybody browsing that area can see it and ask to pair. You decide who to accept, and
+          ignoring somebody sends them nothing.
+        </p>
+      </Why>
     {/if}
   </section>
 
   {#if published}
     <section class="act">
       <h2>Out tonight</h2>
-      <p class="cost">
-        With this on, signing on adds your name to that area's board while you are out —
-        <strong>a name and nothing else</strong>. No position, no times, and no count of
-        anybody. It comes off by itself when you stand down or your phone stops.
-      </p>
+      <Why summary="What gets published">
+        <p>
+          With this on, signing on adds your name to that area's board while you are out —
+          <strong>a name and nothing else</strong>. No position, no times, and no count of
+          anybody. It comes off by itself when you stand down or your phone stops.
+        </p>
+      </Why>
       <button onclick={toggleListed} aria-pressed={showListed}>
         {showListed ? 'Listed while out' : 'Not listed'}
       </button>
@@ -337,11 +352,13 @@
 
     <section class="act">
       <h2>Withdraw</h2>
-      <p class="cost">
-        Throws away the key that signs your card. Invites sent to it stop arriving. Relays
-        that already have the card may keep serving it — <strong>this cannot unpublish
-        it</strong>.
-      </p>
+      <Why summary="What withdrawing does">
+        <p>
+          Throws away the key that signs your card. Invites sent to it stop arriving. Relays
+          that already have the card may keep serving it — <strong>this cannot unpublish
+          it</strong>.
+        </p>
+      </Why>
       {#if confirming}
         <button class="danger" onclick={withdraw}>Throw the key away</button>
         <button onclick={() => (confirming = false)}>Keep my card</button>

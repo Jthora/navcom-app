@@ -17,7 +17,9 @@ import { generateSecretKey } from 'nostr-tools/pure';
 import type { Event } from 'nostr-tools/core';
 import {
   buildCard,
+  canEmbed,
   canFeature,
+  embedUrl,
   CARD_FIELDS,
   HANDLE_MAX,
   layout,
@@ -235,6 +237,66 @@ describe('fediverse handles, which carry their instance', () => {
   it('builds the account URL on the instance the operator named', () => {
     const [l] = readLinks([['i', 'mastodon:example.social/raven', '']]);
     expect(platform('mastodon')!.url(l!.handle)).toBe('https://example.social/@raven');
+  });
+});
+
+describe('what can be framed', () => {
+  it('builds a frame URL on the platform’s own origin, for every platform that has one', () => {
+    for (const p of PLATFORMS) {
+      if (!p.embed) continue;
+      const handle = p.at === 'instance' ? 'example.social/raven' : p.at === 'origin' ? 'raven.example' : 'raven';
+      const u = new URL(embedUrl({ platform: p.id, handle }, 'navcom.app')!);
+      expect(u.protocol, `${p.id} frames over something other than https`).toBe('https:');
+      expect(u.hostname.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('answers null for a platform with no keyless frame, rather than a broken URL', () => {
+    // The ordinary answer. Most platforms refuse framing outright.
+    expect(embedUrl({ platform: 'reddit', handle: 'raven' }, 'navcom.app')).toBeNull();
+    expect(embedUrl({ platform: 'x', handle: 'raven' }, 'navcom.app')).toBeNull();
+    expect(embedUrl({ platform: 'kofi', handle: 'raven' }, 'navcom.app')).toBeNull();
+    expect(canEmbed('reddit')).toBe(false);
+    expect(canEmbed('myspace')).toBe(false);
+  });
+
+  it('reaches TikTok’s creator view as a frame, not as a script in our page', () => {
+    /*
+     * The documented route is a <blockquote> upgraded by embed.js, which executes in our
+     * document. `tiktok.com/embed/@handle` renders the same creator view inside the frame --
+     * verified by rendering both, not by reading about it.
+     */
+    const u = embedUrl({ platform: 'tiktok', handle: 'raven' }, 'navcom.app')!;
+    expect(u).toBe('https://www.tiktok.com/embed/@raven');
+    expect(u).not.toMatch(/embed\.js|blockquote/);
+  });
+
+  it('tells Twitch which host is framing it, because Twitch checks', () => {
+    // A preview deploy on another hostname shows Twitch's refusal rather than a player.
+    expect(embedUrl({ platform: 'twitch', handle: 'raven' }, 'navcom.app')).toContain('parent=navcom.app');
+    expect(embedUrl({ platform: 'twitch', handle: 'raven' }, 'preview.vercel.app')).toContain('parent=preview.vercel.app');
+  });
+
+  it('never frames a platform it would not feature', () => {
+    // `shows: 'link'` means it refuses framing; offering a frame URL would promise a panel
+    // that renders a refusal.
+    for (const p of PLATFORMS) {
+      if (p.shows === 'link') expect(canEmbed(p.id), `${p.id} is link-only but offers a frame`).toBe(false);
+    }
+  });
+
+  it('cannot be pointed at another origin by a handle that passed validation', () => {
+    const nasty = ['../evil.com', 'a/../../b', '@evil.com', '//evil.com', 'evil.com/'];
+    for (const p of PLATFORMS) {
+      if (!p.embed || p.id === 'website') continue;
+      const clean = new URL(embedUrl({ platform: p.id, handle: p.at === 'instance' ? 'example.social/raven' : 'raven' }, 'navcom.app')!).hostname;
+      for (const h of nasty) {
+        const tags = linkTags([{ platform: p.id, handle: h }]);
+        if (tags.length === 0) continue;
+        const got = readLinks(tags)[0]!;
+        expect(new URL(embedUrl(got, 'navcom.app')!).hostname, `${p.id} + ${h} escaped`).toBe(clean);
+      }
+    }
   });
 });
 
