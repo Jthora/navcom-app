@@ -186,3 +186,69 @@ test('a report that reached nothing never looks like one that landed', async ({ 
   await expect(page.locator('[data-outcome]')).toHaveText(/nothing was published/i, { timeout: 10_000 });
   expect(await observations(page), 'nothing should have gone out').toEqual([]);
 });
+
+test('what somebody filed comes back on the record', async ({ page }) => {
+  /*
+   * The loop, closed. Raw Intel shipped with a complete write path and no read path at all --
+   * an operator filed an observation, saw "Filed.", reloaded, and nothing anywhere showed it
+   * had happened. Not even to them.
+   *
+   * This seeds an observation as a relay would serve it and asserts the record shows it,
+   * which is the only assertion that distinguishes filed from lost.
+   */
+  const { generateSecretKey } = await import('nostr-tools/pure');
+  const { buildObservation, anchorFromRecord } = await import('@navcom/core');
+
+  // The record the region screen shows first that can actually be anchored.
+  const anchor = { id: 'st-louis-osm-22823de9', region: 'st-louis' };
+  const event = buildObservation(
+    generateSecretKey(),
+    {
+      anchor: anchor.id,
+      observed_at: Math.floor(Date.now() / 1000) - 3 * 86400,
+      tags: ['locked'],
+      method: 'saw',
+      callsign: 'Raven',
+      precision: 'area'
+    },
+    { precision: 'area', geohash: '9yzg' },
+    Math.floor(Date.now() / 1000),
+    anchor.region
+  );
+
+  await seedDevice(page, { callsign: 'Wren', relayEvents: [event] });
+  await open(page, '/terminal/directory/st-louis/');
+
+  const seen = page.locator('[data-seen]').first();
+  await expect(seen).toBeVisible({ timeout: 10_000 });
+  await expect(seen).toContainText('locked');
+  // Invariant 9: a claim about a moment shows how long ago that moment was.
+  await expect(seen).toContainText(/3 days ago/i);
+  await expect(seen).toContainText('Raven');
+  await expect(seen).toContainText('saw');
+});
+
+test('and is shown apart from the record’s own fields, not merged into them', async ({ page }) => {
+  /*
+   * §1: a correction says what *is* and decays; an observation says what somebody *saw* and
+   * stays true. Rendering them as one list would conflate exactly what the spec separates.
+   */
+  const { generateSecretKey } = await import('nostr-tools/pure');
+  const { buildObservation } = await import('@navcom/core');
+  const event = buildObservation(
+    generateSecretKey(),
+    { anchor: 'st-louis-osm-22823de9', observed_at: Math.floor(Date.now() / 1000),
+      tags: ['light_out'], method: 'told', callsign: 'anonymous', precision: 'area' },
+    { precision: 'area', geohash: '9yzg' },
+    Math.floor(Date.now() / 1000),
+    'st-louis'
+  );
+  await seedDevice(page, { callsign: 'Wren', relayEvents: [event] });
+  await open(page, '/terminal/directory/st-louis/');
+
+  const seen = page.locator('[data-seen]').first();
+  await expect(seen).toBeVisible({ timeout: 10_000 });
+  // Its own labelled region, not a row among the record's fields.
+  await expect(seen).toContainText(/reported here/i);
+  await expect(seen).toContainText('light out');
+});

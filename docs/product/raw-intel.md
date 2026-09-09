@@ -171,6 +171,40 @@ account*; refinement means *the same account, at a resolution that was withheld 
 A consumer that conflated them would treat added precision as a correction and, worse, treat a
 correction as merely more precise.
 
+### Finding one — `g` for the metro, `d` for the place
+
+An observation published with only `refines` is unfindable. Nothing can ask for observations
+about a place, or in an area, so the object could be written and never read — which is what
+happened: the write path shipped complete and nothing subscribed, stored or displayed one.
+
+Two tags, both borrowed rather than invented, because three neighbouring objects already
+settled this:
+
+| | Carries | Asked for as |
+|---|---|---|
+| `g` | the anchor's region slug | `{ kinds: [1911], '#g': ['st-louis'] }` |
+| `d` | the anchor id | `{ kinds: [1911], '#d': [recordId] }` |
+
+`g` is what a **place** already uses, for the same reason and with the same comment: it makes
+a region askable when the published directory for it is empty. `d` is what a **correction**
+already uses to mean *about this record* — so an observation meaning the same thing by the
+same letter is coherent, and the two compose:
+
+```json
+{ kinds: [30911, 1911], '#d': [...recordIds] }
+```
+
+fetches a record's corrections **and** its observations in one round trip. A client already
+sends the first half of that filter.
+
+Kind `1911` is regular, so `d` is not this event's identity and carries no replacement
+semantics — it is a query key, exactly as it is on a card. Two observations about one place
+are two observations, and neither replaces the other.
+
+**Neither tag says anything the content does not.** The region is a coarsening of a position
+already published in the directory, and the anchor id is in `content.anchor`. A tag here buys
+a filter, not a disclosure — which is the test any future tag on this object has to pass.
+
 ## 5. The anchor rule
 
 > **A report MUST name a thing that is already a matter of public record.**

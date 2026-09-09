@@ -201,16 +201,30 @@ export function buildObservation(
   contactSecret: SecretKey,
   observation: Observation,
   where: Where,
-  createdAt: number
+  createdAt: number,
+  /**
+   * The anchor's region slug, so the observation can be asked for by metro.
+   *
+   * Optional only because the exact half of a pair is found through `refines` rather than by
+   * region. Omitting it on a first publication makes an observation nobody can find.
+   */
+  region?: string
 ): Event {
   const content = checkObservation(observation, where);
   return finalizeEvent(
     {
       kind: KIND_OBSERVATION,
       created_at: createdAt,
-      // Only what the spec pins. See the header: discoverability tags are wire format and
-      // are not invented here.
-      tags: [],
+      /*
+       * §4: `g` for the metro, `d` for the place -- both borrowed from objects that already
+       * settled this, and both buying a filter rather than a disclosure. The region is a
+       * coarsening of a position the directory already publishes, and the anchor id is in
+       * the content.
+       */
+      tags: [
+        ...(region ? [['g', region]] : []),
+        ['d', content['anchor'] as string]
+      ],
       content: JSON.stringify(content)
     },
     contactSecret
@@ -343,7 +357,7 @@ function checkObservation(o: Observation, where: Where): Record<string, unknown>
  * own. That is the good kind of protection: one already in force, doing a second job.
  */
 export type AnchorFor =
-  | { ok: true; anchor: string; where: Where }
+  | { ok: true; anchor: string; region: string; where: Where }
   | { ok: false; because: string };
 
 export function anchorFromRecord(record: ResourceRecord): AnchorFor {
@@ -354,10 +368,16 @@ export function anchorFromRecord(record: ResourceRecord): AnchorFor {
     // A refuge reaches this branch, and so does any record nobody has placed yet.
     return { ok: false, because: 'Nothing can be filed against a place with no position on record.' };
   }
+  // Attached by the loader and never read from the CSV, so a row cannot claim to be somewhere
+  // it is not. Without it the observation has no region to be asked for by.
+  if (typeof record.region !== 'string' || record.region.trim() === '') {
+    return { ok: false, because: 'That record is not filed under a region.' };
+  }
   try {
     return {
       ok: true,
       anchor: record.id.trim(),
+      region: record.region.trim(),
       where: { precision: 'area', geohash: geohash(record.lat, record.lon, AREA_GEOHASH_CHARS) }
     };
   } catch {
@@ -372,6 +392,8 @@ export interface PublishedObservation {
   where: Where;
   /** The event this refines, if it is the exact half of a pair. Never a corroboration. */
   refines: string | null;
+  /** The metro this was filed in, when the publisher said. */
+  region: string | null;
   at: number;
 }
 
@@ -436,7 +458,14 @@ export function readObservation(event: Event): PublishedObservation | null {
   };
   if (typeof c.supersedes === 'string') observation.supersedes = c.supersedes;
 
-  return { author: event.pubkey, observation, where, refines, at: event.created_at };
+  return {
+    author: event.pubkey,
+    observation,
+    where,
+    refines,
+    region: event.tags.find((t) => t[0] === 'g')?.[1] ?? null,
+    at: event.created_at
+  };
 }
 
 /**

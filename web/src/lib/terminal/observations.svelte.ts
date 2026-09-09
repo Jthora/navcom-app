@@ -26,12 +26,16 @@
  * reported and nothing is kept.
  */
 
+import type { Event } from 'nostr-tools/core';
 import {
   ANONYMOUS,
   anchorFromRecord,
   buildObservation,
+  KIND_OBSERVATION,
   ObservationError,
+  readObservation,
   type ObservationMethod,
+  type PublishedObservation,
   type ResourceRecord
 } from '@navcom/core';
 import { contactKey, ensureContactKey } from './card';
@@ -87,7 +91,8 @@ export async function report(input: ReportInput): Promise<ReportResult> {
         precision: 'area'
       },
       anchor.where,
-      Math.floor(Date.now() / 1000)
+      Math.floor(Date.now() / 1000),
+      anchor.region
     );
   } catch (e) {
     return { ok: false, because: e instanceof ObservationError ? e.message : 'That will not publish.' };
@@ -100,3 +105,87 @@ export async function report(input: ReportInput): Promise<ReportResult> {
   }
   return { ok: true, id: event.id };
 }
+
+/**
+ * What has been reported about the records on screen.
+ *
+ * ## Live, and not cached
+ *
+ * The board does not cache and neither does this, for the same reason: relay-sourced social
+ * data is re-fetchable, so losing it is not a failure — which rules out the accruing tier —
+ * and a local set of timestamped, location-bearing observations is exactly the material
+ * `raw-intel.md` §9 wants to shrink, which rules out keeping it around. The directory is
+ * cached because it is build-time data an operator needs with no signal; this is not that.
+ *
+ * The honest cost: **offline shows nothing**, the same as the board offline. An operator with
+ * no signal sees the record and its corrections, which are the parts that survive.
+ *
+ * `reapObservations` in core stays unwired as a result, and deliberately: §9 specifies
+ * retention, and the day something does hold observations it will need exactly that function
+ * rather than a re-derivation of it.
+ *
+ * ## One filter, two objects
+ *
+ * §4 gives an observation a `d` tag carrying its anchor, which is the letter a correction
+ * already uses to mean *about this record*. So this asks for the same records the corrections
+ * subscription asks for, and a future change could merge them into one round trip.
+ */
+const MAX_PER_RECORD = 20;
+
+let seenByRecord = $state<Record<string, PublishedObservation[]>>({});
+let watching: { close(): void } | null = null;
+
+export const observed = {
+  /** What has been reported about one record, newest first. */
+  about(recordId: string): PublishedObservation[] {
+    return seenByRecord[recordId] ?? [];
+  },
+
+  /** Watches a set of records. Safe to call repeatedly; the last call replaces the previous. */
+  watch(recordIds: readonly string[]): void {
+    const urls = relays();
+    if (urls.length === 0 || recordIds.length === 0) return;
+
+    watching?.close();
+    seenByRecord = {};
+
+    watching = pool().subscribeMany(
+      urls,
+      { kinds: [KIND_OBSERVATION], '#d': [...recordIds] },
+      {
+        onevent: (event: Event) => {
+          const read = readObservation(event);
+          if (!read) return;
+          const id = read.observation.anchor;
+          const held = seenByRecord[id] ?? [];
+          if (held.some((o) => o.at === read.at && o.author === read.author)) return;
+          /*
+           * Bounded per record, and newest first.
+           *
+           * The `d` tag is public, so anybody may file against any record -- the same open
+           * door the board has. A record that somebody floods stays readable, and the flood
+           * cannot reach the records around it because the bound is per record rather than
+           * across the screen.
+           */
+          /*
+           * Ordered by when it was **seen**, not when it was published.
+           *
+           * `at` is the publish time and `observed_at` is the moment somebody is describing;
+           * §3 keeps them separate precisely because they differ. Sorting by `at` put a
+           * five-week-old sighting above a two-day-old one whenever a backlog was filed in one
+           * go -- which is exactly what filing from the field after a patrol looks like.
+           */
+          const next = [read, ...held]
+            .sort((a, b) => b.observation.observed_at - a.observation.observed_at)
+            .slice(0, MAX_PER_RECORD);
+          seenByRecord = { ...seenByRecord, [id]: next };
+        }
+      }
+    );
+  },
+
+  stop(): void {
+    watching?.close();
+    watching = null;
+  }
+};

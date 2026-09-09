@@ -252,16 +252,61 @@ describe('what it refuses outright', () => {
   });
 });
 
+describe('being findable at all', () => {
+  /** The filter a client actually sends, applied by hand -- a relay matches tags, not types. */
+  const served = (event: Event, key: string, value: string) =>
+    event.tags.some((t) => t[0] === key && t[1] === value);
+
+  it('can be asked for by metro, the way a place already can', () => {
+    const event = overRelay(buildObservation(contact, seen(), AREA, T, 'st-louis'));
+    expect(served(event, 'g', 'st-louis')).toBe(true);
+  });
+
+  it('can be asked for by the place it is about, the way a correction already can', () => {
+    const event = overRelay(buildObservation(contact, seen(), AREA, T, 'st-louis'));
+    expect(served(event, 'd', 'st-louis/st-patrick-center')).toBe(true);
+  });
+
+  it('composes with the correction filter, so one round trip fetches both', () => {
+    /*
+     * `{ kinds: [30911, 1911], '#d': [...records] }` -- a client already sends the first
+     * half of that. The shared meaning of `d` is what makes it work.
+     */
+    const event = overRelay(buildObservation(contact, seen(), AREA, T, 'st-louis'));
+    const wanted = ['st-louis/st-patrick-center', 'st-louis/other'];
+    const dTags = event.tags.filter((t) => t[0] === 'd').map((t) => t[1]);
+    expect(wanted.some((w) => dTags.includes(w))).toBe(true);
+  });
+
+  it('reads its region back, or null when the publisher gave none', () => {
+    expect(readObservation(overRelay(buildObservation(contact, seen(), AREA, T, 'st-louis')))!.region)
+      .toBe('st-louis');
+    expect(readObservation(overRelay(buildObservation(contact, seen(), AREA, T)))!.region).toBeNull();
+  });
+
+  it('says nothing in a tag that the content does not already say', () => {
+    // The test any future tag on this object has to pass: a filter, not a disclosure.
+    const event = buildObservation(contact, seen(), AREA, T, 'st-louis');
+    const content = JSON.parse(event.content) as Record<string, unknown>;
+    for (const [key, value] of event.tags) {
+      if (key === 'd') expect(value).toBe(content['anchor']);
+      // The region is a coarsening of a position the directory already publishes.
+      if (key === 'g') expect(typeof value).toBe('string');
+    }
+  });
+});
+
 describe('what an observation may be filed against', () => {
   const place = (over: Record<string, unknown> = {}) =>
     ({ id: 'st-louis/st-patrick-center', name: "St Patrick's", type: 'shelter',
-       lat: 38.627, lon: -90.1994, ...over }) as never;
+       lat: 38.627, lon: -90.1994, region: 'st-louis', ...over }) as never;
 
   it('coarsens the anchor’s own position, never the operator’s', () => {
     const a = anchorFromRecord(place());
     expect(a.ok).toBe(true);
     if (!a.ok) return;
     expect(a.anchor).toBe('st-louis/st-patrick-center');
+    expect(a.region).toBe('st-louis');
     // Cross-checked against an independent implementation rather than taken from this one --
     // the first version of this line was a guess and disagreed with both.
     expect(a.where).toEqual({ precision: 'area', geohash: '9yzg' });
@@ -286,6 +331,10 @@ describe('what an observation may be filed against', () => {
     expect(anchorFromRecord(place({ lon: undefined })).ok).toBe(false);
   });
 
+  it('refuses a record with no region, because nobody could ask for it by metro', () => {
+    expect(anchorFromRecord(place({ region: undefined })).ok).toBe(false);
+  });
+
   it('refuses a position that is not a position', () => {
     expect(anchorFromRecord(place({ lat: 91 })).ok).toBe(false);
     expect(anchorFromRecord(place({ lon: 200 })).ok).toBe(false);
@@ -295,7 +344,7 @@ describe('what an observation may be filed against', () => {
     const a = anchorFromRecord(place());
     if (!a.ok) throw new Error(a.because);
     const event = overRelay(
-      buildObservation(contact, seen({ anchor: a.anchor }), a.where, T)
+      buildObservation(contact, seen({ anchor: a.anchor }), a.where, T, a.region)
     );
     const read = readObservation(event)!;
     expect(read.observation.anchor).toBe('st-louis/st-patrick-center');

@@ -337,7 +337,18 @@ export function vocabularyCid(tags) {
 export function intelDocument(root = ROOT) {
   const spec = readFileSync(join(root, 'docs/product/raw-intel.md'), 'utf8');
 
-  const block = spec.match(/```\n([\s\S]*?)```/)?.[1] ?? '';
+  /*
+   * Anchored to the vocabulary section, not to the first fence in the file.
+   *
+   * It took whatever bare fenced block came first, which was the vocabulary right up until a
+   * section above it gained a code example -- and then the published vocabulary silently
+   * emptied, which tells every consumer that every tag is unknown. Caught by the guard below
+   * rather than in production, and the guard's own comment had predicted this exact shape.
+   *
+   * Anchoring means a fence added anywhere else in the spec cannot reach it.
+   */
+  const section = spec.split(/^## 7\./m)[1] ?? '';
+  const block = section.match(/```\n([\s\S]*?)```/)?.[1] ?? '';
   /** @type {Record<string, string[]>} */
   const vocabulary = {};
   for (const line of block.split('\n')) {

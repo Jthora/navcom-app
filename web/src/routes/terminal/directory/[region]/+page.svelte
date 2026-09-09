@@ -26,7 +26,8 @@
     isAddedPlace, isSeeded, withPlaces, PlaceError } from '@navcom/core';
   import { corrections } from '$lib/terminal/corrections.svelte';
   import LogWhatYouSaw from '$lib/components/LogWhatYouSaw.svelte';
-  import { anchorFromRecord } from '@navcom/core';
+  import { observed } from '$lib/terminal/observations.svelte';
+  import { anchorFromRecord, OBSERVATION_VOCABULARY } from '@navcom/core';
   import { locateOnce, metresApart, type Fix } from '$lib/console/position-once';
   import { places } from '$lib/terminal/places.svelte';
   import { Slot, Readout, Why, Heartbeat } from '$lib/components/panel';
@@ -178,9 +179,36 @@
   }
 
   /** Options for the field being corrected, or null where it is free text. */
+  /**
+   * How long ago somebody saw a thing.
+   *
+   * Invariant 9 applied to an observation: it never decays -- what was seen was seen -- but a
+   * reader still has to weigh it, and *"three weeks ago"* is the weighing. Coarse on purpose;
+   * a minute-precise time on a public record is a movement log.
+   */
+  function ago(seconds: number): string {
+    // `now` is a Date, and deliberately the build stamp when this phone's clock is not
+    // trusted -- the same reading every other age on this screen is measured against.
+    const days = Math.floor((now.getTime() / 1000 - seconds) / 86400);
+    if (days <= 0) return 'today';
+    if (days === 1) return 'yesterday';
+    if (days < 14) return `${days} days ago`;
+    if (days < 60) return `${Math.floor(days / 7)} weeks ago`;
+    return `${Math.floor(days / 30)} months ago`;
+  }
+
   const options = $derived(correcting ? (FIELD_OPTIONS[correcting] ?? null) : null);
 
   onMount(() => {
+    /*
+     * Observations about the records on this screen.
+     *
+     * Pulled when somebody opens the area, never pushed -- §11: *"results appear when an
+     * operator looks, never as a notification"*. The same records the corrections
+     * subscription already asks for, by the same `d` letter.
+     */
+    observed.watch(data.records.map((r) => r.id));
+
     clock = readClock(data.built, Date.now());
     hydrated = true;
 
@@ -715,6 +743,27 @@
               </button>
             {/if}
 
+            {#if observed.about(record.id).length > 0}
+              <!--
+                What people saw, not what is true now. A correction above says what *is* and
+                decays; this says what somebody saw at a moment and stays true. Rendered apart
+                and labelled apart so the two are never read as one.
+              -->
+              <div class="seen" data-seen>
+                <p class="seen-head">Reported here</p>
+                {#each observed.about(record.id) as o (o.author + o.at)}
+                  <p class="seen-row">
+                    <span class="terms">{o.observation.tags.map((t) => t.replace(/_/g, ' ')).join(' · ')}</span>
+                    <!--
+                      Two lines by design. One wrapping line split "anonymous · told" away from
+                      its own row and left it looking like it belonged to the next sighting.
+                      Invariant 9: a claim about a moment shows how long ago that moment was.
+                    -->
+                    <span class="meta">{ago(o.observation.observed_at)} · {o.observation.callsign} · {o.observation.method}</span>
+                  </p>
+                {/each}
+              </div>
+            {/if}
             {#if reporting === record.id && correcting}
               <!--
                 Most of what an operator learns at a door is an enum, so most corrections are
@@ -941,6 +990,18 @@
 </Why>
 
 <style>
+  /* Evidence, set apart from the record's own fields so the two are never read as one. */
+  /*
+   * Logical properties, not `left`. The rule the RTL guard enforces: a rail hard-coded to the
+   * left of the text sits on the wrong side of Arabic or Hebrew, and the directory ships
+   * language hints per region precisely because it expects to be read in more than one.
+   */
+  .seen { margin: .5rem 0 .2rem; padding-inline-start: .6rem; border-inline-start: 2px solid var(--t-line); }
+  .seen-head { margin: 0 0 .2rem; font-size: .66rem; letter-spacing: .12em; text-transform: uppercase; color: var(--t-faint); }
+  .seen-row { margin: 0 0 .45rem; font-size: .84rem; }
+  .seen-row .terms { display: block; color: var(--t-ink); }
+  .seen-row .meta { display: block; color: var(--t-muted); font-size: .78rem; }
+
   .narrowing { display: grid; gap: .35rem; margin-bottom: .9rem; }
   .narrowing label {
     font-size: .74rem; text-transform: uppercase; letter-spacing: .12em; color: var(--t-faint);
