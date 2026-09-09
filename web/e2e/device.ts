@@ -209,15 +209,33 @@ export async function seedDevice(page: Page, seed: Seed = {}): Promise<void> {
         this.subs.add(subId);
         const filters = message.slice(2) as Record<string, unknown>[];
 
+        /*
+         * Every single-letter tag filter, not just `#p`.
+         *
+         * This honoured `kinds` and `#p` and ignored the rest, which made a whole class of
+         * test pass vacuously: the board subscribes `#d: [region]` and the public roster
+         * subscribes `#l: [navcom:public]`, and both received every card regardless. A test
+         * seeding one card and asserting it appeared would pass with the filter removed
+         * entirely.
+         *
+         * Generalised rather than adding `#d` and `#l` beside `#p`, because the next
+         * subscription would have had the same hole.
+         */
         const matches = (event: Record<string, unknown>) =>
           filters.some((f) => {
             const kinds = f['kinds'] as number[] | undefined;
             if (kinds && !kinds.includes(event['kind'] as number)) return false;
-            const wanted = f['#p'] as string[] | undefined;
-            if (wanted) {
-              const tags = (event['tags'] as string[][]) ?? [];
-              const tagged = tags.filter((t) => t[0] === 'p').map((t) => t[1]);
-              if (!wanted.some((w) => tagged.includes(w))) return false;
+
+            const authors = f['authors'] as string[] | undefined;
+            if (authors && !authors.includes(event['pubkey'] as string)) return false;
+
+            const tags = (event['tags'] as string[][]) ?? [];
+            for (const [key, value] of Object.entries(f)) {
+              if (!key.startsWith('#') || key.length !== 2) continue;
+              const letter = key.slice(1);
+              const wanted = value as string[];
+              const present = tags.filter((t) => t[0] === letter).map((t) => t[1]);
+              if (!wanted.some((w) => present.includes(w))) return false;
             }
             return true;
           });

@@ -9,6 +9,7 @@ import {
   doesTags,
   readDoes,
   readVisibility,
+  visibilityTags,
   type Visibility
 } from './profile.js';
 
@@ -166,7 +167,10 @@ export function buildCard(
        * flag somebody else has to honour.
        */
       tags: [
-        ...((options.visibility ?? DEFAULT_VISIBILITY) === 'board' ? [['d', card.region]] : []),
+        // Public and board both carry the region tag -- public *adds* a place you appear
+        // rather than moving you. Only `address` omits it, which is what keeps it off boards.
+        ...((options.visibility ?? DEFAULT_VISIBILITY) !== 'address' ? [['d', card.region]] : []),
+        ...visibilityTags(options.visibility ?? DEFAULT_VISIBILITY),
         ...linkTags(options.links ?? []),
         ...doesTags(options.does ?? [])
       ],

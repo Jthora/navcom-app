@@ -14,6 +14,7 @@ import type { Event } from 'nostr-tools/core';
 import {
   buildCard,
   DEFAULT_VISIBILITY,
+  PUBLIC_LABEL,
   DOES,
   DOES_MAX,
   doesTags,
@@ -80,7 +81,7 @@ describe('address-only is a property of the event, not a request', () => {
   });
 
   it('offers exactly the tiers that are true', () => {
-    expect(VISIBILITIES).toEqual(['board', 'address']);
+    expect(VISIBILITIES).toEqual(['public', 'board', 'address']);
     expect(VISIBILITY_CHOICES.map((c) => c.value)).toEqual([...VISIBILITIES]);
   });
 
@@ -103,6 +104,49 @@ describe('address-only is a property of the event, not a request', () => {
     expect(VISIBILITY_CHOICES.find((c) => c.value === 'address')!.audience).toMatch(
       /does not make it secret/i
     );
+  });
+});
+
+describe('public is a superset of the board, not a move', () => {
+  it('carries the region tag as well as the label, so a public card is still on its board', () => {
+    const event = overRelay(buildCard(contact, card, T, { visibility: 'public' }));
+    expect(event.tags).toContainEqual(['d', 'st-louis']);
+    expect(event.tags).toContainEqual(['l', PUBLIC_LABEL]);
+    expect(boardWouldServe(event, 'st-louis'), 'choosing public must not delist you').toBe(true);
+  });
+
+  it('reads back as public rather than as board', () => {
+    const read = readCard(overRelay(buildCard(contact, card, T, { visibility: 'public' })));
+    expect(read!.visibility).toBe('public');
+  });
+
+  it('uses a single-letter tag, because a relay indexes nothing else', () => {
+    /*
+     * NIP-01: only single-letter tags are queryable. A longer name would force the public
+     * roster to download every card on the relay -- including every card whose author chose
+     * not to be on it -- and filter locally.
+     */
+    const event = buildCard(contact, card, T, { visibility: 'public' });
+    const label = event.tags.find((t) => t[1] === PUBLIC_LABEL)!;
+    expect(label[0]).toHaveLength(1);
+    expect(label[0]).toMatch(/^[a-zA-Z]$/);
+  });
+
+  it('is namespaced, so it cannot collide with another app’s labels', () => {
+    expect(PUBLIC_LABEL).toContain(':');
+    expect(PUBLIC_LABEL.startsWith('navcom:')).toBe(true);
+  });
+
+  it('leaves board and address unlabelled, so neither is served by a public query', () => {
+    for (const v of ['board', 'address'] as const) {
+      const event = buildCard(contact, card, T, { visibility: v });
+      expect(event.tags.some((t) => t[0] === 'l' && t[1] === PUBLIC_LABEL), v).toBe(false);
+    }
+  });
+
+  it('still defaults to the board, because being on the open web is a further step', () => {
+    expect(DEFAULT_VISIBILITY).toBe('board');
+    expect(readCard(overRelay(buildCard(contact, card, T)))!.visibility).toBe('board');
   });
 });
 

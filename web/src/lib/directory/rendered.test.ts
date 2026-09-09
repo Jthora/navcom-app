@@ -167,8 +167,23 @@ beforeAll(async () => {
       if (text !== 'unknown') failures['rule5']!.push(`${path}: rendered "${text}", not "unknown"`);
     }
 
-    const isTerminal = path.includes('/terminal/') || path.endsWith('/build/index.html');
-    if (!isTerminal) {
+    /*
+     * The three pages that deliberately ship script, and nothing else.
+     *
+     * The terminal is an application. The root console is a real search over the real
+     * directory. `who/` is the public roster: it lists operators who chose `visibility:
+     * public`, and it reads them from relays as you look rather than at build time --
+     * because a relay that timed out mid-build would bake a page saying *nobody is here*,
+     * which is a false statement about people rather than a missing side-effect.
+     *
+     * The cost of that choice is that this page is not indexable and needs JavaScript, and
+     * the page says both out loud rather than implying otherwise.
+     */
+    const interactive =
+      path.includes('/terminal/') ||
+      path.endsWith('/build/index.html') ||
+      path.endsWith('/build/who/index.html');
+    if (!interactive) {
       if (doc.querySelectorAll('script').length > 0) failures['noScript']!.push(`${path} has a script tag`);
       if (doc.querySelectorAll('link[rel="modulepreload"]').length > 0) {
         failures['noScript']!.push(`${path} preloads a module`);

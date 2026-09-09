@@ -1,24 +1,37 @@
 /**
  * Who can find a card, and what its holder says they do.
  *
- * ## Two of the three tiers are real, and the third would be a lie
+ * ## Three tiers, named by reach rather than by permission
  *
- * The obvious design is *public / internal / private*, where internal means "only people who
- * registered can see this". **NavCom cannot offer that, and must not appear to.**
+ * The obvious design is *public / internal / private*, and an earlier version of this file
+ * argued that "internal" was a lie NavCom must not tell. That was half right and the wrong
+ * half was load-bearing.
  *
- * There is no account, no server and no gatekeeper anywhere in this system — that is the
- * whole design, not an unfinished part of it. A card is an event on public relays, and a
- * relay serves what it likes to whoever asks. Anyone can connect to the same relays with any
- * client and read every card on them. A setting labelled "internal" would change nothing
- * about who can read a card; it would only change what an operator *believes* about who can.
+ * What is a lie is **enforcement**. There is no account, no server and no gatekeeper: a card
+ * is an event on public relays, a relay serves what it likes to whoever asks, and nothing here
+ * can stop anyone reading one. A setting that claimed to gate *reading* would change only what
+ * an operator believes, which is invariant 4 pointed at visibility.
  *
- * That is invariant 4's shape pointed at visibility instead of the watch: an operator must
- * never believe a protection is in place when none is. So the tiers here are exactly the two
- * that are true, plus a third that is designed and deliberately not built:
+ * What is true is **reach**, and reach is what people usually mean. No operator data appears
+ * in any prerendered page — cards are relay traffic fetched at runtime, so `/terminal/who/`
+ * ships as *"No address"* and the board ships empty. Being on a board therefore already means:
+ * in the app, in your metro, in no static file, in no search index. That is the "internal"
+ * people are asking for, and it has been built the whole time under a different name.
  *
- * - `board`   — on the region's board. Anyone browsing that metro finds you
- * - `address` — published, on no board. Only somebody you give your address to will find you
+ * So the gap was never internal. It was **public** — appearing somewhere a visitor who never
+ * opens the app can find you:
+ *
+ * - `public`  — on the board *and* on navcom.app itself, where anyone can see you
+ * - `board`   — the app only. Anyone browsing that metro, nobody searching the web
+ * - `address` — published, on no board. Only somebody you give your address to
  * - *sealed*  — encrypted to people you have accepted. **Not built.** See below
+ *
+ * ## And the quietest tier is the default: no card at all
+ *
+ * An operator with no card sees every board and appears on none, because there is nothing to
+ * appear. That is not a setting and needs none — publishing is the deliberate act, and the app
+ * is identical without it. It is also the answer for somebody who will not join a network that
+ * can see them.
  *
  * ## `address` is real, and the mechanism was already here
  *
@@ -43,10 +56,23 @@
  * visible rather than forgotten, and so nobody adds a third radio button that does nothing.
  */
 
-/** How findable a card is. Two values, because two of them are true. */
-export type Visibility = 'board' | 'address';
+/** How findable a card is. Three values, ordered widest reach first. */
+export type Visibility = 'public' | 'board' | 'address';
 
-export const VISIBILITIES: readonly Visibility[] = ['board', 'address'] as const;
+export const VISIBILITIES: readonly Visibility[] = ['public', 'board', 'address'] as const;
+
+/**
+ * The label marking a card as public, and why it is a single letter.
+ *
+ * A relay only indexes **single-letter** tags (NIP-01), so `['visibility', 'public']` would be
+ * unqueryable and the public roster would have to download every card on the relay — including
+ * every card whose author chose *not* to be on it — and filter locally. Asking a relay for
+ * everyone's internal card in order to build a public page is the wrong shape regardless of
+ * whether the data is technically readable.
+ *
+ * `l` is NIP-32's label tag, namespaced so it cannot collide with another app's labels.
+ */
+export const PUBLIC_LABEL = 'navcom:public';
 
 /** The default. Publishing a card at all is the deliberate act; being findable is the point. */
 export const DEFAULT_VISIBILITY: Visibility = 'board';
@@ -66,6 +92,11 @@ export interface VisibilityChoice {
 }
 
 export const VISIBILITY_CHOICES: readonly VisibilityChoice[] = [
+  {
+    value: 'public',
+    label: 'Anyone, anywhere',
+    audience: 'You appear on navcom.app itself, so somebody who never opens the app can find you.'
+  },
   {
     value: 'board',
     label: 'On the board',
@@ -164,5 +195,13 @@ export function readDoes(tags: readonly (readonly string[])[]): string[] {
 
 /** How a card was published, read back off the event that carries it. */
 export function readVisibility(tags: readonly (readonly string[])[]): Visibility {
+  // Public is a superset of the board: choosing it does not take you off your metro's board,
+  // it adds a second place you appear. Checked first for that reason.
+  if (tags.some((t) => t[0] === 'l' && t[1] === PUBLIC_LABEL)) return 'public';
   return tags.some((t) => t[0] === 'd') ? 'board' : 'address';
+}
+
+/** The tags a visibility choice adds beyond the region. */
+export function visibilityTags(v: Visibility): string[][] {
+  return v === 'public' ? [['l', PUBLIC_LABEL]] : [];
 }
