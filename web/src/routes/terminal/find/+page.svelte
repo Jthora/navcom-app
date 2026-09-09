@@ -150,7 +150,7 @@
         {#each board.entries as e (e.contact)}
           <li>
             <div class="who">
-              <span class="name">{e.callsign}</span>
+              <a class="name" href="/terminal/who/?k={e.contact}">{e.callsign}</a>
               {#if e.out}<span class="badge">out tonight</span>{/if}
             </div>
             {#if e.doing}<p class="doing">{e.doing}</p>{/if}
@@ -165,20 +165,11 @@
             {/if}
             {#if e.links.length > 0}
               <!--
-                Links, not embeds. The board is a list; `who/[contact]` is the surface that
-                renders a feed. `no-referrer` because which operator's card somebody was
-                reading is not TikTok's business.
+                Named, not listed. Twelve links per row over a 200-card board is not something
+                anybody reads, and `who/` is the surface that lays them out by rank. The board's
+                job is who is here.
               -->
-              <p class="elsewhere">
-                {#each e.links as l (l.platform)}
-                  <a
-                    href={platformOf(l.platform)?.url(l.handle)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    referrerpolicy="no-referrer"
-                  >{platformOf(l.platform)?.label ?? l.platform}</a>
-                {/each}
-              </p>
+              <p class="elsewhere"><a href="/terminal/who/?k={e.contact}">Where else they are →</a></p>
             {/if}
             {#if e.lightning}
               <!--

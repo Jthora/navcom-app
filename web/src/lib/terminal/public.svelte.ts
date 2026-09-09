@@ -193,6 +193,78 @@ export const board = {
 };
 
 /**
+ * One operator's card, fetched by the key that signed it.
+ *
+ * Separate from `board` and deliberately so. The board asks a relay for a *region* and gets
+ * whoever published there; this asks for an *author* and gets one card. A profile reached from
+ * a shared link has no region to ask about — the link carries a key and nothing else.
+ *
+ * Nothing here is derived, inferred or aggregated. It is one card, rendered.
+ */
+let one = $state<PublishedCard | null>(null);
+let oneOut = $state(false);
+let oneLoading = $state(false);
+let oneCloser: { close(): void } | null = null;
+
+export const profile = {
+  get card(): PublishedCard | null {
+    return one;
+  },
+  /** Whether they are publishing *"out tonight"* right now. */
+  get out(): boolean {
+    return oneOut;
+  },
+  get loading(): boolean {
+    return oneLoading;
+  },
+
+  /** Watches one contact key. Safe to call repeatedly. */
+  watch(contact: string): void {
+    const urls = relays();
+    if (urls.length === 0 || !/^[0-9a-f]{64}$/.test(contact)) return;
+
+    oneCloser?.close();
+    one = null;
+    oneOut = false;
+    oneLoading = true;
+
+    oneCloser = pool().subscribeMany(
+      urls,
+      // By author, not by region -- a card that is address-only carries no region tag and
+      // would be unreachable any other way. That is the whole point of that tier.
+      { kinds: [KIND_CARD, KIND_PUBLIC_PRESENCE], authors: [contact] },
+      {
+        onevent: (event: Event) => {
+          if (event.kind === KIND_CARD) {
+            const read = readCard(event);
+            if (!read) return;
+            // A relay may serve an older replaceable event after a newer one.
+            if (one && one.at >= read.at) return;
+            one = read;
+            return;
+          }
+          // Presence is `d`-tagged with the region, which we only know once the card lands.
+          const region = one?.card.region;
+          if (!region) return;
+          if (readPublicPresence(event, region) === contact) {
+            oneOut = event.created_at >= Math.floor(Date.now() / 1000) - OUT_FOR_SECONDS;
+          }
+        },
+        oneose: () => {
+          oneLoading = false;
+        }
+      }
+    );
+  },
+
+  stop(): void {
+    oneCloser?.close();
+    oneCloser = null;
+    oneLoading = false;
+  }
+};
+
+/**
  * Publishes or replaces your card.
  *
  * Generates the contact key on first use — which is the moment an operator stops being

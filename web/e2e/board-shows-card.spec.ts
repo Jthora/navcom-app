@@ -71,7 +71,12 @@ test('renders a term as its label, never as the raw tag', async ({ page }) => {
   await expect(row).not.toContainText('firstaid');
 });
 
-test('shows where else somebody says they can be found, as links', async ({ page }) => {
+test('names that somebody is elsewhere, and sends you to their card for the detail', async ({ page }) => {
+  /*
+   * Handles moved to `who/` deliberately. Twelve links per row over a 200-card board is not a
+   * list anybody reads, and the board's job is who is here. This asserts the board points at
+   * the surface that has them rather than silently dropping the information.
+   */
   const event = await cardEvent({
     callsign: 'Raven',
     region: REGION,
@@ -84,30 +89,21 @@ test('shows where else somebody says they can be found, as links', async ({ page
   await open(page, '/terminal/find/');
 
   const row = page.locator('li', { hasText: 'Raven' });
-  const tiktok = row.getByRole('link', { name: 'TikTok' });
-  await expect(tiktok).toHaveAttribute('href', 'https://www.tiktok.com/@raven');
-  await expect(row.getByRole('link', { name: 'Bluesky' })).toHaveAttribute(
-    'href',
-    'https://bsky.app/profile/raven.bsky.social'
-  );
+  const through = row.getByRole('link', { name: /where else they are/i });
+  await expect(through).toBeVisible();
+  await expect(through).toHaveAttribute('href', /\/terminal\/who\/\?k=[0-9a-f]{64}/);
+  // The board no longer names the platforms itself.
+  await expect(row.getByRole('link', { name: 'TikTok' })).toHaveCount(0);
 });
 
-test('does not tell the platform whose card was being read', async ({ page }) => {
-  /*
-   * Which operator somebody was looking at is not TikTok's business, and a bare outbound
-   * link hands them the referring URL by default.
-   */
-  const event = await cardEvent({
-    callsign: 'Raven',
-    region: REGION,
-    links: [{ platform: 'tiktok', handle: 'raven' }]
-  });
+test('a callsign on the board opens that operator', async ({ page }) => {
+  const event = await cardEvent({ callsign: 'Raven', region: REGION });
   await seedDevice(page, watching(event));
   await open(page, '/terminal/find/');
 
-  const link = page.locator('li', { hasText: 'Raven' }).getByRole('link', { name: 'TikTok' });
-  await expect(link).toHaveAttribute('referrerpolicy', 'no-referrer');
-  await expect(link).toHaveAttribute('rel', /noopener/);
+  await expect(
+    page.locator('li', { hasText: 'Raven' }).getByRole('link', { name: 'Raven' })
+  ).toHaveAttribute('href', /\/terminal\/who\/\?k=[0-9a-f]{64}/);
 });
 
 test('a card that says none of this still renders as a complete card', async ({ page }) => {

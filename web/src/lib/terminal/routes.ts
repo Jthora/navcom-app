@@ -20,6 +20,7 @@ export const TERMINAL_ROUTES = [
   'peers/',
   'card/',
   'find/',
+  'who/',
   'watch/',
   'on-call/',
   'resupply/',

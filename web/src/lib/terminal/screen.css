@@ -17,6 +17,24 @@
 }
 .terminal .eyebrow a { color: var(--t-faint); text-decoration: none; }
 
+/*
+ * Links, which had no colour at all.
+ *
+ * Only `.eyebrow a` was ever styled, so every other link in the terminal rendered at the
+ * browser's default -- measured `rgb(158, 158, 255)` on the card, find and status screens.
+ *
+ * That is not only off-palette. **Low signature exists so a screen is amber-dominant with no
+ * white anywhere and luminance at the floor**, for an operator who does not want to be lit up
+ * at 2am; a browser-blue link is the brightest, bluest thing on the screen and defeats the
+ * mode outright. Found by screenshotting a new screen and noticing its links were the wrong
+ * colour -- the three older screens had been that way the whole time.
+ *
+ * Ink rather than an accent, with the underline kept: the affordance is the decoration, so a
+ * link does not have to spend a hue to be recognisable, and nothing here has a hue to spare.
+ */
+.terminal a { color: var(--t-ink); }
+.terminal a:focus-visible { outline: 2px solid var(--t-ink); outline-offset: 2px; }
+
 .terminal h1 { font-size: 1.7rem; margin: 0; letter-spacing: -.01em; }
 .terminal h2 {
   font-size: .78rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
