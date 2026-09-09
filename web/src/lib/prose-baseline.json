@@ -30,7 +30,7 @@
   "src/routes/terminal/card/+page.svelte": 47,
   "src/routes/terminal/directory/+page.svelte": 100,
   "src/routes/terminal/directory/[region]/+page.svelte": 519,
-  "src/routes/terminal/distress/+page.svelte": 298,
+  "src/routes/terminal/distress/+page.svelte": 191,
   "src/routes/terminal/find/+page.svelte": 255,
   "src/routes/terminal/funding/+page.svelte": 264,
   "src/routes/terminal/log/+page.svelte": 322,

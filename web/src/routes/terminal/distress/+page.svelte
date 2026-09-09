@@ -14,7 +14,7 @@
   import { onDestroy } from 'svelte';
   import { operator } from '$lib/terminal/session.svelte';
   import { pulse } from '$lib/terminal/haptic';
-  import { Slot, Elapsed } from '$lib/components/panel';
+  import { Slot, Elapsed, Why } from '$lib/components/panel';
   import {
     callLink,
     distressMessage,
@@ -195,28 +195,49 @@
       <strong>There is nowhere to send this.</strong> Distress goes to a watch and you have
       not added one, so holding the button would raise nobody.
     </p>
-    <p class="cost">
-      <!--
-        Peers named, because "raise nobody" is true and the person most likely to read past it
-        is the one who has paired with somebody. Pairing is mutual *visibility* — a peer sees
-        that you are out and that you are past the time you gave. It is not a channel, and
-        there is no way to reach one deliberately: the app holds no number for them.
+    <!--
+      Peers named, because "raise nobody" is true and the person most likely to read past it
+      is the one who has paired with somebody. Pairing is mutual *visibility* — a peer sees
+      that you are out and that you are past the time you gave. It is not a channel, and
+      there is no way to reach one deliberately: the app holds no number for them.
 
-        Stated whether or not this operator has peers yet, so the limit is known before
-        somebody pairs rather than discovered after — the same reason unpairing is explained
-        above the pairing form.
-      -->
-      <strong>Peers you have paired with are not told either.</strong> Pairing lets somebody
-      see that you are out and that you are past the time you gave — it does not carry this,
-      and nothing here can reach them for you.
-    </p>
+      Stated whether or not this operator has peers yet, so the limit is known before
+      somebody pairs rather than discovered after — the same reason unpairing is explained
+      above the pairing form.
+
+      The sentence stays on the screen and what pairing *is* moves behind the disclosure. A
+      browser test reads this block with `toContainText`, which resolves `textContent` and so
+      sees a closed `<details>` too — but it is here for the operator, not the test, and the
+      part that changes what they should do next is the first line.
+    -->
+    <p class="cost"><strong>Peers you have paired with are not told either.</strong></p>
     {#if !contact}
       <p class="cost">
         Nothing on this phone can reach anyone for you.
-        <a href="/terminal/setup/">Add someone you would call</a> — it takes a name and a
-        number, stays on this phone, and is the only thing that helps when there is no watch.
+        <a href="/terminal/setup/">Add someone you would call</a>.
       </p>
     {/if}
+    <!--
+      One disclosure for the block, not one per paragraph.
+      
+      The first version of this conversion gave each moved paragraph its own `Why`, which read
+      on the screen as two collapsed accordions stacked with a heading's worth of space between
+      them -- fewer words and a worse screen, on the one page nobody is reading calmly. The
+      count is not the goal; what a person meets is.
+    -->
+    <Why summary="What that means">
+      <p class="cost">
+        <strong>Peers you have paired with are not told either.</strong> Pairing lets somebody
+        see that you are out and that you are past the time you gave — it does not carry this,
+        and nothing here can reach them for you.
+      </p>
+      {#if !contact}
+        <p class="cost">
+          It takes a name and a number, stays on this phone, and is the only thing that helps
+          when there is no watch.
+        </p>
+      {/if}
+    </Why>
   </section>
 {/if}
 
@@ -226,11 +247,23 @@
       This wakes people up. It keeps sending until a human answers — <strong>not an
       agent</strong> — and only you can stop it.
     </p>
-    <p class="cost">
-      Calling your own person <strong>works before the rest of this screen does</strong>, and
-      with no signal at all. Everything below needs the app to have finished loading; a phone
-      call does not.
-    </p>
+    <!--
+      This paragraph is why `Why` belongs here and not around the person block above.
+      
+      The capability it backs is *"Your person, before the app loads"*, and `capabilities.test`
+      reads the **prerendered** HTML for its claim. Moving it up beside the Text and Call
+      buttons put it inside `{#if contact}`, which is null at prerender -- so the one sentence
+      promising that calling works before the app does had itself stopped appearing until the
+      app did. A `<details>` here still prerenders its contents, so the claim is in the page
+      whether or not anybody opens it.
+    -->
+    <Why summary="What works before this screen does">
+      <p class="cost">
+        Calling your own person <strong>works before the rest of this screen does</strong>, and
+        with no signal at all. Everything below needs the app to have finished loading; a phone
+        call does not.
+      </p>
+    </Why>
     <label for="d">Anything you can say <span class="opt">optional</span></label>
     <textarea id="d" bind:value={text} placeholder="two of them, heading east"></textarea>
   </section>
@@ -307,10 +340,18 @@
     </section>
   {:else if operator.distressRunning}
     <section>
-      <p class="cost">
-        Still going. It will not stop on its own — if nothing is answering, that is what the
-        list above is telling you, and it is worth acting on directly.
-      </p>
+      <!--
+        The panel header directly above already reads `Sending`, so "still going" was the
+        third thing on the screen saying so. What is left is the part a readout cannot carry:
+        this does not time out.
+      -->
+      <p class="cost"><strong>It will not stop on its own.</strong></p>
+      <Why summary="What to do while it sends">
+        <p class="cost">
+          Still going. It will not stop on its own — if nothing is answering, that is what the
+          list above is telling you, and it is worth acting on directly.
+        </p>
+      </Why>
       <button class="stand-down" onclick={() => operator.standDownDistress()}>
         Stand down — I am safe
       </button>
