@@ -129,6 +129,89 @@ const TAG_SET = new Set<string>(OBSERVATION_TAGS);
 export const isObservationTag = (t: string): boolean => TAG_SET.has(t);
 
 /**
+ * What each term is called on a screen.
+ *
+ * ## Why a table and not `id.replace(/_/g, ' ')`
+ *
+ * That is what three call sites did, and it is not a label — it is an algorithm, and an
+ * algorithm cannot be translated. `light_out` comes out as *"light out"* in every language a
+ * person might be reading, and `scam_targeting_community` comes out as itself with the
+ * underscores knocked out. A table is a list of strings, which is the only shape a translation
+ * catalogue can take hold of.
+ *
+ * It also puts the wording in one place. The three sites disagreed about capitalisation
+ * already: the picker upper-cased the first letter and the record line did not, so the same
+ * term read `Locked` in one half of the screen and `locked` in the other.
+ *
+ * ## What is deliberately not here
+ *
+ * No `means` gloss, of the kind `DOES` carries. Explaining when an operator should reach for
+ * `predatory_operation` rather than `scam_targeting_community` is exactly the local knowledge
+ * §7 reserves for a person, and a plausible-sounding guess would shape what operators think to
+ * look at. These are the terms' names, not their definitions.
+ *
+ * The terms themselves are still the placeholder §7 describes. Naming a placeholder is not
+ * authoring the vocabulary.
+ */
+export const OBSERVATION_LABELS: Record<string, string> = {
+  fenced: 'Fenced',
+  locked: 'Locked',
+  demolished: 'Demolished',
+  rebuilt: 'Rebuilt',
+  blocked: 'Blocked',
+
+  closed: 'Closed',
+  moved: 'Moved',
+  hours_changed: 'Hours changed',
+  capacity_full: 'Capacity full',
+  reopened: 'Reopened',
+
+  light_out: 'Light out',
+  camera_new: 'New camera',
+  barrier_new: 'New barrier',
+  transit_changed: 'Transit changed',
+
+  flyer_posted: 'Flyer posted',
+  notice_posted: 'Notice posted',
+  sticker_qr: 'QR sticker',
+
+  scam_targeting_community: 'Scam targeting community',
+  predatory_operation: 'Predatory operation',
+
+  nothing_observed: 'Nothing observed'
+};
+
+/**
+ * The name for a term, or `null` where this build does not know it.
+ *
+ * Null rather than the raw id, for the reason `readCard` returns null on an unknown field: a
+ * term this build has never heard of is not something to render a guess at. A relay serves
+ * whatever anyone published, so an id here can be a newer vocabulary, a typo, or somebody
+ * probing what the screen will echo back.
+ */
+export function observationLabel(id: string): string | null {
+  return OBSERVATION_LABELS[id] ?? null;
+}
+
+/**
+ * How somebody came to know, in words.
+ *
+ * §8: method is a fact about provenance and never a grade. These read as the plain report they
+ * are -- *"Raven · was told"* -- because the moment one of them reads as better than another,
+ * the screen has started grading sources, which is the thing NavCom does not do.
+ */
+export const OBSERVATION_METHOD_LABELS: Record<ObservationMethod, string> = {
+  saw: 'Saw it',
+  told: 'Was told',
+  inferred: 'Inferred'
+};
+
+/** The name for a method, or `null` for anything this build does not know. */
+export function observationMethodLabel(m: string): string | null {
+  return (OBSERVATION_METHOD_LABELS as Record<string, string>)[m] ?? null;
+}
+
+/**
  * The most terms one observation may carry.
  *
  * An observation is what somebody saw at a door, not a survey of it. Bounded for the same
@@ -151,6 +234,27 @@ export const TAGS_MAX = 8;
  * done here — and until then the sentence above is what an operator has to actually see.
  */
 export const ANONYMOUS = 'anonymous';
+
+/**
+ * What `ANONYMOUS` is called on a screen.
+ *
+ * The wire value stays `anonymous` -- renaming it changes the contract version and is queued
+ * for `0.2.0` above. This is only its name, and it needs one for the same reason every term
+ * does: rendered straight, the sentinel put a lower-case English word in a row beside two
+ * capitalised callsigns, and it stayed English in every language the phone might be set to.
+ */
+export const ANONYMOUS_LABEL = 'Anonymous';
+
+/**
+ * A callsign as it should be shown.
+ *
+ * Everything except the sentinel is a name somebody chose for themselves and passes through
+ * untouched -- there is nothing to translate about `Raven`, and nothing that may be changed
+ * about it either.
+ */
+export function callsignLabel(callsign: string): string {
+  return callsign === ANONYMOUS ? ANONYMOUS_LABEL : callsign;
+}
 
 export interface Observation {
   /**

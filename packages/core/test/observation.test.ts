@@ -30,7 +30,12 @@ import {
   RETENTION_DAYS,
   TAGS_MAX,
   type Observation,
-  type Where
+  type Where,
+  OBSERVATION_LABELS,
+  OBSERVATION_VOCABULARY,
+  observationLabel,
+  observationMethodLabel,
+  OBSERVATION_METHOD_LABELS
 } from '../src/index.js';
 
 const SPEC = fileURLToPath(new URL('../../../docs/product/raw-intel.md', import.meta.url));
@@ -390,5 +395,69 @@ describe('the vocabulary is a placeholder and says so', () => {
 
   it('can express nothing_observed, so an empty patrol is reportable', () => {
     expect(OBSERVATION_TAGS).toContain('nothing_observed');
+  });
+});
+
+describe('the vocabulary in code is the vocabulary in the spec', () => {
+  /*
+   * Two copies existed and nothing compared them.
+   *
+   * `/.well-known/navcom-intel.json` parses its vocabulary out of §7's fenced block -- a test
+   * over there asserts it is "read out of the spec, not retyped" -- while this module retypes
+   * the same twenty terms by hand. So the list an operator's app validates against and the
+   * list NavCom publishes to every consumer could disagree, and the first symptom would be an
+   * observation that refuses to publish for a term the spec says is valid.
+   *
+   * Parsed here exactly as the publisher parses it, including the anchor to `## 7.` that the
+   * publisher learned to use after a fence added elsewhere in the spec silently emptied the
+   * whole vocabulary.
+   */
+  const fromSpec = (): Record<string, string[]> => {
+    const section = spec().split(/^## 7\./m)[1] ?? '';
+    const block = /```\n([\s\S]*?)```/.exec(section)?.[1] ?? '';
+    const out: Record<string, string[]> = {};
+    for (const line of block.split('\n')) {
+      const m = /^(\w+)\s+(.+)$/.exec(line);
+      if (m) out[m[1]] = m[2].split('\u00b7').map((t) => t.trim()).filter(Boolean);
+    }
+    return out;
+  };
+
+  it('parses something at all, so an empty read cannot pass as agreement', () => {
+    // The failure this is shaped around emptied the vocabulary rather than changing it, and an
+    // empty list equals an empty list.
+    const parsed = fromSpec();
+    expect(Object.keys(parsed).length).toBeGreaterThan(3);
+    expect(Object.values(parsed).flat().length).toBeGreaterThan(15);
+  });
+
+  it('agrees with the spec, group for group and term for term', () => {
+    const parsed = fromSpec();
+    const mine = Object.fromEntries(
+      Object.entries(OBSERVATION_VOCABULARY).map(([g, t]) => [g, [...t]])
+    );
+    expect(mine).toEqual(parsed);
+  });
+
+  it('has a name for every term, and names nothing that is not a term', () => {
+    const unnamed = OBSERVATION_TAGS.filter((t) => observationLabel(t) === null);
+    expect(unnamed, `these terms would render with no label: ${unnamed.join(', ')}`).toEqual([]);
+
+    const orphan = Object.keys(OBSERVATION_LABELS).filter((t) => !OBSERVATION_TAGS.includes(t));
+    expect(orphan, `labels for terms no longer in the vocabulary: ${orphan.join(', ')}`).toEqual([]);
+  });
+
+  it('refuses to name a term it does not know, rather than echoing it back', () => {
+    // Refuse, do not trim. A relay serves whatever anybody published, so an id arriving here
+    // can be a newer vocabulary, a typo, or somebody testing what the screen will repeat.
+    expect(observationLabel('definitely_not_a_term')).toBeNull();
+    expect(observationLabel('<script>')).toBeNull();
+    expect(observationMethodLabel('guessed')).toBeNull();
+  });
+
+  it('names every method, and grades none of them', () => {
+    for (const m of OBSERVATION_METHODS) expect(observationMethodLabel(m)).toBeTruthy();
+    const words = Object.values(OBSERVATION_METHOD_LABELS).join(' ');
+    expect(words).not.toMatch(/confirmed|verified|reliable|unreliable|weak|strong|likely/i);
   });
 });

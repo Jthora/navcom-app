@@ -221,11 +221,13 @@ test('what somebody filed comes back on the record', async ({ page }) => {
 
   const seen = page.locator('[data-seen]').first();
   await expect(seen).toBeVisible({ timeout: 10_000 });
-  await expect(seen).toContainText('locked');
+  // The name, not the id. This asserted `locked` and passed on the raw term reaching the
+  // screen -- which is what it was doing, in every language.
+  await expect(seen).toContainText('Locked');
   // Invariant 9: a claim about a moment shows how long ago that moment was.
   await expect(seen).toContainText(/3 days ago/i);
   await expect(seen).toContainText('Raven');
-  await expect(seen).toContainText('saw');
+  await expect(seen).toContainText('Saw it');
 });
 
 test('and is shown apart from the record’s own fields, not merged into them', async ({ page }) => {
@@ -250,5 +252,14 @@ test('and is shown apart from the record’s own fields, not merged into them', 
   await expect(seen).toBeVisible({ timeout: 10_000 });
   // Its own labelled region, not a row among the record's fields.
   await expect(seen).toContainText(/reported here/i);
-  await expect(seen).toContainText('light out');
+  await expect(seen).toContainText('Light out');
+  /*
+   * The sentinel gets its name, and the wire keeps its value.
+   *
+   * `anonymous` is a literal in the event content and stays one -- renaming it is a contract
+   * change queued for 0.2.0. What changed is that the screen no longer prints the literal,
+   * which sat lower-case beside two capitalised callsigns and stayed English everywhere.
+   */
+  await expect(seen).toContainText('Anonymous');
+  await expect(seen, 'the wire sentinel is showing through').not.toContainText('· anonymous ·');
 });

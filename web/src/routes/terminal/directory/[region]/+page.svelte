@@ -27,7 +27,8 @@
   import { corrections } from '$lib/terminal/corrections.svelte';
   import LogWhatYouSaw from '$lib/components/LogWhatYouSaw.svelte';
   import { observed } from '$lib/terminal/observations.svelte';
-  import { anchorFromRecord, OBSERVATION_VOCABULARY } from '@navcom/core';
+  import { anchorFromRecord, callsignLabel, OBSERVATION_VOCABULARY, observationLabel,
+    observationMethodLabel } from '@navcom/core';
   import { locateOnce, metresApart, type Fix } from '$lib/console/position-once';
   import { places } from '$lib/terminal/places.svelte';
   import { Slot, Readout, Why, Heartbeat } from '$lib/components/panel';
@@ -753,13 +754,19 @@
                 <p class="seen-head">Reported here</p>
                 {#each observed.about(record.id) as o (o.author + o.at)}
                   <p class="seen-row">
-                    <span class="terms">{o.observation.tags.map((t) => t.replace(/_/g, ' ')).join(' · ')}</span>
+                    <span class="terms">{o.observation.tags.map((t) => observationLabel(t) ?? t).join(' · ')}</span>
                     <!--
                       Two lines by design. One wrapping line split "anonymous · told" away from
                       its own row and left it looking like it belonged to the next sighting.
                       Invariant 9: a claim about a moment shows how long ago that moment was.
                     -->
-                    <span class="meta">{ago(o.observation.observed_at)} · {o.observation.callsign} · {o.observation.method}</span>
+                    <!--
+                      `readObservation` refuses any sighting whose tag or method this build
+                      does not know, so both names above are reached rather than guessed at.
+                      The raw id used to render here: a row read `anonymous · told`, and a
+                      term read `scam targeting community`, in every language.
+                    -->
+                    <span class="meta">{ago(o.observation.observed_at)} · {callsignLabel(o.observation.callsign)} · {observationMethodLabel(o.observation.method) ?? o.observation.method}</span>
                   </p>
                 {/each}
               </div>

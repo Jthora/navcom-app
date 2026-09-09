@@ -24,7 +24,8 @@
    * the directory already publishes, so filing this reveals no position that was not already
    * public — what it withholds is *which* of the places in that cell, until the refinement.
    */
-  import { OBSERVATION_VOCABULARY, OBSERVATION_METHODS, TAGS_MAX, type ObservationMethod, type ResourceRecord } from '@navcom/core';
+  import { OBSERVATION_VOCABULARY, OBSERVATION_METHODS, TAGS_MAX, observationLabel,
+    type ObservationMethod, type ResourceRecord } from '@navcom/core';
   import { report } from '$lib/terminal/observations.svelte';
   import { Why } from '$lib/components/panel';
 
@@ -37,13 +38,21 @@
   let outcome = $state<{ ok: boolean; text: string } | null>(null);
 
   /**
-   * A placeholder vocabulary gets a placeholder label.
+   * Names come from core, which is the only place that has them.
    *
-   * The real list arrives with its own words the day somebody with local knowledge writes it
-   * — `raw-intel.md` §7 — so investing in a label table for twenty terms that are explicitly
-   * marked for replacement would be work thrown away.
+   * This was `t.replace(/_/g, ' ')` and the comment argued a placeholder vocabulary deserves a
+   * placeholder label. Two things were wrong with that. A replace is an algorithm rather than
+   * a string, so it cannot be translated -- `light_out` reads *"light out"* in every language
+   * somebody might have the phone set to. And the same argument was made independently at the
+   * record row, which upper-cased nothing, so one screen showed `Locked` in its picker and
+   * `locked` in the sighting directly below it.
+   *
+   * Naming a placeholder is not authoring the vocabulary; the terms are still §7's stub.
+   *
+   * The fallback cannot fire here -- these ids come from `OBSERVATION_VOCABULARY` itself, and
+   * a core test asserts every term in it has a name.
    */
-  const label = (t: string) => t.replace(/_/g, ' ').replace(/^./, (c) => c.toUpperCase());
+  const label = (t: string) => observationLabel(t) ?? t;
 
   const METHOD_MEANS: Record<ObservationMethod, string> = {
     saw: 'You saw it yourself',
