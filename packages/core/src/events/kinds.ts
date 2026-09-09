@@ -69,6 +69,21 @@ export const KIND_PUBLIC_PRESENCE = 20914;
 export const KIND_INVITE = 1910;
 
 /**
+ * Regular, and therefore **stored** — *"on 3 Sept at 23:10 I saw the door locked."*
+ *
+ * Regular rather than replaceable or addressable because both let an author quietly overwrite
+ * what they published, and an evidence record whose history can be rewritten is the thing the
+ * accountability log exists to prevent. An observation is superseded by a later observation,
+ * never edited.
+ *
+ * The deliberate opposite of `Distress`, which is ephemeral so that no queryable history
+ * exists. An observation is *for* the record.
+ *
+ * Signed by the contact key. Normative source: `docs/product/raw-intel.md`.
+ */
+export const KIND_OBSERVATION = 1911;
+
+/**
  * A credential — *"I vouch for the holder of this."*
  *
  * **Never published.** Handed over the way everything else here is, because indexing it

@@ -43,6 +43,8 @@ clear** — that is how a relay routes anything at all.
 | Invite | `1910` | The recipient's pubkey | Everything else | Throwaway |
 | Your card | `10911` | Region, **what you do**, **where else to find you** | *Nothing* — a card is public by definition | Contact |
 | Public presence | `20914` | Region | Nothing; the content is deliberately **empty** | Contact |
+| An observation | `1911` | **All of it** — what you saw, when, how you know, your callsign or `anonymous`, and a ±20 km area | Nothing — an observation is evidence, and evidence nobody can read is not evidence | Contact |
+| Its refinement | `1911` | The same, with **exact coordinates**, published 48 hours later | Nothing | Contact |
 | Correction | `30911` | The record id | Nothing — a correction is meant to be read | Contact |
 | A place you add | `30915` | Place id, region | Nothing | Contact |
 | Post-quantum key bundle | `10912` | Your public KEM key. **No tags at all** | Nothing to seal — it is a public key | **Operational** |
@@ -76,6 +78,12 @@ Stated as capability rather than intent, because you do not get to choose who ru
   *somebody*, on a rhythm
 - Everything about your card, public presence, corrections and places — all public by
   design, and none of it tied to your operational key
+- **Everything in an observation, and the pair of them together.** An observation publishes at
+  ±20 km immediately and its exact position 48 hours later, which defeats *"that operator is
+  standing there now"* and does not defeat pattern reconstruction from many observations over
+  time — the second threat is answered by dropping them after 90 days, not by the delay. And
+  `anonymous` omits a callsign without severing a history: every observation filed under it
+  shares one contact pubkey. **Anonymous means no name. It does not mean no history.**
 - **Any social handle on your card, beside your callsign.** This is the one thing here that
   bridges a persona to a named account somewhere else, and it is worth its own line: a relay
   operator, or anyone who can read the same relay, can build a callsign-to-account map for a
