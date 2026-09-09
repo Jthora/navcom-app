@@ -105,3 +105,76 @@ describe('credentials really are never published', () => {
     expect(offenders, 'a credential or claim is being published').toEqual([]);
   });
 });
+
+describe('the card row is derived from what a card actually emits', () => {
+  /**
+   * What every clear-text tag on a card means, in words the page has to contain.
+   *
+   * This is the guard that was missing. The page said a card's clear text was **Region**,
+   * and stayed saying it while `buildCard` learned to publish activity terms and social
+   * handles — the single most deanonymising thing in this system, undocumented on the page
+   * that exists to document exactly this. The test above passed throughout, because it
+   * checks the kind *numbers* in the table and not the column beside them.
+   *
+   * `declined.md` refuses to audit what is findable about a persona on the open internet,
+   * and offers this page as the honest half it can do. A wrong page is worse than a missing
+   * one: it is the overclaim shape this project has already been caught by once.
+   */
+  const TAG_MEANS: Record<string, string> = {
+    d: 'Region',
+    t: 'what you do',
+    i: 'where else to find you'
+  };
+
+  const cardRow = () => page().split('\n').find((l) => l.startsWith('| Your card |'))!;
+
+  it('emits only tags this page explains', async () => {
+    const { generateSecretKey } = await import('nostr-tools/pure');
+    const { buildCard, DOES, PLATFORMS } = await import('@navcom/core');
+
+    // Everything a card can carry at once, so a new tag type cannot slip past unlisted.
+    const event = buildCard(
+      generateSecretKey(),
+      { callsign: 'Wren', region: 'st-louis', doing: 'Water and socks.', lightning: 'w@getalby.com' },
+      1_755_300_000,
+      {
+        visibility: 'board',
+        does: DOES.map((d) => d.id),
+        links: PLATFORMS.map((p) => ({
+          platform: p.id,
+          handle: p.at === 'instance' ? 'example.social/wren' : p.at === 'origin' ? 'wren.example' : 'wren'
+        }))
+      }
+    );
+
+    const names = [...new Set(event.tags.map((t) => t[0]!))].sort();
+    expect(names.length, 'a card emitted no tags at all').toBeGreaterThan(0);
+
+    const undocumented = names.filter((n) => !(n in TAG_MEANS));
+    expect(
+      undocumented,
+      `a card emits ${undocumented.join(', ')} and this test has no phrase for it — ` +
+        'decide what it means to a reader, put it on the page, and add it here'
+    ).toEqual([]);
+
+    const row = cardRow();
+    for (const name of names) {
+      expect(row, `the card row does not mention what the "${name}" tag carries`).toContain(
+        TAG_MEANS[name]!
+      );
+    }
+  });
+
+  it('says a handle is the one thing that bridges a persona to a named account', async () => {
+    // The capability, stated where a relay operator's capabilities are stated. Not buried in
+    // the card row, because it is a different kind of claim from "region is visible".
+    const text = page();
+    expect(text).toMatch(/social handle on your card/i);
+    expect(text).toMatch(/callsign-to-account map|bridges a persona/i);
+    expect(text, 'the page must say it cannot be recalled').toMatch(/cannot be recalled|relays keep what they were given/i);
+  });
+
+  it('still says a card seals nothing, because that has not changed', () => {
+    expect(cardRow()).toMatch(/a card is public by definition/i);
+  });
+});

@@ -41,7 +41,7 @@ clear** — that is how a relay routes anything at all.
 | `Distress` | `20911` | Watchtower pubkey | Everything else. **No type tag**, so a subscriber filtering types cannot miss one | Operational |
 | Peer presence | `20913` | **The recipient's pubkey** | Callsign, area, position, until | Throwaway |
 | Invite | `1910` | The recipient's pubkey | Everything else | Throwaway |
-| Your card | `10911` | Region | *Nothing* — a card is public by definition | Contact |
+| Your card | `10911` | Region, **what you do**, **where else to find you** | *Nothing* — a card is public by definition | Contact |
 | Public presence | `20914` | Region | Nothing; the content is deliberately **empty** | Contact |
 | Correction | `30911` | The record id | Nothing — a correction is meant to be read | Contact |
 | A place you add | `30915` | Place id, region | Nothing | Contact |
@@ -76,6 +76,13 @@ Stated as capability rather than intent, because you do not get to choose who ru
   *somebody*, on a rhythm
 - Everything about your card, public presence, corrections and places — all public by
   design, and none of it tied to your operational key
+- **Any social handle on your card, beside your callsign.** This is the one thing here that
+  bridges a persona to a named account somewhere else, and it is worth its own line: a relay
+  operator, or anyone who can read the same relay, can build a callsign-to-account map for a
+  metro from cards alone. It is opt-in, off by default, and per platform — and once
+  published it cannot be recalled, because relays keep what they were given. `declined.md`
+  records unmasking as a documented, strongly-evidenced harm here; this is the one feature
+  that makes it easier, and it exists only because an operator asked for it about themselves
 - **Which pubkeys endorsed you**, if they watch your subscription filters. Named here rather
   than buried: it is the one place standing is not private, and it is priced in `standing.ts`
 
