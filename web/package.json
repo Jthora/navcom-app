@@ -8,6 +8,7 @@
     "build": "vite build",
     "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
     "check:data": "vite-node scripts/check-data.ts",
+    "prose:baseline": "UPDATE_PROSE_BASELINE=1 vitest run src/lib/prose.test.ts",
     "core": "npm --prefix ../packages/core run build",
     "dev": "vite dev",
     "prebuild": "npm run core",
