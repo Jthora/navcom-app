@@ -114,7 +114,22 @@
   }
 
   .terminal {
-    padding: 1.1rem 1.1rem 2rem;
+    /*
+     * The bottom padding clears the fixed signature toggle, and that is what the number is.
+     *
+     * The toggle sits `inset-block-end: 0.5rem` and is `min-height: 2.75rem`, so it occupies
+     * the viewport from 0.5rem to 3.25rem up. At 2rem of padding the last control on a page
+     * came to rest underneath it: measured across twenty screens, ten of them clipped their
+     * final button by 7% of its area with nowhere left to scroll.
+     *
+     * Never a centre — which is why the existing guard, written after a compact Add button
+     * landed fully under the toggle, passed on all ten. It asserts the centre because that is
+     * where a thumb goes, and it was right about that; a corner is a different defect and
+     * needed a different measurement.
+     *
+     * 4rem is 3.25 plus clearance, so a control can always scroll above it.
+     */
+    padding: 1.1rem 1.1rem 4rem;
     max-width: 30rem;
     margin: 0 auto;
   }

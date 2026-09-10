@@ -50,9 +50,28 @@ import { withinLimit } from '../limits.js';
  * `X-Frame-Options`, `frame-ancestors` and an unauthenticated response, not by reading the
  * platform's documentation about itself.
  *
- * - `embed` — a profile-level embed exists and needs no key. It can fill a feature slot
- * - `data`  — no embed, but the API is open and CORS-clean, so we draw it ourselves
- * - `link`  — the platform refuses framing and refuses unauthenticated reads. A link, forever
+ * - `embed` — a profile-level embed exists and needs no key. It fills a feature slot, and on
+ *   a connection that has not asked for less it fills it with a frame
+ * - `data`  — no embed. It fills a feature slot as a facade: the big card, the handle, and
+ *   nothing loaded
+ * - `link`  — only ever listed, in the row of bare links at the bottom
+ *
+ * ## What `data` does not mean, whatever it is called
+ *
+ * It said *"the API is open and CORS-clean, so we draw it ourselves"*, and **nothing draws
+ * them.** That sentence has been in this file longer than the screen it describes.
+ *
+ * The tier was nearly deleted on the strength of it — `layout` has no third branch, so a
+ * `data` platform and a `link` platform looked like they rendered identically. They do not:
+ * `canFeature` is `shows !== 'link'`, so this is the difference between a platform that can
+ * lead a card and one that can only appear in the row at the bottom. Two browser tests
+ * failed on the deletion, which is what they are for.
+ *
+ * So the value is load-bearing and its description was not. Drawing these profiles remains
+ * unbuilt and is not obviously wanted: `who/` is a facade on purpose, and four API calls on
+ * load would tell four platforms that somebody opened a card — the one property that screen
+ * is designed around. The open, CORS-clean APIs are a real measurement and the reason these
+ * rank above a bare link; using them is a feature to specify, not an implication to honour.
  */
 export type Shows = 'embed' | 'data' | 'link';
 
