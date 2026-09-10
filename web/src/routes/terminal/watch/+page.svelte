@@ -178,20 +178,31 @@
   <section class="act">
     <h2>Start a watch</h2>
     <p class="cost">
-      This phone becomes the watch. You give the address to the operators who will sign on
-      under it, in person — <strong>nothing discovers a watch</strong>, because a list of
-      them would be a list of where operators are.
+      This phone becomes the watch. You give the address to operators in person —
+      <strong>nothing discovers a watch</strong>.
     </p>
+    <Why summary="Why nothing discovers one">
+      <p class="cost">
+        This phone becomes the watch. You give the address to the operators who will sign on
+        under it, in person — <strong>nothing discovers a watch</strong>, because a list of
+        them would be a list of where operators are.
+      </p>
+    </Why>
     <button data-start-watch onclick={start}>Start a watch on this phone</button>
   </section>
 
   <section class="act">
     <h2>Or join one</h2>
     <p class="cost">
-      A squad shares one watch key, handed over in person like everything else here. Holding
-      it means you can answer, and <strong>it does not expire when somebody removes you</strong>
-      — a squad-held watch is only for people who already know each other.
+      A squad shares one watch key. <strong>It does not expire when somebody removes you.</strong>
     </p>
+    <Why summary="Who a shared key is for">
+      <p class="cost">
+        A squad shares one watch key, handed over in person like everything else here. Holding
+        it means you can answer, and <strong>it does not expire when somebody removes you</strong>
+        — a squad-held watch is only for people who already know each other.
+      </p>
+    </Why>
     <label for="key">Watch key</label>
     <textarea id="key" bind:value={joining} rows="2" autocomplete="off" spellcheck="false"
       placeholder="64 hex characters"></textarea>
@@ -333,17 +344,23 @@
             {/if}
           </Why>
         {:else}
-          <!-- A refusal and its route stay visible: this tells the operator what to do. -->
-          <p class="cost">
-            <strong>Nobody has said you can take a watch.</strong> Holding a board means
-            operators go out believing a named human is reading what they send, so it is not
-            something to take on your own say-so when the watch is somebody else's.
-          </p>
+          <!--
+            A refusal and its route stay visible: together they tell the operator what to do.
+            What moves is why the gate exists, which is a reason rather than an instruction.
+          -->
+          <p class="cost"><strong>Nobody has said you can take a watch.</strong></p>
           <p class="cost">
             Ask somebody who already holds this watch for a <code>can take watch</code>
             credential, and claim it on <a href="/terminal/standing/">your standing</a>. If you
             are starting your own watch instead, that needs nobody's permission.
           </p>
+          <Why summary="Why anybody has to say so">
+            <p class="cost">
+              Holding a board means operators go out believing a named human is reading what
+              they send, so it is not something to take on your own say-so when the watch is
+              somebody else's.
+            </p>
+          </Why>
         {/if}
     {/if}
   </Panel>
@@ -371,11 +388,15 @@
         The join box has always been here and there was nothing to put in it. A squad that
         cannot be formed is not a squad model, and Milestone 4 is "squad with no box".
       -->
-      The <strong>key</strong>, not the address. Whoever holds it can answer as this watch and
-      publish watch state under it, so it goes to somebody you already know, in person — and
-      <strong>it does not come back</strong>. Removing them from the holders stops them reading
-      new signals; nothing stops them claiming to be this watch.
+      The <strong>key</strong>, not the address — and <strong>it does not come back</strong>.
     </p>
+    <Why summary="What handing it over gives away">
+      <p class="cost">
+        Whoever holds it can answer as this watch and publish watch state under it, so it goes
+        to somebody you already know, in person. Removing them from the holders stops them
+        reading new signals; nothing stops them claiming to be this watch.
+      </p>
+    </Why>
     {#if showingKey}
       <pre class="blob" data-watch-key>{showingKey}</pre>
       <button onclick={() => (showingKey = null)}>Hide it</button>

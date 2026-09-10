@@ -42,7 +42,7 @@
   "src/routes/terminal/setup/+page.svelte": 451,
   "src/routes/terminal/sign-on/+page.svelte": 180,
   "src/routes/terminal/standing/+page.svelte": 349,
-  "src/routes/terminal/watch/+page.svelte": 500,
+  "src/routes/terminal/watch/+page.svelte": 378,
   "src/routes/terminal/who/+page.svelte": 12,
   "src/routes/terminal/wipe/+page.svelte": 226
 }
