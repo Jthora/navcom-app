@@ -160,3 +160,66 @@ describe('a disclosure names itself in a phrase, not a sentence', () => {
     expect(long, `longer than ${LIMIT} words:\n  ${long.join('\n  ')}`).toEqual([]);
   });
 });
+
+describe('a disclosure holds what was moved, not a second copy of what stayed', () => {
+  /**
+   * Written after it broke a test rather than after it looked wrong.
+   *
+   * Converting a screen tempts you to leave the claim on the glass **and** keep the whole
+   * original paragraph behind the `Why`, so that nothing is lost. What that actually produces
+   * is the same sentence twice in one page — and Playwright's `getByText` is strict, so
+   * `backup.spec` went from asserting a sentence is visible to failing with *"resolved to 2
+   * elements"* on the sentence it was guarding.
+   *
+   * Rule 3 says prose is relocated rather than deleted, and a claim that is still on the
+   * screen has not been deleted. The `Why` carries the remainder.
+   */
+  const strip = (src: string): string => {
+    let out = src;
+    for (;;) {
+      const open = /<Why\b/.exec(out);
+      if (!open) return out;
+      let depth = 0;
+      let end = out.length;
+      const scan = /<Why\b|<\/Why>/g;
+      scan.lastIndex = open.index;
+      for (let m = scan.exec(out); m; m = scan.exec(out)) {
+        depth += m[0].startsWith('</') ? -1 : 1;
+        if (depth === 0) {
+          end = m.index + m[0].length;
+          break;
+        }
+      }
+      out = out.slice(0, open.index) + out.slice(end);
+    }
+  };
+
+  const sentences = (markup: string): string[] => {
+    const text = markup
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\{[^{}]*\}/g, ' ')
+      .replace(/\s+/g, ' ');
+    return text
+      .split(/(?<=[.!?])\s+/)
+      .map((x) => x.trim())
+      .filter((x) => x.split(' ').length >= 5);
+  };
+
+  it('never says the same sentence on both sides of a disclosure', () => {
+    const offenders: string[] = [];
+    for (const f of screens()) {
+      const src = readFileSync(join(ROOT, f), 'utf8');
+      const markup = (src.split('</script>').pop() ?? '')
+        .split('<style')
+        .shift()!
+        .replace(/<!--[\s\S]*?-->/g, '');
+      const visible = new Set(sentences(strip(markup)));
+      const hidden = sentences((markup.match(/<Why[\s\S]*?<\/Why>/g) ?? []).join(' '));
+      for (const h of hidden) if (visible.has(h)) offenders.push(`${f}: "${h.slice(0, 70)}"`);
+    }
+    expect(
+      offenders,
+      `said both on the screen and inside its own Why:\n  ${offenders.join('\n  ')}`
+    ).toEqual([]);
+  });
+});

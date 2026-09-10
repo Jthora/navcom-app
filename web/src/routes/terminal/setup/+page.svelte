@@ -100,9 +100,7 @@
       <Readout value={identity.callsign ?? '—'} tone="good" sub="{identity.pubkey.slice(0, 16)}…" />
     </Slot>
     <p class="note">
-      Generated here. Never transmitted, never registered — there is no account, so there is
-      nothing anyone could revoke. <strong>There is also no recovery.</strong> Lose this
-      device and you lose this identity.
+      <strong>There is no recovery.</strong> Lose this device and you lose this identity.
     </p>
     <!--
       Said at the moment it happens, and only here.
@@ -113,32 +111,63 @@
       the same failure the Alone state exists to avoid.
     -->
     <p class="note" data-signature-explained>
-      <strong>The terminal is dim and amber now.</strong> That is deliberate: it keeps your
-      night vision, and it stops your phone lighting you up on a dark street.
-      <strong>Document mode is one tap away</strong> — the control is on every screen, and it
-      stays wherever you leave it.
+      <strong>The terminal is dim and amber now</strong> — it keeps your night vision.
+      <strong>Document mode is one tap away.</strong>
     </p>
+    <Why summary="Why it looks like this">
+      <p class="note">
+        Generated here. Never transmitted, never registered — there is no account, so there is
+        nothing anyone could revoke.
+      </p>
+      <p class="note">
+        The dim amber also stops your phone lighting you up on a dark street. The document
+        mode control is on every screen, and it stays wherever you leave it.
+      </p>
+    </Why>
   {:else}
     <form onsubmit={makeIdentity}>
       <label for="callsign">Callsign</label>
+      <!--
+        Three claims, then one disclosure. This was 130 words standing between somebody
+        opening the app for the first time and the only field they have to fill in — the
+        largest single block of prose in front of a control anywhere in the terminal.
+
+        All three sentences left here are load-bearing and none of them is behind a tap.
+        `Nobody can give this back to you` is additionally asserted **visible** by a browser
+        test rather than merely present, because a person who reads it after dropping the
+        phone is only being told a fact about the past.
+      -->
       <p class="note">
-        How you are known. Never a legal name. Once this exists the app is ready — the
-        section below is optional and most operators will not have one at first.
+        How you are known. <strong>Never a legal name.</strong> Once this exists the app is
+        ready — the section below is optional.
       </p>
+      <p class="note"><strong>This is a pseudonym, not anonymity.</strong></p>
       <p class="note">
-        <!--
-          5.7, stated at the moment the trade is made rather than in a policy nobody reads.
-          There is no account here and no legal name anywhere, and an operator could
-          reasonably read that as anonymity. It is not, and the difference matters most to
-          the people with the most reason to care.
-        -->
-        <strong>This is a pseudonym, not anonymity.</strong> It is a key generated on this
-        phone, and <strong>everything you sign with it links together</strong> — patrols,
-        answers, anything you add to the directory. That is what lets your work count as
-        yours. If you need something genuinely unlinkable, it has to be a separate identity,
-        and nothing here can retroactively unlink what this one has already signed.
+        <strong>Nobody can give this back to you.</strong>
+        <a href="/terminal/backup/">Make a backup</a>, or decide not to.
       </p>
-      <Why summary="What else is made from it">
+      <Why summary="What this key is, and is not">
+        <p class="note">
+          <!--
+            5.7, stated at the moment the trade is made rather than in a policy nobody reads.
+            There is no account here and no legal name anywhere, and an operator could
+            reasonably read that as anonymity. It is not, and the difference matters most to
+            the people with the most reason to care.
+          -->
+          It is a key generated on this
+          phone, and <strong>everything you sign with it links together</strong> — patrols,
+          answers, anything you add to the directory. That is what lets your work count as
+          yours. If you need something genuinely unlinkable, it has to be a separate identity,
+          and nothing here can retroactively unlink what this one has already signed.
+        </p>
+        <p class="note">
+          <!--
+            identity.md: "no recovery method means no recovery", stated plainly at persona
+            creation rather than after a phone is dropped, when it is only a fact about the past.
+          -->
+          There is no account, so a lost phone is a lost persona unless you have made a
+          backup — and choosing not to is a real choice rather than an oversight.
+        </p>
         <p class="note">
           <!--
             Said where the key is generated, because the post-quantum key is derived from it
@@ -150,17 +179,10 @@
           goes</strong> with ordinary encryption and <strong>Status says so</strong> — nothing
           is held back, and nothing pretends to cover more than it did.
         </p>
+        <p class="note">
+          Most operators will not have a watch at first, and the section below is optional.
+        </p>
       </Why>
-      <p class="note">
-        <!--
-          identity.md: "no recovery method means no recovery", stated plainly at persona
-          creation rather than after a phone is dropped, when it is only a fact about the past.
-        -->
-        <strong>Nobody can give this back to you.</strong> There is no account, so a lost
-        phone is a lost persona unless you have made
-        <a href="/terminal/backup/">a backup</a> — and choosing not to is a real choice
-        rather than an oversight.
-      </p>
       <input id="callsign" bind:value={callsign} autocomplete="off" spellcheck="false" />
       <!--
     Inert until there is something to submit.
@@ -186,16 +208,22 @@
 <section>
   <h2>Someone you would call</h2>
   <p class="note">
-    One tap on the Distress screen opens a message to them, already written. <strong>Nothing
-    is sent automatically and you have to press send</strong> — a web app cannot do it for
-    you, and this app will not pretend it can.
+    One tap on Distress opens a message to them, already written. <strong>Nothing is sent
+    automatically and you have to press send.</strong>
   </p>
   <p class="note">
-    Their number stays on this phone. It is never sent to a watch, a relay, or anyone else's
-    machine — there is no list of operators' contacts anywhere for anyone to take.
-    <strong>A burn erases it; a panic wipe does not</strong>, so it is still there the next
-    night.
+    Their number stays on this phone. <strong>A burn erases it; a panic wipe does not.</strong>
   </p>
+  <Why summary="Where their number goes">
+    <p class="note">
+      A web app cannot press send for you, and this app will not pretend it can.
+    </p>
+    <p class="note">
+      The number is never sent to a watch, a relay, or anyone else's machine — there is no
+      list of operators' contacts anywhere for anyone to take. It is still there the next
+      night.
+    </p>
+  </Why>
   <form onsubmit={keepContact}>
     <label for="clabel">Who</label>
     <input id="clabel" bind:value={contactLabel} autocomplete="off" placeholder="Sam" />
@@ -213,19 +241,23 @@
 
 <section class="later">
   <h2>A watch — optional, and only if somebody gave you one</h2>
+  <!-- "Skip this" stays whole. The Alone operator is the common case, not the edge one, and
+       this is the sentence that stops an empty watch section reading as unfinished setup. -->
   <p class="note">
     <strong>Skip this.</strong> You do not need a watch to use NavCom, and having none is
-    how most operators work. Come back when somebody hands you one.
+    how most operators work.
   </p>
-  <p class="note">
-    What it adds: Query, Assist and Distress — the three things that need a person on the
-    other end. What it does not change: everything else, which already works.
-  </p>
-  <p class="note">
-    Handed to you in person, on paper or by whatever you already use. <strong>Nothing
-    discovers a Watchtower on its own</strong> — a list of them would be a list of where
-    operators are.
-  </p>
+  <p class="note"><strong>Nothing discovers a Watchtower on its own.</strong></p>
+  <Why summary="What a watch adds">
+    <p class="note">
+      What it adds: Query, Assist and Distress — the three things that need a person on the
+      other end. What it does not change: everything else, which already works.
+    </p>
+    <p class="note">
+      Handed to you in person, on paper or by whatever you already use — a list of them
+      would be a list of where operators are. Come back when somebody hands you one.
+    </p>
+  </Why>
   <form onsubmit={connect}>
     <label for="pubkey">Pubkey</label>
     <input id="pubkey" bind:value={pubkey} autocomplete="off" spellcheck="false" placeholder="64 hex characters" />
@@ -235,17 +267,23 @@
     <label for="holders">Who holds it</label>
     <textarea id="holders" bind:value={holders} rows="3" autocomplete="off" spellcheck="false"
       placeholder="leave empty unless you were given a list"></textarea>
+    <!--
+      Stated before the field, because the answer for most operators is "leave it empty"
+      and a blank box with no explanation reads as something missing. Both claims stay in
+      front of the field they govern: who can read what you send is the one thing an operator
+      must know before filling this in, so it never goes behind a tap.
+    -->
     <p class="note">
-      <!--
-        Stated before the field, because the answer for most operators is "leave it empty"
-        and a blank box with no explanation reads as something missing.
-      -->
-      <strong>Usually empty.</strong> A watch running on a box holds its own key, and that is
-      what most people are given. A squad with no box holds the watch on their phones instead,
-      and lists one key per phone here — <strong>whoever is on this list can read everything
-      you send</strong>, on watch or off. It comes from the same person who gave you the
-      pubkey; nothing discovers it.
+      <strong>Usually empty</strong> — <strong>whoever is on this list can read everything you
+      send</strong>, on watch or off.
     </p>
+    <Why summary="When it is not empty">
+      <p class="note">
+        A watch running on a box holds its own key, and that is what most people are given. A
+        squad with no box holds the watch on their phones instead, and lists one key per phone
+        here. It comes from the same person who gave you the pubkey; nothing discovers it.
+      </p>
+    </Why>
     <button type="submit" disabled={!pubkey.trim()}>{configured ? 'Update' : 'Connect'}</button>
   </form>
   {#if configured}

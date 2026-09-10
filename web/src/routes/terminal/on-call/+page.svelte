@@ -94,15 +94,14 @@
   -->
   <Why summary="Why it is that thin">
     <p class="cost">
-      <strong>The page carries no detail.</strong> Whoever sends it cannot read the
-      <code>Distress</code> either, so there is nothing in it but the fact that somebody is
-      waiting — you open the terminal to find out anything. That is deliberate: a notification
-      quoting text from the wire would put a stranger's words on your locked screen.
+      Whoever sends it cannot read the <code>Distress</code> either, so there is nothing in it
+      but the fact that somebody is waiting — you open the terminal to find out anything. That
+      is deliberate: a notification quoting text from the wire would put a stranger's words on
+      your locked screen.
     </p>
     <p class="cost">
-      Turning it off is one tap and <strong>tells nobody</strong>. Somebody who has to justify
-      standing down keeps a commitment they cannot keep, which is worse for whoever is relying
-      on it than an honest end.
+      Somebody who has to justify standing down keeps a commitment they cannot keep, which is
+      worse for whoever is relying on it than an honest end.
     </p>
     <p class="cost">
       On-call means <strong>reachable when the board cannot raise anybody</strong>. It is a

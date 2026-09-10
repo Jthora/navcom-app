@@ -227,9 +227,8 @@
     -->
     <Why summary="What that means">
       <p class="cost">
-        <strong>Peers you have paired with are not told either.</strong> Pairing lets somebody
-        see that you are out and that you are past the time you gave — it does not carry this,
-        and nothing here can reach them for you.
+        Pairing lets somebody see that you are out and that you are past the time you gave —
+        it does not carry this, and nothing here can reach them for you.
       </p>
       {#if !contact}
         <p class="cost">

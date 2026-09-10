@@ -39,7 +39,7 @@
   "src/routes/terminal/peers/+page.svelte": 391,
   "src/routes/terminal/query/+page.svelte": 66,
   "src/routes/terminal/resupply/+page.svelte": 123,
-  "src/routes/terminal/setup/+page.svelte": 451,
+  "src/routes/terminal/setup/+page.svelte": 153,
   "src/routes/terminal/sign-on/+page.svelte": 180,
   "src/routes/terminal/standing/+page.svelte": 349,
   "src/routes/terminal/watch/+page.svelte": 378,

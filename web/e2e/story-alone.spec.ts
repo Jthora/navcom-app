@@ -39,7 +39,15 @@ test.describe('arriving with nothing', () => {
     // Confirmed where she is standing — the setup screen shows the name and the key it made.
     // (Status deliberately does not repeat it; it is her own device and her own name.)
     await expect(page.getByText('Newcomer').first()).toBeVisible();
-    await expect(page.getByText(/there is also no recovery/i)).toBeVisible();
+    /*
+     * "There is no recovery", not "there is also no recovery".
+     *
+     * The `also` was a connector to the clause before it — never transmitted, never
+     * registered, nothing anyone could revoke — and that clause is now behind the screen's
+     * `Why`. What she has to be told is unchanged and is still on the glass without a tap:
+     * this cannot be given back to her.
+     */
+    await expect(page.getByText(/there is no recovery/i)).toBeVisible();
 
     // And walking on to Status, the tool is hers and working rather than asking for more.
     await open(page, '/terminal/');
