@@ -24,6 +24,12 @@
         where things are for anyone already reading a site page.
       -->
       <a href="/terminal/">Terminal</a>
+      <!--
+        Operators who chose to be listed publicly. Built and then reachable only by typing the
+        URL, which is this project's own definition of not built -- the third time in one
+        stretch, after handles and observations both shipped with nothing that read them.
+      -->
+      <a href="/who/">Operators</a>
       <a href="/status/">Status</a>
       <a href="/about/">About</a>
       <a href="/docs/contributing/">Contribute</a><a href="/docs/">Docs</a>

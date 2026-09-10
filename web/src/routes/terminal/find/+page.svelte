@@ -146,6 +146,10 @@
           </p>
         </div>
       {/if}
+      <p class="cost">
+        This is one area. <a href="/who/">Operators who chose to be listed publicly</a> are
+        everywhere, on one page.
+      </p>
       <ul class="board">
         {#each board.entries as e (e.contact)}
           <li>

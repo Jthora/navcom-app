@@ -28,11 +28,37 @@
   /** Decided once, on mount, by the phone rather than by asking the reader. */
   let lean = $state(false);
   let host = $state('');
+  /**
+   * Where the reader actually came from.
+   *
+   * This said *"← Find somebody"* unconditionally, pointing at a terminal screen. Somebody
+   * arriving from the public roster — a recruit, which is the audience public visibility
+   * exists for — got a back arrow into a part of the app they had never seen. A control
+   * whose label names a destination has to name the right one; that is the same lesson as
+   * the signature toggle, which read `DOCUMENT` while the mode was low signature.
+   */
+  let cameFrom = $state<{ href: string; label: string }>({
+    href: '/terminal/find/',
+    label: 'Find somebody'
+  });
 
   onMount(() => {
     key = page.url.searchParams.get('k') ?? '';
     lean = isLean();
     host = location.hostname;
+
+    // Same-origin only: a referrer from anywhere else tells us nothing we should act on.
+    try {
+      const from = document.referrer ? new URL(document.referrer) : null;
+      if (from && from.origin === location.origin) {
+        if (from.pathname.startsWith('/who')) cameFrom = { href: '/who/', label: 'Operators' };
+        else if (from.pathname.startsWith('/terminal/find')) {
+          cameFrom = { href: '/terminal/find/', label: 'Find somebody' };
+        }
+      }
+    } catch {
+      // A malformed referrer is not worth a broken screen. The default stands.
+    }
     if (key) profile.watch(key);
     return () => profile.stop();
   });
@@ -58,7 +84,7 @@
 </svelte:head>
 
 <header>
-  <p class="eyebrow"><a href="/terminal/find/">← Find somebody</a></p>
+  <p class="eyebrow"><a href={cameFrom.href}>← {cameFrom.label}</a></p>
   <h1>{card ? card.card.callsign : 'An operator'}</h1>
 </header>
 
