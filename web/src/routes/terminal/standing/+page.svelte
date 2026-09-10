@@ -12,6 +12,7 @@
   import { StandingError, claim, drop, held, presentable, recordWritten, withdraw, withdrawn, written as writtenCredentials } from '$lib/terminal/standing';
   import { loadIdentity } from '$lib/terminal/identity';
   import { Readout, Why } from '$lib/components/panel';
+  import PickACallsign from '$lib/components/PickACallsign.svelte';
 
   let mine = $state<Endorsement[]>([]);
   /**
@@ -223,7 +224,7 @@
 
 {#if !callsign}
   <section class="act">
-    <p>Pick a callsign first — <a href="/terminal/setup/">it takes one screen</a>.</p>
+    <PickACallsign />
   </section>
 {:else}
   <section class="act">

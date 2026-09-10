@@ -18,6 +18,7 @@
   import { createWatch, foundedHere, joinWatch, leaveWatch, watchPubkey, watchSecretHex, WatchKeyError } from '$lib/terminal/watch-key';
   import { endorsersFor } from '$lib/terminal/standing';
   import { Panel, Slot, Readout, Why, Heartbeat, Action, Board, Window, Elapsed } from '$lib/components/panel';
+  import PickACallsign from '$lib/components/PickACallsign.svelte';
   import { loadIdentity } from '$lib/terminal/identity';
   import { loadConfig } from '$lib/terminal/config';
 
@@ -172,7 +173,7 @@
 
 {#if !callsign}
   <section class="act">
-    <p>Pick a callsign first — <a href="/terminal/setup/">it takes one screen</a>.</p>
+    <PickACallsign />
   </section>
 {:else if !address}
   <section class="act">

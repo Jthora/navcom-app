@@ -199,6 +199,22 @@ export function observationLabel(id: string): string | null {
  * §8: method is a fact about provenance and never a grade. These read as the plain report they
  * are -- *"Raven · was told"* -- because the moment one of them reads as better than another,
  * the screen has started grading sources, which is the thing NavCom does not do.
+ *
+ * ## Why there is no glyph here, and should not be
+ *
+ * A mark beside each of these was proposed as the highest-multiplier icon in the application:
+ * three symbols instead of three words, repeated on every sighting on a record. It was
+ * declined on §8.
+ *
+ * Any set of three legible at 12px differs in visual weight -- one solid, one open, one
+ * dashed -- and weight reads as confidence. `saw` would look like the strong one and
+ * `inferred` like the weak one, which is the Admiralty A-F axis drawn in shapes, on the side
+ * of the boundary that is explicitly Starcom's. A set with no weight difference would not be
+ * tellable apart on a cracked screen at night, so it would fail as an icon or succeed as a
+ * grade.
+ *
+ * The problem an icon was reaching for was that these rendered as raw ids. That is fixed
+ * above, by naming them.
  */
 export const OBSERVATION_METHOD_LABELS: Record<ObservationMethod, string> = {
   saw: 'Saw it',

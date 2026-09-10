@@ -8,6 +8,7 @@
    */
   import { onMount } from 'svelte';
   import { Slot, Readout, Why } from '$lib/components/panel';
+  import PickACallsign from '$lib/components/PickACallsign.svelte';
   import {
     DOES,
     DOES_MAX,
@@ -187,7 +188,7 @@
 
 {#if !callsign}
   <section class="act">
-    <p>Pick a callsign first — <a href="/terminal/setup/">it takes one screen</a>.</p>
+    <PickACallsign />
   </section>
 {:else}
   <section class="act">

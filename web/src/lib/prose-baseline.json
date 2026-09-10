@@ -1,6 +1,7 @@
 {
   "src/lib/components/FieldRow.svelte": 0,
   "src/lib/components/LogWhatYouSaw.svelte": 19,
+  "src/lib/components/PickACallsign.svelte": 8,
   "src/lib/components/RecordSummary.svelte": 11,
   "src/lib/components/panel/Action.svelte": 0,
   "src/lib/components/panel/Board.svelte": 0,
@@ -27,7 +28,7 @@
   "src/routes/terminal/+page.svelte": 131,
   "src/routes/terminal/assist/+page.svelte": 133,
   "src/routes/terminal/backup/+page.svelte": 339,
-  "src/routes/terminal/card/+page.svelte": 47,
+  "src/routes/terminal/card/+page.svelte": 39,
   "src/routes/terminal/directory/+page.svelte": 100,
   "src/routes/terminal/directory/[region]/+page.svelte": 519,
   "src/routes/terminal/distress/+page.svelte": 191,
@@ -36,13 +37,13 @@
   "src/routes/terminal/log/+page.svelte": 322,
   "src/routes/terminal/on-call/+page.svelte": 136,
   "src/routes/terminal/patrols/+page.svelte": 129,
-  "src/routes/terminal/peers/+page.svelte": 391,
+  "src/routes/terminal/peers/+page.svelte": 383,
   "src/routes/terminal/query/+page.svelte": 66,
   "src/routes/terminal/resupply/+page.svelte": 123,
   "src/routes/terminal/setup/+page.svelte": 153,
   "src/routes/terminal/sign-on/+page.svelte": 180,
-  "src/routes/terminal/standing/+page.svelte": 349,
-  "src/routes/terminal/watch/+page.svelte": 378,
+  "src/routes/terminal/standing/+page.svelte": 341,
+  "src/routes/terminal/watch/+page.svelte": 370,
   "src/routes/terminal/who/+page.svelte": 12,
   "src/routes/terminal/wipe/+page.svelte": 226
 }
