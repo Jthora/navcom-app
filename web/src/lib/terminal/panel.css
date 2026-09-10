@@ -124,6 +124,19 @@
 .terminal .nc-readout[data-tone='alarm'] { color: var(--t-alarm); }
 
 /*
+ * A readout carrying a name, not a state.
+ *
+ * `text-transform: uppercase` does not restyle a name, it rewrites it: `straße` renders as
+ * `STRASSE` and Turkish `iyi` as `IYI`, where the capital of that `i` is `İ`. A callsign is
+ * the one piece of identity somebody here chooses for themselves, so the terminal shows what
+ * they typed.
+ */
+.terminal .nc-readout[data-verbatim] {
+  text-transform: none;
+  letter-spacing: 0.02em;
+}
+
+/*
  * The mark, drawn in the tone's own colour.
  *
  * `currentColor` and nothing else -- the four rules above are the single source of the colour,

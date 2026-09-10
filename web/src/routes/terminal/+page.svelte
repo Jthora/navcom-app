@@ -493,7 +493,7 @@
       {#if reachable.length > 0}
         <Slot k="On call">
           <Readout
-            value={reachable.join(', ')}
+            value={reachable.join(', ')} verbatim
             tone="neutral"
             sub={reachable.length === 1 ? 'sole — ladder ends here' : null}
           />
@@ -618,7 +618,7 @@
     {#if session}
       <!-- What the board believes about you, so a wrong entry is visible here. -->
       <div data-station>
-        <Slot k="Area"><Readout value={session.area} tone="neutral" /></Slot>
+        <Slot k="Area"><Readout value={session.area} verbatim tone="neutral" /></Slot>
         <Slot k="Check in">
           {#if overdue.flagged}
             <!--
@@ -964,7 +964,7 @@
         <Slot k="Watching">
           <span data-watching-you>
             <Readout
-              value={presence.watchingYou.join(', ')}
+              value={presence.watchingYou.join(', ')} verbatim
               tone="good"
               sub="{presence.watchingYou.length === 1 ? 'is' : 'are'} watching for you tonight"
             />

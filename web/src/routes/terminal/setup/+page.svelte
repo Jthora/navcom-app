@@ -97,7 +97,7 @@
   <h2>Your callsign — the only step</h2>
   {#if identity}
     <Slot k="Callsign">
-      <Readout value={identity.callsign ?? '—'} tone="good" sub="{identity.pubkey.slice(0, 16)}…" />
+      <Readout value={identity.callsign ?? '—'} verbatim tone="good" sub="{identity.pubkey.slice(0, 16)}…" />
     </Slot>
     <p class="note">
       <strong>There is no recovery.</strong> Lose this device and you lose this identity.
@@ -233,7 +233,7 @@
   </form>
   {#if contact}
     <Slot k="Your person">
-      <Readout value={contact.label} tone="good" sub={contact.number ?? null} />
+      <Readout value={contact.label} verbatim tone="good" sub={contact.number ?? null} />
     </Slot>
     <button class="forget" type="button" onclick={forgetContact}>Remove</button>
   {/if}

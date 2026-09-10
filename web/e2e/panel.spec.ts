@@ -258,3 +258,42 @@ test.describe('the tone mark, against the built artifact', () => {
     }
   });
 });
+
+test.describe('a name is shown as it was typed', () => {
+  /*
+   * `toHaveText` with `useInnerText`, and that is the whole point of the test.
+   *
+   * By default it compares `textContent`, which does not see `text-transform` at all — so the
+   * obvious version of this assertion passes just as happily against the bug it was written to
+   * catch. `panel.css` already carries the scar: `innerText` respects the transform, which is
+   * how an uppercased watch key took nineteen tests down at once.
+   */
+  const NAMES = [
+    // Seven letters rendered where somebody typed six.
+    'straße',
+    // The capital of a Turkish `i` is `İ`; `I` is the capital of a different letter.
+    'iyi gece',
+    // English is not exempt.
+    'McTavish',
+    'مراقب'
+  ];
+
+  for (const name of NAMES) {
+    test(`"${name}" is not rewritten by the terminal's register`, async ({ page }) => {
+      await seedDevice(page, { callsign: name });
+      await open(page, '/terminal/setup/');
+
+      const shown = page.locator('[data-readout][data-verbatim] [data-readout-value]').first();
+      await expect(shown).toBeVisible({ timeout: 10_000 });
+      await expect(shown).toHaveText(name, { useInnerText: true });
+    });
+  }
+
+  test('while a state is still stated in the terminal register', async ({ page }) => {
+    // The uppercase is deliberate and stays: it is what makes a panel readable without being
+    // read. Only names opt out of it.
+    await under(page, { state: 'dark', holder: null, holder_kind: null, oncall: [] });
+    const watch = page.locator('[data-slot="watch"] [data-readout-value]');
+    await expect(watch).toHaveText('DARK', { useInnerText: true, timeout: 10_000 });
+  });
+});

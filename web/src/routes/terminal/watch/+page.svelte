@@ -227,7 +227,7 @@
     {/snippet}
 
       {#if board.onStation}
-        <Slot k="Holder"><Readout value={callsign} tone="good" sub="published as the watch" /></Slot>
+        <Slot k="Holder"><Readout value={callsign} verbatim tone="good" sub="published as the watch" /></Slot>
         <Slot k="Published">
           {#if board.unannounced}
             <!--
@@ -302,7 +302,7 @@
             <Readout value="No contact" tone="cold" sub="nothing heard by this phone yet" />
           {:else}
             <Readout
-              value={board.entries.map((e) => e.callsign).join(', ')}
+              value={board.entries.map((e) => e.callsign).join(', ')} verbatim
               tone="neutral"
               sub="out now, that this phone has heard"
             />
@@ -319,7 +319,7 @@
             -->
             <span data-vouchers>
               <Readout
-                value={vouchers.map((v) => v.endorser).join(', ')}
+                value={vouchers.map((v) => v.endorser).join(', ')} verbatim
                 tone="good"
                 sub="{vouchers.length === 1 ? 'says' : 'say'} you can take a watch — it is not a promise that you will stay awake tonight"
               />

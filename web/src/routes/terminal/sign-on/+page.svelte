@@ -97,7 +97,7 @@
     {#if reachable.length > 0}
       <Slot k="On call">
         <Readout
-          value={reachable.join(', ')}
+          value={reachable.join(', ')} verbatim
           tone="neutral"
           sub={reachable.length === 1 ? 'sole — ladder ends here' : null}
         />

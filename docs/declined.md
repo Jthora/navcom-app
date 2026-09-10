@@ -488,6 +488,40 @@ before a new place, before an endorsement — because the clock is the thing tha
 be fixed, and the operator is the only one who can fix it. A warning somebody can act on,
 rather than a flag propagated into a shared corpus that nobody can verify.
 
+### A second language
+
+NavCom is meant to work outside one country and one script, and the codebase already acts on
+that in one place: `rtl.test.ts` reads the built CSS and fails on physical properties, because
+Arabic, Hebrew, Urdu and Persian read the other way. So the question is live rather than
+hypothetical.
+
+Measured rather than guessed, on 2026-09-09: **about 1,396 distinct user-facing strings, some
+12,400 words.** 1,125 of them sit inline in component markup, 164 in `packages/core` and 122
+in `web/src/lib` — the last 286 outside any layer an extractor would look at. `app.html`
+hardcodes `lang="en" dir="ltr"`, there is no i18n dependency, and the one `Intl` call is
+pinned to `['en']`.
+
+**There is no translator, and no second language has been asked for.** Build item 1 is
+"nothing, until somebody carries it for a night"; a catalogue nobody translates is 1,396
+strings of pure carrying cost, and the JS budget on the field terminal is already at 63% of a
+figure chosen for a prepaid Android 8.
+
+**What this does not decline:** the things that are wrong for a non-Latin reader *today*,
+which are defects rather than preparation — letter-spacing that breaks Arabic connected
+script, and raw identifiers reaching the screen in English shape. Those are fixed and guarded.
+The label tables (`OBSERVATION_LABELS`, `DOES`, `VALUE_LABELS`) also stay, because they are
+the seam a translation would need and they earn their place already: they replaced three call
+sites that disagreed with each other about capitalisation.
+
+**Cost:** anybody who does not read English reads this in English, and the day somebody
+volunteers to translate it they inherit a catalogue that has grown in the meantime. The
+`panel.md` split does not shrink that catalogue — it stratifies it, into 816 strings read
+before anything opens and 254 behind a `Why` that could ship untranslated and degrade rather
+than break.
+
+**Instead:** the measurement above, kept current enough to decide from. Reversing this means
+picking a library and translating tier one first, not retrofitting the whole page.
+
 ## What is **not** declined, so nobody mistakes this page for a licence
 
 Everything in [`build-order.md`](build-order.md) is deferred, not declined — endorsements,

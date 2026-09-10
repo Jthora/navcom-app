@@ -502,7 +502,7 @@
       <Slot k="Build">
         {#if health}
           <Readout
-            value={health.commit ? health.commit.slice(0, 7) : 'unknown'}
+            value={health.commit ? health.commit.slice(0, 7) : 'unknown'} verbatim
             tone={health.clean === false ? 'warn' : 'neutral'}
             sub={healthSub}
           />

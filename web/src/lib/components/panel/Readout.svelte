@@ -11,6 +11,22 @@
    * renders a marked one, which is the same discipline as everything else in this project —
    * checked against the built artifact.
    *
+   * ## `verbatim`, for a readout carrying somebody's name
+   *
+   * The uppercase is the terminal's register and it is right for a **state**: `DARK`, `ON
+   * STATION`, `NO ADDRESSEE`. It is wrong for a **name**, because it does not merely restyle
+   * one — it changes the letters.
+   *
+   * Found by rendering callsigns an operator can pick today. `straße` came back `STRASSE`,
+   * seven letters where somebody typed six. `iyi` came back `IYI`, when the capital of a
+   * Turkish `i` is `İ` and `I` is the capital of a different letter entirely. English is not
+   * exempt: `McTavish` renders `MCTAVISH`.
+   *
+   * This is not really an internationalisation defect, which is why it survives the decision
+   * not to translate the interface. NavCom holds no legal names and a callsign is the one
+   * piece of identity a person chooses for themselves — so the terminal displaying something
+   * other than what they typed is the wrong thing on its own terms.
+   *
    * ## The mark beside the word
    *
    * Drawn from `tone`, which every call site already sets — so this adds no argument, no
@@ -33,12 +49,20 @@
   let {
     value,
     tone = 'neutral',
-    sub = null
+    sub = null,
+    verbatim = false
   }: {
     value: string;
     tone?: Tone;
     /** The qualifier that will not fit in five words. Still terse — not a sentence. */
     sub?: string | null;
+    /**
+     * Render the value exactly as it was given, with no case transform.
+     *
+     * For anything a person chose or an identifier that is compared by eye — a callsign, a
+     * contact's name, an area, a commit. Never for a state word.
+     */
+    verbatim?: boolean;
   } = $props();
 
   const overlong = $derived(isOverlong(value));
@@ -49,6 +73,7 @@
   class="nc-readout"
   data-readout
   data-tone={tone}
+  data-verbatim={verbatim ? 'true' : undefined}
   data-overlong={overlong ? 'true' : undefined}
   title={overlong ? 'This readout is longer than five words — it belongs in Why.' : undefined}
 >{#if mark}<svg
