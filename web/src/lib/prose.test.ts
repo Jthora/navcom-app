@@ -126,3 +126,37 @@ describe('what counts as prose', () => {
     expect(proseIn('<h1>Distress</h1><button>File it</button><span>Owl</span>').words).toBe(0);
   });
 });
+
+describe('a disclosure names itself in a phrase, not a sentence', () => {
+  /**
+   * The longest summary that exists, held so it cannot get worse.
+   *
+   * Written after one at eleven words wrapped onto a second line on a phone and left its
+   * little disclosure triangle stranded on the right of a line with nothing else on it. This
+   * is a ratchet rather than a measurement: nine is what the codebase's worst already was, not
+   * a width anybody has proved fits.
+   *
+   * It matters more than it looks. The summary is set uppercase with letter-spacing, which
+   * costs width before a translator has touched it — and German and Finnish run about a third
+   * longer than the English these were written in.
+   */
+  const LIMIT = 9;
+
+  const summaries = (): { file: string; text: string }[] =>
+    screens().flatMap((f) => {
+      const src = readFileSync(join(ROOT, f), 'utf8');
+      return [...src.matchAll(/summary="([^"]*)"/g)].map((m) => ({ file: f, text: m[1] }));
+    });
+
+  it('finds the summaries at all', () => {
+    // A regex that matches nothing passes every assertion under it.
+    expect(summaries().length).toBeGreaterThan(20);
+  });
+
+  it('keeps every one of them short enough not to wrap', () => {
+    const long = summaries()
+      .filter((s) => s.text.trim().split(/\s+/).filter(Boolean).length > LIMIT)
+      .map((s) => `${s.file}: "${s.text}"`);
+    expect(long, `longer than ${LIMIT} words:\n  ${long.join('\n  ')}`).toEqual([]);
+  });
+});

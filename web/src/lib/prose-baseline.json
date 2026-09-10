@@ -34,7 +34,7 @@
   "src/routes/terminal/find/+page.svelte": 255,
   "src/routes/terminal/funding/+page.svelte": 264,
   "src/routes/terminal/log/+page.svelte": 322,
-  "src/routes/terminal/on-call/+page.svelte": 312,
+  "src/routes/terminal/on-call/+page.svelte": 136,
   "src/routes/terminal/patrols/+page.svelte": 129,
   "src/routes/terminal/peers/+page.svelte": 391,
   "src/routes/terminal/query/+page.svelte": 66,

@@ -9,7 +9,7 @@
   import {
     canBePaged, isRegistered, PagingError, registerForPaging, stopPaging, type Registration
   } from '$lib/terminal/paging';
-  import { Slot, Readout } from '$lib/components/panel';
+  import { Slot, Readout, Why} from '$lib/components/panel';
 
   let supported = $state(false);
   let registered = $state(false);
@@ -66,9 +66,7 @@
 
 <section>
   <p>
-    On-call means <strong>reachable when the board cannot raise anybody</strong>. It is a
-    phone that might ring, not a shift — and being reachable is the entire content of the
-    commitment.
+    On-call means <strong>reachable when the board cannot raise anybody</strong>.
   </p>
   <p class="cost">
     <!--
@@ -80,17 +78,38 @@
     else, and drills that prove the ladder still works. The field terminal is silent and
     stays silent.
   </p>
-  <p class="cost">
-    <strong>The page carries no detail.</strong> Whoever sends it cannot read the
-    <code>Distress</code> either, so there is nothing in it but the fact that somebody is
-    waiting — you open the terminal to find out anything. That is deliberate: a notification
-    quoting text from the wire would put a stranger's words on your locked screen.
-  </p>
-  <p class="cost">
-    Turning it off is one tap and <strong>tells nobody</strong>. Somebody who has to justify
-    standing down keeps a commitment they cannot keep, which is worse for whoever is relying
-    on it than an honest end.
-  </p>
+  <p class="cost"><strong>The page carries no detail.</strong></p>
+  <p class="cost">Turning it off is one tap and <strong>tells nobody</strong>.</p>
+  <!--
+    The paragraph above this one is deliberately whole.
+
+    Both of its ends are asserted visible by a browser test — "the only notification NavCom
+    ever sends" and "the field terminal is silent" — and they are the two halves of the same
+    promise. Splitting it to save a dozen words would have put one half behind a tap on the
+    screen whose entire job is telling somebody how often they will be interrupted.
+
+    These two carry their claim and hand over their reasons, which is rule 3. A capability
+    test reads the built page for both claims, and a closed `<details>` still prerenders its
+    contents, so the reasons stay in the page as well as behind the summary.
+  -->
+  <Why summary="Why it is that thin">
+    <p class="cost">
+      <strong>The page carries no detail.</strong> Whoever sends it cannot read the
+      <code>Distress</code> either, so there is nothing in it but the fact that somebody is
+      waiting — you open the terminal to find out anything. That is deliberate: a notification
+      quoting text from the wire would put a stranger's words on your locked screen.
+    </p>
+    <p class="cost">
+      Turning it off is one tap and <strong>tells nobody</strong>. Somebody who has to justify
+      standing down keeps a commitment they cannot keep, which is worse for whoever is relying
+      on it than an honest end.
+    </p>
+    <p class="cost">
+      On-call means <strong>reachable when the board cannot raise anybody</strong>. It is a
+      phone that might ring, not a shift — and being reachable is the entire content of the
+      commitment.
+    </p>
+  </Why>
 </section>
 
 {#if !supported}
@@ -102,9 +121,15 @@
     <p class="cost">
       Nothing is wrong. On an iPhone, notifications only work once NavCom is on the Home
       Screen — <strong>Share, then Add to Home Screen</strong>, then open it from there.
-      Otherwise use a phone that can, or take a channel the executor can reach some other
-      way. Not being on-call is a legitimate choice.
     </p>
+    <!-- The readout above already ends "not being on-call is a legitimate choice"; the
+         paragraph said it a second time three lines later. -->
+    <Why summary="If that is not it">
+      <p class="cost">
+        Otherwise use a phone that can, or take a channel the executor can reach some other
+        way. Not being on-call is a legitimate choice.
+      </p>
+    </Why>
   </section>
 {:else if registered}
   <section class="act">
@@ -113,16 +138,20 @@
       <Readout value="Registered" tone="good" sub={handover ? 'hand this to whoever runs the executor' : 'already registered on this device'} />
     </Slot>
     {#if handover}
-      <p class="cost">
-        Hand this to whoever runs the escalation executor. It is what lets them reach you and
-        nothing else — it carries no callsign and identifies no watch.
-      </p>
+      <p class="cost">Hand this to whoever runs the escalation executor.</p>
+      <Why summary="What is in it">
+        <p class="cost">
+          It is what lets them reach you and nothing else — it carries no callsign and
+          identifies no watch.
+        </p>
+      </Why>
       <pre class="blob">{JSON.stringify(handover, null, 2)}</pre>
       <button onclick={copy}>{copied ? 'Copied' : 'Copy'}</button>
     {:else}
+      <!-- "Already registered on this device" is the readout's own sub, directly above. -->
       <p class="cost">
-        Already registered on this device. If the person running the executor never received
-        your details, stop and register again to produce them.
+        If the person running the executor never received your details, stop and register
+        again to produce them.
       </p>
     {/if}
     <button class="drop" onclick={stop}>Stop being wakeable</button>
@@ -135,9 +164,17 @@
     </Slot>
     <p class="cost">
       You need the <strong>sender key</strong> from whoever runs the escalation executor.
-      They generate it once with <code>navcom-push --keys</code> and hand it over in person,
-      like everything else here. Nothing discovers it.
     </p>
+    <Why summary="Where it comes from">
+      <p class="cost">
+        They generate it once with <code>navcom-push --keys</code> and hand it over in person,
+        like everything else here. Nothing discovers it.
+      </p>
+      <p class="cost">
+        Your phone will ask for permission. Refusing is fine and means not being on-call, which
+        is a real answer rather than a half one.
+      </p>
+    </Why>
     <label for="sender">Sender key</label>
     <textarea id="sender" bind:value={senderKey} rows="3" autocomplete="off" spellcheck="false"
       placeholder="the public half, 87 characters"></textarea>
@@ -145,10 +182,7 @@
     <button onclick={register} disabled={!senderKey.trim() || busy}>
       {busy ? 'Asking…' : 'Let this device be woken'}
     </button>
-    <p class="cost">
-      Your phone will ask for permission. Refusing is fine and means not being on-call, which
-      is a real answer rather than a half one.
-    </p>
+    <p class="cost">Your phone will ask for permission. Refusing is fine.</p>
   </section>
 {/if}
 
