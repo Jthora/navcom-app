@@ -313,8 +313,17 @@ Convert status, watch, distress, sign-on, standing. The rewrites are drafted:
 `WATCH — DARK`, `DISTRESS — NO ADDRESSEE`, `BOARD — NO CONTACT`,
 `STAND DOWN — NOT SENT / STILL ADVERTISED`, `GATE — NOT VOUCHED`.
 
-**Gate:** re-measure. Target is **under 40 words and one screen tall** for status and distress,
-with every removed word present in a `Why`.
+**Gate:** `web/src/lib/prose.test.ts`, against `prose-baseline.json`.
+
+It was *"re-measure"* — a step a person performs — and that is why this rule rotted while the
+five-word readout limit beside it never did. Both were written the same year by the same hand;
+the only difference between them was that one was executable. When the guard was finally
+written, **333 paragraphs outside a `Why` carrying 6,506 words** had accumulated against a rule
+that says there should be none.
+
+The baseline records every screen as it stands. A screen may not grow, and a screen that shrank
+has to record the gain — so the number tracks the work instead of trailing it, and every
+conversion's diff carries the figure it moved. `npm run prose:baseline` rewrites the file.
 
 ### P4 — Motion that carries state
 
@@ -427,7 +436,7 @@ paragraph count need the least change.
 
 | Screen | Prose | What converted |
 |---|---|---|
-| Distress | 90% | Nothing. Reclassified to P4/P6 — its prose is instruction |
+| Distress | 90% | **Reversed 2026-09-09.** 298 → 191: four reasons moved, every warning kept |
 | Watch | 96% | The 218-word preamble, the state, the empty board |
 | Directory | 21 `<p>` | Three: unsent corrections, snapshot age, empty state |
 | Setup | 17 `<p>` | Two confirmed states and one aside |
@@ -436,6 +445,36 @@ paragraph count need the least change.
 The reverted pair on `peers` is the clearest case. *"They are told you are doing it"* is a
 consent fact that decides whether somebody takes watching on, and *"ignoring sends nothing"* is
 a thing that will not happen. Both looked like asides and neither is one.
+
+### What the conversion actually did — 2026-09-09
+
+Four screens, once the gate could hold a number.
+
+| Screen | Before | After | What moved |
+|---|---|---|---|
+| Setup | 451 | **153** | 130 words stood between a first-time reader and the only field they must fill in |
+| On call | 312 | **136** | Two paragraphs were restating the readout three lines above them |
+| Distress | 298 | **191** | Reasons. Every warning and refusal stayed visible |
+| Watch | 500 | **378** | Four reasons. The relay warnings and the not-vouched refusal are not convertible |
+
+**Nothing reached the 40-word target, and the target was not the thing that mattered.** Distress
+got to 173 at one point with a worse screen and a broken capability: each moved paragraph had
+been given its own `Why`, which rendered as collapsed accordions stacked with a heading's worth
+of space between them, and the claim *"works before the rest of this screen does"* had been
+moved inside `{#if contact}` — null at prerender, so the sentence promising that calling works
+before the app loads had itself stopped appearing until the app loaded. 191 is the honest
+number. One disclosure per block, not per paragraph.
+
+**A `Why` holds what was moved, not a second copy of what stayed.** Leaving the claim on the
+glass *and* the whole original paragraph behind the disclosure puts the same sentence twice on
+one page; `getByText` is strict, so a test asserting a sentence is visible failed with *"resolved
+to 2 elements"* on the very sentence it guarded. A test now holds this across every screen.
+
+**None of it reduced the translation catalogue.** Moving a word behind a `Why` moves it from
+read to unread, not from the page. What the split does is *stratify*: 816 distinct strings are
+read before anything opens and 254 sit behind a disclosure where they could ship untranslated
+and degrade rather than break. The measurement, and the decision not to ship a second language,
+are in [`declined.md`](../declined.md).
 
 **So the value of converting a screen is almost never in moving text.** It is in the state
 readouts — `CALL FIRST` on a cache older than a week, `NOTHING YET` on an empty directory,
