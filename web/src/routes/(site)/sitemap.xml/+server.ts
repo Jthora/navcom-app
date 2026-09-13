@@ -31,7 +31,7 @@ export function GET() {
    * every crawler that honoured the sitemap, and `robots.txt` now disallows it — a sitemap
    * that advertises a disallowed path is a contradiction a crawler resolves by complaining.
    */
-  const pages = ['/', '/about/', '/directory/', '/status/', '/docs/'];
+  const pages = ['/', '/about/', '/directory/', '/status/', '/notice/', '/docs/'];
 
   const entries: { path: string; lastmod: string | null }[] = [
     ...pages.map((path) => ({ path, lastmod: null })),

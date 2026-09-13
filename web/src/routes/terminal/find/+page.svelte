@@ -11,7 +11,7 @@
    */
   import { onMount } from 'svelte';
   import { Slot, Readout } from '$lib/components/panel';
-  import { does, NOTE_MAX, platform as platformOf } from '@navcom/core';
+  import { does, keyPrint, NOTE_MAX, platform as platformOf } from '@navcom/core';
   import { board } from '$lib/terminal/public.svelte';
   import { invite } from '$lib/terminal/invites.svelte';
   import { loadIdentity } from '$lib/terminal/identity';
@@ -103,6 +103,14 @@
     <a href="/terminal/card/">Your card</a> is where that happens, and having none is the
     default.
   </p>
+  <p class="cost">
+    <!--
+      Whose words these are, said where somebody reads other people's cards. The terminal has no
+      footer, so the site's link to the notice lives here instead.
+    -->
+    What a card says is its holder's to answer for, not NavCom's.
+    <a href="/notice/">Who is responsible for what</a>.
+  </p>
 </section>
 
 <section class="act">
@@ -155,9 +163,15 @@
           <li>
             <div class="who">
               <a class="name" href="/terminal/who/?k={e.contact}">{e.callsign}</a>
+              <!--
+                Who, by the thing that is actually unique. Callsigns are not, and this is the
+                board somebody would copy a support address from.
+              -->
+              {#if keyPrint(e.contact)}<code class="print" data-key-print>{keyPrint(e.contact)}</code>{/if}
               {#if e.out}<span class="badge">out tonight</span>{/if}
             </div>
-            {#if e.doing}<p class="doing">{e.doing}</p>{/if}
+            <!-- Their words, quoted, so nobody reads them in the app's voice. -->
+            {#if e.doing}<p class="doing"><q>{e.doing}</q></p>{/if}
             {#if e.does.length > 0}
               <!--
                 Their words, not a badge and not a qualification. Nobody checks a card, so
@@ -230,8 +244,13 @@
     display: flex; flex-direction: column; gap: .5rem;
     border-bottom: 1px solid var(--t-line); padding-block: .9rem;
   }
-  .who { display: flex; align-items: center; gap: .7rem; }
+  .who { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .7rem; }
   .name { color: var(--t-ink); font-weight: 650; font-size: 1.02rem; }
+  /* Quieter than the name, and never broken across a line: a print split in two reads as two. */
+  .print {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: .74rem; color: var(--t-faint); white-space: nowrap;
+  }
   .badge {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: .62rem; letter-spacing: .1em; text-transform: uppercase;

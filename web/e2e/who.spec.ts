@@ -62,6 +62,21 @@ test('renders the card the address names', async ({ page }) => {
   await expect(page.getByText(/Supplies/)).toBeVisible();
 });
 
+test('names the card by its key as well as its callsign, and quotes rather than speaks for them', async ({ page }) => {
+  /*
+   * Callsigns are not unique, so the name at the top does not say who is answerable for the
+   * line under it. The print is of the key that signed the card, and the line is marked as a
+   * quotation so nobody reads it in the app's voice.
+   */
+  const { event, contact } = await cardFor({ callsign: 'Raven', doing: 'Water and socks, Thursdays.' });
+  await seedDevice(page, seeded(event));
+  await open(page, `/terminal/who/?k=${contact}`);
+
+  const { keyPrint } = await import('@navcom/core');
+  await expect(page.locator('[data-readout-value]', { hasText: keyPrint(contact)! })).toBeVisible();
+  await expect(page.locator('q', { hasText: 'Water and socks, Thursdays.' })).toBeVisible();
+});
+
 test('says nobody has checked any of it, before the links rather than under them', async ({ page }) => {
   const { event, contact } = await cardFor({
     callsign: 'Raven',

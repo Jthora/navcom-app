@@ -20,7 +20,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/state';
   import { Slot, Readout, Why } from '$lib/components/panel';
-  import { does, embedUrl, frameHeight, layout, platform as platformOf } from '@navcom/core';
+  import { does, embedUrl, frameHeight, keyPrint, layout, platform as platformOf } from '@navcom/core';
   import { profile } from '$lib/terminal/public.svelte';
   import { isLean } from '$lib/terminal/lean';
 
@@ -76,6 +76,14 @@
   );
   const url = (p: string, h: string) => platformOf(p)?.url(h) ?? '#';
   const name = (p: string) => platformOf(p)?.label ?? p;
+  /**
+   * Who, by the thing that is actually unique.
+   *
+   * The key that signed the card rather than the one in the URL, so the print is of what a relay
+   * actually served. Callsigns are not unique, and a name alone does not say who is answerable
+   * for what a card says.
+   */
+  const print = $derived(card ? keyPrint(card.contact) : null);
 </script>
 
 <svelte:head>
@@ -123,8 +131,15 @@
       />
     </Slot>
 
+    {#if print}
+      <Slot k="Key">
+        <Readout value={print} verbatim tone="neutral" sub="unique to this card" />
+      </Slot>
+    {/if}
+
     {#if card.card.doing}
-      <p class="doing">{card.card.doing}</p>
+      <!-- Their words, quoted, so nobody reads them in the app's voice. -->
+      <p class="doing"><q>{card.card.doing}</q></p>
     {/if}
 
     {#if card.does.length > 0}
@@ -147,6 +162,12 @@
         No part of it has been checked by anybody — the same claim every one of the 8,430
         directory records carries, said here because a page shaped like a profile invites the
         belief that somebody vetted it.
+      </p>
+      <p>
+        Callsigns are not unique, so the name at the top does not say who wrote this. The
+        characters beside <strong>Key</strong> do: if somebody told you theirs, that is how you know
+        this card is them. What it says is theirs to answer for —
+        <a href="/notice/">who is responsible for what</a>.
       </p>
     </Why>
 

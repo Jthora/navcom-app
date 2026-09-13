@@ -19,7 +19,7 @@
    * **Not vetted.** Nobody has checked any of it, exactly as with the 8,430 directory records.
    */
   import { onMount } from 'svelte';
-  import { does, platform as platformOf } from '@navcom/core';
+  import { does, keyPrint, platform as platformOf } from '@navcom/core';
   import { publicRoster } from '$lib/public-roster.svelte';
 
   onMount(() => {
@@ -50,7 +50,10 @@
   all is opt-in, and being findable <em>from outside the app</em> is a further step.
 </p>
 
-<p class="cost"><strong>Nobody has checked any of this.</strong> Every entry was published by its holder about themselves.</p>
+<p class="cost">
+  <strong>Nobody has checked any of this.</strong> Every entry was published by its holder about
+  themselves, and is theirs to answer for. <a href="/notice/">Who is responsible for what</a>.
+</p>
 
 {#if !publicRoster.asked}
   <p class="cost">Loading needs JavaScript. This page is the one part of the site that does.</p>
@@ -69,8 +72,16 @@
   <ul class="roster">
     {#each publicRoster.entries as e (e.contact)}
       <li>
-        <p class="who"><a href="/terminal/who/?k={e.contact}">{e.card.callsign}</a> <em>{e.card.region}</em></p>
-        {#if e.card.doing}<p class="doing">{e.card.doing}</p>{/if}
+        <p class="who">
+          <a href="/terminal/who/?k={e.contact}">{e.card.callsign}</a> <em>{e.card.region}</em>
+          <!--
+            Who, by the thing that is actually unique. Callsigns are not: two people may both be
+            Raven, and a name alone does not say who is answerable for the line below it.
+          -->
+          {#if keyPrint(e.contact)}<code class="print" data-key-print>{keyPrint(e.contact)}</code>{/if}
+        </p>
+        <!-- Their words, quoted, so nobody reads them in the site's voice. -->
+        {#if e.card.doing}<p class="doing"><q>{e.card.doing}</q></p>{/if}
         {#if e.does.length > 0}
           <p class="does">{e.does.map((d) => does(d)?.label ?? d).join(' · ')}</p>
         {/if}
@@ -98,6 +109,10 @@
   .roster li { border-top: 1px solid var(--line, #ddd); padding-top: .8rem; }
   .who { margin: 0; font-weight: 600; }
   .who em { font-style: normal; font-weight: 400; opacity: .72; }
+  .print {
+    font-family: var(--font-mono); font-size: .8rem; font-weight: 400; opacity: .72;
+    margin-inline-start: .35rem; white-space: nowrap;
+  }
   .doing { margin: .2rem 0 0; }
   .does { margin: .15rem 0 0; font-size: .88rem; opacity: .78; }
   .elsewhere { margin: .3rem 0 0; display: flex; flex-wrap: wrap; gap: .6rem; font-size: .88rem; }
