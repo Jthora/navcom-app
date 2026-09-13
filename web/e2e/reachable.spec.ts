@@ -347,6 +347,29 @@ test.describe('your card', () => {
     await expect(page.getByRole('button', { name: /replace your card/i })).toBeVisible();
   });
 
+  test('shows the card key beside your name, and never your own key', async ({ page }) => {
+    /*
+     * Somebody sending support needs a way to check they have the real card, and the holder is
+     * the only person who can tell them what to look for. The print must be of the card's key:
+     * the operational key is kept separate precisely so that publishing costs nothing, and
+     * printing it here would hand out the one thing the separation keeps back.
+     */
+    await seedDevice(page, OUT);
+    await open(page, '/terminal/card/');
+    await page.locator('#region').selectOption('st-louis');
+    await page.getByRole('button', { name: /publish your card/i }).click();
+    await expect(page.getByRole('button', { name: /replace your card/i })).toBeVisible();
+
+    const { keyPrint, publicKeyOf, secretFromHex } = await import('@navcom/core');
+    const device = await readDevice(page);
+    const print = (hex: unknown) => keyPrint(publicKeyOf(secretFromHex(hex as string)))!;
+
+    await expect(
+      page.locator('[data-readout-value]', { hasText: print(device.accruing['contact_secret']) })
+    ).toBeVisible();
+    await expect(page.locator('body')).not.toContainText(print(device.accruing['secret']));
+  });
+
   test('withdrawing discards the key rather than claiming to unpublish', async ({ page }) => {
     await seedDevice(page, OUT);
     await open(page, '/terminal/card/');

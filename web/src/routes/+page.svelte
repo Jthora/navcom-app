@@ -519,6 +519,10 @@
           the actual commit and test count behind what you are using right now, not a claim
           about it.
         </p>
+        <p>
+          Anything an operator publishes is theirs to answer for, not NavCom's —
+          <a href="/notice/">who is responsible for what</a>.
+        </p>
       </Why>
     </Panel>
   </div>

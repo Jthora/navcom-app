@@ -92,3 +92,30 @@ test('a card that did not choose public is not on it', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'Onlyboard' })).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Onlyaddress' })).toHaveCount(0);
 });
+
+test('two cards with the same callsign are two people, told apart by key', async ({ page }) => {
+  /*
+   * There is no registry, so anybody may publish a card called Raven -- including somebody
+   * collecting support meant for the real one. The print beside each name is what tells them
+   * apart, and each card's own words are quoted rather than printed in the site's voice.
+   */
+  const { generateSecretKey, getPublicKey } = await import('nostr-tools/pure');
+  const { buildCard, keyPrint } = await import('@navcom/core');
+  const keys = [generateSecretKey(), generateSecretKey()];
+  const at = Math.floor(Date.now() / 1000);
+  await seed(
+    page,
+    keys.map((k) =>
+      buildCard(k, { callsign: 'Raven', region: 'st-louis', doing: 'Water and socks.' }, at, {
+        visibility: 'public'
+      })
+    )
+  );
+  await open(page, '/who/');
+
+  await expect(page.getByRole('link', { name: 'Raven' })).toHaveCount(2, { timeout: 10_000 });
+  for (const k of keys) {
+    await expect(page.locator('.roster li', { hasText: keyPrint(getPublicKey(k))! })).toHaveCount(1);
+  }
+  await expect(page.locator('.roster q', { hasText: 'Water and socks.' })).toHaveCount(2);
+});

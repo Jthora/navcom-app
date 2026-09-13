@@ -55,6 +55,14 @@
       <a href="https://creativecommons.org/publicdomain/zero/1.0/" rel="noreferrer">CC0</a>:
       free for anyone to use.
     </p>
+    <!--
+      On every page, because every page can be the one somebody lands on. NavCom shows other
+      people's words, and a reader who never opens a doc still needs to know whose they are.
+    -->
+    <p class="quiet">
+      What operators publish about themselves is theirs to answer for, not NavCom's.
+      <a href="/notice/">Who is responsible for what</a>.
+    </p>
   </div>
 </footer>
 

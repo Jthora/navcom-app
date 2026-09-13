@@ -13,6 +13,7 @@
     DOES,
     DOES_MAX,
     DOING_MAX,
+    keyPrint,
     layout,
     LINKS_MAX,
     PLATFORMS,
@@ -322,6 +323,22 @@
         <p>
           Anybody browsing that area can see it and ask to pair. You decide who to accept, and
           ignoring somebody sends them nothing.
+        </p>
+      </Why>
+      <!--
+        The card's key, never the operator's own. The two are separate so that publishing costs
+        no operational exposure, and printing the wrong one here would hand out the key the
+        separation exists to keep back.
+      -->
+      <Slot k="Card key">
+        <Readout value={keyPrint(contact) ?? '—'} verbatim tone="neutral" sub="shown beside your name" />
+      </Slot>
+      <Why summary="What these characters are for">
+        <p>
+          Callsigns are not unique — anybody can publish a card called {callsign}. These
+          characters appear beside your name wherever your card is shown, and another card cannot
+          practically match them. Post them wherever people already know you, so somebody looking
+          for you, or sending you support, can check they have the real card.
         </p>
       </Why>
     {/if}

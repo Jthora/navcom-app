@@ -15,6 +15,7 @@ export function GET() {
     '/about/',
     '/directory/',
     '/status/',
+    '/notice/',
     '/docs/',
     ...loadDirectory().map((r) => `/directory/${r.id}/`),
     ...allDocs().map((d) => `/docs/${d.slug}/`)

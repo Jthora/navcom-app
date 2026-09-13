@@ -130,3 +130,24 @@ test('the board offers no way to filter or sort by what somebody claims', async 
   await expect(page.getByRole('button', { name: /patrol|filter|sort/i })).toHaveCount(0);
   await expect(page.locator('.does').getByRole('link')).toHaveCount(0);
 });
+
+test('two cards with one callsign are two people, told apart by key', async ({ page }) => {
+  // Same reason as the public roster: a name is not who said something, and this board is where
+  // somebody would copy a support address from.
+  const { generateSecretKey, getPublicKey } = await import('nostr-tools/pure');
+  const { buildCard, keyPrint } = await import('@navcom/core');
+  const keys = [generateSecretKey(), generateSecretKey()];
+  const at = Math.floor(Date.now() / 1000);
+  const events = keys.map((k) =>
+    buildCard(k, { callsign: 'Raven', region: REGION, doing: 'Water, Thursdays.' }, at)
+  );
+  await seedDevice(page, { ...watching(events[0]), relayEvents: events });
+  await open(page, '/terminal/find/');
+
+  const rows = page.locator('.board li', { hasText: 'Raven' });
+  await expect(rows).toHaveCount(2);
+  for (const k of keys) {
+    await expect(rows.filter({ hasText: keyPrint(getPublicKey(k))! })).toHaveCount(1);
+  }
+  await expect(page.locator('.board q', { hasText: 'Water, Thursdays.' })).toHaveCount(2);
+});
