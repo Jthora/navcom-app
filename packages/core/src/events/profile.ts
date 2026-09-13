@@ -130,6 +130,13 @@ export const VISIBILITY_CHOICES: readonly VisibilityChoice[] = [
  * So `firstaid` means *carries a kit*, not *is trained*. Vouching for competence is what
  * `endorsement.ts` is for — a credential is checkable and a tag is not, and the two must
  * never be made to look alike.
+ *
+ * ## Nor a result
+ *
+ * The free-text `doing` line is the holder's own words, and theirs to answer for. A term here
+ * is different: it is picked from a menu this project wrote, so a word promising that something
+ * protects, defends or has been tested would be NavCom making that claim on every card that
+ * carries it. `profile.test.ts` holds the line.
  */
 export const DOES: readonly { id: string; label: string; means: string }[] = [
   { id: 'patrol', label: 'Patrol', means: 'Walks or drives an area.' },

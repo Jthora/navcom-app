@@ -38,6 +38,16 @@ service worker, so "everyone has updated" is not a date anybody picks.
 `readCard` never reads `event.tags`. Everything added from now on therefore arrives beside
 the content rather than inside it. See `events/links.ts` for the full argument.
 
+### Who said it is the key, not the callsign
+
+There is no registry, so two cards may both say Raven, and a name alone does not identify who
+is answerable for what a card says. Every surface that shows a card therefore shows `keyPrint`
+— the first sixteen hex characters of the contact key, in fours — beside the callsign, and
+quotes the `doing` line as its holder's words rather than printing it in the app's voice. The
+holder sees their own print on the card screen, to post wherever people already know them.
+[`/notice/`](https://navcom.app/notice/) says the same thing to a reader who never opens the
+app.
+
 ## 3. Two visibility tiers, because two of them are true
 
 The obvious design is **public / internal / private**, where internal means *only people who
@@ -105,6 +115,11 @@ therefore means *carries a kit*, not *is trained*, and says so in the picker.
 Vouching for competence is what [`endorsement.ts`](../../packages/core/src/events/endorsement.ts)
 is for. A credential is checkable and a tag is not, and the two must never be made to look
 alike.
+
+**Nor a result.** The `doing` line is its holder's words; a term is picked from a menu this
+project wrote. A term promising that something protects, defends or has been tested would be
+NavCom making that claim on every card that carries it, so the vocabulary describes what
+somebody does and never what anything achieves.
 
 Three is the cap because a card claiming nine things says nothing, and an unbounded list is
 how a self-asserted vocabulary becomes a keyword-stuffing surface.

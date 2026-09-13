@@ -214,6 +214,19 @@ describe('the vocabulary itself', () => {
     expect(DOES.find((d) => d.id === 'firstaid')!.means).toMatch(/not a claim of training/i);
   });
 
+  it('says what somebody does, never what anything achieves', () => {
+    /*
+     * The line between the holder's words and ours. The free-text `doing` line is written by
+     * whoever publishes the card and is theirs to answer for. A term here is picked from a menu
+     * this project wrote, so a word promising a result -- that something protects, defends, or
+     * has been tested -- would be NavCom making that claim on every card that carries it.
+     */
+    const text = DOES.map((d) => `${d.id} ${d.label} ${d.means}`).join(' ');
+    expect(text).not.toMatch(
+      /\b(protect\w*|defen[cs]\w*|shield\w*|safe\w*|secur\w*|guarantee\w*|proven|tested|verified|effective)\b/i
+    );
+  });
+
   it('describes every term, so a picker never shows a bare word', () => {
     for (const d of DOES) {
       expect(d.label.length, d.id).toBeGreaterThan(0);

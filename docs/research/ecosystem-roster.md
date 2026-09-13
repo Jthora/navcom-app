@@ -143,7 +143,10 @@ queryable history.
 The honest statement that standing raises cost and never establishes safety.
 
 **The Impersonator** — fake persona collecting donations meant for a known operator.
-→ Lightning address changes surface to operators who have endorsed you.
+→ A short print of the card's key beside every callsign, so two cards named Raven read as two
+people, and the real Raven can post theirs wherever they are already known. *This line used to
+say address changes would surface to your endorsers. That cannot be built: a credential names no
+subject, so an endorser never learns which card claimed it.*
 
 **The Hostile Watch** ⚠️ — takes watch specifically to learn who is out, where, and when.
 **The highest-privilege position in the system.**
