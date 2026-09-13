@@ -34,6 +34,7 @@ import { loadIdentity } from './identity';
 import { relays } from './relays';
 import { address } from './funding';
 import { pool } from './pool';
+import { isHidden } from '../hidden';
 
 /**
  * How often *"out tonight"* is republished.
@@ -148,6 +149,9 @@ export const board = {
           if (event.kind === KIND_CARD) {
             const read = readCard(event);
             if (!read) return;
+            // Refused at the door rather than filtered on the way out, so a card navcom.app will
+            // not show cannot take a place under the bound either. See `hidden.ts`.
+            if (isHidden(read.contact)) return;
             // Replaceable, but relays deliver what they have. An older card must not
             // overwrite a newer one and show somebody a name they have since changed.
             const existing = cards[read.contact];
@@ -238,6 +242,8 @@ export const profile = {
           if (event.kind === KIND_CARD) {
             const read = readCard(event);
             if (!read) return;
+            // The profile screen never asks for a hidden key; this holds for any other caller.
+            if (isHidden(read.contact)) return;
             // A relay may serve an older replaceable event after a newer one.
             if (one && one.at >= read.at) return;
             one = read;
