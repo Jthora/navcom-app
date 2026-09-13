@@ -19,7 +19,7 @@
   "src/routes/(site)/directory/area/[region]/+page.svelte": 55,
   "src/routes/(site)/docs/+page.svelte": 40,
   "src/routes/(site)/docs/[...slug]/+page.svelte": 5,
-  "src/routes/(site)/notice/+page.svelte": 281,
+  "src/routes/(site)/notice/+page.svelte": 320,
   "src/routes/(site)/status/+page.svelte": 263,
   "src/routes/(site)/who/+page.svelte": 150,
   "src/routes/+error.svelte": 5,

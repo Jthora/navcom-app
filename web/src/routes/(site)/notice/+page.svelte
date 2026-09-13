@@ -16,9 +16,9 @@
    * nothing to accept, and a page pretending otherwise would be the overclaim this project keeps
    * catching. It says what is true and stops.
    *
-   * Nor a promise of takedowns. NavCom cannot delete anything from a relay, and whether its own
-   * pages stop showing something is a decision nobody has made yet -- so this says the first and
-   * not the second.
+   * Nor a promise of takedowns. NavCom cannot delete anything from a relay, and says so. What its
+   * own pages will not show is `hidden.ts`, narrow on purpose, and this states that list with its
+   * limit rather than inviting reports -- there is no reporting channel to invite them to.
    */
 </script>
 
@@ -63,7 +63,9 @@
       </li>
       <li>
         <strong>NavCom cannot delete what somebody else published.</strong> Whether a relay keeps
-        serving it is up to that relay.
+        serving it is up to that relay. This site's own pages can stop showing a card that was
+        named in a legal notice or is unlawful — never over a disagreement between operators —
+        and each such decision is recorded, with its date, in the project's public repository.
       </li>
     </ul>
   </section>

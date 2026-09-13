@@ -122,6 +122,10 @@ tasks anyone; nothing judges anyone.
 **Instead:** the log, reviewable by the people it concerns, so an argument at least has
 shared facts.
 
+**Not to be confused with** the short list of cards navcom.app's own pages will not display
+(`web/src/lib/hidden.ts`). That exists for a legal notice or unlawful content, and one
+operator's complaint about another is neither. See [`profiles.md`](product/profiles.md) §3.
+
 ### How old anybody is
 
 Some people in this community started young. An operator five years in can be seventeen, and

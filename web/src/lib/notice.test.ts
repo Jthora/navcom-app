@@ -43,12 +43,14 @@ describe('the notice', () => {
     expect(page()).toContain('Nothing here is medical, legal or safety advice.');
   });
 
-  it('promises no takedown it cannot perform', () => {
-    // NavCom cannot delete from a relay. Whether its own pages stop showing something is
-    // undecided, and a notice that implied a removal process would be a claim with nothing
-    // behind it.
+  it('promises no deletion it cannot perform, and says what its own pages can do', () => {
+    // NavCom cannot delete from a relay. What it controls is what its own pages render, and that
+    // narrow list is stated with its limit. There is still no reporting channel, so a notice
+    // that invited reports would be a claim with nothing behind it.
     const html = page().toLowerCase();
     expect(html).toContain('cannot delete what somebody else published');
+    expect(html).toContain('never over a disagreement between operators');
+    expect(html).toContain('recorded, with its date');
     expect(html).not.toMatch(/report (it|this|abuse)|we will remove|request removal|takedown/);
   });
 });

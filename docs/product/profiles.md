@@ -80,6 +80,24 @@ The region still travels in `content`, so somebody holding your address still le
 metro. Address-only means *not on a board*. It does not mean secret, and no screen may say
 otherwise — the copy says *"your card is still published"* out loud, and a test asserts it.
 
+### What navcom.app itself will not show
+
+None of the tiers above is enforced by anybody, and nothing here can delete a card. What this
+project controls is what **its own pages** render, and `web/src/lib/hidden.ts` is that list:
+cards navcom.app will not display, by key, for exactly two reasons — the card was named in a
+legal notice, or its content is unlawful. **Never** because one operator disputes another, and
+never because a claim is wrong or distasteful; that is what the key print and
+[`/notice/`](https://navcom.app/notice/) are for, and [`declined.md`](../declined.md) still
+holds records rather than verdicts.
+
+An entry carries a key, a category and a date, and no reason in words. A written reason would
+be an accusation about a pseudonymous person, published by the one party who cannot check it.
+Relays keep serving the card, other apps keep showing it, and a phone that has not updated still
+carries the old list. The operator card screen says so rather than rendering as though the card
+were gone.
+
+Empty is the expected state.
+
 ## 4. The names, and why not the other names
 
 Two rules decided these.

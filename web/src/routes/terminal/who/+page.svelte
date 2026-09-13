@@ -23,6 +23,7 @@
   import { does, embedUrl, frameHeight, keyPrint, layout, platform as platformOf } from '@navcom/core';
   import { profile } from '$lib/terminal/public.svelte';
   import { isLean } from '$lib/terminal/lean';
+  import { hiddenOn } from '$lib/hidden';
 
   let key = $state('');
   /** Decided once, on mount, by the phone rather than by asking the reader. */
@@ -59,7 +60,9 @@
     } catch {
       // A malformed referrer is not worth a broken screen. The default stands.
     }
-    if (key) profile.watch(key);
+    // A card navcom.app will not show is not asked for at all: no relay learns that somebody
+    // opened it here. The store refuses it too, so a second caller cannot forget to.
+    if (key && !hiddenOn(key)) profile.watch(key);
     return () => profile.stop();
   });
 
@@ -100,6 +103,27 @@
   <section class="act">
     <Slot k="Card"><Readout value="No address" tone="cold" sub="this link carries no key" /></Slot>
     <p class="cost">A profile is reached by somebody's address. <a href="/terminal/find/">Browse an area</a> instead.</p>
+  </section>
+{:else if hiddenOn(key)}
+  <section class="act">
+    <!--
+      Said, never silently dropped. "Nothing here" would claim the card does not exist or could
+      not be found, and neither is true: navcom.app decided not to show it, and a reader who
+      followed a link is owed that sentence rather than a false one. No reason in words, for the
+      reason `hidden.ts` gives.
+    -->
+    <Slot k="Card"><Readout value="Not shown here" tone="cold" sub="since {hiddenOn(key)}" /></Slot>
+    <Why summary="Why not">
+      <p>
+        navcom.app stopped showing this card after it was named in a legal notice or found to be
+        unlawful. The decision and its date are recorded in the project's public repository, and
+        it is never made over a disagreement between operators.
+      </p>
+      <p>
+        Relays may still carry the card and other apps may still show it — NavCom cannot delete
+        what somebody else published. <a href="/notice/">Who is responsible for what</a>.
+      </p>
+    </Why>
   </section>
 {:else if profile.loading && !card}
   <section class="act">

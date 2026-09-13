@@ -30,6 +30,7 @@ import type { Event } from 'nostr-tools/core';
 import { KIND_CARD, PUBLIC_LABEL, readCard, type PublishedCard } from '@navcom/core';
 import { relays } from './terminal/relays';
 import { pool } from './terminal/pool';
+import { isHidden } from './hidden';
 
 /**
  * The most cards this will hold.
@@ -82,6 +83,9 @@ export const publicRoster = {
         onevent: (event: Event) => {
           const read = readCard(event);
           if (!read) return;
+          // Refused at the door rather than filtered on the way out, so a card navcom.app will
+          // not show cannot take a place under the bound either. See `hidden.ts`.
+          if (isHidden(read.contact)) return;
           // A relay may serve an older replaceable event after a newer one.
           const existing = cards[read.contact];
           if (existing && existing.at >= read.at) return;
