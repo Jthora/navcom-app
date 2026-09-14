@@ -143,9 +143,9 @@ screenshots something with a teammate's callsign in it.
 **C35 — Field data crosses to analysts as patterns, never as operator records.**
 
 **C37 — Allied interop is time-boxed and op-scoped.** Federation without membership.
-**Declined, not deferred** — see [`declined.md`](../declined.md). This constraint describes
-the shape it would have to take *if* the decision were ever reversed; it is not a commitment
-to build it, and reading it as one is how it ended up on the deferred list by mistake.
+**Deferred** — declined until 2026-09-03, then reversed when a real crew asked; see
+[`declined.md`](../declined.md) and [`build-order.md`](../build-order.md). This is the shape it
+has to take.
 
 ---
 

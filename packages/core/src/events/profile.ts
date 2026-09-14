@@ -147,6 +147,16 @@ export const DOES: readonly { id: string; label: string; means: string }[] = [
   { id: 'search', label: 'Search', means: 'Helps look for somebody missing.' },
   { id: 'observe', label: 'Legal observer', means: 'Witnesses and records.' },
   { id: 'welfare', label: 'Welfare checks', means: 'Checks on people who asked to be checked on.' },
+  /*
+   * Support work, chosen by the maintainer on 2026-09-12. Until then a card could describe only
+   * work done in the street, and the people who hold that work up -- the watch, the box, the
+   * teaching, the gear -- had no word for what they do on the one artifact they can be found by.
+   * Same rule as every other term: an activity, never a qualification, never a result.
+   */
+  { id: 'answers', label: 'Answers questions', means: 'Answers questions from what they know, without holding a board.' },
+  { id: 'station', label: 'Keeps a station', means: 'Runs and maintains a Watchtower box.' },
+  { id: 'teaches', label: 'Teaches', means: 'Shows other people how to do the work. Not a claim of qualification.' },
+  { id: 'gear', label: 'Makes or repairs gear', means: 'Builds, fixes or modifies equipment. Not a claim about how well any of it works.' },
   { id: 'crew', label: 'A crew', means: 'This card is a group rather than one person.' }
 ] as const;
 

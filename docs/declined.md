@@ -280,6 +280,10 @@ every time: *fewer records, all of them plausible.*
 > longer imagined: Zone Guardians and Rescue Rangers are real crews with real keys, so the
 > shape can be designed against them rather than against a hypothesis.
 >
+> *Confirmed by the maintainer on 2026-09-13, as written.* An independent review found this
+> banner was the only written record of the request — the commit that reversed the entry never
+> mentions federation — so the confirmation sits here, beside the claim it supports.
+>
 > Scope note, because the name hides a split. **The intel half is nearly free and partly
 > already shipped**: corrections, places and cards are Contact-key signed and public, so
 > another crew can read them today with no interop protocol at all. **The board half — live
@@ -536,5 +540,7 @@ should be recorded in the commit that moves it.
 **Allied interop used to be on that list, and it was a contradiction with the entry above.**
 This page declined it; this paragraph called it deferred; `constraints.md` C37 states its
 shape as though it were coming. An audit found all three, which is one more reader than it
-should have taken. It is **declined** — the entry above has the argument, and C37 describes
-what would be built *if* it were ever reversed, not a commitment to build it.
+should have taken. It was then settled as **declined** — and on 2026-09-03 that decision was
+**reversed** by the test the entry set for itself: somebody asked. It is deferred now, in
+[`build-order.md`](build-order.md), and the entry above keeps the original argument because it
+was right when it was made.

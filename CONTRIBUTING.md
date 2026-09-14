@@ -139,3 +139,19 @@ cd web && npm run verify    # type-check, data check, build, tests, bundle budge
 
 All of it must pass. The bundle budget is enforced because the device floor — a prepaid
 Android 8 with 400MB free — is a real target and not an aspiration.
+
+## Merging to main
+
+`main` is what navcom.app deploys from. **Nothing merges to it until somebody other than its
+author has read the diff against the invariants in [`CLAUDE.md`](CLAUDE.md)** — a second person,
+or at minimum a fresh reviewer with none of the author's context.
+
+The reason is not distrust of any particular author. A patient, plausible change is
+indistinguishable from a good one to the person who wrote it, and this project's answer to that
+everywhere else is bounded authority rather than better self-checks. It applies to agents working
+here too: **an agent does not merge its own branch.**
+
+**Nothing enforces this yet.** GitHub branch protection needs a second account with write access,
+and the project has one maintainer — see [`build-order.md`](docs/build-order.md) 9.4. Until then it
+is a rule kept by hand, which is exactly the kind this project distrusts, so it is written where
+somebody will see it being broken.

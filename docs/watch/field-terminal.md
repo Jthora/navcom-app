@@ -38,6 +38,11 @@ For anything more complicated, send `Query` and let the console do the work.
 **4. Playbook.** De-escalation, first aid, overdose response, cold exposure. Large type,
 no navigation depth, works when you're panicking. One tap from anywhere.
 
+> **Not built, and not written.** There is no playbook screen and no playbook content. The
+> shape above is the design; the words need people with real expertise, and generated safety
+> guidance is refused outright. Until somebody writes them, the about page points at
+> organisations that teach first aid, de-escalation and overdose response.
+
 **5. Log.** Field notes as you go — text, timestamp, coarse location. Never about
 people being served. Compiles itself into the op record at stand-down.
 
@@ -61,8 +66,8 @@ Those live on the console, or nowhere.
 
 ## Running dark
 
-With no watch and no signal, the terminal still does real work: cached directory,
-playbooks, local logging, and duress falling back to SMS to the operator's own contact.
+With no watch and no signal, the terminal still does real work: cached directory, local
+logging, and duress falling back to SMS to the operator's own contact.
 
 **Safety independence, not capability independence.** Running Dark must never leave an
 operator worse off than carrying no app at all — but it does leave them substantially less

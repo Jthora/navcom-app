@@ -54,7 +54,7 @@ Starcom's `Finding`.
 | **`field-terminal.md` promised photo capture** the code has never had | **Fixed** — narrative was the bug |
 | **`identity.md` described an emblem upload path** that does not exist | **Fixed** |
 | **`build-order.md` 10.b justified itself with "nothing writes an entry"**, contradicted by its own document | **Fixed** |
-| **`declined.md` contradicted itself on allied interop** — declined in one place, listed as deferred in another | **Settled: declined.** C37 describes the shape if reversed, not a commitment |
+| **`declined.md` contradicted itself on allied interop** — declined in one place, listed as deferred in another | **Settled: declined.** C37 describes the shape if reversed, not a commitment. *Reversed 2026-09-03 when a real crew asked — see `declined.md`; this row is kept as it was decided* |
 
 A ninth, found by the same pass and fixed since: the guard against *a mechanism nobody can
 reach* checked a hardcoded five of twenty-four capabilities, and the nine that declared no
