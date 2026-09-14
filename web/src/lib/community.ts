@@ -262,6 +262,88 @@ export const TRAINING: Training[] = [
     where: 'United States, with sister programmes elsewhere',
     how: 'fetched',
     checked: '2026-08-30'
+  },
+
+  /*
+   * De-escalation and bystander intervention, overdose response and legal observing: the three
+   * subjects `CONTRIBUTING.md` names beside first aid as content this project must never write.
+   * Chosen by the maintainer on 2026-09-12 from candidates checked that day.
+   *
+   * Legal observing cannot be listed neutrally, and it is said here rather than hidden: both
+   * organisations openly work on the side of the people being policed, and the one programme
+   * that framed itself as impartial was suspended when checked. Being listed is still not an
+   * endorsement. It is also the subject whose programmes pause and end most often, so these
+   * entries are the ones the six-month re-check will catch first.
+   */
+  {
+    name: 'Right To Be — bystander intervention',
+    url: 'https://righttobe.org/upcoming-free-trainings/',
+    where: 'Online, from any country; sessions on US time zones',
+    how: 'challenged',
+    checked: '2026-09-12'
+  },
+  {
+    name: 'Suzy Lamplugh Trust — anti-harassment and bystander training',
+    url: 'https://www.suzylamplugh.org/anti-harassment-training',
+    where: 'United Kingdom, online',
+    how: 'fetched',
+    checked: '2026-09-12'
+  },
+  {
+    name: 'DC Peace Team — de-escalation and bystander intervention',
+    url: 'https://www.dcpeaceteam.org/upcoming-training-events',
+    where: 'United States, online',
+    how: 'fetched',
+    checked: '2026-09-12'
+  },
+  {
+    name: 'Nonviolent Peaceforce — unarmed civilian protection',
+    url: 'https://nonviolentpeaceforce.org/where-we-work/united-states/',
+    where: 'United States (Minneapolis, New York, San Diego), for groups',
+    how: 'challenged',
+    checked: '2026-09-12'
+  },
+  {
+    name: 'American Red Cross — opioid overdose response',
+    url: 'https://www.redcross.org/take-a-class/opioidoverdose',
+    where: 'United States, online',
+    how: 'challenged',
+    checked: '2026-09-12'
+  },
+  {
+    name: 'St. John Ambulance Canada — opioid poisoning response',
+    url: 'https://sja.ca/en/oprt',
+    where: 'Canada, online',
+    how: 'fetched',
+    checked: '2026-09-12'
+  },
+  {
+    name: 'Change Grow Live — naloxone and overdose response',
+    url: 'https://www.changegrowlive.org/advice-info/alcohol-drugs/naloxone-overdose-reversal-drug',
+    where: 'England and Wales, at local services',
+    how: 'challenged',
+    checked: '2026-09-12'
+  },
+  {
+    name: 'Harm Reduction Victoria — overdose response and naloxone',
+    url: 'https://www.hrvic.org.au/training',
+    where: 'Australia (Victoria), online',
+    how: 'fetched',
+    checked: '2026-09-12'
+  },
+  {
+    name: 'National Lawyers Guild — legal observer training',
+    url: 'https://www.nlg.org/massdefenseprogram/los/',
+    where: 'United States, through local chapters',
+    how: 'fetched',
+    checked: '2026-09-12'
+  },
+  {
+    name: 'Green and Black Cross — legal observer training',
+    url: 'https://greenandblackcross.org/get-involved/workshops/',
+    where: 'England and Wales; observer training was paused when checked',
+    how: 'fetched',
+    checked: '2026-09-12'
   }
 ];
 
