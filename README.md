@@ -22,17 +22,21 @@ You send `Query`, and someone with a full console and both hands free answers.
 That relationship — a support operator with situational awareness backing field operators
 with local awareness — is the product. Everything else serves it.
 
-## Two applications
+## One application, two modes
 
-**[The Console](./docs/watch/console.md)** — desktop-shaped, for whoever holds watch. The
-board, the full directory, the ability to raise operators. Runs on an always-on node
-alongside the relay and the agent.
+You take up the watch, or you go out. The same person does both on different nights, so it
+is one app you learn once.
 
-**[The Field Terminal](./docs/watch/field-terminal.md)** — five screens, one hand, dark,
-cold, offline. Status, signal, directory, playbook, log. Nothing else.
+**[Going out](./docs/watch/field-terminal.md)** — one hand, dark, cold, offline. Status,
+signal, directory, log, and a playbook screen that is designed but not yet written.
 
-They are not the same app at different sizes. They are different instruments for opposite
-situations.
+**[Holding the watch](./docs/watch/the-watch.md)** — the board, the directory, answering
+`Query`, raising people when somebody needs them. A squad holds it on a phone; a box can hold
+it all night alongside a relay and an agent. It is a mode of the same app, not a separate
+console — that was the original plan, and [`console.md`](./docs/watch/console.md) records why
+it changed.
+
+The two situations are opposite, and each mode's screens are built for its own.
 
 ## Watch states
 

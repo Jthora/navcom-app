@@ -128,7 +128,8 @@ board has it; when they stand down they don't outrank anyone.
 
 ## 12. Safety independence, not capability independence
 
-Dark is survivable: cached directory, playbooks, local logging, duress fallback. Running
+Dark is survivable: cached directory, local logging, duress fallback. (Field playbooks are
+designed and not yet written, so they are not on this list.) Running
 without a watch must never leave an operator worse off than carrying no app at all.
 
 It does leave them substantially less capable — `Query` is the central value of the watch

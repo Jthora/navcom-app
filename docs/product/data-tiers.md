@@ -125,7 +125,7 @@ it that way?*
 | Incident log | Wipeable |
 | Cached op detail, drafts | Wipeable |
 | Resource directory | Collective |
-| Field playbooks | Collective |
+| Field playbooks *(designed, not yet written)* | Collective |
 
 ## The rule that ties it together
 

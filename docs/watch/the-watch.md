@@ -110,7 +110,7 @@ to anyone who has not been personally vetted; inside a circle you trust directly
 own account is adequate.
 
 A watch whose ladder is empty is still a watch worth signing on under — cached directory,
-playbooks, local logging, a duress fallback. What is never acceptable is not knowing.
+local logging, a duress fallback. What is never acceptable is not knowing.
 
 ## Duty
 
@@ -146,14 +146,19 @@ board; when they stand down they don't outrank anyone.
 Dark is survivable and the Field Terminal must stay genuinely useful in it:
 
 - Cached directory, fully available offline
-- Field playbooks
 - Duress falls back to SMS to the operator's own contact
 - Everything logged locally, synced when a watch comes back up
+
+> **Field playbooks were on this list, and they do not exist.** They are designed and
+> unwritten: de-escalation, first aid and overdose guidance need people with real expertise,
+> and [`declined.md`](../declined.md) refuses generated content for exactly that reason. Listed
+> as though they worked, they were the one item an operator in Dark would reach for and not
+> find.
 
 **Design rule: safety independence, not capability independence.**
 
 Running Dark must never leave an operator worse off than carrying no app at all — the
-safety kit, the cached directory and the playbooks all still work.
+safety kit and the cached directory still work.
 
 It does leave them substantially **less capable**. `Query` is the central value of the
 watch and it requires a watch; without one the terminal is a cached directory searched
