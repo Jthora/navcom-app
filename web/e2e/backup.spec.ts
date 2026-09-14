@@ -96,7 +96,9 @@ test('a recovery code brings back who you are, and says what it does not', async
   await other.locator('#rblob').fill(code);
   await other.getByRole('button', { name: /^restore$/i }).click();
 
-  await expect(other.locator('[data-restored]')).toContainText(/what you held is not/i);
+  // It said "Your callsign is back", which a recovery code does not restore: `restoreCode`
+  // writes the key alone, and the callsign is stored separately.
+  await expect(other.locator('[data-restored]')).toContainText(/not your callsign or anything you held/i);
   const device = await readDevice(other);
   expect(device.accruing['secret']).toBeTruthy();
   await fresh.close();

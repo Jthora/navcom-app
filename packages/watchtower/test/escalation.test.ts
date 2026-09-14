@@ -147,6 +147,23 @@ describe("the trigger", () => {
     const [first] = await reports(published, operator, pubkey);
     expect(first!.type).toBe("escalation-status");
     expect(first!.text).toMatch(/Paging Wren/);
+    // Structured as well as said, so the phone never parses the sentence to act on it.
+    expect(first!.ladder).toBe("paging");
+    expect(first!.responder.kind).toBe("node");
+  });
+
+  it("says nobody is coming as a state, not only as a sentence, when nobody is on call", async () => {
+    // The defect this guards lived on the phone: the ladder's "Nobody is coming" was filed
+    // under "an agent answered" and never shown. The phone can only act on it at once if the
+    // state travels with the words.
+    const operator = generateSecretKey();
+    const { pubkey, published, deliver } = build([]);
+
+    deliver(distressFrom(operator, pubkey));
+
+    const [first] = await reports(published, operator, pubkey);
+    expect(first!.ladder).toBe("exhausted");
+    expect(first!.text).toMatch(/Nobody is coming/);
   });
 
   it("pages everyone at once, and only after the operator has been told", async () => {

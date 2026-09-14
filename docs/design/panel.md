@@ -383,8 +383,9 @@ gated behind a sequence, not for one second.
 > **`Inked` claims less than the concept did.** It was written as the night's line *"sealed
 > into the hash chain with an inclusion proof."* Inclusion proofs have not shipped — `log.ts`
 > says an operator reading the log is trusting the watch's account — so the close of the night
-> shows how long, where, and *"nobody was watching, and it still counts"*, and claims nothing
-> about provability.
+> shows how long, where, and *"nobody confirmed it, and it still counts"*, and claims nothing
+> about provability. *(It said "nobody was watching" until an audit on 2026-09-13 found the same
+> line shows when a watch exists but its reply failed or came from an agent.)*
 >
 > **And it found a real defect.** All three hold controls — Distress, wipe, take the watch —
 > completed from inside a `requestAnimationFrame` loop. rAF is throttled hard, and paused

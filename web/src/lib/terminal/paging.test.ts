@@ -63,3 +63,33 @@ describe('a browser that returns no encryption key', () => {
     expect(registration.keys.auth).not.toBe('');
   });
 });
+
+describe('burn forgets paging', () => {
+  /** A browser that can be woken, with whatever registration the test gives it. */
+  function installRegistration(registration: unknown, ready: Promise<unknown> = new Promise(() => {})) {
+    const g = globalThis as Record<string, unknown>;
+    g.Notification = { requestPermission: async () => 'granted' };
+    g.PushManager = class {};
+    Object.defineProperty(globalThis, 'navigator', { configurable: true, value: {
+      serviceWorker: { ready, getRegistration: async () => registration }
+    } });
+  }
+
+  it('unsubscribes a device that is on call, so a burned phone cannot be woken', async () => {
+    // Burn said it destroyed everything on the device and left this standing.
+    const unsubscribe = vi.fn(async () => true);
+    installRegistration({ pushManager: { getSubscription: async () => ({ unsubscribe }) } });
+    const { forgetPaging } = await import('./paging');
+    await forgetPaging();
+    expect(unsubscribe).toHaveBeenCalled();
+  });
+
+  it('finishes on a page with no service worker, rather than waiting forever', async () => {
+    // `serviceWorker.ready` never settles without a registration -- installed here as a promise
+    // that never resolves. A burn that awaited it would leave somebody watching a screen that had
+    // not finished destroying anything.
+    installRegistration(undefined);
+    const { forgetPaging } = await import('./paging');
+    await expect(forgetPaging()).resolves.toBeUndefined();
+  });
+});

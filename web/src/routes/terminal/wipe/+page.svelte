@@ -18,6 +18,7 @@
   import { burnCaches, burnConfirmed, panicWipe, tierSummary } from '$lib/terminal/storage';
   import { destroyPool } from '$lib/terminal/pool';
   import { loadIdentity } from '$lib/terminal/identity';
+  import { forgetPaging } from '$lib/terminal/paging';
   import { operator } from '$lib/terminal/session.svelte';
 
   import { Slot, Readout, Action } from '$lib/components/panel';
@@ -33,6 +34,7 @@
 
   function fireWipe() {
     panicWipe();
+    // Also stops a Distress still sending, the public listing and position -- see `forget`.
     operator.forget();
     // Straight back to an ordinary-looking terminal. No receipt, no confirmation.
     goto('/terminal/');
@@ -51,6 +53,15 @@
     // robustness audit: no concrete browser path found, but nothing here should assume one
     // never exists) must not leave a stale confirmation screen showing. No message either
     // way: this screen's whole point is to show nothing at all, on success or failure alike.
+    try {
+      // A burned phone that can still be woken for on-call is not finished. Found by audit on
+      // 2026-09-13: burn cleared storage and caches and left the push subscription standing.
+      // Bounded, because unsubscribing asks the push service and a phone with no signal must
+      // not be left looking at a burn that has not finished.
+      await Promise.race([forgetPaging(), new Promise((resolve) => setTimeout(resolve, 2000))]);
+    } catch {
+      // Deliberately silent. See above.
+    }
     try {
       await burnCaches();
     } catch {
@@ -90,6 +101,16 @@
     you would call. You can carry on working straight afterwards — nobody has to
     re-provision you, and your safety net is still there the next night.
   </p>
+  <!--
+    The cost of stopping what is still sending, said before the hold rather than after. It was
+    decided rather than defaulted into: a wipe that left a Distress and a public listing
+    running kept transmitting from a phone its owner believed was quiet.
+  -->
+  <p class="cost">
+    <strong>It also stops what this phone is still sending</strong> — a Distress still going,
+    your name on the board as out tonight, and your position. If you are wiping because you are
+    in trouble, that silences your own call for help: send it again once you can.
+  </p>
   <Action label="Hold to wipe tonight" holdingLabel="Keep holding…" hold={800} tone="alarm" onfire={fireWipe} />
 </section>
 
@@ -99,8 +120,8 @@
   <h2>What this does not reach</h2>
   <p>
     <strong>The watch still has your board entry.</strong> This wipes the phone, not the
-    watch. That entry is held in memory on the box and expires on its own; wiping here sends
-    nothing and tells nobody.
+    watch. A box forgets the entry on its own; a phone holding the watch keeps it until that
+    page reloads. The wipe itself sends nothing and tells nobody.
   </p>
   <p>
     <strong>The accountability log is outside both tiers.</strong> It lives on the node and
@@ -119,9 +140,10 @@
   <h2>Burn</h2>
   <p>
     Destroys <strong>everything on this device, identity included</strong> — both storage
-    tiers and the offline caches, so the cached directory goes too. Your standing goes with
-    it and there is no recovery unless you set one up. For seizure or compulsion, not for a
-    phone that might be glanced at.
+    tiers and the offline caches, so the cached directory goes too — and stops this phone
+    being woken if it was on call. The watch's on-call list still names you until whoever runs
+    it takes you off. Your standing goes with it and there is no recovery unless you set one
+    up. For seizure or compulsion, not for a phone that might be glanced at.
   </p>
   {#if callsign}
     <label for="confirm">Type <strong>{callsign}</strong> to confirm</label>
@@ -130,8 +152,15 @@
       Burn this device
     </button>
   {:else}
-    <Slot k="Identity"><Readout value="None" tone="cold" sub="nothing here to burn" /></Slot>
-    <p class="cost">No identity on this device, so there is nothing to burn.</p>
+    <Slot k="Identity"><Readout value="None" tone="cold" sub="no identity on this device" /></Slot>
+    <!--
+      It said "nothing to burn", which was not true: cached pages and tonight's data can be here
+      with no identity, and burn refuses to run without one. The browser can remove them.
+    -->
+    <p class="cost">
+      No identity on this device, so burn will not run. Cached pages and tonight's data can still
+      be here — clear this site's data in the browser to remove them.
+    </p>
   {/if}
 </section>
 

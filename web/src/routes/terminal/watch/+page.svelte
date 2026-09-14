@@ -133,10 +133,16 @@
     somebody acts — which is the one class of prose this doctrine never hides.
   -->
   <p><strong>This app does not watch anybody. You do.</strong></p>
+  <!--
+    It said a Distress "is not closed by answering it" and "stays on this board until a human has
+    actually ended it". Neither was true: an answer from this screen is signed as a human, ends
+    the operator's retrying, and reads "Answered" on their phone; and the board lives in this
+    page's memory, so a reload drops it.
+  -->
   <p>
-    <strong>A <code>Distress</code> is not closed by answering it.</strong> Acknowledging
-    tells the operator a person is awake. It stays on this board until a human has actually
-    ended it, and there is no button here that clears one.
+    <strong>Answering a <code>Distress</code> as a human tells the operator you have it</strong>
+    and stops their phone resending it. It stays on this board until they end their patrol or
+    this page reloads, and there is no button here that clears one.
   </p>
   <Why summary="What taking the watch means">
     <p>
@@ -165,8 +171,9 @@
       -->
       <strong>An empty board is not the same as nobody being out.</strong> It shows what this
       phone has heard, which after a handover is less than what is true — operators already
-      out re-announce themselves a minute or two after their phones notice the watch changed
-      hands. Nobody hands you a board, because nobody holds anybody else's picture.
+      out reappear only if their app is open when the watch changes hands, and otherwise not
+      until they sign on again. Nobody hands you a board, because nobody holds anybody else's
+      picture.
     </p>
   </Why>
 </section>
@@ -418,8 +425,8 @@
           signals this device received; it is not a history, and nothing stores one.
         </p>
         <p class="cost">
-          If you have just taken over, operators already out re-announce themselves within a
-          minute or two of their phones noticing the watch changed hands.
+          If you have just taken over, operators already out reappear only if their app is open
+          when the watch changes hands; otherwise not until they sign on again.
         </p>
       </Why>
     {:else}

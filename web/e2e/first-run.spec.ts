@@ -58,7 +58,9 @@ test.describe('a stranger opens the terminal', () => {
       watchtower: { pubkey: 'b'.repeat(64), relays: ['wss://relay.example'] }
     });
     await open(page, '/terminal/sign-on/');
-    await expect(page.getByText(/the signal will keep trying/i)).toBeVisible();
+    // It said "the signal will keep trying". A sign-on is sent once and never retried, and the
+    // kind is not stored, so a watch that comes back never sees it.
+    await expect(page.getByText(/stand down and sign on/i)).toBeVisible();
   });
 
   test('is not offered an ordering control on a region with nothing in it', async ({ page }) => {

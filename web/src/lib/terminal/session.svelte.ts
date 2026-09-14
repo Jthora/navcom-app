@@ -450,7 +450,17 @@ export const operator = {
     error = null;
     distressRunning = true;
     distressRaisedAt = Date.now();
-    distressController = new AbortController();
+    /*
+     * This Distress's own controller, compared on every callback.
+     *
+     * A wipe sets `distressController` to null. Anything this run reports after that -- a late
+     * phase, the cancellation error, its own `finally` -- belongs to a Distress the operator has
+     * already wiped, and must not reappear on their screen or re-lock the send button. A
+     * stand-down leaves the controller in place, so its message is still shown.
+     */
+    const controller = new AbortController();
+    distressController = controller;
+    const current = () => distressController === controller;
     try {
       // ctx() moved inside the try: found in robustness audit. It used to run before this
       // block even started, so its throw (no identity yet, or the ordinary Alone case of
@@ -470,15 +480,18 @@ export const operator = {
           ...(text ? { text } : {})
         },
         {
-          signal: distressController.signal,
-          onPhase: (p) => { distressPhases = [...distressPhases, p]; }
+          signal: controller.signal,
+          onPhase: (p) => { if (current()) distressPhases = [...distressPhases, p]; }
         }
       );
     } catch (e) {
-      error = e instanceof Error ? e.message : String(e);
+      if (current()) error = e instanceof Error ? e.message : String(e);
     } finally {
-      distressRunning = false;
-      distressController = null;
+      // A newer Distress, or a wipe, owns this state now.
+      if (current()) {
+        distressRunning = false;
+        distressController = null;
+      }
     }
   },
 
@@ -491,17 +504,32 @@ export const operator = {
   },
 
   /**
-   * Drops everything this module is holding in memory, and sends nothing.
+   * Drops everything this module is holding, stops everything this phone is still sending,
+   * and sends nothing new.
    *
    * A wipe clears storage; without this the screen would go on showing "On station —
    * Downtown" from a variable, which is the wipe appearing to have failed at the moment an
    * operator most needs to believe it worked.
    *
-   * It deliberately does **not** stand down. Standing down is a signal, and a signal is
-   * visible — the operator wiping under duress is the last person who should be made to
-   * transmit. The board entry is the watch's, it is Live, and it expires on its own.
+   * **It stops a Distress this phone is still sending, the public "out tonight" listing, and
+   * following your position.** Decided 2026-09-13, after an audit found a wiped phone kept
+   * transmitting all three while its owner believed it had gone quiet. The cost is real and
+   * the wipe screen says it: somebody wiping because they are in trouble also silences their
+   * own call for help.
+   *
+   * It still does **not** stand down. Standing down is a signal, and a signal is visible —
+   * the operator wiping under duress is the last person who should be made to transmit. The
+   * board entry is the watch's to forget.
    */
   forget() {
+    distressController?.abort();
+    // Released here rather than when the aborted run notices, which can be a relay round-trip
+    // later: until then the send button stayed unavailable on a phone that had just been wiped.
+    distressController = null;
+    distressRunning = false;
+    distressRaisedAt = null;
+    stopListed();
+    position.stop();
     session = null;
     lastResponse = null;
     error = null;

@@ -586,6 +586,8 @@ describe('distress keeps trying until a human acknowledges', () => {
     agentOnAttempts?: number[];
     /** Answers with no responder kind at all — a broken responder, treated as not-human. */
     facelessOnAttempts?: number[];
+    /** Attempts on which the watch's own escalation ladder reports, and the state it reports. */
+    nodeOnAttempts?: { attempt: number; ladder: 'paging' | 'contact' | 'exhausted' }[];
   }) {
     let publishes = 0;
     const subs: ((e: unknown) => void)[] = [];
@@ -598,12 +600,15 @@ describe('distress keeps trying until a human acknowledges', () => {
       subscribeMany(_r: string[], _f: unknown, params: { onevent(e: unknown): void }) {
         const agent = behaviour.agentOnAttempts?.includes(publishes);
         const faceless = behaviour.facelessOnAttempts?.includes(publishes);
-        if (publishes === behaviour.ackOnAttempt || agent || faceless) {
+        const node = behaviour.nodeOnAttempts?.find((n) => n.attempt === publishes);
+        if (publishes === behaviour.ackOnAttempt || agent || faceless || node) {
           const responder = faceless
             ? undefined
-            : agent
-              ? { kind: 'agent' as const, callsign: 'Mecha Jono' }
-              : { kind: 'human' as const, callsign: 'Wren' };
+            : node
+              ? { kind: 'node' as const, callsign: 'escalation' }
+              : agent
+                ? { kind: 'agent' as const, callsign: 'Mecha Jono' }
+                : { kind: 'human' as const, callsign: 'Wren' };
           // Really signed by the Watchtower key: waitForResponse verifies the signature,
           // so an unsigned fake would be dropped exactly as a forged one should be.
           const event = finalizeEvent(
@@ -611,12 +616,19 @@ describe('distress keeps trying until a human acknowledges', () => {
               kind: KIND_RESPONSE,
               created_at: Math.floor(Date.now() / 1000),
               tags: [['p', ourPubkey]],
-              content: seal(wt, ourPubkey, {
-                type: 'ack',
-                responder,
-                text: null,
-                provenance: null
-              })
+              content: seal(
+                wt,
+                ourPubkey,
+                node
+                  ? {
+                      type: 'escalation-status',
+                      responder,
+                      text: node.ladder === 'exhausted' ? "Couldn't reach anyone. Nobody is coming." : 'Paging Wren.',
+                      provenance: null,
+                      ladder: node.ladder
+                    }
+                  : { type: 'ack', responder, text: null, provenance: null }
+              )
             },
             wt
           );
@@ -631,6 +643,159 @@ describe('distress keeps trying until a human acknowledges', () => {
   }
 
   const noSleep = async () => {};
+
+  it('says the watch found nobody the moment the watch says it, not ten minutes later', async () => {
+    // The defect this guards: the ladder's own "Nobody is coming" fell through to
+    // agent-holding with its words dropped, and the operator learned it only when the phone's
+    // own timer fired. Invariant 2 is about the operator being told, not about eventually.
+    const pool = fakePool({ nodeOnAttempts: [{ attempt: 1, ladder: 'exhausted' }], ackOnAttempt: 3 });
+    const phases: string[] = [];
+    let clock = 0;
+    await sendDistressUntilAcknowledged(
+      pool as never, ['wss://r'], secret, ourPubkey, watchtower, payload,
+      {
+        ackWindowMs: 50,
+        localExhaustedAfterMs: 600_000,
+        clock: () => clock,
+        sleep: async (ms) => { clock += ms; },
+        onPhase: (p) => phases.push(p.phase)
+      }
+    );
+
+    expect(phases).toContain('watch-exhausted');
+    expect(phases, 'the watch is not an agent').not.toContain('agent-holding');
+    // Told long before the phone's timer could have told them.
+    expect(phases).not.toContain('nobody-answering');
+    // And it is not closure: the loop went on, and the human who answered later counted.
+    expect(phases.indexOf('acknowledged')).toBeGreaterThan(phases.indexOf('watch-exhausted'));
+  });
+
+  it('hears the watch saying nobody can be reached even when it lands between listening windows', async () => {
+    /*
+     * At default timings the per-attempt listener is closed for about a minute at the point a
+     * ladder with people on call runs out, and responses are not stored. A report landing there
+     * was lost, and the phone's own timer was the first warning after all. This delivers
+     * `exhausted` only to the always-open subscription — exactly that case — and the earlier
+     * test, which delivers inside a window, could not see it.
+     */
+    const subs: { filter: Record<string, unknown>; onevent: (e: unknown) => void }[] = [];
+    let publishes = 0;
+    let lastId = '';
+    const respond = (signalId: string, body: Record<string, unknown>) =>
+      finalizeEvent(
+        {
+          kind: KIND_RESPONSE,
+          created_at: Math.floor(Date.now() / 1000),
+          tags: [['p', ourPubkey], ['e', signalId]],
+          content: seal(wt, ourPubkey, body)
+        },
+        wt
+      );
+    const pool = {
+      publish(relays: string[], event: { id: string }) {
+        publishes++;
+        lastId = event.id;
+        return relays.map(() => Promise.resolve('ok'));
+      },
+      subscribeMany(_r: string[], filter: Record<string, unknown>, params: { onevent(e: unknown): void }) {
+        subs.push({ filter, onevent: params.onevent });
+        const perAttempt = '#e' in filter;
+        const id = lastId;
+        if (perAttempt && publishes === 1) {
+          // Not to this subscription: to the always-open one, as if it arrived in the gap.
+          queueMicrotask(() => subs[0]!.onevent(respond(id, {
+            type: 'escalation-status',
+            responder: { kind: 'node', callsign: 'escalation' },
+            text: "Couldn't reach anyone. Nobody is coming.",
+            provenance: null,
+            ladder: 'exhausted'
+          })));
+        }
+        if (perAttempt && publishes === 3) {
+          queueMicrotask(() => params.onevent(respond(id, {
+            type: 'ack',
+            responder: { kind: 'human', callsign: 'Wren' },
+            text: null,
+            provenance: null
+          })));
+        }
+        return { close() {} };
+      },
+      close() {}
+    };
+
+    const phases: string[] = [];
+    await sendDistressUntilAcknowledged(
+      pool as never, ['wss://r'], secret, ourPubkey, watchtower, payload,
+      { ackWindowMs: 30, sleep: noSleep, onPhase: (p) => phases.push(p.phase) }
+    );
+
+    expect(phases).toContain('watch-exhausted');
+    expect(phases.filter((p) => p === 'watch-exhausted'), 'said once').toHaveLength(1);
+    expect(phases).not.toContain('nobody-answering');
+    expect(phases.indexOf('acknowledged')).toBeGreaterThan(phases.indexOf('watch-exhausted'));
+  });
+
+  it('stops at once when the operator ends it during the sleep, not a minute later', async () => {
+    // A wipe cancelled the Distress and the loop only noticed at the top of its next pass: the
+    // send button stayed unavailable and late phases reached the screen. Real sleep, long backoff.
+    const pool = fakePool({});
+    const controller = new AbortController();
+    const phases: string[] = [];
+    const started = Date.now();
+    await expect(
+      sendDistressUntilAcknowledged(
+        pool as never, ['wss://r'], secret, ourPubkey, watchtower, payload,
+        {
+          ackWindowMs: 10,
+          backoffMs: 60_000,
+          signal: controller.signal,
+          onPhase: (p) => {
+            phases.push(p.phase);
+            if (p.phase === 'no-answer') controller.abort();
+          }
+        }
+      )
+    ).rejects.toThrow(/cancelled/);
+    expect(Date.now() - started).toBeLessThan(2_000);
+    expect(phases.filter((p) => p === 'sending'), 'no second attempt after the stop').toHaveLength(1);
+  });
+
+  it('stops at once when the operator ends it while waiting for an answer', async () => {
+    const pool = fakePool({});
+    const controller = new AbortController();
+    const phases: string[] = [];
+    const started = Date.now();
+    await expect(
+      sendDistressUntilAcknowledged(
+        pool as never, ['wss://r'], secret, ourPubkey, watchtower, payload,
+        {
+          ackWindowMs: 60_000,
+          signal: controller.signal,
+          onPhase: (p) => {
+            phases.push(p.phase);
+            // Later, not inside the report, so the stop lands while the wait is open.
+            if (p.phase === 'sent') setTimeout(() => controller.abort(), 20);
+          }
+        }
+      )
+    ).rejects.toThrow(/cancelled/);
+    expect(Date.now() - started).toBeLessThan(2_000);
+    // A stop is not "no answer", and must not be reported as one.
+    expect(phases).not.toContain('no-answer');
+  });
+
+  it('shows the watch reporting its progress as the watch, never as an agent answering', async () => {
+    const pool = fakePool({ nodeOnAttempts: [{ attempt: 1, ladder: 'paging' }], ackOnAttempt: 2 });
+    const phases: string[] = [];
+    await sendDistressUntilAcknowledged(
+      pool as never, ['wss://r'], secret, ourPubkey, watchtower, payload,
+      { ackWindowMs: 50, sleep: noSleep, onPhase: (p) => phases.push(p.phase) }
+    );
+    expect(phases).toContain('watch-status');
+    expect(phases).not.toContain('agent-holding');
+    expect(phases).not.toContain('watch-exhausted');
+  });
 
   it('tells the operator nobody is coming, from the device, with no node involved', async () => {
     // Failure mode 4 in escalation.spec.md: EXHAUSTED must reach the operator's own device

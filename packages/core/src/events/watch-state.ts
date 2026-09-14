@@ -480,6 +480,8 @@ export function capabilitySentence(s: WatchStatePayload, now: number): string {
   if (!reachable) {
     return 'An agent holds the board. Distress will page nobody and tell you so.';
   }
-  return `An agent holds the board. ${reachable} on call, reachable now.${thin}${drill}`;
+  // "Reachable now" was the node's statement about its own configuration, which nothing here
+  // can check. What the node can say is who it lists.
+  return `An agent holds the board. ${reachable} listed as on call.${thin}${drill}`;
 }
 

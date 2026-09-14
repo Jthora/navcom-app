@@ -44,7 +44,9 @@ test.describe('coming home', () => {
 
     const home = page.locator('[data-came-home]');
     await expect(home).toBeVisible({ timeout: 10_000 });
-    await expect(home).toContainText(/nobody was watching, and it still counts/i);
+    // "Nobody was watching" overclaimed: the same line shows when a watch exists but its reply
+    // failed or came from an agent. What is known is that nobody confirmed it.
+    await expect(home).toContainText(/nobody confirmed it, and it still counts/i);
   });
 });
 
