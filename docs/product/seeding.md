@@ -116,15 +116,18 @@ Housing Authority Resident Managers" and "Level Up Seattle". A threshold removes
 precisely what `social_facility=outreach` could not offer, which is why that one was declined.
 
 And it types two records OSM could not. **Seattle's Union Gospel Mission** and **The Bridge Care
-Center** both sit in `data/regions/seattle/uncategorised.md` today because OSM said who they
-serve and not what they provide. Overture answers exactly that question.
+Center** both sat in Seattle's `uncategorised.md` because OSM said who they serve and not what
+they provide. Overture answers exactly that question. *(Those lists were removed with the OSM
+records on 2026-09-13: they were names and links extracted from OSM, which is the ODbL problem
+at a smaller size.)*
 
 **Two costs, stated:**
 
 - **Freshness floor.** Overture publishes about monthly — only two releases exist at a time. For
   a building's address and coordinates that is irrelevant; for anything volatile it is worse than
-  Overpass, which answers live. This is a locator source that layers *under* OSM, not a
-  replacement for it
+  Overpass, which answers live. It was meant to layer *under* OSM, and on 2026-09-13 it
+  replaced it instead: OSM is ODbL, and rows extracted from it in bulk made the directory a
+  derivative database (see [`LICENSING.md`](../../LICENSING.md)). Live answers were the price
 - **A tool, not a fetch.** The data is partitioned Parquet on S3, not an API. Reading it needs
   DuckDB, so `sources/overture.ts` **shells out to a binary** rather than taking a native npm
   dependency every contributor pays for whether or not they seed. Absent, it says which tool and

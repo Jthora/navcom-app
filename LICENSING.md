@@ -82,24 +82,30 @@ out of CC0. So OSM is used as a **candidate generator** — it proposes places t
 matter, a person establishes the facts, and only what was independently established is
 published. Candidates are a working artifact and never become published data.
 
-> **Not true of the published directory today.** 1,135 records across 58 regions in
-> `data/regions/` were built from OpenStreetMap directly, against this rule, and none of them
-> has been checked by a person. They are being replaced from a source whose terms allow it.
-> Until they are, those records are ODbL-derived whatever the footer says. Found by an audit on
-> 2026-09-13.
+> **Not true of the directory until 2026-09-13.** 1,135 records across 58 regions in
+> `data/regions/` had been built from OpenStreetMap directly, against this rule, and none of
+> them had been checked by a person. An audit found them that day, and they were replaced from
+> Overture Maps, along with 43 candidate lists that were names and links extracted from OSM.
+> Earlier snapshots and the git history still carry them. Cardiff, where Overture lists nothing
+> that qualifies, is empty as a result.
 
 Records enter `resources.csv` sourced from the organisation's own site, government open
 data, or a person who went there. Government open data is public domain and strong in the
 United States, patchy elsewhere; OSM is global and ODbL. **No single source is both**, and
 pretending otherwise is how a licence gets quietly broken.
 
-**Overture Maps places are not CC0 either, and do not need to be.** Most of the directory —
-7,283 records — comes from Overture's places data, which carries the terms of whoever contributed
+**Overture Maps places are not CC0 either, and do not need to be.** Nearly all of the directory —
+9,623 records — comes from Overture's places data, which carries the terms of whoever contributed
 each place: CDLA Permissive 2.0 for most, Apache 2.0 with Foursquare's copyright notice for
 Foursquare's, and CC0 for AllThePlaces'. None is share-alike, so the directory can stay
 permissive. But CDLA Permissive 2.0 requires its own text to travel with the data, and
-Foursquare's notice has to be kept. **Those notices do not yet ship beside the data** — found by
-the same audit, and fixed in the same change that replaces the OpenStreetMap records.
+Foursquare's notice has to be kept. **They ship beside the data**:
+[`data/regions/NOTICE.md`](data/regions/NOTICE.md), with both licence texts next to it. They sit
+in `data/regions/` rather than beside `data/LICENSE` because that folder is what the
+content-addressed archive packs, so the notices travel wherever a snapshot does. They were found
+missing by the same audit, and added in the same change that replaced the OpenStreetMap records.
+
+The attribution Overture asks for: *Overture Maps Foundation, overturemaps.org.*
 
 ## Contributing
 

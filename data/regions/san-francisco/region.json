@@ -10,13 +10,15 @@
   ],
   "status": "seeded",
   "sources": {
-    "osm": {
+    "overture": {
       "bbox": [
         -122.55,
         37.7,
         -122.34,
         37.84
-      ]
+      ],
+      "release": "2026-08-19.0",
+      "minConfidence": 0.5
     }
   }
 }

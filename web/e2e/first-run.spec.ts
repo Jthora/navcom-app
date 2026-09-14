@@ -71,7 +71,7 @@ test.describe('a stranger opens the terminal', () => {
      * app has least to offer them.
      */
     await blankDevice(page);
-    await open(page, '/terminal/directory/nashville/');
+    await open(page, '/terminal/directory/cardiff/');
     await expect(page.locator('[data-nearest]')).toHaveCount(0);
     // What they get instead: the state, and something they can actually do about it.
     await expect(page.getByText(/nobody has put this area in/i)).toBeVisible();

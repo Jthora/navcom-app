@@ -1,1 +1,5 @@
 id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+hobart-overture-a45fa5a5,Bethlehem House Tasmania,shelter,"272 Murray St, Hobart",-42.8792724609375,147.31874084472656,+61362344594,,,,,,,,,,,,,,,,,,2026-09-14,,website,ok,Source: http://www.bethlehemhouse.org.au/
+hobart-overture-1cce19a5,Foodbank Tasmania,meal,"4-8 Sunmont St, Hobart",-42.829307556152344,147.3060302734375,+61362741052,,,,,,,,,,,,,,,,,,2026-09-14,,website,ok,Source: https://www.foodbank.org.au/tas/
+hobart-overture-dd95f689,Colony 47 Housing Connect,shelter,"13 Bayfield Street, Rosny Park",-42.866703033447266,147.3708953857422,,,,,,,,,,,,,,,,,,,2026-09-14,,website,ok,Source: https://www.colony47.com.au/housing-solutions
+hobart-overture-450f8ba7,Shelter Tasmania Inc.,shelter,"Ste 33, Level 3/110-114 Collins St, Hobart",-42.88283157348633,147.32882690429688,+61362245488,,,,,,,,,,,,,,,,,,2026-09-14,,website,ok,Source: http://www.sheltertas.org.au/

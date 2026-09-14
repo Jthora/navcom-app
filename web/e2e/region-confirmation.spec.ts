@@ -51,7 +51,7 @@ test.describe('an empty region', () => {
     // that reads as the screen contradicting itself. An empty region has no records to be
     // unconfirmed about.
     await seedDevice(page, { callsign: 'Wren', relayEvents: [] });
-    await open(page, '/terminal/directory/nashville/');
+    await open(page, '/terminal/directory/cardiff/');
 
     await expect(page.getByText(/nothing yet/i).first()).toBeVisible();
     await expect(page.locator('[data-readout][data-tone="warn"]', { hasText: 'Unconfirmed' })).toHaveCount(0);
@@ -62,7 +62,7 @@ test.describe('an empty region', () => {
     // region containing only added places is never "unconfirmed" — checked here rather than
     // assumed from the rule in places.ts.
     await seedDevice(page, { callsign: 'Wren', relayEvents: [] });
-    await open(page, '/terminal/directory/nashville/');
+    await open(page, '/terminal/directory/cardiff/');
 
     await page.locator('[data-add-place]').click();
     await page.locator('#pl-name').fill('Room In The Inn');

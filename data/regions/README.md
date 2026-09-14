@@ -8,6 +8,18 @@ data/regions/<slug>/resources.csv
 data/regions/<slug>/region.json
 ```
 
+## Licences
+
+What contributors wrote is CC0 ([`data/LICENSE`](../LICENSE)). **Rows seeded from Overture Maps
+keep their sources' terms**: mostly CDLA Permissive 2.0, some Apache 2.0 from Foursquare, and some
+CC0. Those terms travel with the files in [`NOTICE.md`](NOTICE.md),
+[`LICENSE-CDLA-Permissive-2.0.txt`](LICENSE-CDLA-Permissive-2.0.txt) and
+[`LICENSE-Apache-2.0.txt`](LICENSE-Apache-2.0.txt).
+
+They sit in this folder, not beside `data/LICENSE`, because this folder is what the
+content-addressed archive packs, and CDLA Permissive 2.0 requires its text to go wherever the
+data is shared. The reasoning is in [`LICENSING.md`](../../LICENSING.md).
+
 ## Why the manifest exists
 
 A row says a place opens at `19:00`. Nothing in the row says **local to where** — and a
