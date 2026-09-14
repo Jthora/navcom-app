@@ -66,7 +66,13 @@ describe('the notice is reachable', () => {
     expect(pages.length, 'no pages found to check').toBeGreaterThan(10);
     const missing = pages.filter((p) => !readFileSync(join(BUILD, p), 'utf8').includes(LINK));
     expect(missing.slice(0, 20), `${missing.length} pages do not link the notice`).toEqual([]);
-  }, 120_000);
+    /*
+     * Reads every page of the public site, so it is a corpus guard and costs what one does.
+     * Measured: 11s and 45s idle, and 169s on 2026-09-13 with the machine running three other
+     * corpus scans and several research agents, when a 120s budget failed it on the clock.
+     * 300s absorbs that load without being mistaken for a hang.
+     */
+  }, 300_000);
 
   it('is linked from the terminal screen that lists other people’s cards', () => {
     const find = readFileSync(join(BUILD, 'terminal/find/index.html'), 'utf8');
