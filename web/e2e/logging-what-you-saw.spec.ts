@@ -200,7 +200,7 @@ test('what somebody filed comes back on the record', async ({ page }) => {
   const { buildObservation, anchorFromRecord } = await import('@navcom/core');
 
   // The record the region screen shows first that can actually be anchored.
-  const anchor = { id: 'st-louis-osm-22823de9', region: 'st-louis' };
+  const anchor = { id: 'st-louis-overture-3ec355b9', region: 'st-louis' };
   const event = buildObservation(
     generateSecretKey(),
     {
@@ -239,7 +239,7 @@ test('and is shown apart from the record’s own fields, not merged into them', 
   const { buildObservation } = await import('@navcom/core');
   const event = buildObservation(
     generateSecretKey(),
-    { anchor: 'st-louis-osm-22823de9', observed_at: Math.floor(Date.now() / 1000),
+    { anchor: 'st-louis-overture-3ec355b9', observed_at: Math.floor(Date.now() / 1000),
       tags: ['light_out'], method: 'told', callsign: 'anonymous', precision: 'area' },
     { precision: 'area', geohash: '9yzg' },
     Math.floor(Date.now() / 1000),

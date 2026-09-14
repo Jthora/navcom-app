@@ -13,17 +13,22 @@ import { seedDevice, open } from './device';
  * now their page **did not exist** — `entries()` prerendered only regions that already had
  * something in them, so the person with the local knowledge got a 404.
  *
- * So the first test here is not about the form. It is about whether Nashville answers at all.
+ * So the first test here is not about the form. It is about whether Cardiff answers at all.
  */
 
-const EMPTY = '/terminal/directory/nashville/';
+/*
+ * Cardiff because it is the one region that ships empty. Nashville was, until the OpenStreetMap
+ * records were replaced from Overture on 2026-09-13 and it gained eighteen. A later release could
+ * fill Cardiff too, and then these tests need another empty region rather than a weaker check.
+ */
+const EMPTY = '/terminal/directory/cardiff/';
 
 test.describe('an area nobody has put anything in', () => {
   test('has a page at all, which is the whole cold start', async ({ page }) => {
     await seedDevice(page, { callsign: 'Wren', relayEvents: [] });
     await open(page, EMPTY);
     // Not a 404, and not a redirect to somewhere with data.
-    await expect(page).toHaveURL(new RegExp('nashville'));
+    await expect(page).toHaveURL(new RegExp('cardiff'));
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   });
 
@@ -42,7 +47,7 @@ test.describe('an area nobody has put anything in', () => {
      */
     await seedDevice(page, { callsign: 'Wren', relayEvents: [] });
     await open(page, '/terminal/directory/');
-    const link = page.locator('a[href="/terminal/directory/nashville/"]');
+    const link = page.locator('a[href="/terminal/directory/cardiff/"]');
     await expect(link).toBeVisible();
     await expect(link).toContainText(/nothing yet/i);
   });

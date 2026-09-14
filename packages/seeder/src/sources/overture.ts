@@ -42,10 +42,12 @@ const run = promisify(execFile);
  *
  * ## What it is not
  *
- * **A replacement for OSM.** Overture publishes about monthly and keeps two releases, so its
- * freshness floor is weeks where Overpass answers live. It is a *locator* source -- names,
- * addresses, coordinates, phones -- layering under a live one, and it carries no intake rule
- * whatsoever. Nothing here gets somebody a bed; it gets somebody a number to ring.
+ * **A live source.** Overture publishes about monthly and keeps two releases, so its freshness
+ * floor is weeks where Overpass answers live. It was written to layer under OSM, and since
+ * 2026-09-13 it is the only scraped source instead: OSM is ODbL, and rows extracted from it in
+ * bulk made the directory a derivative database (`LICENSING.md`). Live answers were the price.
+ * It is a *locator* source -- names, addresses, coordinates, phones -- and it carries no intake
+ * rule whatsoever. Nothing here gets somebody a bed; it gets somebody a number to ring.
  */
 
 /** Overture's own release, pinned per region so a re-scrape is reproducible. */

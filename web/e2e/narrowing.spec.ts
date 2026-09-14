@@ -67,7 +67,14 @@ test('and it says plainly that it is not Query', async ({ page }) => {
 
 test('and is absent where there is nothing to narrow', async ({ page }) => {
   // A filter over a handful of records costs a tap and saves none.
+  //
+  // Belfast was the short case until the reseed of 2026-09-13 took it from six records to
+  // twenty-two. The count is asserted first, so the next reseed that grows Hobart past the
+  // threshold says so instead of reading as the control appearing where it should not.
   await blankDevice(page);
-  await open(page, '/terminal/directory/belfast/');
+  await open(page, '/terminal/directory/hobart/');
+  const records = await page.locator('[data-record]').count();
+  expect(records, 'Hobart should be the short case: some records, ten or fewer').toBeGreaterThan(0);
+  expect(records, 'Hobart should be the short case: some records, ten or fewer').toBeLessThanOrEqual(10);
   await expect(page.locator('[data-narrow]')).toHaveCount(0);
 });

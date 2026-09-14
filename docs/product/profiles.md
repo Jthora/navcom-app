@@ -15,7 +15,7 @@ why there is nothing to revoke and nobody who could revoke it.
 
 **Anyone may publish a card.** A card is therefore a claim by its holder and nothing more.
 No entry on any board has been checked by anybody, and every surface that renders one must
-be as plain about that as the directory is about its 8,430 unvisited records.
+be as plain about that as the directory is about its 9,635 unvisited records.
 
 ## 2. What rides where, and why it matters
 

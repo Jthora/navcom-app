@@ -279,7 +279,7 @@ function cmdBuild(slug: string): Report {
    * absence it is.
    */
   const scanned = flat.some((r) => r.serves !== undefined);
-  writeUncategorised(slug, uncategorised, scanned);
+  writeUncategorised(slug, uncategorised, scanned, region.sources?.osm !== undefined);
 
   return write(slug, {
     region: slug, command: "build", at: new Date().toISOString(),
@@ -309,8 +309,23 @@ function cmdBuild(slug: string): Report {
 function writeUncategorised(
   slug: string,
   rows: { name: string; serves: string; url?: string }[],
-  scanned: boolean
+  scanned: boolean,
+  /** Whether any of the region's sources can say who a place serves. Only OSM can. */
+  nameable: boolean
 ): void {
+  /*
+   * No source that could name one means no list, and no notice either.
+   *
+   * The notice below blames an OSM cache that predates a tag. A region seeded from Overture
+   * alone has no OSM cache, and Overture carries nothing like `social_facility:for`, so the
+   * notice was false for every such region and a pending scan was promised that no source can
+   * run. Found moving 66 regions off OpenStreetMap on 2026-09-13, when rebuilding each would
+   * have written it into all of them.
+   */
+  if (!nameable) {
+    if (existsSync(uncategorisedPath(slug))) rmSync(uncategorisedPath(slug));
+    return;
+  }
   /*
    * Nothing found and never looked are different facts, and an absent file said both.
    *

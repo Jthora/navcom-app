@@ -1,2 +1,2 @@
 id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
-gold-coast-osm-e5e4108a,Vibe Care Pantry,meal,Eighth Avenue,-28.1188601,153.4705489,+61755367575,,,,,,,,,,,,,,,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/node/8973712438
+gold-coast-overture-5160a7f7,All Care Australia,shelter,"Unit 2/14 Millennium Cct, Gold Coast",-27.93111228942871,153.33506774902344,+61730636355,,,,,,,,,,,,,,,,,,2026-09-14,,website,ok,Source: http://www.allcareaustralia.com/

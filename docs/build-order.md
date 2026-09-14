@@ -439,7 +439,7 @@ signal, and has a record of their own night.
 
 | | Item | Owner | Cost of not doing it |
 |---|---|---|---|
-| 1.1 | ~~The scraper~~ | **done** | 8,430 records across 1,912 regions. Public half only, and it taught that a source which cannot distinguish what matters must not be used for that category |
+| 1.1 | ~~The scraper~~ | **done** | 9,635 records across 1,912 regions. Public half only, and it taught that a source which cannot distinguish what matters must not be used for that category |
 | 1.2 | **Intake rules for places you know** | **human, local** | The half no scraper produces, and the half the directory exists for. Ten records done properly beats a thousand skeletons |
 | 1.3 | ~~Your own patrol record~~ | **done** | Local by default and by design — nothing in it reaches a watch, a relay or a peer. Export carries no coordinates and nobody but the operator |
 | 1.4 | ~~Coming home~~ | **done** | Confirmed by name where somebody was watching, and confirmed anyway where nobody was |
@@ -770,7 +770,7 @@ somebody notices the day it changes.
 **Done when:** somebody looking for a bed tonight can use `navcom.app` themselves, in their
 own language, without being an operator or installing anything.
 
-**Gated on Milestone 6.** A person-facing path over 8,430 scraped skeletons is *worse* than
+**Gated on Milestone 6.** A person-facing path over 9,635 scraped skeletons is *worse* than
 none: the operator who gets bad data is inconvenienced, and the person who gets it is turned
 away at 11pm with nowhere else to be. The first draft listed these as independent, which was
 the most dangerous mistake in it.

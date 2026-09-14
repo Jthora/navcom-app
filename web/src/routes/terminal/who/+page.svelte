@@ -188,7 +188,7 @@
     <Why summary="What that means">
       <p>
         Everything on this page was published by the holder of this address, about themselves.
-        No part of it has been checked by anybody — the same claim every one of the 8,430
+        No part of it has been checked by anybody — the same claim every one of the 9,635
         directory records carries, said here because a page shaped like a profile invites the
         belief that somebody vetted it.
       </p>

@@ -16,7 +16,7 @@
    * **Not a count.** No number anywhere: a count invites gaming and tells a reader nothing they
    * can act on. Alphabetical, which rewards nothing.
    *
-   * **Not vetted.** Nobody has checked any of it, exactly as with the 8,430 directory records.
+   * **Not vetted.** Nobody has checked any of it, exactly as with the 9,635 directory records.
    */
   import { onMount } from 'svelte';
   import { does, keyPrint, platform as platformOf } from '@navcom/core';

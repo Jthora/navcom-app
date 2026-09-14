@@ -1,5 +1,1 @@
 id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
-cardiff-osm-b9a8866a,Trowbridge Pantry,meal,"91 Caernarvon Way, Cardiff, CF3 1RU",51.5165012,-3.1117613,,,,,,,,,,,,,,,Mo-Th off; Fr 10:00-14:00; Sa-Su off,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/node/10233307770
-cardiff-osm-55fe17d6,Tremorfa Pantry,meal,"Tweedsmuir Road, Cardiff, CF24 2QZ",51.4878921,-3.1412185,,,,,,,,,,,,,,,Mo-Tu off; We 10:00-13:00; Th-Su off,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/node/10233338242
-cardiff-osm-2c07b98d,Butetown Pantry,meal,"Loudoun Square, Cardiff, CF10 5JA",51.4703365,-3.1700396,+442920487658,,,,,,,,,,,,,,Mo-We off; Th 12:00-15:00; Fr-Su off,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/node/10233338253
-cardiff-osm-14e8247e,Tresillian House,shelter,"Tresillian Way, Cardiff",51.4738574,-3.1756819,,,,,,,,,,,,,,,,,,,2026-08-19,,website,ok,Source: https://www.openstreetmap.org/way/673331522

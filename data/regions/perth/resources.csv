@@ -1,1 +1,6 @@
 id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
+perth-overture-83431822,Foodbank WA,meal,"23 Abbott Rd, Perth",-31.95424461364746,115.98506164550781,+61892589277,,,,,,,,,,,,,,,,,,2026-09-14,,website,ok,Source: http://www.foodbank.org.au/
+perth-overture-f4638c6a,St Patrick's Community Support Centre,shelter,"12 Queen Victoria St, Perth",-32.04921340942383,115.75009155273438,+61863724800,,,,,,,,,,,,,,,,,,2026-09-14,,website,ok,Source: http://www.stpats.com.au/
+perth-overture-1bb3d3c0,St. Bart's,shelter,"7 Lime Street, East Perth",-31.951221466064453,115.86994171142578,+61893235100,,,,,,,,,,,,,,,,,,2026-09-14,,website,ok,Source: http://stbarts.org.au/
+perth-overture-4cc75d46,Victoria Park Youth Accommodation,shelter,"88 Burswood Rd, Perth",-31.967966079711914,115.89436340332031,+61893614118,,,,,,,,,,,,,,,,,,2026-09-14,,website,ok,Source: http://www.vpya.org.au/
+perth-overture-befe74ad,Vietnam Women's shelter,shelter,"5 Reston Ct, Perth",-31.839853286743164,115.77935791015625,+61424745628,,,,,,,,,,,,,,,,,,2026-09-14,,website,ok,Source: https://overturemaps.org/
