@@ -51,9 +51,10 @@
     <p class="quiet">
       Maintained by volunteers. Every perishable fact shows its age, and &ldquo;call
       first&rdquo; is a real answer rather than a missing one &mdash; please call ahead
-      before sending anyone anywhere. Data is
-      <a href="https://creativecommons.org/publicdomain/zero/1.0/" rel="noreferrer">CC0</a>:
-      free for anyone to use.
+      before sending anyone anywhere. What contributors wrote is
+      <a href="https://creativecommons.org/publicdomain/zero/1.0/" rel="noreferrer">CC0</a>;
+      records drawn from public map data keep their sources&rsquo; terms &mdash; see
+      <a href="/docs/licensing/">Licensing</a>.
     </p>
     <!--
       On every page, because every page can be the one somebody lands on. NavCom shows other

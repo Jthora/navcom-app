@@ -76,14 +76,15 @@
   </ul>
 
   <p class="built-at">
-    Checked-on dates below are exact. This page was rebuilt
-    <time datetime={publishedOn}>{publishedOn}</time>, and anything close to going stale is
-    shown as <strong>call first</strong> a day early rather than a day late.
+    Checked-on dates below are exact. <strong>Whether a fact has gone stale was judged when this
+    page was built</strong>, on <time datetime={publishedOn}>{publishedOn}</time>, with a day's
+    margin. If that date is more than a day behind today, treat any hours as <strong>call
+    first</strong> anyway.
   </p>
 
-
   <p class="built">
-    Rebuilt daily. Last build <time datetime={publishedOn}>{publishedOn}</time>.
+    Rebuilt whenever it is deployed, and once a day while a rebuild timer is running. Last build
+    <time datetime={publishedOn}>{publishedOn}</time>.
   </p>
 </div>
 

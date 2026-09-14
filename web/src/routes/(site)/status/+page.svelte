@@ -1,9 +1,16 @@
 <script lang="ts">
   /**
    * The public status page required by docs/spec/escalation.spec.md, which says drill
-   * results are published. Nothing is built yet, so it says that. A watch that cannot
-   * demonstrate a passing drill is presumed broken, and this page is where that becomes
-   * visible rather than a claim.
+   * results are published.
+   *
+   * ## It says only what a static page can know
+   *
+   * This page ships no JavaScript and reads nothing at runtime. It cannot see a Watchtower, a
+   * roster or a drill — nothing discovers a Watchtower, by design, because a list of them is a
+   * list of where operators are. An earlier version said drill results and watch state "appear
+   * here" and that it "rebuilds daily"; none of the three had anything behind it. Every sentence
+   * now describes this project's own position or the build it came from, and says plainly what
+   * it cannot see.
    */
   // Derived at build time, not written by hand. See +page.server.ts for why.
   import { formatDate } from '$lib/directory';
@@ -20,7 +27,7 @@
   <title>Status · NavCom</title>
   <meta
     name="description"
-    content="What works, what has been proven, and what has not. Escalation drill results are published here."
+    content="What works, what has been proven, and what has not — and what this page cannot see."
   />
 </svelte:head>
 
@@ -32,9 +39,9 @@
     <p class="notice__label">Escalation</p>
     <p>
       <strong>Built, unproven, and running with nobody on-call.</strong> The ladder exists
-      and its seven failure paths are tested — but no drill has ever run, and no deployment
-      has a roster. A Distress today pages nobody, reaches the end of the ladder at once, and
-      tells the operator so.
+      and its seven failure paths are tested — but no drill has ever run, and no watch this
+      project runs has a roster. A Distress sent to a watch with nobody on-call pages nobody,
+      reaches the end of the ladder at once, and tells the operator so.
     </p>
     <p>
       That is the ladder working correctly. <strong>It is not the ladder helping.</strong>
@@ -45,13 +52,13 @@
   <section>
     <h2>Drills</h2>
     <p class="hint">
-      When escalation exists, it tests its own path on an unannounced schedule and publishes
-      the result here — how many were paged, how many acknowledged, and how long the first
-      acknowledgement took.
+      A watch tests its own escalation path on an unannounced schedule and publishes the result
+      itself — how many were paged, how many acknowledged, and how long the first acknowledgement
+      took. <strong>This page does not read those results.</strong>
     </p>
-    <p class="empty">No drills have run.</p>
+    <p class="empty">No drill results are shown here.</p>
     <p class="hint">
-      A passing drill will be reported as <em>no evidence of failure</em>, never as
+      A passing drill is reported as <em>no evidence of failure</em>, never as
       <em>verified</em>. It means the path worked that time.
     </p>
   </section>
@@ -77,15 +84,17 @@
       Absolute, not "3 days ago": this page ships no JavaScript, so a relative age would be
       frozen at build time and start lying the moment somebody read it. A date stays true.
 
-      It is also how the daily rebuild reports on itself — a date several days back means
-      the scheduled job has stopped, which previously could only be found by reading a
-      workflow file.
+      It said "It rebuilds daily" after the scheduled rebuild had been deleted with CI, which
+      made an old date read as a fault when it was the ordinary state. The daily rebuild is back
+      as a timer on the watch box (`packages/watchtower/ops/systemd`), and a timer runs only while
+      a box does — so this states what an old date means rather than promising a fresh one.
     -->
     <p class="stamp" data-version={data.version.commit}>
       This page was built from
       <code>{data.version.commit}</code>{#if data.version.dirty}&nbsp;(with uncommitted changes){/if}
-      on <time datetime={data.version.builtAt}>{buildDate}</time>. It rebuilds daily —
-      an older date than that means the rebuild has stopped.
+      on <time datetime={data.version.builtAt}>{buildDate}</time>. It rebuilds whenever it is
+      deployed, and once a day while a rebuild timer is running — a date more than a day old
+      means none is, and everything on this page is that old.
       <a href="/version.json">version.json</a> says the same thing to a machine.
     </p>
   </section>
@@ -106,12 +115,12 @@
   <section>
     <h2>Watch state</h2>
     <p class="hint">
-      When a Watchtower is running, its current state appears here — whether a human is on
-      station, an agent holds the board, or it is dark. The callsign of whoever holds it is
-      deliberately not published: that would turn this page into a record of when specific
-      people are awake and working.
+      <strong>This page cannot see any Watchtower, by design.</strong> Nothing discovers one,
+      because a list of Watchtowers is a list of where operators are. A watch publishes its own
+      state to the people who hold its key, and an operator sees it on the Field Terminal before
+      signing on.
     </p>
-    <p class="empty">No Watchtower is running.</p>
+    <p class="empty">No watch state is shown here.</p>
   </section>
 </div>
 

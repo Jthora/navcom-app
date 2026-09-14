@@ -19,7 +19,8 @@
   <p class="lead">
     Official listings rot. Hours are wrong, and the rules that decide whether a person gets
     a bed — pets, ID, sobriety, curfew, couples — are usually missing entirely. This
-    directory carries those rules, and it always shows how recently anyone checked.
+    directory has a place for those rules. Almost all of them are still blank, and blank reads
+    <em>unknown</em> — and every fact shows when it was checked, and how.
   </p>
 
   <div class="actions">

@@ -116,8 +116,13 @@
     <Why summary="Why not">
       <p>
         navcom.app stopped showing this card after it was named in a legal notice or found to be
-        unlawful. The decision and its date are recorded in the project's public repository, and
-        it is never made over a disagreement between operators.
+        unlawful, or while such a notice is being checked. The decision and its date are recorded
+        in the project's public repository, and it is never made over a disagreement between
+        operators.
+      </p>
+      <p>
+        None of it is permanent. A hide made before a notice could be checked lapses on its own
+        after 14 days, and no hide stands past 90 days without a person looking at it again.
       </p>
       <p>
         Relays may still carry the card and other apps may still show it — NavCom cannot delete
@@ -157,7 +162,7 @@
 
     {#if print}
       <Slot k="Key">
-        <Readout value={print} verbatim tone="neutral" sub="unique to this card" />
+        <Readout value={print} verbatim tone="neutral" sub="check every character" />
       </Slot>
     {/if}
 

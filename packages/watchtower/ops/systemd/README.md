@@ -56,6 +56,29 @@ signals.` and `[relay] connected: ...` for each configured relay. Then
 run the CLI's `status` command from any machine with the right pubkey in
 its `client.toml` to confirm `LIVE` end to end.
 
+## 5. The daily rebuild of navcom.app
+
+The public directory decides *stale — call first* when a page is built, with a one-day margin.
+Without a scheduled rebuild a page can outlive its verdicts by weeks, so the box fires the site's
+Vercel deploy hook once a day.
+
+```sh
+# The hook URL comes from the Vercel project settings (Git -> Deploy Hooks), for main.
+# It is a secret: anyone holding it can trigger a rebuild, though not change code.
+install -m 600 /dev/null ~/.config/navcom-watchtower/deploy-hook
+printf '%s\n' 'https://api.vercel.com/v1/integrations/deploy/...' > ~/.config/navcom-watchtower/deploy-hook
+
+chmod +x ops/navcom-rebuild
+sudo cp ops/systemd/navcom-rebuild.service ops/systemd/navcom-rebuild.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now navcom-rebuild.timer
+```
+
+Check it: `systemctl list-timers navcom-rebuild.timer` for the next run, and
+`sudo systemctl start navcom-rebuild.service && journalctl -u navcom-rebuild -n 5` for one now —
+look for `[rebuild] deploy hook fired`. **A timer that stops is invisible from here**; the site's
+own build date is how anybody else notices, and the public pages say what an old date means.
+
 ## Notes
 
 - **No persistence to worry about.** The board is memory-only by design

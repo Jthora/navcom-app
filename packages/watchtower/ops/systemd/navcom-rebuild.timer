@@ -1,0 +1,14 @@
+[Unit]
+Description=NavCom — rebuild navcom.app once a day
+
+[Timer]
+# Daily, well before anybody opens the directory in the morning. Randomised so the hook is not
+# hit on the same second every day, and Persistent so a box that was off at the time rebuilds
+# when it comes back rather than skipping a day.
+OnCalendar=*-*-* 04:15:00
+RandomizedDelaySec=30min
+Persistent=true
+Unit=navcom-rebuild.service
+
+[Install]
+WantedBy=timers.target

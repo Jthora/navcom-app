@@ -77,7 +77,7 @@ export function load() {
       {
         name: 'Drills',
         built: shipped('packages/watchtower/src/escalation/drills.ts'),
-        note: 'Unannounced and randomised. Results below, when a box is publishing them.'
+        note: 'Unannounced and randomised. A watch publishes its own results; this page does not read them.'
       },
       {
         name: 'Field terminal',

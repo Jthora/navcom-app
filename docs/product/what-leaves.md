@@ -125,6 +125,11 @@ Stated as capability rather than intent, because you do not get to choose who ru
   and a `20912` arriving with no signal of yours just before it can be guessed at. Weaker
   than the aggregate it replaced, which announced it in the clear, and still real
 - **Your endorser set is exposed to the relay you ask.** Above, and in `standing.ts`
+- **Posting your card's key print links you to that key.** The card screen shows sixteen
+  characters of your contact key so people can tell your card from a copy. Posting them where
+  you are known ties that identity to everything the same key signs — your card, *out tonight*,
+  and corrections or places filed without a callsign. Your card's own links already make part of
+  that join; posting the print makes it checkable. Showing it in person does not
 - **Nothing here covers what you post elsewhere.** This document is about what the app emits.
   A photograph of your gear on another platform is outside it, and outside what this project
   will build a tool to check
