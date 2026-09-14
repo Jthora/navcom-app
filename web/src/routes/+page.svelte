@@ -306,7 +306,7 @@
   <title>NavCom</title>
   <meta
     name="description"
-    content="Look up who takes someone tonight, and see the real state of the network — no setup, no account."
+    content="Look up who takes someone tonight, and see how much of the directory anybody has checked — no setup, no account."
   />
 </svelte:head>
 
@@ -402,7 +402,8 @@
           {/if}
         </p>
         <p>
-          Searched on this device, with nothing sent anywhere. Places elsewhere are found by
+          What you type is searched on this device and sent nowhere. Picking a region, or
+          allowing location, downloads that area's list. Places elsewhere are found by
           finding their city first — the whole directory is too large to carry on one page, and
           a search that silently covered only part of it would be worse than one that says so.
         </p>
@@ -457,13 +458,13 @@
             Do you know this area? If anything is wrong — especially who they take, or what
             happens to somebody with no ID — the fastest fix is the
             <a href="/terminal/directory/{focusedRegionSlug}/">field terminal</a>: pick a
-            callsign, find the listing, tap report a problem. No account, and it works with
-            no signal.
+            callsign, find the listing, tap report a problem. No account, and once you have
+            opened that area with signal, it works without.
           </p>
           <p>
-            Your correction is <strong>added</strong> under your callsign, or anonymously if
-            you have not picked one — it cannot delete a listing or overrule anybody, and
-            nobody has to approve it.
+            Your correction is <strong>added</strong> under your callsign, or without one — still
+            signed by this phone's own key, so it is not anonymous — and it cannot delete a
+            listing or overrule anybody, and nobody has to approve it.
           </p>
         </Why>
         <Slot k="Holding watch">
@@ -475,8 +476,8 @@
             Watchtower, by design: a list of Watchtowers is a list of where operators are.
             Holding watch, generally, means answering Query, Assist and Distress for operators
             working an area, backed by a capability receipt that states plainly what that
-            promises — <em>"2 on-call, both SMS-reachable"</em> or
-            <em>"0 on-call, Distress pages nobody and says so."</em>
+            promises — something like <em>two on-call, both reachable by text</em>, or
+            <em>nobody on-call, and Distress will say so</em>.
           </p>
           <p>
             If somebody hands you a Watchtower, or you want to start one,

@@ -47,10 +47,13 @@ describe('what is deployed', () => {
     expect(page).toContain(`data-version="${stamp().commit}"`);
   });
 
-  it('tells a reader how to notice the daily rebuild has stopped', () => {
-    // The gap this replaces could previously only be found by reading a workflow file.
+  it('tells a reader what an old build date means, without promising a schedule', () => {
+    // It said "rebuilds daily" for weeks after the only scheduled rebuild had been deleted with
+    // CI. The daily rebuild now runs from a timer on the watch box, which exists only while a box
+    // does, so the page states the condition an old date reveals rather than the promise.
     const page = readFileSync(join(BUILD, 'status', 'index.html'), 'utf8');
-    expect(page).toMatch(/rebuilds daily/i);
-    expect(page).toMatch(/rebuild has stopped/i);
+    expect(page).not.toMatch(/rebuilds daily/i);
+    expect(page).toMatch(/rebuilds whenever it is\s+deployed/i);
+    expect(page).toMatch(/a date more than a day old\s+means none is/i);
   });
 });

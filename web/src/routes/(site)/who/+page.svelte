@@ -41,6 +41,13 @@
 <svelte:head>
   <title>Operators · NavCom</title>
   <meta name="description" content="Volunteers who chose to be findable here. Nobody has checked any of it." />
+  <!--
+    The page said "not in any search index" and nothing made that true: the names are not in the
+    prerendered HTML, but a crawler that runs JavaScript reads them anyway. Asking not to be
+    indexed makes the sentence honest, and it narrows how far one card's words travel — a card
+    stays findable by anybody who comes here, and stops being findable by anybody who searches.
+  -->
+  <meta name="robots" content="noindex" />
 </svelte:head>
 
 <h1>Operators</h1>
@@ -56,14 +63,18 @@
 </p>
 
 {#if !publicRoster.asked}
-  <p class="cost">Loading needs JavaScript. This page is the one part of the site that does.</p>
+  <p class="cost">Loading needs JavaScript. This page, the console and the terminal are the parts of the site that do.</p>
 {:else if publicRoster.loading && publicRoster.entries.length === 0}
   <p class="cost">Asking relays…</p>
 {:else if publicRoster.entries.length === 0}
-  <!-- Not the same as "nobody uses NavCom". Most operators never publish a card at all. -->
+  <!--
+    Not the same as "nobody uses NavCom" -- and not the same as "nobody is listed" either. When
+    every relay fails to connect, the pool reports the end of results just as it does for an empty
+    answer, so this sentence also appears during an outage and must not claim more than it knows.
+  -->
   <p class="cost">
-    No operator here has chosen to be listed publicly. That is the ordinary case rather than a
-    failure — a card is optional, and this list is a further opt-in on top of it.
+    No public card came back from the relays asked. That is the ordinary case rather than a
+    failure — most operators never publish one — but a relay that did not answer looks the same.
   </p>
 {:else}
   {#if publicRoster.partial}
@@ -99,8 +110,9 @@
 {/if}
 
 <p class="cost">
-  This list is read from relays as you look at it, so it is current — and for the same reason it
-  is <strong>not in any search index</strong>.
+  This list is read from relays as you look at it, so it is current. The names are not in this
+  page's HTML and the page asks search engines not to index it, so they <strong>should not appear
+  in any search index</strong>.
 </p>
 
 <style>

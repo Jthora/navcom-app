@@ -82,10 +82,24 @@ out of CC0. So OSM is used as a **candidate generator** — it proposes places t
 matter, a person establishes the facts, and only what was independently established is
 published. Candidates are a working artifact and never become published data.
 
+> **Not true of the published directory today.** 1,135 records across 58 regions in
+> `data/regions/` were built from OpenStreetMap directly, against this rule, and none of them
+> has been checked by a person. They are being replaced from a source whose terms allow it.
+> Until they are, those records are ODbL-derived whatever the footer says. Found by an audit on
+> 2026-09-13.
+
 Records enter `resources.csv` sourced from the organisation's own site, government open
 data, or a person who went there. Government open data is public domain and strong in the
 United States, patchy elsewhere; OSM is global and ODbL. **No single source is both**, and
 pretending otherwise is how a licence gets quietly broken.
+
+**Overture Maps places are not CC0 either, and do not need to be.** Most of the directory —
+7,283 records — comes from Overture's places data, which carries the terms of whoever contributed
+each place: CDLA Permissive 2.0 for most, Apache 2.0 with Foursquare's copyright notice for
+Foursquare's, and CC0 for AllThePlaces'. None is share-alike, so the directory can stay
+permissive. But CDLA Permissive 2.0 requires its own text to travel with the data, and
+Foursquare's notice has to be kept. **Those notices do not yet ship beside the data** — found by
+the same audit, and fixed in the same change that replaces the OpenStreetMap records.
 
 ## Contributing
 

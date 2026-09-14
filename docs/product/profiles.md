@@ -96,6 +96,12 @@ Relays keep serving the card, other apps keep showing it, and a phone that has n
 carries the old list. The operator card screen says so rather than rendering as though the card
 were gone.
 
+**Nothing on it is permanent, because the list is itself the lever an infiltrator would most
+want.** A `provisional` entry — a notice not yet checked — stops hiding on every phone after 14
+days unless a person confirms it, and a confirmed entry fails the build after 90 days until
+somebody re-dates or removes it. Procedure, including telling the author:
+[`notices.md`](notices.md).
+
 Empty is the expected state.
 
 ## 4. The names, and why not the other names
@@ -123,6 +129,10 @@ and says nothing about where), *Public / Private* (the second word is false here
 taxonomy here needs local knowledge and is explicitly not agent work; the terms shipped are a
 working set so the mechanism could be built and tested, not a considered answer. The schema,
 the cap, the refusal and the rendering are real. The words are not final.
+
+The four support terms — *answers questions*, *keeps a station*, *teaches*, *makes or repairs
+gear* — were chosen by the maintainer on 2026-09-12. Until then a card could describe only work
+done in the street, and the people who hold that work up had no word for what they do.
 
 **Every term describes an activity, never a qualification.** This is the rule that matters. A
 card is self-asserted and nobody checks it, so a tag reading `medic` would be an unverified

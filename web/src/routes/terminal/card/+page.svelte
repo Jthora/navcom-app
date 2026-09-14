@@ -23,6 +23,7 @@
     type Visibility
   } from '@navcom/core';
   import { contactPubkey, listed, myCard, setListed, withdrawCard, type MyCard } from '$lib/terminal/card';
+  import { hiddenOn } from '$lib/hidden';
   import { loadIdentity } from '$lib/terminal/identity';
   import { publishCard } from '$lib/terminal/public.svelte';
 
@@ -317,8 +318,26 @@
 
     {#if published && contact}
       <Slot k="Card">
-        <Readout value="Published" tone="good" sub="as {callsign}" />
+        {#if hiddenOn(contact)}
+          <!--
+            Said to the holder first. A card that simply vanished from the board, with the person
+            it belongs to never told, is the silent lever the notice procedure is shaped against.
+          -->
+          <Readout value="Not shown here" tone="warn" sub="on navcom.app since {hiddenOn(contact)}" />
+        {:else}
+          <Readout value="Published" tone="good" sub="as {callsign}" />
+        {/if}
       </Slot>
+      {#if hiddenOn(contact)}
+        <Why summary="What that means">
+          <p>
+            navcom.app's own pages stopped showing this card after a notice about it. Relays still
+            carry it and other apps may still show it. A hide made before the notice could be
+            checked lapses on its own within 14 days, and no hide stands past 90 without a person
+            looking at it again. <a href="/notice/">The notice page</a> says how to answer.
+          </p>
+        </Why>
+      {/if}
       <Why summary="Who can see it">
         <p>
           Anybody browsing that area can see it and ask to pair. You decide who to accept, and
@@ -336,9 +355,14 @@
       <Why summary="What these characters are for">
         <p>
           Callsigns are not unique — anybody can publish a card called {callsign}. These
-          characters appear beside your name wherever your card is shown, and another card cannot
-          practically match them. Post them wherever people already know you, so somebody looking
-          for you, or sending you support, can check they have the real card.
+          characters appear beside your name wherever your card is shown, and they are hard to
+          copy — but only for somebody who compares every one of them.
+        </p>
+        <p>
+          <strong>Showing them in person is safer than posting them.</strong> This key also signs
+          your <em>out tonight</em> and anything you file without a callsign, so posting it where
+          people know you ties all of that to who you are there. Your card's links already make
+          part of that join; posting the key makes it checkable.
         </p>
       </Why>
     {/if}

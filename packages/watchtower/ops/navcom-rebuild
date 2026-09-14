@@ -1,0 +1,31 @@
+#!/bin/sh
+# Rebuilds navcom.app once, by firing its Vercel deploy hook.
+#
+# Why a box does this: the public directory judges "stale — call first" when a page is built,
+# with a one-day margin (STALENESS_MARGIN_DAYS). Nothing rebuilt the site on a schedule after CI
+# was removed, so a page could outlive its verdicts by weeks. The pages now say their verdicts
+# were judged at build time, which keeps a missed rebuild honest; this makes the rebuild happen.
+#
+# The hook URL is a secret -- whoever holds it can trigger a rebuild of main, though not change
+# any code -- so it lives in a file only this user can read, and is never printed.
+set -eu
+
+HOOK_FILE="${NAVCOM_DEPLOY_HOOK_FILE:-$HOME/.config/navcom-watchtower/deploy-hook}"
+
+if [ ! -r "$HOOK_FILE" ]; then
+  echo "[rebuild] no deploy hook at $HOOK_FILE -- nothing fired" >&2
+  exit 1
+fi
+
+url=$(head -n 1 "$HOOK_FILE")
+
+case "$url" in
+  https://api.vercel.com/*) ;;
+  *)
+    echo "[rebuild] $HOOK_FILE does not hold a Vercel deploy hook URL -- nothing fired" >&2
+    exit 1
+    ;;
+esac
+
+curl -fsS -X POST --max-time 30 -o /dev/null "$url"
+echo "[rebuild] deploy hook fired"

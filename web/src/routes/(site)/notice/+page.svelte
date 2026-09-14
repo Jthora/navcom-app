@@ -54,18 +54,21 @@
       </li>
       <li>
         <strong>A card is named by its key as well as its callsign.</strong> Callsigns are not
-        unique. The short run of characters beside a name is, and it is how two people who chose
-        the same name are told apart.
+        unique. The short run of characters beside a name comes from the card's key and is hard to
+        copy, but only if you compare every character — matching the first few proves little.
       </li>
       <li>
-        <strong>NavCom never handles money.</strong> A support address on a card belongs to its
-        holder, and anything sent to it goes straight to them.
+        <strong>NavCom never handles money.</strong> A support address on a card is its holder's,
+        and NavCom never sees or holds anything sent to it — where it goes is between the sender,
+        the holder and their wallet.
       </li>
       <li>
         <strong>NavCom cannot delete what somebody else published.</strong> Whether a relay keeps
         serving it is up to that relay. This site's own pages can stop showing a card that was
         named in a legal notice or is unlawful — never over a disagreement between operators —
         and each such decision is recorded, with its date, in the project's public repository.
+        None is permanent: one made before a notice could be checked lapses on its own after 14
+        days, and none stands past 90 without a person looking at it again.
       </li>
     </ul>
   </section>

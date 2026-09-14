@@ -1,0 +1,15 @@
+[Unit]
+Description=NavCom — rebuild navcom.app once, so the directory's stale verdicts are re-judged
+Documentation=https://github.com/Jthora/navcom-watchtower
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=jono
+Group=jono
+WorkingDirectory=/home/jono/workspace/ul_agent/navcom-watchtower
+
+# Reads the deploy hook from ~/.config/navcom-watchtower/deploy-hook (chmod 600). Fails loudly
+# into the journal when the file is missing or wrong, rather than succeeding at nothing.
+ExecStart=/home/jono/workspace/ul_agent/navcom-watchtower/ops/navcom-rebuild

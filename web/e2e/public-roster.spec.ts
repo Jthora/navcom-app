@@ -59,11 +59,16 @@ test('is alphabetical, which rewards nothing', async ({ page }) => {
   expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)));
 });
 
-test('says outright that it is not in a search index', async ({ page }) => {
-  // The cost of reading live rather than prerendering, stated rather than implied.
+test('asks not to be indexed, and says so no more strongly than that is true', async ({ page }) => {
+  /*
+   * It said "not in any search index" with nothing behind it: the names are not in the static
+   * HTML, but a crawler that runs JavaScript reads them. The noindex tag is what makes the
+   * sentence honest, so both are asserted together -- the claim without the tag is the defect.
+   */
   await seed(page, []);
   await open(page, '/who/');
-  await expect(page.getByText(/not in any search index/i)).toBeVisible();
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+  await expect(page.getByText(/should not appear\s+in any search index/i)).toBeVisible();
 });
 
 test('an empty roster is not the same as nobody using NavCom', async ({ page }) => {
