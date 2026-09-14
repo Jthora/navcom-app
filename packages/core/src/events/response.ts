@@ -9,6 +9,7 @@
 import { seal } from '../crypto/envelope.js';
 import type { SecretKey } from '../crypto/keys.js';
 import type { Author } from '../attestation.js';
+import type { LadderState } from '../escalation.js';
 import type { LogEntry } from '../log.js';
 import type { InclusionProof, LogRoot } from '../merkle.js';
 import { KIND_RESPONSE, tagInReplyTo, tagRecipient } from './kinds.js';
@@ -102,6 +103,16 @@ export interface ResponsePayload {
    * the watch marking its own homework, and proves nothing on its own.
    */
   review?: LogReview;
+  /**
+   * Where the escalation ladder is, on a response the escalation executor sends.
+   *
+   * Structured so a phone never has to parse English to learn the one thing it must act on:
+   * `exhausted` means nobody on call answered and nobody is left to try. Before this existed
+   * the ladder said so only in `text`, and the operator's phone filed the whole response under
+   * "an agent answered" — so the watch's own *nobody is coming* never reached the screen, and
+   * the operator learned it ten minutes later from the phone's own timer.
+   */
+  ladder?: LadderState;
   /** Hex signature by `responder`, where they signed for themselves. */
   sig?: string;
 }

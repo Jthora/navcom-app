@@ -121,8 +121,9 @@
 {#if configured && watch.state.state === 'dark'}
   <section>
     <p class="error">
-      Nothing is watching. You can still sign on — the signal will keep trying — but
-      <strong>nobody will see it</strong> until a watch comes back up.
+      Nothing is watching. You can still sign on, but <strong>the watch will not see it</strong>
+      — a sign-on is sent once and not stored, so once the watch is back, stand down and sign on
+      again.
     </p>
   </section>
 {/if}

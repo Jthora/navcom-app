@@ -435,13 +435,22 @@ no tag on the event. Both parts were wrong, and the implementation deliberately 
 ```json
 {
   "type": "ack | answer | escalation-status | log-review",
-  "responder": { "kind": "human | agent", "callsign": "...", "pubkey": "hex | absent" },
+  "responder": { "kind": "human | agent | node", "callsign": "...", "pubkey": "hex | absent" },
   "text": "string|null",
-  "provenance": { "record_id": "...", "verified": "2026-08-14", "method": "in_person" }
+  "provenance": { "record_id": "...", "verified": "2026-08-14", "method": "in_person" },
+  "ladder": "paging | contact | exhausted | acknowledged | absent"
 }
 ```
 
-- `responder.kind` MUST be present and accurate on every response [C25, invariant 5]
+- `responder.kind` MUST be present and accurate on every response [C25, invariant 5]. The
+  escalation ladder speaks as `node`: it is neither a person nor an agent, and a client MUST
+  NOT present it as either
+- The escalation executor MUST set `ladder` on every response it sends. **A client MUST show
+  `exhausted` to the operator when it arrives** — not only after its own timeout. A working
+  watch that knows nobody is coming, and a screen that withholds it, is invariant 2 failing
+  quietly. Responses are ephemeral and not stored, so this includes one that arrives while
+  the client is between resends: a client MUST keep listening for the whole Distress, not only
+  inside each attempt's window
 - A `log-review` response carries `review: { root, entries[{entry, proof}], more }`. The
   node MUST cap `entries` and set `more` rather than exceeding a relay's message size —
   a response too large to publish is silence, and silence is never an answer

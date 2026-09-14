@@ -159,6 +159,8 @@ export class EscalationExecutor {
       // a command that exited non-zero.
       text: note ? `${ladderReport(ladder)} ${note}` : ladderReport(ladder),
       provenance: null,
+      // The state itself, so a phone can act on `exhausted` without parsing the sentence.
+      ladder: ladder.state,
     };
 
     const event = this.sign({

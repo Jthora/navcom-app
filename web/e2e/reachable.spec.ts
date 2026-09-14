@@ -236,6 +236,37 @@ test.describe('wipe', () => {
     await expect(page.getByRole('button', { name: /burn this device/i })).toBeDisabled();
   });
 
+  test('burn stops this phone being woken for on-call', async ({ page }) => {
+    // Burn said it destroyed everything on the device and left the push subscription standing,
+    // so a burned phone could still be paged. The subscription is stood in for, and burn must
+    // actually reach it -- a unit test of the helper cannot show the button calls it.
+    await page.addInitScript(() => {
+      const w = window as unknown as { __navcomUnsubscribed?: boolean };
+      if (!('serviceWorker' in navigator)) return;
+      Object.defineProperty(navigator.serviceWorker, 'getRegistration', {
+        configurable: true,
+        value: async () => ({
+          pushManager: {
+            getSubscription: async () => ({
+              unsubscribe: async () => {
+                w.__navcomUnsubscribed = true;
+                return true;
+              }
+            })
+          }
+        })
+      });
+    });
+    await seedDevice(page, OUT);
+    await open(page, '/terminal/wipe/');
+    await page.locator('#confirm').fill('Wren');
+    await page.getByRole('button', { name: /burn this device/i }).click();
+
+    await expect
+      .poll(() => page.evaluate(() => (window as unknown as { __navcomUnsubscribed?: boolean }).__navcomUnsubscribed === true))
+      .toBe(true);
+  });
+
   test('says plainly where a wipe does not reach', async ({ page }) => {
     // An operator who believes a wipe is total is worse off than one who knows exactly
     // where it stops — the watch's own board entry, and the accountability log, survive

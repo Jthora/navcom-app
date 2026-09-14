@@ -105,7 +105,8 @@
       {#if operator.lastResponse?.text}{operator.lastResponse.text}{/if}
       Your own person is one tap away on
       <a href="/terminal/distress/">the Distress screen</a>, and if this is worse than you
-      first said, <strong>Distress does not stop until a human answers</strong>.
+      first said, <strong>Distress keeps sending until a human answers</strong>, while that
+      screen stays open.
     </p>
   {:else if sent}
     <p class="ok" data-acked>Acknowledged by the watch.</p>

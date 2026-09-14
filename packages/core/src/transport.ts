@@ -113,7 +113,9 @@ export function waitForResponse(
    * subscription opens.
    */
   sent: Event | readonly Event[],
-  timeoutMs: number
+  timeoutMs: number,
+  /** Ends the wait at once when the operator stops, rather than after the whole window. */
+  signal?: AbortSignal
 ): Promise<ResponsePayload> {
   const answering = (Array.isArray(sent) ? sent : [sent as Event]) as readonly Event[];
   return new Promise((resolve, reject) => {
@@ -123,6 +125,7 @@ export function waitForResponse(
       if (done) return;
       done = true;
       clearTimeout(timer);
+      signal?.removeEventListener('abort', stop);
       // Assigned below; guarded because a synchronous failure can land here first.
       closer?.close();
       fn();
@@ -132,6 +135,12 @@ export function waitForResponse(
       () => finish(() => reject(new Error(`No response from Watchtower within ${timeoutMs}ms`))),
       timeoutMs
     );
+    const stop = () => finish(() => reject(new Error('Stopped by the operator')));
+    if (signal?.aborted) {
+      stop();
+      return;
+    }
+    signal?.addEventListener('abort', stop, { once: true });
 
     try {
       closer = pool.subscribeMany(
@@ -186,6 +195,25 @@ export type DistressPhase =
    */
   | { phase: 'agent-holding'; attempt: number; response: ResponsePayload }
   /**
+   * The watch's escalation ladder, saying where it is.
+   *
+   * Authored by the node — not a person, and not an agent — and shown as exactly that. Not
+   * closure: the loop keeps going, because only a human ends a Distress.
+   */
+  | { phase: 'watch-status'; attempt: number; response: ResponsePayload }
+  /**
+   * **Nobody is coming, and the watch said so.**
+   *
+   * The ladder reached `exhausted`: nobody on call answered and nobody is left to try. Shown
+   * the moment it arrives. Before this existed the phone filed it under "an agent answered",
+   * dropped its words, and the operator learned nothing until `nobody-answering` fired ten
+   * minutes later — a working watch telling the truth at once, and the screen withholding it.
+   *
+   * Retrying still continues. Only the operator ends a Distress, and a human who answers late
+   * still counts.
+   */
+  | { phase: 'watch-exhausted'; attempt: number; response: ResponsePayload }
+  /**
    * **Nobody is coming, and the device worked that out by itself.**
    *
    * Failure mode 4 in `escalation.spec.md`: `EXHAUSTED` must reach the operator's own
@@ -218,13 +246,27 @@ export interface DistressOptions {
    * working and the phone is the only thing left that can tell the operator.
    */
   localExhaustedAfterMs?: number;
-  /** Injected for tests so they do not wait in real time. */
-  sleep?: (ms: number) => Promise<void>;
+  /**
+   * Injected for tests so they do not wait in real time. Handed the loop's `signal`, and a
+   * sleep that ignores it only delays a stop — the loop checks again when it returns.
+   */
+  sleep?: (ms: number, signal?: AbortSignal) => Promise<void>;
   /** Injected for tests. Real code has no business reading a clock it cannot control. */
   clock?: () => number;
 }
 
-const defaultSleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+/** Ends early when the operator stops, so a stop never waits out a backoff of up to a minute. */
+const defaultSleep = (ms: number, signal?: AbortSignal) =>
+  new Promise<void>((resolve) => {
+    if (signal?.aborted) return resolve();
+    const done = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', done);
+      resolve();
+    };
+    const timer = setTimeout(done, ms);
+    signal?.addEventListener('abort', done, { once: true });
+  });
 
 /**
  * Sends `Distress` and **keeps sending until a human acknowledges it.**
@@ -241,6 +283,10 @@ const defaultSleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
  * `agent-holding` and the loop continues, because invariant 2 says `Distress` terminates in
  * a human, and invariant 5 says an agent is never the sole responder. An agent ack that
  * stopped the retries would satisfy neither while looking, on screen, exactly like help.
+ *
+ * The watch's own escalation ladder is neither, and is reported as `watch-status` — or
+ * `watch-exhausted` the moment it says nobody can be reached, which the operator must learn
+ * when the watch knows it rather than when this phone's timer runs out.
  */
 export async function sendDistressUntilAcknowledged(
   pool: SimplePool,
@@ -290,6 +336,18 @@ export async function sendDistressUntilAcknowledged(
    * anywhere.
    */
   let latched: ResponsePayload | null = null;
+  /**
+   * The watch saying nobody can be reached, heard on the always-open subscription.
+   *
+   * At default timings the per-attempt listener is closed from roughly 243s to 303s, and a
+   * ladder with people on call reaches `exhausted` at about 300s — so the report that matters
+   * most landed in that gap, was dropped, and the operator learned it from the phone's own
+   * timer after all. Kept here and reported at the loop's next look, the way a late human
+   * acknowledgement already was.
+   */
+  let heardExhausted: ResponsePayload | null = null;
+  /** Whether the current ladder's `exhausted` has been reported, so it is said once. */
+  let exhaustedShown = false;
   let persistent: { close(): void } | null = null;
   try {
     persistent = pool.subscribeMany(
@@ -305,6 +363,10 @@ export async function sendDistressUntilAcknowledged(
             // Only a human closes a Distress [invariant 5]. An agent seen here changes
             // nothing; the per-attempt path already reports it when it lands in a window.
             if (payload.responder?.kind === 'human') latched = payload;
+            // The one non-human report that must never be lost to the gap. It closes nothing.
+            else if (payload.responder?.kind === 'node' && payload.ladder === 'exhausted') {
+              heardExhausted = payload;
+            }
           } catch {
             // Not for us.
           }
@@ -320,9 +382,30 @@ export async function sendDistressUntilAcknowledged(
   /** Closes the Distress if a human answered while nothing else was listening. */
   const answered = (): ResponsePayload | null => latched;
 
+  /**
+   * Whether the operator has ended it.
+   *
+   * Checked after every await, not only at the top of a pass. A pass is a send, a wait of up
+   * to `ackWindowMs` and a sleep of up to `maxBackoffMs`, and a Distress a wipe had cancelled
+   * went on for up to a minute: the send button stayed unavailable and late phases reached the
+   * screen.
+   */
+  const stopped = () => opts.signal?.aborted === true;
+  const cancelled = () => new Error('Distress cancelled by the operator');
+
+  const reportExhausted = (response: ResponsePayload) => {
+    if (exhaustedShown) return;
+    exhaustedShown = true;
+    report({ phase: 'watch-exhausted', attempt, response });
+  };
+  const reportHeard = () => {
+    if (heardExhausted) reportExhausted(heardExhausted);
+    heardExhausted = null;
+  };
+
   try {
   for (;;) {
-    if (opts.signal?.aborted) throw new Error('Distress cancelled by the operator');
+    if (stopped()) throw cancelled();
     const early = answered();
     if (early) {
       report({ phase: 'acknowledged', response: early });
@@ -340,11 +423,12 @@ export async function sendDistressUntilAcknowledged(
     } catch (e) {
       report({ phase: 'unreachable', attempt, error: e instanceof Error ? e.message : String(e) });
     }
+    if (stopped()) throw cancelled();
 
     if (sent) {
       try {
         const response = await waitForResponse(
-          pool, relays, secret, ourPubkey, watchtower.pubkey, outstanding, ackWindow
+          pool, relays, secret, ourPubkey, watchtower.pubkey, outstanding, ackWindow, opts.signal
         );
         // An absent responder kind is treated as not-a-human. The spec requires the field on
         // every response, so a missing one is a broken responder, and guessing "human"
@@ -353,11 +437,26 @@ export async function sendDistressUntilAcknowledged(
           report({ phase: 'acknowledged', response });
           return response;
         }
-        report({ phase: 'agent-holding', attempt, response });
+        // The watch's own ladder speaks as the node: not a person, and not an agent. Its word
+        // that nobody can be reached is reported the moment it arrives. It used to fall through
+        // to "an agent answered" with its text thrown away, and the operator learned it ten
+        // minutes later from `nobody-answering`.
+        if (response.responder?.kind === 'node') {
+          if (response.ladder === 'exhausted') reportExhausted(response);
+          else {
+            // A later status means a new ladder opened on a resend, so its own end is news.
+            exhaustedShown = false;
+            report({ phase: 'watch-status', attempt, response });
+          }
+        } else {
+          report({ phase: 'agent-holding', attempt, response });
+        }
       } catch {
+        if (stopped()) throw cancelled();
         report({ phase: 'no-answer', attempt });
       }
     }
+    reportHeard();
 
     // Said once, and it changes nothing. The loop keeps going because only the operator
     // ends a Distress — but an operator who knows nobody is coming can act on that, and one
@@ -368,11 +467,13 @@ export async function sendDistressUntilAcknowledged(
       report({ phase: 'nobody-answering', attempt, elapsedMs });
     }
 
-    await sleep(backoff);
+    await sleep(backoff, opts.signal);
+    if (stopped()) throw cancelled();
     backoff = Math.min(backoff * 2, maxBackoff);
 
     // The gap is exactly where an ephemeral response goes unheard, so it is checked on the
     // way out of it as well as on the way in.
+    reportHeard();
     const late = answered();
     if (late) {
       report({ phase: 'acknowledged', response: late });

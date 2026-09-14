@@ -66,20 +66,28 @@
 
 <section>
   <p>
-    On-call means <strong>reachable when the board cannot raise anybody</strong>.
+    On-call means <strong>you are paged the moment a Distress reaches this watch</strong>.
   </p>
   <p class="cost">
     <!--
       Stated before the button, because it is the thing that makes this screen different from
       every other one in the app and the thing somebody is actually agreeing to.
+
+      It said "a Distress that reached nobody else", which was not what the executor does: the
+      whole roster is paged in parallel the moment a ladder starts. Somebody agreeing to be woken
+      needs the true frequency, not a gentler one.
     -->
     <strong>This is the only notification NavCom ever sends.</strong> Not check-ins, not
-    someone signing on, not anything you missed. A <code>Distress</code> that reached nobody
-    else, and drills that prove the ladder still works. The field terminal is silent and
-    stays silent.
+    someone signing on, not anything you missed. Every <code>Distress</code> that reaches a
+    watch run on a box, as soon as it arrives — until its paging limit is spent, when nobody is
+    paged and the operator is told — and drills that prove the ladder still works.
+    The field terminal is silent and stays silent.
   </p>
   <p class="cost"><strong>The page carries no detail.</strong></p>
-  <p class="cost">Turning it off is one tap and <strong>tells nobody</strong>.</p>
+  <p class="cost">
+    Turning it off is one tap and <strong>tells nobody</strong> — so the watch keeps listing you
+    as on call until whoever runs it takes you off.
+  </p>
   <!--
     The paragraph above this one is deliberately whole.
 
@@ -94,18 +102,18 @@
   -->
   <Why summary="Why it is that thin">
     <p class="cost">
-      Whoever sends it cannot read the <code>Distress</code> either, so there is nothing in it
-      but the fact that somebody is waiting — you open the terminal to find out anything. That
-      is deliberate: a notification quoting text from the wire would put a stranger's words on
-      your locked screen.
+      The page carries none of the <code>Distress</code>'s words, so there is nothing in it but
+      the fact that somebody is waiting — you open the terminal to find out anything. That is
+      deliberate: a notification quoting text from the wire would put a stranger's words on your
+      locked screen.
     </p>
     <p class="cost">
       Somebody who has to justify standing down keeps a commitment they cannot keep, which is
       worse for whoever is relying on it than an honest end.
     </p>
     <p class="cost">
-      On-call means <strong>reachable when the board cannot raise anybody</strong>. It is a
-      phone that might ring, not a shift — and being reachable is the entire content of the
+      On-call means <strong>you are paged the moment a Distress reaches this watch</strong>. It
+      is a phone that might ring, not a shift — and being reachable is the entire content of the
       commitment.
     </p>
   </Why>

@@ -55,7 +55,7 @@
       const text = restoreBlob.trim();
       if (/^[0-9a-f]{64}$/i.test(text)) {
         restoreCode(text);
-        done = 'Your callsign is back. What you held is not — that needs a full backup.';
+        done = 'Your key is back — not your callsign or anything you held. That needs a full backup.';
       } else {
         const { keys } = restore(restorePass, text);
         done = `Restored ${keys} thing${keys === 1 ? '' : 's'}. Reopen the terminal.`;
@@ -158,7 +158,8 @@
     {#if blob}
       <p class="cost">
         Everything that outlasts a night: your callsign and key, your peers, your standing,
-        your card. <strong>Not tonight's patrol</strong> — a backup that carried it would
+        your card, the person you would call and any watch key — so the file carries their
+        number off this phone. <strong>Not tonight's patrol</strong> — a backup that carried it would
         carry the thing a panic wipe destroys.
       </p>
       <pre class="blob">{blob}</pre>

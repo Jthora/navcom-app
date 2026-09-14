@@ -148,7 +148,7 @@ page_window = 300
 contact_window = 300
 
 [oncall]
-# operators reachable when the board can't raise anyone
+# operators paged when a Distress reaches this watch, up to its paging budget
 # a channel is a condition of the role — see opt-ins.md
 ```
 

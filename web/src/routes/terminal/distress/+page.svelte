@@ -7,9 +7,11 @@
    *  - It is **always deliberate** [invariant 3]. Nothing here fires on a timer, a missed
    *    window or inactivity, which is why sending is a hold rather than a tap.
    *  - It **terminates in a human, or says it could not** [invariant 2]. Every attempt is
-   *    on screen, including the ones that never left the phone.
+   *    on screen, including the ones that never left the phone — and when the watch says
+   *    nobody can be reached, that is shown the moment it arrives, in the watch's own words.
    *  - An agent is **never the sole responder** [invariant 5]. An agent answering is shown
-   *    as "getting through", not as help.
+   *    as "getting through", not as help. The watch's own escalation ladder is neither a
+   *    person nor an agent, and is shown as the watch.
    */
   import { onDestroy } from 'svelte';
   import { operator } from '$lib/terminal/session.svelte';
@@ -68,6 +70,24 @@
   );
 
   /**
+   * The watch said nobody can be reached — going by its **latest** report.
+   *
+   * The ladder's own word, shown when it arrives. Until this existed it was filed under "an
+   * agent answered" with its text thrown away, and an operator with nobody on call was told
+   * something was still happening for ten minutes. The latest report rather than the first:
+   * a resend can open a fresh ladder that is paging again, and a panel still saying nobody can
+   * be reached would then be stale.
+   */
+  const watchSaidNobody = $derived.by(() => {
+    for (let i = phases.length - 1; i >= 0; i--) {
+      const p = phases[i];
+      if (p.phase === 'watch-exhausted') return p;
+      if (p.phase === 'watch-status') return undefined;
+    }
+    return undefined;
+  });
+
+  /**
    * The device worked out that nobody is coming.
    *
    * This does not mean the sending stopped — it has not, and only the operator can stop it.
@@ -75,6 +95,17 @@
    * the phone is the only thing left able to tell the operator that.
    */
   const nobodyAnswering = $derived(phases.some((p) => p.phase === 'nobody-answering'));
+
+  /**
+   * Words from the watch, bounded.
+   *
+   * Anybody holding the watch key can put text here, and this is the screen nobody reads
+   * calmly. Long enough for every sentence the ladder actually sends; short enough that a
+   * paragraph cannot push the stand-down control off the screen.
+   */
+  const WATCH_TEXT_MAX = 280;
+  const clip = (s: string | null | undefined): string | null =>
+    s ? (s.length > WATCH_TEXT_MAX ? `${s.slice(0, WATCH_TEXT_MAX - 1)}…` : s) : null;
 
   /*
    * The fill is animation; the firing is a timer.
@@ -133,6 +164,9 @@
       case 'unreachable': return `Attempt ${p.attempt} — never left the phone: ${p.error}`;
       case 'no-answer': return `Attempt ${p.attempt} — sent, no answer`;
       case 'agent-holding': return `Attempt ${p.attempt} — an agent answered. Still looking for a human`;
+      case 'watch-status':
+      case 'watch-exhausted':
+        return `Attempt ${p.attempt} — the watch: ${clip(p.response.text) ?? 'no detail'}`;
       case 'nobody-answering':
         return `${Math.round(p.elapsedMs / 60000)} minutes, no human. Still sending`;
       case 'acknowledged': return `${p.response.responder?.callsign ?? 'A human'} has it`;
@@ -219,7 +253,7 @@
     {/if}
     <!--
       One disclosure for the block, not one per paragraph.
-      
+
       The first version of this conversion gave each moved paragraph its own `Why`, which read
       on the screen as two collapsed accordions stacked with a heading's worth of space between
       them -- fewer words and a worse screen, on the one page nobody is reading calmly. The
@@ -242,13 +276,20 @@
 
 {#if !operator.distressRunning && phases.length === 0}
   <section>
+    <!--
+      "Keeps sending until a human answers" was true only while this page kept running: the
+      retrying lives in timers in this page, so closing it ends it, and a locked iPhone or a
+      backgrounded Android tab pauses or throttles it. Said here, before the hold, because it
+      changes what somebody should do with the phone after sending.
+    -->
     <p>
-      This wakes people up. It keeps sending until a human answers — <strong>not an
-      agent</strong> — and only you can stop it.
+      This wakes people up. It keeps sending while this screen stays open and the phone stays
+      awake, until a human answers — <strong>not an agent</strong>. Locking the phone can pause
+      it and closing this screen stops it; otherwise only you can stop it.
     </p>
     <!--
       This paragraph is why `Why` belongs here and not around the person block above.
-      
+
       The capability it backs is *"Your person, before the app loads"*, and `capabilities.test`
       reads the **prerendered** HTML for its claim. Moving it up beside the Text and Call
       buttons put it inside `{#if contact}`, which is null at prerender -- so the one sentence
@@ -259,8 +300,8 @@
     <Why summary="What works before this screen does">
       <p class="cost">
         Calling your own person <strong>works before the rest of this screen does</strong>, and
-        with no signal at all. Everything below needs the app to have finished loading; a phone
-        call does not.
+        with no data connection — it still needs phone signal. Everything below needs the app to
+        have finished loading; a phone call does not.
       </p>
     </Why>
     <label for="d">Anything you can say <span class="opt">optional</span></label>
@@ -318,17 +359,31 @@
     Above the attempt list and above the stand-down control, because it is the only thing on
     this screen that changes what the operator should do next.
   -->
-  {#if nobodyAnswering && !acknowledged}
-    <section class="nobody" data-nobody-answering>
+  {#if (watchSaidNobody || nobodyAnswering) && !acknowledged}
+    <section class="nobody" data-nobody-answering data-watch-exhausted={watchSaidNobody ? 'true' : undefined}>
       <h2>Nobody is coming</h2>
-      <p>
-        Long enough has passed that a working watch would have answered or told you it
-        couldn't. <strong>Assume no one is on their way</strong> and act on that.
-      </p>
-      <p class="cost">
-        This phone worked that out on its own — it is not a message from the watch, and it
-        does not mean the sending stopped. It hasn't. Only you can stop it.
-      </p>
+      {#if watchSaidNobody}
+        <p>
+          <strong>The watch says nobody can be reached.</strong> Assume no one is on their way
+          and act on that.
+        </p>
+        {#if clip(watchSaidNobody.response.text)}
+          <p class="cost">In the watch's words: <q>{clip(watchSaidNobody.response.text)}</q></p>
+        {/if}
+        <p class="cost">
+          The sending has not stopped, and a human who answers later still counts. Only you can
+          stop it.
+        </p>
+      {:else}
+        <p>
+          Long enough has passed that a working watch would have answered or told you it
+          couldn't. <strong>Assume no one is on their way</strong> and act on that.
+        </p>
+        <p class="cost">
+          This phone worked that out on its own — it is not a message from the watch, and it
+          does not mean the sending stopped. It hasn't. Only you can stop it.
+        </p>
+      {/if}
     </section>
   {/if}
 
@@ -342,13 +397,15 @@
       <!--
         The panel header directly above already reads `Sending`, so "still going" was the
         third thing on the screen saying so. What is left is the part a readout cannot carry:
-        this does not time out.
+        this does not time out — while this screen stays open and the phone stays awake.
       -->
-      <p class="cost"><strong>It will not stop on its own.</strong></p>
+      <p class="cost"><strong>It will not stop on its own while this screen stays open and awake.</strong></p>
       <Why summary="What to do while it sends">
         <p class="cost">
-          Still going. It will not stop on its own — if nothing is answering, that is what the
-          list above is telling you, and it is worth acting on directly.
+          Still going. It will not stop on its own while this screen stays open and the phone
+          stays awake — locking the phone can pause it, and closing this screen stops it. If
+          nothing is answering, that is what the list above is telling you, and it is worth
+          acting on directly.
         </p>
       </Why>
       <button class="stand-down" onclick={() => operator.standDownDistress()}>
@@ -358,8 +415,8 @@
   {:else}
     <section>
       <p class="error" data-stopped>
-        <strong>Stopped without a human.</strong> Nobody acknowledged this. Nothing is
-        still trying.
+        <strong>Stopped without a human.</strong> Nobody acknowledged this. Nothing on this
+        phone is still trying, and anyone already paged was not told it stopped.
       </p>
       <button class="raise small" onclick={() => operator.raiseDistress(text.trim())}>
         Send again
@@ -400,6 +457,13 @@
   }
   li.unreachable { color: var(--t-dark); }
   li.agent-holding { color: var(--t-oncall); }
+  /*
+   * The watch speaking, at full weight. Its reports include "every channel failed" and "nobody
+   * could be paged", which escalation.spec requires the operator be told plainly -- not in the
+   * muted grey of a routine attempt line.
+   */
+  li.watch-status { color: var(--t-ink); }
+  li.watch-exhausted { color: var(--t-dark); font-weight: 650; }
   li.nobody-answering { color: var(--t-dark); font-weight: 650; }
 
   .person { border: 2px solid var(--t-station); background: var(--t-raised); padding: 1rem 1.1rem; }

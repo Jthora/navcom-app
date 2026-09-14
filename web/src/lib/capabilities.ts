@@ -234,8 +234,11 @@ export const CAPABILITIES: Capability[] = [
     name: 'Distress',
     screen: 'terminal/distress/',
     claims: [
-      'It keeps sending until a human answers',
-      'only you can stop it'
+      // Conditional on purpose. The retrying is timers in the page: closing it ends it, and a
+      // locked or backgrounded phone pauses or throttles it. A claim without that condition
+      // promised a Distress that keeps going in a pocket.
+      'It keeps sending while this screen stays open',
+      'otherwise only you can stop it'
     ],
     control: 'button.raise',
     requires: ['identity']
@@ -346,8 +349,10 @@ export const CAPABILITIES: Capability[] = [
       'keeping it means looking',
       // Overdue nudges and does nothing else [invariant 3].
       'marked, and nothing else happens',
-      // Invariant 2: only a human ends a Distress, and no button here closes one.
-      'is not closed by answering it',
+      // Invariant 2: only a human ends a Distress. An answer from this screen is signed as a
+      // human, so it does end the operator's retrying -- the claim is that, and that no button
+      // here clears one. It said "is not closed by answering it", which was not true.
+      'stops their phone resending it',
       // A new holder reading an empty board as "nobody is out" is the failure mode of
       // handover, and it is silent.
       'An empty board is not the same as nobody being out'

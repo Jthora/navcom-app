@@ -319,7 +319,9 @@ Everything else was already built for her, which is what makes this one sharp:
 - `standDown` records the patrol whether or not a watch confirmed it, and says why: *"its
   absence must not mean the patrol never happened"*
 - The sign-on screen is **written for her**, and says so on arrival: *"Nothing is watching. You
-  can still sign on — the signal will keep trying."*
+  can still sign on — the signal will keep trying."* *(Corrected 2026-09-13: a sign-on is sent
+  once and not stored, and the screen now says to stand down and sign on again once the watch
+  is back.)*
 
 Every part of the capability existed. Only the way in was missing. That is the same branch of
 the same screen 0.S found the Distress gap in — so this pass and the last have now found the

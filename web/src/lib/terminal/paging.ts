@@ -127,3 +127,18 @@ export async function isRegistered(): Promise<boolean> {
   const registration = await navigator.serviceWorker.ready;
   return (await registration.pushManager.getSubscription()) !== null;
 }
+
+/**
+ * Removes this device's paging subscription, if it has one, for burn.
+ *
+ * Burn claimed to destroy everything on the device and left this standing, so a burned phone
+ * could still be woken for on-call. Not `stopPaging`: that waits on `serviceWorker.ready`, which
+ * never settles on a page with no registration, and a burn that hung there would leave somebody
+ * watching a screen that had not finished. `getRegistration` answers either way.
+ */
+export async function forgetPaging(): Promise<void> {
+  if (!canBePaged()) return;
+  const registration = await navigator.serviceWorker.getRegistration();
+  const subscription = await registration?.pushManager.getSubscription();
+  await subscription?.unsubscribe();
+}

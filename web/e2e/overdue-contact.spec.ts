@@ -71,7 +71,8 @@ test.describe('the watch says you are past your window', () => {
     // Before the watch says anything, the screen shows only the device's own arithmetic —
     // and promises exactly what is about to happen.
     await expect(page.getByText(/past declared/i)).toBeVisible();
-    await expect(page.getByText(/the watch will nudge, nothing more/i)).toBeVisible();
+    // "May", not "will": only a watch run on a box nudges, and only while this screen is open.
+    await expect(page.getByText(/a watch may nudge, nothing more/i)).toBeVisible();
     await expect(page.locator('[data-nudged]')).toHaveCount(0);
 
     await page.evaluate(

@@ -656,7 +656,9 @@ describe('the field terminal', () => {
     expect(wipe.bodyText).toMatch(/Hold to wipe tonight/i);
     expect(wipe.bodyText).toMatch(/identity included/i);
     expect(wipe.bodyText).toMatch(/no recovery unless you set one up/i);
-    expect(wipe.bodyText).toMatch(/nothing to burn/i);
+    // It said "nothing to burn"; cached pages and tonight's data can exist with no identity.
+    expect(wipe.bodyText).toMatch(/no identity on this device/i);
+    expect(wipe.bodyText).toMatch(/clear this site's data in the browser/i);
   });
 
   it('does not congratulate anyone after a wipe', () => {

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { seedDevice, open, TEST_SECRET, answerNextSignal } from './device';
+import { seedDevice, open, TEST_SECRET, answerNextSignal, holdUntil } from './device';
 
 /**
  * What the operator is told while a `Distress` is running.
@@ -96,6 +96,35 @@ test.describe('while a Distress is running', () => {
     await expect(page.locator('[data-distress="acknowledged"]')).toHaveCount(0);
   });
 
+  test('the watch saying nobody can be reached is shown at once, as the watch [invariant 2]', async ({ page }) => {
+    /*
+     * The defect this guards: the escalation ladder's own "Nobody is coming" was filed under
+     * "an agent answered" and its words thrown away, so an operator with nobody on call was
+     * told something was still happening for ten minutes, until the phone's own timer said
+     * otherwise. The ladder is the watch, not an agent, and its word is shown when it arrives.
+     */
+    const watchSecret = await withWatch(page);
+    const reply = await replyBuilder(watchSecret, {
+      type: 'escalation-status',
+      responder: { kind: 'node', callsign: 'escalation' },
+      text: "Couldn't reach anyone. Nobody is coming.",
+      provenance: null,
+      ladder: 'exhausted'
+    });
+
+    await open(page, '/terminal/distress/');
+    await raiseDistress(page);
+    await answerNextSignal(page, reply);
+
+    const nobody = page.locator('[data-watch-exhausted]');
+    await expect(nobody).toBeVisible({ timeout: 15_000 });
+    await expect(nobody).toContainText(/Nobody is coming/);
+    await expect(nobody).toContainText(/Couldn't reach anyone/);
+    await expect(page.getByText(/an agent answered/i)).toHaveCount(0);
+    // Still sending: only the operator ends it, and a human who answers later still counts.
+    await expect(page.locator('[data-distress="running"]')).toBeVisible();
+  });
+
   test('and nothing on the screen closes it', async ({ page }) => {
     // Only the operator ends a Distress, and only by stopping the sending themselves.
     const watchSecret = await withWatch(page);
@@ -113,6 +142,44 @@ test.describe('while a Distress is running', () => {
 
     const labels = (await page.getByRole('button').allInnerTexts()).join(' | ');
     expect(labels).not.toMatch(/close|resolve|clear|dismiss|cancel distress/i);
+  });
+});
+
+test.describe('a wipe while a Distress is running', () => {
+  test.setTimeout(60_000);
+
+  /*
+   * Decided 2026-09-13: a wipe stops what this phone is still sending, a Distress included. A
+   * review then found the stop only landed at the top of the loop's next pass — up to a minute
+   * of the send button unavailable on a phone just wiped, with the cancellation coming back onto
+   * the screen as an error. Driven through the screens a person would use and never a reload,
+   * which ends the Distress on its own and would prove nothing.
+   */
+  test('stops it at once, leaves no trace of it, and the phone can send again', async ({ page }) => {
+    await withWatch(page);
+    await open(page, '/terminal/distress/');
+    await raiseDistress(page);
+    await expect(page.locator('[data-distress="running"]')).toBeVisible({ timeout: 15_000 });
+
+    await page.locator('header a[href="/terminal/"]').first().click();
+    await page.locator('nav[data-rail="all"] a[href="/terminal/wipe/"]').click();
+    await holdUntil(page, 'button:has-text("Hold to wipe tonight")');
+    await expect(page).toHaveURL(/\/terminal\/$/);
+
+    const distresses = () =>
+      page.evaluate(() =>
+        (((window as never as { __navcomPublished?: { kind: number }[] }).__navcomPublished) ?? [])
+          .filter((e) => e.kind === 20911).length
+      );
+    const atWipe = await distresses();
+
+    await page.locator('a[href="/terminal/distress/"]').first().click();
+    await expect(page.locator('button.raise')).toBeVisible({ timeout: 5_000 });
+    await expect(page.locator('[data-distress]')).toHaveCount(0);
+    await expect(page.getByText(/cancelled/i)).toHaveCount(0);
+
+    await page.waitForTimeout(3_000);
+    expect(await distresses(), 'nothing sent after the wipe').toBe(atWipe);
   });
 });
 

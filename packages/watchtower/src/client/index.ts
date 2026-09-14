@@ -222,6 +222,17 @@ program
                 case "agent-holding":
                   console.log(`   attempt ${p.attempt} answered by an AGENT (${p.response.responder?.callsign ?? "?"}) -- still looking for a human`);
                   break;
+                // The watch's own ladder. It printed nothing at all once these phases existed,
+                // including "Couldn't reach anyone" -- a missing case in a switch with no default.
+                case "watch-status":
+                  console.log(`   attempt ${p.attempt} the watch: ${p.response.text ?? "(no detail)"}`);
+                  break;
+                case "watch-exhausted":
+                  console.log(`   attempt ${p.attempt} NOBODY IS COMING, says the watch: ${p.response.text ?? "(no detail)"} -- still sending; Ctrl-C to stand down`);
+                  break;
+                case "nobody-answering":
+                  console.log(`   ${Math.round(p.elapsedMs / 60000)} min with no human -- assume nobody is coming; still sending`);
+                  break;
                 case "acknowledged": break;
               }
             }

@@ -463,8 +463,14 @@
         will stop looking for another way to reach the operator.
       -->
       {#if ackDone}
+        <!--
+          "The watch has been told you have this" was more than a relay accepting it proves: the
+          watch refuses an acknowledgement from a key that is not on its on-call list, and says
+          so only in its own log.
+        -->
         <p class="cost" data-ack-sent>
-          <strong>Sent.</strong> The watch has been told you have this, under your callsign.
+          <strong>Sent to a relay.</strong> It counts only if this key is on the watch's on-call
+          list.
         </p>
       {:else if ackFailed}
         <p class="cost" data-ack-failed>
@@ -473,8 +479,9 @@
         </p>
       {:else}
         <p class="cost" data-ack-pending>
-          An operator raised a <strong>Distress</strong> and is waiting for a human. Tapping
-          says you have it, and is the only thing that stops the ladder paging.
+          An operator raised a <strong>Distress</strong> and is waiting for a human. If this key
+          is on the watch's on-call list, tapping tells them a human has it and stops the ladder
+          going any further.
         </p>
       {/if}
     {/if}
@@ -637,7 +644,15 @@
           {:else if remaining !== null && remaining > 0}
             <Readout value="{remaining} min left" tone="good" sub="of what you declared" />
           {:else}
-            <Readout value="Past declared" tone="warn" sub="the watch will nudge, nothing more" />
+            <!--
+              "The watch will nudge" was promised with no check that a watch exists, and only a
+              watch run on a box nudges at all -- one held on a phone never does.
+            -->
+            <Readout
+              value="Past declared"
+              tone="warn"
+              sub={operator.hasWatch ? 'a watch may nudge, nothing more' : 'nothing will nudge you'}
+            />
           {/if}
         </Slot>
         {#if position.live}
@@ -870,7 +885,7 @@
         <Readout
           value={new Date(cameHome.at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           tone="good"
-          sub={cameHome.by ? `${cameHome.by} has you home` : 'nobody was watching, and it still counts'}
+          sub={cameHome.by ? `${cameHome.by} has you home` : 'nobody confirmed it, and it still counts'}
         />
       </Slot>
       {#if cameHome.started !== null}
