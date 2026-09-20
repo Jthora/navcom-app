@@ -22,6 +22,9 @@ test('narrows a long list to the place you can already name', async ({ page }) =
   await open(page, LA);
 
   const records = page.locator('[data-record]');
+  // The region screen renders its records from its data file rather than from prerendered
+  // markup, so counting the instant the page loads counts whatever happened to be there.
+  await expect(records.first()).toBeVisible();
   const before = await records.count();
   expect(before, 'Los Angeles should be the crowded case').toBeGreaterThan(50);
 
@@ -73,6 +76,7 @@ test('and is absent where there is nothing to narrow', async ({ page }) => {
   // threshold says so instead of reading as the control appearing where it should not.
   await blankDevice(page);
   await open(page, '/terminal/directory/hobart/');
+  await expect(page.locator('[data-record]').first()).toBeVisible();
   const records = await page.locator('[data-record]').count();
   expect(records, 'Hobart should be the short case: some records, ten or fewer').toBeGreaterThan(0);
   expect(records, 'Hobart should be the short case: some records, ten or fewer').toBeLessThanOrEqual(10);

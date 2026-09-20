@@ -197,7 +197,13 @@ export const CAPABILITIES: Capability[] = [
     claims: [
       // Display rule 4's own words, finally true in both halves: the app could render a
       // flag and not set one, so reporting was impossible while fixing needed a pull request.
-      'Report a problem',
+      //
+      // The screen's sentence rather than the button's label. The per-record controls are
+      // built in the browser since 2026-09-19, so the label is no longer in the prerendered
+      // HTML this is read from — and a claim checked against markup a fresh visitor never
+      // receives is not checked at all. The button itself is exercised by the browser suite,
+      // which is where `control` below is proven.
+      'report a problem with any listing below',
       // The abuse answer, said where somebody reports. Nobody adjudicates, so the shape of
       // the data has to be what makes it survivable.
       'cannot delete this listing or overrule anybody',

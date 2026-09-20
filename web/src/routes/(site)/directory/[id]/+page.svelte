@@ -37,7 +37,18 @@
   />
 </svelte:head>
 
-<div class="wrap">
+<!--
+  The record's own markers live on the wrapper, not on the header inside it.
+
+  They were on the header, which holds the name and nothing else — so `rendered.test`, which
+  reads every `[data-record]` in the build and checks the display rules against the fields
+  inside it, found no fields here and drew its address coverage entirely from the terminal's
+  region screen. When that screen moved its list into the browser on 2026-09-19 the coverage
+  went with it, and the refuge rule — a refuge must never render an address — was left
+  inspecting nothing. This page renders every field a record has; it is the right thing to be
+  read as a record.
+-->
+<div class="wrap" data-record={record.id} data-seeded={meta.seeded} data-flagged={meta.flagFirst !== null}>
   <p class="back"><a href="/directory/">&larr; All resources</a></p>
 
   {#if meta.flagFirst}
@@ -59,7 +70,7 @@
     </div>
   {/if}
 
-  <header class:seeded={meta.seeded} data-record={record.id} data-seeded={meta.seeded} data-flagged={meta.flagFirst !== null}>
+  <header class:seeded={meta.seeded}>
     <h1>{record.name}</h1>
     <p class="type">{labelValue(record.type)}</p>
   </header>

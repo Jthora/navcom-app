@@ -28,6 +28,22 @@ import { BUILT_AT } from '$lib/built';
 export const prerender = true;
 
 /**
+ * The records are prerendered as **data**, not as markup — see the `byType` gate in
+ * `+page.svelte`.
+ *
+ * They were both. Every region page shipped its records twice: once as rendered HTML and once
+ * again in the `__data.json` this loader's return value is serialised into, which the client
+ * router reads on navigation. St. Louis was 390 kB of HTML around 33 kB of data — the markup
+ * was twelve times the thing it was made of, and the directory carries 1,913 regions of it in
+ * every deployment Vercel retains, on an account near its storage cap.
+ *
+ * The page itself still renders on the server, so everything a fresh visitor is promised is
+ * still in the artifact where `capabilities.test` reads it. Only the list is built on arrival,
+ * from data this page already has — no second round trip, and nothing about being offline
+ * changes as long as the service worker keeps caching both halves.
+ */
+
+/**
  * Every region, including the ones that ship empty.
  *
  * This used to be every region *with records*, on the reasoning that a region with none has

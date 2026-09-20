@@ -251,6 +251,44 @@ install scoped to `web/` cannot see it.
 The build command is `npm run verify --workspace navcom-web`, so a deploy that breaks a
 display rule or the bundle budget fails instead of shipping.
 
+### What a deployment weighs
+
+**The page budget is not the only size that matters.** Vercel keeps the build output of every
+deployment it retains, and that storage is the account's hard limit — 10 GB on Hobby, past
+which unprotected deployments are deleted immediately rather than after their retention
+period. What fills it is output size × deployments retained × how long each is kept, so a
+build that is merely large becomes a deploy that will not go out on the night it matters.
+
+Measured 2026-09-19, before and after:
+
+| | Raw | Compressed | Files |
+|---|---|---|---|
+| Before | 288 MB | 61 MB | 29,067 |
+| After | 158 MB | 43 MB | 17,514 |
+
+Four things were being shipped twice or not at all:
+
+- **`__data.json` on the public site.** SvelteKit writes one beside every prerendered page with
+  a server `load`, so its client router can fetch the next page's data. The public site sets
+  `csr = false` and has no router: 11,546 files, 15 MB, that nothing could request. Deleted
+  after the build by `scripts/prune-data.mjs`
+- **Hydration markers and template indentation in the directory**, inert on pages that never
+  hydrate — `scripts/slim-html.mjs`, about 8%
+- **The machine-readable export.** `JSON.stringify(…, null, 2)` was 12 MB of indentation in a
+  28 MB file. A consumer that wants it readable pipes it through a formatter
+- **The terminal's region pages.** The records reached them twice: once as markup, once as the
+  data that markup was made from. St. Louis shipped 390 kB of HTML around 33 kB of data. The
+  list is built in the browser now and that surface went from 98 MB to 22 MB — see the `byType`
+  gate, which is deliberately the list and not the page, because the claims a fresh visitor is
+  promised have to stay in the artifact `capabilities.test` reads
+
+**The multiplier is how often it deploys, not what a page weighs.** At roughly 170 deployments
+a month against a 30-day retention, 61 MB a deployment is 10.4 GB and 43 MB is 7.5 GB — the
+first is over the cap and the second is not comfortably under it. Vercel stores one copy of a
+file that has not changed, so a data-only change costs less than the totals above; a change to
+the app's code rewrites every page's asset URLs and costs the lot. Retention and deploy
+frequency are the levers that move this. Page weight only slows the climb.
+
 ## Budgets
 
 Budgets get numbers, and the numbers get a derivation. The old one — *"initial JS under

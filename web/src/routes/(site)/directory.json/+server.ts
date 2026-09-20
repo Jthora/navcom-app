@@ -9,7 +9,12 @@ export const prerender = true;
  */
 export function GET() {
   const { records, regions } = loadAll();
-  const body = JSON.stringify(buildExport(records, new Date(), regions), null, 2);
+  /*
+   * Not pretty-printed. The indentation was 12 MB of spaces and newlines in a 28 MB file —
+   * carried in every retained deployment, on an account close to its storage cap. A consumer
+   * of a machine-readable export pipes it through a formatter if a person needs to read it.
+   */
+  const body = JSON.stringify(buildExport(records, new Date(), regions));
   return new Response(body, {
     headers: {
       'content-type': 'application/json; charset=utf-8',
