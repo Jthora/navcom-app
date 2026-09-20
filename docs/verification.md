@@ -141,6 +141,18 @@ are checked against prerendered HTML, so they cannot sit behind `{#if}`.** Five 
 session an important sentence hid behind a conditional a fresh visitor never reaches. Putting
 the claim where the test can see it puts it where the operator can.
 
+**One surface builds its content in the browser, and the line was drawn deliberately.** The
+terminal's region screen renders its record list on arrival rather than in the HTML — the
+markup was twelve times the weight of the data it was made from, in every deployment Vercel
+retains (see [`delivery.md`](delivery.md)). What stayed prerendered is everything that screen
+promises: what reporting does and cannot do, what the snapshot's age means, the empty state.
+The display rules did not lose their built-artifact check either, because the public record
+pages render the same components and are now read as records — a `data-record` that sat on a
+header holding only the name meant those pages had never been scanned at all, and the refuge
+rule was drawing its only real coverage from the screen that stopped prerendering. The list
+itself is exercised in a browser by the e2e suite, which is the only place a client-rendered
+list can be checked.
+
 ---
 
 ## Move 3 — A deploy stamp

@@ -11,6 +11,7 @@
    * implementation of the display rules that the built-artifact tests check, and the
    * directory is where a rule the output does not honour would do real harm.
    */
+  import { browser } from '$app/environment';
   import FieldRow from '$lib/components/FieldRow.svelte';
   import {
     displayField,
@@ -41,10 +42,14 @@
   /**
    * Collapsed groups, not open ones — everything starts open.
    *
-   * Two reasons, and they point the same way. In the field it is fewer taps for someone
-   * working one-handed. In the build it means the records are actually IN the prerendered
-   * HTML, where the display-rule regression tests can see them; a collapsed-by-default
-   * accordion would have shipped this screen with the rules unchecked.
+   * In the field it is fewer taps for someone working one-handed.
+   *
+   * It used to buy a second thing: the records were in the prerendered HTML, where the
+   * display-rule regression tests could read them. That ended on 2026-09-19 — this screen
+   * renders from its data file now, because the markup was twelve times the weight of the data
+   * and every retained deployment carried it. The rules are still checked against built HTML on
+   * the public record and area pages, which render through the same components, and against
+   * this screen in a real browser by the e2e suite.
    */
   let collapsed = $state<Set<ResourceType>>(new Set());
   const isOpen = (t: ResourceType) => !collapsed.has(t);
@@ -365,11 +370,31 @@
     narrowed.filter((r: ResourceRecord) => typeof r.lat !== 'number' || typeof r.lon !== 'number').length
   );
 
+  /*
+   * Built in the browser, not on the server.
+   *
+   * The records reach this page twice over: once as the markup the server rendered them into,
+   * and once as the `__data.json` the client router reads on navigation. St. Louis shipped
+   * 390 kB of HTML around 33 kB of data for the same 54 places, and the directory carries
+   * 1,913 regions of that in every deployment Vercel retains. Rendering the list here rather
+   * than on the server drops the duplicate: 98 MB of build output becomes 22 MB.
+   *
+   * **The gate is the list and nothing else.** Everything a fresh visitor is promised —
+   * what reporting does, what the snapshot's age means, the empty state — still renders on
+   * the server, because `capabilities.test` reads those claims out of the prerendered HTML
+   * and a claim behind a conditional is the failure that check exists to catch.
+   *
+   * What it costs: the records are not on screen until this screen's JavaScript runs. They
+   * come from data already in hand rather than a fetch, so being offline changes nothing,
+   * but on the device floor there is a beat before the list appears where there was none.
+   */
   const byType = $derived(
-    RESOURCE_TYPES.map((type) => ({
-      type,
-      records: nearestFirst(narrowed.filter((r: ResourceRecord) => r.type === type))
-    })).filter((g) => g.records.length > 0)
+    browser
+      ? RESOURCE_TYPES.map((type) => ({
+          type,
+          records: nearestFirst(narrowed.filter((r: ResourceRecord) => r.type === type))
+        })).filter((g) => g.records.length > 0)
+      : []
   );
 
   /**

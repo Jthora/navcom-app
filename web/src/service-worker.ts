@@ -43,6 +43,19 @@ const SHELL = [
  */
 const isAreaPage = (pathname: string) => /\/terminal\/directory\/[^/]+\/?$/.test(pathname);
 
+/**
+ * An area's records, which since 2026-09-19 are the data file rather than the page.
+ *
+ * The region screen renders its records on the client from the data SvelteKit writes beside
+ * the page, so caching the document alone now saves a shell with nothing in it. Offline is the
+ * pair or it is nothing.
+ */
+const isAreaData = (pathname: string) =>
+  /\/terminal\/directory\/[^/]+\/__data\.json$/.test(pathname);
+
+/** Both halves of one area: the page, and the records it renders from. */
+const areaParts = (path: string) => [path, path.replace(/\/?$/, '/') + '__data.json'];
+
 const sw = self as unknown as ServiceWorkerGlobalScope;
 
 /** No network and nothing cached. Fail visibly — degrade visibly, never fail silently. */
@@ -127,7 +140,8 @@ async function carryAreasForward(): Promise<void> {
     try {
       const old = await caches.open(name);
       for (const request of await old.keys()) {
-        if (!isAreaPage(new URL(request.url).pathname)) continue;
+        const carried = new URL(request.url).pathname;
+        if (!isAreaPage(carried) && !isAreaData(carried)) continue;
         // Never overwrite what this version already has.
         if (await current.match(request)) continue;
         const hit = await old.match(request);
@@ -176,7 +190,11 @@ sw.addEventListener('message', (event) => {
   event.waitUntil(
     caches
       .open(CACHE)
-      .then((c) => c.add(new Request(path, { credentials: 'same-origin' })))
+      .then((c) =>
+        Promise.all(
+          areaParts(path).map((part) => c.add(new Request(part, { credentials: 'same-origin' })))
+        )
+      )
       // A failure here is an area not saved, which the page reports on its own terms. It
       // must not take down the worker that is also serving Distress.
       .catch(() => undefined)
@@ -313,7 +331,11 @@ sw.addEventListener('fetch', (event) => {
   // The directory page is the one worth refreshing when there IS a network: a cached copy
   // that silently never updates is how a phone ends up confidently reciting a shelter that
   // closed in March. Cache remains the fallback, so being offline changes nothing.
-  if (url.pathname.endsWith('/terminal/directory/') || isAreaPage(url.pathname)) {
+  if (
+    url.pathname.endsWith('/terminal/directory/') ||
+    isAreaPage(url.pathname) ||
+    isAreaData(url.pathname)
+  ) {
     event.respondWith(
       fetch(request)
         .then((response) => {

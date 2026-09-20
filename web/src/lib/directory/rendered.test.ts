@@ -719,21 +719,32 @@ describe('the field terminal', () => {
     }
   });
 
-  it('renders its cached records into the built page, where the display rules are checked', () => {
-    // The rules in the first describe block scan every [data-record] on every page. That
-    // only covers the terminal if the terminal actually prerenders its records -- which is
-    // why the groups start open. A collapsed-by-default accordion would have shipped this
-    // screen with the six display rules unchecked on the surface where a confident wrong
-    // answer does the most harm.
-    //
-    // Named rather than "the first directory page": every region is prerendered now,
-    // including the thirty-five that ship empty so an operator has somewhere to add what they
-    // know. `find` picked one of those and this failed, correctly -- an empty page really
-    // does render no records. The claim being made here is about a populated one.
+  it('still ships what it promises, now that its records are built in the browser', () => {
+    /*
+     * This screen used to prerender its records, and the six display rules were checked
+     * against them here — which is why the groups start open.
+     *
+     * That ended on 2026-09-19. The records reached this page twice, once as markup and once
+     * as the data the markup was made from, and the markup was twelve times the weight: 98 MB
+     * of build output for 1,913 regions, carried in every deployment Vercel retains. The list
+     * is built on arrival now, and the rules are checked against the public record pages,
+     * which render through the same components — see the address assertion above, which is
+     * what proves that coverage is real rather than a selector matching nothing.
+     *
+     * What must still be in the HTML is everything a fresh visitor is promised, because a
+     * claim behind a conditional is the failure `capabilities.test` exists to catch. The
+     * records themselves are exercised in a browser by the e2e suite, which is the only place
+     * a client-rendered list can be checked at all.
+     */
     const dir = screens().find((p) => p.path.includes('/terminal/directory/st-louis'))!;
     expect(dir, 'st-louis is the populated region these rules are checked against').toBeDefined();
-    expect(dir.doc.querySelectorAll('[data-record]').length).toBeGreaterThan(0);
-    expect(dir.doc.querySelectorAll('[data-display][data-field]').length).toBeGreaterThan(0);
+    expect(dir.bodyText).toContain('report a problem with any listing below');
+    expect(dir.doc.querySelectorAll('[data-snapshot-age]').length).toBeGreaterThan(0);
+    // The rules still have something to read, on the pages that do prerender records.
+    const record = pages.find((p) => p.path.includes('/directory/st-louis-'))!;
+    expect(record, 'a public record page is where the display rules are read now').toBeDefined();
+    expect(record.doc.querySelectorAll('[data-record]').length).toBeGreaterThan(0);
+    expect(record.doc.querySelectorAll('[data-display][data-field]').length).toBeGreaterThan(0);
   });
 
   it('has no search box, because Query goes to the watch', () => {
