@@ -3,8 +3,11 @@
 What happens when somebody tells whoever maintains navcom.app that a card shown there is
 unlawful, or sends a legal notice about it.
 
-The address is on [`/notice/`](https://navcom.app/notice/). What comes out of this procedure is
-an entry in `web/src/lib/hidden.ts` — see [`profiles.md`](profiles.md) §3 for that list and its
+**There is no address yet, and `/notice/` prints none.** This procedure describes what happens
+once an alias exists; until then there is no way to trigger it, which is a hole rather than a
+decision — stated here because an earlier version of this line said the address was already on
+that page, and a document claiming a channel that does not exist is worse than one admitting it
+has none. What comes out of this procedure is an entry in `web/src/lib/hidden.ts` — see [`profiles.md`](profiles.md) §3 for that list and its
 limits. It is written down before anybody is upset, for the same reason
 [`build-order.md`](../build-order.md) 10.7 says a refund policy has to be.
 
