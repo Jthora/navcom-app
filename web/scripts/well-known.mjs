@@ -31,7 +31,7 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -367,6 +367,40 @@ export function intelDocument(root = ROOT) {
    */
   const emitted = existsSync(join(root, 'packages/core/src/directory/observation.ts'));
 
+  /*
+   * The same question, asked of the other half, because the answer is different.
+   *
+   * `buildRefinement` is implemented in core, tested, and **called by nothing** -- so every
+   * observation NavCom has ever published is `area`, and the 48-hour delay this file declares
+   * has never once elapsed into an event. That is precisely the failure the comment above
+   * describes: a consumer told to expect something nothing emits. It was true one field over
+   * while the guard watched the first.
+   *
+   * Derived rather than remembered, so the day somebody wires a caller the declaration stops
+   * carrying the note on its own. Core and its own tests do not count -- a caller there is the
+   * thing being tested, not a path an operator can reach.
+   */
+  const refinable = (() => {
+    /** @param {string} dir @returns {boolean} */
+    const calls = (dir) => {
+      let found = false;
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        if (found) break;
+        const at = join(dir, entry.name);
+        if (entry.isDirectory()) found = calls(at);
+        else if (/\.(ts|svelte|js)$/.test(entry.name) && !/\.test\./.test(entry.name)) {
+          found = readFileSync(at, 'utf8').includes('buildRefinement(');
+        }
+      }
+      return found;
+    };
+    try {
+      return calls(join(root, 'web/src'));
+    } catch {
+      return false;
+    }
+  })();
+
   return {
     spec: 'navcom-intel',
     version: '0.1.0',
@@ -414,6 +448,21 @@ export function intelDocument(root = ROOT) {
      * locating people, so there is no way to file a class of thing. It prevents a system for
      * finding people. It does not prevent one person lying once.
      */
+    /*
+     * Published for the same reason as the block below it: this file already told a consumer
+     * to expect these events, and one may have built for them.
+     */
+    ...(refinable
+      ? {}
+      : {
+          refinement_not_emitted: {
+            claim:
+              'No `exact` observation exists. Every observation published so far is `area`, and the 48-hour delay below has never elapsed into an event.',
+            why: 'Every anchor available today is a published directory record, and that record ships its coordinates at full precision in the directory itself — so refining would withhold for 48 hours a number the same application publishes outright. The split earns its keep when §5\'s anchor object exists and an observation can name something that is not a row.',
+            consumer_should:
+              'Implement the `refines` rule above regardless — it is cheap, and the day one fires you have to be right already — but do not wait for a refinement, and never read an absent one as a position deliberately withheld.'
+          }
+        }),
     anchor_names_are_free_text: {
       claim: 'The observation carries no free text. The anchor it references has a name, which does.',
       consumer_should: 'Treat a resolved anchor name as unstructured text. Do not infer from this document that nothing in the chain is free-form.',
