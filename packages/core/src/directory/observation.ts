@@ -364,6 +364,21 @@ export function buildObservation(
  * operator reporting one thing once produces two observations ~20 km apart that confirm each
  * other, which is correlated fabrication arriving through a mechanism built for privacy.
  * Dedup on event id is correct and does not catch it: the two events are genuinely distinct.
+ *
+ * ## Nothing calls this, and that is the honest state rather than an omission
+ *
+ * Every anchor an operator can reach today is a **published directory record** — `anchorFromRecord`
+ * refuses anything else — and that record ships its coordinates at full precision in
+ * the region CSVs under `data/regions/` and on its own public page. So a refinement would withhold for
+ * forty-eight hours a number the same application publishes outright, while the device kept a
+ * timestamped note of where its operator stood in order to send it. That is the store
+ * `observations.svelte.ts` refuses to build, bought for nothing.
+ *
+ * The split earns its keep the moment §5's **anchor object** exists and an observation can name
+ * something that is not a row — a corner, a doorway, a thing with no page of its own. It is kept
+ * built and tested for that day, and `scripts/well-known.mjs` derives the published declaration
+ * from whether anything outside core calls it, so a consumer is never told to expect an event
+ * nothing emits.
  */
 export function buildRefinement(
   contactSecret: SecretKey,

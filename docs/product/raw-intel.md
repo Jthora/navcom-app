@@ -127,6 +127,19 @@ measurement and here by Starcom, and worth noticing that the project produced it
 An observation publishes immediately at `area` precision. The `exact` anchor position
 publishes **48 hours later**, as a second event referencing the first.
 
+> **Nothing emits the `exact` half today, and the published declaration says so.**
+> `buildRefinement` is implemented, tested, and called by nothing. Every anchor an operator can
+> reach is a published directory record, and that record ships its coordinates at full precision
+> in the directory itself — so a refinement would withhold for two days a number this project
+> publishes outright, while the device kept a timestamped note of where its operator stood in
+> order to send it later. That is a store [`observations.svelte.ts`](../../web/src/lib/terminal/observations.svelte.ts)
+> refuses to build, bought for nothing.
+>
+> The split earns its keep the moment §5's anchor object exists and an observation can name a
+> corner or a doorway rather than a row. `/.well-known/navcom-intel.json` derives this from
+> whether anything outside core calls the builder, so a consumer is never told to expect an
+> event nothing emits. Found on 2026-09-20.
+
 **Why a delay at all.** Real-time relay traffic naming a precise location tells a watcher
 that an operator is standing there *now*. That is the acute threat and a delay defeats it
 completely.
