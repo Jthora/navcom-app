@@ -7,7 +7,7 @@
    */
   import { onMount } from 'svelte';
   import { address, FundingError, setAddress, setSquadAddress, squadAddress } from '$lib/terminal/funding';
-  import { Slot, Readout } from '$lib/components/panel';
+  import { Slot, Readout, Why } from '$lib/components/panel';
 
   let mine = $state('');
   let squad = $state('');
@@ -102,6 +102,20 @@
     a different thing from money arriving at a person, and it sidesteps personal incentive
     entirely.
   </p>
+  <!--
+    The limit, said where the field is, because the field had none and looked like the one
+    above it. This is written on the phone and read back into this box and nowhere else: a
+    donor never sees it. Found by an audit for mechanisms nobody can reach, 2026-09-20.
+  -->
+  <p class="cost"><strong>Kept on this phone, and published nowhere.</strong></p>
+  <Why summary="Why this one is not on your card">
+    <p class="cost">
+      What a card may carry is a closed list, and a card carrying anything else is refused
+      outright rather than partly accepted — so adding the crew's address is a change to what
+      every reader of a card accepts, not a setting. Until that is decided, hand this one over
+      the way you would a phone number.
+    </p>
+  </Why>
 
   {#if error}<p class="error">{error}</p>{/if}
   {#if saved}

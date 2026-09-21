@@ -494,6 +494,25 @@ export const CAPABILITIES: Capability[] = [
     ],
     control: '#a',
     requires: ['identity', 'watch']
+  },
+  {
+    name: 'Somebody else\'s card',
+    screen: 'terminal/who/',
+    claims: [
+      /*
+       * Both sentences are in the prerendered page, which is the whole point of choosing them.
+       * This screen is reached with a key in the link, so what a fresh visitor meets before any
+       * card can load is the empty state — and the empty state has to say why there is nothing
+       * here and where to go instead, or it reads as a profile that failed to load.
+       */
+      'A profile is reached by somebody',
+      'Browse an area instead'
+    ],
+    readOnly:
+      'Nothing on this screen is operated. A card is one person\'s own published claims, rendered ' +
+      'from a key in the link — there is nothing here to change, because the person it describes ' +
+      'publishes it from their own device and nobody else can edit it.',
+    requires: []
   }
 ];
 

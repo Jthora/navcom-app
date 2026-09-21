@@ -12,7 +12,8 @@
   import { page } from '$app/state';
   import { PairError, pair, peers, setBuddy, unpair, type Peer } from '$lib/terminal/peers';
   import { loadIdentity } from '$lib/terminal/identity';
-  import { relays, usingDefaults } from '$lib/terminal/relays';
+  import { relays, setRelays, usingDefaults } from '$lib/terminal/relays';
+  import { loadConfig } from '$lib/terminal/config';
   import encodeQR from '@paulmillr/qr';
   import { canScan, pubkeyFrom, scan, ScanError, type Scanner } from '$lib/terminal/scan';
   import { invites, type Waiting } from '$lib/terminal/invites.svelte';
@@ -27,6 +28,11 @@
   let copied = $state(false);
   let using = $state<string[]>([]);
   let defaults = $state(false);
+  /** Whether a configured watch is supplying the list, in which case it wins. */
+  let watchRelays = $state(false);
+  let relayDraft = $state('');
+  let relayError = $state<string | null>(null);
+  let relayNote = $state<string | null>(null);
   let scannable = $state(false);
   let scanning = $state(false);
   let camera = $state<HTMLVideoElement | null>(null);
@@ -36,6 +42,8 @@
   onMount(() => {
     using = relays();
     defaults = usingDefaults();
+    watchRelays = (loadConfig()?.relays?.length ?? 0) > 0;
+    relayDraft = using.join('\n');
     scannable = canScan();
     mine = peers();
     myPubkey = loadIdentity()?.pubkey ?? null;
@@ -49,6 +57,47 @@
     invites.start();
     return () => invites.stop();
   });
+
+  /**
+   * Choosing where presence is published.
+   *
+   * `setRelays` shipped tested, exported, and called by nothing: an operator with no watch
+   * could read which strangers' machines carried their presence and had no way to change
+   * them, while the line above told them these were "the relays you configured". Pairing is
+   * the one feature built for somebody with no watch at all, so this is precisely the
+   * operator with no other way in — the same shape as `panicWipe` having no button.
+   */
+  function useRelays() {
+    relayError = null;
+    relayNote = null;
+    const list = relayDraft.split(/[\s,]+/).map((r) => r.trim()).filter(Boolean);
+    if (list.length === 0) {
+      relayError = 'At least one relay, or go back to the defaults.';
+      return;
+    }
+    // Named rather than dropped. `setRelays` filters silently, and a typo that vanishes with
+    // no reason is the silent failure this project refuses everywhere else.
+    const bad = list.find((r) => !/^wss?:\/\//.test(r));
+    if (bad) {
+      relayError = `"${bad}" is not a relay URL — expected wss://`;
+      return;
+    }
+    setRelays(list);
+    using = relays();
+    defaults = usingDefaults();
+    relayNote =
+      'Saved. Anything that starts after this uses the new list; what is already running keeps the old one until you reopen the app.';
+  }
+
+  /** Back to the shipped pair. An empty own-list is how `relays()` falls through to them. */
+  function backToDefaults() {
+    relayError = null;
+    setRelays([]);
+    using = relays();
+    defaults = usingDefaults();
+    relayDraft = using.join('\n');
+    relayNote = 'Back to the two that ship with the app.';
+  }
 
   const link = $derived(myPubkey ? `https://navcom.app/terminal/peers/#${myPubkey}` : '');
 
@@ -220,6 +269,31 @@
     They carry sealed messages they cannot read, and none of them learns who your peers are.
   </p>
   <p class="blocks">{#each using as r (r)}<span>{r}</span>{/each}</p>
+  {#if watchRelays}
+    <p>
+      These are your watch's relays, and that is why they are not changed here — the watch and
+      your peers share one connection rather than opening two. They are on
+      <a href="/terminal/setup/">the setup screen</a>, with the watch they belong to.
+    </p>
+  {:else}
+    <label for="relay-list">Where presence is published</label>
+    <textarea
+      id="relay-list"
+      bind:value={relayDraft}
+      rows="3"
+      autocomplete="off"
+      spellcheck="false"
+      data-relay-list
+    ></textarea>
+    {#if relayError}<p class="error" role="alert" data-relay-error>{relayError}</p>{/if}
+    {#if relayNote}<p data-relay-note>{relayNote}</p>{/if}
+    <div class="relay-acts">
+      <button data-relay-save onclick={useRelays}>Use these</button>
+      {#if !defaults}
+        <button class="drop" data-relay-reset onclick={backToDefaults}>Back to the defaults</button>
+      {/if}
+    </div>
+  {/if}
 </Why>
 
 {#if invites.waiting.length > 0}
@@ -344,6 +418,7 @@
 {/if}
 
 <style>
+  .relay-acts { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .5rem; }
   .over {
     margin: 0 0 0.6rem;
     padding: 0.6rem 0.75rem;

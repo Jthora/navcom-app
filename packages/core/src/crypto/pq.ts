@@ -138,13 +138,16 @@ export function hybridOpen(
  */
 export type Cover = 'hybrid' | 'classical';
 
-/**
- * What to tell somebody, in one sentence, when a message went without post-quantum cover.
+/*
+ * There is deliberately no exported sentence for this.
  *
- * Deliberately calm and deliberately specific. A yellow triangle saying "insecure" would be
- * both alarming and wrong — the message *is* encrypted, and nobody can read it today. What
- * is missing is cover against somebody recording it now to open in fifteen years, and that
- * is a sentence, not a warning label.
+ * `COVER_NOTE` was here — the canonical wording to show when a message went without
+ * post-quantum cover — and nothing outside its own test ever read it, while the Status screen
+ * said the same thing in better words: it names who has to open the app, and that cover then
+ * happens on its own. **Two copies of one safety sentence drift, and the copy nobody renders
+ * drifts first.**
+ *
+ * The wording lives on the screen. `web/e2e/reachable.spec.ts` holds it to being a note rather
+ * than an alarm — on the built page, which is where the promise is actually made. Removed
+ * 2026-09-20, by an audit for mechanisms nobody can reach.
  */
-export const COVER_NOTE =
-  'Sent with standard encryption. Unreadable now, but not covered against being stored today and opened by a future quantum computer.';

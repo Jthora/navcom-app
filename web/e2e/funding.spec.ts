@@ -21,6 +21,16 @@ test('states the real picture before anything is enabled', async ({ page }) => {
   await expect(page.getByText(/converting to cash usually is not/i)).toBeVisible();
 });
 
+test('says the crew address reaches nobody, where it is typed', async ({ page }) => {
+  // It was written on the phone, read back into the same box, and published nowhere -- while
+  // sitting directly under an address that does go on a card. Found by an audit for state
+  // written and never read; the limit is stated rather than the field quietly removed.
+  await seedDevice(page, OUT);
+  await open(page, '/terminal/funding/');
+
+  await expect(page.getByText(/published nowhere/i)).toBeVisible();
+});
+
 test('shows no amount, and has nowhere to put one', async ({ page }) => {
   // Matching the WORD "total" would fail on this screen's own copy, which promises there
   // will never be one -- the third prose false-positive in this suite. What matters is that
