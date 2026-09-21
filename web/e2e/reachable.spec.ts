@@ -35,6 +35,25 @@ test.describe('setup', () => {
     await expect(page.getByText(/skip this/i)).toBeVisible();
   });
 
+  test('a callsign can be changed without burning the device', async ({ page }) => {
+    /*
+     * `setCallsign` shipped exported and called by nothing. The field that takes a callsign is
+     * in the other half of this screen's `{#if identity}`, so once an identity existed there was
+     * no field at all — and the only way to change the name the board shows was to burn the
+     * device, destroying the standing that name had been carrying in order to rename it.
+     */
+    await seedDevice(page, OUT);
+    await open(page, '/terminal/setup/');
+
+    await page.locator('#rename').fill('Raven');
+    await page.locator('[data-rename]').click();
+    await expect(page.getByText('Raven').first()).toBeVisible();
+
+    // The stored identity changed, not just the readout.
+    await open(page, '/terminal/setup/');
+    await expect(page.locator('#rename')).toHaveValue('Raven');
+  });
+
   test('somebody you would call can be added and removed', async ({ page }) => {
     await seedDevice(page, OUT);
     await open(page, '/terminal/setup/');
@@ -229,11 +248,36 @@ test.describe('wipe', () => {
     await expect(burn).toBeEnabled();
   });
 
+  test('says how much each tier is holding, not only what is in it', async ({ page }) => {
+    // The storage-full banner tells an operator to clear something without saying what is
+    // large. `tierSizes` was written "for telling an operator what is taking the room before
+    // they have to guess" and was reachable from nothing.
+    await seedDevice(page, OUT);
+    await open(page, '/terminal/wipe/');
+
+    await expect(page.locator('[data-room-wipeable]')).toHaveText(/\d+\s*(B|kB)/);
+    await expect(page.locator('[data-room-accruing]')).toHaveText(/\d+\s*(B|kB)/);
+  });
+
   test('the wrong callsign does not arm the burn', async ({ page }) => {
     await seedDevice(page, OUT);
     await open(page, '/terminal/wipe/');
     await page.locator('#confirm').fill('wren');
     await expect(page.getByRole('button', { name: /burn this device/i })).toBeDisabled();
+  });
+
+  test('a callsign with combining characters can still arm the burn', async ({ page }) => {
+    /*
+     * The confirmation was re-derived in the template with a raw `!==` — no NFC normalisation,
+     * and no trim on the stored callsign — while the gate it stands in front of applies both.
+     * An operator who set up on one keyboard and typed the confirmation on another watched the
+     * one control that survives seizure stay disabled, forever, with no reason given.
+     */
+    await seedDevice(page, { callsign: 'Jose\u0301' });
+    await open(page, '/terminal/wipe/');
+
+    await page.locator('#confirm').fill('Jos\u00e9');
+    await expect(page.getByRole('button', { name: /burn this device/i })).toBeEnabled();
   });
 
   test('burn stops this phone being woken for on-call', async ({ page }) => {
@@ -311,6 +355,58 @@ test.describe('peers', () => {
     await page.getByRole('button', { name: /^pair$/i }).click();
 
     await expect(page.getByText(/not a navcom code/i)).toBeVisible();
+  });
+
+  /*
+   * `setRelays` was exported, unit-tested, and called from nothing for as long as it existed.
+   * An operator with no watch could read which strangers' machines carried their presence and
+   * could not change one of them -- while the sentence above the list offered "the relays you
+   * configured" as a state they had no way to reach. Same shape as `panicWipe` having no
+   * button, and it is only closed when a person can work the control.
+   */
+  test('an operator with no watch can choose where presence is published', async ({ page }) => {
+    await seedDevice(page, OUT);
+    await open(page, '/terminal/peers/');
+
+    // Scoped to the disclosure: the screen has another `.blocks` list of its own.
+    const where = page.locator('details', { has: page.getByText('Where this goes') });
+    await where.locator('summary').click();
+    await where.locator('[data-relay-list]').fill('wss://relay.example');
+    await where.locator('[data-relay-save]').click();
+
+    // The readout, not the form: what the app will actually use.
+    await expect(where.locator('p.blocks')).toContainText('wss://relay.example');
+    await expect(where.locator('[data-relay-note]')).toBeVisible();
+  });
+
+  test('and a typo is named rather than silently dropped', async ({ page }) => {
+    // `setRelays` filters non-relay lines out on its own, which would make a mistyped URL
+    // disappear with no reason given -- the silent failure this project refuses everywhere.
+    await seedDevice(page, OUT);
+    await open(page, '/terminal/peers/');
+
+    const where = page.locator('details', { has: page.getByText('Where this goes') });
+    await where.locator('summary').click();
+    await where.locator('[data-relay-list]').fill('relay.example');
+    await where.locator('[data-relay-save]').click();
+
+    await expect(where.locator('[data-relay-error]')).toContainText(/not a relay URL/i);
+    await expect(where.locator('p.blocks')).not.toContainText('relay.example');
+  });
+
+  test('and the choice is put back where a watch supplies the list', async ({ page }) => {
+    // A watch's relays win in `relays()`, so offering a control that silently loses to them
+    // would be a worse lie than having none. The screen says where they live instead.
+    await seedDevice(page, {
+      ...OUT,
+      watchtower: { pubkey: 'a'.repeat(64), relays: ['wss://watch.example'] }
+    });
+    await open(page, '/terminal/peers/');
+
+    const where = page.locator('details', { has: page.getByText('Where this goes') });
+    await where.locator('summary').click();
+    await expect(where.locator('[data-relay-list]')).toHaveCount(0);
+    await expect(page.getByText(/these are your watch's relays/i)).toBeVisible();
   });
 });
 

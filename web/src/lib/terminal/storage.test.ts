@@ -11,7 +11,7 @@
 
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
-  burn, burnCaches, burnConfirmed, clearField, clearStorageError, corruptTiers, get,
+  burn, burnArmed, burnCaches, burnConfirmed, clearField, clearStorageError, corruptTiers, get,
   onStorageError, panicWipe, set, storageError, tierSizes, tierSummary
 } from './storage';
 
@@ -105,6 +105,37 @@ describe('burn destroys everything on the device', () => {
   it('does not throw where the Cache API is absent', () => {
     delete (globalThis as Record<string, unknown>).caches;
     return expect(burnCaches()).resolves.toBeUndefined();
+  });
+});
+
+describe('the gate the button asks', () => {
+  /*
+   * `burnArmed` exists because the wipe screen could not ask `burnConfirmed` anything — it
+   * destroys the device as it answers. So the button re-derived the comparison with a raw
+   * `!==`, without the NFC normalisation the gate applies and without trimming the stored
+   * callsign, and an operator whose name carries combining characters watched the only control
+   * that survives seizure stay disabled forever. These assert the two answers agree.
+   */
+  it('accepts the same name typed in a different normalisation', () => {
+    // "José" decomposed (e + combining acute) against the composed form a second keyboard sends.
+    expect(burnArmed('Jose\u0301', 'Jos\u00e9')).toBe(true);
+    expect(burnArmed('Jos\u00e9', 'Jose\u0301')).toBe(true);
+  });
+
+  it('tolerates a stored callsign with surrounding whitespace, as the gate does', () => {
+    expect(burnArmed('Wren', ' Wren ')).toBe(true);
+  });
+
+  it('refuses a different name, and refuses everything when there is no identity', () => {
+    expect(burnArmed('Raven', 'Wren')).toBe(false);
+    expect(burnArmed('', null)).toBe(false);
+    expect(burnArmed('Wren', null)).toBe(false);
+  });
+
+  it('destroys nothing by being asked', () => {
+    set('accruing', 'callsign', 'Wren');
+    expect(burnArmed('Wren', 'Wren')).toBe(true);
+    expect(get('accruing', 'callsign'), 'asking must not burn').toBe('Wren');
   });
 });
 

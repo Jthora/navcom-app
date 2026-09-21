@@ -1,7 +1,7 @@
 <script lang="ts">
   import { ConfigError, loadConfig, saveConfig } from '$lib/terminal/config';
   import { ContactError, clearContact, loadContact, saveContact } from '$lib/terminal/contact';
-  import { createIdentity, loadIdentity } from '$lib/terminal/identity';
+  import { createIdentity, loadIdentity, setCallsign } from '$lib/terminal/identity';
   import { askToKeep } from '$lib/terminal/persist';
   import { Slot, Readout, Why } from '$lib/components/panel';
   import { onMount } from 'svelte';
@@ -16,9 +16,12 @@
   let contact = $state<ReturnType<typeof loadContact>>(null);
   let identity = $state<ReturnType<typeof loadIdentity>>(null);
   let configured = $state(false);
+  /** The callsign field in the identity branch — a rename, not a second identity. */
+  let renamed = $state('');
 
   onMount(() => {
     identity = loadIdentity();
+    renamed = identity?.callsign ?? '';
     contact = loadContact();
     if (contact) {
       contactLabel = contact.label;
@@ -67,6 +70,27 @@
     contactNumber = '';
   }
 
+  /**
+   * Changing the name the board shows.
+   *
+   * `setCallsign` shipped exported, and called by nothing. The form that takes a callsign sits
+   * in the `{:else}` half of this screen, so once an identity existed there was no field at all
+   * — and the only way to change a callsign was to burn the device, which destroys the standing
+   * the callsign was carrying in order to change what it is called.
+   */
+  function rename(event: SubmitEvent) {
+    event.preventDefault();
+    error = null;
+    const name = renamed.trim();
+    if (!name) {
+      error = 'A callsign is needed. It is what the board shows.';
+      return;
+    }
+    setCallsign(name);
+    identity = loadIdentity();
+    renamed = identity?.callsign ?? name;
+  }
+
   function connect(event: SubmitEvent) {
     event.preventDefault();
     error = null;
@@ -102,6 +126,20 @@
     <p class="note">
       <strong>There is no recovery.</strong> Lose this device and you lose this identity.
     </p>
+    <form onsubmit={rename}>
+      <label for="rename">Change your callsign</label>
+      <input id="rename" bind:value={renamed} autocomplete="off" spellcheck="false" />
+      <button type="submit" data-rename>Change it</button>
+    </form>
+    <p class="note">Your key does not change, so your standing comes with you.</p>
+    <Why summary="What a new callsign does not change">
+      <p class="note">
+        Nobody has to re-add you, and nothing you hold is reissued. What you have already
+        signed keeps the old name — a correction, an observation, an endorsement somebody gave
+        you — and <a href="/terminal/card/">a published card</a> shows the old one until you
+        publish it again.
+      </p>
+    </Why>
     <!--
       Said at the moment it happens, and only here.
 

@@ -25,7 +25,6 @@ import {
   watchtowerAt,
   buildKeyBundle,
   coverOf,
-  COVER_NOTE,
   kemPublicFromHex,
   kemPublicHex,
   openFromGroup,
@@ -173,14 +172,12 @@ describe('falling back', () => {
     expect(coverOf([ravenPub], {})).toBe('classical');
   });
 
-  it('says what is actually missing, calmly and specifically', () => {
-    // Not a warning label. The message IS encrypted and nobody can read it today; what is
-    // missing is cover against being stored now and opened later. A yellow triangle saying
-    // "insecure" would be alarming and also wrong.
-    expect(COVER_NOTE).toMatch(/unreadable now/i);
-    expect(COVER_NOTE).toMatch(/quantum/i);
-    expect(COVER_NOTE).not.toMatch(/insecure|unsafe|danger|warning|error|risk/i);
-  });
+  /*
+   * The calm-wording assertion that used to sit here checked `COVER_NOTE`, a sentence no screen
+   * rendered. It is now checked where the promise is actually made: `reachable.spec.ts`, "is a
+   * note, not an alarm", against the built Status page — including the colour it is drawn in,
+   * which no string comparison could have caught.
+   */
 });
 
 describe('the join between an address and its envelope', () => {

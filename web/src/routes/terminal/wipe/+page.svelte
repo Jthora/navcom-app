@@ -15,7 +15,7 @@
    */
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { burnCaches, burnConfirmed, panicWipe, tierSummary } from '$lib/terminal/storage';
+  import { burnArmed, burnCaches, burnConfirmed, panicWipe, tierSizes, tierSummary } from '$lib/terminal/storage';
   import { destroyPool } from '$lib/terminal/pool';
   import { loadIdentity } from '$lib/terminal/identity';
   import { forgetPaging } from '$lib/terminal/paging';
@@ -26,9 +26,22 @@
   let summary = $state<{ accruing: string[]; wipeable: string[] }>({ accruing: [], wipeable: [] });
   let callsign = $state<string | null>(null);
   let typed = $state('');
+  /**
+   * How much each tier is holding.
+   *
+   * `tierSizes` was written "for telling an operator what is taking the room before they have to
+   * guess" and then reached from nothing, while the storage-full banner told them to clear
+   * something without saying what was large. Bytes of stored text, not a count of anything
+   * anybody did.
+   */
+  let sizes = $state({ accruing: 0, wipeable: 0 });
+
+  /** Rounded hard: the number is for choosing between two tiers, not for auditing a device. */
+  const room = (n: number): string => (n < 1024 ? `${n} B` : `${Math.round(n / 1024)} kB`);
 
   onMount(() => {
     summary = tierSummary();
+    sizes = tierSizes();
     callsign = loadIdentity()?.callsign ?? null;
   });
 
@@ -87,10 +100,12 @@
   <p class="tier">
     <span class="tag wipe">tonight</span>
     {summary.wipeable.length ? summary.wipeable.join(' · ') : 'nothing'}
+    <span class="room" data-room-wipeable>{room(sizes.wipeable)}</span>
   </p>
   <p class="tier">
     <span class="tag keep">kept</span>
     {summary.accruing.length ? summary.accruing.join(' · ') : 'nothing'}
+    <span class="room" data-room-accruing>{room(sizes.accruing)}</span>
   </p>
 </section>
 
@@ -148,7 +163,12 @@
   {#if callsign}
     <label for="confirm">Type <strong>{callsign}</strong> to confirm</label>
     <input id="confirm" bind:value={typed} autocomplete="off" spellcheck="false" />
-    <button class="danger burn" disabled={typed.trim() !== callsign} onclick={doBurn}>
+    <!--
+      Asked of `storage.ts`, never re-derived here. The raw comparison this replaces ignored the
+      NFC normalisation the gate itself applies, so a callsign with combining characters left the
+      button disabled forever while the gate behind it would have opened.
+    -->
+    <button class="danger burn" disabled={!burnArmed(typed, callsign)} onclick={doBurn}>
       Burn this device
     </button>
   {:else}
@@ -165,6 +185,7 @@
 </section>
 
 <style>
+  .room { color: var(--t-faint); font-variant-numeric: tabular-nums; margin-inline-start: .4rem; }
   .holding { border: 2px solid var(--t-line-strong); padding: .9rem 1rem; gap: .4rem; }
   .tier { margin: 0; display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap;
           font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9rem; }

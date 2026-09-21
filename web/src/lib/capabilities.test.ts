@@ -42,6 +42,25 @@ describe('every capability has a screen', () => {
     }
   });
 
+  it('declares a capability for every terminal screen, because membership was opt-in', () => {
+    /*
+     * The guard one level up from `control`/`readOnly`.
+     *
+     * Making each of those mandatory *per entry* closed the allow-list inside the manifest and
+     * left the manifest itself an allow-list — so a screen nobody remembered to add was a screen
+     * nothing checked. `terminal/who/` shipped that way: precached, linked from `find/`, and not
+     * one word on it verified. "A guard whose coverage is a hand-written allow-list only ever
+     * covers the failures somebody already remembered."
+     *
+     * One-way on purpose. A capability may name a deeper screen than a route — the reporting one
+     * names `terminal/directory/st-louis/`, a real page that `TERMINAL_ROUTES` does not list
+     * because it is a region rather than a screen.
+     */
+    const declared = new Set<string>(CAPABILITY_SCREENS);
+    const missing = TERMINAL_ROUTES.map((r) => `terminal/${r}`).filter((s) => !declared.has(s));
+    expect(missing, 'terminal screens with no capability entry').toEqual([]);
+  });
+
   it('every on-visit screen was actually built, since nothing precaches it', () => {
     // The failure this guards: a screen that is neither in the shell nor in the build is
     // simply absent, and the precache check above would not have looked.

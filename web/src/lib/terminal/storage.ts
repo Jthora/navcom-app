@@ -271,11 +271,26 @@ export async function burnCaches(): Promise<void> {
  */
 const sameName = (a: string, b: string): boolean => a.normalize('NFC') === b.normalize('NFC');
 
-export function burnConfirmed(typed: string, callsign: string | null): boolean {
+/**
+ * Whether this confirmation matches — **with no side effect**, so a template can ask.
+ *
+ * Split out because the wipe screen could not ask. `sameName` is module-private and
+ * `burnConfirmed` destroys the device as it answers, so the button re-derived the match with a
+ * raw `typed.trim() !== callsign` — no normalisation, and no trim on the callsign either. That
+ * is the exact bug normalising was added to fix, reintroduced one file over: an operator whose
+ * callsign carries combining characters, or a stored trailing space, watched the button stay
+ * disabled while `burnConfirmed` would have accepted them. A confirmation nobody can satisfy is
+ * not a safeguard, and this one guards seizure and compulsion.
+ *
+ * The gate still lives here. What the template gets is the same question, asked safely.
+ */
+export const burnArmed = (typed: string, callsign: string | null): boolean =>
   // No identity means nothing to burn — and an empty confirmation must never match an
   // empty callsign into a successful destroy.
-  if (!callsign) return false;
-  if (!sameName(typed.trim(), callsign.trim())) return false;
+  !!callsign && sameName(typed.trim(), callsign.trim());
+
+export function burnConfirmed(typed: string, callsign: string | null): boolean {
+  if (!burnArmed(typed, callsign)) return false;
   burn();
   return true;
 }
