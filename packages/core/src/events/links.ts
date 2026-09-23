@@ -367,6 +367,21 @@ function handleOf(value: string, p: Platform): string | null {
 }
 
 /**
+ * A handle checked the way publishing checks it, for a caller holding one it did not get from
+ * `readLinks`.
+ *
+ * Exported because `proofs.ts` builds a request from the two halves of a fediverse handle, and a
+ * second implementation of *is this a host, and is that an account name* is a second
+ * implementation that can disagree. It disagreed immediately: splitting on the first slash alone
+ * admitted `evil.com/path/@x/raven`, whose account half is not a name at all. One check, here,
+ * where the platform table lives.
+ */
+export function checkedHandle(platformId: string, handle: string): string | null {
+  const p = BY_ID.get(platformId);
+  return p ? handleOf(handle, p) : null;
+}
+
+/**
  * Links as NIP-39 `i` tags, in rank order.
  *
  * Throws nothing. A link naming a platform this build does not know, or carrying a handle

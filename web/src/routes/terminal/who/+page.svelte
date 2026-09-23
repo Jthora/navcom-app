@@ -19,8 +19,10 @@
    */
   import { onMount } from 'svelte';
   import { page } from '$app/state';
-  import { Slot, Readout, Why } from '$lib/components/panel';
-  import { does, embedUrl, frameHeight, keyPrint, layout, platform as platformOf } from '@navcom/core';
+  import { Slot, Readout, Why, Action } from '$lib/components/panel';
+  import { does, embedUrl, frameHeight, keyPrint, layout, platform as platformOf,
+    canProve, checkProof, proofRequest, type CardLink, type ProofResult
+  } from '@navcom/core';
   import { profile } from '$lib/terminal/public.svelte';
   import { isLean } from '$lib/terminal/lean';
   import { hiddenOn } from '$lib/hidden';
@@ -87,6 +89,57 @@
    * for what a card says.
    */
   const print = $derived(card ? keyPrint(card.contact) : null);
+
+  /**
+   * What a tap on `Check` found, per platform.
+   *
+   * Session-only, and deliberately not stored. A cached verdict is a claim about the past
+   * rendered as a fact about now, and the check costs one request — the thing worth keeping
+   * would be the staleness, not the answer.
+   */
+  let proofs = $state<Record<string, ProofResult | 'checking'>>({});
+
+  /** Handles that carry a pointer and belong to a platform that answers without an account. */
+  const provable = $derived(
+    (card?.links ?? []).filter((l) => canProve(l.platform) && l.proof)
+  );
+
+  /**
+   * Refuted is `warn`, never `alarm`.
+   *
+   * `panel.md` rule 7: the alarm channel is sealed for `DISTRESS` and for a watch state that is
+   * lying about itself. A handle that does not prove out is worth knowing and is not an
+   * emergency, and spending the alarm on it would cost the one signal that must never be
+   * ordinary.
+   */
+  const toneOf = (state: ProofResult['state']) =>
+    state === 'proven' ? 'good' : state === 'refuted' ? 'warn' : 'cold';
+
+  /**
+   * One request, to one platform, because somebody asked for it.
+   *
+   * Never on load and never for every handle at once: this screen is built so that opening a
+   * card tells nobody, and a check is the one place that stops being true — so it is a
+   * deliberate act, for one link, and the sentence above the control says where it goes.
+   */
+  async function check(link: CardLink) {
+    if (!card) return;
+    const request = proofRequest(link);
+    proofs = { ...proofs, [link.platform]: 'checking' };
+    let body: unknown = null;
+    if (request) {
+      try {
+        const res = await fetch(request.url, {
+          credentials: 'omit',
+          referrerPolicy: 'no-referrer'
+        });
+        body = res.ok ? await res.json() : null;
+      } catch {
+        // Offline, blocked, or refused. `checkProof` reads a blank as unknown, never as no.
+      }
+    }
+    proofs = { ...proofs, [link.platform]: checkProof(link, card.contact, body) };
+  }
 </script>
 
 <svelte:head>
@@ -199,6 +252,42 @@
         <a href="/notice/">who is responsible for what</a>.
       </p>
     </Why>
+
+    {#if provable.length > 0}
+      <!--
+        The one claim on this page that can be disproven rather than merely unsupported, so it
+        gets its own slots. Everything above is its holder's word about themselves.
+      -->
+      <Why summary="What checking a handle does">
+        <p>
+          A handle here is a claim until somebody checks it. Where the platform lets anyone read a
+          post without an account, the operator can publish one naming this key, and tapping
+          <strong>Check</strong> fetches that post and compares it. A pass means the same person
+          holds both; a fail can mean the proof names a different key, or was written by a
+          different account.
+        </p>
+        <p>
+          Checking contacts that platform from this phone, once, for that one handle — the only
+          moment this page reaches anything outside NavCom. Nothing is checked until you tap, and
+          nothing is stored afterwards.
+        </p>
+      </Why>
+      {#each provable as l (l.platform)}
+        {@const got = proofs[l.platform]}
+        <Slot k={name(l.platform)}>
+          {#if got === 'checking'}
+            <Readout value="Checking" tone="neutral" sub={l.handle} />
+          {:else if got}
+            <Readout value={got.readout} tone={toneOf(got.state)} sub={got.reason} />
+          {:else}
+            <Readout value="Unchecked" tone="cold" sub={l.handle} />
+          {/if}
+        </Slot>
+        {#if !got}
+          <Action label="Check {name(l.platform)}" onfire={() => check(l)} />
+        {/if}
+      {/each}
+    {/if}
 
     {#if card.card.lightning}
       <Slot k="Support">

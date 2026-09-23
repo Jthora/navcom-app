@@ -763,6 +763,48 @@ against it, for the same reason counter-signing is gated: **the circle is people
 person.** When that stops being true this becomes urgent, and it is written here so that
 somebody notices the day it changes.
 
+### 7.8 — The handle proof, because it was the field that was already there
+
+| | Item | Owner | Cost |
+|---|---|---|---|
+| 7.8 | Handle proofs, NIP-39 | **done** | The `i` tag has carried a `proof` field since links shipped and nothing ever filled one, so every handle on every card was a claim. GitHub and Mastodon both serve a public JSON document with permissive CORS, which is the entire list — every other platform refuses unauthenticated or cross-origin reads, and there is no server to do it from |
+
+**Why this and not the credential stack above it.** The question a reader actually asks of a
+profile is *is this a person, and is it the one I think* — not *what are they qualified in*.
+A proof answers the first, needs no vocabulary, no verifier, no invariant widened and no new
+event, and it **disproves** a false claim rather than merely failing to support it. Somebody
+with a following is impersonated long before they are asked for a certificate.
+
+**Nothing is fetched until somebody taps**, for one handle at a time. `who/` is built so that
+opening a card tells no relay and no platform, and a check is the one place that stops being
+true — so it is a deliberate act with the sentence saying where the request goes beside it. No
+result is stored: a cached verdict is a claim about the past rendered as a fact about now.
+
+**Refuted is `warn`, never `alarm`.** Rule 7 seals that channel for `DISTRESS` and for a watch
+state lying about itself. A handle that does not prove out is worth knowing and is not an
+emergency.
+
+### Verified capabilities — written down, not scheduled
+
+Not a milestone item, and deliberately not given a number. `profiles.md` §6 decided
+institutional credentials are written down rather than built, and
+[`verified-capabilities.md`](product/verified-capabilities.md) now carries the shape with
+[`credential-verification.md`](research/credential-verification.md) behind it. Five gates, none
+of them engineering:
+
+1. Does invariant 8's opt-in clause widen from contact details to identity documents
+2. Does a badge shelf create a tier a pseudonymous operator can never join
+3. **Has a credentialed professional actually asked** — the test crew federation passed on
+   2026-09-03, and this one has not
+4. Who runs the verifier, and who reviews it, in a project whose on-call roster is one deep
+5. Does a person write the explainer, since displaying a real qualification can carry legal
+   consequences in several states
+
+The research found the thing that decides the order: checkability comes *from* publicity, so
+the credentials with open APIs are public directories of people, and the ones safe for a
+pseudonymous operator to hold cannot be checked at all. If it is ever built it verifies
+**presented** credentials and never queries registries.
+
 ---
 
 ## Milestone 8 — The directory serves whoever opens it

@@ -16,7 +16,7 @@ async function cardFor(opts: {
   callsign: string;
   doing?: string;
   does?: string[];
-  links?: { platform: string; handle: string }[];
+  links?: { platform: string; handle: string; proof?: string }[];
 }) {
   const { generateSecretKey, getPublicKey } = await import('nostr-tools/pure');
   const { buildCard } = await import('@navcom/core');
@@ -222,4 +222,110 @@ test('offers nothing to rank, sort or filter by', async ({ page }) => {
   const body = await page.locator('body').innerText();
   expect(body).not.toMatch(/\b\d+\s+(followers|patrols|reports|endorsements|vouches)\b/i);
   expect(body).not.toMatch(/verified|rank|level|score|tier/i);
+});
+
+
+/**
+ * The handle proof — the one claim on this page that can be disproven.
+ *
+ * NIP-39 has carried a proof field since links shipped and nothing ever filled it, so every
+ * handle was a claim. What matters here is not that a proof can pass: it is that **nothing is
+ * fetched until somebody taps**, because this screen's whole design is that opening a card
+ * tells nobody, and a check is the one place that stops being true.
+ */
+
+const GIST = 'a1b2c3d4e5f6';
+
+async function npubOf(contact: string) {
+  const { npubEncode } = await import('nostr-tools/nip19');
+  return npubEncode(contact);
+}
+
+/** Answers GitHub's gist endpoint, and counts how many times it was asked. */
+async function fakeGist(
+  page: import('@playwright/test').Page,
+  body: unknown
+): Promise<{ calls: () => number }> {
+  let calls = 0;
+  await page.route('https://api.github.com/**', async (route) => {
+    calls++;
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+  });
+  return { calls: () => calls };
+}
+
+test('a handle with a proof is unchecked until somebody taps, and contacts nobody before that', async ({
+  page
+}) => {
+  const { event, contact } = await cardFor({
+    callsign: 'Raven',
+    links: [{ platform: 'github', handle: 'raven', proof: GIST }]
+  });
+  const npub = await npubOf(contact);
+  const gist = await fakeGist(page, {
+    owner: { login: 'raven' },
+    files: { 'nostr.md': { content: `Verifying that I control the following Nostr public key: ${npub}` } }
+  });
+
+  await seedDevice(page, seeded(event));
+  await open(page, `/terminal/who/?k=${contact}`);
+
+  await expect(page.getByText('Unchecked')).toBeVisible();
+  expect(gist.calls(), 'the page reached GitHub before anybody asked it to').toBe(0);
+
+  await page.getByRole('button', { name: /Check GitHub/i }).click();
+
+  await expect(page.getByText('Proven')).toBeVisible();
+  expect(gist.calls()).toBe(1);
+});
+
+test('a proof written by somebody else is refuted, and never sounds the alarm', async ({ page }) => {
+  const { event, contact } = await cardFor({
+    callsign: 'Raven',
+    links: [{ platform: 'github', handle: 'raven', proof: GIST }]
+  });
+  const npub = await npubOf(contact);
+  // The obvious forgery: point at a real proof belonging to another account.
+  await fakeGist(page, {
+    owner: { login: 'someone-else' },
+    files: { 'nostr.md': { content: `Verifying that I control the following Nostr public key: ${npub}` } }
+  });
+
+  await seedDevice(page, seeded(event));
+  await open(page, `/terminal/who/?k=${contact}`);
+  await page.getByRole('button', { name: /Check GitHub/i }).click();
+
+  await expect(page.getByText('Someone else')).toBeVisible();
+  // `panel.md` rule 7: the alarm channel belongs to Distress and to a watch state that is lying
+  // about itself. A handle that does not prove out is worth knowing and is not an emergency.
+  await expect(page.locator('[data-tone="alarm"]')).toHaveCount(0);
+});
+
+test('a check that could not reach the platform says unknown, never no', async ({ page }) => {
+  const { event, contact } = await cardFor({
+    callsign: 'Raven',
+    links: [{ platform: 'github', handle: 'raven', proof: GIST }]
+  });
+  await page.route('https://api.github.com/**', (route) => route.abort());
+
+  await seedDevice(page, seeded(event));
+  await open(page, `/terminal/who/?k=${contact}`);
+  await page.getByRole('button', { name: /Check GitHub/i }).click();
+
+  await expect(page.getByText('Not checked')).toBeVisible();
+  await expect(page.getByText(/unknown is not no/i)).toBeVisible();
+});
+
+test('a handle on a platform that answers nobody is not offered a check it cannot do', async ({
+  page
+}) => {
+  const { event, contact } = await cardFor({
+    callsign: 'Raven',
+    links: [{ platform: 'x', handle: 'raven', proof: 'anything' }]
+  });
+  await seedDevice(page, seeded(event));
+  await open(page, `/terminal/who/?k=${contact}`);
+
+  await expect(page.getByRole('heading', { name: 'Raven' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Check/i })).toHaveCount(0);
 });
