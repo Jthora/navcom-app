@@ -81,7 +81,45 @@ const NOT_CORRECTABLE: Partial<Record<ResourceField, string>> = {
    * refused is *publishing into it from outside*. No UI offered this, so nothing reachable
    * changes — which is why it survived unnoticed.
    */
-  notes: 'free text cannot be policed, and the no-descriptor rule is enforced by there being nowhere to put one rather than by a prohibition'
+  notes: 'free text cannot be policed, and the no-descriptor rule is enforced by there being nowhere to put one rather than by a prohibition',
+
+  /*
+   * What a place **is**, as opposed to what it does.
+   *
+   * These were correctable because `CORRECTABLE` is every field class minus a short list, and
+   * nobody added them to it. No screen offers them — `CORRECTABLE_FIELDS` in `fields.ts` names
+   * eight, and none of these is among them — so nothing an operator can tap produced one, and
+   * that is exactly why it went unnoticed: the hole was only reachable from a relay.
+   *
+   * `name` is the sharpest of them. It accepts 200 characters, renders as the record's heading,
+   * and made "there is nowhere to put a descriptor" untrue the moment somebody published one.
+   */
+  name: 'a correction says what a place does, not what it is called; a name that can be rewritten from a relay is a free-text field with a heading',
+  address: 'the same reason as `lat` — where a building is is not something an operator learns by being turned away at its door',
+  type: 'what kind of service something is is the schema\'s question, not a claim from the doorway. Changing it moves a record between categories a person searched by',
+  region: 'which metro a record belongs to is build-time data; a correction that moved one would hide it from the area that carries it',
+
+  /*
+   * The attestation, which describes the claim rather than the place.
+   *
+   * A correction already carries its own `verified_by`, `method` and `last_verified` in the
+   * envelope, signed. Letting it also *assert* those fields on the record let anybody attach a
+   * stranger's callsign to a row they never checked — and 1,349 of the shipped rows have a
+   * blank `verified_by`, where a blank has no incumbent to outrank.
+   */
+  verified_by: 'who checked something is proven by the signature on the correction, never asserted inside it',
+  last_verified: 'when something was checked is the envelope\'s claim about itself',
+  method: 'how somebody knew is part of the attestation, and an attestation that can restate its own method is not one',
+
+  /*
+   * The switch that decides whether hours render at all.
+   *
+   * Rule 7 withholds the posted hours of a `weather_activated` centre because they are not
+   * tonight's hours. A correction rewriting `seasonal` to `year_round` un-withholds them —
+   * *"Open 19:00-07:00"* for a warming centre nobody has activated, which is the exact
+   * sentence `display.ts` names as the thing it exists to prevent.
+   */
+  seasonal: 'whether a programme is seasonal is a policy fact about the programme, and it is the switch that decides whether its hours may be shown at all'
 };
 
 const CORRECTABLE: readonly ResourceField[] = (Object.keys(FIELD_CLASS) as ResourceField[]).filter(
@@ -417,11 +455,20 @@ export function mergeCorrections(
       // Captured before the write, because after it the base value is gone. A disagreement is
       // only visible while both halves are still in scope.
       const was = base[field];
+      /*
+       * Normalised, because a multi-value field is an array here.
+       *
+       * `replaced` is what makes `displayMerged` render a decisive field as contested, and the
+       * `typeof was === 'string'` test skipped every array — so `accepts`, the decisive field
+       * that says who a shelter takes, could be overwritten from `single_women, families` to
+       * `single_men` and render as a confident value with nothing to say they disagreed.
+       */
+      const before = Array.isArray(was) ? was.join(' | ') : typeof was === 'string' ? was : '';
       record[field] = winner.fields[field] as never;
       sources[field] = {
         correction: winner,
         confidence: bestConfidence,
-        ...(typeof was === 'string' && was.trim() !== '' ? { replaced: was } : {})
+        ...(before.trim() !== '' ? { replaced: before } : {})
       };
     }
   }

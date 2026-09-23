@@ -644,3 +644,62 @@ describe('a corrupted entry in the input list (found in robustness audit)', () =
     expect(mergeCorrections(base(), withGarbage, NOW).record.hours).toBe('Mon-Sun 20:00-06:00');
   });
 });
+
+describe('what a correction may assert at all', () => {
+  /*
+   * `CORRECTABLE` is every field class minus a short list, and that list held only `lat`, `lon`
+   * and `notes`. So `name`, `address`, `type`, `region` and the attestation fields were
+   * assertable by anybody with a relay while no screen offered one — which is why it went
+   * unnoticed: unreachable from the app, wide open from the wire.
+   */
+  const signed = (fields: Record<string, string>): Event =>
+    finalizeEvent(
+      {
+        kind: KIND_CORRECTION,
+        created_at: 1_755_300_000,
+        tags: [['d', 'st-louis-example']],
+        content: JSON.stringify({
+          record: 'st-louis-example',
+          verified_by: 'Wren',
+          method: 'in_person',
+          last_verified: '2026-08-19',
+          fields
+        })
+      },
+      wren
+    );
+
+  for (const [field, value] of [
+    ['name', 'Somewhere Else Entirely'],
+    ['address', '412 Elm St'],
+    ['type', 'meal'],
+    ['region', 'sydney'],
+    ['verified_by', 'Raven'],
+    ['last_verified', '2026-09-21'],
+    ['method', 'in_person'],
+    ['seasonal', 'year_round']
+  ] as const) {
+    it(`refuses one asserting ${field}`, () => {
+      expect(readCorrection(overRelay(signed({ [field]: value })))).toBeNull();
+    });
+  }
+
+  it('still takes a flag, because that is how a person reports a problem', () => {
+    // The one field in this group that must stay: "report a problem" submits exactly this.
+    expect(readCorrection(overRelay(signed({ flag: 'reported_closed' })))).not.toBeNull();
+  });
+
+  it('records what a multi-value field replaced, so a decisive one reads as contested', () => {
+    /*
+     * `replaced` is what makes `displayMerged` render a decisive field as contested, and it was
+     * captured only for strings — so `accepts`, the field that says who a shelter takes, could
+     * be cut from two values to one and render as a confident answer with no disagreement shown.
+     */
+    const merged = mergeCorrections(
+      base({ accepts: ['single_women', 'families'] as never }),
+      [{ ...correction({ fields: { accepts: 'single_men' } }), by: 'abc123' }],
+      NOW
+    );
+    expect(merged.sources.accepts?.replaced).toBe('single_women | families');
+  });
+});

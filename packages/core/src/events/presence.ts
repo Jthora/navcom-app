@@ -166,6 +166,15 @@ export function readPresence(
     if (payload.area !== null && payload.area !== undefined && !withinLimit(payload.area, AREA_MAX)) {
       return null;
     }
+    /*
+     * The only number anything acts on, and `buddyState` compares it arithmetically.
+     *
+     * A string makes every comparison false, so the peer reads `out` forever and is never
+     * nudged; a null makes them all true, so they read `overdue` from the first second. Both
+     * are invisible, and both break the promise this object exists to keep — that somebody
+     * cannot believe they are watched while nobody is.
+     */
+    if (typeof payload.until !== 'number' || !Number.isFinite(payload.until)) return null;
     return { from: inner.pubkey, payload, at: inner.created_at };
   } catch {
     return null;

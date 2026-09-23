@@ -83,6 +83,15 @@ export type LogOutcome =
    * neighbour.
    */
   | 'contact-attempted'
+  /**
+   * The node answered and **nothing left the machine** — every relay refused the response.
+   *
+   * The same distinction `contact-attempted` draws, applied to the more important action. An
+   * acknowledgement recorded as `acknowledged` when no relay took it tells an operator reading
+   * their own record that they were answered on a night they were not, which is a confident
+   * wrong answer in the one artifact that exists to be trusted about what happened.
+   */
+  | 'ack-not-sent'
   | 'contact-not-attempted'
   | 'escalation-reached-human'
   | 'escalation-reached-nobody'

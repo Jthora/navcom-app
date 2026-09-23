@@ -130,10 +130,20 @@ describe('door 3 — a correction merged at read time', () => {
     expect(merged.record.address).toBeUndefined();
   });
 
-  it('applies the same correction to any other type', () => {
+  it('drops it for every other type too, since 2026-09-21', () => {
+    /*
+     * This asserted the opposite — that an address correction applied to anything that was not
+     * a refuge — and it was right about the refuge guard, which is type-specific by design.
+     *
+     * What it also documented, without meaning to, was that `address` was correctable at all.
+     * It was: `CORRECTABLE` is every field class minus `lat`, `lon` and `notes`, so `address`,
+     * `name`, `type` and the attestation fields could be rewritten by anybody with a relay,
+     * while no screen offered any of them. `name` in particular took 200 characters and
+     * rendered as the record's heading. The refuge guard is now belt to that braces.
+     */
     const base = { ...dv({ phone: '555-0100' }), type: 'shelter' as const };
     const merged = mergeCorrections(base, [correction({ address: '412 Elm St' })], now);
-    expect(merged.record.address).toBe('412 Elm St');
+    expect(merged.record.address).toBeUndefined();
   });
 
   it('still merges the useful fields of a correction that also carried an address', () => {

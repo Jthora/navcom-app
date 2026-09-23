@@ -76,7 +76,12 @@ export function formatRelative(days: number): string {
   if (days < 31) return `${days} days ago`;
   const months = Math.floor(days / 30);
   if (months < 12) return `${months} month${months === 1 ? '' : 's'} ago`;
-  const years = Math.floor(days / 365);
+  /*
+   * Floored against a different divisor than the months above it, so 360-364 days produced
+   * `months = 12` (skipping the months branch) and `years = 0` — "0 years ago" for a check
+   * that is all but a year old, on the one function whose whole job is showing age.
+   */
+  const years = Math.max(1, Math.floor(days / 365));
   return `${years} year${years === 1 ? '' : 's'} ago`;
 }
 

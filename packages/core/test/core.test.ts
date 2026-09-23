@@ -383,6 +383,23 @@ describe('on-call is a list of statements, not a number', () => {
     expect(s.oncall).toHaveLength(1);
   });
 
+  it('reads back a published log root, so the divergence alarm has something to compare', () => {
+    /*
+     * This read `typeof p.log_root === 'string'` against an object, so every well-formed watch
+     * state came back committing to no log — and the alarm that exists to catch a watch quietly
+     * rewriting its history could never fire, while every operator was told their own entries
+     * could not be checked.
+     */
+    const root = { root: 'a'.repeat(64), size: 12, at: NOW_S };
+    expect(readWatchState(JSON.stringify({ state: 'automated', log_root: root })).log_root).toEqual(root);
+  });
+
+  it('refuses a root it cannot verify, rather than carrying a shape', () => {
+    for (const bad of ['a'.repeat(64), { root: 'zz', size: 1, at: 1 }, { root: 'a'.repeat(64), size: -1, at: 1 }, {}]) {
+      expect(readWatchState(JSON.stringify({ state: 'automated', log_root: bad })).log_root).toBeNull();
+    }
+  });
+
   it('carries a version so a consumer can notice the shape changed', () => {
     expect(darkState().v).toBe(WATCH_STATE_VERSION);
     expect(readWatchState('{"state":"automated"}').v).toBe(1);

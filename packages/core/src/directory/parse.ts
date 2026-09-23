@@ -25,11 +25,16 @@ export interface ParseResult {
 }
 
 /** RFC4180-ish: quoted fields, doubled quotes, embedded commas and newlines. */
+/** A file that cannot be read as CSV at all, as opposed to a row that fails a rule. */
+export class CsvError extends Error {}
+
 export function parseCsv(text: string): string[][] {
   const rows: string[][] = [];
   let row: string[] = [];
   let field = '';
   let quoted = false;
+  /** Where the currently-open quote started, 1-based including the header, for the message. */
+  let quoteRow = 0;
   let i = 0;
 
   const src = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
@@ -45,12 +50,21 @@ export function parseCsv(text: string): string[][] {
       field += c; i++; continue;
     }
 
-    if (c === '"') { quoted = true; i++; continue; }
+    if (c === '"') { quoted = true; quoteRow = rows.length + 1; i++; continue; }
     if (c === ',') { row.push(field); field = ''; i++; continue; }
     if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; i++; continue; }
     field += c; i++;
   }
 
+  /*
+   * A quote that never closes swallows the rest of the file.
+   *
+   * One stray `"` in a notes column turned every following newline and comma into text inside
+   * one field, so the build shipped a directory that stopped at that row — silently, because
+   * `parseDirectory` reported no issue and had none to report. Silent absence of a shelter is
+   * the failure this file exists to prevent, and it was the one malformation it could not see.
+   */
+  if (quoted) throw new CsvError(`unterminated quote — a \`"\` opened at row ${quoteRow} and never closed`);
   if (field.length > 0 || row.length > 0) { row.push(field); rows.push(row); }
   return rows.filter((r) => r.some((cell) => cell.trim().length > 0));
 }
@@ -117,9 +131,20 @@ const str = (v: string | undefined): string | undefined =>
   blank(v) ? undefined : v!.trim();
 
 export function parseDirectory(csv: string): ParseResult {
-  const rows = parseCsv(csv);
   const issues: ParseIssue[] = [];
   const records: ResourceRecord[] = [];
+
+  let rows: string[][];
+  try {
+    rows = parseCsv(csv);
+  } catch (e) {
+    // Reported rather than thrown, so the caller that wants issues gets one and
+    // `parseDirectoryOrThrow` still fails the build. No records: a file that cannot be scanned
+    // has no rows worth trusting, including the ones before the break.
+    if (!(e instanceof CsvError)) throw e;
+    issues.push({ row: 0, column: 'file', message: e.message });
+    return { records, issues };
+  }
 
   if (rows.length === 0) return { records, issues };
 

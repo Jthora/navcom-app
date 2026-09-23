@@ -360,6 +360,16 @@ function readOnCall(raw: unknown): OnCall | null {
  * Anything that does not parse cleanly reads as Dark, which is always the safe direction:
  * an operator who believes nobody is watching acts for themselves.
  */
+/** A published commitment, or null. Shape-checked: a root nobody can verify is worse than none. */
+function readLogRoot(v: unknown): LogRoot | null {
+  if (!v || typeof v !== 'object') return null;
+  const r = v as Partial<LogRoot>;
+  if (typeof r.root !== 'string' || !/^[0-9a-f]{64}$/.test(r.root)) return null;
+  if (typeof r.size !== 'number' || !Number.isInteger(r.size) || r.size < 0) return null;
+  if (typeof r.at !== 'number' || !Number.isFinite(r.at)) return null;
+  return { root: r.root, size: r.size, at: r.at };
+}
+
 export function readWatchState(content: string | null | undefined): WatchStatePayload {
   if (!content) return darkState();
   try {
@@ -384,7 +394,18 @@ export function readWatchState(content: string | null | undefined): WatchStatePa
       last_drill: p.last_drill ?? null,
       // A v2 node publishes no root. Null reads as "this watch commits to no log", which is
       // the honest reading of its absence rather than a shape to paper over.
-      log_root: typeof p.log_root === 'string' ? p.log_root : null
+      /*
+       * Validated as the object it is published as.
+       *
+       * This tested `typeof p.log_root === 'string'`, and `log_root` is a `LogRoot` — so every
+       * well-formed `10910` read back as committing to no log. TypeScript could not catch it:
+       * narrowing `LogRoot | null` by `typeof === 'string'` yields `never`, and `never` is
+       * assignable to the null it fell through to. The cost was the whole mechanism: a client
+       * never accumulated a published root, so `observeRoot` had nothing to compare and the
+       * `diverged` alarm — the finding it exists to produce — could not fire, while
+       * `checkReview` told every operator their own entries could not be checked.
+       */
+      log_root: readLogRoot(p.log_root)
     };
   } catch {
     return darkState();

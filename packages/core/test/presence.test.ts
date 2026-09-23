@@ -225,3 +225,23 @@ describe("a buddy whose phone has the wrong time", () => {
       .toBe('overdue');
   });
 });
+
+describe('a deadline that is not a number', () => {
+  /*
+   * `until` is the only number `buddyState` acts on, and it was never validated. A string makes
+   * every comparison false, so the peer reads `out` forever and is never nudged; a null makes
+   * them all true, so they read `overdue` from the first second. Both are invisible, and both
+   * break the promise pairing makes — that nobody believes they are watched while nobody is.
+   */
+  for (const bad of ['2026-09-21T22:00', null, undefined, Number.NaN, Infinity]) {
+    it(`refuses a presence whose until is ${String(bad)}`, () => {
+      const [event] = buildPresence(wren, [ravenPub], out({ until: bad as never }), T);
+      expect(readPresence(raven, event!, [wrenPub])).toBeNull();
+    });
+  }
+
+  it('still reads a real one', () => {
+    const [event] = buildPresence(wren, [ravenPub], out(), T);
+    expect(readPresence(raven, event!, [wrenPub])?.payload.until).toBe(T + 7200);
+  });
+});

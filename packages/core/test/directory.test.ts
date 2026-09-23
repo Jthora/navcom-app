@@ -404,3 +404,35 @@ describe('the region template', () => {
     expect(() => parseRegion('_template', raw)).toThrow();
   });
 });
+
+describe('a file that cannot be scanned', () => {
+  it('fails instead of silently swallowing every row after a stray quote', () => {
+    /*
+     * One unterminated quote turned every following newline and comma into text inside a single
+     * field, so the build shipped a directory that stopped at that row and reported nothing.
+     * Silent absence of a shelter is the failure this parser exists to prevent, and it was the
+     * one malformation it could not see.
+     */
+    const csv = 'id,name,type,notes\nr1,First,shelter,"open late\nr2,Second,shelter,\n';
+    const { records, issues } = parseDirectory(csv);
+    expect(records).toEqual([]);
+    expect(issues).toHaveLength(1);
+    expect(issues[0]!.message).toMatch(/unterminated quote/i);
+    expect(() => parseDirectoryOrThrow(csv)).toThrow(/unterminated quote/i);
+  });
+
+  it('still reads a quoted field that closes, including doubled quotes', () => {
+    // The guard must not cost the thing it guards.
+    expect(parseCsv('a,b\n1,"hello, world"\n')[1]![1]).toBe('hello, world');
+    expect(parseCsv('a\n"she said ""go"""\n')[1]![0]).toBe('she said "go"');
+  });
+});
+
+describe('how old a thing is said to be', () => {
+  it('never calls a nearly-year-old check "0 years ago"', () => {
+    // Months floored by 30 reached 12 while years floored by 365 was still 0, so 360-364 days
+    // read as "0 years ago" — recent, on the one function whose whole job is age.
+    for (const days of [360, 361, 364, 365, 400]) expect(formatRelative(days)).toBe('1 year ago');
+    expect(formatRelative(740)).toBe('2 years ago');
+  });
+});
