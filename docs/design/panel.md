@@ -325,6 +325,35 @@ The baseline records every screen as it stands. A screen may not grow, and a scr
 has to record the gain — so the number tracks the work instead of trailing it, and every
 conversion's diff carries the figure it moved. `npm run prose:baseline` rewrites the file.
 
+#### The profile screens — *inspected 2026-09-23, and mostly the region screen's answer again*
+
+`standing` at 341 words and `card` at 39 were the two largest unconverted-looking screens left
+before profile work, so both were read block by block against the three outcomes before anything
+was extended on top of them. **Two real gaps, and the rest is load-bearing.**
+
+- **A withdrawn credential rendered as a bare name beside a paragraph**, while a held one three
+  sections above rendered as a `Readout` — one screen carrying two treatments of one object, with
+  the state that matters (*it is gone*) living only in the prose. Now a readout, cold, naming who
+  took it back
+- **The unsent withdrawal had no state name.** *"This device has stopped honouring what you took
+  back"* is a consequence, and the operator needed the condition first: `NOT SENT — honoured on
+  this phone, nowhere else`. The paragraph stays beneath it, word for word
+
+Everything else stayed, and the reasons are the same three the region screen found. `card`'s
+thirty-nine words are the action's consequence (*"you have no card unless you publish one"*), an
+irreversibility warning, and per-field hints attached to the controls that produce them — the
+last of which a screen-level slot would separate from its own input. `standing`'s remainder is
+instruction (*hand one over in person; nothing here can deliver it for you*), which the doctrine
+never hides, and the presentation card, which is deliberately not panel-shaped because **a
+credential that resembles official identification is the beginning of the authority this project
+refuses**.
+
+**341 → 331.** Ten words, and the figure is the point: a screen that reads as unconverted because
+it contains prose may be a screen whose prose is load-bearing, and measuring it is cheaper than
+assuming either way. `GATE — NOT VOUCHED` from the drafted rewrites is not here, because it
+already exists on `watch/` where the gate actually bites — the state belongs with the control it
+governs, and two homes for one fact is how they start disagreeing.
+
 ### P4 — Motion that carries state
 
 `Window`, `Elapsed`, `Heartbeat`, `Board` reorder.

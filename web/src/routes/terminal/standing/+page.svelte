@@ -290,10 +290,16 @@
       <ul class="written" data-withdrawn>
         {#each gone as e (e.id)}
           <li>
-            <span class="name">{label(e.scope)}</span>
+            <!--
+              The same object as the list above it, so it is read the same way. This rendered as
+              a bare name beside a paragraph while a held credential rendered as a readout, which
+              made one screen carry two treatments of one thing -- and the state that matters
+              here, that it is gone, was only in the prose.
+            -->
+            <Readout value={label(e.scope)} tone="cold" sub="taken back by {e.endorser}" />
             <p class="cost">
-              <strong>{e.endorser}</strong> has taken this back, so it no longer counts for
-              anything. They are the person to ask about it.
+              It no longer counts for anything, and <strong>{e.endorser}</strong> is the person
+              to ask about it.
             </p>
           </li>
         {/each}
@@ -334,10 +340,18 @@
         Deliberately outside the list. This lived inside the row it referred to, and
         withdrawing removes that row — so the one case worth reporting rendered nowhere.
       -->
-      <p class="cost" data-withdrawal-unsent>
-        This device has stopped honouring what you took back. It did not reach a relay, so
-        anybody else checking will still see it until you open this with signal.
-      </p>
+      <div data-withdrawal-unsent>
+        <!--
+          A name for the state before the sentence explaining it. `panel.md` rules 1 and 2: the
+          operator needs to know in one glance that the withdrawal is honoured here and nowhere
+          else, and the paragraph beneath says why without being the only place it is said.
+        -->
+        <Readout value="Not sent" tone="warn" sub="honoured on this phone, nowhere else" />
+        <p class="cost">
+          This device has stopped honouring what you took back. It did not reach a relay, so
+          anybody else checking will still see it until you open this with signal.
+        </p>
+      </div>
     {/if}
 
     {#if mineWritten.length > 0}

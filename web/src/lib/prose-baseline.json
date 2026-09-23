@@ -49,7 +49,7 @@
   "src/routes/terminal/resupply/+page.svelte": 123,
   "src/routes/terminal/setup/+page.svelte": 164,
   "src/routes/terminal/sign-on/+page.svelte": 191,
-  "src/routes/terminal/standing/+page.svelte": 341,
+  "src/routes/terminal/standing/+page.svelte": 331,
   "src/routes/terminal/watch/+page.svelte": 374,
   "src/routes/terminal/who/+page.svelte": 12,
   "src/routes/terminal/wipe/+page.svelte": 321
