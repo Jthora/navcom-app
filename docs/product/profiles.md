@@ -241,6 +241,18 @@ vouched for by that crew, on the existing peer credential, checkable by signatur
 nobody. It measures demonstrated competence in this context rather than institutional training
 in another — which is arguably the better signal here, and needs no invariant changed.
 
+**The shape is now argued, so the day somebody asks it is a decision rather than a design
+exercise.** [`verified-capabilities.md`](verified-capabilities.md) carries the how — NIP-58
+rather than a NavCom invention, because its award is subject-bound and the bearer problem above
+is exactly what that fixes — and
+[`credential-verification.md`](../research/credential-verification.md) carries the research
+behind it. Two findings from that research bear on this section directly. The privacy argument
+above is no longer categorical: selective disclosure can prove a qualification without the
+number or the name, where an issuer supports it. And a third cost has surfaced that this section
+did not know about — **displaying a real qualification can expose the operator legally**, since
+several states restrict holding out a protected title and a visible credential can narrow Good
+Samaritan protection. None of that moves the recommendation. The demand test is still unmet.
+
 ## 7. Open
 
 - **Sealed cards.** A genuinely private card is an encrypted one, addressed to a holder set —
@@ -255,7 +267,10 @@ in another — which is arguably the better signal here, and needs no invariant 
   ask for one, which is a deliberate absence to re-decide rather than a gap to fill.
 - **Institutional credentials.** §6. Written down, not built, and reversible the day a
   credentialed professional actually asks — the test `declined.md` set for crew federation and
-  which that entry passed on 2026-09-03.
+  which that entry passed on 2026-09-03. The design and its research now sit in
+  [`verified-capabilities.md`](verified-capabilities.md) and
+  [`credential-verification.md`](../research/credential-verification.md), which is what the
+  reversal would be built from.
 - **Handle proofs.** `i` tags carry a NIP-39 proof field and almost nothing fills it, because
   verifying one means fetching it and most platforms refuse unauthenticated reads. Until then
   a handle is a claim, and is rendered as one.
