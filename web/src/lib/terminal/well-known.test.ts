@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { REFUSALS, PERMITTED, BROADCAST } from '@navcom/core';
+import { REFUSALS, PERMITTED, BROADCAST, buildObservation } from '@navcom/core';
+import { generateSecretKey } from 'nostr-tools/pure';
 // Plain .mjs, deliberately: this is the file node runs during a build, long after the
 // TypeScript is gone, and testing the thing that actually runs is the point.
 import { refusalsDocument, healthDocument, metroFigures, nodeIdentity, intelDocument, vocabularyCid, canonicalVocabulary } from '../../../scripts/well-known.mjs';
@@ -295,6 +296,42 @@ describe('the intel declaration', () => {
     const v = doc().versioning;
     expect(v.overlap_days).toBeGreaterThan(0);
     expect(doc().version).toMatch(/^\d+\.\d+\.\d+$/);
+  });
+
+  it('states how an observation is found, and it is how the builder actually tags one', () => {
+    /*
+     * §4 pinned `g` and `d`; this file said nothing, and a comment beside the builder still
+     * called discovery unsettled. A consumer filtering on `#g` had to ask whether it would keep
+     * working. So the declared tags are read out of §4 and compared here against the event the
+     * builder actually signs -- spec, contract and wire giving one answer.
+     */
+    const declared = doc().discovery.tags.map((t) => t.tag).sort();
+    expect(declared, '§4 table no longer parses').toEqual(['d', 'g']);
+
+    const event = buildObservation(
+      generateSecretKey(),
+      {
+        anchor: 'st-louis/st-patrick-center',
+        observed_at: 1_756_000_000 - 3600,
+        tags: ['locked'],
+        method: 'saw',
+        callsign: 'Raven',
+        precision: 'area'
+      },
+      { precision: 'area', geohash: 'dp3w' },
+      1_756_000_000,
+      'st-louis'
+    );
+    const signed = event.tags.map(([t]) => t).sort();
+    expect(signed).toEqual(declared);
+    expect(event.tags.find(([t]) => t === 'g')?.[1]).toBe('st-louis');
+    expect(event.tags.find(([t]) => t === 'd')?.[1]).toBe('st-louis/st-patrick-center');
+  });
+
+  it('never tells a consumer to read the region as a geohash', () => {
+    // Some slugs parse as one -- `denver`, decoded, is in the Atlantic east of the Caribbean --
+    // and NIP-52 uses `g` for a geohash, so a consumer arriving from there will assume it.
+    expect(doc().discovery.region_is).toMatch(/Never a geohash/);
   });
 
   it('does not claim the chain is free of free text, because it is not', () => {

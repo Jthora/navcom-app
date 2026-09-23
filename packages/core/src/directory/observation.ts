@@ -26,10 +26,13 @@
  * - **The vocabulary is a placeholder** (§7). It needs local knowledge and is not agent work
  * - **The anchor object does not exist** (§5), so an observation can only name a directory
  *   record that already exists. That is a real limit, not a simplification
- * - **Nothing here makes an observation discoverable.** The spec pins one tag, `refines`, and
- *   pins no other; a consumer today finds observations by author or by fetching the kind. An
- *   anchor-shaped or region-shaped tag would fix that and would be **wire format**, so it is
- *   not invented here — it is the next thing the spec has to say
+ * - **A refinement is findable only by author.** A first publication carries `g` and `d`
+ *   (§4, and `buildObservation` below), so it can be asked for by region or by place. A
+ *   refinement carries only `refines`, which relays do not index, and neither of the others.
+ *   Moot while nothing calls `buildRefinement`; the first thing to settle when something does
+ *
+ * This list once said nothing made an observation discoverable, for weeks after §4 pinned both
+ * tags — and a consumer building a filter on `g` read it and asked whether `g` was settled.
  */
 
 import { finalizeEvent, verifyEvent } from 'nostr-tools/pure';

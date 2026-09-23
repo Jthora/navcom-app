@@ -357,6 +357,20 @@ export function intelDocument(root = ROOT) {
   }
 
   /*
+   * How an observation is found, read out of §4's table rather than typed here.
+   *
+   * §4 pinned `g` and `d` and this file said nothing about either, so the one document a
+   * consumer is told to conform to was silent on how to ask for the object it defines. A
+   * consumer building a filter on `#g` found the builder emitting it, a comment beside it
+   * calling discovery unsettled, and nothing here to settle it -- and had to ask whether its
+   * filter would keep working. Anchored to the subsection for the vocabulary's reason: a table
+   * added anywhere else in the spec cannot reach it.
+   */
+  const finding = spec.split(/^### Finding one/m)[1]?.split(/^#{2,3} /m)[0] ?? '';
+  const discovery = [...finding.matchAll(/^\| `(\w)` \| (.+?) \| `(.+?)` \|$/gm)]
+    .map(([, tag, carries, filter]) => ({ tag, carries, filter }));
+
+  /*
    * Derived from whether anything can BUILD one, not whether a constant exists.
    *
    * This tested `kinds.ts` for `KIND_OBSERVATION = 1911`, which would have flipped a public
@@ -423,6 +437,20 @@ export function intelDocument(root = ROOT) {
         precision: ['area', 'exact']
       }
     ],
+    /*
+     * Stated here so both tags sit inside the versioning commitment below: moving either one is
+     * a breaking change, announced and overlapped like any other, rather than a quiet edit to a
+     * builder that leaves a consumer's filter matching nothing -- which looks exactly like
+     * nobody having observed anything.
+     */
+    discovery: {
+      tags: discovery,
+      region_is: 'a directory region slug: the id in https://navcom.app/directory/<region>/, and the same `g` a kind 30915 place carries. Never a geohash. A few slugs happen to parse as one; decode none of them',
+      position_is: 'in content only, where `precision` governs it. No tag on this kind carries a position',
+      refinement:
+        'carries only `refines`, which relays do not index, and neither tag above. Find one by author' +
+        (refinable ? '' : '. Moot while `refinement_not_emitted` stands')
+    },
     /** Obligations on whoever consumes this. Each is a way the exchange stops compounding. */
     requires: [
       'Preserve the chain: a refined report cites the event ids it was built from, so a third party can walk it back without asking either of us',
