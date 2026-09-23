@@ -279,6 +279,23 @@ test('a handle with a proof is unchecked until somebody taps, and contacts nobod
   expect(gist.calls()).toBe(1);
 });
 
+test('the check control is reachable by thumb, like every other control', async ({ page }) => {
+  // The standard `card-profile.spec.ts` holds the link controls to. A new control on a screen
+  // nothing measured is how the standard stops being one.
+  const { event, contact } = await cardFor({
+    callsign: 'Raven',
+    links: [{ platform: 'github', handle: 'raven', proof: GIST }]
+  });
+  await seedDevice(page, seeded(event));
+  await open(page, `/terminal/who/?k=${contact}`);
+  await page.setViewportSize({ width: 375, height: 667 });
+
+  const box = await page.getByRole('button', { name: /Check GitHub/i }).boundingBox();
+  expect(box, 'the check control has no box').not.toBeNull();
+  expect(box!.height, `it is ${box!.height}px tall`).toBeGreaterThanOrEqual(40);
+  expect(box!.width, `it is ${box!.width}px wide`).toBeGreaterThanOrEqual(40);
+});
+
 test('a proof written by somebody else is refuted, and never sounds the alarm', async ({ page }) => {
   const { event, contact } = await cardFor({
     callsign: 'Raven',
