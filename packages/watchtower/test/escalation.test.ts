@@ -592,6 +592,62 @@ describe("a watch being flooded", () => {
     expect(said.some((r) => /nobody has been woken/i.test(r.text ?? ""))).toBe(true);
   });
 
+  it("names who could not be reached, rather than reporting a partial failure as a page", async () => {
+    /*
+     * `ladder.paged` is built from the roster when the ladder opens, never from what actually
+     * dispatched — so a roster of three with one dead channel told the operator "Paging Wren,
+     * Raven, Kestrel." and they spent the paging window believing three people were being woken.
+     * Only the all-channels-failed case was reported. `runDrill` already named the dispatched
+     * ones, so the two paths disagreed about what "paged" means.
+     */
+    const stranger = generateSecretKey();
+    const partly = vi.fn<typeof pageAll>(async () => [
+      { callsign: "Wren", channel: "sms", dispatched: true },
+      { callsign: "Kestrel", channel: "push", dispatched: false, error: "ENOENT" },
+    ]);
+    const { pubkey, published, deliver } = build([onCallEntry("Wren"), onCallEntry("Kestrel")], partly);
+
+    deliver(distressFrom(stranger, pubkey));
+    // Waited on the sentence itself: the ladder's own "Paging Wren, Kestrel." arrives first and
+    // matching a name would pass on the very report this test exists to distrust.
+    const said = await vi.waitFor(async () => {
+      const all = await reports(published, stranger, pubkey);
+      expect(all.some((r) => /could not be reached/i.test(r.text ?? ""))).toBe(true);
+      return all;
+    });
+    expect(said.some((r) => /kestrel/i.test(r.text ?? ""))).toBe(true);
+    // And it must not claim nobody was woken, because somebody was.
+    expect(said.some((r) => /nobody has been woken/i.test(r.text ?? ""))).toBe(false);
+  });
+
+  it("ignores a Distress stamped outside the paging window", async () => {
+    /*
+     * A signed `20911` is valid forever and any relay can re-serve one, so a captured Distress
+     * from months ago opened a ladder and woke the whole roster — again every hour, since
+     * terminal ladders are reaped hourly. The keyless pager has always refused this: something
+     * stamped well in the past is not news, and paging for it wakes somebody about an emergency
+     * that is over.
+     */
+    const stranger = generateSecretKey();
+    const paged = vi.fn<typeof pageAll>(async () => []);
+    const { executor, pubkey, deliver } = build([onCallEntry("Wren")], paged);
+
+    const old = finalizeEvent(
+      {
+        kind: KIND_DISTRESS,
+        tags: [["p", pubkey]],
+        content: sealSignal(stranger, [pubkey], { position: null, area: "north side" }),
+        created_at: Math.floor(Date.now() / 1000) - 90 * 86400
+      },
+      stranger,
+    );
+    deliver(old);
+
+    await new Promise((r) => setTimeout(r, 200));
+    expect(executor.ladders.all(), "a replayed Distress must open no ladder").toHaveLength(0);
+    expect(paged).not.toHaveBeenCalled();
+  });
+
   it("does not hold every ladder it has ever opened", async () => {
     // An empty roster and no emergency contact is failure mode 1: the ladder opens straight
     // into EXHAUSTED rather than waiting out a window with nobody on the other end. That is

@@ -500,8 +500,9 @@ export class WatchtowerDaemon {
       response = { type: "ack", responder: { kind: "agent", callsign: this.agentName }, text: `error: ${message}`, provenance: null };
     }
 
-    this.noteResponse(event.pubkey, response);
-    await this.publishResponse(event.pubkey, event.id, response);
+    // Published first, recorded second. The record says what happened, not what was attempted.
+    const accepted = await this.publishResponse(event.pubkey, event.id, response);
+    this.noteResponse(event.pubkey, response, accepted);
   }
 
   /**
@@ -511,16 +512,33 @@ export class WatchtowerDaemon {
    * away from an action that silently never gets recorded, and the log's whole value is
    * that it is complete.
    */
-  private noteResponse(operator: string, response: ResponsePayload): void {
+  private noteResponse(operator: string, response: ResponsePayload, accepted: number): void {
     const callsign = this.board.get(operator)?.callsign;
+    /*
+     * `accepted` is how many relays took it, and it decides the outcome.
+     *
+     * This recorded `acknowledged` before the publish and regardless of its result, so a
+     * response every relay refused still left a durable claim that this watch answered — a
+     * confident wrong answer in the one artifact that exists to be trusted about what happened.
+     */
     if (response.type === "log-review" || response.type === "answer") {
+      // An answer nobody could receive is not an answer. Said as plainly as the ack below.
+      if (accepted === 0) {
+        this.note("answered", operator, "ack-not-sent", callsign);
+        return;
+      }
       // An answer with no provenance renders unverified to the operator; the log says the
       // same thing, so the two accounts cannot drift apart.
       this.note("answered", operator, response.provenance ? "answered" : "answered-unverified", callsign);
       return;
     }
     const failed = response.text?.startsWith("error:") ?? false;
-    this.note("acked", operator, failed ? "error" : "acknowledged", callsign);
+    this.note(
+      "acked",
+      operator,
+      failed ? "error" : accepted > 0 ? "acknowledged" : "ack-not-sent",
+      callsign,
+    );
   }
 
   private async handleDistressEvent(event: Event): Promise<void> {
@@ -543,8 +561,15 @@ export class WatchtowerDaemon {
       text: null,
       provenance: null,
     };
-    this.note("acked", event.pubkey, "acknowledged", callsign);
-    await this.publishResponse(event.pubkey, event.id, response);
+    /*
+     * Published first, recorded second, and the record follows the result.
+     *
+     * This wrote `acknowledged` and fsynced it before publishing, so a response that every
+     * relay refused still left a durable claim that this watch answered. `contactOverdue` in
+     * this same file already does it the right way round for the *less* important action.
+     */
+    const accepted = await this.publishResponse(event.pubkey, event.id, response);
+    this.note("acked", event.pubkey, accepted > 0 ? "acknowledged" : "ack-not-sent", callsign);
   }
 
   private startListening(): void {

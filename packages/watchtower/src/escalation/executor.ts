@@ -1,4 +1,5 @@
 import { SimplePool } from "nostr-tools/pool";
+import { normalizeURL } from "nostr-tools/utils";
 import { finalizeEvent, verifyEvent } from "nostr-tools/pure";
 import type { Event, EventTemplate } from "nostr-tools/core";
 import { randomBytes } from "node:crypto";
@@ -57,6 +58,9 @@ export interface ExecutorOptions {
   drillStatePath?: string;
 }
 
+/** How often a relay that is not connected is tried again. */
+export const RELISTEN_SECONDS = 15;
+
 export class EscalationExecutor {
   readonly ladders = new LadderRegistry();
   private readonly pool: SimplePool;
@@ -83,7 +87,17 @@ export class EscalationExecutor {
    */
   private drilling = false;
   private sweepHandle: ReturnType<typeof setInterval> | undefined;
+  private relistenHandle: ReturnType<typeof setInterval> | undefined;
   private subCloser: { close: (reason?: string) => void } | undefined;
+  /**
+   * The subscription currently trusted to be open, or null once every relay has closed it.
+   *
+   * A token rather than a boolean because re-subscribing closes the previous subscription on
+   * purpose, and that close must not mark the new one dead.
+   */
+  private listening: object | null = null;
+  /** Last reachability logged per relay, so a relay that stays down is said once, not every retry. */
+  private readonly relayUp = new Map<string, boolean>();
   /**
    * The executor's own accountability log -- separate from the daemon's, and the only
    * place a Distress's real outcome (paged, acknowledged by whom, or exhausted) is
@@ -279,12 +293,30 @@ export class EscalationExecutor {
        * An empty result is not a failure: a roster of console-open entries dispatches
        * nothing because those people are already watching a console.
        */
-      if (results.length > 0 && results.every((r) => !r.dispatched)) {
+      const failed = results.filter((r) => !r.dispatched);
+      if (results.length > 0 && failed.length === results.length) {
         console.error(`[page] EVERY CHANNEL FAILED for ${event.id.slice(0, 8)}`);
         await this.report(
           ladder,
           event.id,
           "No page could be sent -- every channel failed. Nobody has been woken.",
+        );
+      } else if (failed.length > 0) {
+        /*
+         * A partial failure was reported to the operator as a success.
+         *
+         * `ladder.paged` is built from the roster when the ladder opens, never from what was
+         * dispatched, so the status said "Paging Wren, Raven, Kestrel." when Kestrel's channel
+         * had exited non-zero -- and the operator spent the paging window believing three
+         * people were being woken. `runDrill` already names only those that dispatched; the two
+         * paths disagreed about what "paged" means.
+         */
+        const names = failed.map((r) => r.callsign).join(", ");
+        console.error(`[page] PARTIAL FAILURE for ${event.id.slice(0, 8)}: ${names}`);
+        await this.report(
+          ladder,
+          event.id,
+          `${names} could not be reached -- their channel failed. The rest were paged.`,
         );
       }
     }
@@ -334,6 +366,8 @@ export class EscalationExecutor {
   }
 
   private listen(): void {
+    const token = {};
+    this.listening = token;
     this.subCloser = this.pool.subscribeMany(
       this.config.relays.urls,
       { kinds: [KIND_DISTRESS, KIND_SIGNAL], "#p": [this.pubkey], since: this.since },
@@ -350,6 +384,26 @@ export class EscalationExecutor {
             return;
           }
 
+          /*
+           * A signed `20911` is valid forever, and any relay can re-serve one.
+           *
+           * The `#p` re-check above exists because a relay may mis-honour its own filter, which
+           * is the same reason the `since` in the subscription cannot be trusted as a defence.
+           * Without an age check a captured Distress from months ago opens a ladder and wakes
+           * the whole roster -- and, because terminal ladders are reaped hourly, wakes them
+           * again every hour. The keyless pager has guarded exactly this from the start:
+           * "something stamped well in the past is not news, and paging for it would wake
+           * somebody about an emergency that is over".
+           */
+          const age = Math.floor(Date.now() / 1000) - event.created_at;
+          const window = this.config.escalation.pagingWindowSeconds;
+          if (age > window || age < -window) {
+            console.warn(
+              `[executor] ${event.id.slice(0, 8)} stamped ${age}s away -- outside the paging window, ignored`,
+            );
+            return;
+          }
+
           const task =
             event.kind === KIND_DISTRESS
               ? this.handleDistress(event)
@@ -359,8 +413,52 @@ export class EscalationExecutor {
             console.error(`[executor] handling ${event.id.slice(0, 8)} failed: ${String(err)}`);
           });
         },
+        // Every relay has closed its part. Fires when all of them refused at boot, too.
+        onclose: () => {
+          if (this.listening === token) this.listening = null;
+        },
       },
     );
+  }
+
+  /**
+   * Gives every relay that is not connected another chance, and says when one comes or goes.
+   *
+   * **The executor went deaf if a relay was unreachable when it started.** The pool marks a
+   * relay that fails its first connection as never to be retried, nothing logged it, and
+   * nothing subscribed again -- so an executor that booted into an outage came up looking
+   * healthy and could not hear a `Distress` for the rest of its life. On a box that restarts
+   * after a power cut, booting into the outage is the ordinary case rather than the edge one,
+   * and invariant 2 forbids exactly this: a ladder that fails silently.
+   *
+   * A fresh subscription retries what the pool gave up on. The new one opens before the old
+   * one closes, so a relay that was fine is never left without a subscription between the two.
+   * `Distress` and acknowledgements are ephemeral, so relays hold nothing to replay into the
+   * overlap, and a duplicate that did arrive would find its ladder already open.
+   */
+  private relisten(): void {
+    const status = this.pool.listConnectionStatus?.() ?? new Map<string, boolean>();
+    const urls = this.config.relays.urls;
+    let anyDown = false;
+    for (const url of urls) {
+      const up = status.get(normalizeURL(url)) === true;
+      if (!up) anyDown = true;
+      const was = this.relayUp.get(url);
+      if (was === up) continue;
+      this.relayUp.set(url, up);
+      if (!up) {
+        console.error(
+          `[executor] ${url} unreachable -- retrying every ${RELISTEN_SECONDS}s. ` +
+            "A Distress sent only there is not heard until it answers.",
+        );
+      } else if (was === false) {
+        console.log(`[executor] ${url} reachable again`);
+      }
+    }
+    if (!anyDown && this.listening) return;
+    const previous = this.subCloser;
+    this.listen();
+    previous?.close("relisten");
   }
 
   private async maybeAck(event: Event): Promise<void> {
@@ -445,6 +543,7 @@ export class EscalationExecutor {
 
   start(): void {
     this.listen();
+    this.relistenHandle = setInterval(() => this.relisten(), RELISTEN_SECONDS * 1000);
     // The ladder advances on a clock the executor owns. This is not a trigger -- no timer
     // in this process can START a ladder, only move one that a 20911 already began.
     this.sweepHandle = setInterval(() => {
@@ -469,8 +568,30 @@ export class EscalationExecutor {
     }, 1000);
   }
 
+  /**
+   * One drill on demand, fired exactly the way the sweep fires one: with the subscription open.
+   *
+   * `--drill` built an executor and called `fireDrill()` without `start()`, so nothing was
+   * listening when the on-call person answered. Every manual drill waited out its window,
+   * recorded FAIL, and the daemon published that FAIL in `10910`, where it demotes the watch
+   * -- and `docs/human-tasks.md` gives this command as the proof that paging works.
+   *
+   * Run beside a live executor, a real `Distress` inside the drill window is handled by both.
+   * That pages twice rather than not at all, which is the direction to be wrong in.
+   */
+  async drillOnce(id?: string): Promise<void> {
+    this.start();
+    try {
+      await this.fireDrill(id);
+    } finally {
+      await this.stop();
+    }
+  }
+
   async stop(): Promise<void> {
     if (this.sweepHandle) clearInterval(this.sweepHandle);
+    if (this.relistenHandle) clearInterval(this.relistenHandle);
+    this.listening = null;
     this.subCloser?.close("shutdown");
     this.pool.destroy();
   }

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { emptyState, forgetOld, shouldPage, REPAGE_AFTER_SECONDS } from "../src/pager/decide.js";
+import { emptyState, forgetOld, markPaged, shouldPage, REPAGE_AFTER_SECONDS } from "../src/pager/decide.js";
 
 /**
  * A keyless pager's whole job is counting, so this is where its failure modes live.
@@ -33,6 +33,9 @@ describe("one incident, one page", () => {
     // that the rest of this system is built to avoid.
     const s = emptyState();
     expect(shouldPage(s, { id: "e1", author: wren, at: T }, T)).toBe(true);
+    // The page went out. Recording that is the caller's job since 2026-09-21, so that a page
+    // which never went cannot suppress the retries that follow it.
+    markPaged(s, wren, T);
     for (let i = 2; i < 20; i++) {
       const at = T + i * 10;
       expect(shouldPage(s, { id: `e${i}`, author: wren, at }, at), `retry ${i}`).toBe(false);
@@ -86,6 +89,7 @@ describe("what it refuses to wake somebody for", () => {
     // produces alarm fatigue is a configuration that disables the alarm.
     const s = emptyState();
     expect(shouldPage(s, { id: "e1", author: wren, at: T }, T, 0)).toBe(true);
+    markPaged(s, wren, T);
     expect(shouldPage(s, { id: "e2", author: wren, at: T }, T, 0)).toBe(false);
   });
 });
@@ -94,6 +98,7 @@ describe("running for months on a machine nobody looks at", () => {
   it("forgets operators who have not been paged for in a long time", () => {
     const s = emptyState();
     shouldPage(s, { id: "e1", author: wren, at: T }, T);
+    markPaged(s, wren, T);
     expect(s.pagedAt.size).toBe(1);
     forgetOld(s, T + 7200);
     expect(s.pagedAt.size).toBe(0);
@@ -102,6 +107,7 @@ describe("running for months on a machine nobody looks at", () => {
   it("keeps a recent page, so forgetting cannot cause a double page", () => {
     const s = emptyState();
     shouldPage(s, { id: "e1", author: wren, at: T }, T);
+    markPaged(s, wren, T);
     forgetOld(s, T + 60);
     expect(shouldPage(s, { id: "e2", author: wren, at: T + 61 }, T + 61)).toBe(false);
   });
@@ -153,5 +159,25 @@ describe("it holds no key, structurally", () => {
     // find a key-shaped hole in it.
     const example = readFileSync(join(import.meta.dirname, "../pager.example.toml"), "utf8");
     expect(example).not.toMatch(/privkey|secret|private_key/i);
+  });
+});
+
+describe("a page that failed to send", () => {
+  it("leaves the next retry free, instead of counting as delivered", () => {
+    /*
+     * `shouldPage` used to record the operator as paged before the command had run, so one
+     * failed dispatch — a dead gateway, a missing binary — suppressed every real retry from
+     * that operator for the whole repage window. The backup pager, whose only job is
+     * redundancy for the thing that must not fail, went quiet exactly when its first attempt
+     * failed.
+     */
+    const s = emptyState();
+    expect(shouldPage(s, { id: "e1", author: wren, at: T }, T)).toBe(true);
+    // No markPaged: the command exited non-zero.
+    expect(shouldPage(s, { id: "e2", author: wren, at: T + 10 }, T + 10)).toBe(true);
+
+    // And once one actually goes out, the retries are suppressed as before.
+    markPaged(s, wren, T + 10);
+    expect(shouldPage(s, { id: "e3", author: wren, at: T + 20 }, T + 20)).toBe(false);
   });
 });

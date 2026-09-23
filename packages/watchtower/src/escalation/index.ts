@@ -108,8 +108,7 @@ async function drillNow(path: string): Promise<never> {
     drillStatePath: config.escalation.drillStatePath,
   });
 
-  await executor.fireDrill();
-  await executor.stop();
+  await executor.drillOnce();
 
   const state = readDrillState(config.escalation.drillStatePath);
   console.log(JSON.stringify({ command: "drill", at: new Date().toISOString(), result: state?.last ?? null }, null, 2));

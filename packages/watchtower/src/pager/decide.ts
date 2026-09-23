@@ -60,8 +60,21 @@ export function shouldPage(
   const window = Math.max(repageAfter, 1);
   if (last !== undefined && now - last < window) return false;
 
-  state.pagedAt.set(sighting.author, now);
+  /*
+   * Deliberately **not** recorded here.
+   *
+   * This used to mark the operator as paged before the command had run, so a failed page — a
+   * dead gateway, a missing binary — counted as a delivered one and every real retry from that
+   * operator was refused for the next five minutes. The backup pager, whose entire job is
+   * redundancy for the one thing that must not fail, went quiet exactly when its first attempt
+   * failed. `markPaged` is called by the caller, after the command exits zero.
+   */
   return true;
+}
+
+/** Records a page that actually went out. Called after the command succeeds, never before. */
+export function markPaged(state: PagerState, author: string, now: number): void {
+  state.pagedAt.set(author, now);
 }
 
 /**

@@ -8,7 +8,8 @@
 
 import { describe, it, expect, vi, afterEach } from "vitest";
 import type { SimplePool } from "nostr-tools/pool";
-import { generateSecretKey, getPublicKey } from "nostr-tools/pure";
+import { finalizeEvent, generateSecretKey, getPublicKey } from "nostr-tools/pure";
+import type { Event } from "nostr-tools/core";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -16,6 +17,8 @@ import { EscalationExecutor } from "../src/escalation/executor.js";
 import type { EscalationConfig, OnCallEntry } from "../src/escalation/config.js";
 import * as drills from "../src/escalation/drills.js";
 import type { pageAll } from "../src/escalation/pager.js";
+import { sealSignal } from "../src/shared/crypto.js";
+import { KIND_SIGNAL } from "../src/shared/kinds.js";
 
 const STANDING = 4_102_444_800;
 const entry = (callsign: string): OnCallEntry => ({
@@ -134,4 +137,66 @@ describe("a drill that is due", () => {
     expect(page.mock.calls.length).toBe(1);
     await first;
   }, 15_000);
+});
+
+describe("a drill fired by hand", () => {
+  it("can pass, because the acknowledgement arrives on a subscription that is open", async () => {
+    // `--drill` fired without ever subscribing, so the on-call person's answer went nowhere:
+    // every manual drill waited out its window, recorded FAIL, and that FAIL was published
+    // in 10910 where it demotes the watch. `docs/human-tasks.md` gives this command as the
+    // proof that paging works, and it could not pass.
+    const statePath = tempState(STANDING);
+    const responder = generateSecretKey();
+    const secretKey = generateSecretKey();
+    const watchtower = getPublicKey(secretKey);
+    const DRILL = "d".repeat(32);
+
+    let onevent: ((e: Event) => void) | undefined;
+    const pool = {
+      publish: () => [Promise.resolve("ok")],
+      subscribeMany: (_u: string[], _f: unknown, params: { onevent: (e: Event) => void }) => {
+        onevent = params.onevent;
+        return { close: () => {} };
+      },
+      destroy: () => {},
+    } as unknown as SimplePool;
+
+    const page = vi.fn<typeof pageAll>(async () => {
+      // The on-call person answers a moment after the page lands -- over the relay, the only
+      // way an answer can arrive.
+      setTimeout(() => {
+        onevent?.(
+          finalizeEvent(
+            {
+              kind: KIND_SIGNAL,
+              tags: [["p", watchtower], ["t", "distress-ack"]],
+              content: sealSignal(responder, [watchtower], { distress_id: DRILL }),
+              created_at: Math.floor(Date.now() / 1000),
+            },
+            responder,
+          ),
+        );
+      }, 20);
+      return [{ callsign: "Wren", channel: "sms", dispatched: true }];
+    });
+
+    const wren: OnCallEntry = {
+      declaration: {
+        author: { kind: "human", callsign: "Wren", pubkey: getPublicKey(responder) },
+        channel: "sms",
+        expires: STANDING,
+      },
+      command: ["true"],
+    };
+    const ex = new EscalationExecutor({
+      config: config(statePath, 0.3, [wren]),
+      secretKey, pubkey: watchtower, pool, page, drillStatePath: statePath,
+    });
+    executors.push(ex);
+
+    await ex.drillOnce(DRILL);
+
+    expect(page).toHaveBeenCalledTimes(1);
+    expect(drills.readDrillState(statePath)?.last?.result).toBe("pass");
+  });
 });

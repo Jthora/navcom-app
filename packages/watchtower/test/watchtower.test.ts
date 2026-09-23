@@ -46,13 +46,17 @@ function fakeConfig(
   };
 }
 
-function fakePool() {
+function fakePool(refuse = false) {
   const publishedEvents: Event[] = [];
   let onEvent: ((event: Event) => void) | undefined;
   const pool = {
     publish: (relays: string[], event: Event) => {
       publishedEvents.push(event);
-      return relays.map(() => Promise.resolve("ok"));
+      // `refuse` is every relay saying no — the case where the daemon answered and nothing
+      // left the machine. It still records what it tried, so the attempt is observable.
+      return relays.map(() =>
+        refuse ? Promise.reject(new Error("relay refused")) : Promise.resolve("ok"),
+      );
     },
     subscribeMany: (_relays: string[], _filter: unknown, params: { onevent: (e: Event) => void }) => {
       onEvent = params.onevent;
@@ -72,10 +76,11 @@ function buildDaemon(
   allowedPubkeys: string[] = [],
   log?: AccountabilityLog,
   escalationLogPath: string | null = null,
+  refusePublish = false,
 ) {
   const secretKey = generateSecretKey();
   const pubkey = getPublicKey(secretKey);
-  const { pool, publishedEvents, deliver } = fakePool();
+  const { pool, publishedEvents, deliver } = fakePool(refusePublish);
   const daemon = new WatchtowerDaemon({
     config: fakeConfig(configOverrides, allowedPubkeys, escalationLogPath),
     secretKey,
@@ -121,8 +126,9 @@ async function started(
   allowedPubkeys: string[] = [],
   log?: AccountabilityLog,
   escalationLogPath: string | null = null,
+  refusePublish = false,
 ) {
-  const ctx = buildDaemon(configOverrides, allowedPubkeys, log, escalationLogPath);
+  const ctx = buildDaemon(configOverrides, allowedPubkeys, log, escalationLogPath, refusePublish);
   await ctx.daemon.start();
   activeDaemons.push(ctx.daemon);
   return ctx;
@@ -165,9 +171,31 @@ describe("what the watch writes down", () => {
     deliver(signalEvent(operator, pubkey, "on-station", { callsign: "Wren", area: "Downtown", expected_duration: 7200, routine_interval: null, share_position: false, position: null }));
     await waitForResponse(publishedEvents);
 
-    expect(outcomes(operatorPubkey)).toContain("acked/acknowledged");
+    // Waited for, because the note is written after the publish since 2026-09-21: the record
+    // says what happened rather than what was attempted, so it lands a tick later.
+    await vi.waitFor(() => expect(outcomes(operatorPubkey)).toContain("acked/acknowledged"));
     // The area was on the wire and must not be in the record.
     expect(JSON.stringify(opened.all())).not.toContain("Downtown");
+  });
+
+  it("does not record an acknowledgement that reached no relay", async () => {
+    /*
+     * The note was written and fsynced *before* the publish, and regardless of its result — so
+     * a response every relay refused still left a durable claim that this watch answered. An
+     * operator reading their own record months later would be shown a confident answer about a
+     * night nobody answered them. `contactOverdue` in the same file already had this right for
+     * the less important action.
+     */
+    const { pubkey, deliver, publishedEvents } = await started({}, [], opened, null, true);
+    const operator = generateSecretKey();
+    const operatorPubkey = getPublicKey(operator);
+
+    deliver(signalEvent(operator, pubkey, "on-station", { callsign: "Wren", area: "Downtown", expected_duration: 7200, routine_interval: null, share_position: false, position: null }));
+    await waitForResponse(publishedEvents);
+    await vi.waitFor(() => expect(outcomes(operatorPubkey).length).toBeGreaterThan(0));
+
+    expect(outcomes(operatorPubkey)).toContain("acked/ack-not-sent");
+    expect(outcomes(operatorPubkey)).not.toContain("acked/acknowledged");
   });
 
   it("records an answer as unverified when it carried no provenance", async () => {
@@ -180,7 +208,7 @@ describe("what the watch writes down", () => {
 
     // The client renders this unverified; the log says the same, so the two accounts of
     // the same answer cannot drift apart.
-    expect(outcomes(operatorPubkey)).toContain("answered/answered-unverified");
+    await vi.waitFor(() => expect(outcomes(operatorPubkey)).toContain("answered/answered-unverified"));
     // And the question itself is not in the record [C27].
     expect(JSON.stringify(opened.all())).not.toContain("dog");
   });

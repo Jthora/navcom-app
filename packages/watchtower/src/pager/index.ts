@@ -6,7 +6,7 @@ import type { Event } from "nostr-tools/core";
 import { parse } from "smol-toml";
 import { KIND_DISTRESS } from "@navcom/core";
 import { isValidHexPubkey } from "../shared/validate.js";
-import { emptyState, forgetOld, shouldPage, REPAGE_AFTER_SECONDS } from "./decide.js";
+import { emptyState, forgetOld, markPaged, shouldPage, REPAGE_AFTER_SECONDS } from "./decide.js";
 
 /**
  * A pager that holds no key.
@@ -117,10 +117,23 @@ function main(): void {
         `NAVCOM DISTRESS. An operator has raised a Distress and is waiting for a human. ` +
         `Open the terminal and acknowledge it.`;
 
-      const argv = fill(config.command, { message, at: new Date(event.created_at * 1000).toISOString() });
+      /*
+       * Bounded before it is formatted.
+       *
+       * `created_at` is wire data. Past about 8.64e12 seconds `toISOString()` throws a
+       * RangeError inside `onevent`, nostr-tools swallows it as a message-processing warning,
+       * and the page is dropped with no `[pager]` line at all — while the operator had already
+       * been marked as paged, suppressing their real retries for the next five minutes.
+       */
+      const stampedAt = Number.isFinite(event.created_at) && Math.abs(event.created_at) < 8.64e12
+        ? new Date(event.created_at * 1000).toISOString()
+        : "unknown";
+      const argv = fill(config.command, { message, at: stampedAt });
       const [cmd, ...args] = argv;
       execFile(cmd!, args, { timeout: 30_000 }, (err) => {
         const stamp = new Date().toISOString();
+        // Counted only when it went. A failure must leave the next retry free to try again.
+        if (!err) markPaged(state, event.pubkey, Math.floor(Date.now() / 1000));
         // Both outcomes are printed. A pager whose command silently fails is worse than no
         // pager, because somebody is counting on it.
         console.log(
