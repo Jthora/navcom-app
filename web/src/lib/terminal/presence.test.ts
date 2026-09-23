@@ -89,3 +89,32 @@ describe("a peer whose phone has the wrong time", () => {
     expect(presence.out.map((p) => p.callsign)).toContain('Raven');
   });
 });
+
+describe('the outgoing heartbeat', () => {
+  it('is not stopped by the screen that stops the listening', () => {
+    /*
+     * `presence.stop()` is the Status screen's `onMount` cleanup, and it used to clear the beat
+     * as well as the subscription. So the first time an operator left Status for any other
+     * screen, their own heartbeat stopped while they were still out — and three minutes later
+     * every paired peer moved them to `unknown · nothing heard`, where a buddy who agreed to
+     * watch could no longer tell a flat battery from trouble.
+     */
+    vi.useFakeTimers();
+    let beats = 0;
+    presence.beat(() => {
+      beats++;
+      return { callsign: 'Wren', status: 'out', area: 'north side', until: 0 };
+    });
+
+    presence.stop();
+    vi.advanceTimersByTime(180_000);
+    expect(beats, 'the beat belongs to the patrol, not to a screen').toBeGreaterThan(0);
+
+    // It ends where the patrol does.
+    presence.stopBeat();
+    const after = beats;
+    vi.advanceTimersByTime(180_000);
+    expect(beats).toBe(after);
+    vi.useRealTimers();
+  });
+});

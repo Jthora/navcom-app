@@ -185,11 +185,28 @@ export const presence = {
     }, HEARTBEAT_SECONDS * 1000);
   },
 
+  /**
+   * Stops **listening**. The outgoing beat is not ended here, and that is the fix.
+   *
+   * This cleared the interval too, and the only caller is the Status screen's `onMount`
+   * cleanup — so the first time an operator left Status for any other screen, their own
+   * heartbeat stopped while they were still out. Nothing restarted it: `start()` touches only
+   * the subscription, and only a fresh `signOn()` calls `beat()`. Three minutes later every
+   * paired peer moved them to `unknown · nothing heard`, and a buddy who agreed to watch could
+   * no longer tell a flat battery from trouble.
+   *
+   * The asymmetry was the tell: `stopListed()`, the public board's beat, is deliberately absent
+   * from that cleanup for exactly this reason.
+   */
   stop(): void {
     closer?.close();
     closer = null;
+    connected = false;
+  },
+
+  /** Ends the outgoing heartbeat. Belongs to the patrol: stand-down, or a wipe. */
+  stopBeat(): void {
     if (beat) clearInterval(beat);
     beat = null;
-    connected = false;
   }
 };

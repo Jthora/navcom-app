@@ -357,10 +357,17 @@ export const board = {
 
     stillAdvertised = true;
     if (darkRetry) clearInterval(darkRetry);
+    /*
+     * The captured secret, not a fresh read.
+     *
+     * This re-read `watchKey()` on every tick, and the screen's *Give up this watch* removes
+     * that key the moment it calls this — so from the first failed publish the retry returned
+     * immediately, forever, while `stillAdvertised` stayed true and the relay went on telling
+     * every operator that a named human was watching. Invariant 4, produced by the loop written
+     * to prevent it.
+     */
     darkRetry = setInterval(() => {
-      const s = watchKey();
-      if (!s) return;
-      void publishDark(s).then((ok) => {
+      void publishDark(secret).then((ok) => {
         if (!ok) return;
         stillAdvertised = false;
         if (darkRetry) clearInterval(darkRetry);

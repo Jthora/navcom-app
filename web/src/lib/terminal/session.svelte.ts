@@ -126,6 +126,24 @@ function area(text?: string) {
   };
 }
 
+/**
+ * Asks the watch something, and forgets what it last said.
+ *
+ * `lastResponse` is module state that outlives the screen that produced it, and three screens
+ * read its mere presence as proof their own send landed. So an operator who signed on an hour
+ * ago, walked out of signal and asked a question was shown the sign-on acknowledgement as the
+ * answer — responder callsign, provenance line and all — and Resupply went further: it printed
+ * "Sent. Whoever keeps the stash will see it." and **wiped what they had typed**, for a message
+ * that never left the phone.
+ *
+ * Cleared before the send rather than after the failure, because the window between them is
+ * exactly when the screen renders.
+ */
+async function ask<T>(fn: () => Promise<T>): Promise<T | null> {
+  lastResponse = null;
+  return run(fn);
+}
+
 async function run<T>(fn: () => Promise<T>): Promise<T | null> {
   busy = true;
   error = null;
@@ -319,7 +337,7 @@ export const operator = {
   },
 
   async routine() {
-    const r = await run(() => send('routine', {}));
+    const r = await ask(() => send('routine', {}));
     if (r) {
       lastResponse = r;
       // This is one of the two things that answer the watch's *"you are past the time you
@@ -331,7 +349,7 @@ export const operator = {
 
   async query(text: string) {
     // Area rides along so the watch can answer "nearest bed" without asking where you are.
-    const r = await run(() => send('query', area(text), 15_000));
+    const r = await ask(() => send('query', area(text), 15_000));
     if (r) lastResponse = r;
   },
 
@@ -348,12 +366,12 @@ export const operator = {
    * alone has no quartermaster either. They buy their own socks.
    */
   async resupply(text: string) {
-    const r = await run(() => send('resupply', area(text), 15_000));
+    const r = await ask(() => send('resupply', area(text), 15_000));
     if (r) lastResponse = r;
   },
 
   async assist(urgency: 'soon' | 'now', text: string) {
-    const r = await run(() => send('assist', { urgency, ...area(text ? text : undefined) }, 15_000));
+    const r = await ask(() => send('assist', { urgency, ...area(text ? text : undefined) }, 15_000));
     if (r) lastResponse = r;
   },
 
@@ -371,7 +389,7 @@ export const operator = {
    * quietly treating it as trusted. `null` means nothing to show, not "checked and clean."
    */
   async reviewLog(): Promise<{ own: ReviewCheck; escalation: ReviewCheck | null } | null> {
-    const response = await run(() => send('log-review', {}, 20_000));
+    const response = await ask(() => send('log-review', {}, 20_000));
     if (!response) return null;
     lastResponse = response;
     if (!response.review) return null;
@@ -397,7 +415,7 @@ export const operator = {
     let closedBy: string | undefined;
 
     if (operator.hasWatch) {
-      const r = await run(() => send('stood-down', {}));
+      const r = await ask(() => send('stood-down', {}));
       if (r) {
         lastResponse = r;
         if (r.responder?.kind === 'human') closedBy = r.responder.callsign;
@@ -430,6 +448,7 @@ export const operator = {
     // by itself. A phone that dies removes you the same way, which is the honest behaviour
     // for a board whose only claim is that somebody is out right now.
     stopListed();
+    presence.stopBeat();
 
     session = null;
     clearField('wipeable', 'signon');
@@ -529,6 +548,7 @@ export const operator = {
     distressRunning = false;
     distressRaisedAt = null;
     stopListed();
+    presence.stopBeat();
     position.stop();
     session = null;
     lastResponse = null;

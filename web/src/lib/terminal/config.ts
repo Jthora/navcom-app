@@ -54,9 +54,21 @@ export function saveConfig(
   for (const r of relays) {
     if (!/^wss?:\/\//.test(r)) throw new ConfigError(`"${r}" is not a relay URL — expected wss://`);
   }
+  /*
+   * Everything validated before anything is written.
+   *
+   * `holders()` threw on a mistyped key *after* the pubkey and relays were already on disk and
+   * before the holder list was, so a single wrong character left a half-written config: the
+   * screen said nothing was saved, and `loadConfig()` returned a watch with no holders. That
+   * reads as configured everywhere — sign-on arms, Distress arms — and every signal is then
+   * sealed to the watch key alone, so the squad members it was meant for decrypt nothing. The
+   * operator believes a squad is behind them and their Distress lands on nobody's board.
+   */
+  const holderKeys = holders(holdersRaw);
   set('accruing', 'watchtower', cleanKey);
   set('accruing', 'relays', relays);
-  return { pubkey: cleanKey, relays, holders: holders(holdersRaw) };
+  set('accruing', 'watch_holders', holderKeys);
+  return { pubkey: cleanKey, relays, holders: holderKeys };
 }
 
 /**
@@ -74,6 +86,6 @@ function holders(raw: string | undefined): string[] {
   for (const k of keys) {
     if (!isPubkey(k)) throw new ConfigError(`"${k}" is not a pubkey — expected 64 hex characters.`);
   }
-  set('accruing', 'watch_holders', keys);
-  return keys.length ? keys : [];
+  // Pure: the caller writes, once everything has passed. See `saveConfig`.
+  return keys;
 }

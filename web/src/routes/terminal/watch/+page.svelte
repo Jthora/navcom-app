@@ -78,6 +78,20 @@
     }
   }
 
+  /**
+   * Giving up the watch.
+   *
+   * **Deliberately not awaited.** Removing a key from this phone has to work with no signal —
+   * an operator handing the device over, or leaving a squad, cannot be told to find a relay
+   * first — so this never blocks on the network.
+   *
+   * What changed is the retry behind it. `standDown` used to re-read the watch key on every
+   * tick and this function deletes that key in the next statement, so from the first failed
+   * publish the retry returned immediately and Dark never landed at all. It holds the key it
+   * captured now, and keeps trying while this page is open. A `station` nobody retracted is
+   * read as Dark by every client after `STALE_AFTER_SECONDS` regardless, so the window this
+   * closes is five minutes rather than forever — worth closing, not worth blocking for.
+   */
   function leave() {
     void board.standDown();
     leaveWatch();
