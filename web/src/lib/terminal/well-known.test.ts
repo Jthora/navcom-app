@@ -328,6 +328,29 @@ describe('the intel declaration', () => {
     expect(event.tags.find(([t]) => t === 'd')?.[1]).toBe('st-louis/st-patrick-center');
   });
 
+  it('points a bulk consumer at the content-addressed copy, under the name actually announced', () => {
+    /*
+     * The expensive path was the only one a consumer could find: 16 MB of JSON over HTTPS, with
+     * no mention anywhere in this document that a CAR exists. A consumer polling that export is
+     * how a crawl spike becomes a bandwidth bill.
+     *
+     * The announcement name is read out of the script that publishes it, because a consumer told
+     * to watch `navcom:directory` while `announce.mjs` publishes something else watches nothing —
+     * and the two live in different files.
+     */
+    const announce = readFileSync(
+      fileURLToPath(new URL('../../../scripts/announce.mjs', import.meta.url)),
+      'utf8'
+    );
+    const bulk = doc().bulk;
+    expect(bulk.car).toMatch(/\/_ipfs\/navcom-directory\.car$/);
+    expect(bulk.cid_announced_as.kind).toBe(30078);
+    expect(announce, 'the declaration names an artifact nothing announces').toContain(
+      `artifact: '${bulk.cid_announced_as.d}'`
+    );
+    expect(bulk.json_export_note).toMatch(/rate limited/i);
+  });
+
   it('never tells a consumer to read the region as a geohash', () => {
     // Some slugs parse as one -- `denver`, decoded, is in the Atlantic east of the Caribbean --
     // and NIP-52 uses `g` for a geohash, so a consumer arriving from there will assume it.

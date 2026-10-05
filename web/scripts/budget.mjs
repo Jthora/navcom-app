@@ -253,4 +253,68 @@ if (publicJs === 0) {
   console.log('\n  Zero JavaScript on the public site. Every page there works with scripting disabled.');
 }
 
+/*
+ * A ceiling on any single file, because the page budgets above were watching the wrong thing.
+ *
+ * Every budget in this file models what one reader downloads on one page. They said nothing
+ * about a file no page links — and on 2026-10-04 the artifact that threatened the account the
+ * site is served from was `directory.json`, a 25 MB export in production that no page has ever
+ * referenced and no budget here was measuring. It appeared, grew with the directory, and the
+ * only thing that would have noticed was a bill.
+ *
+ * Raw rather than gzipped, deliberately. A client that omits `Accept-Encoding` pays the
+ * uncompressed size, and a hand-rolled consumer routinely does: this export is 16 MB raw and
+ * 1.3 MB gzipped, a twelvefold difference that only the raw number makes visible.
+ *
+ * An artifact over the ceiling is not forbidden. It has to be named here with a reason and a
+ * number, so that growing past it is a decision somebody makes rather than a thing that happens.
+ */
+const ARTIFACT_CEILING = 1024 * 1024;
+const NAMED = [
+  {
+    path: 'directory.json',
+    max: 20 * 1024 * 1024,
+    why: 'The whole directory as one export. No page links it, robots.txt disallows it, and a bulk consumer is pointed at the CAR instead.'
+  },
+  {
+    path: '_ipfs/navcom-directory.car',
+    max: 8 * 1024 * 1024,
+    why: 'The content-addressed directory, fetched by whoever pins it. This is the path bulk traffic is supposed to take.'
+  },
+  {
+    path: 'sitemap.xml',
+    max: 2 * 1024 * 1024,
+    why: 'One line per record. Grows with the directory and is fetched once per crawl.'
+  }
+];
+
+const rel = (f) => f.slice(BUILD.length).replace(/^\/+/, '');
+const over = [];
+for (const f of files) {
+  const name = rel(f);
+  const bytes = statSync(f).size;
+  const named = NAMED.find((n) => n.path === name);
+  const limit = named ? named.max : ARTIFACT_CEILING;
+  if (bytes > limit) over.push({ name, bytes, limit, named: Boolean(named) });
+}
+
+if (over.length) {
+  failed = true;
+  console.log('\n  ARTIFACT CEILING');
+  for (const o of over) {
+    console.log(
+      `  FAIL  ${o.name}  ${kb(o.bytes)} raw, over ${kb(o.limit)}` +
+        (o.named
+          ? ' — it has a budget here and has outgrown it. Decide, then raise it.'
+          : ' — no page links it and nothing here allows it. Name it in NAMED with a reason, or do not ship it.')
+    );
+  }
+} else {
+  const biggest = NAMED.map((n) => {
+    const f = files.find((x) => rel(x) === n.path);
+    return f ? `${n.path} ${kb(statSync(f).size)}` : null;
+  }).filter(Boolean);
+  if (biggest.length) console.log(`\n  PASS  Artifacts    ${biggest.join(' · ')}`);
+}
+
 process.exit(failed ? 1 : 0);

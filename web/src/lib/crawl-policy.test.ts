@@ -127,6 +127,18 @@ describe('cache headers', () => {
     expect(valueFor('/directory/(.*)')).toContain('must-revalidate');
   });
 
+  it('tells a crawler not to index the exports, in case it fetched one anyway', () => {
+    // robots.txt asks a crawler not to fetch. This is the half that applies to the ones that do
+    // it regardless: `noindex` keeps a 16 MB JSON file out of a search result even when the
+    // request happened.
+    const headerFor = (source: string) =>
+      vercel().headers.find((h) => h.source === source)?.headers ?? [];
+    for (const source of ['/directory.json', '/console-regions.json', '/console-index/(.*)', '/_ipfs/(.*)']) {
+      const tag = headerFor(source).find((k) => k.key === 'x-robots-tag')?.value;
+      expect(tag, `${source} can still be indexed`).toBe('noindex');
+    }
+  });
+
   it('leaves the deploy stamp revalidating, because that is what it is for', () => {
     expect(valueFor('/version.json')).toBe('public, max-age=0, must-revalidate');
     expect(valueFor('/version.json')).not.toContain('s-maxage');

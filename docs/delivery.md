@@ -316,6 +316,29 @@ Three things that decided the shape:
 - **A budget at 99% forces a crisis rather than a decision**, which is how the last raise
   happened silently. The ratchet fires with room left to think
 
+### A fourth budget, on files no page ever loads
+
+Every budget above measures what one reader downloads on one page. None of them was watching a
+file nothing links — and on **2026-10-04** the artifact that threatened the account this site is
+served from was `/directory.json`, a 25 MB export in production that no page has ever referenced.
+It appeared, it grew with the directory, and the only thing positioned to notice was a bill.
+
+| | |
+|---|---|
+| **Ceiling** | **1 MB** raw, any single file in `build/` |
+| **Named exceptions** | `directory.json` 20 MB · `_ipfs/navcom-directory.car` 8 MB · `sitemap.xml` 2 MB |
+| **Measured** | 15.7 MB · 5.2 MB · 1.06 MB |
+| **Enforced by** | `scripts/budget.mjs`, which fails the build |
+
+**Raw rather than gzipped, deliberately.** A client that omits `Accept-Encoding` pays the
+uncompressed size and a hand-rolled consumer routinely does: the export is 15.7 MB raw against
+1.3 MB gzipped, and only the raw number makes that twelvefold difference visible.
+
+An artifact over the ceiling is not forbidden — it has to be **named with a reason and a number**,
+so outgrowing one is a decision somebody makes rather than something that happens. The exceptions
+sit close enough to today's sizes that the directory growing by a fifth forces the conversation
+again.
+
 The root console (`navcom.app/`) carries a third, deliberately much smaller budget: **60 kB**
 JS / **120 kB** page total, gzipped, measured at 49.7/66.8 kB the day it shipped. It is a
 sibling of the terminal, not nested under it, so it never inherits the identity/storage/relay

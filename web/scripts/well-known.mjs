@@ -579,6 +579,30 @@ export function intelDocument(root = ROOT) {
       abnormal: 'A sustained rate above this from one key is not a person on foot. It is not proof of bad faith — a scripted importer would look the same — but nothing in NavCom produces it, so it did not come from the app.',
       note: 'These are expectations, not limits. NavCom enforces no rate; it has no server that could.'
     },
+    /*
+     * Where bulk belongs, published because the expensive path was the only one a consumer could
+     * find.
+     *
+     * `/directory.json` is a convenience: one file, every record, 16 MB uncompressed and 1.3 MB
+     * gzipped -- a twelvefold penalty for any client that omits `Accept-Encoding`, which a
+     * hand-rolled fetcher routinely does. It is linked by no page, disallowed in `robots.txt`
+     * since the crawl spike of 2026-10-04, and nothing here had ever told a consumer that a
+     * content-addressed copy exists instead.
+     *
+     * The CAR is the path bulk traffic is supposed to take: fetched once, verified against a CID
+     * announced on relays this origin does not control, and fetched again only when that CID
+     * moves. A consumer polling the JSON export on a timer pays for the same bytes repeatedly and
+     * takes our word for them every time.
+     */
+    bulk: {
+      car: 'https://navcom.app/_ipfs/navcom-directory.car',
+      cid_announced_as: { kind: 30078, d: 'navcom:directory' },
+      prefer:
+        'Fetch the CAR once, verify it against the announced CID, and fetch again when the CID changes. Watch the announcement rather than polling an HTTPS file.',
+      json_export: 'https://navcom.app/directory.json',
+      json_export_note:
+        'A convenience, not the contract. Disallowed to crawlers, uncompressed for any client that does not ask for compression, and may be rate limited. Nothing in this document depends on it staying free to poll.'
+    },
     refuses: '/.well-known/navcom-refusals.json'
   };
 }
