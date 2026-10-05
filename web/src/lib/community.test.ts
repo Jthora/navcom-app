@@ -17,7 +17,6 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parse } from 'node-html-parser';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import { GONE, LIVE, NEVER_LINK, STALE_AFTER_DAYS, TRAINING, YOUTH, daysSince } from './community';
@@ -41,16 +40,33 @@ beforeAll(async () => {
     throw new Error('No build output. Run `npm run build` before these tests.');
   }
   /*
-   * Yielded, for the reason rtl.test.ts records: parsing 12,329 documents in one synchronous
-   * pass holds the event loop long enough that Vitest's reporter heartbeat times out, and the
-   * run fails with an unhandled error while every test in it passed.
+   * Scanned rather than parsed, because this hook was the slowest thing in the suite and the
+   * directory is growing into its own ceiling.
+   *
+   * Building a DOM for every built page cost **53 seconds of this hook's 120-second budget** at
+   * 8,487 pages on an idle machine, and blew straight through it under parallel load — failing a
+   * run in which every assertion passed. Vercel runs this suite as the deploy's build command, so
+   * the first thing it would have taken down is the ability to ship anything. The page count
+   * tracks the directory, so the margin shrinks with every region seeded.
+   *
+   * A regex is not a parser and that is fine here: this is our own generated HTML, every `href`
+   * in it is double-quoted, and the assertions below are positive — every live link, every
+   * archive, must be *found*. An extraction that silently stopped working fails them loudly,
+   * which is what makes the cheap version safe rather than merely fast.
+   *
+   * The yield stays, for the reason rtl.test.ts records: one synchronous pass over this many
+   * documents holds the event loop long enough that Vitest's reporter heartbeat times out.
    */
   hrefs = [];
+  const HREF = /<a\s[^>]*?href="([^"]*)"/gi;
   for (const [i, path] of files.entries()) {
-    if (i % 250 === 0) await new Promise((r) => setImmediate(r));
-    for (const a of parse(readFileSync(path, 'utf8')).querySelectorAll('a[href]')) {
-      hrefs.push({ path, href: a.getAttribute('href') as string });
+    if (i % 500 === 0) await new Promise((r) => setImmediate(r));
+    for (const m of readFileSync(path, 'utf8').matchAll(HREF)) {
+      hrefs.push({ path, href: m[1]! });
     }
+  }
+  if (hrefs.length === 0) {
+    throw new Error(`No hrefs found across ${files.length} built pages — the scan is broken.`);
   }
   // Deliberately site-wide: the guard's whole point is that *nothing* anywhere links to a
   // squatted domain. Memory is fine — each document is collectable once its hrefs are out —
