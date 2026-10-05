@@ -1,5 +1,26 @@
-User-agent: *
-Allow: /
+# The public resource directory is meant to be found — by somebody searching for a bed
+# tonight. That is search engines, and it is the one part of this site crawling helps.
+#
+# Everything disallowed below is either an app shell with nothing to index, or a machine
+# export meant for a named consumer rather than a crawler. `/directory.json` alone is 25 MB
+# uncompressed, and no crawler has ever needed it: the pages carry the same records in 3 KB
+# each, and a consumer that wants the export is told about it in
+# `/.well-known/navcom-intel.json` rather than by finding it here.
+#
+# This file used to say `Allow: /` under a comment claiming everything else was "deliberately
+# not indexable". The comment was the policy and the file was the opposite, which is how 8,429
+# record pages and a 25 MB export came to be advertised to everything with a user agent.
+#
+# `seeding.md` requires NavCom's own seeder to honour robots.txt and rate limit, because the
+# places in this directory are organisations serving people. This is the same courtesy asked
+# of whoever crawls us.
 
-# The public resource directory is meant to be found. Everything else about NavCom
-# is deliberately not indexable, because there is nothing else here to index.
+User-agent: *
+Crawl-delay: 10
+Disallow: /terminal/
+Disallow: /directory.json
+Disallow: /console-regions.json
+Disallow: /console-index/
+Disallow: /__data.json
+Disallow: /_ipfs/
+Allow: /
