@@ -34,8 +34,9 @@
   <h3><a href="/directory/{record.id}/">{record.name}</a></h3>
   <p class="type">{labelValue(record.type)}</p>
   {#if away}
-    <!-- In a list of local places, the one thing that makes this one not local. -->
-    <p class="abroad" data-abroad={away.country}>In {countryName(away.country)} — across an international border</p>
+    <!-- In a list of local places, the one thing that makes this one not local. A label, not
+         an explanation: the record page carries the evidence behind its Why. -->
+    <strong class="abroad" data-abroad={away.country}>In {countryName(away.country)}</strong>
   {/if}
 
   <dl>
@@ -92,6 +93,7 @@
   }
 
   .abroad {
+    display: block;
     margin: 0.2rem 0 0;
     font-size: 0.9rem;
     font-weight: 600;

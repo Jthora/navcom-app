@@ -669,9 +669,7 @@
                 Decided from the merged record, so a phone number corrected in the field moves
                 this with it. A fact, and nothing about what crossing requires: see abroad.ts.
               -->
-              <p class="abroad" data-abroad={away.country}>
-                In {countryName(away.country)} — across an international border
-              </p>
+              <strong class="abroad" data-abroad={away.country}>In {countryName(away.country)}</strong>
             {/if}
 
             <!--
@@ -1122,6 +1120,7 @@
    * things where somebody is reading fast. The words carry it.
    */
   .abroad {
+    display: block;
     color: var(--t-ink); font-weight: 700; font-size: .9rem;
     border-inline-start: 3px solid var(--t-line-strong); padding-inline-start: .6rem;
     margin: .2rem 0 .5rem;

@@ -1,5 +1,6 @@
 <script lang="ts">
   import FieldRow from '$lib/components/FieldRow.svelte';
+  import { Why } from '$lib/components/panel';
   import { displayField, displayRecord } from '$lib/directory';
   import { AVAILABILITY_FIELDS, FIELD_LABELS, INTAKE_FIELDS, labelValue } from '@navcom/core';
   import { abroad, countryName, localTimeNote } from '@navcom/core';
@@ -152,10 +153,12 @@
       -->
       <div class="notice notice--warn abroad" data-abroad={away.country}>
         <p class="notice__label">In {countryName(away.country)}</p>
-        <p>
-          Listed under {data.region.name}, but its phone number places it in
-          {countryName(away.country)} — across an international border.
-        </p>
+        <Why summary="How we know">
+          <p>
+            Listed under {data.region.name}, but its phone number places it in
+            {countryName(away.country)} — across an international border.
+          </p>
+        </Why>
       </div>
     {/if}
     {#if record.lat !== undefined && record.lon !== undefined}
