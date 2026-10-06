@@ -382,6 +382,12 @@ export function intelDocument(root = ROOT) {
   const emitted = existsSync(join(root, 'packages/core/src/directory/observation.ts'));
 
   /*
+   * The report kind is reserved and unbuilt. Derived from a builder existing rather than from the
+   * constant in `kinds.ts`, which is exactly the distinction the comment above was written for.
+   */
+  const reportEmitted = existsSync(join(root, 'packages/core/src/events/report.ts'));
+
+  /*
    * The same question, asked of the other half, because the answer is different.
    *
    * `buildRefinement` is implemented in core, tested, and **called by nothing** -- so every
@@ -435,6 +441,21 @@ export function intelDocument(root = ROOT) {
         required: ['anchor', 'observed_at', 'tags', 'method', 'callsign', 'precision'],
         method: ['saw', 'told', 'inferred'],
         precision: ['area', 'exact']
+      },
+      {
+        kind: 1912,
+        name: 'report',
+        range: 'regular (1000-9999) — stored, immutable, superseded but never edited',
+        signed_by: 'the operator\'s contact key, the one that signed their card. Never the operational key',
+        /*
+         * Derived, not asserted, for the reason the status above is: reserving a number is not
+         * implementing an object, and a consumer told to expect events nothing sends builds against
+         * a world that does not exist. This flips the day a builder appears in core.
+         */
+        emitted: reportEmitted,
+        note: reportEmitted
+          ? 'A client can build one.'
+          : 'RESERVED. Nothing in NavCom builds one yet, so none exists. The number is allocated so that nobody else takes it and an implementer has something citable. Fields are settled in docs/design/the-artifact-that-leaves.md and in the exchange with Archangel Agency: callsign, date, one to three activity terms, an optional region in the content and never a tag, and an optional supersedes. No g tag, no t tags, no mission, no partners, no counts, no coordinates, no time of day.'
       }
     ],
     /*

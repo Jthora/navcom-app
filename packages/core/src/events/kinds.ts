@@ -84,6 +84,27 @@ export const KIND_INVITE = 1910;
 export const KIND_OBSERVATION = 1911;
 
 /**
+ * A work report — *"on 4 October I handed out supplies in St. Louis."* **Reserved, not emitted.**
+ *
+ * An operator's own account of their own work, signed by the **contact key**, published because they
+ * chose to. Archangel Agency asked for a wire form for the op recap `propagation.md` §2 describes,
+ * accepted every change NavCom asked for, and needs a number to build their reader against. This is
+ * that number.
+ *
+ * **Nothing in this codebase builds one yet, and the published contract says so.** Reserving a kind
+ * is not implementing an object: `scripts/well-known.mjs` derives each kind's emitted status from
+ * whether a builder exists, precisely so a consumer is never told to expect events nothing sends.
+ * The number is here so nobody else takes it and so their emitter has something citable.
+ *
+ * Regular (1000–9999) for the reason `1911` is: a record of work is superseded by a later record and
+ * never silently rewritten. Correction travels as `supersedes`; withdrawal as a NIP-09 request, whose
+ * reach `relay/conformance.ts` now measures rather than assumes.
+ *
+ * Design and the decisions behind it: [`the-artifact-that-leaves.md`](../../../../docs/design/the-artifact-that-leaves.md).
+ */
+export const KIND_REPORT = 1912;
+
+/**
  * A credential — *"I vouch for the holder of this."*
  *
  * **Never published.** Handed over the way everything else here is, because indexing it

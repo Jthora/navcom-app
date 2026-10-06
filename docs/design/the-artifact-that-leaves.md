@@ -59,14 +59,13 @@ What it carries is already decided by §2 of `propagation.md` and C22: callsign,
 in words, the region if the operator left it on, and a quiet mark of provenance. No counts, no
 impact claims, no call to action, no referral code.
 
-**The font is an open decision rather than an inherited one.** P8 closed webfonts for the
-interface because a font that has not loaded is text that is not there, and a reflow while
-somebody reaches for `Distress` moves the layout under their thumb. *Neither argument reaches an
-image drawn after a deliberate tap* — nothing reflows and no text is missing, and the
-`FontFace` API loads a face and adds it to `document.fonts` before the first `fillText`. So the
-choice is: a subset face for the canvas alone, or the system stack and an artifact that looks
-different on every phone. The second is the default if nobody decides, and it is the one that
-costs `propagation.md`'s quality bar.
+**The font was an open decision and is now a made one: the system stack, variance accepted**
+(maintainer, 2026-10-05). P8 closed webfonts for the interface because a font that has not loaded is
+text that is not there, and a reflow while somebody reaches for `Distress` moves the layout under
+their thumb. Neither argument reaches an image drawn after a deliberate tap, so the question was open
+rather than settled by P8 — and the answer is still no face of our own. The card is legible
+everywhere and identical nowhere, and `FAMILY` in `recap.ts` is the one line that reverses it if a
+posted card ever looks wrong enough to matter.
 
 **Alt text ships beside the image.** The share sheet carries no alt field, so the operator has to
 paste it in the app: generate it with the card and offer it to copy. Worth knowing while writing
@@ -74,8 +73,13 @@ it — Instagram shows alt only to screen readers, and Mastodon cannot edit alt 
 
 ### P3 — The signed report.
 
-Kind `1912`, reserved rather than allocated, and gated on two things that are not code: the
-allocation decision, and one operator who actually wants to post. The object mirrors
+**Kind `1912` is reserved** (maintainer, 2026-10-05): it is in `kinds.ts` and in the published
+declaration, which derives `emitted: false` from the absence of a builder — so a consumer has a
+number to cite and is told plainly that nothing sends one yet. **The object itself waits on an
+operator who wants to post**, and on the agent question below, which was answered *format only*:
+Archangel builds their own emitter against our spec, we build the object and its vectors, and the
+screen, the same-day default and the throttle wait for a human — because every one of those exists
+for somebody who can be hurt. The object mirrors
 `observation.ts`; there is no `g` tag, for the reason in
 [`verified-capabilities.md`](../product/verified-capabilities.md)'s neighbourhood — a
 region-indexed per-operator work report is C27's *queryable history of who was out where*, built

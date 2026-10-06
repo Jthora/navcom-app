@@ -189,10 +189,17 @@ describe('the intel declaration', () => {
     // not be among them until it is this one.
     const allocated = [...kindsSrc().matchAll(/KIND_(\w+)\s*=\s*(\d+)/g)]
       .map(([, name, n]) => ({ name, kind: Number(n) }));
-    const claimed = doc().defines.map((d) => d.kind);
-    for (const k of claimed) {
-      const clash = allocated.find((a) => a.kind === k && a.name !== 'OBSERVATION');
-      expect(clash, `kind ${k} is already KIND_${clash?.name}`).toBeUndefined();
+    /*
+     * Generalised when a second kind was declared. The question is not "is 1911 absent from
+     * kinds.ts" — it is there on purpose — but whether a number this document claims is allocated
+     * to anything *other* than the object claiming it. One number, one meaning.
+     */
+    const owner: Record<number, string> = { 1911: 'OBSERVATION', 1912: 'REPORT' };
+    for (const d of doc().defines) {
+      const mine = owner[d.kind];
+      expect(mine, `kind ${d.kind} is declared with no owner named in this test`).toBeTruthy();
+      const clash = allocated.find((a) => a.kind === d.kind && a.name !== mine);
+      expect(clash, `kind ${d.kind} is already KIND_${clash?.name}`).toBeUndefined();
     }
   });
 
@@ -209,6 +216,25 @@ describe('the intel declaration', () => {
       fileURLToPath(new URL('../../../../packages/core/src/directory/observation.ts', import.meta.url))
     );
     expect(doc().status.startsWith(buildable ? 'implemented in core' : 'specified, not implemented')).toBe(true);
+  });
+
+  it('calls the report kind reserved for exactly as long as nothing builds one', () => {
+    /*
+     * The same guard as the status above, aimed at the second kind. A number in `kinds.ts` is not an
+     * implementation, and a consumer told to expect `1912` events while nothing sends one builds
+     * against a world that does not exist — which is the failure this whole file exists to prevent.
+     * Keyed on a builder existing, so it flips itself the day one appears.
+     */
+    const buildable = existsSync(
+      fileURLToPath(new URL('../../../../packages/core/src/events/report.ts', import.meta.url))
+    );
+    const report = doc().defines.find((d) => d.kind === 1912);
+    expect(report, 'the report kind is not declared at all').toBeTruthy();
+    expect(report?.emitted).toBe(buildable);
+    if (!buildable) {
+      expect(report?.note).toMatch(/^RESERVED/);
+      expect(report?.note).toMatch(/No g tag, no t tags, no mission/);
+    }
   });
 
   it('publishes a vocabulary read out of the spec, not retyped', () => {
