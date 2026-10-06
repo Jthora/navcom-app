@@ -34,7 +34,14 @@ group by name reads what the device already has.
 
 ## 2. The root changes with state, and that is the whole onboarding
 
-**Signed out, the root of the Com stack is account setup — and Nav is already populated behind it.**
+**Signed out, the root of the Com stack is the directory search, with account setup one line
+beneath it — and Nav is already populated behind both** (revised 2026-10-06).
+
+The first version put setup at the root, and that was right for somebody deciding whether to join
+and wrong for the other person who arrives here: somebody who needs a place to sleep tonight. The
+landing page has always been the directory's front door, and putting a form in front of the search
+would have made the person who most needs NavCom meet a sign-up first. Search first serves both —
+nobody in need sees a form, and an operator is one tap from setup.
 
 This is the entire first-run experience and it needs no separate flow. Public missions and live map
 activity render immediately, behind and beside a setup form, so the value is visible *during*

@@ -3,6 +3,7 @@
   import { onMount } from 'svelte';
   import GridMap from '$lib/components/grid/GridMap.svelte';
   import type { ConsoleCentroid } from '$lib/console/types';
+  import type { Feed } from '$lib/missions/live';
   import { get } from '$lib/terminal/storage';
 
   /*
@@ -23,21 +24,17 @@
   let regions = $state<{ lon: number; lat: number }[]>([]);
 
   /*
-   * The missions, as of the last build — read from navcom.app, never from The Record, so looking
-   * at the map still tells nobody anything [$lib/missions/snapshot]. Typed loosely and checked
-   * here rather than importing core: the page needs two fields, and core's mission module
-   * brings the signature library with it.
+   * Missions, read live by this device from The Record [$lib/missions/live] — loaded after first
+   * paint, because verifying signatures brings a library the outlines do not need.
    */
-  type Snapshot = {
-    taken_at: string;
-    status: 'ok' | 'unavailable';
-    missions: { state: string; validUntil: number; placement: { jurisdiction: string | null } }[];
-  };
-  let snapshot = $state<Snapshot | null>(null);
+  let feed = $state<Feed>({ status: 'connecting' });
+  /** Ticks each minute, so a mission that ends while the page is open stops being lit. */
+  let now = $state(Date.now());
 
-  /** Re-checked against this device's clock: a mission active at build time may have ended since. */
   const active = $derived(
-    (snapshot?.missions ?? []).filter((m) => m.state !== 'closed' && m.validUntil > Date.now() / 1000)
+    feed.status === 'live' || feed.status === 'cached'
+      ? feed.missions.filter((m) => m.state !== 'closed' && m.validUntil > now / 1000)
+      : []
   );
   /** Provinces to light. A national mission (`us`) lights nothing — it would light everything. */
   const lit = $derived(
@@ -45,13 +42,9 @@
   );
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   /** Absolute, because a date cannot become false the way "3 hours ago" can. */
-  const asOf = $derived.by(() => {
-    const t = snapshot ? new Date(snapshot.taken_at) : null;
-    if (!t || Number.isNaN(t.getTime())) return '';
-    const hh = String(t.getUTCHours()).padStart(2, '0');
-    const mm = String(t.getUTCMinutes()).padStart(2, '0');
-    return `${t.getUTCDate()} ${MONTHS[t.getUTCMonth()]} ${hh}:${mm} UTC`;
-  });
+  const stamp = (t: Date) =>
+    `${t.getUTCDate()} ${MONTHS[t.getUTCMonth()]} ${String(t.getUTCHours()).padStart(2, '0')}:${String(t.getUTCMinutes()).padStart(2, '0')} UTC`;
+  const age = $derived(feed.status === 'live' ? 'live' : feed.status === 'cached' ? `as of ${stamp(feed.at)}, offline` : '');
 
   onMount(() => {
     // The same flag the console and the terminal raise once their handlers are attached, so a
@@ -65,14 +58,17 @@
       })
       // The outlines still draw; a missing layer of dots is not worth a failure state.
       .catch(() => undefined);
-    fetch('/missions.json')
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then((d: Snapshot) => {
-        snapshot = d;
-      })
-      .catch(() => {
-        snapshot = { taken_at: '', status: 'unavailable', missions: [] };
-      });
+    let stop: (() => void) | null = null;
+    let gone = false;
+    void import('$lib/missions/live').then(({ subscribeMissions }) => {
+      if (!gone) stop = subscribeMissions((f) => (feed = f));
+    });
+    const tick = setInterval(() => (now = Date.now()), 60_000);
+    return () => {
+      gone = true;
+      stop?.();
+      clearInterval(tick);
+    };
   });
 </script>
 
@@ -87,14 +83,14 @@
   <div class="key">
     <h1><a href="/">NavCom</a> grid</h1>
     <span><i aria-hidden="true"></i>Directory regions</span>
-    {#if snapshot}
-      {#if snapshot.status === 'unavailable'}
-        <strong data-missions="unavailable">Missions unavailable at the last build</strong>
-      {:else if active.length === 0}
-        <strong data-missions="none">No open missions · as of {asOf}</strong>
-      {:else}
-        <span data-missions="open"><b class="lit" aria-hidden="true"></b>Open missions · as of {asOf}</span>
-      {/if}
+    {#if feed.status === 'connecting'}
+      <strong data-missions="connecting">Reaching The Record…</strong>
+    {:else if feed.status === 'unavailable'}
+      <strong data-missions="unavailable">Missions unavailable — The Record cannot be reached</strong>
+    {:else if active.length === 0}
+      <strong data-missions="none" data-feed={feed.status}>No open missions · {age}</strong>
+    {:else}
+      <span data-missions="open" data-feed={feed.status}><b class="lit" aria-hidden="true"></b>Open missions · {age}</span>
     {/if}
     <a class="notice" href="/notice/">Notice</a>
   </div>

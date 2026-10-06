@@ -24,5 +24,4 @@ Disallow: /console-index/
 Disallow: /__data.json
 Disallow: /_ipfs/
 Disallow: /grid/
-Disallow: /missions.json
 Allow: /

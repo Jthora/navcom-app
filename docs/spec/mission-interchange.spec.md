@@ -46,7 +46,7 @@ from whether a builder exists, and this document follows the same discipline.
 
 | | Status |
 |---|---|
-| Reading kind `30079` packages from The Record | LIVE — every build reads the active field missions into [`/missions.json`](https://navcom.app/missions.json), with each refusal and its reason listed beside them |
+| Reading kind `30079` packages from The Record | LIVE — every device subscribes to The Record directly, verifies each package itself, and keeps the subscription open, so a new or closed mission shows without a reload |
 | The grid (the map missions appear on) | LIVE at [`/grid/`](https://navcom.app/grid/), lighting each mission's province — a proving ground until it moves onto the landing page |
 | Kind `1911` observation (raw intel) | BUILT — builder and contract exist; published at `/.well-known/navcom-intel.json` |
 | Kind `1912` report | Reserved, **not emitted** — the contract says `emitted: false` |
@@ -437,9 +437,9 @@ the map opens populated. It is identified as an agent everywhere it appears.
 - **Settle autonomously and fast.** It is how operators are credited
 - **Cite generously.** It keeps the evidence and pays the finder
 - **Propose new tags.** NavCom ignores tags it doesn't know; nothing breaks
-- **Keep publishing desk packages.** An operator with no crew can't do field work alone at night,
-  but can do desk work — and the Alone layer is NavCom's default. They may be how Alone operators
-  earn standing
+- **Desk packages stay yours.** NavCom shows field work only (decided 2026-10-06): it is the
+  boots-on-the-ground half, and desk work belongs in Starcom's own app. Nothing about desk
+  packages needs to change for NavCom
 - **Fund bounties** if you can (§8.2)
 
 ---

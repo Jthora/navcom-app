@@ -71,7 +71,16 @@
     requestAnimationFrame(draw);
   }
 
-  const fit = () => Math.max(width, height * 0.9);
+  /*
+   * The whole world's width, at the least zoomed-in a person can go.
+   *
+   * It used to fill the screen's height instead, which on a portrait phone made the world wider
+   * than the screen — so the button labelled "Show the whole map" showed a band centred on
+   * Greenwich with the Americas cut off, and a test meant to see California light up could not
+   * see California at all. A control that does not keep its label's promise is a defect, so the
+   * whole map now means the whole map, with empty space above and below it on a tall screen.
+   */
+  const fit = () => width;
 
   function clamp() {
     scale = Math.min(Math.max(scale, fit()), fit() * MAX_ZOOM);

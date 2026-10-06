@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { blankDevice, open, seedDevice } from './device';
@@ -26,8 +27,24 @@ async function picture(page: Page): Promise<{ colours: number; hash: number }> {
   });
 }
 
+/** Wraps whatever WebSocket the harness installed, so a test can see where the page connects. */
+async function recordSockets(page: Page) {
+  await page.addInitScript(() => {
+    const g = globalThis as unknown as { WebSocket: new (u: string) => unknown; __sockets: string[] };
+    const Inner = g.WebSocket;
+    g.__sockets = [];
+    g.WebSocket = class extends (Inner as unknown as { new (u: string): object }) {
+      constructor(u: string) {
+        super(u);
+        g.__sockets.push(String(u));
+      }
+    } as unknown as typeof g.WebSocket;
+  });
+}
+
 async function ready(page: Page) {
   await blankDevice(page);
+  await recordSockets(page);
   await open(page, '/grid/');
   await expect(page.locator('[data-grid="ready"]')).toBeVisible({ timeout: 15_000 });
   // One frame after ready, so the first draw has happened.
@@ -41,18 +58,22 @@ test.describe('the grid draws, and tells nobody', () => {
     expect((await picture(page)).colours).toBeGreaterThan(3);
   });
 
-  test('looking at it makes no request to anybody else', async ({ page }) => {
-    // The property map.md is built around: the common case, looking at the map, tells nobody
-    // anything. Asserted in a real browser rather than trusted.
-    // Collected first and judged after load: during navigation `page.url()` is still
-    // about:blank, which made the page's own request look foreign.
+  test('it talks to nobody but navcom.app and the relay that holds the missions', async ({ page }) => {
+    // The property map.md is built around, as refined when missions moved onto the device: no
+    // tile server, no font host, no analytics — and one socket, to The Record, because every
+    // device reads the missions itself rather than being handed a picture.
     const requested: string[] = [];
     page.on('request', (r) => requested.push(r.url()));
     await ready(page);
     await page.getByRole('button', { name: 'Zoom in' }).click();
+    // The subscription loads after first paint, so its socket is polled for, not read once.
+    const sockets = () => page.evaluate(() => (globalThis as unknown as { __sockets?: string[] }).__sockets ?? []);
+    await expect.poll(async () => (await sockets()).length, { timeout: 10_000 }).toBeGreaterThan(0);
     const home = new URL(page.url()).origin;
     expect(requested.length).toBeGreaterThan(1);
     expect(requested.filter((u) => new URL(u).origin !== home)).toEqual([]);
+    expect(await sockets()).toEqual(expect.arrayContaining(['wss://record.cosmiccodex.app']));
+    expect((await sockets()).filter((u) => u !== 'wss://record.cosmiccodex.app')).toEqual([]);
   });
 
   test('it moves when asked, by button and by key', async ({ page }) => {
@@ -136,15 +157,14 @@ test.describe('the grid draws, and tells nobody', () => {
     expect(results.violations, JSON.stringify(results.violations, null, 2)).toEqual([]);
   });
 
-  test.describe('missions on the map', () => {
-    const snapshot = (missions: object[], status = 'ok') => ({
-      version: 1, taken_at: new Date().toISOString(), source: 'test', status, missions, refused: []
-    });
-    const california = (validUntil: number) => ({
-      d: 'test-ca', state: 'open', validUntil, placement: { jurisdiction: 'us-ca', point: null }
-    });
-    const serve = (page: Page, body: object) =>
-      page.route('**/missions.json', (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify(body) }));
+  test.describe('missions, read live from The Record', () => {
+    /** Real packages signed by Mecha Jono; [0] is the California heat-relief campaign. */
+    const REAL = JSON.parse(readFileSync(new URL('../../packages/core/test/fixtures/mission-packages.json', import.meta.url), 'utf8'));
+    const HEAT = REAL[0];
+    const HEAT_ENDS = Number(HEAT.tags.find((t: string[]) => t[0] === 'valid_until')[1]);
+    /** The fixtures are real and expire; the clock is fixed so this suite does not, on 10 October. */
+    const DURING = new Date('2026-10-06T20:00:00Z');
+
     /** Mean brightness of the whole canvas: a lit province makes it rise, and nothing else differs. */
     const brightness = (page: Page) =>
       page.locator('.grid canvas').evaluate((c: HTMLCanvasElement) => {
@@ -153,42 +173,74 @@ test.describe('the grid draws, and tells nobody', () => {
         for (let i = 0; i < d.length; i += 4) sum += d[i]! + d[i + 1]! + d[i + 2]!;
         return sum / (d.length / 4);
       });
-    async function settled(page: Page) {
-      await blankDevice(page);
+    /** A socket that never connects, installed last so it wins: a phone with no signal. */
+    const noSignal = (page: Page) =>
+      page.addInitScript(() => {
+        class Dead extends EventTarget {
+          readyState = 0;
+          constructor(readonly url: string) {
+            super();
+          }
+          send(): void {}
+          close(): void {}
+        }
+        (globalThis as unknown as { WebSocket: unknown }).WebSocket = Dead;
+      });
+    async function load(page: Page) {
       await page.goto('/grid/', { waitUntil: 'networkidle' });
       await expect(page.locator('[data-grid="ready"]')).toBeVisible({ timeout: 15_000 });
-      // The whole map, so both runs compare the same view however the regions arrived.
       await page.getByRole('button', { name: 'Show the whole map' }).click();
-      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))));
     }
 
-    test('an open mission lights its province, and says how old the snapshot is', async ({ page }) => {
-      await serve(page, snapshot([]));
-      await settled(page);
+    test('an open mission lights its province, and says it is live', async ({ page }) => {
+      await page.clock.setFixedTime(DURING);
+      await blankDevice(page);
+      await load(page);
+      await expect(page.locator('[data-missions="none"]')).toContainText('live');
       const dark = await brightness(page);
-      await expect(page.locator('[data-missions="none"]')).toContainText(/No open missions · as of \d{1,2} [A-Z][a-z]{2} \d{2}:\d{2} UTC/);
 
-      await page.unroute('**/missions.json');
-      await serve(page, snapshot([california(Math.floor(Date.now() / 1000) + 86_400)]));
-      await settled(page);
-      await expect(page.locator('[data-missions="open"]')).toContainText(/Open missions · as of/);
-      // Polled, not read once: the legend updates in the same tick the snapshot lands, but the
-      // canvas redraws on the next animation frame, and a single read can fall between the two.
+      await seedDevice(page, { relayEvents: [HEAT], __noStorage: true } as Parameters<typeof seedDevice>[1]);
+      await load(page);
+      await expect(page.locator('[data-missions="open"]')).toContainText('Open missions · live');
+      // Polled: the legend updates in the tick the event lands, the canvas on the next frame.
       await expect.poll(() => brightness(page), { timeout: 5_000 }).toBeGreaterThan(dark);
     });
 
-    test('a mission that has ended since the build lights nothing', async ({ page }) => {
-      // Active when the snapshot was taken, over by the time somebody looks. This device's
-      // clock decides, not the build's [invariant 7].
-      await serve(page, snapshot([california(Math.floor(Date.now() / 1000) - 60)]));
-      await settled(page);
+    test('a mission that has ended lights nothing, by this device’s clock', async ({ page }) => {
+      await page.clock.setFixedTime(new Date((HEAT_ENDS + 60) * 1000));
+      await seedDevice(page, { relayEvents: [HEAT], __noStorage: true } as Parameters<typeof seedDevice>[1]);
+      await load(page);
       await expect(page.locator('[data-missions="none"]')).toBeVisible();
     });
 
-    test('a build that could not reach The Record says so, rather than showing no missions', async ({ page }) => {
-      await serve(page, snapshot([], 'unavailable'));
-      await settled(page);
-      await expect(page.locator('[data-missions="unavailable"]')).toBeVisible();
+    test('with no signal and nothing remembered, it says The Record cannot be reached', async ({ page }) => {
+      await blankDevice(page);
+      await noSignal(page);
+      await load(page);
+      await expect(page.locator('[data-missions="connecting"]')).toBeVisible();
+      await expect(page.locator('[data-missions="unavailable"]')).toBeVisible({ timeout: 15_000 });
+    });
+
+    test('offline, it shows what this device last saw, with its age', async ({ page }) => {
+      await page.clock.setFixedTime(DURING);
+      await seedDevice(page, { relayEvents: [HEAT], __noStorage: true } as Parameters<typeof seedDevice>[1]);
+      await load(page);
+      await expect(page.locator('[data-missions="open"][data-feed="live"]')).toBeVisible();
+
+      await noSignal(page);
+      await load(page);
+      await expect(page.locator('[data-missions="open"][data-feed="cached"]')).toContainText(/as of \d{1,2} [A-Z][a-z]{2} \d{2}:\d{2} UTC, offline/);
+    });
+
+    test('a copy on the device that was tampered with fails verification on the way back in', async ({ page }) => {
+      await page.clock.setFixedTime(DURING);
+      const tampered = { ...HEAT, content: HEAT.content.replace('Bakersfield', 'Fresno') };
+      await page.addInitScript((events) => {
+        localStorage.setItem('navcom.wipeable', JSON.stringify({ missions: { at: '2026-10-06T19:00:00.000Z', events } }));
+      }, [tampered]);
+      await noSignal(page);
+      await load(page);
+      await expect(page.locator('[data-missions="none"][data-feed="cached"]')).toBeVisible();
     });
   });
 

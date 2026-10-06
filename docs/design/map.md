@@ -80,9 +80,18 @@ So the line is not a performance budget. It is: **we own the picture, they own t
 **A handoff is an exit, and an exit leaks.** Every tap out hands a third party a coordinate,
 a timestamp and a referrer. So: the handoff is always user-initiated and never automatic; the
 link carries `rel="noreferrer"`; and no handoff is ever offered for a confidential record
-(§5). The grid itself makes zero third-party requests, which means **the common case —
-looking at the map — tells nobody anything.** That is the property worth protecting, and it
-is why the heavy layer is opt-in rather than lazy.
+(§5). The grid itself makes no request to any third party, which means **the common case —
+looking at the map — tells nobody anything about where you are looking.** That is the property
+worth protecting, and it is why the heavy layer is opt-in rather than lazy.
+
+**The one connection it does make is to the relay that holds the missions** (2026-10-06). Every
+device reads the missions itself from The Record and verifies each one, because each device
+drawing its own picture is the architecture [CLAUDE.md]. An earlier version had the site's build
+take a snapshot instead, to keep even that connection off the page; it made one build draw the
+picture for everyone and tied freshness to deploys, which is the centralisation this design
+exists to avoid. The cost of the direct route is small and named: The Record learns that a device
+opened NavCom's missions — one subscription to all of them, never which part of the map anybody
+looked at, which is exactly what a tile server would learn and why tiles stay opt-in.
 
 **Deferring only pays if the deferred thing is genuinely not fetched.** A mini-map that
 lazy-loads when it scrolls into view is a mini-map that loads. Click-to-load, with a
@@ -144,7 +153,7 @@ Three layers. Only the first is on at first paint.
 
 | Layer | Source | Default |
 |---|---|---|
-| **Grid** | Ours | **On.** Zero third-party requests |
+| **Grid** | Ours | **On.** No third-party request; one subscription to The Record for missions |
 | **Roads** | [OpenFreeMap](https://openfreemap.org) public instance — OSM vector tiles, no key, no registration, no cookies, dark styles available | Off. Loads when chosen, and says what choosing costs |
 | **Satellite** | — | **Declined.** No free keyless source whose terms permit it |
 
@@ -192,6 +201,11 @@ Three rules on top of the table, and these are the part that matters:
 
 ## 6. What is on the grid when it opens
 
+**Decided 2026-10-06: missions by default, coverage behind a switch.** The directory's 1,911 region
+dots make the map look alive at once, and they also compete with the missions for the eye. So the
+landing map opens on what there is to do, and one control shows or hides where the directory
+reaches. The proving ground at `/grid/` still shows both until 11.3 builds the landing page.
+
 Open and claimed missions, and public reports. **Not the 9,623 directory records.** The
 landing map is a situation, not an inventory — the directory stays searched rather than
 browsed, and ten thousand pins is a heat map of where somebody once ran a scraper, not of
@@ -202,7 +216,7 @@ Budgets, all of them targets to measure rather than claims:
 | | Target |
 |---|---|
 | Grid geometry, world outlines + provinces where regions are | ≤ 250 KB gzipped — **measured 55.8 KB** |
-| Third-party requests at first paint | **Zero** |
+| Requests at first paint to anyone but navcom.app | **None** — the mission subscription opens after first paint, to The Record only |
 | Repeat visit, no new deploy | Zero network for the grid — service worker now covers the whole origin |
 | Device floor | Interactive on a prepaid Android 8, 400 MB free |
 
