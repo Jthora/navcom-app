@@ -20,6 +20,7 @@
   import { loadIdentity } from '$lib/terminal/identity';
   import { Slot, Readout } from '$lib/components/panel';
   import { canShareText, shareText } from '$lib/terminal/share';
+  import { RECAP_FILENAME, RECAP_SIZE, canShareFile, drawRecap, recapAlt } from '$lib/terminal/recap';
 
   let list = $state<Patrol[]>([]);
   let keep = $state(false);
@@ -60,8 +61,13 @@
    * control that arrives at hydration beats markup that disagrees with itself.
    */
   let canShare = $state(false);
-  /** The one share outcome worth saying out loud. The other three are silent on purpose. */
-  let shareRefused = $state(false);
+  /**
+   * The share outcomes worth saying out loud. Everything else is silent on purpose.
+   *
+   * `refused` is a sheet that would not take it; `saved` is a browser with no file share, where the
+   * image was downloaded instead — which is a different thing that happened, not a failure.
+   */
+  let shareSaid = $state<'' | 'refused' | 'saved'>('');
 
   onMount(() => {
     list = patrols();
@@ -112,9 +118,55 @@
    * failure for it would teach them the control is broken when it did exactly what they asked.
    */
   async function share() {
-    shareRefused = false;
+    shareSaid = '';
     copied = false;
-    if ((await shareText(text)) === 'refused') shareRefused = true;
+    if ((await shareText(text)) === 'refused') shareSaid = 'refused';
+  }
+
+  /**
+   * The image, which is the only version of this that reaches Instagram.
+   *
+   * Drawn at the moment of the tap rather than kept anywhere: it is derived from the record one
+   * line at a time, and an image of where somebody has been is not a thing to leave lying in
+   * storage. The caption that rides with it is the sentence an operator can also paste as alt text.
+   */
+  async function shareImage() {
+    shareSaid = '';
+    copied = false;
+    const input = { callsign, patrols: list, includeAreas, includeNotes };
+    const canvas = document.createElement('canvas');
+    canvas.width = RECAP_SIZE;
+    canvas.height = RECAP_SIZE;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      shareSaid = 'refused';
+      return;
+    }
+    drawRecap(ctx, input);
+    const blob = await new Promise<Blob | null>((done) => canvas.toBlob(done, 'image/png'));
+    if (!blob) {
+      shareSaid = 'refused';
+      return;
+    }
+    const file = new File([blob], RECAP_FILENAME, { type: 'image/png' });
+    if (canShareFile(file)) {
+      try {
+        await navigator.share({ files: [file], text: recapAlt(input) });
+      } catch (err: unknown) {
+        const name = (err as { name?: string } | null)?.name ?? '';
+        if (name !== 'AbortError') shareSaid = 'refused';
+      }
+      return;
+    }
+    // No file share here — a desktop, usually. Saving it is the honest alternative, and it is
+    // said out loud because the operator asked for one thing and got another.
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = RECAP_FILENAME;
+    a.click();
+    URL.revokeObjectURL(url);
+    shareSaid = 'saved';
   }
 
   async function copy() {
@@ -235,16 +287,21 @@
         {#if canShare}
           <button data-share onclick={share}>Share</button>
         {/if}
+        <button data-share-image onclick={shareImage}>Image</button>
         <button onclick={copy}>{copied ? 'Copied' : 'Copy'}</button>
       </div>
-      {#if shareRefused}
+      {#if shareSaid}
         <!--
           A readout rather than a sentence: the state has a name, and `panel.md` rule 1 is that
           every state gets one. It also keeps this screen's prose where it is.
         -->
-        <div data-share-refused>
+        <div data-share-said={shareSaid}>
           <Slot k="Share">
-            <Readout value="Not sent" tone="warn" sub="still here, and Copy still works" />
+            {#if shareSaid === 'refused'}
+              <Readout value="Not sent" tone="warn" sub="still here, and Copy still works" />
+            {:else}
+              <Readout value="Saved instead" tone="neutral" sub="this browser has no share sheet for images" />
+            {/if}
           </Slot>
         </div>
       {/if}

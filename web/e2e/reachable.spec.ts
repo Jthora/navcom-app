@@ -1911,7 +1911,7 @@ test.describe('handing the record to the phone', () => {
     await openExport(page);
 
     await page.locator('[data-share]').click();
-    await expect(page.locator('[data-share-refused]')).toHaveCount(0);
+    await expect(page.locator('[data-share-said]')).toHaveCount(0);
   });
 
   test('says so when the sheet refuses it, and the text is still there', async ({ page }) => {
@@ -1920,9 +1920,97 @@ test.describe('handing the record to the phone', () => {
     await openExport(page);
 
     await page.locator('[data-share]').click();
-    const said = page.locator('[data-share-refused]');
+    const said = page.locator('[data-share-said="refused"]');
     await expect(said).toBeVisible();
     await expect(said).toContainText(/not sent/i);
     await expect(page.locator('[data-export]')).toBeVisible();
+  });
+
+  test('the image is a 1080 square PNG, with the caption that doubles as alt text', async ({ page }) => {
+    /*
+     * Instagram's share target is image-oriented, so this is the only version of the artifact that
+     * reaches the feed `propagation.md` §2 sets its quality bar by. What the test pins is the part a
+     * refactor would break quietly: a real PNG, at the size a feed takes without cropping, carrying
+     * a caption and no link.
+     */
+    await page.addInitScript(() => {
+      const w = window as unknown as Record<string, unknown>;
+      w['__shared'] = [];
+      const nav = navigator as unknown as Record<string, unknown>;
+      nav['canShare'] = () => true;
+      nav['share'] = async (data: { files?: File[]; text?: string }) => {
+        const file = data.files?.[0];
+        const bitmap = file ? await createImageBitmap(file) : null;
+        (w['__shared'] as unknown[]).push({
+          keys: Object.keys(data).sort(),
+          text: data.text,
+          type: file?.type,
+          name: file?.name,
+          bytes: file?.size,
+          width: bitmap?.width,
+          height: bitmap?.height
+        });
+      };
+    });
+    await seedDevice(page, WITH_WORK);
+    await openExport(page);
+
+    await page.locator('[data-share-image]').click();
+    await expect
+      .poll(async () => ((await page.evaluate(() => (window as unknown as Record<string, unknown>)['__shared'])) as unknown[]).length)
+      .toBe(1);
+
+    const [sent] = (await page.evaluate(
+      () => (window as unknown as Record<string, unknown>)['__shared']
+    )) as {
+      keys: string[];
+      text: string;
+      type: string;
+      name: string;
+      bytes: number;
+      width: number;
+      height: number;
+    }[];
+    expect(sent!.keys).toEqual(['files', 'text']);
+    expect(sent!.type).toBe('image/png');
+    expect(sent!.name).toBe('patrol-record.png');
+    expect(sent!.width).toBe(1080);
+    expect(sent!.height).toBe(1080);
+    // A drawn card, not an empty one.
+    expect(sent!.bytes).toBeGreaterThan(2000);
+    expect(sent!.text).toMatch(/Wren's patrol record from NavCom/);
+    expect(sent!.text).not.toMatch(/https?:|join|download/i);
+  });
+
+  test('the image leaves field notes out while the switch is off', async ({ page }) => {
+    // The switch is off by default and the layer underneath defaults the other way, which is how
+    // the riskiest free text in the system nearly went into a picture bound for a public feed.
+    const note = 'two handouts at the underpass';
+    await page.addInitScript(() => {
+      const w = window as unknown as Record<string, unknown>;
+      w['__shared'] = [];
+      const nav = navigator as unknown as Record<string, unknown>;
+      nav['canShare'] = () => true;
+      nav['share'] = async (data: { text?: string }) => {
+        (w['__shared'] as unknown[]).push(data.text);
+      };
+    });
+    await seedDevice(page, {
+      ...OUT,
+      keepPatrolHistory: true,
+      accruing: {
+        patrols: [{ started: 1_800_000_000, ended: 1_800_009_000, area: 'Downtown', note }]
+      }
+    });
+    await openExport(page);
+
+    await page.locator('[data-share-image]').click();
+    await expect
+      .poll(async () => ((await page.evaluate(() => (window as unknown as Record<string, unknown>)['__shared'])) as unknown[]).length)
+      .toBe(1);
+    const [caption] = (await page.evaluate(
+      () => (window as unknown as Record<string, unknown>)['__shared']
+    )) as string[];
+    expect(caption).not.toMatch(/underpass/);
   });
 });
