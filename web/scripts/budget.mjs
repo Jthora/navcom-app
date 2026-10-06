@@ -68,7 +68,11 @@ const COLD_MS_PER_KB = 1050 / 100;
 const SURFACES = {
   public: {
     label: 'public site',
-    match: (name) => !name.startsWith('terminal/') && name !== 'index.html' && name !== 'who/index.html',
+    match: (name) =>
+      !name.startsWith('terminal/') &&
+      name !== 'index.html' &&
+      name !== 'who/index.html' &&
+      name !== 'grid/index.html',
     js: 0,
     warn: 0,
     page: 250 * 1024
@@ -89,6 +93,22 @@ const SURFACES = {
     js: 60 * 1024,
     warn: 52 * 1024,
     page: 120 * 1024
+  },
+  /**
+   * The grid's proving ground [build-order 11.2], until 11.3 moves the map onto the landing page.
+   *
+   * Derived, not chosen: measured on 2026-10-06 at **44.9 kB JS / 48.0 kB page**, ~2.0 s to
+   * interactive on a congested cell, with ~20% headroom as every surface here gets. Almost all
+   * of it is SvelteKit's runtime; the map's own code is 3.1 kB, which is the number 11.3 has to
+   * fit inside the console. The 55 kB of geometry is fetched, not referenced, so it is not in
+   * these figures — the service worker caches it after the first visit.
+   */
+  grid: {
+    label: 'grid',
+    match: (name) => name === 'grid/index.html',
+    js: 54 * 1024,
+    warn: 49 * 1024,
+    page: 58 * 1024
   },
   /**
    * The public roster, which is **not** the same kind of page as the console.

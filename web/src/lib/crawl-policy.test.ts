@@ -31,7 +31,9 @@ const EXPORTS = [
   '/console-regions.json',
   '/console-index/',
   '/__data.json',
-  '/_ipfs/'
+  '/_ipfs/',
+  // The grid's geometry and its proving-ground page: 55 KB a request, and nothing to index.
+  '/grid/'
 ];
 
 describe('robots.txt', () => {
