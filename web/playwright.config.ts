@@ -33,6 +33,22 @@ export default defineConfig({
    */
   retries: 0,
 
+  /**
+   * Fewer workers than cores, because the suite was competing with itself.
+   *
+   * Five runs in one session failed on tests that pass alone in one to four seconds: the
+   * service-worker area check, a thumb-reach measurement, two setup flows, a correction. Every
+   * one of them blew a 30-second timeout under full parallelism and every page snapshot showed
+   * exactly the content the assertion wanted. The common factor was load, not the test and not
+   * the app — the third case the retries note below does not cover.
+   *
+   * **This hides nothing.** A retry would turn a flake into a pass; capping concurrency stops
+   * manufacturing the flake. The cost is wall-clock on a suite that runs in minutes, and the
+   * thing it buys is a deploy gate — `vercel.json` runs this as the build command, so a loaded
+   * build container could fail a release for reasons that have nothing to do with the release.
+   */
+  workers: process.env['CI'] ? 2 : '50%',
+
   /** `.only` left in a file must not silently narrow CI to one test. */
   forbidOnly: !!process.env['CI'],
 
