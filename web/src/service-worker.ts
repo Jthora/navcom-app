@@ -1,21 +1,85 @@
 /// <reference types="@sveltejs/kit" />
 /**
- * Offline shell for the Field Terminal.
+ * Offline shell for the Field Terminal, and the whole origin's repeat-visit cache.
  *
- * Registered only when a terminal page is visited — the public site runs no script, so it
- * never reaches this code. That is deliberate: a document does not need a worker, and a
- * reader who has scripting off should not be handed one.
+ * Two jobs, and they are worth separating because they have different failure modes.
  *
- * The terminal is a different matter. **Offline is a normal state, not an error** [C10], and
- * the Outpost's whole situation is a parking lot with no service. So the shell is cached on
- * install and served from cache first, because a terminal that needs the network to render
- * "Dark" has failed at the exact moment it mattered.
+ * ## The terminal, which must work with no network at all
+ *
+ * **Offline is a normal state, not an error** [C10], and the Outpost's whole situation is a
+ * parking lot with no service. So the shell is cached on install and served from cache first,
+ * because a terminal that needs the network to render "Dark" has failed at the exact moment
+ * it mattered.
+ *
+ * ## The public site, which must not re-download itself every visit
+ *
+ * Since 2026-10-05 this worker also serves `(site)` — the directory, docs, status and about —
+ * from a second, version-keyed cache. A returning reader fetches **nothing** until a deploy
+ * changes the build version, at which point the old cache is dropped whole and the next visit
+ * refills it. That is the whole mechanism: no revalidation, no age heuristics, no manifest to
+ * keep in step. Deploy happens on every push, so the invalidation is frequent and automatic.
+ *
+ * ### How a zero-JavaScript page gets a worker
+ *
+ * It does not register one, and that is not a loophole. `(site)` is `csr = false` and ships no
+ * script, as [`delivery.md`](../../docs/delivery.md) requires. The root console is `csr = true`,
+ * hydrates, and registers this worker at scope `/` — so a reader who passed through the landing
+ * page is thereafter served by a worker the documents themselves never mention. The promise is
+ * about what a page ships, and a cached document ships less than an uncached one.
+ *
+ * ### What this does not fix
+ *
+ * **Crawlers.** A bot does not run JavaScript, so it never registers this and never benefits
+ * from it. The August CDN spike was crawler traffic and the answer to it was the firewall rule
+ * and `robots.txt`, not this. This is for the human who opens the site twice.
  */
 
 import { base, build, files, version } from '$service-worker';
 import { TERMINAL_ROUTES } from '$lib/terminal/routes';
 
 const CACHE = `navcom-terminal-${version}`;
+
+/**
+ * The public site's cache, separate from the terminal's on purpose.
+ *
+ * Two reasons, both about eviction. The terminal's cache holds the areas an operator
+ * *deliberately chose to carry*, and nothing may throw those away to make room for a docs page
+ * somebody read once — `carryAreasForward` exists because a deploy did exactly that. And the
+ * public set is unbounded where the terminal's is not: there are 1,912 region pages, and a
+ * reader clicking through them must not fill a cheap phone.
+ *
+ * So they are different caches with different rules: the terminal's is precious and precached,
+ * this one is disposable and capped.
+ */
+const SITE = `navcom-site-${version}`;
+
+/**
+ * How many public documents to keep.
+ *
+ * Generous enough for a session of real browsing, small enough to be invisible on the device
+ * floor — a prepaid Android 8 with 400 MB free. Entries are evicted oldest-first, which
+ * `cache.keys()` gives us in insertion order by specification.
+ */
+const SITE_LIMIT = 60;
+
+/**
+ * Never cached, at any size, in either cache.
+ *
+ * `directory.json` is 16 MB and would consume a twenty-fifth of the device floor's free space
+ * in one request nobody asked for. The CSV and CAR artifacts are bulk exports for other
+ * machines. `.well-known` is read by external consumers — other people's agents — and serving
+ * one of them a stale refusals file from our cache would be a small lie told on our behalf.
+ */
+const isNeverCached = (pathname: string) =>
+  pathname === `${base}/directory.json` ||
+  pathname.endsWith('.csv') ||
+  pathname.endsWith('.car') ||
+  pathname.endsWith('/sitemap.xml') ||
+  pathname.startsWith(`${base}/.well-known/`);
+
+/** The terminal and the app's own immutable assets: precached, cache-first, precious. */
+const isTerminalScope = (pathname: string) =>
+  pathname.startsWith(`${base}/terminal`) || pathname.startsWith(`${base}/_app`);
 
 /**
  * The shell, plus the terminal's own pages.
@@ -158,10 +222,37 @@ sw.addEventListener('activate', (event) => {
   event.waitUntil(
     carryAreasForward()
       .then(() => caches.keys())
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      // Both current caches survive; every older one is dropped whole. Dropping the previous
+      // SITE cache IS the public site's invalidation — a new deploy means a new version string
+      // means the next visit refills from the network, with nothing to reason about.
+      .then((keys) =>
+        Promise.all(keys.filter((k) => k !== CACHE && k !== SITE).map((k) => caches.delete(k)))
+      )
       .then(() => sw.clients.claim())
   );
 });
+
+/**
+ * Stores one public document and evicts down to the cap.
+ *
+ * Only `ok`, `basic` responses are kept: a 404 cached as a document would survive until the
+ * next deploy, and an opaque cross-origin response tells us nothing about what it contains.
+ * Eviction is oldest-first and happens after the insert, so the page being read now is never
+ * the one thrown away.
+ */
+async function keepSitePage(request: Request, response: Response): Promise<void> {
+  if (!response.ok || response.type !== 'basic') return;
+  try {
+    const cache = await caches.open(SITE);
+    await cache.put(request, response);
+    const keys = await cache.keys();
+    const over = keys.length - SITE_LIMIT;
+    for (let i = 0; i < over; i += 1) await cache.delete(keys[i]!);
+  } catch {
+    // A full disk, a quota refusal, a private window: none of these may break the page. The
+    // reader gets the network copy they already have.
+  }
+}
 
 /**
  * A page asking to be saved.
@@ -325,8 +416,37 @@ sw.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== location.origin) return;
-  // Only the terminal is offline-capable. The public site is served normally.
-  if (!url.pathname.startsWith('/terminal') && !url.pathname.startsWith('/_app')) return;
+  if (isNeverCached(url.pathname)) return;
+
+  /*
+   * A public document: served from cache if this build already fetched it, otherwise fetched
+   * and kept.
+   *
+   * Cache-first with **no revalidation**, which is the part that does the work: a reader who
+   * opens the site twice in a day makes zero requests the second time. It is only safe because
+   * the cache name carries the build version, so the staleness window is "until the next
+   * deploy" rather than "forever", and deploys happen on every push.
+   *
+   * Directory records are the one thing that could go stale dangerously, and they do not go
+   * stale here: a prerendered record carries the `verified` date it was built with, so the
+   * cached page shows exactly the age the live page would show. Rule 1 of the display rules
+   * holds either way — a volatile field never appears without its age [directory-schema.md].
+   */
+  if (!isTerminalScope(url.pathname)) {
+    event.respondWith(
+      caches.match(request).then(
+        (hit) =>
+          hit ??
+          fetch(request)
+            .then((response) => {
+              void keepSitePage(request, response.clone());
+              return response;
+            })
+            .catch(() => offline())
+      )
+    );
+    return;
+  }
 
   // The directory page is the one worth refreshing when there IS a network: a cached copy
   // that silently never updates is how a phone ends up confidently reciting a shelter that
