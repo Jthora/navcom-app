@@ -7,6 +7,7 @@
    */
   // Derived at build time, not written by hand. See +page.server.ts for why.
   import { formatDate } from '$lib/directory';
+  import { Why } from '$lib/components/panel';
 
   let { data } = $props();
   const components = $derived(
@@ -16,6 +17,8 @@
   const buildDate = $derived(formatDate(data.version.builtAt.slice(0, 10)));
   /** What the directory can answer today, measured at build time. See `+page.server.ts`. */
   const fresh = $derived(data.fresh);
+  /** The window hours and intake are suppressed after, from the schema rather than a literal. */
+  const volatileWindow = $derived(fresh.tiers.find((t) => t.cls === 'volatile')?.windowDays);
 </script>
 
 <svelte:head>
@@ -55,38 +58,43 @@
     {#if fresh.volatileDark}
       <p>
         <strong>Unknown across the whole directory right now.</strong> Every record reads
-        <em>call first</em> for opening hours and intake, because the newest check anywhere is
-        {fresh.newestAgeDays} days old and these fields stop showing after
-        {fresh.tiers.find((t) => t.cls === 'volatile')?.windowDays} days.
+        <em>call first</em>: the newest check anywhere is {fresh.newestAgeDays} days old, and these
+        fields stop showing after {volatileWindow} days.
       </p>
-      <p>
-        That is the design working rather than a fault — a wrong hour sends somebody to a locked
-        door — and it is also the directory at its least useful. <strong>Addresses, phone numbers
-        and what a place is remain shown</strong>, because those do not rot at the same speed.
-        What fixes it is somebody ringing a place and filing what they are told.
-      </p>
+      <Why summary="What that means">
+        <p>
+          That is the design working rather than a fault — a wrong hour sends somebody to a locked
+          door — and it is also the directory at its least useful. <strong>Addresses, phone numbers
+          and what a place is remain shown</strong>, because those do not rot at the same speed.
+          What fixes it is somebody ringing a place and filing what they are told.
+        </p>
+      </Why>
     {:else}
       <p>
-        <strong>Shown, where somebody has checked recently enough.</strong> Opening hours and
-        intake are suppressed on any record whose last check is older than
-        {fresh.tiers.find((t) => t.cls === 'volatile')?.windowDays} days, and the newest check in
-        the directory is {fresh.newestAgeDays} days old.
+        <strong>Shown, where somebody has checked recently enough.</strong> The newest check is
+        {fresh.newestAgeDays} days old; a record stops showing them after {volatileWindow} days.
       </p>
     {/if}
   </div>
 
   <section>
     <h2>Drills</h2>
-    <p class="hint">
-      When escalation exists, it tests its own path on an unannounced schedule and publishes
-      the result here — how many were paged, how many acknowledged, and how long the first
-      acknowledgement took.
-    </p>
     <p class="empty">No drills have run.</p>
-    <p class="hint">
-      A passing drill will be reported as <em>no evidence of failure</em>, never as
-      <em>verified</em>. It means the path worked that time.
-    </p>
+    <!--
+      Moved behind a `Why` rather than deleted, word for word. Both paragraphs explain a mechanism
+      that has never run; the state — that none has — is the part a reader needs in front of them.
+    -->
+    <Why summary="What a drill reports">
+      <p class="hint">
+        When escalation exists, it tests its own path on an unannounced schedule and publishes
+        the result here — how many were paged, how many acknowledged, and how long the first
+        acknowledgement took.
+      </p>
+      <p class="hint">
+        A passing drill will be reported as <em>no evidence of failure</em>, never as
+        <em>verified</em>. It means the path worked that time.
+      </p>
+    </Why>
   </section>
 
   <section>
@@ -151,6 +159,14 @@
 <style>
   h1 { font-size: clamp(1.7rem, 5vw, 2.3rem); line-height: 1.15; margin: 0.5rem 0 1.25rem; }
   .notice { margin-bottom: 1rem; }
+  /* `panel.css` scopes the terminal's version under `.terminal`; this page carries its own. */
+  :global(.nc-why) { margin: 0.6rem 0; }
+  :global(.nc-why > summary) {
+    font-size: 0.85rem; font-family: var(--font-body); font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+    cursor: pointer; padding: 0.2rem 0;
+  }
+  :global(.nc-why[open] > summary) { margin-bottom: 0.3rem; }
   section { margin-top: 2.5rem; }
   h2 {
     font-size: 0.95rem; font-family: var(--font-body); font-weight: 700;
