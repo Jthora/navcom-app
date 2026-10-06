@@ -14,6 +14,8 @@
   );
   /** The same absolute-date formatter the directory uses, for the same reason. */
   const buildDate = $derived(formatDate(data.version.builtAt.slice(0, 10)));
+  /** What the directory can answer today, measured at build time. See `+page.server.ts`. */
+  const fresh = $derived(data.fresh);
 </script>
 
 <svelte:head>
@@ -40,6 +42,37 @@
       That is the ladder working correctly. <strong>It is not the ladder helping.</strong>
       Nothing here should be relied on in an emergency.
     </p>
+  </div>
+
+  <!--
+    The directory's own age, said here because every record says it one field at a time.
+    `check:data` has printed this into a build log since the cliff was first hit; a reader opening
+    this page could not see it, which left the most decisive fields in the directory dark for twenty
+    days with nothing on the site saying so.
+  -->
+  <div class="notice">
+    <p class="notice__label">Hours and intake</p>
+    {#if fresh.volatileDark}
+      <p>
+        <strong>Unknown across the whole directory right now.</strong> Every record reads
+        <em>call first</em> for opening hours and intake, because the newest check anywhere is
+        {fresh.newestAgeDays} days old and these fields stop showing after
+        {fresh.tiers.find((t) => t.cls === 'volatile')?.windowDays} days.
+      </p>
+      <p>
+        That is the design working rather than a fault — a wrong hour sends somebody to a locked
+        door — and it is also the directory at its least useful. <strong>Addresses, phone numbers
+        and what a place is remain shown</strong>, because those do not rot at the same speed.
+        What fixes it is somebody ringing a place and filing what they are told.
+      </p>
+    {:else}
+      <p>
+        <strong>Shown, where somebody has checked recently enough.</strong> Opening hours and
+        intake are suppressed on any record whose last check is older than
+        {fresh.tiers.find((t) => t.cls === 'volatile')?.windowDays} days, and the newest check in
+        the directory is {fresh.newestAgeDays} days old.
+      </p>
+    {/if}
   </div>
 
   <section>

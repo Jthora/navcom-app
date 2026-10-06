@@ -17,7 +17,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { STALE_AFTER_DAYS, STALENESS_MARGIN_DAYS } from '@navcom/core/directory';
+import { freshness } from '@navcom/core/directory';
 
 import { INTAKE_FIELDS } from '@navcom/core';
 import { parseDirectory } from '@navcom/core';
@@ -149,42 +149,42 @@ const show = (label: string, notes: Note[]) => {
  * ringing a shelter, and a person needs notice.
  */
 function horizon(): void {
-  const days = (from: string) =>
-    Math.floor((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
-
-  const checked = [...checkDates].sort();
-  const newest = checked[checked.length - 1];
+  /*
+   * Measured in core now, not here.
+   *
+   * This was the only place that knew, and the status page — whose whole job is saying what is true
+   * about the deployment — said nothing about it, so the fact lived in a build log a maintainer reads
+   * rather than on a page a reader opens. Both call `freshness` so they cannot disagree.
+   */
+  const f = freshness([...checkDates], today);
 
   console.log('\nFRESHNESS');
-  if (!newest) {
+  if (f.newest === null) {
     console.log('  Nothing in this directory carries a check date at all.');
     warnings.push({ region: '—', row: null, field: 'last_verified', message: 'No record carries a check date.' });
     return;
   }
 
-  for (const [cls, window] of Object.entries(STALE_AFTER_DAYS)) {
-    const usable = window - STALENESS_MARGIN_DAYS;
-    const showing = checked.filter((d) => days(d) <= usable).length;
-    const left = usable - days(newest);
-    const line =
-      `  ${cls.padEnd(9)} window ${String(window).padStart(3)}d  ` +
-      `${String(showing).padStart(4)}/${checked.length} records still show a value  ` +
-      (left >= 0 ? `${left}d until none do` : `none for ${-left}d`);
-    console.log(line);
+  for (const t of f.tiers) {
+    console.log(
+      `  ${t.cls.padEnd(9)} window ${String(t.windowDays).padStart(3)}d  ` +
+        `${String(t.showing).padStart(4)}/${t.checked} records still show a value  ` +
+        (t.left >= 0 ? `${t.left}d until none do` : `none for ${-t.left}d`)
+    );
 
     // Volatile is the one that decides whether somebody can read opening hours tonight.
-    if (cls !== 'volatile') continue;
-    if (showing === 0) {
+    if (t.cls !== 'volatile') continue;
+    if (t.showing === 0) {
       warnings.push({
         region: '—', row: null, field: 'last_verified',
         message:
-          `Every volatile value in the directory is suppressed — the newest check is ${days(newest)} days old ` +
-          `and the window is ${window}. Every page reads "call first" for hours and intake until somebody re-checks a place.`
+          `Every volatile value in the directory is suppressed — the newest check is ${f.newestAgeDays} days old ` +
+          `and the window is ${t.windowDays}. Every page reads "call first" for hours and intake until somebody re-checks a place.`
       });
-    } else if (left <= 7) {
+    } else if (t.left <= 7) {
       warnings.push({
         region: '—', row: null, field: 'last_verified',
-        message: `${left} day(s) until every volatile value in the directory is suppressed. Newest check: ${newest}.`
+        message: `${t.left} day(s) until every volatile value in the directory is suppressed. Newest check: ${f.newest}.`
       });
     }
   }

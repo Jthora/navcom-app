@@ -16,6 +16,7 @@
 
 import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+import { freshness } from '@navcom/core/directory';
 import { loadDirectory, loadRegions } from '$lib/directory/load';
 import { VERSION } from '$lib/server/version';
 
@@ -50,6 +51,22 @@ export function load() {
   const regions = loadRegions();
   const withData = new Set(records.map((r) => r.region)).size;
 
+  /*
+   * How much of the directory still answers its own question.
+   *
+   * `check:data` has measured this since the day the cliff was first hit, and printed it into a
+   * build log. **This page said nothing about it** — so for twenty days every record read "call
+   * first" for hours and intake, correctly, and the one page whose job is saying what is true about
+   * this deployment did not mention that the directory's most decisive fields were all dark.
+   *
+   * Derived at build time from the same function the data check uses, for the reason this file
+   * already learned about its own build date: a number written by hand is a number that drifts.
+   */
+  const fresh = freshness(
+    records.map((r) => r.last_verified ?? '').filter(Boolean),
+    new Date().toISOString().slice(0, 10)
+  );
+
   return {
     /**
      * When this page was built, absolutely.
@@ -62,6 +79,9 @@ export function load() {
      * the scheduled job is not running.
      */
     version: VERSION,
+
+    /** What the directory can and cannot answer today. See the comment above. */
+    fresh,
 
     components: [
       {

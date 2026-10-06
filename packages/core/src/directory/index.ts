@@ -1,6 +1,7 @@
 export * from './types.js';
 export * from './iso-date.js';
 export * from './volatility.js';
+export * from './freshness.js';
 export * from './confidence.js';
 export * from './display.js';
 export * from './confidential.js';
