@@ -68,6 +68,34 @@ test.describe('the grid draws, and tells nobody', () => {
     expect((await picture(page)).hash).not.toBe(zoomed.hash);
   });
 
+  test('it opens on the regions, not on Greenwich', async ({ page }) => {
+    // Found on the first live run: the world view put most of the US off the left edge of a
+    // phone and left the bottom third empty. The opening view frames where most regions are,
+    // so it must show more of them than the whole-world view does.
+    const dotPixels = () =>
+      page.locator('.grid canvas').evaluate((c: HTMLCanvasElement) => {
+        const probe = getComputedStyle(c).getPropertyValue('--t-muted').trim();
+        const hex = probe.startsWith('#') ? probe.slice(1) : '9BA5B2';
+        const [r, g, b] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
+        const d = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
+        let n = 0;
+        for (let i = 0; i < d.length; i += 4) {
+          if (Math.abs(d[i]! - r!) < 6 && Math.abs(d[i + 1]! - g!) < 6 && Math.abs(d[i + 2]! - b!) < 6) n++;
+        }
+        return n;
+      });
+    await blankDevice(page);
+    await page.goto('/grid/', { waitUntil: 'networkidle' });
+    await expect(page.locator('[data-grid="ready"]')).toBeVisible({ timeout: 15_000 });
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))));
+    const framed = await dotPixels();
+    await page.getByRole('button', { name: 'Show the whole map' }).click();
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))));
+    const world = await dotPixels();
+    expect(framed).toBeGreaterThan(0);
+    expect(framed).toBeGreaterThan(world);
+  });
+
   test('its controls are thumb-sized, at the terminal’s own floor', async ({ page }) => {
     await ready(page);
     for (const name of ['Zoom in', 'Zoom out', 'Show the whole map']) {
@@ -99,6 +127,9 @@ test.describe('the grid draws, and tells nobody', () => {
     await expect(page.locator('[data-grid="ready"]')).toBeVisible({ timeout: 15_000 });
     await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))));
     await expect(page.locator('html')).toHaveAttribute('data-signature', 'low');
+    // The opening view frames the regions; the whole map puts Arctic ocean in the corner.
+    await page.getByRole('button', { name: 'Show the whole map' }).click();
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))));
     expect(await corner(page)).toEqual([0, 0, 0]);
 
     const results = await new AxeBuilder({ page }).analyze();

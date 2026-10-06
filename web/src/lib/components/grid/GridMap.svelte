@@ -102,6 +102,7 @@
 
   /** Zoom by `factor`, keeping the point under (sx, sy) where it is. */
   function zoomAt(factor: number, sx = width / 2, sy = height / 2) {
+    touched = true;
     const ux = cx + (sx - width / 2) / scale;
     const uy = cy + (sy - height / 2) / scale;
     scale *= factor;
@@ -113,17 +114,49 @@
   }
 
   function panBy(dx: number, dy: number) {
+    touched = true;
     cx -= dx / scale;
     cy -= dy / scale;
     clamp();
     request();
   }
 
-  function reset() {
+  /** Set once a person moves the map. After that, nothing moves it for them. */
+  let touched = false;
+
+  function world() {
     scale = fit();
     cx = 0.5;
     cy = 0.4;
     clamp();
+  }
+
+  /**
+   * Frames where most of the marks are, and says whether it could.
+   *
+   * The 5th to 95th percentile, not the bounding box: a handful of distant regions — Hawaii,
+   * Australia, the UK — would otherwise stretch the frame straight back out to the whole world,
+   * which is the view that opened on Greenwich with most of the US off the edge of a phone. It
+   * follows the data, so the frame moves on its own as coverage grows elsewhere.
+   */
+  function frameMarks(): boolean {
+    if (projected.length < 10 || width === 0) return false;
+    const xs = projected.map((p) => p[0]).sort((a, b) => a - b);
+    const ys = projected.map((p) => p[1]).sort((a, b) => a - b);
+    const at = (v: number[], f: number) => v[Math.round(f * (v.length - 1))]!;
+    const [x0, x1, y0, y1] = [at(xs, 0.05), at(xs, 0.95), at(ys, 0.05), at(ys, 0.95)];
+    const pad = 1.3;
+    scale = Math.min(width / Math.max((x1 - x0) * pad, 1e-4), height / Math.max((y1 - y0) * pad, 1e-4));
+    cx = (x0 + x1) / 2;
+    cy = (y0 + y1) / 2;
+    clamp();
+    return true;
+  }
+
+  /** The whole map, as the button says — and a person asked for it, so it stays there. */
+  function reset() {
+    touched = true;
+    world();
     request();
   }
 
@@ -198,7 +231,7 @@
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       el.width = Math.round(width * dpr);
       el.height = Math.round(height * dpr);
-      if (scale === 0) scale = fit();
+      if (scale === 0 && !frameMarks()) world();
       clamp();
       request();
     };
@@ -240,9 +273,10 @@
     };
   });
 
-  // A change in marks is a redraw, nothing more.
+  // New marks frame the map, until a person has moved it; after that they are only redrawn.
   $effect(() => {
     void projected;
+    if (!touched) frameMarks();
     request();
   });
 </script>
