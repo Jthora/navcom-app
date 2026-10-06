@@ -46,8 +46,8 @@ from whether a builder exists, and this document follows the same discipline.
 
 | | Status |
 |---|---|
-| Reading kind `30079` packages from The Record | DESIGNED — NavCom has read them by hand; the importer is milestone 11 |
-| The grid (the map missions appear on) | In progress — geometry measured and generated, renderer under test |
+| Reading kind `30079` packages from The Record | LIVE — every build reads the active field missions into [`/missions.json`](https://navcom.app/missions.json), with each refusal and its reason listed beside them |
+| The grid (the map missions appear on) | LIVE at [`/grid/`](https://navcom.app/grid/), lighting each mission's province — a proving ground until it moves onto the landing page |
 | Kind `1911` observation (raw intel) | BUILT — builder and contract exist; published at `/.well-known/navcom-intel.json` |
 | Kind `1912` report | Reserved, **not emitted** — the contract says `emitted: false` |
 | Claims, settlement, challenge (§5) | AGREED — Starcom reads them once built on its side |
