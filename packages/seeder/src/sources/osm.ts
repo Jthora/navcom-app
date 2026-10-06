@@ -136,6 +136,7 @@ export function fromOverpass(json: { elements?: OverpassElement[] }): RawRecord[
       name,
       ...(categoryOf(tags) ? { category: categoryOf(tags)! } : {}),
       ...(addressOf(tags) ? { address: addressOf(tags)! } : {}),
+      ...(tags["addr:country"] ? { country: tags["addr:country"] } : {}),
       ...(typeof lat === "number" ? { lat } : {}),
       ...(typeof lon === "number" ? { lon } : {}),
       ...(tags["phone"] ?? tags["contact:phone"]

@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { RESOURCE_TYPES, type ResourceType } from "@navcom/core";
+import { RESOURCE_TYPES, abroad, type ResourceType } from "@navcom/core";
 import type { RawRecord, SeededRecord } from "./seeded.js";
 
 /**
@@ -138,6 +138,26 @@ export function normalisePhone(raw: string | undefined, country = "US"): string 
   const dialable = (d: string): string | undefined =>
     d.length >= 7 && d.length <= 15 ? "+" + d : undefined;
 
+  /*
+   * A plus where "+1" belonged.
+   *
+   * Sources sometimes write a North American number as "+269 364 0566" — the plus kept, the
+   * country code dropped. Taken as written that is a Comoros number, and five published records
+   * shipped like it: a Benton Harbor shelter dialling Comoros, others reaching Vanuatu,
+   * Austria, Malaysia and Egypt. On a prepaid phone that is a failed call or one that spends
+   * credit abroad, from the field the surface treats as most important at 11pm.
+   *
+   * Repaired only where it cannot be anything else worth reaching: the region dials +1, the
+   * plus is followed by exactly ten digits, and those digits have the shape of a North
+   * American number (area code and exchange each start 2–9). Comoros genuinely has ten-digit
+   * international numbers, and in a region that dials +1 a shelter's line is overwhelmingly
+   * more likely to be local with a typo than in the Indian Ocean. Windsor's numbers are
+   * eleven digits and Juárez's twelve, so nothing correctly written is touched.
+   */
+  if (first.startsWith("+") && DIALLING[country]?.cc === "1" && /^[2-9]\d\d[2-9]\d{6}$/.test(digits)) {
+    return "+1" + digits;
+  }
+
   // Already international, whoever wrote it. Nothing to infer.
   if (first.startsWith("+")) return dialable(digits);
   if (digits.startsWith("00")) return dialable(digits.slice(2));
@@ -167,6 +187,40 @@ export function normalisePhone(raw: string | undefined, country = "US"): string 
 function tidy(s: string | undefined): string | undefined {
   const t = s?.replace(/\s+/g, " ").replace(/^["']|["']$/g, "").trim();
   return t ? t : undefined;
+}
+
+/** Regions are filed by country code; the US's territories dial and file as the US. */
+const HOME: Record<string, string> = { PR: "US" };
+
+/**
+ * The country a place is in when it is **not** the region's, or `null` when it belongs here.
+ *
+ * Regions are fetched as rectangles, and a rectangle does not stop at a river: the one around
+ * Detroit took in seven Windsor shelters, El Paso's took in five services in Ciudad Juárez, and
+ * San Diego's one in Tijuana. Their coordinates were right; they were simply in another country,
+ * filed as local. [abroad.ts in core labels the ones already published.]
+ *
+ * Two pieces of evidence, in order of authority:
+ *
+ * 1. **What the source says.** Overture's address carries an ISO country; OSM sometimes has
+ *    `addr:country`. Where the source says, it decides — including when it says *this* country,
+ *    which keeps a Detroit charity that happens to use a Canadian number.
+ * 2. **The phone number**, only when the source is silent, decided by core's own rule so the
+ *    import and the page can never disagree about the same place. It never uses drawn borders,
+ *    for the reason core gives: at any public basemap's resolution, El Paso's own shelters plot
+ *    inside Mexico.
+ *
+ * No evidence keeps the place. Dropping a real local service because nothing confirmed it was
+ * local would be the worse mistake.
+ */
+export function outsideCountry(raw: RawRecord, regionCountry: string): string | null {
+  const home = HOME[regionCountry] ?? regionCountry;
+  const declared = raw.country?.trim().toUpperCase();
+  if (declared && /^[A-Z]{2}$/.test(declared)) {
+    const there = HOME[declared] ?? declared;
+    return there === home ? null : there;
+  }
+  return abroad({ phone: normalisePhone(raw.phone, regionCountry) ?? null }, regionCountry)?.country ?? null;
 }
 
 /** Null when the record cannot be characterised. The caller drops it and reports why. */

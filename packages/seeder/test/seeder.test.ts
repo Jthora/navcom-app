@@ -12,7 +12,7 @@ import { audit } from "../src/audit.js";
 import { dedupe, metresApart, nameKey } from "../src/dedupe.js";
 import { COLUMNS, toCsv } from "../src/emit.js";
 import { isHumanVerified, merge } from "../src/merge.js";
-import { mapType, normalise, normalisePhone, seededId } from "../src/normalise.js";
+import { mapType, normalise, normalisePhone, outsideCountry, seededId } from "../src/normalise.js";
 import { parseRecordArgs } from "../src/record.js";
 import { RESOURCE_TYPES } from "@navcom/core";
 import type { RawRecord, SeededRecord } from "../src/seeded.js";
@@ -785,5 +785,83 @@ describe("a phone number nobody can dial", () => {
     expect(normalisePhone("(314) 802-0700", "US")).toBe("+13148020700");
     expect(normalisePhone("020 7946 0958", "GB")).toBe("+442079460958");
     expect(normalisePhone("+1 314 802 0700 x23", "US")).toBe("+13148020700");
+  });
+});
+
+describe("a plus where +1 belonged", () => {
+  // The five published records this repaired, as their sources wrote them.
+  const BROKEN: [string, string][] = [
+    ["+2693640566", "+12693640566"], // Benton Harbor, MI — as written, Comoros
+    ["+6787636989", "+16787636989"], // Athens, GA — Vanuatu
+    ["+4327583708", "+14327583708"], // Seminole, TX — Austria
+    ["+6063121329", "+16063121329"], // London, KY — Malaysia
+    ["+2034448464", "+12034448464"], // Oxford, CT — Egypt
+  ];
+
+  it("restores the country code in a region that dials +1", () => {
+    for (const [raw, fixed] of BROKEN) expect(normalisePhone(raw, "US"), raw).toBe(fixed);
+  });
+
+  it("touches nothing that was written correctly", () => {
+    expect(normalisePhone("+15199717595", "US")).toBe("+15199717595"); // Windsor, eleven digits
+    expect(normalisePhone("+526566870677", "US")).toBe("+526566870677"); // Juárez, twelve
+    expect(normalisePhone("+442079460958", "GB")).toBe("+442079460958");
+  });
+
+  it("only repairs where the region dials +1", () => {
+    // In a region on another plan, a ten-digit international number is taken as written.
+    expect(normalisePhone("+2693640566", "GB")).toBe("+2693640566");
+  });
+
+  it("only repairs digits shaped like a North American number", () => {
+    // An area code cannot start with 0 or 1, so this is not one missing its +1.
+    expect(normalisePhone("+1693640566", "US")).not.toBe("+11693640566");
+  });
+});
+
+describe("a place inside the rectangle but outside the country", () => {
+  const raw = (over: Partial<Parameters<typeof outsideCountry>[0]>) => ({
+    source: "overture", sourceId: "x", name: "A place", ...over,
+  });
+
+  it("drops Windsor from Detroit when Overture says Canada", () => {
+    expect(outsideCountry(raw({ country: "CA" }), "US")).toBe("CA");
+  });
+
+  it("drops it on the phone alone when the source says nothing", () => {
+    expect(outsideCountry(raw({ phone: "+15199717595" }), "US")).toBe("CA");
+    expect(outsideCountry(raw({ phone: "+526566870677" }), "US")).toBe("MX");
+  });
+
+  it("lets the source's own word outrank the phone", () => {
+    // A Detroit charity with a Canadian line is still in Detroit if its address says so.
+    expect(outsideCountry(raw({ country: "US", phone: "+15199717595" }), "US")).toBeNull();
+  });
+
+  it("keeps a place nothing says is elsewhere, because dropping a real local service is worse", () => {
+    expect(outsideCountry(raw({}), "US")).toBeNull();
+    expect(outsideCountry(raw({ phone: "+19155321122" }), "US")).toBeNull(); // El Paso, Texan number
+    expect(outsideCountry(raw({ phone: "+2693640566" }), "US")).toBeNull(); // repaired, then local
+  });
+
+  it("files Puerto Rico as the US", () => {
+    expect(outsideCountry(raw({ country: "PR" }), "US")).toBeNull();
+  });
+});
+
+describe("the country the importer needs to see", () => {
+  // If a later edit drops this column the country filter goes quiet — every place reads as
+  // having no declared country, and only the phone fallback remains. Nothing would error.
+  it("asks Overture for each place's country", () => {
+    const q = overtureQuery({ bbox: [-83.29, 42.25, -82.91, 42.45], release: "2026-08-19.0" });
+    expect(q).toContain("addresses[1].country AS country");
+  });
+
+  it("carries it through to the record the filter reads", () => {
+    const [r] = fromOverture([
+      { id: "a", name: "Welcome Centre Shelter", category: "homeless_shelter", country: "CA" },
+    ]);
+    expect(r?.country).toBe("CA");
+    expect(outsideCountry(r!, "US")).toBe("CA");
   });
 });

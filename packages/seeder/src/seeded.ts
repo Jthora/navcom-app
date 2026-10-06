@@ -51,6 +51,14 @@ export interface RawRecord {
    */
   serves?: string[];
   address?: string;
+  /**
+   * The country the source says this place is in, ISO 3166-1 alpha-2, when it says.
+   *
+   * Used for one decision only — whether the place belongs in this region at all — and never
+   * written to the record. A region is fetched as a rectangle, and a rectangle around Detroit
+   * takes in Windsor; this is how the import tells them apart. [outsideCountry]
+   */
+  country?: string;
   lat?: number;
   lon?: number;
   phone?: string;

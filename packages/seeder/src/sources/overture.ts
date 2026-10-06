@@ -138,6 +138,7 @@ export function overtureQuery(
     "INSTALL httpfs; LOAD httpfs; SET s3_region='us-west-2';",
     "SELECT id, names.primary AS name, taxonomy.primary AS category, confidence,",
     "       addresses[1].freeform AS address, addresses[1].locality AS locality,",
+    "       addresses[1].country AS country,",
     "       phones[1] AS phone, websites[1] AS website,",
     "       bbox.xmin AS lon, bbox.ymin AS lat",
     `FROM read_parquet('${BUCKET}/${config.release}/theme=places/type=place/*')`,
@@ -156,6 +157,8 @@ interface OvertureRow {
   confidence?: number;
   address?: string;
   locality?: string;
+  /** ISO 3166-1 alpha-2, from the place's first address. */
+  country?: string;
   phone?: string;
   website?: string;
   lat?: number;
@@ -181,6 +184,7 @@ export function fromOverture(rows: readonly OvertureRow[]): RawRecord[] {
       name: r.name,
       category,
       ...(address ? { address } : {}),
+      ...(r.country ? { country: r.country } : {}),
       ...(typeof r.lat === "number" ? { lat: r.lat } : {}),
       ...(typeof r.lon === "number" ? { lon: r.lon } : {}),
       ...(r.phone ? { phone: r.phone } : {}),

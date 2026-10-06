@@ -10,7 +10,7 @@ import { dedupe } from "./dedupe.js";
 import { toCsv } from "./emit.js";
 import { merge } from "./merge.js";
 import { needsStatusWrite } from "./manifest.js";
-import { normalise } from "./normalise.js";
+import { normalise, outsideCountry } from "./normalise.js";
 import { fetchOsm, type OsmConfig } from "./sources/osm.js";
 import { DuckDbMissing, fetchOverture, type OvertureConfig } from "./sources/overture.js";
 import type { RawRecord, SeededRecord } from "./seeded.js";
@@ -69,6 +69,12 @@ interface Report {
   findings?: { id: string; problem: string }[];
   /** Source categories with no home in the taxonomy. A question for a human, not an error. */
   unmapped?: { category: string; count: number }[];
+  /**
+   * Dropped because they are in another country from the region — inside its rectangle, across
+   * its border. Named, like `uncategorised`, so a person can see exactly what was left out and
+   * disagree: a count of "7 outside US" would hide that they were Windsor's shelters.
+   */
+  outside?: { name: string; country: string }[];
 }
 
 const regionDir = (slug: string) => join(ROOT, "data", "regions", slug);
@@ -246,7 +252,17 @@ function cmdBuild(slug: string): Report {
    */
   const uncategorised: { name: string; serves: string; url?: string }[] = [];
 
+  /** Inside the fetch rectangle, outside the country. See `outsideCountry`. */
+  const outside: { name: string; country: string }[] = [];
+
   for (const r of flat) {
+    // Before normalise, so a Windsor shelter is reported as abroad rather than miscounted
+    // below as a category nobody mapped.
+    const elsewhere = outsideCountry(r, country);
+    if (elsewhere) {
+      outside.push({ name: r.name, country: elsewhere });
+      continue;
+    }
     const one = normalise(slug, r, country);
     if (!one) {
       const key = r.category ?? "(none)";
@@ -293,6 +309,9 @@ function cmdBuild(slug: string): Report {
       .sort((a, b) => b.count - a.count),
     ...(uncategorised.length > 0
       ? { uncategorised: uncategorised.sort((a, b) => a.name.localeCompare(b.name)) }
+      : {}),
+    ...(outside.length > 0
+      ? { outside: outside.sort((a, b) => a.name.localeCompare(b.name)) }
       : {}),
   });
 }
