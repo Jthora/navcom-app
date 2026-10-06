@@ -168,7 +168,7 @@ beforeAll(async () => {
     }
 
     /*
-     * The three pages that deliberately ship script, and nothing else.
+     * The pages that deliberately ship script, and nothing else.
      *
      * The terminal is an application. The root console is a real search over the real
      * directory. `who/` is the public roster: it lists operators who chose `visibility:
@@ -178,11 +178,16 @@ beforeAll(async () => {
      *
      * The cost of that choice is that this page is not indexable and needs JavaScript, and
      * the page says both out loud rather than implying otherwise.
+     *
+     * `grid/` is the fourth, and temporary: the map's proving ground [build-order 11.2], a
+     * canvas that has no meaning without script. 11.3 moves the map onto the root console,
+     * which is already an exception above, and this line goes with the route.
      */
     const interactive =
       path.includes('/terminal/') ||
       path.endsWith('/build/index.html') ||
-      path.endsWith('/build/who/index.html');
+      path.endsWith('/build/who/index.html') ||
+      path.endsWith('/build/grid/index.html');
     if (!interactive) {
       if (doc.querySelectorAll('script').length > 0) failures['noScript']!.push(`${path} has a script tag`);
       if (doc.querySelectorAll('link[rel="modulepreload"]').length > 0) {

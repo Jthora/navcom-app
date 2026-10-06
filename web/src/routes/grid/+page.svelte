@@ -39,14 +39,16 @@
 
 <svelte:head>
   <title>Grid · NavCom</title>
+  <meta name="description" content="The map NavCom draws itself: country outlines, provinces where it has regions, and every directory region marked. No third-party map, and nothing sent anywhere." />
   <meta name="robots" content="noindex" />
 </svelte:head>
 
 <main class="terminal">
   <GridMap marks={regions} label="World map, with provinces where NavCom has regions, and each region marked" />
   <div class="key">
-    <a href="/">NavCom</a>
+    <h1><a href="/">NavCom</a> grid</h1>
     <span><i aria-hidden="true"></i>Directory regions</span>
+    <a class="notice" href="/notice/">Notice</a>
   </div>
 </main>
 
@@ -69,7 +71,9 @@
     font-size: 0.75rem;
     color: var(--t-muted);
   }
-  .key a { color: var(--t-ink); text-decoration: none; font-weight: 700; letter-spacing: 0.08em; }
+  .key h1 { margin: 0; font-size: 0.8rem; font-weight: 400; color: var(--t-muted); letter-spacing: 0.08em; }
+  .key h1 a { color: var(--t-ink); text-decoration: none; font-weight: 700; }
+  .key .notice { color: var(--t-muted); }
   .key i {
     display: inline-block;
     width: 6px;
