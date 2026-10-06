@@ -74,8 +74,17 @@ drafted → open → claimed → reported → settled
 **`claimed` is the dangerous state.** A claim is a public statement that a named person intends to be
 somewhere doing something — which is the pattern the Doxxer reads, and the reason presence was never
 published. Three defences, and the design needs all of them: a claim names a mission rather than a
-place and a time; a claim may be **private to the poster** at the claimant's choice; and a claim
-expires by itself.
+place and a time; **visibility is asked at the moment of claiming**; and a claim expires by itself.
+
+**Asked each time, not set once** (decided 2026-10-05). A preference buried in settings is a decision
+somebody made in a different mood about a different mission, and the whole risk here is that the two
+are not alike: taking a daylight supply run in your own neighbourhood and taking a 2am welfare check
+across town are the same verb and nothing else. So the claim control carries two options and one line
+each saying who will see it — *the poster only* or *everyone* — and no default is preselected. The cost
+is a decision at the moment somebody is trying to move, which is the worst time to ask; the answer is
+that the question is one tap wide and the options are two, so the ask is smaller than the exposure it
+prevents. A mission still reads as taken on the grid either way: **what a private claim withholds is
+who, never that.**
 
 **`settled` is where the points come from, so it is where the gaming comes from.** Who settles:
 
@@ -99,7 +108,7 @@ answers a different question, and a reader weighs whichever one their question n
 | | Answers | Earned by | Spent on |
 |---|---|---|---|
 | **Honor** | *Whose word do you keep?* | Settling missions for a particular body | Nothing. It is a relationship, not a balance |
-| **Karma** | *How do people find you to work with?* | Others' judgement of conduct | Weight when a faction votes |
+| **Karma** | *How do people find you to work with?* | Judgement from somebody you settled a mission with | Weight when a faction votes |
 | **Hours** | *How much have you actually done?* | Time on settled missions | Nothing. A record, not a score |
 | **Supply** | *What have you moved?* | Materiel carried and handed out | Nothing, and it is the realest of these |
 | **Intel** | *What do you know that the grid did not?* | Observations and corrections that held up | Nothing |
@@ -110,6 +119,21 @@ answers a different question, and a reader weighs whichever one their question n
 it is a standing with somebody in particular, and it buys nothing from anyone else. Honor with the
 Tho'ra Clan says nothing about your standing with a mutual aid network in another city, and a design
 that adds them together has invented a rank.
+
+**Karma comes only from a counterparty** (decided 2026-10-05). Not from anyone who can see you: from
+the poster of a mission you settled, or a claimant whose mission you posted, and only once per mission.
+This is the one currency that gates governance weight, so it is the one that had to be expensive. Open
+voting makes conduct scoring a mob tool and makes sybils free — a fresh key costs nothing and
+quadratic weighting amplifies a cheap identity by three orders of magnitude, which is measured, not
+feared. Requiring a settled mission between the two parties means a fake account must first do real
+work with a real person to acquire a single vote, and the work is the part that cannot be faked at
+scale.
+
+Two consequences, both accepted. **A new operator has no Karma and must not be read as untrustworthy**
+for it — zero and unknown are the same number here, and the UI says *no settled missions yet* rather
+than a score of nothing. **Bad conduct that never reached a settlement leaves no mark**, so Karma is
+not a safety mechanism and must never be rendered as one; the thing that protects somebody from a
+person who behaved badly is the account of what happened, carried by whoever was there.
 
 **Writs are the one I would not skip.** Every open posting system drowns in postings, and the usual
 answers are moderation queues and reputation thresholds. A writ is cheaper and more honest: the right
