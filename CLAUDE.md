@@ -139,23 +139,36 @@ wrong guidance, and plausible-sounding safety content is worse than none.
 
 ## Invariants
 
-Never violated, no exceptions, no configuration:
+**Revised 2026-10-05.** Missions are now the point of this application, and *nothing tasks anyone*
+was holding it back from being one. The reasoning, the research behind it and what each of these
+protects is in [`docs/design/missions.md`](docs/design/missions.md) §7. Four anti-patterns were
+withdrawn with it — see the table below.
 
-1. **Nothing is recorded about the people being served.** No field, no convention. A rule
-   about what the system *offers*; free-text notes can't be enforced, so guide rather than
-   pretend
+**The first seven protect somebody who never agreed to be here. They are not open.**
+
+1. **Nothing is recorded about the people being served.** No field, no convention, and **no
+   mission may be settled by evidence about a person.** They cannot consent and cannot leave,
+   which is why this one does not move
 2. **`Distress` terminates in a human, or tells the operator it couldn't.** The ladder may
-   fail. It may never fail silently
+   fail. It may never fail silently. **Nothing in the mission system may borrow this channel**
 3. **Duress is always deliberate.** Never inferred from silence, missed windows or inactivity
-4. **The watch state is visible before sign-on.** An operator must never believe a human is
-   watching when none is
-5. **Agents are always identified as agents**, and never the sole responder to `Distress`
-6. **Nothing tasks anyone.** There is no dispatch verb. The watch tells you what is
-   happening; it never assigns
-7. **Panic wipe destroys the Wipeable tier and nothing else.** Burn destroys everything on
-   the device. The node-side accountability log is outside both
-8. **No legal names anywhere.** Contact details only where an operator opted in for themselves
-9. **Volatile data shows its age.** Stale reads "call first"; blank reads "unknown"
+4. **Agents are always identified as agents**, and never the sole responder to `Distress`.
+   More necessary now, not less: agents post missions
+5. **Panic wipe destroys the Wipeable tier and nothing else.** Burn destroys everything on
+   the device. The node-side accountability log is outside both. Claims, drafts and mission
+   history are Wipeable
+6. **No legal names anywhere.** Contact details only where an operator opted in for themselves.
+   Standing accrues to a persona
+7. **Volatile data shows its age.** Stale reads "call first"; blank reads "unknown". An expired
+   mission says so
+
+**Changed:**
+
+8. **Nothing tasks anyone *without their asking*.** A mission is an offer. Taking one is the
+   operator's own act, abandoning it costs nothing, and **no mission may be assigned to a named
+   person who did not claim it**. There is still no dispatch verb
+9. **A state is visible before somebody commits to it.** The watch state before sign-on, as
+   before — and a mission shows whether anybody is actually behind it before you take it
 
 ## Anti-patterns — you will want to do these
 
@@ -163,15 +176,15 @@ Every one is a conventional solution that is wrong here.
 
 | You'll want to | Don't, because |
 |---|---|
-| Add a feed or activity stream | Operational tools open into a situation, not a timeline |
-| Add notifications | Only `Distress` paging, only to on-call operators who registered a channel. The field terminal is silent |
+| ~~Add a feed or activity stream~~ | **Withdrawn 2026-10-05.** The landing page opens into a populated panel, and that is the point |
+| Add notifications that demand attention | Still true where it matters: `Distress` paging goes only to on-call operators who registered a channel, and **nothing marks an operator late or absent** |
 | Persist the board for history | The board expires. Only the accountability log survives, and it records actions, not positions |
 | Let the agent judge or decide | Its authority is bounded so misbehaviour is survivable. Unverifiability is answered by limits, not better tests |
 | Put a search box on the field terminal that **asks somebody** | `Query` goes to the watch. Someone with both hands free does the lookup. That *is* the product. **Narrowing a list already on the phone is a different act** and is allowed — it asks nobody, works offline, and the root console has had one since it shipped. The line is whether a person is on the other end of it, not whether there is a text input |
-| Make onboarding engaging | No streaks, badges, prompts or nudges. Ever |
+| ~~Make onboarding engaging~~ | **Withdrawn 2026-10-05**, and replaced by a sharper test: a reward that affirms competence or values crowds motivation *in*; one that feels controlling crowds it *out*. Among volunteers, merely mentioning an extrinsic reward measurably reduced it — so recognition by name, yes; payment per task advertised up front, no |
 | Escalate on a missed check-in | Overdue nudges. Alarm fatigue destroys the one mechanism where failure means someone is hurt |
-| Show a count of anything | Provenance by name. A number invites gaming |
-| Build a nice map view | Device floor is a prepaid Android 8 with 400MB free |
+| Show one number that sums somebody up | **Several kinds of standing, never a total, and nothing purchasable.** Honor is a relationship with one body, not a level; Karma is conduct; Hours, Supply and Intel are records. One aggregate score is what gets farmed, and what makes two people comparable on an axis they did not choose |
+| ~~Build a nice map view~~ | **Withdrawn 2026-10-05.** The landing page is a map and a comms panel, and the prepaid-Android-8 floor was formally raised with it. The map's resolution must still match the data's: coarse placement on a street basemap invents precision nobody has |
 | **Write a new rule when you find a gap** | **The rules are already one idea restated many times, and that is why they read as a compliance regime.** Check whether [`attestation.md`](docs/attestation.md) already covers it. Prefer deleting a rule to adding one |
 | **Turn every gap you find into work** | A gap has three fates, not two: fixed, deferred, or **declined**. Nobody here has an institution behind them, and an obligation list that only grows is how a volunteer network drowns. Check [`declined.md`](docs/declined.md) before the build order |
 
