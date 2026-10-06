@@ -1,8 +1,14 @@
 # Mission interchange — NavCom ⇄ Starcom / Mecha Jono
 
-**NavCom's side of the boundary, rev 1 — 2026-10-06.** Starcom's side is
+**NavCom's side of the boundary, rev 2 — 2026-10-06.** Starcom's side is
 [`starcom.app/spec/starcom-navcom-interchange.spec.md`](https://starcom.app/spec/starcom-navcom-interchange.spec.md)
-(rev 10 at the time of writing). Each spec owns its own side; neither restates the other's.
+(rev 10 at the time of writing; rev 11 will carry the answers below). Each spec owns its own
+side; neither restates the other's.
+
+**Rev 2** records Starcom's reply of the same day — all eight proposals accepted — and closes a
+gap neither side had seen: The Record accepts writes only from an allowlist, so operators' claims
+and reports cannot be published there. §5.0 says where they go instead, and §10 asks two new
+questions about it.
 
 Written for Mecha Jono's development agent first, and for any human on either team second. It
 says what NavCom now is, exactly how to serve it missions, how raw intel moves in both directions,
@@ -35,7 +41,8 @@ from whether a builder exists, and this document follows the same discipline.
 | **LIVE** | Running on navcom.app today |
 | **BUILT** | In NavCom's code and tested, not yet reachable by an operator |
 | **DESIGNED** | Decided and written down in `docs/design/`, not yet built |
-| **PROPOSED** | This document's suggestion. Needs Starcom's answer — see §10 |
+| **AGREED** | Proposed here and accepted by Starcom on 2026-10-06; normative in Starcom's rev 11 when published |
+| **PROPOSED** | This document's suggestion. Needs an answer — see §10 |
 
 | | Status |
 |---|---|
@@ -43,7 +50,7 @@ from whether a builder exists, and this document follows the same discipline.
 | The grid (the map missions appear on) | In progress — geometry measured and generated, renderer under test |
 | Kind `1911` observation (raw intel) | BUILT — builder and contract exist; published at `/.well-known/navcom-intel.json` |
 | Kind `1912` report | Reserved, **not emitted** — the contract says `emitted: false` |
-| Claims, settlement, challenge (§5) | PROPOSED |
+| Claims, settlement, challenge (§5) | AGREED — Starcom reads them once built on its side |
 | Standing, Writs, bounties (§8) | DESIGNED |
 
 ---
@@ -127,7 +134,7 @@ never a total).
 
 | | |
 |---|---|
-| Relay | **The Record**, `wss://record.cosmiccodex.app`, which is where the packages actually are. NavCom MAY also read the five public relays Starcom's rev 10 lists |
+| Relay | **The Record**, `wss://record.cosmiccodex.app` — authoritative for packages (AGREED, Q8). The five relays rev 10 lists are best-effort mirrors a reader need not read. The Record honours NIP-40 expiry, which its NIP-11 document confirms |
 | Author | `6301c4d09a014909e5a48b7d0c9aa859eec18804c2fc87eab4e414aa5a319692` |
 | Filter | `{ "kinds": [30079], "authors": ["6301c4d0…9692"], "#t": ["navcom_mission"] }` |
 
@@ -143,7 +150,7 @@ manifest signature** in `metadata.signature`, and will not claim to until it doe
 
 ## 4. Serving a NavCom mission — the package profile
 
-Everything in this section is what you already publish, plus three PROPOSED additions marked as
+Everything in this section is what you already publish, plus three additions, all AGREED, marked as
 such. A package that meets §4.1 is shown; nothing else in this section is a precondition.
 
 ### 4.1 Required for a package to appear on the grid
@@ -190,25 +197,25 @@ Australia). That is exactly the right resolution for a state-wide campaign.
 |---|---|---|
 | `open` | Anyone may take part | LIVE in your packages |
 | `closed` | Over. A closed mission is a good outcome; close honestly | LIVE in your packages |
-| `claimed` | An **exclusive** mission somebody has taken | PROPOSED |
+| `claimed` | An **exclusive** mission somebody has taken | AGREED (Q3) |
 
 **Mecha Jono's duty under invariant 9:** if you can no longer settle reports on a mission — the
 window passed, the situation changed, nobody is watching it — **close it.** An open mission is a
 promise that somebody is behind it.
 
-### 4.5 Campaigns and tasks — PROPOSED `claims` tag
+### 4.5 Campaigns and tasks — AGREED `claims` tag
 
 NavCom designed a mission as a discrete task with one claimant. **Your packages are campaigns**:
 one heat-relief package covers all of California with four asks, meant for many people at once.
 An exclusive claim on that would let one operator lock a state.
 
-So, PROPOSED:
+So, AGREED (Q2):
 
 | `["claims", "many"]` | A campaign. Anybody may take part; nobody can lock it. **The default when the tag is absent**, because it is what you publish today |
 |---|---|
 | `["claims", "one"]` | A task. The first accepted claim takes it; you set `mission_state` to `claimed`, and back to `open` if the claim lapses |
 
-### 4.6 Identify yourself — PROPOSED `agent` tag
+### 4.6 Identify yourself — AGREED `agent` tag
 
 NavCom labels every package from your key as agent-posted regardless (invariant 4). A
 self-describing `["agent", "mecha_jono"]` tag would let any other reader do the same without
@@ -216,10 +223,28 @@ knowing your key.
 
 ---
 
-## 5. The return path — claims, reports, settlement — PROPOSED
+## 5. The return path — claims, reports, settlement — AGREED
 
-Rev 10 says Starcom reads replies but does not send them yet. This is the shape NavCom proposes,
-built on existing NIPs so neither side allocates new kinds for it.
+Built on existing NIPs, so neither side allocates a kind for it. Starcom accepted it on
+2026-10-06 (Q1); its reading side is still to be built.
+
+**NavCom sends labels, never kind-`1` replies.** Rev 10's kind-`1` reply stays valid on Starcom's
+side, but a kind-`1` note is a public social post that every client indexes and displays. A claim
+sent that way would publish who took what, which is exactly what the operator's choice in §5.1
+exists to control.
+
+### 5.0 Where the return path is published
+
+**Not The Record.** Its own NIP-11 document, read on 2026-10-06, describes it as *"EIN open-read,
+allowlist-write archive … everything here is meant to be public and permanent."* Operators are not
+on that allowlist, and should not be: NavCom promises an operator that a report can be withdrawn,
+honestly described, and a relay built for permanence is the wrong home for one.
+
+| Signed by | Published to | Read by |
+|---|---|---|
+| **An operator** — public claims, reports, witness and challenge labels | **NavCom's relays**: today `wss://relay.damus.io` and `wss://nos.lol`, both already among rev 10's mirrors; NavCom's own RelayNodes when they ship | Starcom and Mecha Jono, filtering `#a` for their packages (Q9) |
+| **An operator** — a private claim (gift wrap) | The inbox relays Mecha Jono names in a NIP-17 kind `10050` list | Mecha Jono only (Q4, Q10) |
+| **Mecha Jono** — packages, `settled` and `challenged` labels | **The Record** | NavCom, which already reads it |
 
 ### 5.1 Taking part — a claim
 
@@ -308,7 +333,7 @@ Things your models must hold:
 - **The vocabulary is a stub, written by humans with local knowledge.** Do not extend it. Failure
   is safe: what it cannot express stays on the operator's device
 
-### 6.2 What you send back — a citation — PROPOSED
+### 6.2 What you send back — a citation — AGREED
 
 When an intel report or a package uses an observation, cite it:
 `["e", "<1911 event id>", "<relay>", "cites"]`.
@@ -419,20 +444,27 @@ the map opens populated. It is identified as an agent everywhere it appears.
 
 ---
 
-## 10. Questions for Starcom
+## 10. Questions, and Starcom's answers
 
-Answer any of these in your spec and NavCom's next revision follows.
+Answered by Starcom on 2026-10-06; all eight accepted. Three are Mecha Jono's to act on.
+
+| | Question | Answer | Who acts |
+|---|---|---|---|
+| Q1 | NIP-32 namespace `navcom.mission` with `claimed`, `settled`, `witnessed`, `challenged`? | **Yes**, beside rev 10's kind-`1` reply | Starcom builds the reader |
+| Q2 | `["claims", "one" \| "many"]`? | **Yes, as written.** Absent means `many` | — |
+| Q3 | `mission_state: claimed` for `claims: one`? | **Yes.** A private claim still publishes the state | — |
+| Q4 | Can Mecha Jono read NIP-59 gift-wrapped private claims? | Starcom supports private claims; **Mecha Jono to answer** | Mecha Jono |
+| Q5 | Cite observations with `["e", id, relay, "cites"]`? | **Yes.** Starcom's `navcom-intel/0.1.0` reader is built and counts one contact key as one source; wiring it in comes first | Starcom builds |
+| Q6 | Count materiel, never people? | **Yes, for every package** in rev 11 | Mecha Jono changes `format.effect` |
+| Q7 | `["agent", "mecha_jono"]`? | **Yes.** Rev 11 defines `["agent", <name>]` for any agent | Mecha Jono adds the tag |
+| Q8 | Which relays are authoritative? | **The Record.** The five are best-effort mirrors | — |
+
+### New in rev 2
 
 | | Question | NavCom's default if unanswered |
 |---|---|---|
-| Q1 | Accept the NIP-32 namespace `navcom.mission` with `claimed`, `settled`, `witnessed`, `challenged`? | Proceed as §5 |
-| Q2 | Add `["claims", "one" \| "many"]`? | Treat every package as `many` |
-| Q3 | Add `mission_state: claimed` for `claims: one`? | Only applies once Q2 is answered |
-| Q4 | Can Mecha Jono read NIP-59 gift-wrapped private claims? | Private claims unavailable on your missions |
-| Q5 | Cite observations with `["e", id, relay, "cites"]`? | Intel cannot be credited |
-| Q6 | Change `format.effect` to count materiel (§7.1)? | Shown as you publish it, with the people count omitted |
-| Q7 | Add `["agent", "mecha_jono"]`? | NavCom labels you by key |
-| Q8 | Which relays are authoritative — The Record, the five in rev 10, or both? | The Record |
+| Q9 | Will Starcom and Mecha Jono read operators' labels and reports from NavCom's relays (§5.0), filtering `#a` for their packages? | NavCom publishes there regardless; until Starcom reads them, nothing from NavCom's side reaches it |
+| Q10 | Will Mecha Jono publish a NIP-17 kind `10050` list naming the relays where it accepts gift-wrapped claims? | Private claims stay unavailable on Mecha Jono's missions — the answer to Q4 needs somewhere to deliver |
 
 ### Your open questions from rev 10, answered
 
@@ -447,7 +479,7 @@ Answer any of these in your spec and NavCom's next revision follows.
 
 ## Appendix — a field mission, as NavCom would like to receive it
 
-Your live heat-relief package, with the three PROPOSED additions and the §7.1 fix:
+Your live heat-relief package, with the three AGREED additions and the §7.1 fix:
 
 ```json
 { "kind": 30079, "pubkey": "6301c4d0…9692", "tags": [
