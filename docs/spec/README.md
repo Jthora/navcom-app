@@ -13,9 +13,14 @@ Specs exist **only for the MVP surface**:
 `Distress` and the escalation ladder are specified too, despite sitting outside that loop,
 because they are safety-critical and must never be improvised later.
 
-Everything else — endorsements, presets, funding, recovery, propagation, allied interop —
-is deliberately unspecified. Specs written before the loop is proven are guesses in a more
-confident format.
+Everything else — endorsements, presets, funding, recovery, propagation — is deliberately
+unspecified. Specs written before the loop is proven are guesses in a more confident format.
+
+**Allied interop left that list on 2026-10-06**, for the two reasons the rule itself names: the
+loop was proven on 2026-08-18, and the counterparty is no longer hypothetical — Mecha Jono
+publishes Mission Packages NavCom is about to read. A spec for an exchange somebody is already
+building against is not a guess; leaving it unwritten would be. It marks every part LIVE, BUILT,
+DESIGNED or PROPOSED, so the confidence of the format never exceeds the confidence of the work.
 
 | | |
 |---|---|
@@ -23,6 +28,7 @@ confident format.
 | [`signals.spec.md`](./signals.spec.md) | Event kinds, payloads, encryption, acknowledgement |
 | [`watch-state.spec.md`](./watch-state.spec.md) | Board model, TTLs, overdue, handover |
 | [`escalation.spec.md`](./escalation.spec.md) | The ladder as a state machine |
+| [`mission-interchange.spec.md`](./mission-interchange.spec.md) | Mission Packages, raw intel, claims, counts — NavCom's side of the boundary with Starcom and Mecha Jono |
 
 ## Conventions
 
