@@ -1,5 +1,5 @@
 import { loadDirectory } from '$lib/directory/load';
-import { allDocs } from '$lib/docs';
+import { allDocs } from '$lib/server/docs';
 
 export const prerender = true;
 

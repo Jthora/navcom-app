@@ -7,6 +7,17 @@
  * repository.
  *
  * Rendered at build time, so it costs the reader zero JavaScript.
+ *
+ * ## Why this lives under `server/`
+ *
+ * It used to sit in `$lib` and be imported by universal `+page.ts` loads, which put it in the
+ * client module graph: `marked` plus every markdown file in the repository, emitted as one
+ * **332.9 kB gzipped chunk**. The pages were `csr = false`, so nothing ever downloaded it — but
+ * only because no client-rendered page happened to link to `/docs/`. The first link from the
+ * console or Com would have turned it into a real download on a congested cell.
+ *
+ * `$lib/server` is enforced by SvelteKit: importing it from client code is a build error. So
+ * this is no longer a convention somebody has to remember. [build-order 11.0]
  */
 
 import { marked } from 'marked';
@@ -20,7 +31,7 @@ import { marked } from 'marked';
 const REPO =
   (process.env.PUBLIC_REPO_URL ?? 'https://github.com/Jthora/navcom-app') + '/blob/main';
 
-const files = import.meta.glob('../../../docs/**/*.md', {
+const files = import.meta.glob('../../../../docs/**/*.md', {
   query: '?raw',
   import: 'default',
   eager: true
@@ -33,7 +44,7 @@ const files = import.meta.glob('../../../docs/**/*.md', {
  *
  * They stay at the repository root because that is where a code host looks for them.
  */
-const rootFiles = import.meta.glob(['../../../CONTRIBUTING.md', '../../../LICENSING.md'], {
+const rootFiles = import.meta.glob(['../../../../CONTRIBUTING.md', '../../../../LICENSING.md'], {
   query: '?raw',
   import: 'default',
   eager: true

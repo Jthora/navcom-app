@@ -12,12 +12,16 @@
  * They are not free. On 2026-09-19 the directory carried 11,546 of them, 15.7 MB, in every
  * deployment Vercel retains, on an account near its storage cap.
  *
- * ## Why only `/directory/`
+ * ## Why only `/directory/` and `/docs/`
  *
  * `csr` is per route. The root console (`/`) and `/who/` set `csr = true`, and the whole
  * field terminal is an app — their data files are fetched at runtime by the router and must
- * stay. Only the directory's two prerendered trees are pruned, which is where all but a
- * rounding error of the weight is anyway.
+ * stay. Only zero-JavaScript prerendered trees are pruned.
+ *
+ * `/docs/` joined on 2026-10-06. Its loads moved from universal to server so the markdown corpus
+ * would leave the client bundle [build-order 11.0], and a server load is exactly what makes
+ * SvelteKit write these: 64 of them, 1.5 MB, each a JSON copy of a page that already exists as
+ * HTML — at URLs nothing links to, which is crawler surface and nothing else.
  *
  * Run after `build` and before anything that reads the output.
  */
@@ -29,7 +33,7 @@ import { fileURLToPath } from 'node:url';
 const BUILD = fileURLToPath(new URL('../build/', import.meta.url));
 
 /** Prerendered, zero-JavaScript, and therefore unable to fetch anything. */
-const PRUNE = ['directory'];
+const PRUNE = ['directory', 'docs'];
 
 /** @param {string} dir @returns {{ files: number, bytes: number }} */
 function prune(dir) {
