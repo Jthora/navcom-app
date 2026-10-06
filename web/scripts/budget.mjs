@@ -254,7 +254,12 @@ for (const surface of Object.values(SURFACES)) {
  * The graph comes from Vite's manifest, which records `dynamicImports` per chunk, so no JavaScript
  * is parsed. Missing manifest is not an error: a build without one simply has nothing to say here.
  */
-const MANIFEST = join('.svelte-kit', 'output', 'client', '.vite', 'manifest.json');
+// Resolved from this file, like BUILD, not from the working directory. Run from the repo root, a
+// cwd-relative path finds no manifest and the check reports nothing — silently, which is the one way
+// this note must never fail.
+const MANIFEST = fileURLToPath(
+  new URL('../.svelte-kit/output/client/.vite/manifest.json', import.meta.url)
+);
 
 function deferredWeight() {
   let manifest;
