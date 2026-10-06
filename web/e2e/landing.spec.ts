@@ -1,10 +1,10 @@
-import { readFileSync } from 'node:fs';
-import { expect, test, type Page } from '@playwright/test';
+import { existsSync, readFileSync } from 'node:fs';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { blankDevice, open, seedDevice } from './device';
 
 /**
- * The grid, on the phone this project is built for [build-order 11.2].
+ * The landing page's map, on the phone this project is built for [build-order 11.2, 11.3].
  *
  * The unit tests prove the geometry decodes. They cannot prove a canvas draws anything — Path2D
  * exists only in a browser — and "a mechanism nobody can reach is not built" [verification.md].
@@ -27,6 +27,28 @@ async function picture(page: Page): Promise<{ colours: number; hash: number }> {
   });
 }
 
+/** True when a tap at the element's centre would land on it, rather than on something over it. */
+async function uncovered(locator: Locator): Promise<boolean> {
+  return locator.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    return hit === el || el.contains(hit);
+  });
+}
+
+/** The URL pattern of the chunk a module was split into, read from the build under test. */
+function chunkOf(module: string): string {
+  const manifest = JSON.parse(
+    readFileSync(new URL('../.svelte-kit/output/client/.vite/manifest.json', import.meta.url), 'utf8')
+  ) as Record<string, { file: string }>;
+  const file = manifest[module]?.file;
+  if (!file) throw new Error(`${module} is not in the Vite manifest`);
+  // A manifest from another build names a chunk this server does not have, and a route on it
+  // would block nothing — the test would pass for the wrong reason. Fail here instead.
+  if (!existsSync(new URL(`../build/${file}`, import.meta.url))) throw new Error(`${file} is not in web/build`);
+  return `**/${file}`;
+}
+
 /** Wraps whatever WebSocket the harness installed, so a test can see where the page connects. */
 async function recordSockets(page: Page) {
   await page.addInitScript(() => {
@@ -45,13 +67,13 @@ async function recordSockets(page: Page) {
 async function ready(page: Page) {
   await blankDevice(page);
   await recordSockets(page);
-  await open(page, '/grid/');
+  await open(page, '/');
   await expect(page.locator('[data-grid="ready"]')).toBeVisible({ timeout: 15_000 });
   // One frame after ready, so the first draw has happened.
   await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))));
 }
 
-test.describe('the grid draws, and tells nobody', () => {
+test.describe('the landing map draws, and tells nobody', () => {
   test('it draws land, not an empty box', async ({ page }) => {
     await ready(page);
     // Ground, land, two kinds of border and region dots: far more than one colour.
@@ -106,8 +128,11 @@ test.describe('the grid draws, and tells nobody', () => {
         return n;
       });
     await blankDevice(page);
-    await page.goto('/grid/', { waitUntil: 'networkidle' });
+    await page.goto('/', { waitUntil: 'networkidle' });
     await expect(page.locator('[data-grid="ready"]')).toBeVisible({ timeout: 15_000 });
+    // Coverage is off on the landing map [map.md §6], so the dots this counts are switched on
+    // first. Switching them on does not move the view: framing follows the regions either way.
+    await page.getByRole('button', { name: 'Coverage' }).click();
     await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))));
     const framed = await dotPixels();
     await page.getByRole('button', { name: 'Show the whole map' }).click();
@@ -126,13 +151,28 @@ test.describe('the grid draws, and tells nobody', () => {
     }
   });
 
-  test('when the geometry cannot load, it says so instead of showing an empty box', async ({ page }) => {
+  test('when the geometry cannot load, it says so where it can be seen', async ({ page }) => {
     // Offline is a normal state here [C10]; the failure path is the one worth testing.
     await page.route('**/grid/world.json', (r) => r.abort());
     await blankDevice(page);
-    await open(page, '/grid/');
-    await expect(page.locator('[data-grid-failed]')).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('[data-grid-failed]')).toContainText(/needs one visit with a connection/);
+    await open(page, '/');
+    const failed = page.locator('[data-grid-failed]');
+    await expect(failed).toBeVisible({ timeout: 15_000 });
+    await expect(failed).toContainText(/needs one visit with a connection/);
+    // Visible to Playwright is not seen by a person. This line sat at the foot of the map, under
+    // the phone's sheet, and passed the check above the whole time.
+    expect(await uncovered(failed)).toBe(true);
+  });
+
+  test('when the map’s own code cannot arrive, it says so instead of a blank map', async ({ page }) => {
+    // It comes by dynamic import, so a first visit can get the page and lose the map [com.md §6].
+    await page.route(chunkOf('src/lib/components/grid/GridMap.svelte'), (r) => r.abort());
+    await blankDevice(page);
+    await open(page, '/');
+    const failed = page.locator('[data-grid-failed]');
+    await expect(failed).toBeVisible({ timeout: 15_000 });
+    await expect(failed).toContainText(/needs one visit with a connection/);
+    expect(await uncovered(failed)).toBe(true);
   });
 
   test('a device set to low signature gets the map in low signature, not at full brightness', async ({ page }) => {
@@ -144,7 +184,7 @@ test.describe('the grid draws, and tells nobody', () => {
       p.locator('.grid canvas').evaluate((c: HTMLCanvasElement) => [...c.getContext('2d')!.getImageData(2, 2, 1, 1).data.slice(0, 3)]);
 
     await seedDevice(page, { accruing: { signature: 'low' } });
-    await open(page, '/grid/');
+    await open(page, '/');
     await expect(page.locator('[data-grid="ready"]')).toBeVisible({ timeout: 15_000 });
     await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))));
     await expect(page.locator('html')).toHaveAttribute('data-signature', 'low');
@@ -187,7 +227,7 @@ test.describe('the grid draws, and tells nobody', () => {
         (globalThis as unknown as { WebSocket: unknown }).WebSocket = Dead;
       });
     async function load(page: Page) {
-      await page.goto('/grid/', { waitUntil: 'networkidle' });
+      await page.goto('/', { waitUntil: 'networkidle' });
       await expect(page.locator('[data-grid="ready"]')).toBeVisible({ timeout: 15_000 });
       await page.getByRole('button', { name: 'Show the whole map' }).click();
     }
@@ -221,6 +261,15 @@ test.describe('the grid draws, and tells nobody', () => {
       await expect(page.locator('[data-missions="unavailable"]')).toBeVisible({ timeout: 15_000 });
     });
 
+    test('when its own code cannot arrive, it says so rather than reaching forever', async ({ page }) => {
+      // "Reaching The Record…" with nothing behind it is a pending state that never resolves.
+      await page.route(chunkOf('src/lib/missions/live.ts'), (r) => r.abort());
+      await blankDevice(page);
+      await load(page);
+      await expect(page.locator('[data-missions="unloaded"]')).toBeVisible({ timeout: 15_000 });
+      await expect(page.locator('[data-missions="connecting"]')).toHaveCount(0);
+    });
+
     test('offline, it shows what this device last saw, with its age', async ({ page }) => {
       await page.clock.setFixedTime(DURING);
       await seedDevice(page, { relayEvents: [HEAT], __noStorage: true } as Parameters<typeof seedDevice>[1]);
@@ -250,3 +299,99 @@ test.describe('the grid draws, and tells nobody', () => {
     expect(results.violations, JSON.stringify(results.violations, null, 2)).toEqual([]);
   });
 });
+
+test.describe('the landing page: Com over the map', () => {
+  const detentOf = (page: Page) => page.locator('[data-com]').getAttribute('data-detent');
+  /** One tap on the handle moves one step: peek → half → full → peek. */
+  async function setDetent(page: Page, want: 'peek' | 'half' | 'full') {
+    for (let i = 0; i < 3 && (await detentOf(page)) !== want; i++) {
+      await page.locator('.grab').click();
+    }
+    await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', want);
+  }
+
+  test('somebody who needs a place sees the search at once, and no Distress they cannot use', async ({ page }) => {
+    // Search first [com.md §2]: the landing page is also where somebody looks for a bed
+    // tonight, and a form in front of the search would make them meet a sign-up first.
+    await blankDevice(page);
+    await open(page, '/');
+    await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'peek');
+    // All of it, not a sliver: an earlier layout passed a looser check with only the field's top
+    // edge on screen, because the page was sized taller than the phone it was on.
+    const search = page.getByLabel(/where are you, or what do you need/i);
+    await expect(search).toBeInViewport({ ratio: 1 });
+    // And nothing floats over it.
+    const clear = await search.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + 12, r.top + r.height / 2);
+      return hit === el || el.contains(hit);
+    });
+    expect(clear).toBe(true);
+    await expect(page.locator('.distress-layer')).toBeHidden();
+    // And joining is right there beneath it, for the person who came to help.
+    await expect(page.getByRole('link', { name: /open the field terminal/i })).toHaveCount(1);
+  });
+
+  test('typing lifts the sheet so the results can be seen', async ({ page }) => {
+    await blankDevice(page);
+    await open(page, '/');
+    await page.getByLabel(/where are you, or what do you need/i).focus();
+    await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'half');
+  });
+
+  test('the handle steps the sheet through its three heights, by touch and by key', async ({ page }) => {
+    await blankDevice(page);
+    await open(page, '/');
+    await setDetent(page, 'half');
+    await setDetent(page, 'full');
+    await expect(page.locator('.grab')).toHaveAttribute('aria-label', 'Show less');
+    await page.locator('.grab').focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'peek');
+  });
+
+  test('an operator can reach Distress at every height of the sheet, and nothing covers it', async ({ page }) => {
+    // The test panicWipe never had [verification.md]: not that the control renders, but that a
+    // person can reach it whatever state the interface is in [com.md §4, invariant 2].
+    await seedDevice(page, { callsign: 'kestrel' } as Parameters<typeof seedDevice>[1]);
+    await open(page, '/');
+    const distress = page.locator('.distress-layer a');
+    for (const detent of ['peek', 'half', 'full'] as const) {
+      await setDetent(page, detent);
+      await expect(distress, detent).toBeVisible();
+      await expect(distress, detent).toBeInViewport();
+      const box = await distress.boundingBox();
+      expect(box!.height, detent).toBeGreaterThanOrEqual(48);
+      const onTop = await distress.evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        return hit === el || el.contains(hit);
+      });
+      expect(onTop, `something covers Distress at ${detent}`).toBe(true);
+    }
+  });
+
+  test('coverage is one switch away, and off until somebody asks', async ({ page }) => {
+    const mutedPixels = () =>
+      page.locator('.grid canvas').evaluate((c: HTMLCanvasElement) => {
+        const hex = getComputedStyle(c).getPropertyValue('--t-muted').trim().replace('#', '') || '9BA5B2';
+        const [r, g, b] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
+        const d = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
+        let n = 0;
+        for (let i = 0; i < d.length; i += 4) {
+          if (Math.abs(d[i]! - r!) < 6 && Math.abs(d[i + 1]! - g!) < 6 && Math.abs(d[i + 2]! - b!) < 6) n++;
+        }
+        return n;
+      });
+    await blankDevice(page);
+    await page.goto('/', { waitUntil: 'networkidle' });
+    await expect(page.locator('[data-grid="ready"]')).toBeVisible({ timeout: 15_000 });
+    const coverage = page.getByRole('button', { name: 'Coverage' });
+    await expect(coverage).toHaveAttribute('aria-pressed', 'false');
+    const off = await mutedPixels();
+    await coverage.click();
+    await expect(coverage).toHaveAttribute('aria-pressed', 'true');
+    await expect.poll(mutedPixels, { timeout: 5_000 }).toBeGreaterThan(off + 1000);
+  });
+});
+

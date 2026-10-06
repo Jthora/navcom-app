@@ -4,6 +4,10 @@
   "installCommand": "npm install",
   "outputDirectory": "web/build",
   "framework": null,
+  "redirects": [
+    { "source": "/grid", "destination": "/", "permanent": false },
+    { "source": "/grid/", "destination": "/", "permanent": false }
+  ],
   "headers": [
     {
       "source": "/version.json",

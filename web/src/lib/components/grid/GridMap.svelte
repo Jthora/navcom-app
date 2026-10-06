@@ -18,11 +18,17 @@
 
   let {
     marks = [],
+    frame,
     highlight = new Set<string>(),
     label = 'Map'
   }: {
     /** Points to draw, in longitude and latitude. Constant size on screen whatever the zoom. */
     marks?: readonly { lon: number; lat: number }[];
+    /**
+     * Points to open the view on, when they are not the points being drawn — the landing map
+     * frames where the regions are while showing only missions. Defaults to `marks`.
+     */
+    frame?: readonly { lon: number; lat: number }[];
     /** Provinces to light, by lower-case ISO 3166-2 code — where a mission is (`us-ca`). */
     highlight?: ReadonlySet<string>;
     /** What the map shows, for anybody who cannot see the canvas. */
@@ -53,6 +59,7 @@
     lit = chosen.length > 0 ? pathOf(chosen.flatMap((s) => s.rings)) : null;
   }
   const projected = $derived(marks.map((m) => mercator(m.lon, m.lat)));
+  const framing = $derived(frame ? frame.map((m) => mercator(m.lon, m.lat)) : projected);
 
   // The view: which point of the unit square sits at the centre, and how many CSS px it spans.
   let cx = 0.5;
@@ -182,9 +189,9 @@
    * follows the data, so the frame moves on its own as coverage grows elsewhere.
    */
   function frameMarks(): boolean {
-    if (projected.length < 10 || width === 0) return false;
-    const xs = projected.map((p) => p[0]).sort((a, b) => a - b);
-    const ys = projected.map((p) => p[1]).sort((a, b) => a - b);
+    if (framing.length < 10 || width === 0) return false;
+    const xs = framing.map((p) => p[0]).sort((a, b) => a - b);
+    const ys = framing.map((p) => p[1]).sort((a, b) => a - b);
     const at = (v: number[], f: number) => v[Math.round(f * (v.length - 1))]!;
     const [x0, x1, y0, y1] = [at(xs, 0.05), at(xs, 0.95), at(ys, 0.05), at(ys, 0.95)];
     const pad = 1.3;
@@ -315,10 +322,14 @@
     request();
   });
 
-  // New marks frame the map, until a person has moved it; after that they are only redrawn.
+  // New points to frame move the view, until a person has moved it; new marks are redrawn.
+  $effect(() => {
+    void framing;
+    if (!touched) frameMarks();
+    request();
+  });
   $effect(() => {
     void projected;
-    if (!touched) frameMarks();
     request();
   });
 </script>
@@ -385,10 +396,14 @@
     line-height: 1;
   }
   .controls button:focus-visible { outline: 2px solid var(--t-ink); outline-offset: 1px; }
+  /* Centred, not at the foot: on a phone the landing page's sheet covers the bottom of the map at
+     every height, and a failure under it was present, "visible" to a test, and seen by nobody. */
   .state {
     position: absolute;
     inset-inline: 1rem;
-    inset-block-end: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    text-align: center;
     color: var(--t-ink);
     font-size: 0.9rem;
   }

@@ -47,7 +47,7 @@ from whether a builder exists, and this document follows the same discipline.
 | | Status |
 |---|---|
 | Reading kind `30079` packages from The Record | LIVE — every device subscribes to The Record directly, verifies each package itself, and keeps the subscription open, so a new or closed mission shows without a reload |
-| The grid (the map missions appear on) | LIVE at [`/grid/`](https://navcom.app/grid/), lighting each mission's province — a proving ground until it moves onto the landing page |
+| The grid (the map missions appear on) | LIVE as the landing page at [`navcom.app`](https://navcom.app/), lighting each mission's province |
 | Kind `1911` observation (raw intel) | BUILT — builder and contract exist; published at `/.well-known/navcom-intel.json` |
 | Kind `1912` report | Reserved, **not emitted** — the contract says `emitted: false` |
 | Claims, settlement, challenge (§5) | AGREED — Starcom reads them once built on its side |

@@ -5,8 +5,9 @@ when they open this, and a search box over a list is not a situation. But "a map
 different products wearing one word, and the whole design is in deciding which one we build
 and which one we hand off.
 
-Status: **design, decided where marked.** Nothing here is built. Normative sources it leans
-on: [`panel.md`](panel.md), [`missions.md`](missions.md),
+Status: **design, decided where marked. The grid (§3) and its layer switch (§6) are built** and
+are the landing page; the road layer, the mini-map and the handoff are not. Normative sources it
+leans on: [`panel.md`](panel.md), [`missions.md`](missions.md),
 [`directory-schema.md`](../product/directory-schema.md),
 [`delivery.md`](../delivery.md).
 
@@ -204,7 +205,7 @@ Three rules on top of the table, and these are the part that matters:
 **Decided 2026-10-06: missions by default, coverage behind a switch.** The directory's 1,911 region
 dots make the map look alive at once, and they also compete with the missions for the eye. So the
 landing map opens on what there is to do, and one control shows or hides where the directory
-reaches. The proving ground at `/grid/` still shows both until 11.3 builds the landing page.
+reaches. Built the same day: the landing page opens on the missions, and **Coverage** is the switch.
 
 Open and claimed missions, and public reports. **Not the 9,623 directory records.** The
 landing map is a situation, not an inventory — the directory stays searched rather than

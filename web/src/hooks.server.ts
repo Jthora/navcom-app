@@ -83,10 +83,18 @@ const BOOTSTRAP = `<script>
 const MARKER = '<!--navcom-bootstrap-->';
 
 export const handle: Handle = async ({ event, resolve }) => {
-  // Terminal only. The marker is removed everywhere else rather than left in place, so a
-  // public page carries no trace of a script it is not allowed to have.
-  const isTerminal = event.url.pathname.startsWith('/terminal');
+  /*
+   * The terminal, and the landing page. The landing page joined on 2026-10-06 when Com moved
+   * onto it, because Com carries Distress for an operator in a layer nothing covers [com.md §4]
+   * — and the reason this script exists is that Distress must not wait three seconds for a
+   * bundle. The root already ships script, so it has no zero-JavaScript promise to break.
+   *
+   * The marker is removed everywhere else rather than left in place, so a public page carries
+   * no trace of a script it is not allowed to have.
+   */
+  const path = event.url.pathname;
+  const bootstraps = path === '/' || path.startsWith('/terminal');
   return resolve(event, {
-    transformPageChunk: ({ html }) => html.replace(MARKER, isTerminal ? BOOTSTRAP : '')
+    transformPageChunk: ({ html }) => html.replace(MARKER, bootstraps ? BOOTSTRAP : '')
   });
 };

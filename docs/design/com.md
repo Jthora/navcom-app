@@ -7,7 +7,9 @@ state.** Profile, groups, chat, search and the detail view of anything all live 
 more than a panel holds and exactly what a stack is for. Bottom sheets are how a stack presents on a
 phone, which is why both arrived in the same sentence.
 
-Status: **design, decided 2026-10-06.** Companions: [`panel.md`](panel.md) for the readout rules,
+Status: **design, decided 2026-10-06. The shell is built** — the two containers, the three detents,
+the search-first root and the `Distress` layer, as the landing page. The stack itself, the signed-in
+root, profile, groups and chat are not. Companions: [`panel.md`](panel.md) for the readout rules,
 [`map.md`](map.md) for Nav, [`delivery.md`](../delivery.md) for the budgets this is measured against.
 
 ---
@@ -70,9 +72,11 @@ The three detents are what make it work:
 2. **Half** — lists, search, a group. Enough to read and act, with the map still oriented behind.
 3. **Full** — one detail view, filling the screen.
 
-Signed out on a phone, the sheet opens at **half** with setup in it and the populated map behind it.
-Which is the point: somebody who has not signed up is looking at real missions in their region while
-they decide.
+Signed out on a phone, the sheet opens at **peek**, and peek is sized to hold the whole search field:
+**12.75rem, measured** on a Pixel 5 and an iPhone SE rather than guessed. Focusing the search lifts it
+to half, where the results are. The first draft opened at half with setup in it; §2's revision put the
+search first, and a search that fits in the peek leaves the map at full size behind it. Which is the
+point: somebody who has not signed up is looking at real missions while they decide.
 
 This is mobile-first in the sense that matters here — **the field case is the phone case.** Somebody
 standing in a car park at 1am gets the map at full size and summons everything else.

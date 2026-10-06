@@ -21,6 +21,8 @@
   } from '$lib/console/types';
   import { locateOnce, nearest } from '$lib/console/position-once';
   import { get, set } from '$lib/terminal/storage';
+  import type { Feed } from '$lib/missions/live';
+  import type GridMapType from '$lib/components/grid/GridMap.svelte';
 
   /**
    * A local, deliberately-not-imported equivalent of $lib/terminal/signature's own
@@ -66,6 +68,72 @@
    */
   let centroids = $state<ConsoleCentroid[]>([]);
   let figures = $state<Record<string, ConsoleRegionFigures>>({});
+
+  /*
+   * Nav: the map, filling the screen behind Com [docs/design/map.md, com.md].
+   *
+   * Loaded after first paint. The map cannot draw until its 55 kB of geometry arrives anyway,
+   * so fetching its code in parallel costs nothing a person can see — and keeps this page's
+   * first-paint script inside the budget that has kept the front door fast.
+   */
+  let GridMap = $state<typeof GridMapType | null>(null);
+  /**
+   * Set when the map's or the missions' code did not arrive. Both come by dynamic import, so on a
+   * first visit — before the service worker holds them — either can fail, and without these the
+   * page would sit at a blank map and "Reaching The Record…" for as long as it is open [com.md §6].
+   */
+  let mapUnloaded = $state(false);
+  let missionsUnloaded = $state(false);
+  /** Where the regions are: what the map opens on, whether or not it draws them. */
+  const regionPoints = $derived(centroids.map((c) => ({ lon: c.lon, lat: c.lat })));
+  /** Coverage is one switch away; missions are what the map opens on [map.md §6]. */
+  let coverage = $state(false);
+
+  /** Missions, read live by this device from The Record [$lib/missions/live]. */
+  let feed = $state<Feed>({ status: 'connecting' });
+  /** Ticks each minute, so a mission that ends while the page is open stops being lit. */
+  let now = $state(Date.now());
+  const active = $derived(
+    feed.status === 'live' || feed.status === 'cached'
+      ? feed.missions.filter((m) => m.state !== 'closed' && m.validUntil > now / 1000)
+      : []
+  );
+  /** Provinces to light. A national mission (`us`) lights nothing — it would light everything. */
+  const lit = $derived(
+    new Set(active.map((m) => m.placement.jurisdiction).filter((j): j is string => !!j && j.includes('-')))
+  );
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const stamp = (t: Date) =>
+    `${t.getUTCDate()} ${MONTHS[t.getUTCMonth()]} ${String(t.getUTCHours()).padStart(2, '0')}:${String(t.getUTCMinutes()).padStart(2, '0')} UTC`;
+  const missionAge = $derived(
+    feed.status === 'live' ? 'live' : feed.status === 'cached' ? `as of ${stamp(feed.at)}, offline` : ''
+  );
+
+  /*
+   * Com, on a phone, is a sheet over the map with three heights [com.md §3]: peek shows the
+   * search, so somebody who needs a bed tonight can type at once; half shows results; full
+   * shows everything. On a wide screen it is a sidebar and the heights do not apply.
+   */
+  type Detent = 'peek' | 'half' | 'full';
+  let detent = $state<Detent>('peek');
+  const NEXT: Record<Detent, Detent> = { peek: 'half', half: 'full', full: 'peek' };
+  let dragFrom: number | null = null;
+  function grabDown(e: PointerEvent) {
+    dragFrom = e.clientY;
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  }
+  function grabUp(e: PointerEvent) {
+    if (dragFrom === null) return;
+    const dy = e.clientY - dragFrom;
+    dragFrom = null;
+    if (dy < -40) detent = detent === 'peek' ? 'half' : 'full';
+    else if (dy > 40) detent = detent === 'full' ? 'half' : 'peek';
+    else detent = NEXT[detent];
+  }
+  /** Typing should show what it finds: the search lifts the sheet to half. */
+  const lift = () => {
+    if (detent === 'peek') detent = 'half';
+  };
 
   /**
    * Fetch one region's records so the search can see them.
@@ -252,6 +320,30 @@
         healthTried = true;
       })
       .finally(() => clearTimeout(healthGaveUp));
+
+    /*
+     * An operator on this device gets Distress, in its own layer that nothing covers
+     * [com.md §4]. The prerendered bar is revealed by the bootstrap before the bundle arrives
+     * [hooks.server.ts]; this repeats it for a device that signed on after that ran.
+     */
+    if (get('accruing', 'secret')) document.getElementById('distress-early')?.removeAttribute('hidden');
+
+    void import('$lib/components/grid/GridMap.svelte')
+      .then((m) => (GridMap = m.default))
+      .catch(() => (mapUnloaded = true));
+    let stopMissions: (() => void) | null = null;
+    let gone = false;
+    void import('$lib/missions/live')
+      .then(({ subscribeMissions }) => {
+        if (!gone) stopMissions = subscribeMissions((f) => (feed = f));
+      })
+      .catch(() => (missionsUnloaded = true));
+    const tick = setInterval(() => (now = Date.now()), 60_000);
+    return () => {
+      gone = true;
+      stopMissions?.();
+      clearInterval(tick);
+    };
   });
 
   /**
@@ -311,31 +403,107 @@
   />
 </svelte:head>
 
-<div class="terminal">
+<div class="terminal landing">
   <!--
-    Not "The Watchtower" — that term is precise elsewhere in this project (a specific node's
-    keypair, docs/spec/bootstrap.spec.md) and reserving it there is the point: it names a
-    daemon an operator can be pointed at, not a brand. This is the one screen every kind of
-    visitor sees first, including the majority who will never touch a watch at all — the
-    product's own name belongs here unqualified.
+    Distress, first in the document and outside both panes, so that no sheet, map or detail can
+    ever cover it [com.md §4]. Prerendered hidden and shown only on a device with an operator:
+    by the bootstrap before the bundle arrives, and by onMount after.
   -->
-  <header>
-    <h1>NavCom</h1>
-  </header>
+  <div id="distress-early" class="distress-layer" hidden>
+    <a class="nc-act" data-act data-tone="alarm" href="/terminal/distress/" data-sveltekit-reload>
+      <span class="nc-act-label">Distress</span>
+    </a>
+  </div>
 
-  <!-- A first automated accessibility pass (axe-core, this session) found this content sitting
-       outside any landmark region — true of every terminal screen too, fixed there the same
-       way. `<main>` is the minimal fix, not a redesign. -->
-  <main>
   <!--
-    Nav and Com, side by side once there is room to show it — the split is the point
-    [docs/positioning.md: "On a ship's bridge, Navigation and Communications are separate
-    stations. NavCom fuses them into one post."]. Stacked below `--bridge-break`, because the
-    device floor this project designs for is a phone, and a bridge that only exists on a wide
-    monitor is not the one this project is actually for.
+    Nav and Com [docs/positioning.md: "On a ship's bridge, Navigation and Communications are
+    separate stations. NavCom fuses them into one post."]. Nav is the map, filling the screen;
+    Com is a sheet over it on a phone and a sidebar beside it on a wide screen [com.md §3].
   -->
+  <main class="bridge">
+    <section class="nav" data-nav aria-label="Map">
+      {#if GridMap}
+        <GridMap
+          marks={coverage ? regionPoints : []}
+          frame={regionPoints}
+          highlight={lit}
+          label="Map of the provinces with an open mission{coverage ? ', and every directory region' : ''}"
+        />
+      {:else}
+        <div class="nav-loading" data-grid={mapUnloaded ? 'failed' : 'loading'}>
+          {#if mapUnloaded}
+            <!-- GridMap's own words for its own failure: the same failure reads the same way. -->
+            <strong class="unloaded" data-grid-failed>Map not loaded — it needs one visit with a connection</strong>
+          {/if}
+        </div>
+      {/if}
+      <div class="nav-key">
+        <!--
+          Not "The Watchtower" — that term names a specific node's keypair elsewhere
+          [docs/spec/bootstrap.spec.md]. This is the one screen every kind of visitor sees
+          first, and the product's own name belongs here unqualified.
+        -->
+        <h1>NavCom</h1>
+        {#if missionsUnloaded}
+          <strong data-missions="unloaded">Missions not loaded — they need one visit with a connection</strong>
+        {:else if feed.status === 'connecting'}
+          <strong data-missions="connecting">Reaching The Record…</strong>
+        {:else if feed.status === 'unavailable'}
+          <strong data-missions="unavailable">Missions unavailable — The Record cannot be reached</strong>
+        {:else if active.length === 0}
+          <strong data-missions="none" data-feed={feed.status}>No open missions · {missionAge}</strong>
+        {:else}
+          <span data-missions="open" data-feed={feed.status}><b class="lit" aria-hidden="true"></b>Open missions · {missionAge}</span>
+        {/if}
+        <button type="button" class="layer" aria-pressed={coverage} onclick={() => (coverage = !coverage)}>
+          Coverage
+        </button>
+      </div>
+    </section>
+
+    <section class="com" data-com data-detent={detent} aria-label="Com">
+      <!--
+        The sheet's handle: drag it, or tap it, to change how much of Com shows. A real button,
+        so a keyboard can reach it — a click with no pointer behind it (detail 0) is a key.
+      -->
+      <div class="com-head">
+      <button
+        type="button"
+        class="grab"
+        aria-label={detent === 'full' ? 'Show less' : 'Show more'}
+        aria-expanded={detent !== 'peek'}
+        onpointerdown={grabDown}
+        onpointerup={grabUp}
+        onclick={(e) => {
+          if (e.detail === 0) detent = NEXT[detent];
+        }}
+      ><span aria-hidden="true"></span></button>
+        <!--
+          Reachable from every screen, not just one [signature.spec.ts already asserts this for the
+          terminal] — this page is another screen of the same app now, not a separate site, so the
+          same rule applies here.
+        -->
+        <!--
+          Same fix as the terminal's, because this was the same defect copied.
+
+          `aria-pressed` tracked low-signature while the label named the destination, so a screen
+          reader announced "DOCUMENT, toggle button, pressed" while the page was in low signature —
+          the two halves contradicting each other, each individually valid, which is why an
+          automated pass cannot find it.
+        -->
+        <button
+          class="signature"
+          data-signature-toggle
+          aria-label={sig === 'low' ? 'Switch to document mode' : 'Switch to low signature'}
+          onclick={() => {
+            sig = sig === 'low' ? 'document' : 'low';
+            setSignature(sig);
+          }}
+        >{sig === 'low' ? 'Document' : 'Low signature'}</button>
+      </div>
+      <div class="com-body">
   <div class="nc-bridge">
-    <Panel label="Nav" post={nearRegion ? `Near ${nearRegion.name}` : null}>
+    <Panel label="Find" post={nearRegion ? `Near ${nearRegion.name}` : null}>
       <label for="lookup" class="nc-lookup-label">Where are you, or what do you need</label>
       <input
         id="lookup"
@@ -343,6 +511,7 @@
         bind:value={query}
         placeholder="a shelter, a clinic, a city…"
         autocomplete="off"
+        onfocus={lift}
       />
       {#if results.length > 0}
         <ul class="nc-results">
@@ -384,7 +553,7 @@
       {#if !query.trim()}
         <div class="nc-manual">
           <label for="region-pick">No signal, or geolocation said no? Pick a region</label>
-          <select id="region-pick" bind:value={manualRegion}>
+          <select id="region-pick" bind:value={manualRegion} onfocus={lift}>
             <option value="">Not now</option>
             {#each regionOptions as r (r.region)}
               <option value={r.region}>{r.name}</option>
@@ -533,28 +702,9 @@
     <span class="nc-act-label">Open the Field Terminal</span>
   </a>
 
-  <!--
-    Reachable from every screen, not just one [signature.spec.ts already asserts this for the
-    terminal] — this page is another screen of the same app now, not a separate site, so the
-    same rule applies here.
-  -->
-  <!--
-    Same fix as the terminal's, because this was the same defect copied.
 
-    `aria-pressed` tracked low-signature while the label named the destination, so a screen
-    reader announced "DOCUMENT, toggle button, pressed" while the page was in low signature —
-    the two halves contradicting each other, each individually valid, which is why an
-    automated pass cannot find it.
-  -->
-  <button
-    class="signature"
-    data-signature-toggle
-    aria-label={sig === 'low' ? 'Switch to document mode' : 'Switch to low signature'}
-    onclick={() => {
-      sig = sig === 'low' ? 'document' : 'low';
-      setSignature(sig);
-    }}
-  >{sig === 'low' ? 'Document' : 'Low signature'}</button>
+      </div>
+    </section>
   </main>
 </div>
 
@@ -566,10 +716,218 @@
    * monitor: the white-margin bug's sibling, an unstructured full-bleed stack rather than an
    * absence of background.
    */
-  .terminal {
-    max-width: 68rem;
-    margin: 0 auto;
-    padding-inline: 1.25rem;
+  /*
+   * The whole screen is the bridge: the map fills it, Com sits over it on a phone and beside it
+   * on a wide screen. The 68rem centred column this page used to have was a console's layout;
+   * a map has to reach the edges.
+   */
+  /*
+   * Exactly the screen. `.terminal` gives every screen `min-height: 100dvh` and a 4rem bottom
+   * pad to keep content clear of the corner toggle; on this page that made the bridge 64px taller
+   * than the phone, and the bottom of the sheet — most of the search field — hung below the edge.
+   * The toggle lives in the sheet's head here, so neither rule applies.
+   */
+  .landing {
+    position: fixed;
+    inset: 0;
+    min-height: 0;
+    padding: 0;
+    background: var(--t-ground, #0b0e12);
+    --distress-h: 0px;
+  }
+  /*
+   * And the document given a height, only while this page is showing. With every child fixed,
+   * the document is zero pixels tall: a browser renders that happily, and anything that asks
+   * whether the page is showing — an accessibility tree, a test — is told nothing is.
+   */
+  :global(html:has(.landing)),
+  :global(body:has(.landing)) {
+    height: 100%;
+  }
+  /* Distress takes the bottom strip when it shows; Com sits above it, never over it. */
+  .landing:has(.distress-layer:not([hidden])) {
+    --distress-h: 3.75rem;
+  }
+  .bridge {
+    position: absolute;
+    inset: 0 0 var(--distress-h) 0;
+  }
+  .nav {
+    position: absolute;
+    inset: 0;
+  }
+  .nav-loading {
+    position: absolute;
+    inset: 0;
+    background: var(--t-ground, #0b0e12);
+  }
+  /* Where GridMap puts its own failure, centred, for the same reason [GridMap.svelte]. */
+  .unloaded {
+    position: absolute;
+    inset-inline: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    text-align: center;
+    color: var(--t-ink);
+    font-size: 0.9rem;
+  }
+  .nav-key {
+    position: absolute;
+    inset-inline-start: calc(0.75rem + env(safe-area-inset-left, 0px));
+    inset-block-start: calc(0.75rem + env(safe-area-inset-top, 0px));
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.75rem;
+    color: var(--t-muted);
+    max-width: calc(100% - 6rem);
+  }
+  .nav-key h1 {
+    font-size: 1rem;
+    letter-spacing: 0.08em;
+  }
+  .nav-key strong {
+    font-weight: 400;
+  }
+  .nav-key .lit {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    background: color-mix(in srgb, var(--t-ink) 16%, var(--t-raised));
+    border: 1px solid var(--t-muted);
+    margin-inline-end: 0.45rem;
+    vertical-align: middle;
+  }
+  /* A layer switch, at the terminal's thumb floor rather than its full action height. */
+  .nav-key .layer {
+    min-height: 3rem;
+    padding: 0 0.9rem;
+    font-size: 0.85rem;
+  }
+  .nav-key .layer[aria-pressed='true'] {
+    border-color: var(--t-ink);
+  }
+
+  /* Com on a phone: a sheet at one of three heights, over the map. */
+  .com {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    height: var(--detent);
+    display: flex;
+    flex-direction: column;
+    background: var(--t-ground, #0b0e12);
+    border-top: 1px solid var(--t-line-strong);
+    box-shadow: 0 -0.5rem 1.5rem rgb(0 0 0 / 0.45);
+    transition: height 0.2s ease;
+  }
+  /*
+   * Measured, not guessed: the search field ends 162px into the sheet on a Pixel 5 and 176px on
+   * an iPhone SE, where its label wraps. Peek shows all of it with room to spare.
+   */
+  .com[data-detent='peek'] {
+    --detent: 12.75rem;
+  }
+  .com[data-detent='half'] {
+    --detent: 55%;
+  }
+  .com[data-detent='full'] {
+    --detent: calc(100% - 4rem);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .com {
+      transition: none;
+    }
+  }
+  .grab {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 2.25rem;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    cursor: grab;
+    touch-action: none;
+  }
+  .grab span {
+    width: 3rem;
+    height: 0.3rem;
+    border-radius: 0.15rem;
+    background: var(--t-line-strong);
+  }
+  .com-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .distress-layer {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 30;
+    height: var(--distress-h);
+    padding: 0.3rem 0.75rem calc(0.3rem + env(safe-area-inset-bottom, 0px));
+    background: var(--t-ground, #0b0e12);
+    border-top: 1px solid var(--t-line-strong);
+  }
+  .distress-layer .nc-act {
+    width: 100%;
+    min-height: 100%;
+  }
+
+  /* Com on a wide screen: a sidebar beside the map, all of it showing, no heights. At the inline
+     end, so a right-to-left page gets its mirror image rather than a sidebar on the wrong side. */
+  @media (min-width: 48rem) {
+    .com {
+      inset-block: 0;
+      inset-inline: auto 0;
+      width: min(28rem, 42%);
+      height: auto;
+      border-block-start: 0;
+      border-inline-start: 1px solid var(--t-line-strong);
+      box-shadow: none;
+      transition: none;
+    }
+    .nav {
+      inset-block: 0;
+      inset-inline: 0 min(28rem, 42%);
+    }
+    .grab {
+      display: none;
+    }
+    .com-head {
+      justify-content: flex-end;
+      padding-block-start: 0.75rem;
+    }
+  }
+
+  /*
+   * The sheet's head: the handle, and the display-mode toggle beside it. The terminal floats the
+   * toggle in a corner, which on this page put it over the search; at the foot of Com it was out
+   * of reach whenever the sheet was low. In the head it is reachable at every height and on a
+   * wide screen, and it covers nothing because it is part of the sheet.
+   */
+  .com-head {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-inline-end: 0.75rem;
+  }
+  .com-head .grab {
+    flex: 1;
+  }
+  .com-head .signature {
+    position: static;
   }
 
   .nc-bridge {
@@ -579,12 +937,6 @@
   /* panel.css's own `.nc-panel { margin: 0 0 1rem }` would double up with the grid gap. */
   .nc-bridge :global(.nc-panel) {
     margin-bottom: 0;
-  }
-  @media (min-width: 48rem) {
-    .nc-bridge {
-      grid-template-columns: 1fr 1fr;
-      align-items: start;
-    }
   }
 
   .nc-lookup-label {

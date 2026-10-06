@@ -228,15 +228,16 @@ test.describe('desktop-only: the split-screen bridge and the white-margin regres
     await blankDevice(page);
     await open(page, '/');
 
-    const panels = page.locator('.nc-bridge > section.nc-panel');
-    await expect(panels).toHaveCount(2);
-    const [nav, com] = await Promise.all([panels.nth(0).boundingBox(), panels.nth(1).boundingBox()]);
-    if (!nav || !com) throw new Error('panels did not render with a bounding box');
-
-    // Side by side: same row (top edges close together), second panel starts where the
-    // first one ends rather than below it.
+    // Nav is the map and Com the sidebar beside it [com.md §3]; the search and the network
+    // panels now live inside Com, stacked, which is where this test used to look for the split.
+    const [nav, com] = await Promise.all([
+      page.locator('[data-nav]').boundingBox(),
+      page.locator('[data-com]').boundingBox()
+    ]);
+    if (!nav || !com) throw new Error('Nav or Com did not render with a bounding box');
     expect(Math.abs(nav.y - com.y)).toBeLessThan(4);
     expect(com.x).toBeGreaterThanOrEqual(nav.x + nav.width - 4);
+    expect(nav.width).toBeGreaterThan(com.width);
   });
 
   test('no gap between the viewport edge and the console — the bug this shipped with', async ({ page }, testInfo) => {
