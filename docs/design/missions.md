@@ -118,33 +118,60 @@ answers a different question, and a reader weighs whichever one their question n
 
 | | Answers | Earned by | Spent on |
 |---|---|---|---|
-| **Honor** | *Whose word do you keep?* | Settling missions for a particular body | Nothing. It is a relationship, not a balance |
-| **Karma** | *How do people find you to work with?* | Judgement from somebody you settled a mission with | Weight when a faction votes |
+| **Honor** | *How far have you come with them?* | Settling missions for a particular body | **Rungs, which raise your Writ ceiling** |
+| **Karma** | *Will they work with you again?* | Conduct toward one counterparty | Nothing. It is a condition, not a balance |
 | **Hours** | *How much have you actually done?* | Time on settled missions | Nothing. A record, not a score |
 | **Supply** | *What have you moved?* | Materiel carried and handed out | Nothing, and it is the realest of these |
 | **Intel** | *What do you know that the grid did not?* | Raw observations that were refined downstream | Nothing |
 | **Writs** | *May you ask others to do things?* | Granted by a body, or by setup | **Caps how many missions you have open** |
 | **Sats** | *Did somebody pay?* | Zaps, from whoever chose to | Itself |
 
-**Honor is per-body, never global.** RimWorld gets this right: favour with the Empire is not a level,
-it is a standing with somebody in particular, and it buys nothing from anyone else. Honor with the
-Tho'ra Clan says nothing about your standing with a mutual aid network in another city, and a design
-that adds them together has invented a rank.
+### Honor and Karma are a consumable and a condition
 
-**Karma comes only from a counterparty** (decided 2026-10-05). Not from anyone who can see you: from
-the poster of a mission you settled, or a claimant whose mission you posted, and only once per mission.
-This is the one currency that gates governance weight, so it is the one that had to be expensive. Open
-voting makes conduct scoring a mob tool and makes sybils free — a fresh key costs nothing and
-quadratic weighting amplifies a cheap identity by three orders of magnitude, which is measured, not
-feared. Requiring a settled mission between the two parties means a fake account must first do real
-work with a real person to acquire a single vote, and the work is the part that cannot be faked at
-scale.
+**Revised 2026-10-06, and it resolves a real objection.** These two were previously both accumulating
+scores, which made them substantially the same measurement double-entered: settling one sponsored
+mission raised Honor with the body *and* earned Karma from the body's delegate, one event incrementing
+two counters. Reading RimWorld's two systems properly supplied the distinction, and it is structural
+rather than cosmetic.
 
-Two consequences, both accepted. **A new operator has no Karma and must not be read as untrustworthy**
-for it — zero and unknown are the same number here, and the UI says *no settled missions yet* rather
-than a score of nothing. **Bad conduct that never reached a settlement leaves no mark**, so Karma is
-not a safety mechanism and must never be rendered as one; the thing that protects somebody from a
-person who behaved badly is the account of what happened, carried by whoever was there.
+**Honor is vertical: rank inside one hierarchy, and it is spent.** RimWorld's royal favour is a
+currency, held per-pawn, exchanged for *titles* — and a title grants **permits**, which are the right
+to call in aid on a cooldown. That is a Writ, arrived at from the other direction. So Honor buys
+**rungs** with a body, and a rung raises your Writ ceiling with that body. It is per-body and never
+global: Honor with the Tho'ra Clan says nothing about your standing with a mutual aid network in
+another city, and a design that adds them together has invented a rank.
+
+**Karma is horizontal: a condition, per counterparty, and it is never spent.** RimWorld's goodwill
+runs −100 to +100 *with each faction separately*, and four of its properties are worth taking for
+reasons this document already needed:
+
+| Property | Why we want it |
+|---|---|
+| **Bounded range** | There is nothing to farm past the cap. Everyone decent converges at the top, so it reads as a status rather than a rank — the cheapest possible answer to farming, needing no detection and no adjudication |
+| **Decays toward neutral** | Standing must be maintained, which answers the early-joiner's permanent advantage without a display-windowing hack |
+| **Losses larger than gains** | Trust is slow to build and fast to destroy. This is the missing ingredient in the bounty game: a withheld bounty must cost far more than a paid one earns |
+| **Hysteresis** | RimWorld makes you an ally at +75 and keeps you allied until 0. A relationship survives one bad night and does not survive a pattern |
+
+**It is per-counterparty including individuals**, which closes the gap that made deleting Karma
+impossible: an operator who works only with people and never joins a body still accrues standing with
+each of them.
+
+**Governance weight is Honor rank within the body being voted in**, not Karma. A global number
+weighting a vote inside one body imports standing earned somewhere else, and rank conferring privilege
+is what titles already do.
+
+Two consequences, both accepted. **A new operator is at neutral, not at a deficit** — the UI reads *no
+history with you* rather than a score of zero. **Karma is not a safety mechanism and must never be
+rendered as one**; what protects somebody from a person who behaved badly is the account of what
+happened, carried by whoever was there.
+
+**A rung's obligations are the body's to set** (decided 2026-10-06). RimWorld titles make demands —
+apparel, a throne room, a refusal to do menial work — and that cost is what gives rank weight. Here
+each body declares what its own rungs expect, so a disciplined crew may be demanding and a loose one
+need not be. It is compatible with invariant 8 because the obligation is stated before the rung is
+accepted and the rung is never assigned. The accepted cost is that the same rank means different
+things in different bodies and nothing is comparable across them — which is the same property Honor
+already has, and the same one that makes it a relationship rather than a level.
 
 **Writs are the one I would not skip.** Every open posting system drowns in postings, and the usual
 answers are moderation queues and reputation thresholds. A writ is cheaper and more honest: the right

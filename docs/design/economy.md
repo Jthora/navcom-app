@@ -265,14 +265,74 @@ mint. The line is that **we publish software; we never hold value.**
 
 ---
 
-## 6. Still open
+## 6. Ceilings are conserved, never minted
 
-- **Karma and Honor remain unresolved.** The critique stands: they are substantially the same
-  measurement double-entered, and vote weight sits on the global number when the relational one
-  is the defensible place for it. The proposal was Karma as a named roster rather than a score,
-  Honor gaining a sink by raising a Writ ceiling, and Honor becoming revocable by the body that
-  granted it. Not adopted yet, and `missions.md` §4 still describes the old shape.
-- **Who settles a mission whose poster has vanished**, which blocks `settled` being built at all.
+**Decided 2026-10-06, closing a leak the ceiling design opened.**
+
+Honor is per-body so that a fake body is harmless — its Honor only buys standing with itself. But a
+rung raises a **Writ ceiling**, and ceilings are honoured by every relay, so the leak ran straight
+through the layer meant to contain it: found a body, post missions to your own members, settle them,
+mint Honor, mint ceilings, and the whole grid respects them.
+
+**The rule is a conservation law rather than a check. Nothing creates ceiling except a source, and a
+body may only delegate from what it holds.** Account setup is the source; a body with nothing has
+nothing to give.
+
+| | |
+|---|---|
+| **Capacity scales with real membership, with no tuning** | Each person brings their setup grant, so a body of 400 has 400 units and a body of 4 has 4. No cap to revisit as the network grows |
+| **Lending has a real opportunity cost** | A body gives ceiling to a member only when that member's mission matters more than one of its own — efficient allocation by people with local knowledge, rather than central rationing |
+| **New sources plug in without changing the law** | Verification tiers, vouching, a higher setup bar: each becomes a source. The law stays "bodies only move it" |
+
+Each rejected alternative had a dominant exploit, which is why this was not close:
+
+- **A fixed cap per body** makes founding many small bodies strictly better than growing one. Cap
+  arbitrage, and it defeats the "unlisted until it has members" protection directly.
+- **Per-relay recognition lists** put relays in competition on permissiveness: operators migrate to
+  the permissive ones and the permissive ones get flooded. A race to the bottom, and an operator
+  cannot predict whether their own mission will be visible.
+- **No body grants at all** removes the main reason to join an organisation, undermining the layer
+  this whole design rests on.
+
+**The honest cost: the economy's sybil resistance now equals the cost of account setup.** That is a
+feature. It puts the hard problem in one legible place, where the credential and verification work
+is the right answer, instead of burying it inside a currency where nobody would look for it.
+
+---
+
+## 7. Settlement when the poster has vanished
+
+**Decided 2026-10-06: a report auto-settles after a challenge window, and says that it did.**
+
+Money already self-heals — the §4 locktime returns an unreleased bounty without anyone's help. What
+stranded was *standing*: nothing could settle the mission, so the operator earned nothing.
+
+Fairness decides this. **The operator has sunk unrecoverable cost — fuel, hours, risk — through no
+fault of their own.** Leaving it permanently unsettled transfers the whole loss to the blameless
+party. Requiring a witness fails for solo work, and Alone is the declared default, so that option
+systematically penalises the operators this project calls the common case.
+
+The objection is a false report minting standing unobserved. Priced out, the payoff collapses: no
+counterparty exists to move Karma, Honor-to-ceiling is bounded by a body that is absent, and what
+remains is **Hours, which §4 already calls a record rather than a score.** A small bounded gain
+against a large real protection.
+
+One refinement makes it right rather than merely defensible: **the settlement names how it happened.**
+*Settled by poster* and *settled unchallenged* are different facts and must not be laundered into one
+word. The weaker evidence stays visible, as a readout rather than a score, and a reader judges it.
+
+The window is the **fallback, not the only path**. A witness may settle immediately, and so may the
+sponsoring body — a body outlives whoever posted in its name. The claimant's view reads *reported —
+settles 20 Oct unless challenged*, and asks nothing further of them.
+
+---
+
+## 8. Still open
+
+- **Who may challenge a settlement**, and for how long the window runs.
 - **Bounties and unpaid missions share one map**, funded clearly marked and filterable (decided).
   The volunteer research's warning applies and is accepted knowingly: visible pay nearby makes
   unpaid work read as a chore, and the filter is the mitigation.
+- **The numbers.** Setup ceiling, the multiple that founding costs, the claim concurrency cap, the
+  Karma decay rate and its hysteresis thresholds. All of them want a first guess and then real
+  traffic, and none of them can be reasoned to from here.
