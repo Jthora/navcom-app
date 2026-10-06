@@ -31,3 +31,4 @@ export * from './relays.js';
 export * from './directory/index.js';
 export * from './directory/observation.js';
 export * from './directory/geohash.js';
+export * from './missions/index.js';
