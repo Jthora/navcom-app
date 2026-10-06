@@ -71,6 +71,12 @@ drafted → open → claimed → reported → settled
                      ↘ abandoned        ↘ disputed
 ```
 
+**A claim is exclusive, and you may hold only a few at once** (decided 2026-10-05). Exclusivity is
+what makes a claim mean anything, and it is also an attack: one person claims everything and lets it
+all expire, denying the map to everybody. Charging for abandonment would violate invariant 8, which
+says abandoning costs nothing — so the defence is a **concurrency cap** instead. Walking away stays
+free; holding fifty does not happen.
+
 **`claimed` is the dangerous state.** A claim is a public statement that a named person intends to be
 somewhere doing something — which is the pattern the Doxxer reads, and the reason presence was never
 published. Three defences, and the design needs all of them: a claim names a mission rather than a
@@ -95,6 +101,11 @@ who, never that.**
 | Evidence says | The thing is public — a shelf, a notice, a shelter list | The evidence would be a person |
 | Nobody says | The work is its own reward | Points are attached |
 
+**Images are carried only where the poster asked for them** (decided 2026-10-05). A mission declares
+what settles it, and images are off unless that mission opted in — which puts the choice with
+whoever defined the work and spreads it across many people rather than one blanket rule. The ban
+below is not one of the things a poster may opt into.
+
 **Evidence must never be a photograph of a person**, and that is not a style rule: it is the one
 invariant that protects somebody who never agreed to be in this system. A mission that can only be
 settled by proving what you did *to* a person is a mission this network must refuse to carry.
@@ -111,8 +122,8 @@ answers a different question, and a reader weighs whichever one their question n
 | **Karma** | *How do people find you to work with?* | Judgement from somebody you settled a mission with | Weight when a faction votes |
 | **Hours** | *How much have you actually done?* | Time on settled missions | Nothing. A record, not a score |
 | **Supply** | *What have you moved?* | Materiel carried and handed out | Nothing, and it is the realest of these |
-| **Intel** | *What do you know that the grid did not?* | Observations and corrections that held up | Nothing |
-| **Writs** | *May you ask others to do things?* | Granted by a body, or bought | **Posting a mission consumes one** |
+| **Intel** | *What do you know that the grid did not?* | Raw observations that were refined downstream | Nothing |
+| **Writs** | *May you ask others to do things?* | Granted by a body, or by setup | **Caps how many missions you have open** |
 | **Sats** | *Did somebody pay?* | Zaps, from whoever chose to | Itself |
 
 **Honor is per-body, never global.** RimWorld gets this right: favour with the Empire is not a level,
@@ -140,11 +151,29 @@ answers are moderation queues and reputation thresholds. A writ is cheaper and m
 to ask something of other people is **scarce and granted**, so an organisation's limit is its own, and
 a stranger with no standing cannot flood the map. It is also the sink the other currencies lack.
 
+**They are a ceiling, not a balance** (decided 2026-10-06). This architecture keeps no ledger, so a
+balance is unverifiable — but a ceiling on how many missions you have *open* is a function of public
+data, which every relay and every reader can evaluate independently and identically. Spending is
+implicit in posting and refund is implicit in the mission closing. Full reasoning, including why a
+blockchain would buy the wrong property, is in [`economy.md`](economy.md) §1 and §2.
+
 **Sats are offered, never counted.** A zap receipt is not proof of payment — NIP-57's own receipt only
 shows that somebody fetched an invoice and that the recipient's server says it was paid, and a
 compromised server can fabricate them. So money may be **offered on a mission and paid directly**, and
-no standing may ever be minted from a receipt. If payment must be proven, the payer shows their own
-wallet's record, out of band, to whoever is asking.
+no standing may ever be minted from a receipt.
+
+**Updated 2026-10-06, and the rule got stronger rather than weaker.** A NIP-61 nutzap is a
+P2PK-locked Cashu token *in which the payment is the receipt* — not a claim about money but the
+money itself, locked to the recipient's key. So payment can now be proven without trusting
+anybody: receipts are still worth nothing, bearer tokens are worth their face value, and standing
+is still never minted from either. The escrow this makes possible, and why it locks at claim time
+rather than at posting, is in [`economy.md`](economy.md) §4.
+
+**Writs are not purchasable, and the way money gets in is a separate lane** (decided 2026-10-06,
+resolving a contradiction with CLAUDE.md that this table carried for a day). An unpaid mission is
+posted against a Writ; a bounty is posted against locked sats. They are **alternatives, not
+convertibles** — so money never becomes the right to direct unpaid volunteers, and it is not
+banned either. [`economy.md`](economy.md) §2 and §4.
 
 ## 5. Gamification, against the evidence
 
