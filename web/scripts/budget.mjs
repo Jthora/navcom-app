@@ -237,14 +237,114 @@ for (const surface of Object.values(SURFACES)) {
   console.log('');
 }
 
-// Emitted but never referenced by any page. Harmless to a reader, but worth seeing: if it
-// starts growing, something has begun shipping client code.
-const dead = files.filter((f) => !referenced.has(f) && !f.endsWith('.txt'));
+/*
+ * Weight a page can pull LATER, by dynamic import.
+ *
+ * Every budget above measures first paint, because `assetsOf` reads what the HTML references and a
+ * chunk fetched by `import()` appears in no `src` or `href`. That was correct while nothing
+ * code-split, and it is **about to stop being the whole truth**: Com loads its navigation stack,
+ * chat and search when somebody opens the sheet [design/com.md §6], so those chunks will be
+ * delivered to readers while being invisible to every number here — and the `dead` note below would
+ * go on calling them "loaded by no page".
+ *
+ * Reported rather than enforced, deliberately. There is nothing to enforce against yet, and every
+ * budget in this file was **derived from a measurement** rather than chosen to fit. This is how the
+ * measurement becomes available before the decision has to be made.
+ *
+ * The graph comes from Vite's manifest, which records `dynamicImports` per chunk, so no JavaScript
+ * is parsed. Missing manifest is not an error: a build without one simply has nothing to say here.
+ */
+const MANIFEST = join('.svelte-kit', 'output', 'client', '.vite', 'manifest.json');
+
+function deferredWeight() {
+  let manifest;
+  try {
+    manifest = JSON.parse(readFileSync(MANIFEST, 'utf8'));
+  } catch {
+    return null;
+  }
+
+  // file -> entry, so a chunk found by its emitted name can be walked onward.
+  const byFile = new Map();
+  for (const entry of Object.values(manifest)) byFile.set(entry.file, entry);
+
+  const reachable = new Set();
+  const seen = new Set();
+
+  /** Everything `entry` pulls, statically or dynamically, transitively. */
+  const follow = (entry) => {
+    if (!entry || seen.has(entry.file)) return;
+    seen.add(entry.file);
+    for (const dep of [...(entry.imports ?? []), ...(entry.dynamicImports ?? [])]) {
+      const next = manifest[dep] ?? byFile.get(dep);
+      if (!next) continue;
+      // `file` is already build-root-relative, e.g. `_app/immutable/entry/app.<hash>.js`.
+      reachable.add(join(BUILD, next.file));
+      follow(next);
+    }
+  };
+
+  /*
+   * A manifest from a different build is worse than none: the hashes do not match anything in
+   * `build/`, every path fails `existsSync`, and the check reports a confident zero. That is the
+   * silent-pass failure this project keeps finding, so it is named rather than filtered away.
+   */
+  const entries = Object.values(manifest).filter((e) => e.isEntry);
+  if (entries.length > 0 && !entries.some((e) => existsSync(join(BUILD, e.file)))) {
+    return { stale: true, files: new Set(), count: 0, bytes: 0 };
+  }
+
+  for (const entry of entries) follow(entry);
+
+  // Only what no page already loads at first paint, and only what actually exists on disk.
+  const deferred = [...reachable].filter((f) => !referenced.has(f) && existsSync(f));
+  const sized = deferred.map((f) => ({ f, bytes: gz(f) })).sort((a, b) => b.bytes - a.bytes);
+  return {
+    files: new Set(deferred),
+    count: deferred.length,
+    bytes: sized.reduce((n, x) => n + x.bytes, 0),
+    worst: sized[0] ?? null
+  };
+}
+
+const deferred = deferredWeight();
+if (deferred?.stale) {
+  console.log(
+    `\n  note  the Vite manifest does not match this build, so dynamic-import weight` +
+      `\n        could not be measured. Re-run the build.`
+  );
+} else if (deferred && deferred.count > 0) {
+  /*
+   * Named, because the point of this note is the one chunk nobody knew about.
+   *
+   * On 2026-10-06 that was `docs` at 332.9 kB gzipped — more than twice the worst measured page,
+   * sitting in the category the previous note called "not delivered to anyone". Whether a client-side
+   * navigation ever actually pulls it is not something this script can prove, which is exactly why it
+   * reports reachability and stops short of claiming delivery. `directory.json` was the same shape:
+   * an artifact no budget was watching, found only once somebody went looking.
+   */
+  const worst = deferred.worst ? relative(BUILD, deferred.worst.f) : '';
+  console.log(
+    `\n  note  ${deferred.count} chunk(s) reachable by dynamic import, ${kb(deferred.bytes)} gzipped —` +
+      `\n        not at first paint, so no budget above measures them. Largest:` +
+      `\n        ${worst} at ${kb(deferred.worst.bytes)}.`
+  );
+}
+
+/*
+ * Emitted and reachable by nothing at all. Harmless to a reader, but worth seeing: if it starts
+ * growing, something has begun shipping client code.
+ *
+ * Now excludes the dynamically-reachable set above, so the claim it makes stays true.
+ */
+const dead = files.filter(
+  (f) => !referenced.has(f) && !f.endsWith('.txt') && !deferred?.files.has(f)
+);
 if (dead.length) {
   const deadBytes = dead.reduce((n, f) => n + gz(f), 0);
   console.log(
     `\n  note  ${dead.length} unreferenced file(s), ${kb(deadBytes)} gzipped — emitted by the` +
-      `\n        client build, loaded by no page. Not delivered to anyone.`
+      `\n        client build, reachable from no page at all. Not delivered to anyone.`
   );
 }
 

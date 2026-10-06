@@ -327,12 +327,52 @@ settles 20 Oct unless challenged*, and asks nothing further of them.
 
 ---
 
-## 8. Still open
+## 8. The challenge, which needs no adjudicator
 
-- **Who may challenge a settlement**, and for how long the window runs.
+**Decided 2026-10-06.** A challenge window of **seven days** — long enough for somebody who was
+there to notice, short enough that an operator's standing is not held hostage by silence.
+
+**Anyone who can see the mission may challenge it**, and a challenge is a **signed statement under
+their own name**, never an anonymous flag. That is the same answer this project gives everywhere:
+provenance by name, because a number or a flag invites gaming and a name does not.
+
+And the part that makes it buildable: **a challenge does not get resolved, because nothing is being
+adjudicated.** It does not reverse the settlement and it does not summon a judge. The readout changes
+from *settled unchallenged* to *settled, challenged by <name>*, both statements stand, and the reader
+decides what to make of it. There is no tribunal, no quorum, no vote — consistent with the standing
+refusal to let anything here judge, and with there being no authority in this system to appeal to.
+
+---
+
+## 9. The numbers, as first guesses
+
+**None of these can be reasoned to from here.** They are starting values with a stated rationale so
+they can be argued with and moved once there is traffic. Recorded rather than embedded in code
+comments, so that moving one is a decision rather than a tweak.
+
+| | Value | Why this number |
+|---|---|---|
+| **Setup grants** | ceiling of **1** | One open mission. Enough to act, not enough to flood |
+| **Founding a body** | **5** ceiling, transferred in | Under conservation this is either one person who earned five rungs, or **five people each putting in their only writ** — a body that exists because five humans committed their single ask to it, which self-selects for real groups |
+| **Claim concurrency cap** | **3**, raised by rung | A real night in one area might be two or three missions. Fifty is the attack |
+| **Karma band** | stable within **−50 to +50** | Ordinary standing does not drift |
+| **Karma decay** | **0.4/day** down above +50; **0.2/day** up below −50 | RimWorld's own asymmetry, and the moral shape is right: good standing is harder to hold than a bad record is to escape |
+| **Hysteresis** | trusted at **+75** until it falls to **0**; distrusted at **−75** until **0** | Survives one bad night, does not survive a pattern |
+| **Challenge window** | **7 days** | §8 |
+
+**What moves Karma, and what must not.** Two events move it *mechanically*, because both are provable
+from public data: a **released bounty raises** the recipient's standing with the payer, and a
+**bounty left unreleased to its locktime lowers** it — sharply, per the asymmetry above. Everything
+else is the counterparty's own judgement, bounded by the band so it cannot become a weapon.
+
+**Abandoning a claim must never reduce Karma.** Invariant 8 says abandoning costs nothing, and a
+reputation penalty is a cost. This is the rule most likely to be violated by accident later, because
+a stream of abandoned claims looks exactly like something a conduct score should notice.
+
+---
+
+## 10. Still open
+
 - **Bounties and unpaid missions share one map**, funded clearly marked and filterable (decided).
   The volunteer research's warning applies and is accepted knowingly: visible pay nearby makes
   unpaid work read as a chore, and the filter is the mitigation.
-- **The numbers.** Setup ceiling, the multiple that founding costs, the claim concurrency cap, the
-  Karma decay rate and its hysteresis thresholds. All of them want a first guess and then real
-  traffic, and none of them can be reasoned to from here.

@@ -134,23 +134,43 @@ usable** — while putting no ceiling on what Com eventually holds. Raising the 
 removed the pressure that has kept the first screen fast for its whole life, and that pressure is the
 only reason it still is.
 
-Two things this requires, both of which the budget script must learn:
+Two things this requires, and the first one is the opposite of what an earlier draft of this
+document said.
 
-- **The budget must measure first paint, not the sum of what the page can eventually load.** Measuring
-  the total would fail a correct implementation, and measuring nothing would let the peek bar quietly
-  grow to 60 kB.
-- **An opened sheet on a dead connection must say so.** A code-split chunk that fails to arrive is a
-  blank sheet, and offline is a normal state here [C10]. The terminal's own cache already makes this
-  work for its screens; the landing page's chunks need the same treatment, which the service worker's
-  new whole-origin cache now gives them for free after one visit — but the *first* visit is exactly
-  the case the device floor exists to protect, so the failure has to be visible rather than empty.
+**The budget already measures first paint correctly, and that is the problem.** `assetsOf` reads each
+page's HTML and counts only what the HTML references, so a chunk pulled by a dynamic `import()` is
+invisible to it. The peek bar stays measured and capped — that part is fine. What goes wrong is the
+line the report prints at the end: *"15,398 unreferenced files, 11,498 kB gzipped — emitted by the
+client build, loaded by no page."* **That claim becomes false the day Com code-splits**, because those
+chunks will be loaded, just later. A budget that silently stops describing what a reader downloads is
+worse than a budget that fails.
+
+So the script needs a **third measurement**: the weight reachable by dynamic import from a page,
+reported separately from first paint. The Vite manifest already records `dynamicImports` per chunk, so
+the graph is available without parsing JavaScript. Reported now, enforced once there is something to
+enforce — which is how every other budget here was set, derived from a measurement rather than chosen
+to fit.
+
+**An opened sheet on a dead connection must say so.** A chunk that fails to arrive is a blank sheet,
+and offline is a normal state here [C10]. The service worker's whole-origin cache covers this after
+one visit — but the *first* visit is exactly the case the device floor exists to protect, so the
+failure has to read as a failure rather than as an empty panel.
 
 ---
 
-## 7. Still open
+## 7. The three smaller questions, answered
 
-- **Which detent a mission tap opens**, and whether tapping the map ever pushes straight to full.
-- **What the peek bar says when there is nothing to say.** Silence is a readout
-  [`panel.md`](panel.md), so it needs to read as one rather than as a bar with nothing in it.
-- **Whether desktop gets the sheet too**, or keeps the sidebar. One implementation is cheaper and the
-  sidebar is better where there is room.
+**A mission tap opens the sheet at *half*, never full.** A mission is about a place, and the map is
+what makes the place mean anything — losing the map to read the mission discards the context that
+made it legible. Full height is for profiles and long-form, where there is no map to lose.
+
+**The peek bar has fixed slots and silence is a readout.** It carries watch state, which is never
+empty — somebody is on watch or nobody is, and both are answers — and your claim slot, which reads
+*nothing claimed* rather than disappearing. A bar whose contents come and go is a bar nobody learns
+the shape of, and [`panel.md`](panel.md) already settled that: fixed slots, and silence reads as a
+readout rather than as absence.
+
+**Desktop keeps the sidebar; mobile gets the sheet. One stack, two containers.** A sheet on a large
+display is wrong, and the saving from a single container is small because the stack's *contents* are
+identical either way — panel.md's fixed-slot discipline means a group view renders the same rows in a
+sidebar as in a sheet. Only the container and its gestures differ.

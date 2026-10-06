@@ -1100,6 +1100,40 @@ says so about itself.
 | Node service language for the box | Session 1 — TypeScript unless there's a reason |
 | ~~**The staleness margin lost the cadence it was sized for**~~ | **Decided 2026-09-13: both halves.** A daily rebuild comes back as a systemd timer on the watch box firing the site's deploy hook (`packages/watchtower/ops/`), and the public pages now say their verdicts were judged when built and what a date more than a day old means — so a missed rebuild degrades honestly rather than quietly. **Not running** until a box exists and its hook is created. The problem as it was found: `STALENESS_MARGIN_DAYS = 1` exists because confidence is frozen into the zero-JS site at build time, and it assumes the page is never more than a day old. The daily rebuild it was sized for lived in `.github/workflows/web.yml`, **deleted with CI on 2026-08-24** — a decision recorded and reasoned, whose effect on freshness nobody connected at the time. Deploys now happen on push only, so a `/directory/` page can be weeks old and still show a value for a field that crossed its window. The Terminal recomputes on hydration and escapes it; the public surface a stranger reaches from a search engine does not. Either restore a cadence by some means that is not a dead workflow, or widen the margin to the cadence that actually happens and read call-first earlier. Doing neither leaves a number that assumes a schedule nobody runs |
 
+## Milestone 11 — Missions, standing and the grid
+
+**The pivot of 2026-10-05.** Invariant 8 was changed rather than deleted, four anti-patterns were
+withdrawn with dates, and missions became the point of the application. Design is complete and
+normative in [`design/missions.md`](design/missions.md), [`design/economy.md`](design/economy.md),
+[`design/map.md`](design/map.md) and [`design/com.md`](design/com.md). **None of it is built.**
+
+Ordered so that each step is useful alone, per the rule that a layer below must stand without the
+layer above.
+
+| | Step | Owner | Not doing it costs |
+|---|---|---|---|
+| 11.0 | **Move the docs corpus out of the client graph.** `(site)/docs/+page.ts` is universal, so `marked` plus every repo markdown file is emitted as a **332.9 kB gzipped chunk** that no budget measured until 2026-10-06. Nothing reaches it today — the console links only to `/notice/` and `/terminal/` — which is exactly why it must be closed **before** Com adds navigation | agent | A 332.9 kB download on a congested cell, triggered by the first link anybody adds to `/docs/`. The same shape as `directory.json`: an artifact no budget was watching |
+| 11.1 | **The mission object.** Kind, tags, lifecycle states, expiry, `t=navcom_mission` interop with Archangel's packages. Schema and validation only, no UI | agent | Nothing above can start. Every later step encodes assumptions about this |
+| 11.2 | **The grid.** Vector outlines from Natural Earth, canvas, both themes, zero third-party requests. Measure the geometry file first — every number in `map.md` §3 and §6 is an estimate | agent | The landing page has no Nav, which is half the pivot |
+| 11.3 | **Com's shell.** The stack, the two containers, the three detents, and the state-dependent root. **`Distress` as a layer nothing can cover, with the reachability test `panicWipe` lacked** — asserted at every detent, not merely rendered | agent | Invariant 2 fails silently, which is the specific failure this project has shipped three times |
+| 11.4 | **Claim and report.** Concurrency cap of 3, visibility asked at claim time with nothing preselected, the seven-day challenge window, and a settlement that names how it settled | agent | Missions are a noticeboard. The loop that gives somebody a reason to return does not exist |
+| 11.5 | **Writ ceilings.** Counted from open missions over public events, evaluated identically by every relay, conserved so a body delegates only what it holds | agent | The map drowns, and a hollow body mints grid-wide authority |
+| 11.6 | **Standing.** Honor buying rungs, Karma as bounded decaying per-counterparty goodwill, Hours, Supply, Intel. Numbers from `economy.md` §9 as first guesses | agent | Nothing accrues, so nothing is worth coming back for |
+| 11.7 | **Intel, against a placeholder vocabulary.** Schema, anchor enforcement, publication split and expiry can all be built before the tag vocabulary exists | agent, then **human** for the vocabulary | The only kind an Alone operator can earn is the one that does not exist, and Alone is the default |
+| 11.8 | **Bounties.** NIP-61 nutzaps, a NUT-14 HTLC locked at claim time with a refund locktime, `funded`/`released`/`withheld` as a readout. **We run no mint and guard no federation** | agent | Nobody doing this work can be paid through it, which is the one mechanism that could fund the people in the field |
+
+### Gates on this milestone
+
+- **11.0 gates 11.3.** Com adds navigation, and navigation is what makes the docs chunk reachable.
+- **The tag vocabulary is not agent work** and gates only the *publication* half of 11.7, not its schema.
+- **The budget script must stay honest about code-splitting.** It now reports dynamic-import weight and
+  names the largest chunk; it does not yet enforce a ceiling on it, because every budget here was
+  derived from a measurement rather than chosen to fit, and the measurement does not exist until Com
+  splits. **Setting that ceiling is part of 11.3, not a follow-up.**
+- **Nothing here outranks the directory's volatile fields**, which have been dark for 22 days. A
+  mission layer over a directory that answers every *when are they open?* with "call first" undersells
+  the thing underneath it. That is human work and no part of this milestone fixes it.
+
 ## The seeding rule
 
 Recorded here because it is the easiest way to do real harm quickly, and it governs A2–A3.
