@@ -1827,3 +1827,102 @@ test.describe('what a Distress reaches when there is no watch', () => {
     await expect(page.locator('[data-no-watch]')).toHaveCount(0);
   });
 });
+
+test.describe('handing the record to the phone', () => {
+  /**
+   * `contribution.ts` builds the artifact `propagation.md` §2 asks for — scrubbed, understated,
+   * safe to post — and until now the only way out of the app was the clipboard. **The careful
+   * part was finished and the act it exists for was missing**, which is this file's subject.
+   *
+   * Instagram's share target is image-oriented, so text alone will not reach the feed §2 sets its
+   * quality bar by. It reaches every other place an operator posts, and it is hours of work.
+   */
+  const WITH_WORK = {
+    ...OUT,
+    keepPatrolHistory: true,
+    accruing: {
+      patrols: [{ started: 1_800_000_000, ended: 1_800_009_000, area: 'Downtown' }]
+    }
+  };
+
+  /** Installs a share sheet that records what it was handed. */
+  const fakeSheet = (page: import('@playwright/test').Page, behaviour = 'accept') =>
+    page.addInitScript((mode) => {
+      const w = window as unknown as Record<string, unknown>;
+      w['__shared'] = [];
+      const nav = navigator as unknown as Record<string, unknown>;
+      nav['canShare'] = () => true;
+      nav['share'] = async (data: unknown) => {
+        (w['__shared'] as unknown[]).push(data);
+        if (mode === 'cancel') {
+          const err = new Error('Share canceled');
+          err.name = 'AbortError';
+          throw err;
+        }
+        if (mode === 'refuse') {
+          const err = new Error('Permission denied');
+          err.name = 'NotAllowedError';
+          throw err;
+        }
+      };
+    }, behaviour);
+
+  async function openExport(page: import('@playwright/test').Page) {
+    await open(page, '/terminal/patrols/');
+    await page.getByRole('button', { name: /show what would be shared/i }).click();
+    await expect(page.locator('[data-export]')).toBeVisible();
+  }
+
+  test('the share control is on the page, and hands over the text and nothing else', async ({ page }) => {
+    await fakeSheet(page);
+    await seedDevice(page, WITH_WORK);
+    await openExport(page);
+
+    const shown = (await page.locator('[data-export]').innerText()).trim();
+    await page.locator('[data-share]').click();
+
+    const sent = await page.evaluate(() => (window as unknown as Record<string, unknown>)['__shared']);
+    expect(Array.isArray(sent) && sent.length).toBe(1);
+    const payload = (sent as { text?: string }[])[0]!;
+    // No `url`: §2 refuses a call to action, a download link and a referral code, and a link
+    // travelling with every recap an operator posts is all three.
+    expect(Object.keys(payload)).toEqual(['text']);
+    expect(payload.text?.trim()).toBe(shown);
+  });
+
+  test('offers no share control on a browser with no sheet, and Copy still works', async ({ page }) => {
+    await page.addInitScript(() => {
+      const nav = navigator as unknown as Record<string, unknown>;
+      delete nav['share'];
+      delete nav['canShare'];
+    });
+    await seedDevice(page, WITH_WORK);
+    await openExport(page);
+
+    await expect(page.locator('[data-share]')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /^copy$/i })).toBeVisible();
+  });
+
+  test('says nothing when the operator dismisses the sheet', async ({ page }) => {
+    // Printing a failure here would teach an operator the control is broken when it did exactly
+    // what they asked of it.
+    await fakeSheet(page, 'cancel');
+    await seedDevice(page, WITH_WORK);
+    await openExport(page);
+
+    await page.locator('[data-share]').click();
+    await expect(page.locator('[data-share-refused]')).toHaveCount(0);
+  });
+
+  test('says so when the sheet refuses it, and the text is still there', async ({ page }) => {
+    await fakeSheet(page, 'refuse');
+    await seedDevice(page, WITH_WORK);
+    await openExport(page);
+
+    await page.locator('[data-share]').click();
+    const said = page.locator('[data-share-refused]');
+    await expect(said).toBeVisible();
+    await expect(said).toContainText(/not sent/i);
+    await expect(page.locator('[data-export]')).toBeVisible();
+  });
+});

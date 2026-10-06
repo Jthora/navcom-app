@@ -19,6 +19,7 @@
   import { storedPlaces } from '$lib/terminal/places.svelte';
   import { loadIdentity } from '$lib/terminal/identity';
   import { Slot, Readout } from '$lib/components/panel';
+  import { canShareText, shareText } from '$lib/terminal/share';
 
   let list = $state<Patrol[]>([]);
   let keep = $state(false);
@@ -52,6 +53,15 @@
   let myPlaces = $state<ReturnType<typeof storedPlaces>>([]);
   let showExport = $state(false);
   let copied = $state(false);
+  /**
+   * Whether this phone has a share sheet.
+   *
+   * Read after mount, not during render: these pages prerender with no `navigator`, and a
+   * control that arrives at hydration beats markup that disagrees with itself.
+   */
+  let canShare = $state(false);
+  /** The one share outcome worth saying out loud. The other three are silent on purpose. */
+  let shareRefused = $state(false);
 
   onMount(() => {
     list = patrols();
@@ -60,6 +70,7 @@
     mine = loadIdentity()?.pubkey ?? null;
     myCorrections = storedCorrections();
     myPlaces = storedPlaces();
+    canShare = canShareText();
   });
 
   const total = $derived(list.reduce((n, p) => n + (p.ended - p.started), 0));
@@ -92,6 +103,18 @@
     setKeepHistory(!keep);
     keep = keepsHistory();
     list = patrols();
+  }
+
+  /**
+   * Hands it to the phone, which is what the artifact was built for.
+   *
+   * Dismissing the sheet says nothing: that is somebody changing their mind, and printing a
+   * failure for it would teach them the control is broken when it did exactly what they asked.
+   */
+  async function share() {
+    shareRefused = false;
+    copied = false;
+    if ((await shareText(text)) === 'refused') shareRefused = true;
   }
 
   async function copy() {
@@ -208,7 +231,23 @@
     </button>
     {#if showExport}
       <pre data-export>{text}</pre>
-      <button onclick={copy}>{copied ? 'Copied' : 'Copy'}</button>
+      <div class="row">
+        {#if canShare}
+          <button data-share onclick={share}>Share</button>
+        {/if}
+        <button onclick={copy}>{copied ? 'Copied' : 'Copy'}</button>
+      </div>
+      {#if shareRefused}
+        <!--
+          A readout rather than a sentence: the state has a name, and `panel.md` rule 1 is that
+          every state gets one. It also keeps this screen's prose where it is.
+        -->
+        <div data-share-refused>
+          <Slot k="Share">
+            <Readout value="Not sent" tone="warn" sub="still here, and Copy still works" />
+          </Slot>
+        </div>
+      {/if}
     {/if}
   </section>
 {/if}
