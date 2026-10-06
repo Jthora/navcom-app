@@ -1,6 +1,7 @@
 import { SimplePool } from "nostr-tools/pool";
 import { finalizeEvent, generateSecretKey, getPublicKey } from "nostr-tools/pure";
 import type { Event } from "nostr-tools/pure";
+import type { Filter } from "nostr-tools/filter";
 
 /**
  * Can these relays carry this app's traffic?
@@ -50,6 +51,8 @@ const KINDS = {
   replaceable: 19979,
   /** 30000-39999: one event per (kind, pubkey, d-tag). */
   addressable: 39979,
+  /** 1000-9999: stored, never replaced. The only range a deletion request has anything to act on. */
+  regular: 9979,
 } as const;
 
 /** How long to wait for a relay to deliver something it accepted. */
@@ -80,6 +83,27 @@ export interface RelayResult {
   url: string;
   reached: boolean;
   claims: ClaimResult[];
+  /** What a deletion request actually did here. Not a claim — see `DeletionResult`. */
+  deletion?: DeletionResult;
+}
+
+/**
+ * What a NIP-09 deletion request did, which the specification leaves to the relay.
+ *
+ * **Deliberately not a claim.** A relay that keeps an event after a deletion request has broken
+ * nothing: NIP-09 says relays *may* honour or ignore one, there is no enforcement, and deleting
+ * from every relay and client is impossible. Reporting that as `fail` would exit the conformance
+ * run non-zero for permitted behaviour and train a Stationkeeper to ignore a red result — the exact
+ * thing the three-state verdict above exists to prevent.
+ *
+ * It is measured because the **withdrawal copy depends on it.** An operator taking a published
+ * report back is owed the truth about what that does, and before this the only honest sentence was
+ * a hedge: *relays may ignore this*. Now it can name which ones did.
+ */
+export interface DeletionResult {
+  /** Gone afterwards, kept, or nothing could be told. */
+  honoured: boolean | null;
+  detail: string;
 }
 
 /** The five claims, in descending order of what breaks if they are false. */
@@ -91,7 +115,7 @@ export const CLAIMS = [
   "an addressable event is stored and returned by its tag",
 ] as const;
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(() => r(), ms));
 const hex = (n: number) =>
   Array.from({ length: n }, () => Math.floor(Math.random() * 16).toString(16)).join("");
 
@@ -101,10 +125,76 @@ function sign(secret: Uint8Array, kind: number, tags: string[][], content = "nav
 
 /** Did the relay say OK? Resolves rather than throws: a refusal is a result, not an error. */
 async function publish(pool: SimplePool, url: string, event: Event): Promise<string | null> {
+  return publishTo(pool, url, event);
+}
+
+/** The same question, of anything that can publish — so the deletion probe can be tested. */
+async function publishTo(pool: DeletionPool, url: string, event: Event): Promise<string | null> {
   const results = await Promise.allSettled(pool.publish([url], event));
   const bad = results.find((r) => r.status === "rejected");
   if (bad && bad.status === "rejected") return String(bad.reason).slice(0, 120);
   return results.some((r) => r.status === "fulfilled") ? null : "no response";
+}
+
+/** What `probeDeletion` needs of a pool, so a test can hand it one. */
+export interface DeletionPool {
+  publish: (urls: string[], event: Event) => Promise<string>[];
+  querySync: (urls: string[], filter: Filter) => Promise<Event[]>;
+}
+
+/**
+ * Publishes something, asks the relay to delete it, and looks again.
+ *
+ * Separate and exported because `checkRelay` builds its own pool and cannot be driven from a test,
+ * and because the three outcomes here are easy to get subtly wrong: *kept* is permitted, *not
+ * stored* proves nothing about deletion, and only *gone* is a relay honouring the request.
+ *
+ * Writes two events per relay — a throwaway in an unallocated regular kind, then the request to
+ * remove it. Both are signed by a key that exists for this run only, which is the same courtesy the
+ * rest of this file extends to somebody's donated machine.
+ */
+export async function probeDeletion(
+  pool: DeletionPool,
+  url: string,
+  secret: Uint8Array,
+  settle: (ms: number) => Promise<void> = sleep
+): Promise<DeletionResult> {
+  const pubkey = getPublicKey(secret);
+  const mark = sign(secret, KINDS.regular, [["d", "navcom-deletion-probe-" + hex(8)]]);
+  const filter = { kinds: [KINDS.regular], authors: [pubkey] };
+
+  const sent = await Promise.allSettled(pool.publish([url], mark));
+  if (!sent.some((r) => r.status === "fulfilled")) {
+    return { honoured: null, detail: "the relay would not accept the event, so nothing could be deleted" };
+  }
+  await settle(POLITE_GAP_MS);
+
+  const before = await pool.querySync([url], filter);
+  if (!before.some((e) => e.id === mark.id)) {
+    /*
+     * Not a failure of anything. A relay that stores nothing in this range cannot serve a withdrawn
+     * report either, which is the question an operator actually has.
+     */
+    return { honoured: null, detail: "the relay did not store the event, so there was nothing to delete" };
+  }
+
+  const request = sign(secret, 5, [["e", mark.id]], "");
+  const refused = await publishTo(pool, url, request);
+  if (refused !== null) {
+    return { honoured: null, detail: `the relay refused the deletion request itself: ${refused}` };
+  }
+  await settle(DELIVERY_MS);
+
+  const after = await pool.querySync([url], filter);
+  if (after.some((e) => e.id === mark.id)) {
+    return {
+      honoured: false,
+      detail:
+        "the event is still served after a deletion request. NIP-09 permits that — a withdrawal here " +
+        "removes nothing, and an operator must be told so rather than reassured"
+    };
+  }
+  return { honoured: true, detail: "the event was gone afterwards" };
 }
 
 /**
@@ -116,7 +206,25 @@ async function publish(pool: SimplePool, url: string, event: Event): Promise<str
  * ephemeral events -- a false alarm on the most safety-critical claim here, and the obvious way
  * to write this wrong.
  */
-export async function checkRelay(url: string, now = Date.now): Promise<RelayResult> {
+export interface CheckOptions {
+  /**
+   * Whether to measure what a deletion request does. **Off by default, and that is not timidity.**
+   *
+   * The five claims already write five events per relay. Adding two more got this machine
+   * `banned: too many rate-limit violations` from `relay.damus.io` within two consecutive runs — a
+   * check nobody can run twice is worse than a measurement nobody has. The withdrawal copy needs
+   * this answer occasionally, not on every run, so it is asked for by name:
+   *
+   *   npm run conformance --prefix packages/watchtower -- --deletion
+   */
+  deletion?: boolean;
+}
+
+export async function checkRelay(
+  url: string,
+  now = Date.now,
+  opts: CheckOptions = {}
+): Promise<RelayResult> {
   const pool = new SimplePool();
   const secret = generateSecretKey();
   const pubkey = getPublicKey(secret);
@@ -255,10 +363,18 @@ export async function checkRelay(url: string, now = Date.now): Promise<RelayResu
 
     // Tidy up after ourselves. The two stored events are ~200 bytes each and this is somebody
     // else's disk; a deletion request is the courtesy, and its success is not a claim.
+    /*
+     * Measured here because the line below has been asking for deletions since this file was
+     * written and never once looked at whether they worked. The withdrawal an operator is offered
+     * rests on the answer.
+     */
+    await sleep(POLITE_GAP_MS);
+    const deletion = opts.deletion === true ? await probeDeletion(pool, url, secret) : undefined;
+
     await sleep(POLITE_GAP_MS);
     await publish(pool, url, sign(secret, 5, [["e", rep.id], ["e", addr.id]], "self-test cleanup"));
 
-    return { url, reached: true, claims };
+    return { url, reached: true, claims, ...(deletion ? { deletion } : {}) };
   } catch (err) {
     const why = err instanceof Error ? err.message : String(err);
     for (const c of CLAIMS) {
@@ -288,9 +404,12 @@ export async function checkRelay(url: string, now = Date.now): Promise<RelayResu
 }
 
 /** Every relay, one at a time -- concurrent connections to strangers is not a good look. */
-export async function checkRelays(urls: readonly string[]): Promise<RelayResult[]> {
+export async function checkRelays(
+  urls: readonly string[],
+  opts: CheckOptions = {}
+): Promise<RelayResult[]> {
   const out: RelayResult[] = [];
-  for (const url of urls) out.push(await checkRelay(url));
+  for (const url of urls) out.push(await checkRelay(url, Date.now, opts));
   return out;
 }
 
@@ -310,6 +429,16 @@ export function render(results: readonly RelayResult[]): string[] {
       const mark = c.verdict === "pass" ? "ok  " : c.verdict === "fail" ? "FAIL" : "?   ";
       out.push(`  ${mark} ${c.claim}`);
       if (c.verdict !== "pass") out.push(`       ${c.detail}`);
+    }
+    if (r.deletion) {
+      /*
+       * `kept`, never `FAIL`. NIP-09 permits a relay to ignore a deletion request, and marking
+       * permitted behaviour as a failure is how a red result stops meaning anything.
+       */
+      const mark =
+        r.deletion.honoured === true ? "ok  " : r.deletion.honoured === false ? "kept" : "?   ";
+      out.push(`  ${mark} a deletion request is honoured`);
+      if (r.deletion.honoured !== true) out.push(`       ${r.deletion.detail}`);
     }
   }
   const bad = results.flatMap((r) => r.claims.filter((c) => c.verdict === "fail").map((c) => [r.url, c] as const));

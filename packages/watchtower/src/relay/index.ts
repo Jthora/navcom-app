@@ -23,7 +23,15 @@ async function main(): Promise<void> {
   const relays = args.length > 0 ? args : [...DEFAULT_RELAYS];
 
   console.log(`[conformance] ${relays.length} relay(s): ${relays.join(", ")}\n`);
-  const results = await checkRelays(relays);
+  /*
+   * The deletion probe is asked for by name, because it costs writes.
+   *
+   * Two consecutive runs with it on earned this machine `banned: too many rate-limit violations`
+   * from `relay.damus.io`. A check nobody can run twice is worse than a measurement nobody has, and
+   * the withdrawal copy needs the answer occasionally rather than every time.
+   */
+  const deletion = process.argv.includes("--deletion");
+  const results = await checkRelays(relays, { deletion });
   for (const line of render(results)) console.log(line);
 
   const failed = results.some((r) => r.claims.some((c) => c.verdict === "fail"));
@@ -31,6 +39,12 @@ async function main(): Promise<void> {
   if (unreachable.length > 0) {
     console.log(
       `\n[conformance] ${unreachable.length} relay(s) unreachable — reported unknown, not failed.`
+    );
+  }
+  if (!deletion) {
+    console.log(
+      "\n[conformance] deletion requests not measured — add `-- --deletion` to ask, which writes two" +
+        "\n               more events per relay. See `probeDeletion`."
     );
   }
   if (needsAttention(results)) console.log("\n[conformance] NEEDS A LOOK");
