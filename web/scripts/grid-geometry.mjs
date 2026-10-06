@@ -85,9 +85,11 @@ execFileSync(
     // shape on screen, for a continent no region is filed in. Scenery that misleads is dropped.
     '-filter', 'target=world', 'ADM0_A3 !== "ATA"',
     '-simplify', 'target=provinces', SIMPLIFY, 'keep-shapes',
-    // Names and codes are not drawn and cost bytes; the grid is scenery, not a gazetteer.
+    // Names are not drawn and cost bytes; the grid is scenery, not a gazetteer. Provinces keep
+    // one field, their ISO 3166-2 code, because that is how a mission says where it is
+    // (`jurisdiction: us-ca`) and the grid has to find the shape to light.
     '-filter-fields', 'target=world',
-    '-filter-fields', 'target=provinces',
+    '-filter-fields', 'target=provinces', 'iso_3166_2',
     '-o', 'target=world,provinces', 'format=topojson', `quantization=${QUANTIZATION}`, raw
   ],
   { stdio: ['ignore', 'ignore', 'inherit'] }

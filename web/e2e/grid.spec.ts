@@ -136,6 +136,62 @@ test.describe('the grid draws, and tells nobody', () => {
     expect(results.violations, JSON.stringify(results.violations, null, 2)).toEqual([]);
   });
 
+  test.describe('missions on the map', () => {
+    const snapshot = (missions: object[], status = 'ok') => ({
+      version: 1, taken_at: new Date().toISOString(), source: 'test', status, missions, refused: []
+    });
+    const california = (validUntil: number) => ({
+      d: 'test-ca', state: 'open', validUntil, placement: { jurisdiction: 'us-ca', point: null }
+    });
+    const serve = (page: Page, body: object) =>
+      page.route('**/missions.json', (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify(body) }));
+    /** Mean brightness of the whole canvas: a lit province makes it rise, and nothing else differs. */
+    const brightness = (page: Page) =>
+      page.locator('.grid canvas').evaluate((c: HTMLCanvasElement) => {
+        const d = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
+        let sum = 0;
+        for (let i = 0; i < d.length; i += 4) sum += d[i]! + d[i + 1]! + d[i + 2]!;
+        return sum / (d.length / 4);
+      });
+    async function settled(page: Page) {
+      await blankDevice(page);
+      await page.goto('/grid/', { waitUntil: 'networkidle' });
+      await expect(page.locator('[data-grid="ready"]')).toBeVisible({ timeout: 15_000 });
+      // The whole map, so both runs compare the same view however the regions arrived.
+      await page.getByRole('button', { name: 'Show the whole map' }).click();
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))));
+    }
+
+    test('an open mission lights its province, and says how old the snapshot is', async ({ page }) => {
+      await serve(page, snapshot([]));
+      await settled(page);
+      const dark = await brightness(page);
+      await expect(page.locator('[data-missions="none"]')).toContainText(/No open missions · as of \d{1,2} [A-Z][a-z]{2} \d{2}:\d{2} UTC/);
+
+      await page.unroute('**/missions.json');
+      await serve(page, snapshot([california(Math.floor(Date.now() / 1000) + 86_400)]));
+      await settled(page);
+      await expect(page.locator('[data-missions="open"]')).toContainText(/Open missions · as of/);
+      // Polled, not read once: the legend updates in the same tick the snapshot lands, but the
+      // canvas redraws on the next animation frame, and a single read can fall between the two.
+      await expect.poll(() => brightness(page), { timeout: 5_000 }).toBeGreaterThan(dark);
+    });
+
+    test('a mission that has ended since the build lights nothing', async ({ page }) => {
+      // Active when the snapshot was taken, over by the time somebody looks. This device's
+      // clock decides, not the build's [invariant 7].
+      await serve(page, snapshot([california(Math.floor(Date.now() / 1000) - 60)]));
+      await settled(page);
+      await expect(page.locator('[data-missions="none"]')).toBeVisible();
+    });
+
+    test('a build that could not reach The Record says so, rather than showing no missions', async ({ page }) => {
+      await serve(page, snapshot([], 'unavailable'));
+      await settled(page);
+      await expect(page.locator('[data-missions="unavailable"]')).toBeVisible();
+    });
+  });
+
   test('no axe violations', async ({ page }) => {
     await ready(page);
     const results = await new AxeBuilder({ page }).analyze();

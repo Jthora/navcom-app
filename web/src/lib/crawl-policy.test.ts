@@ -33,7 +33,9 @@ const EXPORTS = [
   '/__data.json',
   '/_ipfs/',
   // The grid's geometry and its proving-ground page: 55 KB a request, and nothing to index.
-  '/grid/'
+  '/grid/',
+  // The map's missions as of the last build: a machine export, rebuilt on every deploy.
+  '/missions.json'
 ];
 
 describe('robots.txt', () => {

@@ -19,8 +19,39 @@
     return get('accruing', 'secret') ? 'low' : 'document';
   }
 
-  /** Where the directory already has a region — the honest content until missions exist. */
+  /** Where the directory already has a region. */
   let regions = $state<{ lon: number; lat: number }[]>([]);
+
+  /*
+   * The missions, as of the last build — read from navcom.app, never from The Record, so looking
+   * at the map still tells nobody anything [$lib/missions/snapshot]. Typed loosely and checked
+   * here rather than importing core: the page needs two fields, and core's mission module
+   * brings the signature library with it.
+   */
+  type Snapshot = {
+    taken_at: string;
+    status: 'ok' | 'unavailable';
+    missions: { state: string; validUntil: number; placement: { jurisdiction: string | null } }[];
+  };
+  let snapshot = $state<Snapshot | null>(null);
+
+  /** Re-checked against this device's clock: a mission active at build time may have ended since. */
+  const active = $derived(
+    (snapshot?.missions ?? []).filter((m) => m.state !== 'closed' && m.validUntil > Date.now() / 1000)
+  );
+  /** Provinces to light. A national mission (`us`) lights nothing — it would light everything. */
+  const lit = $derived(
+    new Set(active.map((m) => m.placement.jurisdiction).filter((j): j is string => !!j && j.includes('-')))
+  );
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  /** Absolute, because a date cannot become false the way "3 hours ago" can. */
+  const asOf = $derived.by(() => {
+    const t = snapshot ? new Date(snapshot.taken_at) : null;
+    if (!t || Number.isNaN(t.getTime())) return '';
+    const hh = String(t.getUTCHours()).padStart(2, '0');
+    const mm = String(t.getUTCMinutes()).padStart(2, '0');
+    return `${t.getUTCDate()} ${MONTHS[t.getUTCMonth()]} ${hh}:${mm} UTC`;
+  });
 
   onMount(() => {
     // The same flag the console and the terminal raise once their handlers are attached, so a
@@ -34,6 +65,14 @@
       })
       // The outlines still draw; a missing layer of dots is not worth a failure state.
       .catch(() => undefined);
+    fetch('/missions.json')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((d: Snapshot) => {
+        snapshot = d;
+      })
+      .catch(() => {
+        snapshot = { taken_at: '', status: 'unavailable', missions: [] };
+      });
   });
 </script>
 
@@ -44,10 +83,19 @@
 </svelte:head>
 
 <main class="terminal">
-  <GridMap marks={regions} label="World map, with provinces where NavCom has regions, and each region marked" />
+  <GridMap marks={regions} highlight={lit} label="World map, with provinces where NavCom has regions, each region marked, and the provinces with an open mission lit" />
   <div class="key">
     <h1><a href="/">NavCom</a> grid</h1>
     <span><i aria-hidden="true"></i>Directory regions</span>
+    {#if snapshot}
+      {#if snapshot.status === 'unavailable'}
+        <strong data-missions="unavailable">Missions unavailable at the last build</strong>
+      {:else if active.length === 0}
+        <strong data-missions="none">No open missions · as of {asOf}</strong>
+      {:else}
+        <span data-missions="open"><b class="lit" aria-hidden="true"></b>Open missions · as of {asOf}</span>
+      {/if}
+    {/if}
     <a class="notice" href="/notice/">Notice</a>
   </div>
 </main>
@@ -74,6 +122,16 @@
   .key h1 { margin: 0; font-size: 0.8rem; font-weight: 400; color: var(--t-muted); letter-spacing: 0.08em; }
   .key h1 a { color: var(--t-ink); text-decoration: none; font-weight: 700; }
   .key .notice { color: var(--t-muted); }
+  .key strong { font-weight: 400; color: var(--t-muted); }
+  .key .lit {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    background: color-mix(in srgb, var(--t-ink) 16%, var(--t-raised));
+    border: 1px solid var(--t-muted);
+    margin-inline-end: 0.45rem;
+    vertical-align: middle;
+  }
   .key i {
     display: inline-block;
     width: 6px;

@@ -80,6 +80,14 @@ describe('the committed geometry', () => {
     expect(inside(layers['world']!.rings, mercator(2.35, 48.86))).toBe(true);
   });
 
+  it('keeps each province’s code, so a mission’s jurisdiction finds the right shape', () => {
+    const california = layers['provinces']!.shapes.find((s) => s.id === 'us-ca');
+    expect(california).toBeDefined();
+    // The shape filed as us-ca is the one Los Angeles is in, and Phoenix is not.
+    expect(inside(california!.rings, mercator(-118.24, 34.05))).toBe(true);
+    expect(inside(california!.rings, mercator(-112.07, 33.45))).toBe(false);
+  });
+
   it('leaves out Antarctica, which Mercator would stretch across the whole bottom edge', () => {
     const south = mercator(0, -60)[1];
     const anyPolar = layers['world']!.rings.some((r) => {

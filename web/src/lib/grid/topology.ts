@@ -31,9 +31,10 @@ export function unmercator(x: number, y: number): [number, number] {
   return [lon, lat];
 }
 
-type Polygon = { type: 'Polygon'; arcs: number[][] };
-type MultiPolygon = { type: 'MultiPolygon'; arcs: number[][][] };
-type Empty = { type: null };
+type Props = { properties?: { iso_3166_2?: string } };
+type Polygon = { type: 'Polygon'; arcs: number[][] } & Props;
+type MultiPolygon = { type: 'MultiPolygon'; arcs: number[][][] } & Props;
+type Empty = { type: null } & Props;
 
 export interface Topology {
   type: 'Topology';
@@ -47,9 +48,17 @@ export interface Topology {
 /** A closed ring of projected points, packed as x0, y0, x1, y1, … in the unit square. */
 export type Ring = Float32Array;
 
-/** Every ring of every shape in one layer. Shapes are not kept apart: nothing here is clickable. */
+/** One province or country: its ISO 3166-2 code where the file carries one, and its rings. */
+export interface Shape {
+  /** Lower-case, as a mission files it: `us-ca`. Null where the file has no code. */
+  id: string | null;
+  rings: Ring[];
+}
+
+/** Every ring in one layer, and the same rings grouped by shape so one can be picked out. */
 export interface Layer {
   rings: Ring[];
+  shapes: Shape[];
 }
 
 /** Arcs from delta-encoded integers to absolute longitude and latitude. */
@@ -94,11 +103,15 @@ export function decode(topology: Topology): Record<string, Layer> {
   const out: Record<string, Layer> = {};
   for (const [name, collection] of Object.entries(topology.objects)) {
     const rings: Ring[] = [];
+    const shapes: Shape[] = [];
     for (const g of collection.geometries) {
-      if (g.type === 'Polygon') for (const r of g.arcs) rings.push(stitch(r, arcs));
-      else if (g.type === 'MultiPolygon') for (const p of g.arcs) for (const r of p) rings.push(stitch(r, arcs));
+      const own: Ring[] = [];
+      if (g.type === 'Polygon') for (const r of g.arcs) own.push(stitch(r, arcs));
+      else if (g.type === 'MultiPolygon') for (const p of g.arcs) for (const r of p) own.push(stitch(r, arcs));
+      rings.push(...own);
+      shapes.push({ id: g.properties?.iso_3166_2?.toLowerCase() ?? null, rings: own });
     }
-    out[name] = { rings };
+    out[name] = { rings, shapes };
   }
   return out;
 }

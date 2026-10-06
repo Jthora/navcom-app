@@ -14,14 +14,17 @@
    * redraw, never per-frame geometry. Redraws happen on demand, at most once per frame.
    */
   import { onMount } from 'svelte';
-  import { decode, mercator, type Topology } from '$lib/grid/topology';
+  import { decode, mercator, type Layer, type Topology } from '$lib/grid/topology';
 
   let {
     marks = [],
+    highlight = new Set<string>(),
     label = 'Map'
   }: {
     /** Points to draw, in longitude and latitude. Constant size on screen whatever the zoom. */
     marks?: readonly { lon: number; lat: number }[];
+    /** Provinces to light, by lower-case ISO 3166-2 code — where a mission is (`us-ca`). */
+    highlight?: ReadonlySet<string>;
     /** What the map shows, for anybody who cannot see the canvas. */
     label?: string;
   } = $props();
@@ -31,6 +34,24 @@
 
   let land: Path2D | null = null;
   let provinces: Path2D | null = null;
+  let provinceShapes: Layer['shapes'] = [];
+  /** The provinces in `highlight`, as one path, rebuilt only when the set changes. */
+  let lit: Path2D | null = null;
+
+  function pathOf(rings: Layer['rings']): Path2D {
+    const p = new Path2D();
+    for (const ring of rings) {
+      p.moveTo(ring[0]!, ring[1]!);
+      for (let i = 2; i < ring.length; i += 2) p.lineTo(ring[i]!, ring[i + 1]!);
+      p.closePath();
+    }
+    return p;
+  }
+
+  function relight() {
+    const chosen = provinceShapes.filter((s) => s.id !== null && highlight.has(s.id));
+    lit = chosen.length > 0 ? pathOf(chosen.flatMap((s) => s.rings)) : null;
+  }
   const projected = $derived(marks.map((m) => mercator(m.lon, m.lat)));
 
   // The view: which point of the unit square sits at the centre, and how many CSS px it spans.
@@ -78,6 +99,13 @@
     ctx.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * ox, dpr * oy);
     ctx.fillStyle = token('--t-raised', '#141920');
     ctx.fill(land, 'evenodd');
+    if (lit) {
+      // A lift in brightness, never a hue: every hue on these screens is a watch state.
+      ctx.globalAlpha = 0.16;
+      ctx.fillStyle = token('--t-ink', '#F2F5F8');
+      ctx.fill(lit, 'evenodd');
+      ctx.globalAlpha = 1;
+    }
     ctx.lineJoin = 'round';
     ctx.lineWidth = 0.6 / scale;
     ctx.strokeStyle = token('--t-line', '#232B35');
@@ -85,6 +113,11 @@
     ctx.lineWidth = 1 / scale;
     ctx.strokeStyle = token('--t-line-strong', '#38424F');
     ctx.stroke(land);
+    if (lit) {
+      ctx.lineWidth = 1.5 / scale;
+      ctx.strokeStyle = token('--t-muted', '#9BA5B2');
+      ctx.stroke(lit);
+    }
 
     // Marks in screen space, so a region is the same size at every zoom.
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -248,17 +281,10 @@
       .then((r) => (r.ok ? (r.json() as Promise<Topology>) : Promise.reject(new Error(String(r.status)))))
       .then((topology) => {
         const layers = decode(topology);
-        const toPath = (name: string) => {
-          const p = new Path2D();
-          for (const ring of layers[name]?.rings ?? []) {
-            p.moveTo(ring[0]!, ring[1]!);
-            for (let i = 2; i < ring.length; i += 2) p.lineTo(ring[i]!, ring[i + 1]!);
-            p.closePath();
-          }
-          return p;
-        };
-        land = toPath('world');
-        provinces = toPath('provinces');
+        land = pathOf(layers['world']?.rings ?? []);
+        provinces = pathOf(layers['provinces']?.rings ?? []);
+        provinceShapes = layers['provinces']?.shapes ?? [];
+        relight();
         status = 'ready';
         request();
       })
@@ -271,6 +297,13 @@
       el.removeEventListener('wheel', onWheel);
       scheme.removeEventListener('change', request);
     };
+  });
+
+  // A different set of provinces to light is a new path and a redraw.
+  $effect(() => {
+    void highlight;
+    relight();
+    request();
   });
 
   // New marks frame the map, until a person has moved it; after that they are only redrawn.
