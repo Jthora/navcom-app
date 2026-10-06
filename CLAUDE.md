@@ -111,7 +111,7 @@ zero-JavaScript.
 | Native mobile | Deprioritised 2026-08-19. Adds three things: locked-screen `Distress` (both platforms — iOS 18 Controls make this possible, contrary to an earlier note), a phone holding the watch overnight (Android only), and silent SMS (Android only). None blocking | Decided, deferred |
 | UI framework | Svelte | Decided |
 | Watch | A mode of the same app, not a separate Console. A box may hold it all night; a squad without one holds it on a phone | Decided 2026-08-19, reversing "served from the box" |
-| Relay topology | Public relays for MVP; self-hosted RelayNode at Mk1 | Decided |
+| Relay topology | Relay lists (NIP-65, NIP-17) across grid nodes and public relays; nodes declare their policies and clients choose; no grid relay keeps a record of who reads it. See [`grid.md`](docs/design/grid.md) | Decided 2026-10-06, replacing "public relays for MVP, RelayNode at Mk1" |
 | Node services | TypeScript unless there's a reason — shared payload types with the clients | Decided |
 
 **Escalation executor is a separate process from the agent.** Non-negotiable — see
@@ -158,7 +158,9 @@ withdrawn with it — see the table below.
    the device. The node-side accountability log is outside both. Claims, drafts and mission
    history are Wipeable
 6. **No legal names anywhere.** Contact details only where an operator opted in for themselves.
-   Standing accrues to a persona
+   Standing accrues to a persona. One exception (2026-10-06): a mission package may name a public
+   figure in their public role, from an official source and with its link, as context — never as
+   the object of an action
 7. **Volatile data shows its age.** Stale reads "call first"; blank reads "unknown". An expired
    mission says so
 

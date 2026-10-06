@@ -1,6 +1,6 @@
 # Mission interchange — NavCom ⇄ Starcom / Mecha Jono
 
-**NavCom's side of the boundary, rev 2 — 2026-10-06.** Starcom's side is
+**NavCom's side of the boundary, rev 3 — 2026-10-06.** Starcom's side is
 [`starcom.app/spec/starcom-navcom-interchange.spec.md`](https://starcom.app/spec/starcom-navcom-interchange.spec.md)
 (rev 10 at the time of writing; rev 11 will carry the answers below). Each spec owns its own
 side; neither restates the other's.
@@ -9,6 +9,11 @@ side; neither restates the other's.
 gap neither side had seen: The Record accepts writes only from an allowlist, so operators' claims
 and reports cannot be published there. §5.0 says where they go instead, and §10 asks two new
 questions about it.
+
+**Rev 3** records Mecha Jono's answers of the same evening — Q4, Q6, Q7 and Q9 live, Q10 built —
+NavCom's rulings on the three things Mecha Jono asked in return (§10), and a decision that reaches
+past this boundary: **reading is private and acting is accountable.** Relays are chosen from what
+each node declares, and the grid's relays, The Record included, keep no record of who reads (§11).
 
 Written for Mecha Jono's development agent first, and for any human on either team second. It
 says what NavCom now is, exactly how to serve it missions, how raw intel moves in both directions,
@@ -52,6 +57,7 @@ from whether a builder exists, and this document follows the same discipline.
 | Kind `1912` report | Reserved, **not emitted** — the contract says `emitted: false` |
 | Claims, settlement, challenge (§5) | AGREED — Starcom reads them once built on its side |
 | Standing, Writs, bounties (§8) | DESIGNED |
+| The grid's rules — no reader records, relay lists, declared policies (§11) | DESIGNED, decided 2026-10-06. The reader rule is The Record's to apply |
 
 ---
 
@@ -107,7 +113,12 @@ your packages. A package that crosses one is not shown.
    missions, not less.
 5. **Panic wipe** destroys an operator's local mission history. Nothing you publish depends on it
    surviving.
-6. **No legal names anywhere.** Operators are callsigns. Standing accrues to a persona.
+6. **No legal names anywhere.** Operators are callsigns. Standing accrues to a persona. **One
+   exception, for packages** (decided 2026-10-06): a public figure named by an official source may
+   appear in their public role, with the source's link, as background or as the source itself.
+   Never as the object of an action — not in an ask, an objective or `for` — never an operator, and
+   never anyone the mission serves. A mission is a call to action, and a name in one points a crowd
+   at a person.
 7. **Volatile data shows its age.** A field mission MUST carry `valid_until`. An expired mission
    reads as expired; it is never quietly shown as current.
 
@@ -221,6 +232,18 @@ NavCom labels every package from your key as agent-posted regardless (invariant 
 self-describing `["agent", "mecha_jono"]` tag would let any other reader do the same without
 knowing your key.
 
+### 4.7 Work an agent may take — AGREED `taker:agent`
+
+Mecha Jono's proposal of 2026-10-06, accepted. `["t", "taker:agent"]` on a package says at least one
+objective may be taken by an agent; each objective's `takers` in the manifest says which —
+`["human"]`, `["agent"]` or both. Distinct from `agent`, which says who posted, and from `audience`.
+
+**An agent's claim is shown, marked as an agent's, and counted as a claim** (decided 2026-10-06).
+It is the same NIP-32 label (§5.1), carrying the agent's own `["agent", <name>]`, and only on an
+objective whose `takers` includes `agent`; NavCom ignores an agent's claim on anything else. The
+mark is invariant 4: whoever reads the mission sees that an agent took it, not a person. Shown when
+NavCom's claims ship (build order 11.4).
+
 ---
 
 ## 5. The return path — claims, reports, settlement — AGREED
@@ -242,8 +265,8 @@ honestly described, and a relay built for permanence is the wrong home for one.
 
 | Signed by | Published to | Read by |
 |---|---|---|
-| **An operator** — public claims, reports, witness and challenge labels | **NavCom's relays**: today `wss://relay.damus.io` and `wss://nos.lol`, both already among rev 10's mirrors; NavCom's own RelayNodes when they ship | Starcom and Mecha Jono, filtering `#a` for their packages (Q9) |
-| **An operator** — a private claim (gift wrap) | The inbox relays Mecha Jono names in a NIP-17 kind `10050` list | Mecha Jono only (Q4, Q10) |
+| **An operator** — public claims, reports, witness and challenge labels | **NavCom's relays**: today `wss://relay.damus.io` and `wss://nos.lol`, both already among rev 10's mirrors. **Moving to relay lists** (§11.2): read each operator's NIP-65 list as well as these | Starcom and Mecha Jono, filtering `#a` for their packages — LIVE for Mecha Jono (Q9) |
+| **An operator** — a private claim (gift wrap) | The inbox relays in Mecha Jono's NIP-17 kind `10050` list: `wss://nos.lol` and `wss://relay.primal.net` | Mecha Jono only — LIVE (Q4, Q10) |
 | **Mecha Jono** — packages, `settled` and `challenged` labels | **The Record** | NavCom, which already reads it |
 
 ### 5.1 Taking part — a claim
@@ -428,6 +451,7 @@ the map opens populated. It is identified as an agent everywhere it appears.
 - Count things, not people (§7.1)
 - Cite the observations you use (§6.2)
 - Never touch the `Distress` channel, never assign a named person, never score an operator
+- Keep no record of who reads The Record (§11.1), and keep your `10050` list current (Q10)
 
 ### 9.3 Permission — go further
 
@@ -453,18 +477,30 @@ Answered by Starcom on 2026-10-06; all eight accepted. Three are Mecha Jono's to
 | Q1 | NIP-32 namespace `navcom.mission` with `claimed`, `settled`, `witnessed`, `challenged`? | **Yes**, beside rev 10's kind-`1` reply | Starcom builds the reader |
 | Q2 | `["claims", "one" \| "many"]`? | **Yes, as written.** Absent means `many` | — |
 | Q3 | `mission_state: claimed` for `claims: one`? | **Yes.** A private claim still publishes the state | — |
-| Q4 | Can Mecha Jono read NIP-59 gift-wrapped private claims? | Starcom supports private claims; **Mecha Jono to answer** | Mecha Jono |
+| Q4 | Can Mecha Jono read NIP-59 gift-wrapped private claims? | **Yes — LIVE.** NIP-44 v2, tested against the official vectors; the wrap, the seal and the claim inside are each checked, read every 30 minutes, and a private claim ends only at its expiry or when its package closes | — |
 | Q5 | Cite observations with `["e", id, relay, "cites"]`? | **Yes.** Starcom's `navcom-intel/0.1.0` reader is built and counts one contact key as one source; wiring it in comes first | Starcom builds |
-| Q6 | Count materiel, never people? | **Yes, for every package** in rev 11 | Mecha Jono changes `format.effect` |
-| Q7 | `["agent", "mecha_jono"]`? | **Yes.** Rev 11 defines `["agent", <name>]` for any agent | Mecha Jono adds the tag |
+| Q6 | Count materiel, never people? | **Yes — LIVE.** The 19 live missions that counted people were rewritten, and the builder now refuses a field package whose asks or effect count people | — |
+| Q7 | `["agent", "mecha_jono"]`? | **Yes — LIVE** on every field package, case package and ending. Rev 11 defines `["agent", <name>]` for any agent | — |
 | Q8 | Which relays are authoritative? | **The Record.** The five are best-effort mirrors | — |
 
-### New in rev 2
+### New in rev 2, answered by Mecha Jono
 
-| | Question | NavCom's default if unanswered |
+| | Question | Answer |
 |---|---|---|
-| Q9 | Will Starcom and Mecha Jono read operators' labels and reports from NavCom's relays (§5.0), filtering `#a` for their packages? | NavCom publishes there regardless; until Starcom reads them, nothing from NavCom's side reaches it |
-| Q10 | Will Mecha Jono publish a NIP-17 kind `10050` list naming the relays where it accepts gift-wrapped claims? | Private claims stay unavailable on Mecha Jono's missions — the answer to Q4 needs somewhere to deliver |
+| Q9 | Will Starcom and Mecha Jono read operators' labels and reports from NavCom's relays (§5.0), filtering `#a` for their packages? | **Mecha Jono: yes — LIVE.** Every 30 minutes it asks each relay on its own, checks every signature, and records a failing relay as failing; a public claim is withdrawn only when every relay it was seen on answers without it. Starcom's reader is still to be built |
+| Q10 | Will Mecha Jono publish a NIP-17 kind `10050` list naming the relays where it accepts gift-wrapped claims? | **Yes — published** with Mecha Jono's letter: `wss://nos.lol` and `wss://relay.primal.net`. `relay.damus.io` is left out because it refuses every NIP-42 sign-in |
+
+**Settling waits for reports** — agreed. §5.3's seven days start when kind `1912` is emitted; until
+then Mecha Jono records each claim against its package, and no claim on a campaign moves its
+`mission_state`.
+
+### New in rev 3 — what Mecha Jono asked, answered
+
+| Asked | NavCom's answer |
+|---|---|
+| Does rule 6 reach a public figure named by a cited source? | **As context only** — §2.1, rule 6. A public figure in their public role, with the link, as background or source; never the object of an action |
+| Will NavCom show an agent's claim? | **Yes, marked as an agent's and counted as a claim** — §4.7 |
+| A Raspberry Pi is becoming a second RelayNode — what would NavCom need? | **What every node owes its readers, declared rather than demanded** — §11. NavCom reads missions from The Record's mirrors as well as The Record, so the Pi's mirror is used as soon as NavCom's reader takes more than one relay. Operator traffic moves to relay lists across grid nodes and public relays, and the Pi is one of the places a watch can list |
 
 ### Your open questions from rev 10, answered
 
@@ -474,6 +510,56 @@ Answered by Starcom on 2026-10-06; all eight accepted. Three are Mecha Jono's to
   time; reports are public and region-blind
 - **Keeping the two descriptions in step.** This document is NavCom's side and yours is Starcom's.
   Each links the other, each is versioned, and neither restates the other
+
+---
+
+## 11. The grid — decided 2026-10-06
+
+Decided by Jono for the Earth Intelligence Network as a whole, not as NavCom's demand on another
+project. NavCom's design notes are in [`../design/grid.md`](../design/grid.md).
+
+### 11.1 Reading is private; acting is accountable
+
+**A grid relay keeps no record of who reads it.** Every NavCom visitor reads missions from The
+Record, including somebody looking for a bed tonight, and strfry logs each connection's address
+(`Connect from …`, `Disconnect from …`). Readers include the people NavCom serves and the operators
+whose callsigns exist so they cannot be named; an address log is one request to an internet
+provider away from a legal name.
+
+- **Drop the address lines.** Keep `realIpHeader` set, so a writer's real address is known. In a
+  system service, `LogFilterPatterns=~(Connect|Disconnect) from` drops exactly those two lines
+  (systemd 253 or later; not available in per-user services). In a per-user service,
+  `strfry --verbosity=WARNING` drops every info line, those two included
+- **Record every write.** The write-policy plugin already sees each attempt; have it log the
+  address, the key, the kind and the verdict. Acting is accountable, and writers are few
+- **Leave abuse to Cloudflare's edge**, which keeps its own security log
+- **Clear what is already kept.** Journals written before the change still hold readers'
+  addresses; rotate and vacuum them
+- **Say so** in the relay's NIP-11 document
+
+This cannot make a reader anonymous — Cloudflare and NavCom's own host still see addresses — and no
+page should imply it does. It removes the one long-lived copy the grid itself would hold.
+
+### 11.2 Relay lists, grid and public together
+
+NavCom's two built-in relays become a starting point only. Each Watchtower, operator and publisher
+declares where it can be reached (NIP-65 relay lists, NIP-17 inboxes); clients write there and read
+from all of them. Grid nodes sit beside public relays: `Distress` goes out on every path, and routine
+traffic on a few. DESIGNED; nothing changes on the wire until NavCom's client ships it.
+
+### 11.3 Declared, then chosen
+
+A node states its policy — what it logs, what it keeps, what it accepts — in its NIP-11 document and
+as a signed attestation that Security Beu checks. NavCom's client chooses relays whose stated policy
+fits the traffic. **PROPOSED:** Mecha Jono's side drafts the attestation, since Security Beu already
+audits every public address hourly.
+
+### 11.4 The Pi
+
+A mirror of The Record and the first peer of the private IPFS swarm, as Mecha Jono's brief sets out;
+its tunnel lives in Jono's Cloudflare account and the Pi holds only the connector token; the mirror
+keeps no reader records; and it is also served as a Tor onion from the start, for anyone who needs
+to read without their address reaching anybody, Cloudflare included.
 
 ---
 

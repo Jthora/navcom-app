@@ -904,10 +904,11 @@ clone" half of "somebody else can deploy."
 distinct from board time (7.6) and the corrected-record standing model — both currently
 track the first axis, not the second. Named so the gap isn't invisible; not resolved here.
 
-**Deferred — RelayNode.** It was in the first draft as a way to remove strangers from the
-path. It also **adds** a single point of failure to the milestone about removing them: a relay
-only one person runs is worse than two public ones. Revisit when a public relay actually
-fails us, or when there is a second person to run it.
+**RelayNode — superseded 2026-10-06** by [`design/grid.md`](design/grid.md). The deferral waited
+for a public relay to fail NavCom or for a second person to run one, and both happened the same
+day: `relay.damus.io` refuses every NIP-42 sign-in and answered with errors, and a Raspberry Pi beside
+the Jetson has a second person behind it. The reasoning about small relays was then revisited from
+first principles rather than revived.
 
 ---
 
@@ -1134,6 +1135,19 @@ layer above.
 - **Nothing here outranks the directory's volatile fields**, which have been dark for 22 days. A
   mission layer over a directory that answers every *when are they open?* with "call first" undersells
   the thing underneath it. That is human work and no part of this milestone fixes it.
+
+### The grid — decided 2026-10-06
+
+Decided for the Earth Intelligence Network as a whole; reasoning in
+[`design/grid.md`](design/grid.md), and the parts partners act on in the interchange spec, §11.
+
+| | Step | Owner | Not doing it costs |
+|---|---|---|---|
+| G1 | **No reader records on The Record.** Address lines dropped, writes recorded, old journals cleared | Mecha Jono's session | Every NavCom visitor's address stays in a log on a box an agent reads from |
+| G2 | **Missions from more than one relay.** The reader takes The Record and its mirrors, and the newest version of each package wins | agent | The map goes dark whenever the Jetson does |
+| G3 | **Relay lists in the client.** NIP-65 and NIP-17, the built-in relays as a starting point only, `Distress` on every path | agent | Operator traffic stays on two relays NavCom can hold to nothing |
+| G4 | **The node policy attestation.** Drafted by Mecha Jono's side, read by the client when it chooses relays | Mecha Jono's session, then agent | Relays are chosen on trust nobody can show |
+| G5 | **The Pi.** Mirror, swarm peer and Tor onion, per Mecha Jono's brief and NavCom's companion page | the Pi's operator, Jono | No second copy of The Record |
 
 ## The seeding rule
 

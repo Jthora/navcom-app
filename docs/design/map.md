@@ -92,7 +92,9 @@ take a snapshot instead, to keep even that connection off the page; it made one 
 picture for everyone and tied freshness to deploys, which is the centralisation this design
 exists to avoid. The cost of the direct route is small and named: The Record learns that a device
 opened NavCom's missions — one subscription to all of them, never which part of the map anybody
-looked at, which is exactly what a tile server would learn and why tiles stay opt-in.
+looked at, which is exactly what a tile server would learn and why tiles stay opt-in. **It also logged
+the address each connection came from**, which the grid's reader rule now says a relay must not keep
+[`grid.md`](grid.md) §1; until The Record applies it, that is part of the cost.
 
 **Deferring only pays if the deferred thing is genuinely not fetched.** A mini-map that
 lazy-loads when it scrolls into view is a mini-map that loads. Click-to-load, with a

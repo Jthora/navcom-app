@@ -129,10 +129,9 @@ export const KIND_REVOCATION = 30914;
  * application-specific replaceable data, so nothing has to be allocated or defended, and any
  * node can read one with an off-the-shelf library.
  *
- * **The only kind here that may cross a private relay.** Everything else NavCom publishes is
- * about an operator, and a small allowlisted relay is worse for those than a public one — the
- * protection is the anonymity set, not the sealing. This names no operator and says nothing that
- * is not already public on the site.
+ * Names no operator and says nothing that is not already public on the site. An earlier note here
+ * called this the only kind that could cross a small relay, on the theory that a big public relay's
+ * crowd protected the rest; that was withdrawn on 2026-10-06 [docs/design/grid.md §2].
  */
 export const KIND_ANNOUNCE = 30078;
 

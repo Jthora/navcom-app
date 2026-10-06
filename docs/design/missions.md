@@ -92,6 +92,10 @@ that the question is one tap wide and the options are two, so the ask is smaller
 prevents. A mission still reads as taken on the grid either way: **what a private claim withholds is
 who, never that.**
 
+**An agent may claim too, where the poster allowed it** (decided 2026-10-06): only an objective whose
+`takers` includes `agent`, shown marked as an agent's and counted like any other claim. The mark is
+invariant 4; the wire form is in the interchange spec, §4.7.
+
 **`settled` is where the points come from, so it is where the gaming comes from.** Who settles:
 
 | Model | Works when | Fails when |
