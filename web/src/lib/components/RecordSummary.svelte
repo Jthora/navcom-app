@@ -1,8 +1,15 @@
 <script lang="ts">
   import { displayField, displayRecord, type ResourceRecord } from '$lib/directory';
-  import { labelValue, labelValues } from '@navcom/core';
+  import { abroad, countryName, labelValue, labelValues } from '@navcom/core';
 
-  let { record, now }: { record: ResourceRecord; now: Date } = $props();
+  let {
+    record,
+    now,
+    regionCountry = null
+  }: { record: ResourceRecord; now: Date; regionCountry?: string | null } = $props();
+
+  /** In another country from the region this list is for — decided by core, see `abroad.ts`. */
+  const away = $derived(abroad(record, regionCountry));
 
   const meta = $derived(displayRecord(record, now));
   const hours = $derived(displayField(record, 'hours', now));
@@ -26,6 +33,10 @@
 
   <h3><a href="/directory/{record.id}/">{record.name}</a></h3>
   <p class="type">{labelValue(record.type)}</p>
+  {#if away}
+    <!-- In a list of local places, the one thing that makes this one not local. -->
+    <p class="abroad" data-abroad={away.country}>In {countryName(away.country)} — across an international border</p>
+  {/if}
 
   <dl>
     <div><dt>Open</dt><dd>
@@ -80,6 +91,12 @@
     font-size: 0.92rem;
   }
 
+  .abroad {
+    margin: 0.2rem 0 0;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--accent);
+  }
   .seeded-note {
     font-family: var(--font-mono);
     font-size: 0.7rem;

@@ -41,6 +41,8 @@ export interface RecordHit {
   type: string;
   region: string;
   regionName: string;
+  /** Carried from the index entry; see `ConsoleRecordEntry.abroad`. */
+  abroad?: string;
 }
 
 export type ConsoleHit = RegionHit | RecordHit;
@@ -74,7 +76,8 @@ export function search(scope: SearchScope, query: string, limit = RESULT_LIMIT):
           name: e.name,
           type: e.type,
           region: loaded.region,
-          regionName: loaded.name
+          regionName: loaded.name,
+          ...(e.abroad ? { abroad: e.abroad } : {})
         });
         if (out.length >= limit) return out;
       }

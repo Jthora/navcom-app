@@ -17,6 +17,13 @@ export interface ConsoleRecordEntry {
   id: string;
   name: string;
   type: string;
+  /**
+   * The country the service is actually in, by name, when that is not the region's country —
+   * Windsor's shelters in `detroit`, Juárez's in `el-paso`. Absent on every other record, so it
+   * costs thirteen entries a few bytes each and the console no code at all: the name arrives
+   * ready to print rather than as a code the page would need a table to translate.
+   */
+  abroad?: string;
 }
 
 /** A region's centroid, derived from its own geotagged records — never hand-curated. */

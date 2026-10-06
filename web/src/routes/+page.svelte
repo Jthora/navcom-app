@@ -126,7 +126,8 @@
           name: e.name,
           type: e.type,
           region: loaded!.region,
-          regionName: loaded!.name
+          regionName: loaded!.name,
+          ...(e.abroad ? { abroad: e.abroad } : {})
         }))
       : []
   );
@@ -356,7 +357,7 @@
               {#if r.kind === 'record'}
                 <a href="/directory/{r.id}/" data-hit="record">
                   <span class="nc-results-name">{r.name}</span>
-                  <span class="nc-results-meta">{r.type.replace(/_/g, ' ')} · {r.regionName}</span>
+                  <span class="nc-results-meta">{r.type.replace(/_/g, ' ')} · {r.regionName}{#if r.abroad} · <strong data-abroad>in {r.abroad}</strong>{/if}</span>
                 </a>
               {:else}
                 <!--

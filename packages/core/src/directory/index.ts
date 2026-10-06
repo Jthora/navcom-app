@@ -5,6 +5,7 @@ export * from './freshness.js';
 export * from './confidence.js';
 export * from './display.js';
 export * from './confidential.js';
+export * from './abroad.js';
 export * from './decisive.js';
 export * from './parse.js';
 export * from './export.js';

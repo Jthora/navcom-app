@@ -55,7 +55,7 @@
       <h2>{labelValue(type)}</h2>
       <ul class="cards">
         {#each records as record (record.id)}
-          <li><RecordSummary {record} {now} /></li>
+          <li><RecordSummary {record} {now} regionCountry={data.region.country} /></li>
         {/each}
       </ul>
     </section>

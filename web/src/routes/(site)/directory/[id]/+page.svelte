@@ -2,7 +2,7 @@
   import FieldRow from '$lib/components/FieldRow.svelte';
   import { displayField, displayRecord } from '$lib/directory';
   import { AVAILABILITY_FIELDS, FIELD_LABELS, INTAKE_FIELDS, labelValue } from '@navcom/core';
-  import { localTimeNote } from '@navcom/core';
+  import { abroad, countryName, localTimeNote } from '@navcom/core';
   import type { PageData } from './$types';
 
   let { data }: { data: PageData } = $props();
@@ -10,6 +10,13 @@
   const now = $derived(new Date(data.builtAt));
   const record = $derived(data.record);
   const meta = $derived(displayRecord(record, now));
+  /**
+   * Whether this service is in a different country from the region it is filed under.
+   *
+   * Decided by core from the phone number, never from a drawn border — at the resolution any
+   * public basemap uses, El Paso's own shelters plot inside Mexico. See `abroad.ts`.
+   */
+  const away = $derived(data.region ? abroad(record, data.region.country) : null);
   /** The build date, for the printed sheet. The site ships no JavaScript, so this is it. */
   const publishedOn = $derived(data.builtAt.slice(0, 10));
 
@@ -121,6 +128,12 @@
       -->
       <p><strong>This check is old enough that it may no longer be true.</strong></p>
     {/if}
+    {#if away && data.region}
+      <p>
+        <strong>This service is in {countryName(away.country)}</strong>, across an international
+        border from {data.region.name}.
+      </p>
+    {/if}
     <p><strong>Call before you go.</strong></p>
   </div>
 
@@ -130,6 +143,21 @@
       <FieldRow field="address" label={FIELD_LABELS.address ?? 'Address'} display={displayField(record, 'address', now)} />
       <FieldRow field="phone" label={FIELD_LABELS.phone ?? 'Phone'} display={displayField(record, 'phone', now)} />
     </dl>
+    {#if away && data.region}
+      <!--
+        A fact and its evidence, and nothing about what crossing requires. One of the records
+        this applies to is a migrant shelter, and for somebody seeking asylum a confident line
+        about documents would be safety guidance that is wrong for the person most likely to
+        read it.
+      -->
+      <div class="notice notice--warn abroad" data-abroad={away.country}>
+        <p class="notice__label">In {countryName(away.country)}</p>
+        <p>
+          Listed under {data.region.name}, but its phone number places it in
+          {countryName(away.country)} — across an international border.
+        </p>
+      </div>
+    {/if}
     {#if record.lat !== undefined && record.lon !== undefined}
       <p class="map">
         <!-- geo: hands off to the native app on Android and does nothing elsewhere, so the
@@ -240,6 +268,8 @@
 
   .hint { font-size: 0.9rem; color: var(--muted); margin: 0.6rem 0; max-width: var(--measure); }
   .notes { max-width: var(--measure); }
+  .abroad { margin-top: 0.75rem; max-width: var(--measure); }
+  .abroad p { margin: 0; }
   .map { margin-top: 0.6rem; font-size: 0.95rem; display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: baseline; }
   .coords { font-size: 0.78rem; color: var(--muted); }
 

@@ -14,6 +14,7 @@
  * docs/spec/signals.spec.md requires on any directory-derived `20912` answer.
  */
 
+import { abroad, type Abroad } from './abroad.js';
 import { confidenceForClass, isSeeded } from './confidence.js';
 import { displayField, formatDate } from './display.js';
 import type { Region } from './region.js';
@@ -47,6 +48,13 @@ export interface ExportedRecord {
   /** Attach verbatim to a 20912 answer derived from this record [signals.spec]. */
   provenance: { record_id: string; verified: string | null; method: string | null };
   notes: string | null;
+  /**
+   * Set when the service is in a different country from the region it is filed under — the
+   * Windsor shelters in `detroit`, the Juárez services in `el-paso`. `null` means no evidence it
+   * is abroad, not proof that it is local. See `abroad.ts` for why the evidence is the phone
+   * number and never a drawn border.
+   */
+  abroad: Abroad | null;
 }
 
 export interface DirectoryExport {
@@ -103,6 +111,8 @@ export function buildExport(
   now: Date,
   regions: Region[] = []
 ): DirectoryExport {
+  // Built once: a find() per record would be records × regions comparisons on every build.
+  const countryOf = new Map(regions.map((r) => [r.slug, r.country]));
   return {
     version: EXPORT_VERSION,
     regions,
@@ -117,10 +127,12 @@ export function buildExport(
       'Attach `provenance` to any 20912 answer derived from a record. An answer without it must render as unverified [signals.spec].',
       'These verdicts were computed at built_at. If this copy is older than staleness_margin_days, refetch rather than serving it.',
       'hours and curfew are local times. Resolve them against the timezone of the record\'s region, listed in `regions`.',
-      'A region with status=seeded has been checked by nobody. Say so when presenting its rows.'
+      'A region with status=seeded has been checked by nobody. Say so when presenting its rows.',
+      'abroad means the service is in a different country from its region. Say which country whenever you present it. Do not add advice about crossing a border: what crossing requires depends on who is crossing.'
     ],
     count: records.length,
     records: records.map((record) => {
+      const country = (record.region && countryOf.get(record.region)) || null;
       const confidence = Object.fromEntries(
         CLASSES.map((cls) => [cls, confidenceForClass(record, cls, now)])
       ) as Record<VolatilityClass, Confidence>;
@@ -144,7 +156,8 @@ export function buildExport(
           verified: record.last_verified ?? null,
           method: record.method ?? null
         },
-        notes: record.notes ?? null
+        notes: record.notes ?? null,
+        abroad: abroad(record, country)
       };
     })
   };

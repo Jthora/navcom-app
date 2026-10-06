@@ -1,4 +1,5 @@
 import { error } from '@sveltejs/kit';
+import { abroad, countryName } from '@navcom/core';
 import { loadDirectory, loadRegions } from '$lib/directory/load';
 import type { ConsoleRecordEntry } from '$lib/console/types';
 
@@ -39,7 +40,12 @@ export function GET({ params }: { params: { region: string } }) {
 
   const entries: ConsoleRecordEntry[] = loadDirectory()
     .filter((r) => r.region === params.region)
-    .map((r) => ({ id: r.id, name: r.name, type: r.type }));
+    .map((r) => {
+      const away = abroad(r, region.country);
+      return away
+        ? { id: r.id, name: r.name, type: r.type, abroad: countryName(away.country) }
+        : { id: r.id, name: r.name, type: r.type };
+    });
 
   return new Response(JSON.stringify(entries), {
     headers: {

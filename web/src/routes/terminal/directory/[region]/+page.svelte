@@ -22,7 +22,7 @@
     type ResourceType
   } from '$lib/directory';
   import { AVAILABILITY_FIELDS, FIELD_LABELS, FIELD_QUESTION, INTAKE_FIELDS, labelValue,
-    PLACE_METHODS, type PlaceMethod } from '@navcom/core';
+    PLACE_METHODS, type PlaceMethod, abroad, countryName } from '@navcom/core';
   import { displayMerged, mergeCorrections, needsChecking, CORRECTABLE_FIELDS, FIELD_OPTIONS,
     isAddedPlace, isSeeded, withPlaces, PlaceError } from '@navcom/core';
   import { corrections } from '$lib/terminal/corrections.svelte';
@@ -644,6 +644,7 @@
           {@const asks = needsChecking(published, corrections.about(published.id), now)}
           {@const record = merged.record}
           {@const meta = displayRecord(record, now)}
+          {@const away = abroad(record, data.region.country)}
           <article
             class="rec"
             class:seeded={meta.seeded}
@@ -663,6 +664,15 @@
             {/if}
 
             <h3>{record.name}</h3>
+            {#if away}
+              <!--
+                Decided from the merged record, so a phone number corrected in the field moves
+                this with it. A fact, and nothing about what crossing requires: see abroad.ts.
+              -->
+              <p class="abroad" data-abroad={away.country}>
+                In {countryName(away.country)} — across an international border
+              </p>
+            {/if}
 
             <!--
               Rule 3, and the reason this kind exists at all. An added place has never been
@@ -1105,6 +1115,16 @@
   .flag {
     color: var(--t-dark); border: 1px solid var(--t-dark);
     padding: .4rem .6rem; margin: 0 0 .5rem; font-weight: 700; font-size: .92rem;
+  }
+  /*
+   * Neutral emphasis on purpose. Every hue on this screen is a watch state — amber is on-call,
+   * red is nobody watching — and borrowing one for a directory fact would make it mean two
+   * things where somebody is reading fast. The words carry it.
+   */
+  .abroad {
+    color: var(--t-ink); font-weight: 700; font-size: .9rem;
+    border-inline-start: 3px solid var(--t-line-strong); padding-inline-start: .6rem;
+    margin: .2rem 0 .5rem;
   }
   .seeded-note {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
