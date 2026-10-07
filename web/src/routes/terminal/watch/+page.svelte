@@ -249,7 +249,11 @@
     {/snippet}
 
       {#if board.onStation}
-        <Slot k="Holder"><Readout value={callsign} verbatim tone="good" sub="published as the watch" /></Slot>
+        <!--
+          No "published as the watch" under the name: a take while this phone heard nothing
+          publishes nothing, and Published below says which is true [review: relay paths].
+        -->
+        <Slot k="Holder"><Readout value={callsign} verbatim tone="good" /></Slot>
         <Slot k="Published">
           {#if board.unannounced}
             <!--
@@ -257,8 +261,21 @@
               operator is covering nobody and would not otherwise find out.
             -->
             <span class="error"><Heartbeat label="Not reaching a relay" /></span>
-          {:else}
+          {:else if board.deaf}
+            <!--
+              "Yes" here was the board's subscription existing, not it hearing anything: relays that
+              refused it, or held it without a word, left a named human announced while nothing on
+              this phone could hear a Distress [review: relay paths].
+            -->
+            <span class="error"><Heartbeat label="Not hearing on any relay" /></span>
+          {:else if board.announced}
             <Readout value="Yes" tone="good" />
+          {:else}
+            <!--
+              Hearing again, or still sending: no claim of this holder's has reached a relay in the
+              last five minutes, so operators do not read them as here yet.
+            -->
+            <span data-not-yet-announced><Readout value="Not yet" tone="warn" /></span>
           {/if}
         </Slot>
         {#if board.unannounced}
@@ -269,10 +286,23 @@
             will read Dark. It will keep trying.
           </p>
         {/if}
+        {#if board.deaf}
+          <!-- On the glass for the same reason: it is the one thing a holder must know now. -->
+          <p class="error" data-not-hearing>
+            This phone is not hearing on any relay, so a Distress sent to this watch would not
+            reach you.
+          </p>
+          <Why summary="What operators read meanwhile">
+            <p class="cost">
+              Nothing more is announced while this lasts, so operators read Dark within five
+              minutes, which is then true. It keeps trying, and announces you once a relay has
+              kept answering for ten seconds.
+            </p>
+          </Why>
+        {/if}
         <Why summary="What standing down does">
           <p class="cost">
-            You are published as the watch, under <strong>{callsign}</strong>. Standing down
-            says so — it publishes Dark rather than going quiet, so nobody is left reading a
+            Standing down publishes Dark rather than going quiet, so nobody is left reading a
             stale claim that a human is here.
           </p>
         </Why>
@@ -320,7 +350,10 @@
           and the hold below is already a real threshold you can abandon by letting go.
         -->
         <Slot k="Taking on">
-          {#if board.entries.length === 0}
+          {#if board.entries.length === 0 && board.deaf}
+            <!-- Before the hold, not after it: nobody here can hear, so the empty board is unknown. -->
+            <span data-board-unknown><Readout value="Unknown" tone="warn" sub="not hearing on any relay" /></span>
+          {:else if board.entries.length === 0}
             <Readout value="No contact" tone="cold" sub="nothing heard by this phone yet" />
           {:else}
             <Readout
@@ -431,7 +464,12 @@
     <h2>Who is out</h2>
     {#if board.entries.length === 0}
       <Slot k="Board">
-        <span data-empty-board><Readout value="No contact" tone="cold" sub="nothing heard by this phone" /></span>
+        {#if board.deaf}
+          <!-- Blank reads unknown [invariant 7]: a phone hearing on no relay cannot say nobody is out. -->
+          <span data-board-unknown><Readout value="Unknown" tone="warn" sub="not hearing on any relay" /></span>
+        {:else}
+          <span data-empty-board><Readout value="No contact" tone="cold" sub="nothing heard by this phone" /></span>
+        {/if}
       </Slot>
       <Why summary="What that does and does not mean">
         <p class="cost">
@@ -487,9 +525,10 @@
                 <button onclick={() => (answering = null)}>Cancel</button>
               </div>
               {#if unsent === w.id}
+                <!-- Sent counts only where they were heard: they publish there, and listen there. -->
                 <p class="error" data-answer-unsent>
-                  That did not reach a relay, so they have not received it. It is still on
-                  your board — try again when you have signal.
+                  That did not reach a relay they were heard on, so it may not have reached them.
+                  It is still on your board — try again when you have signal.
                 </p>
               {/if}
               {#if declineIsValid(w.type)}
@@ -548,7 +587,13 @@
       </p>
     {/if}
     {#if board.waiting.length === 0}
-      <Slot k="Waiting"><Readout value="Nothing waiting" tone="cold" /></Slot>
+      <Slot k="Waiting">
+        {#if board.deaf}
+          <Readout value="Unknown" tone="warn" sub="not hearing on any relay" />
+        {:else}
+          <Readout value="Nothing waiting" tone="cold" />
+        {/if}
+      </Slot>
     {:else}
       <ul class="board asks">
         {#each board.waiting as w (w.id)}{@render ask(w)}{/each}
@@ -564,7 +609,13 @@
       so by where it puts it, not only in words.
     -->
     {#if board.restock.length === 0}
-      <Slot k="Restock"><Readout value="Nothing has run out" tone="cold" /></Slot>
+      <Slot k="Restock">
+        {#if board.deaf}
+          <Readout value="Unknown" tone="warn" sub="not hearing on any relay" />
+        {:else}
+          <Readout value="Nothing has run out" tone="cold" />
+        {/if}
+      </Slot>
     {:else}
       <ul class="board asks">
         {#each board.restock as w (w.id)}

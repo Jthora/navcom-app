@@ -30,7 +30,7 @@
  * answers and watch state, which is a separate job [`watch-key.ts`].
  */
 
-import { finalizeEvent } from 'nostr-tools/pure';
+import { finalizeEvent, getPublicKey } from 'nostr-tools/pure';
 import type { Event } from 'nostr-tools/core';
 import {
   KIND_DISTRESS,
@@ -50,12 +50,31 @@ import {
 import { loadIdentity } from './identity';
 import { loadConfig } from './config';
 import { watchRelays } from './relays';
+import { usable } from './relay-url';
 import { pool } from './pool';
-import { subscribeLive } from './subscribe';
+import { subscribeLive, type LiveSubscription } from './subscribe';
 import { watchKey, watchPubkey } from './watch-key';
 
 /** How often watch state is republished. A stale state reads Dark, which is the point. */
 export const WATCH_BEAT_SECONDS = 120;
+
+/**
+ * How long standing down waits to read the watch's state before it decides whether to say Dark.
+ * Nothing answering in that time is not a reason to stay quiet: it says Dark, the safe direction.
+ */
+const HANDOVER_READ_MS = 3_000;
+
+/**
+ * How long a relay has to have kept answering the board's subscription before this phone renews
+ * its holder's claim there [review: relay paths].
+ *
+ * Renewing wherever the board was hearing *at that instant* let a relay that answers and drops
+ * straight away — a volunteer relay in a crash loop, a proxy that kills sockets, a weak cell —
+ * keep a named human announced: each reopen answered for a moment, the claim went out in that
+ * moment, and it never went stale, while nothing on the phone heard a `Distress` for more than a
+ * fraction of a second at a time. Taking the watch is not held to this; renewing it is.
+ */
+export const HEARD_FOR_MS = 10_000;
 
 export interface Waiting {
   id: string;
@@ -64,7 +83,14 @@ export interface Waiting {
   type: SignalType | 'distress';
   text: string | null;
   at: number;
+  /**
+   * The relays it arrived on. They are ones the sender published to, so they are where an answer
+   * can reach them, whatever this watch's own relays have become since [review: relay paths].
+   */
+  heardOn: string[];
 }
+
+type Advertised = { state: string; holder: string | null };
 
 /**
  * How many of each the board will hold.
@@ -85,9 +111,33 @@ let routineDropped = $state(false);
 let distressDropped = $state(false);
 /** Nobody can see this watch yet, because taking it never reached a relay. */
 let unannounced = $state(false);
+/**
+ * This holder's claim reached a relay within the last five minutes, so operators read them as on
+ * station. Cleared once that long passes with nothing renewed, which is when operators read Dark.
+ */
+let announced = $state(false);
+let announcedUntil: ReturnType<typeof setTimeout> | null = null;
 /** Still advertised as staffed, because standing down never reached a relay. */
 let stillAdvertised = $state(false);
 let darkRetry: ReturnType<typeof setInterval> | null = null;
+/** A renewal waiting for a relay that has just started answering to have kept at it. */
+let recheck: ReturnType<typeof setTimeout> | null = null;
+/**
+ * Moved on by taking the watch, standing down, and forgetting it all.
+ *
+ * Each of those awaits relays, and a person can act again before they answer: retake the watch
+ * while a stand-down's Dark is still out, or wipe the phone while it reads who holds the watch. So
+ * whatever comes back belongs to the act that is current, and an older one stops where it is —
+ * otherwise a failed Dark armed its retry over a holder back on station, and a wipe was followed
+ * by a Dark it had promised would not be sent [review: relay paths].
+ */
+let generation = 0;
+/**
+ * The `created_at` of the last watch state this phone signed. Each one is later than the last, so
+ * a stand-down straight after a take — or a take straight after a stand-down — is never a tie that
+ * relays settle by comparing ids, which would leave the older claim standing half the time.
+ */
+let lastSignedAt = 0;
 
 /**
  * Who this watch is currently advertising as its holder.
@@ -99,7 +149,7 @@ let darkRetry: ReturnType<typeof setInterval> | null = null;
  * That is what made the handover hole invisible from here. Read from the same relays the
  * board already uses, so it costs one filter rather than a connection.
  */
-let advertised = $state<{ state: string; holder: string | null } | null>(null);
+let advertised = $state<Advertised | null>(null);
 
 /**
  * The timestamp of the last sign-on or stand-down applied for each operator.
@@ -115,11 +165,29 @@ let advertised = $state<{ state: string; holder: string | null } | null>(null);
 let stateAt: Record<string, number> = {};
 let onStation = $state(false);
 let since = $state(0);
-let closer: { close(): void } | null = null;
+let closer: LiveSubscription | null = null;
 /** Which watch the listener is open for, so returning to the screen does not reopen it. */
 let listeningTo: string | null = null;
-/** When the advertised state was published: only a newer one replaces it. */
+/**
+ * The relays the listener was opened on, or last moved to.
+ *
+ * Only the watch was compared, so a holder who changed relays while on station went on being heard
+ * on the old ones and announced on the new — operators who followed the change read On station
+ * and nothing on this phone heard their `Distress` [review: relay paths]. A different list is
+ * followed now, on the next `start()` or beat.
+ */
+let listeningOn: string[] = [];
+/** The listener these callbacks belong to; anything from one it replaced is ignored. */
+let listenToken: object | null = null;
+/** The relays the listener is hearing on now: answered, and not closed since. */
+let hearing = $state<string[]>([]);
+/** Whether every relay has answered or failed at least once since the listener opened. */
+let heardBack = $state(false);
+/** Hearing nothing at the last look, so the next answer is announced at once. */
+let wasDeaf = false;
+/** When the advertised state was published, and which event it was: only a newer one replaces it. */
 let advertisedAt = 0;
+let advertisedId = '';
 let beat: ReturnType<typeof setInterval> | null = null;
 
 /** Anything sealed to us that we could not open is dropped, never guessed at. */
@@ -185,6 +253,16 @@ export const board = {
   },
 
   /**
+   * Whether operators read this holder as on station right now: a claim of theirs reached a relay
+   * within the last five minutes. False before the first one lands, and again once five minutes
+   * pass with nothing renewed — after a take while this phone heard nothing, or after it stopped
+   * hearing.
+   */
+  get announced(): boolean {
+    return announced;
+  },
+
+  /**
    * Whether standing down actually reached anyone.
    *
    * The worse direction by far, and the one this module already explains: watch state is
@@ -219,6 +297,18 @@ export const board = {
   },
 
   /**
+   * Whether this phone is hearing the watch on no relay at all [review: relay paths].
+   *
+   * Known only once every relay has answered or failed, and true while none of them is answering
+   * its subscription: refused, dropped, or held without a word. A holder in this state would not
+   * hear a `Distress`, so nothing more is announced until a relay has kept answering for
+   * {@link HEARD_FOR_MS}.
+   */
+  get deaf(): boolean {
+    return heardBack && hearing.length === 0;
+  },
+
+  /**
    * Starts listening.
    *
    * Listening is not holding watch. A member off watch still sees the board — that is the
@@ -228,14 +318,32 @@ export const board = {
   start(): void {
     const identity = loadIdentity();
     const address = watchPubkey() ?? loadConfig()?.pubkey;
-    const urls = watchRelays();
+    const urls = usable(watchRelays());
     if (!identity || !address || urls.length === 0) return;
-    // Already listening for this watch: reopening would leave a gap a Distress could fall into.
-    if (closer && listeningTo === address) return;
+    if (closer && listeningTo === address) {
+      // Already listening for this watch: reopening would leave a gap a Distress could fall into.
+      // A change of relays is followed instead, in place — relays on both lists keep their
+      // subscription untouched; a new one is asked once its connection is up, and a dropped one
+      // is let go at once.
+      if (!sameRelays(urls, listeningOn)) {
+        listeningOn = urls;
+        closer.follow(urls);
+      }
+      return;
+    }
 
-    closer?.close();
+    // The previous listener, which was for another watch, is let go once this one is opened.
+    const previous = closer;
+    const token = {};
+    listenToken = token;
     listeningTo = address;
+    listeningOn = urls;
+    advertised = null;
     advertisedAt = 0;
+    advertisedId = '';
+    hearing = [];
+    heardBack = false;
+    wasDeaf = false;
     /*
      * Two filters per relay, not `subscribeMany` with an array.
      *
@@ -265,14 +373,16 @@ export const board = {
         { kinds: [KIND_WATCH_STATE], authors: [address] }
       ],
       {
-        onevent: (event: Event) => {
+        onevent: (event: Event, url: string) => {
+          if (listenToken !== token) return;
           if (event.kind === KIND_WATCH_STATE) {
             // Newest wins, whichever relay answers last [audit: relay paths, F11]: the stand-down
             // guard below trusts this, and a lagging relay's old Station made it refuse to say Dark.
-            if (event.created_at < advertisedAt) return;
+            if (!newer(event, advertisedAt, advertisedId)) return;
             try {
-              advertised = JSON.parse(event.content) as { state: string; holder: string | null };
+              advertised = JSON.parse(event.content) as Advertised;
               advertisedAt = event.created_at;
+              advertisedId = event.id;
             } catch {
               advertised = null;
             }
@@ -284,10 +394,25 @@ export const board = {
             ? 'distress'
             : readTag(event.tags, 't')) as Waiting['type'] | undefined;
           if (!type) return;
-          apply(type, read.from, read.payload, event);
+          apply(type, read.from, read.payload, event, url);
+        },
+        // The same signal from another relay: one more place an answer can reach them.
+        onrepeat: (event: Event, url: string) => {
+          if (listenToken === token) heardAlsoOn(event.id, url);
+        },
+        oneose: () => {
+          if (listenToken !== token) return;
+          heardBack = true;
+          listened();
+        },
+        onlisten: (now: string[]) => {
+          if (listenToken !== token) return;
+          hearing = now;
+          listened();
         }
       }
     );
+    previous?.close();
   },
 
   /**
@@ -300,34 +425,55 @@ export const board = {
   async takeWatch(): Promise<void> {
     const secret = watchKey();
     const identity = loadIdentity();
-    const urls = watchRelays();
+    const urls = usable(watchRelays());
     if (!secret || !identity?.callsign || urls.length === 0) return;
 
+    const mine = ++generation;
     since = Math.floor(Date.now() / 1000);
     onStation = true;
+    // A stand-down still retrying its Dark would land it on top of this claim.
+    if (darkRetry) clearInterval(darkRetry);
+    darkRetry = null;
+    stillAdvertised = false;
+    unannounced = false;
+    setAnnounced(false);
     // Holding a watch is hearing it: the listener is opened here if no screen opened it.
     board.start();
-    // Reported, not assumed. Everyone out sees the callsign of whoever took it — so if
-    // nothing was published, this operator is covering nobody and needs to know now rather
-    // than at the moment somebody needs them.
-    unannounced = !(await publishState(secret, identity.callsign, since));
     if (beat) clearInterval(beat);
     beat = setInterval(() => {
-      const s = watchKey();
-      const who = loadIdentity()?.callsign;
+      if (!onStation) return;
+      // A change of relays made on another screen is followed before anything is claimed.
+      board.start();
       // The beat is also the retry: a watch that could not announce itself heals here as
       // soon as there is signal, and the warning clears with it.
       //
-      // **Only while this phone is listening** [audit: relay paths, F09]. The beat used to
-      // outlive the board, so a holder who left the Watch screen went on being announced as a
-      // human on station while nothing on the phone could hear a Distress. Without the listener
-      // the claim goes unrefreshed and reads Dark within five minutes, which is then true.
-      if (onStation && s && who && closer) {
-        void publishState(s, who, since).then((ok) => {
-          unannounced = !ok;
-        });
-      }
+      // **Only where this phone is listening** [audit: relay paths, F09; review: relay paths].
+      // The beat used to outlive the board, so a holder who left the Watch screen went on being
+      // announced as a human on station while nothing on the phone could hear a Distress. Then it
+      // checked only that a listener existed — and one whose every relay refused it, or held it
+      // without a word, still existed. A relay this phone cannot hear on — or heard on only for a
+      // moment — is not told again, so the claim there goes stale and reads Dark within five
+      // minutes, which is then true.
+      void announce();
     }, WATCH_BEAT_SECONDS * 1000);
+
+    // Reported, not assumed. Everyone out sees the callsign of whoever took it — so if
+    // nothing was published, this operator is covering nobody and needs to know now rather
+    // than at the moment somebody needs them.
+    //
+    // Where this phone hears [review: relay paths]: the relays it hears on now, and if it hears on
+    // none yet, the ones it has not heard back from at all — never one that has already refused,
+    // dropped or ignored the board. Once every relay has answered or failed and none is hearing,
+    // that is nowhere, which the screen says. An unknown relay that then turns out not to answer
+    // keeps this one claim until it reads Dark, within five minutes, because nothing renews it.
+    const hearingNow = closer?.listening() ?? [];
+    const on = hearingNow.length > 0 ? hearingNow : (closer?.pending() ?? []);
+    if (on.length === 0) return;
+    const ok = await publishState(secret, identity.callsign, since, on);
+    // Stood down, or wiped, while that was out: what it says about this take no longer applies.
+    if (generation !== mine) return;
+    unannounced = !ok;
+    if (ok) setAnnounced(true);
   },
 
   /**
@@ -339,12 +485,22 @@ export const board = {
    */
   async standDown(): Promise<void> {
     const secret = watchKey();
-    const urls = watchRelays();
+    const urls = usable(watchRelays());
+    const mine = ++generation;
     onStation = false;
     unannounced = false;
+    setAnnounced(false);
     if (beat) clearInterval(beat);
     beat = null;
+    if (recheck) clearTimeout(recheck);
+    recheck = null;
+    // An earlier stand-down's retry is this one's to finish: it retries for itself if it must.
+    if (darkRetry) clearInterval(darkRetry);
+    darkRetry = null;
     if (!secret || urls.length === 0) return;
+    // Captured now: the screen's *Give up this watch* removes the key straight after calling this.
+    const author = getPublicKey(secret);
+    const listenedOn = listeningOn;
 
     /*
      * Only whoever is currently advertised may publish Dark.
@@ -357,12 +513,24 @@ export const board = {
      *
      * Standing down is always honoured locally. What is conditional is *speaking for the
      * watch*, and somebody who has already handed over does not.
+     *
+     * **Read where Dark would go, not only where the listener happened to be** [review: relay
+     * paths]. The guard trusted what the board's listener had heard, and after a change of relays
+     * the listener had not heard the new ones — so Dark went out over a holder who had taken over
+     * there. The relays Dark is about to reach and the ones the board listens on are asked now,
+     * briefly; nothing answering is not a reason to stay quiet.
      */
-    const mine = loadIdentity()?.callsign;
+    const callsign = loadIdentity()?.callsign;
+    const newest = await newestState(author, usable([...urls, ...listenedOn]));
+    // Taken up again while that was read, and the new claim stands; or wiped, and nothing is sent.
+    if (generation !== mine) return;
     // A Station old enough to read as Dark speaks for nobody, and must not silence this one.
-    const fresh = Math.floor(Date.now() / 1000) - advertisedAt < STALE_AFTER_SECONDS;
-    if (fresh && advertised?.state === 'station' && advertised.holder && mine && advertised.holder !== mine) {
-      console.info('[watch] handed over to ' + advertised.holder + ' — not publishing Dark over them');
+    const fresh = Math.floor(Date.now() / 1000) - newest.at < STALE_AFTER_SECONDS;
+    const holder = newest.state?.state === 'station' ? newest.state.holder : null;
+    if (fresh && holder && callsign && holder !== callsign) {
+      console.info('[watch] handed over to ' + holder + ' — not publishing Dark over them');
+      // Whatever this phone once published has been replaced by their claim.
+      stillAdvertised = false;
       return;
     }
 
@@ -377,11 +545,15 @@ export const board = {
      *
      * So it retries until it lands, and says so until it does. This is the one place in the
      * app where going quiet is not a safe default.
+     *
+     * Unless the holder took the watch back, or wiped the phone, while it was out: then there is
+     * nothing to retry — a Dark retried over a holder back on station would land on their claim.
      */
-    if (await publishDark(secret)) return;
+    const landed = await publishDark(secret);
+    if (generation !== mine) return;
+    stillAdvertised = !landed;
+    if (landed) return;
 
-    stillAdvertised = true;
-    if (darkRetry) clearInterval(darkRetry);
     /*
      * The captured secret, not a fresh read.
      *
@@ -393,7 +565,9 @@ export const board = {
      */
     darkRetry = setInterval(() => {
       void publishDark(secret).then((ok) => {
-        if (!ok) return;
+        // One that lands after the watch was taken back, or another stand-down began, speaks for
+        // neither: the warning and the retry belong to whatever is current.
+        if (!ok || generation !== mine) return;
         stillAdvertised = false;
         if (darkRetry) clearInterval(darkRetry);
         darkRetry = null;
@@ -450,9 +624,17 @@ export const board = {
      * The result was discarded, so an answer that reached no relay still cleared the item —
      * the watch believed they had replied and the operator got nothing. Leaving it in place
      * is what lets somebody notice and try again.
+     *
+     * **Gone to where they will hear it** [review: relay paths]. The answer went only to this
+     * watch's relays as they are now, and counted as sent if any took it — so a holder who had
+     * changed relays answered a `Distress` heard on the old one where its sender never listens,
+     * was told it had gone, and the sender's phone went on to say nobody was coming. It goes to
+     * the relays the signal arrived on as well, and counts as sent only if one of those took it:
+     * the sender published there, and listens there.
      */
-    const results = await Promise.allSettled(pool().publish(urls, event));
-    const sent = results.some((r) => r.status === 'fulfilled');
+    const heard = usable(item.heardOn ?? []);
+    const took = await publishEach(usable([...heard, ...urls]), event);
+    const sent = heard.length > 0 ? took.some((url) => heard.includes(url)) : took.length > 0;
     if (!sent) return false;
 
     // A Distress stays until a human has actually ended it, which is not something this
@@ -466,14 +648,12 @@ export const board = {
 
   /**
    * A screen closing. **Not the end of a watch** — while this phone holds one, the listener
-   * stays open with the beat, so a holder who steps away to Status still hears a Distress, and
-   * is never announced as listening when they are not [audit: relay paths, F09].
+   * stays open with the beat, so a holder who steps away to Status still hears a Distress [audit:
+   * relay paths, F09]. The beat announces them only on relays the listener is hearing on.
    */
   stop(): void {
     if (onStation) return;
-    closer?.close();
-    closer = null;
-    listeningTo = null;
+    unlisten();
   },
 
   /**
@@ -485,40 +665,175 @@ export const board = {
    * everyone within five minutes, which is true — nobody on this phone is watching.
    */
   forget(): void {
-    closer?.close();
-    closer = null;
-    listeningTo = null;
+    // Anything still on its way back — a stand-down's read, a Dark — now stops where it is.
+    generation++;
+    unlisten();
     if (beat) clearInterval(beat);
     beat = null;
     if (darkRetry) clearInterval(darkRetry);
     darkRetry = null;
+    if (recheck) clearTimeout(recheck);
+    recheck = null;
     onStation = false;
     since = 0;
     unannounced = false;
+    setAnnounced(false);
     stillAdvertised = false;
     entries = [];
     waiting = [];
     stateAt = {};
     advertised = null;
     advertisedAt = 0;
+    advertisedId = '';
     routineDropped = false;
     distressDropped = false;
   }
 };
 
+/** Closes the listener and forgets what it was hearing. */
+function unlisten(): void {
+  listenToken = null;
+  closer?.close();
+  closer = null;
+  listeningTo = null;
+  listeningOn = [];
+  hearing = [];
+  heardBack = false;
+  wasDeaf = false;
+}
+
+/** The same relays, in any order. Both lists come out of `usable`, so spelling is settled. */
+function sameRelays(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((url) => b.includes(url));
+}
+
+/** Newest wins, and of two from the same second the lower id, as NIP-01 settles them. */
+function newer(event: Event, at: number, id: string): boolean {
+  return event.created_at > at || (event.created_at === at && (id === '' || event.id < id));
+}
+
+/**
+ * After every change in what the listener hears. Hearing again after hearing nothing is announced
+ * without waiting for the beat — once the relay has kept answering for {@link HEARD_FOR_MS}, not
+ * the moment it answers, so a relay that answers and drops straight away announces nobody.
+ */
+function listened(): void {
+  const deafNow = heardBack && hearing.length === 0;
+  if (wasDeaf && !deafNow && onStation) void announce();
+  wasDeaf = deafNow;
+}
+
+/**
+ * This holder's Station, on the relays the board has heard on for at least {@link HEARD_FOR_MS}
+ * without a break, and nowhere else. If it is hearing somewhere but not yet for that long, it looks
+ * again once that relay would have been.
+ */
+async function announce(): Promise<void> {
+  if (recheck) clearTimeout(recheck);
+  recheck = null;
+  const secret = watchKey();
+  const who = loadIdentity()?.callsign;
+  if (!onStation || !secret || !who || !closer) return;
+  const on = closer.listening(HEARD_FOR_MS);
+  if (on.length === 0) {
+    if (closer.listening().length > 0) recheck = setTimeout(() => void announce(), HEARD_FOR_MS);
+    return;
+  }
+  const mine = generation;
+  const ok = await publishState(secret, who, since, on);
+  // A stand-down, retake or wipe while that was in flight owns the warning now.
+  if (generation !== mine) return;
+  unannounced = !ok;
+  if (ok) setAnnounced(true);
+}
+
+/**
+ * Whether operators read this holder as here. Set when a claim lands, and cleared once a claim
+ * that is not renewed would read Dark to them.
+ */
+function setAnnounced(on: boolean): void {
+  if (announcedUntil) clearTimeout(announcedUntil);
+  announcedUntil = null;
+  announced = on;
+  if (!on) return;
+  announcedUntil = setTimeout(() => {
+    announcedUntil = null;
+    announced = false;
+  }, STALE_AFTER_SECONDS * 1000);
+}
+
+/** When the next watch state this phone signs is stamped: now, and never at or before the last. */
+function stateTime(): number {
+  lastSignedAt = Math.max(Math.floor(Date.now() / 1000), lastSignedAt + 1);
+  return lastSignedAt;
+}
+
+/**
+ * The newest watch state on these relays, beside what the listener already holds; newest wins.
+ *
+ * Asked once and briefly, for the stand-down guard. Whatever has not answered by
+ * `HANDOVER_READ_MS` is left out, and what the listener heard stands for it.
+ */
+function newestState(author: string, urls: string[]): Promise<{ state: Advertised | null; at: number }> {
+  let best = { state: advertised as Advertised | null, at: advertisedAt, id: advertisedId };
+  return new Promise((resolve) => {
+    let done = false;
+    let read: LiveSubscription | null = null;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      read?.close();
+      resolve(best);
+    };
+    const timer = setTimeout(finish, HANDOVER_READ_MS);
+    read = subscribeLive(urls, { kinds: [KIND_WATCH_STATE], authors: [author], limit: 1 }, {
+      onevent: (event) => {
+        if (!newer(event, best.at, best.id)) return;
+        try {
+          best = { state: JSON.parse(event.content) as Advertised, at: event.created_at, id: event.id };
+        } catch {
+          /* unreadable: what was held stands */
+        }
+      },
+      oneose: finish
+    });
+    // Told before it was returned, when there was nobody to ask.
+    if (done) read.close();
+  });
+}
+
+/**
+ * Publishes to each relay on its own, and gives back the ones that took it.
+ *
+ * One at a time, so a relay the pool cannot open is one refusal among the rest rather than a
+ * throw for all of them [audit: relay paths, F01], and so the caller can tell which took it.
+ */
+async function publishEach(urls: string[], event: Event): Promise<string[]> {
+  const results = await Promise.allSettled(
+    urls.map((url) => {
+      try {
+        return pool().publish([url], event)[0] ?? Promise.reject(new Error('nothing to publish to'));
+      } catch (e) {
+        return Promise.reject(e);
+      }
+    })
+  );
+  return urls.filter((_, i) => results[i]?.status === 'fulfilled');
+}
+
 /** Publishes Dark, reporting whether any relay took it. */
 async function publishDark(secret: Uint8Array): Promise<boolean> {
-  const urls = watchRelays();
+  const urls = usable(watchRelays());
   if (urls.length === 0) return false;
   const event = finalizeEvent(
     {
-      ...buildWatchStateEvent(darkInput(), Math.floor(Date.now() / 1000)),
+      ...buildWatchStateEvent(darkInput(), stateTime()),
       content: JSON.stringify(darkState())
     },
     secret
   );
-  const results = await Promise.allSettled(pool().publish(urls, event));
-  return results.some((r) => r.status === 'fulfilled');
+  return (await publishEach(urls, event)).length > 0;
 }
 
 function darkInput() {
@@ -535,8 +850,8 @@ function darkInput() {
   };
 }
 
-async function publishState(secret: Uint8Array, callsign: string, at: number): Promise<boolean> {
-  const urls = watchRelays();
+/** Publishes Station to these relays, reporting whether any took it. */
+async function publishState(secret: Uint8Array, callsign: string, at: number, urls: string[]): Promise<boolean> {
   const event = finalizeEvent(
     buildWatchStateEvent(
       {
@@ -552,12 +867,18 @@ async function publishState(secret: Uint8Array, callsign: string, at: number): P
         log_root: null,
         now: Math.floor(Date.now() / 1000)
       },
-      Math.floor(Date.now() / 1000)
+      stateTime()
     ),
     secret
   );
-  const results = await Promise.allSettled(pool().publish(urls, event));
-  return results.some((r) => r.status === 'fulfilled');
+  return (await publishEach(urls, event)).length > 0;
+}
+
+/** One more relay a signal on the board was heard on. */
+function heardAlsoOn(id: string, url: string): void {
+  const at = waiting.findIndex((w) => w.id === id);
+  if (at === -1 || waiting[at]!.heardOn.includes(url)) return;
+  waiting = waiting.map((w, i) => (i === at ? { ...w, heardOn: [...w.heardOn, url] } : w));
 }
 
 /** Folds one signal into the board. */
@@ -565,7 +886,8 @@ function apply(
   type: Waiting['type'],
   from: string,
   payload: Record<string, unknown>,
-  event: Event
+  event: Event,
+  url: string
 ): void {
   const callsign = typeof payload.callsign === 'string' ? payload.callsign : from.slice(0, 8);
   const now = event.created_at;
@@ -609,6 +931,9 @@ function apply(
   );
 
   if (type === 'routine') return;
+
+  // Already waiting, heard again: where it came from is added, and how long we have had it stands.
+  if (waiting.some((w) => w.id === event.id)) return heardAlsoOn(event.id, url);
 
   // Query, Assist and Distress are all things a person is waiting on.
   const without = waiting.filter((w) => w.id !== event.id);
@@ -656,7 +981,8 @@ function apply(
        * top of the watch's queue. Receipt time is both the honest answer to "how long have I
        * had this" and the one nobody else can set.
        */
-      at: Math.floor(Date.now() / 1000)
+      at: Math.floor(Date.now() / 1000),
+      heardOn: [url]
     }
   ];
 }

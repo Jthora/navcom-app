@@ -39,7 +39,7 @@
   "src/routes/terminal/card/+page.svelte": 39,
   "src/routes/terminal/directory/+page.svelte": 100,
   "src/routes/terminal/directory/[region]/+page.svelte": 519,
-  "src/routes/terminal/distress/+page.svelte": 272,
+  "src/routes/terminal/distress/+page.svelte": 301,
   "src/routes/terminal/find/+page.svelte": 272,
   "src/routes/terminal/funding/+page.svelte": 271,
   "src/routes/terminal/log/+page.svelte": 322,
@@ -51,7 +51,7 @@
   "src/routes/terminal/setup/+page.svelte": 164,
   "src/routes/terminal/sign-on/+page.svelte": 191,
   "src/routes/terminal/standing/+page.svelte": 331,
-  "src/routes/terminal/watch/+page.svelte": 374,
+  "src/routes/terminal/watch/+page.svelte": 403,
   "src/routes/terminal/who/+page.svelte": 12,
   "src/routes/terminal/wipe/+page.svelte": 334
 }

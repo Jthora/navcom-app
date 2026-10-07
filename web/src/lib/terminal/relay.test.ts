@@ -49,12 +49,35 @@ beforeEach(() => {
 });
 
 describe('two relays that disagree', () => {
-  it('shows the newer state, even when the older arrives last', () => {
+  /*
+   * Each copy on its own relay, in both orders, and the reading asserted exactly. This used to
+   * assert only that the last reading was not Station — which the absent reading given before
+   * anything arrives satisfies, so a module that showed nothing at all passed [review: relay paths].
+   */
+  const read = (first: ReturnType<typeof state>, second: ReturnType<typeof state>) => {
     const reads: WatchStateRead[] = [];
-    watchWatchtower({ pubkey: getPublicKey(watch), relays: ['wss://a', 'wss://b'], holders: [] }, (r) => reads.push(r));
-    subscribed[0]!.onevent(state('dark', now - 10));
-    subscribed[0]!.onevent(state('station', now - 60));
-    expect(reads.at(-1)!.state?.state ?? 'absent').not.toBe('station');
+    const c = watchWatchtower({ pubkey: getPublicKey(watch), relays: ['wss://a', 'wss://b'], holders: [] }, (r) => reads.push(r));
+    expect(subscribed, 'one subscription per relay').toHaveLength(2);
+    subscribed[0]!.onevent(first);
+    subscribed[1]!.onevent(second);
+    c.close();
+    return reads.at(-1);
+  };
+
+  it('keeps the newer state when the older arrives last', () => {
+    expect(read(state('dark', now - 10), state('station', now - 60))).toMatchObject({
+      reason: null,
+      dark: true,
+      state: { state: 'dark' }
+    });
+  });
+
+  it('takes the newer state when it arrives last', () => {
+    expect(read(state('dark', now - 60), state('station', now - 10))).toMatchObject({
+      reason: null,
+      dark: false,
+      state: { state: 'station', holder: 'Wren' }
+    });
   });
 });
 
