@@ -127,13 +127,20 @@ describe("a relay whose handshake finishes after nostr-tools has given up on it"
     // nostr-tools abandons a socket at its connection timeout by detaching its handlers, and never
     // closes it. When the handshake finished later the socket stayed open, kept alive by ws
     // answering pings, until the relay or the process restarted -- one per attempt, and a
-    // listener retries every fifteen seconds for as long as the relay is slow.
+    // listener retries every fifteen seconds for as long as the relay is slow. It is now closed
+    // when it is abandoned [#12], so the late handshake has nothing left to finish on.
     const wss = new WebSocketServer({ noServer: true });
     const open = new Set<ServerSocket>();
+    const connections = new Set<Socket>();
     let upgrades = 0;
     const http = createHttpServer();
+    http.on("connection", (socket: Socket) => {
+      connections.add(socket);
+      socket.on("close", () => connections.delete(socket));
+    });
     http.on("upgrade", (req, socket, head) => {
       setTimeout(() => {
+        if (socket.destroyed) return;
         wss.handleUpgrade(req, socket, head, (ws) => {
           upgrades++;
           open.add(ws);
@@ -150,7 +157,58 @@ describe("a relay whose handshake finishes after nostr-tools has given up on it"
     pools.push(pool);
     await expect(pool.ensureRelay(`ws://127.0.0.1:${port}`, { connectionTimeout: 500 })).rejects.toBeDefined();
 
-    await eventually(() => expect(upgrades).toBe(1), 5_000);
-    await eventually(() => expect(open.size, "the abandoned socket is still open").toBe(0), 3_000);
+    await eventually(() => expect(connections.size, "the abandoned socket is still open").toBe(0), 3_000);
+    await new Promise((r) => setTimeout(r, 1_500));
+    expect(open.size, "a late handshake left an open connection behind").toBe(0);
+    expect(upgrades, "the socket outlived the give-up long enough for the handshake to finish").toBe(0);
+  }, 15_000);
+});
+
+describe("a relay that takes the connection and never answers the upgrade [#12]", () => {
+  it("leaves no socket open once nostr-tools has given up on it", async () => {
+    // nostr-tools abandons a socket at its connection timeout by nulling its handlers, and never
+    // closes it; `ws` sets no handshake timeout of its own. Against a relay that takes the TCP
+    // connection and never answers, every retry left one socket open for as long as the relay held
+    // it -- about two hundred an hour from a listener -- and pool.destroy() could not reach them.
+    const open = new Set<Socket>();
+    const server: Server = createServer((socket) => {
+      open.add(socket);
+      // Read what arrives, so the client hanging up is seen here; the upgrade is never answered.
+      socket.resume();
+      socket.on("close", () => open.delete(socket));
+      socket.on("error", () => {});
+    });
+    servers.push(server);
+    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", () => resolve()));
+    const address = server.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+
+    const pool = nodePool();
+    pools.push(pool);
+    for (let i = 0; i < 3; i++) {
+      await expect(pool.ensureRelay(`ws://127.0.0.1:${port}`, { connectionTimeout: 200 })).rejects.toBeDefined();
+    }
+    await eventually(() => expect(open.size, "sockets nobody holds are still open").toBe(0), 3_000);
+  }, 15_000);
+
+  it("still connects to a relay that answers within the caller's own timeout", async () => {
+    // The socket is closed when the caller gives up, not on a clock of its own: a relay that takes
+    // six seconds to finish the upgrade is still reached by a caller that waits nine -- as the
+    // conformance check (twelve) and promote (nineteen) wait. Six, so that the five-second
+    // handshake timeout considered for #12 instead of closing on give-up would fail this.
+    const wss = new WebSocketServer({ noServer: true });
+    const http = createHttpServer();
+    http.on("upgrade", (req, socket, head) => {
+      setTimeout(() => wss.handleUpgrade(req, socket, head, () => {}), 6_000);
+    });
+    servers.push({ close: () => { for (const ws of wss.clients) ws.terminate(); wss.close(); http.close(); } });
+    await new Promise<void>((resolve) => http.listen(0, "127.0.0.1", () => resolve()));
+    const address = http.address();
+    const port = typeof address === "object" && address ? address.port : 0;
+
+    const pool = nodePool();
+    pools.push(pool);
+    const relay = await pool.ensureRelay(`ws://127.0.0.1:${port}`, { connectionTimeout: 9_000 });
+    expect(relay.connected).toBe(true);
   }, 15_000);
 });

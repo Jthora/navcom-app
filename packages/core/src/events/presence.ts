@@ -108,8 +108,9 @@ export function buildPresence(
       secret
     );
 
-    // A key that exists for one message and is never stored. This is what makes two
-    // wrapped events from the same operator unlinkable to anyone but their recipients.
+    // A key that exists for one message and is never stored, so nobody reading a relay can tell
+    // who sent it. Not more than that: the relay carrying it sees the connection, and every wrap
+    // in one beat shares this createdAt, so a beat's wraps can be grouped (what-leaves.md).
     const ephemeral = generateSecretKey();
     return finalizeEvent(
       {

@@ -7,10 +7,38 @@ import {
   KIND_PLACE,
   readCorrection,
   readPlace,
+  sanitizeForLog,
   type Correction,
   type Place,
 } from "@navcom/core";
 import { nodePool } from "../shared/nostr-node.js";
+
+/**
+ * A string from somebody else, made safe to print [review: relay paths, #24].
+ *
+ * Every field below comes from a stranger's event, and every refusal reason from a relay, and a
+ * terminal obeys what it is sent: a place whose `hours` carried cursor movement could erase the
+ * line above it and print a different address in its place, on the screen a maintainer reads
+ * before editing the CSV. Control characters go, C1 included; nothing a field may legitimately
+ * hold is cut short. `--json` is {@link json}'s.
+ */
+function shown(value: unknown): string {
+  return sanitizeForLog(String(value ?? ""), 4_000);
+}
+
+/**
+ * `--json`, still safe to read in a terminal [review: relay paths].
+ *
+ * JSON escapes U+0000–U+001F and nothing else, so DEL and the C1 controls -- U+009B among them, a
+ * one-character CSI -- went to the terminal raw. They are escaped here as `\u00XX`. Every one of
+ * them can only be inside a string, so what comes out is still JSON and parses to the same values.
+ */
+export function json(value: unknown): string {
+  return JSON.stringify(value, null, 2).replace(
+    /[\u007f-\u009f]/g,
+    (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, "0")}`,
+  );
+}
 
 /**
  * Collecting live corrections so a person can promote the good ones.
@@ -196,7 +224,7 @@ async function main(): Promise<void> {
   const read = await collect({ pool, relays: options.relays, since });
   pool.destroy();
 
-  const notReached = read.missed.map((m) => `${m.url}: ${m.reason}`).join(", ");
+  const notReached = read.missed.map((m) => `${shown(m.url)}: ${shown(m.reason)}`).join(", ");
   if (read.answered.length === 0) {
     // Not "nothing waiting". Nothing was read, which says nothing about what is waiting.
     console.error(`No relay answered (${notReached}). Nothing was checked.`);
@@ -215,13 +243,7 @@ async function main(): Promise<void> {
   const added = latestPlaces(places);
 
   if (options.json) {
-    console.log(
-      JSON.stringify(
-        { read: { answered: read.answered, notReached: read.missed }, corrections: groups, places: added },
-        null,
-        2,
-      ),
-    );
+    console.log(json({ read: { answered: read.answered, notReached: read.missed }, corrections: groups, places: added }));
     return;
   }
 
@@ -229,7 +251,7 @@ async function main(): Promise<void> {
   if (read.missed.length > 0) {
     console.log(
       `Read ${read.answered.length} of ${total} relays; not reached: ` +
-        read.missed.map((m) => `${m.url} (${m.reason})`).join(", "),
+        read.missed.map((m) => `${shown(m.url)} (${shown(m.reason)})`).join(", "),
     );
     console.log("");
   }
@@ -242,12 +264,14 @@ async function main(): Promise<void> {
   if (groups.length > 0) {
     console.log(`${groups.length} record(s) with corrections, most-reported first.\n`);
     for (const { record, corrections: cs } of groups) {
-      console.log(`${record}`);
+      console.log(shown(record));
       for (const c of cs) {
         const fields = Object.entries(c.fields)
-          .map(([k, v]) => `${k}=${v}`)
+          .map(([k, v]) => `${shown(k)}=${shown(v)}`)
           .join("  ");
-        console.log(`  ${c.last_verified}  ${c.verified_by.padEnd(12)} ${c.method.padEnd(16)} ${fields}`);
+        console.log(
+          `  ${shown(c.last_verified)}  ${shown(c.verified_by).padEnd(12)} ${shown(c.method).padEnd(16)} ${fields}`,
+        );
       }
       console.log("");
     }
@@ -259,11 +283,11 @@ async function main(): Promise<void> {
     console.log(`Places added (${added.length}), by region.\n`);
     for (const p of added) {
       const extras = Object.entries(p.fields ?? {})
-        .map(([k, v]) => `${k}=${v}`)
+        .map(([k, v]) => `${shown(k)}=${shown(v)}`)
         .join("  ");
-      console.log(`${p.region}  ${p.name} -- ${p.address}`);
+      console.log(`${shown(p.region)}  ${shown(p.name)} -- ${shown(p.address)}`);
       console.log(
-        `  ${p.last_verified}  ${p.verified_by.padEnd(12)} ${p.method.padEnd(16)} ${p.type}` +
+        `  ${shown(p.last_verified)}  ${shown(p.verified_by).padEnd(12)} ${shown(p.method).padEnd(16)} ${shown(p.type)}` +
           (extras ? `  ${extras}` : ""),
       );
     }

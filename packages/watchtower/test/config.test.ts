@@ -100,6 +100,21 @@ hard_expiry             = 14400
       expect(config.watch.routineIntervalDefault).toBe(7200);
       expect(config.watch.overdueGrace).toBeGreaterThan(0); // default applied, not thrown
     });
+
+    it("refuses an age window a phone could read the watch as up past, and says why [#4]", () => {
+      // A phone reads the watch as up until its state is 300s old by the phone's own clock. At 120,
+      // a phone 200s off read it as up while sign-on, Query and Distress all got silence.
+      dir = mkdtempSync(join(tmpdir(), "watchtower-cfg-"));
+      const path = writeConfig(dir, `max_event_age_seconds = 120\n`);
+      expect(() => loadDaemonConfig(path)).toThrow(/max_event_age_seconds must be at least 300, got 120/);
+      expect(() => loadDaemonConfig(path)).toThrow(/reads this watch as up/);
+    });
+
+    it("accepts an age window of the threshold or wider", () => {
+      dir = mkdtempSync(join(tmpdir(), "watchtower-cfg-"));
+      expect(loadDaemonConfig(writeConfig(dir, `max_event_age_seconds = 300\n`)).watch.maxEventAgeSeconds).toBe(300);
+      expect(loadDaemonConfig(writeConfig(dir, `max_event_age_seconds = 900\n`)).watch.maxEventAgeSeconds).toBe(900);
+    });
   });
 
   describe("relay URL validation (found in review)", () => {

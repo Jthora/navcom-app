@@ -154,8 +154,10 @@ function perRelayPool(urls: string[]) {
         return reason ? Promise.reject(new Error(reason)) : Promise.resolve("ok");
       });
     },
-    subscribeMany: (_r: string[], _f: unknown, params: { onevent: (e: Event) => void }) => {
+    subscribeMany: (_r: string[], _f: unknown, params: { onevent: (e: Event) => void; oneose?: () => void }) => {
       onevents.push(params.onevent);
+      // Each relay answers the subscription, as a real one does [#38].
+      queueMicrotask(() => params.oneose?.());
       return { close: () => {} };
     },
     destroy: () => {},
@@ -244,11 +246,15 @@ describe("a Distress a relay serves again [F12]", () => {
 describe("a heartbeat a relay refused [F13]", () => {
   it("says how many relays took the watch state", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
-    vi.spyOn(console, "log").mockImplementation(() => {});
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
     const { daemon, refusing } = fakeDaemon(["wss://a.relay", "wss://b.relay"]);
     refusing.set("wss://b.relay", "blocked: not on the list");
 
-    expect(await daemon.start()).toBe(1);
+    await daemon.start();
+    await eventually(() =>
+      expect(log.mock.calls.flat().join("\n")).toMatch(/watch state \(automated\) published on wss:\/\/a\.relay -- 1\/2 relay\(s\) carry it now/),
+    );
+    expect(log.mock.calls.flat().join("\n"), "said of a relay that refused it").not.toMatch(/published on wss:\/\/b\.relay/);
   });
 
   it("names the relay and its reason, once per change rather than once per beat", async () => {
@@ -267,6 +273,14 @@ describe("a heartbeat a relay refused [F13]", () => {
 
       refusing.set("wss://b.relay", null);
       await vi.advanceTimersByTimeAsync(60_000);
+      // Its first time is said as that, not as "again" [review: relay paths].
+      expect(log.mock.calls.flat().join("\n")).toMatch(/published on wss:\/\/b\.relay -- 2\/2 relay\(s\) carry it now/);
+      expect(log.mock.calls.flat().join("\n")).not.toMatch(/b\.relay accepting watch state again/);
+
+      refusing.set("wss://b.relay", "rate-limited: slow down");
+      await vi.advanceTimersByTimeAsync(60_000);
+      refusing.set("wss://b.relay", null);
+      await vi.advanceTimersByTimeAsync(60_000);
       expect(log.mock.calls.flat().join("\n")).toMatch(/b\.relay accepting watch state again/);
     } finally {
       vi.useRealTimers();
@@ -280,7 +294,7 @@ describe("a heartbeat a relay refused [F13]", () => {
     try {
       const { daemon, refusing } = fakeDaemon(["wss://a.relay"], { heartbeatIntervalSeconds: 60 });
       refusing.set("wss://a.relay", "rate-limited: slow down");
-      expect(await daemon.start()).toBe(0);
+      await daemon.start();
       await vi.advanceTimersByTimeAsync(60_000 * 2);
 
       const none = error.mock.calls.map((c) => String(c[0])).filter((l) => /operators read Dark/.test(l));
@@ -289,4 +303,142 @@ describe("a heartbeat a relay refused [F13]", () => {
       vi.useRealTimers();
     }
   });
+});
+
+describe("where the box announces the watch [#38]", () => {
+  const watchStates = (relay: LocalRelay) => relay.published.filter((e) => e.kind === 10910);
+
+  it("does not announce it on a relay that refuses the box's own subscription", async () => {
+    // A relay that takes writes and author-only reads but refuses the box's #p REQ -- an inbox that
+    // wants AUTH. Operators reading it saw a fresh "automated" watch while nothing on the box could
+    // hear a Distress sent there. Withheld, the state there ages to Dark.
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    const open = await startRelay();
+    const inbox = await startRelay();
+    relays.push(open, inbox);
+    inbox.refuseReq = (filters) => (filters.some((f) => "#p" in f) ? "auth-required: members only" : null);
+    const { daemon } = daemonOn([open.url, inbox.url], { heartbeatIntervalSeconds: 1 });
+    await daemon.start();
+
+    await eventually(() => expect(watchStates(open).length, "not announced where it listens").toBeGreaterThan(1), 5_000);
+    expect(watchStates(inbox), "announced on a relay it cannot hear on").toHaveLength(0);
+    expect(daemon.listening()).toBe(1);
+  }, 10_000);
+
+  it("announces it on a relay the moment that relay starts answering, not at the next beat", async () => {
+    // The power-cut case: the box is up before the relay is. Nothing is published there while it is
+    // down, and the first state follows its first answer at once -- the beat here is an hour.
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    const port = await freePort();
+    const { daemon } = daemonOn([`ws://127.0.0.1:${port}`]);
+    await daemon.start();
+    await new Promise((r) => setTimeout(r, 300));
+
+    const relay = await startRelay({ port });
+    relays.push(relay);
+    await eventually(() => expect(watchStates(relay)).toHaveLength(1), 10_000);
+  }, 15_000);
+
+  it("says, on every beat, when it is listening on no relay and so announcing nothing", async () => {
+    vi.useFakeTimers();
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      // A pool whose relays never answer the subscription.
+      const published: Event[] = [];
+      const pool = {
+        publish: (_u: string[], e: Event) => {
+          published.push(e);
+          return [Promise.resolve("ok")];
+        },
+        subscribeMany: () => ({ close: () => {} }),
+        destroy: () => {},
+      } as unknown as SimplePool;
+      const secretKey = generateSecretKey();
+      const daemon = new WatchtowerDaemon({
+        config: config(["wss://a.relay"], { heartbeatIntervalSeconds: 60 }),
+        secretKey,
+        pubkey: getPublicKey(secretKey),
+        pool,
+      });
+      daemons.push(daemon);
+      await daemon.start();
+      await vi.advanceTimersByTimeAsync(60_000 * 2);
+
+      expect(published.filter((e) => e.kind === 10910)).toHaveLength(0);
+      const said = error.mock.calls.map((c) => String(c[0])).filter((l) => /LISTENING ON NO RELAY/.test(l));
+      expect(said).toHaveLength(2);
+      expect(said[0]).toMatch(/operators read Dark/);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe("the first watch state, relay by relay [review: relay paths]", () => {
+  it("says each relay as it first takes it, so a healthy box ends at N/N", async () => {
+    // One line for the whole first publish said "2/3" on a box whose third relay answered a moment
+    // later, and nothing after -- while the systemd README said to look for N/N.
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const a = await startRelay();
+    const b = await startRelay();
+    relays.push(a, b);
+    const port = await freePort();
+    const late = `ws://127.0.0.1:${port}`;
+    const { daemon } = daemonOn([a.url, b.url, late]);
+    await daemon.start();
+    await eventually(() => expect(daemon.listening()).toBe(2), 5_000);
+
+    const c = await startRelay({ port });
+    relays.push(c);
+    const said = () => log.mock.calls.map((x) => String(x[0])).filter((l) => l.includes("published on"));
+    await eventually(() => expect(said().some((l) => l.includes(late))).toBe(true), 10_000);
+    for (const url of [a.url, b.url]) expect(said().some((l) => l.includes(`published on ${url} --`)), url).toBe(true);
+    expect(said().find((l) => l.includes(late))).toMatch(/3\/3 relay\(s\) carry it now/);
+  }, 20_000);
+
+  it("never has two publishes of it in flight, so each one settles and is reported", async () => {
+    // Relays answering in the same second each asked for a publish at once. Same second, same
+    // event: nostr-tools keeps one pending OK per event id, and the earlier calls never settled.
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const servers = await Promise.all([startRelay(), startRelay(), startRelay()]);
+    relays.push(...servers);
+    const { nodePool } = await import("../src/shared/nostr-node.js");
+    const pool = nodePool();
+    let inFlight = 0;
+    let most = 0;
+    const calls: { settled: boolean }[] = [];
+    const publish = pool.publish.bind(pool);
+    pool.publish = ((urls: string[], event: Event, ...rest: unknown[]) => {
+      const promises = (publish as (...a: unknown[]) => Promise<string>[])(urls, event, ...rest);
+      if (event.kind !== 10910) return promises;
+      const call = { settled: false };
+      calls.push(call);
+      inFlight++;
+      most = Math.max(most, inFlight);
+      void Promise.allSettled(promises).then(() => {
+        call.settled = true;
+        inFlight--;
+      });
+      return promises;
+    }) as typeof pool.publish;
+    const secretKey = generateSecretKey();
+    const daemon = new WatchtowerDaemon({
+      config: config(servers.map((r) => r.url)),
+      secretKey,
+      pubkey: getPublicKey(secretKey),
+      pool,
+    });
+    daemons.push(daemon);
+    await daemon.start();
+
+    await eventually(() => expect(daemon.listening()).toBe(3), 5_000);
+    await eventually(() => expect(calls.length > 0 && calls.every((c) => c.settled), JSON.stringify(calls)).toBe(true), 8_000);
+    expect(most, "two publishes of the watch state went out at once").toBe(1);
+    for (const r of servers) expect(r.published.filter((e) => e.kind === 10910).length, r.url).toBeGreaterThan(0);
+  }, 20_000);
 });

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { loadEscalationConfig } from "./config.js";
 import { loadOrCreateKeypair } from "../shared/identity.js";
-import { EscalationExecutor } from "./executor.js";
+import { EscalationExecutor, ageWindowSeconds } from "./executor.js";
 import { testPage } from "./pager.js";
 import { readDrillState } from "./drills.js";
 import { buildReview, render } from "./review.js";
@@ -180,6 +180,15 @@ function main(): void {
     `[executor] windows: paging=${config.escalation.pagingWindowSeconds}s ` +
       `contact=${config.escalation.contactWindowSeconds}s ack_holds=${config.escalation.ackHoldsSeconds}s`,
   );
+  // Said, because shortening the paging window used to narrow which phones were heard as well.
+  const ageWindow = ageWindowSeconds(config);
+  if (ageWindow !== config.escalation.pagingWindowSeconds) {
+    console.log(
+      `[executor] a Distress stamped more than ${ageWindow}s from this machine's clock is ignored -- not ` +
+        `${config.escalation.pagingWindowSeconds}s, the paging window: a phone reads this watch as up until its ` +
+        `state is ${ageWindow}s old, so it must be heard that far off`,
+    );
+  }
 
   // By name, never as a total -- and the empty case is stated rather than left to inference.
   if (wakeable.length === 0) {

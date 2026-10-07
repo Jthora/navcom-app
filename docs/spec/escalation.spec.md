@@ -104,10 +104,43 @@ For `ack_holds_seconds` after a **human** acknowledged an operator's ladder (def
 new `20911` from that operator MUST NOT open a ladder or page anyone. The executor answers it
 with the acknowledgement it already has: a `20912` authored by the same human, with ladder state
 `acknowledged`, whose `e` tags name **both** the new `20911` and the one the human acknowledged.
-It sends that again, freshly signed, about ten seconds later. It records a re-sent
-acknowledgement in its accountability log (`acked`) once per attempt, never a second escalation.
-Once the window closes, a new `20911` opens a new ladder as before. A clock that steps back past
-the moment of the acknowledgement closes the window too: the hold fails toward paging.
+Its text says when the acknowledgement was given, that the executor has not escalated the new
+attempt, and when the watch will treat it as new — only what the executor knows: a keyless pager
+beside it may still page for the attempt, so it does not say nobody was paged. It sends that
+again, freshly signed, about ten seconds later. It records a re-sent acknowledgement in its
+accountability log (`acked`) once per attempt, when the outcome is settled, never a second
+escalation. Once the window closes, a new `20911` opens a new ladder as before. A clock that steps
+back past the moment of the acknowledgement closes the window too: the hold fails toward paging.
+
+**A held acknowledgement that no relay takes on either send ends the hold.** A first send that no
+relay takes is sent again ten seconds later like any other, and the hold stands until then: a
+refusal is often a moment's — the daemon's agent acknowledgement on the same key a millisecond
+earlier, under a relay's rate limit, or a blip on a box with one relay — and ending the hold at it
+opened a ladder in the same breath and paged a person who had already answered. When the second
+send reaches no relay either, and nothing from the hold has reached a relay meanwhile, the operator
+was told nothing, so nothing is being held for them: the hold ends, and the operator's next attempt
+opens a ladder and pages — the hold fails toward paging, as it does for a restart or a clock step.
+The next attempt rather than this one, so a phone that heard through a relay that never said OK,
+and stopped, is not paged for. The `acked` record is `acknowledged` once a relay takes either send,
+and `ack-not-sent` once neither did — including a second send that never went because the hold
+ended first or the executor stopped.
+
+**A phone tells an acknowledgement of this `Distress` from one of an earlier `Distress` by its `e`
+tags, read against what the watch has told it.** This `Distress`'s ids are the ones it sent, and
+the ones the watch's ladder reports name beside them: a `Distress` started again while the first
+one's ladder is still paging — the app reopened or evicted, the phone wiped and the `Distress` sent
+again — has its attempts joined to that ladder, and each report to them names the attempt and the
+ladder's own id. A person's answer that names only this `Distress`'s ids, or names a ladder this
+`Distress` is part of — one it opened or joined — is an answer to this one, and it ends: the person
+paged answers the id their page carried, which a restarted `Distress` never sent. Otherwise — it
+names an id this `Distress` never sent and was never told it joined, and no ladder it is part of —
+the `Distress` started after the answer: the app was reopened or the phone wiped once that ladder
+was over, or this is a new emergency, and a person answered an earlier `Distress`. The phone MUST
+say so, with who and when, and MUST NOT present it as an answer to this one; it keeps sending,
+because only a person answering this `Distress` ends it [invariant 2]. Once the window closes, its
+next attempt is escalated as new. Only a ladder's own report says what an attempt joined, never a
+person's answer: that is the difference between a restarted `Distress` and one the watch is
+repeating an earlier answer to.
 
 The reason is a phone that missed the acknowledgement — its connection dropped at that moment.
 It keeps sending, because only a human answer ends a `Distress` on the phone, and every new
@@ -123,12 +156,14 @@ phone still in the same `Distress` has held since it sent it; a phone that start
 `Distress` again holds neither, and the second send arrives after it has recorded the new one.
 
 **The cost: a genuinely new emergency from the same operator inside the window is read as the
-old one until it closes.** Nobody is told about it — not the person who acknowledged, and not the
-rest of the roster. The operator's phone is told who acknowledged and when, and that nobody has
-been told about the new attempt; that is the whole of what the executor does. Two things outside it still see the new `20911`: the watch's board marks the
-operator in distress again, so whoever is holding the watch on a console sees it; and a keyless
-pager, which cannot know a `Distress` was acknowledged, pages as it always does. An `EXHAUSTED`
-ladder holds nothing — nobody answered it, so a new attempt pages as before.
+old one until it closes.** The executor tells nobody about it — not the person who acknowledged,
+and not the rest of the roster. The operator's phone is told who acknowledged the earlier one and
+when, and that the watch has not escalated this one; a current phone shows that as an answer to
+an earlier `Distress` and keeps sending, so its first attempt after the window is paged for. Two
+things outside the executor still see the new `20911`: the watch's board marks the operator in
+distress again, so whoever is holding the watch on a console sees it; and a keyless pager, which
+cannot know a `Distress` was acknowledged, pages as it always does. An `EXHAUSTED` ladder holds
+nothing — nobody answered it, so a new attempt pages as before.
 
 The ladder state machine in core is unchanged. The hold is the executor's, applied before it
 would open a ladder, and **it is kept in memory only**: an executor that restarts inside the
@@ -143,6 +178,20 @@ The operator MUST receive a `20912` on **every** transition [C42]:
 - `"no answer — trying your emergency contact"`
 - `"couldn't reach anyone"`
 - `"Raven is responding"`
+
+**And on every attempt.** A retry that joins a live ladder pages nobody again, and MUST be answered
+with the ladder's current report — its state, and whatever the node has added to it, such as that a
+channel failed — naming the retry and the ladder's own `20911`. A report is ephemeral, and a phone
+that missed one (a connection that dropped, a `Distress` started again) otherwise heard nothing
+from the watch until the ladder ran out. Naming both is also how a `Distress` started again learns
+the id the person paged will answer: the one their page carried.
+
+**A client MUST hear every one of these, as it arrives.** On a box the daemon acknowledges every
+attempt at once, as an agent, so the first answer to an attempt is usually an agent's; the
+ladder's report follows by a round trip and its correction — nobody could be woken — by one more.
+A client that took the first answer to each attempt and stopped listening showed "an agent
+answered" until the ladder ran out five minutes later. It listens for the whole `Distress` instead
+([`signals.spec.md`](signals.spec.md), `20912`).
 
 `EXHAUSTED` MUST reach the operator's own device even with no watch and no network — a
 local fallback message. An operator who knows nobody is coming can act on that.
@@ -180,10 +229,16 @@ Registering a channel is a **condition of the role**, enforced at startup: an on
 with no way to wake anyone is refused rather than paged into nothing and then reported as
 paged.
 
-**A dispatch that failed MUST be reported as a failure.** A command exiting non-zero — a dead
-gateway, a missing binary — means nobody was woken, and the operator MUST NOT be told
-`"Paging Wren."` when that happened. The ladder's own sentence describes the state machine,
-which cannot see a command's exit status; the node adds what only it knows.
+**A dispatch that failed MUST be reported as a failure, the moment it is known.** A command
+exiting non-zero — a dead gateway, a missing binary — means nobody was woken, and the operator
+MUST NOT be left believing `"Paging Wren."` when that happened. The ladder's first report goes out
+as the pages are dispatched, not after them: a command may take thirty seconds to fail, and the
+operator is owed the watch's first word before then. So `"Paging Wren."` can precede the outcome,
+and the node MUST follow it, as soon as the commands return, with what only it knows — the
+ladder's own sentence describes the state machine, which cannot see a command's exit status.
+Where nobody was woken, that report replaces the ladder's sentence rather than following it with
+one that takes it back; where some channels failed, it names who was paged and who was not. Every
+attempt after that is answered with the corrected report, never the ladder's sentence alone.
 
 ## Paging budget
 
@@ -196,8 +251,9 @@ Alarm fatigue is the failure mode that destroys escalation outright, so it is bo
 rather than left to a relay or an operator's patience.
 
 Past the budget the node MUST still open the ladder and MUST still report to the operator,
-and the report MUST say plainly that nobody could be paged. **The ladder is allowed to fail;
-it is never allowed to fail silently** [invariant 2]. Refusing to page while reporting
+and the report MUST say plainly that nobody could be paged. The budget is therefore taken before
+the ladder's first report, and that report is the one that says it. **The ladder is allowed to
+fail; it is never allowed to fail silently** [invariant 2]. Refusing to page while reporting
 `"Paging Wren."` would be the invariant failing in exactly the way it forbids.
 
 The bound is global rather than per-key: a flood already arrives from one fresh key per
@@ -250,9 +306,15 @@ Not optional — these are the point of the spec:
    agent health
 7. Duplicate distress → single ladder, not two
 8. Flood of `20911` from unknown keys → paging bounded, **every** operator still told, and
-   what they are told is that nobody could be paged
-9. Every paging channel fails → operator told nobody was woken, not told they were paged
+   what they are told — first, not after "Paging Wren." — is that nobody could be paged
+9. Every paging channel fails → operator told nobody was woken the moment the commands return,
+   in a report that replaces `"Paging Wren."` rather than adding to it, and every attempt after
+   that is told the same — including on a box whose daemon answers every attempt first
 10. Operator sends a new `Distress` inside `ack_holds_seconds` of a human acknowledgement →
     the acknowledgement again, naming the new id and the acknowledged one, and heard by the
-    phone's own loop when one of its relays is slow to say OK; nobody paged; after the window,
-    or once the clock has stepped back past the acknowledgement, a new ladder
+    phone's own loop when one of its relays is slow to say OK; nobody paged. A phone whose
+    `Distress` started after the acknowledgement says a person answered an earlier `Distress` and
+    keeps sending; one whose attempts joined that ladder while it was paging ends on the person's
+    answer to it. A held acknowledgement that no relay takes on either send ends the hold, and the
+    next attempt pages; one the second send gets through does not.
+    After the window, or once the clock has stepped back past the acknowledgement, a new ladder

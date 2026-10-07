@@ -51,15 +51,20 @@ sudo systemctl status navcom-watchtower
 sudo journalctl -u navcom-watchtower -f
 ```
 
-Look for `[daemon] published watch state (automated) to N/N relays` and
-`[relay] <url> listening` for each configured relay. A relay that says
-`unreachable` or `refused the subscription` is retried by itself; one
-that says `auth-required` never will deliver, because the daemon does not
-do NIP-42 AUTH. One that says `has not answered` took the subscription and
-went quiet: treat it as down. A `[heartbeat] NO RELAY ACCEPTED` line means operators
-read Dark. Then
-run the CLI's `status` command from any machine with the right pubkey in
-its `client.toml` to confirm `LIVE` end to end.
+Look for `[relay] <url> listening` for each configured relay, each followed
+by `[heartbeat] watch state (automated) published on <url> -- k/N relay(s)
+carry it now`; on a healthy box the last of those says N/N. The watch state
+goes only to relays the daemon is listening on, so a relay it cannot hear on
+reads Dark rather than showing a watch that cannot hear anybody. A
+relay that says `unreachable`, `closed the subscription` or `refused the
+subscription` is retried by itself; one that says `auth-required` never will
+deliver, because the daemon does not do NIP-42 AUTH. One that says `has not
+answered` took the subscription and went quiet: treat it as down. A
+`[heartbeat] NO RELAY ACCEPTED` or `LISTENING ON NO RELAY` line means
+operators read Dark. Then run `watchtower-daemon --check` with the same
+config, which also asks each relay for the box's own subscription, and the
+CLI's `status` command from any machine with the right pubkey in its
+`client.toml` to confirm `LIVE` end to end.
 
 ## 5. The daily rebuild of navcom.app
 

@@ -121,7 +121,15 @@ export async function sendDistress(
   return event;
 }
 
-/** Waits for the `20912` addressed to us that answers `sent`. */
+/**
+ * Waits for the `20912` addressed to us that answers `sent`.
+ *
+ * For a signal asked once — a `Query`, an `Assist`, a sign-on. **A `Distress` does not use it**:
+ * a wait that resolves on the first answer was the slot a daemon's instant agent acknowledgement
+ * took on every attempt, and everything the ladder said after it — "nobody has been woken"
+ * included — was dropped [audit: relay paths, #31, #32]. `sendDistressUntilAcknowledged` learns
+ * every answer from its own listener instead.
+ */
 export function waitForResponse(
   pool: SimplePool,
   relays: string[],
@@ -136,23 +144,11 @@ export function waitForResponse(
    */
   watchtower: string,
   /**
-   * The signal being answered — or **every signal this Distress has sent so far**.
+   * The signal being answered, or several: a response naming any of them is accepted.
    *
-   * One event is right for a Query or an Assist, which are asked once. A `Distress` is not:
-   * it republishes as a **new signed event with a new id** every time nothing answers, and
-   * listening only for a response to the newest id loses two real cases.
-   *
-   * A person woken at 3am takes longer than the 20s window to reach for a phone, so by the
-   * time they acknowledge, the one they were paged about is no longer the one being listened
-   * for — their answer is filtered out at the relay and the operator is told nothing. And
-   * between windows the loop sleeps with no subscription open at all, so an answer arriving
-   * in the gap is missed even when the id does match.
-   *
-   * Passing every id fixes the first: the response is accepted whichever signal it names. It
-   * does not fix the second, though this once said it did. **Responses are ephemeral, and
-   * relays keep them briefly or not at all** — strfry for five minutes, most never — so one
-   * published in a gap reaches only a subscription already open. That is the Distress-long
-   * listener in `sendDistressUntilAcknowledged`, not this wait [audit: relay paths, F25].
+   * **Responses are ephemeral, and relays keep them briefly or not at all** — strfry for five
+   * minutes, most never — so this hears only what arrives while it is open. An answer published
+   * before it opened, or after it closed, is gone [audit: relay paths, F25].
    */
   sent: Event | readonly Event[],
   timeoutMs: number,
@@ -228,19 +224,23 @@ export type DistressPhase =
   | { phase: 'sending'; attempt: number }
   | { phase: 'sent'; attempt: number }
   | { phase: 'unreachable'; attempt: number; error: string }
+  /** Nothing answered this attempt — not a person, not an agent, not the watch's ladder. */
   | { phase: 'no-answer'; attempt: number }
   /**
    * A response arrived, and it was an agent.
    *
    * Not closure. Invariant 5: an agent is never the sole responder to `Distress`, so this
-   * proves the signal is getting through and nothing more — the loop keeps going.
+   * proves the signal is getting through and nothing more — the loop keeps going. Said once
+   * per attempt: a daemon acknowledges every attempt, and the line means the same each time.
    */
   | { phase: 'agent-holding'; attempt: number; response: ResponsePayload }
   /**
    * The watch's escalation ladder, saying where it is.
    *
    * Authored by the node — not a person, and not an agent — and shown as exactly that. Not
-   * closure: the loop keeps going, because only a human ends a Distress.
+   * closure: the loop keeps going, because only a human ends a Distress. **Every** report is
+   * said, as it arrives: "nobody has been woken" follows "Paging Wren." by one round trip, and a
+   * loop that kept only the first answer of each attempt threw the second away [#31, #32].
    */
   | { phase: 'watch-status'; attempt: number; response: ResponsePayload }
   /**
@@ -251,10 +251,31 @@ export type DistressPhase =
    * dropped its words, and the operator learned nothing until `nobody-answering` fired ten
    * minutes later — a working watch telling the truth at once, and the screen withholding it.
    *
-   * Retrying still continues. Only the operator ends a Distress, and a human who answers late
-   * still counts.
+   * Retrying still continues, and sooner: an exhausted ladder holds nothing, so the backoff
+   * this lands in is cut short and the next attempt opens a fresh one. Only the operator ends a
+   * Distress, and a human who answers late still counts.
    */
   | { phase: 'watch-exhausted'; attempt: number; response: ResponsePayload }
+  /**
+   * **A person answered an earlier `Distress` from this operator — not this one.**
+   *
+   * For `ack_holds_seconds` after a human acknowledged, the executor answers a new `20911`
+   * from that operator with the same acknowledgement, naming the new attempt *and* the one the
+   * human answered (`escalation.spec.md`, *An acknowledged Distress, sent again*). When the one
+   * the human answered is an id this run never sent, and the watch never said this run joined
+   * its ladder, this run started after the answer: the app was reopened or the phone wiped once
+   * the ladder was over, or this is a new emergency. The watch has not escalated it.
+   *
+   * A run that started while that ladder was still paging is not this case. The watch joined its
+   * attempts to the ladder and said so, naming both, and a person answering that ladder answered
+   * this run too [review: relay paths, R1].
+   *
+   * Said so, by name, and **not closure**: the loop keeps sending, because only a person
+   * answering *this* Distress ends it [invariant 2]. Once the hold closes, a later attempt
+   * opens a ladder and pages. It closed this run in under a tenth of a second, under the
+   * heading "Answered", before this existed [#0].
+   */
+  | { phase: 'acknowledged-earlier'; attempt: number; response: ResponsePayload }
   /**
    * **Nobody is coming, and the device worked that out by itself.**
    *
@@ -289,15 +310,18 @@ export interface DistressOptions {
    */
   localExhaustedAfterMs?: number;
   /**
-   * Injected for tests so they do not wait in real time. Handed the loop's `signal`, and a
-   * sleep that ignores it only delays a stop — the loop checks again when it returns.
+   * The backoff between attempts. Injected for tests so they do not wait in real time.
+   *
+   * Handed a signal that aborts when the operator stops, when a person answers, and when the
+   * watch says nobody can be reached — the moments a backoff must not be waited out. A sleep
+   * that ignores it only delays those: the loop looks again when it returns.
    */
   sleep?: (ms: number, signal?: AbortSignal) => Promise<void>;
   /** Injected for tests. Real code has no business reading a clock it cannot control. */
   clock?: () => number;
 }
 
-/** Ends early when the operator stops, so a stop never waits out a backoff of up to a minute. */
+/** Ends early when the signal aborts, so a stop never waits out a backoff of up to a minute. */
 const defaultSleep = (ms: number, signal?: AbortSignal) =>
   new Promise<void>((resolve) => {
     if (signal?.aborted) return resolve();
@@ -309,6 +333,17 @@ const defaultSleep = (ms: number, signal?: AbortSignal) =>
     const timer = setTimeout(done, ms);
     signal?.addEventListener('abort', done, { once: true });
   });
+
+/** How long a listener waits for its relay to connect — the pool's own default for a subscription. */
+const LISTENER_CONNECT_MS = 3_000;
+/** The longest wait before a closed listener is opened again. */
+const LISTENER_REOPEN_MAX_MS = 15_000;
+
+/** A pool that can hand over its relay, as `SimplePool` does, and may refuse to connect. */
+interface OwnRelayPool {
+  ensureRelay?: SimplePool['ensureRelay'];
+  allowConnectingToRelay?: (url: string, operation: ['read', unknown[]]) => boolean;
+}
 
 /**
  * Sends `Distress` and **keeps sending until a human acknowledges it.**
@@ -325,10 +360,21 @@ const defaultSleep = (ms: number, signal?: AbortSignal) =>
  * `agent-holding` and the loop continues, because invariant 2 says `Distress` terminates in
  * a human, and invariant 5 says an agent is never the sole responder. An agent ack that
  * stopped the retries would satisfy neither while looking, on screen, exactly like help.
+ * A person answering an *earlier* Distress is `acknowledged-earlier`, and does not end it either.
+ * A person answering a ladder the watch said this Distress joined is answering this one.
  *
  * The watch's own escalation ladder is neither, and is reported as `watch-status` — or
  * `watch-exhausted` the moment it says nobody can be reached, which the operator must learn
  * when the watch knows it rather than when this phone's timer runs out.
+ *
+ * **Every answer is learned from one place: a listener on each relay, open for the whole
+ * Distress** [audit: relay paths, #31–#34]. Each attempt used to wait for the first answer naming
+ * it and stop listening, so on a box whose daemon acknowledges every attempt at once, that
+ * acknowledgement took the slot every time: the ladder's "nobody has been woken" a moment later
+ * was dropped, a held human answer lost the race and waited out a backoff, and the screen said
+ * "an agent answered" until the watch gave up five minutes on. Now an attempt's window ends
+ * only when it runs out or a person answers, and everything the watch says is reported as it
+ * arrives.
  */
 export async function sendDistressUntilAcknowledged(
   pool: SimplePool,
@@ -342,7 +388,7 @@ export async function sendDistressUntilAcknowledged(
   const ackWindow = opts.ackWindowMs ?? 20_000;
   const maxBackoff = opts.maxBackoffMs ?? 60_000;
   const sleep = opts.sleep ?? defaultSleep;
-  const report = opts.onPhase ?? (() => {});
+  const say = opts.onPhase ?? (() => {});
 
   const clock = opts.clock ?? (() => Date.now());
   const localExhaustedAfter = opts.localExhaustedAfterMs ?? 600_000;
@@ -353,114 +399,60 @@ export async function sendDistressUntilAcknowledged(
   let saidNobodyAnswering = false;
 
   /**
-   * Every signal this Distress has published, so a late answer to any of them is still an
-   * answer. Capped because a relay filter is not unbounded and a Distress can run for hours;
-   * sixty-four covers about an hour of retries at this backoff, and an acknowledgement older
-   * than every one of those is not the case anybody is trying to catch.
+   * Every id this Distress has sent, uncapped.
+   *
+   * An answer naming any of them is an answer to this Distress, however late — somebody
+   * arriving late is still somebody arriving. And it is what tells a person's answer to *this*
+   * Distress from one to an earlier: a held acknowledgement names the attempt it reached and
+   * the one the person answered, and only when the second is here, or in `laddered` below, did
+   * they answer this one. The cap it once had served a relay filter that no longer exists, and a
+   * capped list would read an answer to this run's first attempt, two hours on, as somebody
+   * else's.
    */
-  const outstanding: Event[] = [];
-  const OUTSTANDING = 64;
-
+  const sent = new Set<string>();
   /**
-   * One subscription, open for the whole `Distress`, beside the per-attempt one.
+   * Ids the watch has named in a ladder report that also named one of this Distress's: the
+   * ladders it is part of [review: relay paths, R1].
    *
-   * The per-attempt wait listens for `ackWindowMs` and then the loop sleeps for the backoff
-   * — twenty seconds of listening in every eighty at steady state. **Responses are ephemeral
-   * (`20912`), so relays do not store them**: an acknowledgement published while nothing is
-   * subscribed is not delayed, it is gone. Roughly three quarters of the window a human could
-   * answer in had no listener at all, and the executor publishes an ack exactly once, on the
-   * ladder's transition.
+   * A Distress started again while the first one's ladder was still paging — the app reopened or
+   * evicted, the phone wiped and the Distress sent again, as the wipe screen says to — has its
+   * attempts joined to that ladder, and the watch says so to each one, naming the attempt and the
+   * ladder's own id. The person paged answers the id the page carried, which this run never sent.
+   * Read against `sent` alone, that answer was dropped, the hold's repeat of it read as an answer
+   * to an earlier Distress, and the phone went on sending for half an hour while Wren was on her
+   * way; when the hold closed, the roster was paged again for the same emergency. The watch treats
+   * these attempts as one Distress, and so does this.
    *
-   * The filter is deliberately wider than the per-attempt one and the narrowing happens in
-   * the handler instead, against the ids actually outstanding. A filter cannot be widened
-   * after it is opened, and this file's own history says the rest: what lives in a filter is
-   * untested until it runs against a real relay, and what lives in a handler can be tested
-   * anywhere.
+   * Only a report authored by the node feeds it, never a person's answer: that is the difference
+   * between this run joining a ladder and the watch repeating an answer to one it never joined.
    */
+  const laddered = new Set<string>();
+  /** An id that is this Distress's: one it sent, or a ladder the watch said it is part of. */
+  const ours = (id: string) => sent.has(id) || laddered.has(id);
+  /** Verified ids already handled — one relay and the next deliver the same event. */
+  const heardIds = new Set<string>();
+  /** A person's answer to this Distress. Ends it. */
   let latched: ResponsePayload | null = null;
-  /**
-   * The watch saying nobody can be reached, heard on the always-open subscription.
-   *
-   * At default timings the per-attempt listener is closed from roughly 243s to 303s, and a
-   * ladder with people on call reaches `exhausted` at about 300s — so the report that matters
-   * most landed in that gap, was dropped, and the operator learned it from the phone's own
-   * timer after all. Kept here and reported at the loop's next look, the way a late human
-   * acknowledgement already was.
-   */
-  let heardExhausted: ResponsePayload | null = null;
-  /** Whether the current ladder's `exhausted` has been reported, so it is said once. */
-  let exhaustedShown = false;
-  /**
-   * An agent's answer heard on the always-open subscription during this attempt, for the one
-   * case the per-attempt wait cannot see: it came back while this attempt was still being sent.
-   */
-  let heardAgent: ResponsePayload | null = null;
 
-  const heard = (event: Event) => {
-    if (latched || !verifyEvent(event)) return;
-    const answers = event.tags.filter((t) => t[0] === 'e').map((t) => t[1]);
-    if (!outstanding.some((o) => answers.includes(o.id))) return;
-    try {
-      const payload = open<ResponsePayload>(secret, watchtower.pubkey, event.content);
-      // Only a human closes a Distress [invariant 5]. An agent seen here changes nothing; it
-      // is kept only to be said if the per-attempt wait, which reports it, never sees it.
-      if (payload.responder?.kind === 'human') latched = payload;
-      // The one non-human report that must never be lost to the gap. It closes nothing.
-      else if (payload.responder?.kind === 'node' && payload.ladder === 'exhausted') {
-        heardExhausted = payload;
-      } else if (payload.responder?.kind === 'agent') heardAgent = payload;
-    } catch {
-      // Not for us.
-    }
+  // What this attempt has heard, so "no answer" is said only when nothing answered, and an
+  // agent, or an earlier acknowledgement, once per attempt rather than once per relay.
+  let answeredNow = false;
+  let agentSaidNow = false;
+  let earlierSaidNow = false;
+
+  /**
+   * Phases heard while an attempt is still going out, said once it has.
+   *
+   * An answer can beat a slow relay's OK by seconds; said at once it would read "an agent
+   * answered" above "left the phone", which is the wrong way round for somebody reading it.
+   */
+  let held: DistressPhase[] | null = null;
+  const report = (phase: DistressPhase) => {
+    if (held) held.push(phase);
+    else say(phase);
   };
 
-  /*
-   * **One listener per relay, and each one heals itself** [audit: relay paths, F03].
-   *
-   * The listener used to be one subscription across every relay, opened once. The phone's pool
-   * does not reconnect, so the first time every socket dropped — a network handoff, or the app
-   * set aside to dial somebody — the listener was gone for the rest of the Distress and nothing
-   * said so. An acknowledgement that then landed between attempts was lost, and the watch,
-   * hearing the next attempt, paged its roster again. Per relay, because a pool reports a
-   * subscription across several relays closed only once every one of them has gone.
-   *
-   * A closed listener is reopened after a short wait that doubles to fifteen seconds, until
-   * the Distress ends. An address this pool cannot parse is not retried: it fails the same way
-   * every time, and the per-attempt path already says so.
-   */
-  const RESPONSES = { kinds: [KIND_RESPONSE], authors: [watchtower.pubkey], '#p': [ourPubkey] };
   let finished = false;
-  const listeners = new Map<string, { token: object; sub: { close(): void } | null }>();
-  const reopening = new Map<string, ReturnType<typeof setTimeout>>();
-  const listen = (url: string, wait = 1_000) => {
-    if (finished) return;
-    reopening.delete(url);
-    const token = {};
-    listeners.set(url, { token, sub: null });
-    try {
-      const sub = pool.subscribeMany([url], RESPONSES, {
-        onevent: heard,
-        onclose: () => {
-          if (finished || listeners.get(url)?.token !== token) return;
-          listeners.set(url, { token, sub: null });
-          if (!reopening.has(url)) reopening.set(url, setTimeout(() => listen(url, Math.min(wait * 2, 15_000)), wait));
-        }
-      });
-      if (listeners.get(url)?.token === token) listeners.set(url, { token, sub });
-    } catch {
-      // Unparseable: it will fail identically every time. Not retried, never fatal.
-      listeners.delete(url);
-    }
-  };
-  for (const url of relays) listen(url);
-  /** Reopens, now, any listener that is down and not already waiting to come back. */
-  const relisten = () => {
-    for (const [url, l] of listeners) if (!l.sub && !reopening.has(url)) listen(url);
-  };
-
-  /** Closes the Distress if a human answered while nothing else was listening. */
-  const answered = (): ResponsePayload | null => latched;
-
   /**
    * Whether the operator has ended it.
    *
@@ -470,119 +462,284 @@ export async function sendDistressUntilAcknowledged(
    * screen.
    */
   const stopped = () => opts.signal?.aborted === true;
+  /** Nothing listens, and nothing is opened, once this is true: a burn means nothing left talking. */
+  const over = () => finished || stopped();
   const cancelled = () => new Error('Distress cancelled by the operator');
 
-  const reportExhausted = (response: ResponsePayload) => {
-    if (exhaustedShown) return;
-    exhaustedShown = true;
-    report({ phase: 'watch-exhausted', attempt, response });
+  /** The wait in progress, so an answer can end it early. Only a backoff is ended by `exhausted`. */
+  let waiting: { controller: AbortController; exhaustedEnds: boolean } | null = null;
+
+  const heard = (event: Event) => {
+    if (over() || latched || !verifyEvent(event) || heardIds.has(event.id)) return;
+    const named = event.tags.filter((t) => t[0] === 'e').map((t) => t[1] ?? '');
+    if (!named.some(ours)) return;
+    let response: ResponsePayload;
+    try {
+      response = open<ResponsePayload>(secret, watchtower.pubkey, event.content);
+    } catch {
+      return; // Not for us.
+    }
+    heardIds.add(event.id);
+    // An absent responder kind is treated as not-a-human. The spec requires the field on every
+    // response, so a missing one is a broken responder, and guessing "human" there is the one
+    // wrong guess this loop must never make.
+    const kind = response.responder?.kind;
+
+    if (kind === 'human') {
+      /*
+       * Only a person answering this Distress closes it [invariant 2]: every id they name is this
+       * Distress's, or one of them is a ladder the watch said it is part of. The second covers a
+       * held answer to another of this operator's attempts — a second phone, a second tab — that
+       * names this run's own ladder beside an id this run never sent.
+       */
+      if (named.every(ours) || named.some((id) => laddered.has(id))) {
+        latched = response;
+        waiting?.controller.abort();
+        return;
+      }
+      // Somebody answered a Distress this run never sent and never joined. Said; not closure [#0].
+      answeredNow = true;
+      if (!earlierSaidNow) {
+        earlierSaidNow = true;
+        report({ phase: 'acknowledged-earlier', attempt, response });
+      }
+      return;
+    }
+
+    answeredNow = true;
+    if (kind === 'node') {
+      // The watch saying which ladder these attempts are in. A ladder's report, not a repeated
+      // answer: one claiming `acknowledged` is a person's to make, and adds nothing here.
+      if (response.ladder !== 'acknowledged') for (const id of named) if (id) laddered.add(id);
+      if (response.ladder === 'exhausted') {
+        report({ phase: 'watch-exhausted', attempt, response });
+        // Nothing is left of that ladder to wait on, so the backoff is not waited out.
+        if (waiting?.exhaustedEnds) waiting.controller.abort();
+      } else {
+        report({ phase: 'watch-status', attempt, response });
+      }
+      return;
+    }
+    if (!agentSaidNow) {
+      agentSaidNow = true;
+      report({ phase: 'agent-holding', attempt, response });
+    }
   };
-  const reportHeard = () => {
-    if (heardExhausted) reportExhausted(heardExhausted);
-    heardExhausted = null;
+
+  /*
+   * **One listener per relay, open for the whole Distress, and each one heals itself**
+   * [audit: relay paths, F03].
+   *
+   * Responses are ephemeral (`20912`), so relays do not store them: one published while nothing
+   * is subscribed is not delayed, it is gone. The executor answers each later attempt with where
+   * its ladder stands, or with a person's acknowledgement while it holds one — but a transition
+   * between attempts (`exhausted`, or a person answering) is sent once, when it happens, a hold
+   * lasts only `ack_holds_seconds` and not past a restart, and nothing re-sends an agent's answer.
+   * So nothing here may depend on being subscribed at the right moment: this listener is.
+   *
+   * It used to be one subscription across every relay, opened once. The phone's pool does not
+   * reconnect, so the first time every socket dropped — a network handoff, or the app set aside
+   * to dial somebody — it was gone for the rest of the Distress and nothing said so. Per relay,
+   * because a pool reports a subscription across several relays closed only once every one has
+   * gone. A closed listener is opened again after a wait that doubles to fifteen seconds, and at
+   * once when an attempt goes out.
+   *
+   * **Subscribed on the relay itself** where the pool can hand it over, as the box's listener is
+   * [#3]. The pool's own wrapper calls `reason.startsWith(...)` on every close, so a relay that
+   * sent `CLOSED` with a reason that was not a string — `null`, or the `{}` a JavaScript relay
+   * makes of an Error — threw there: the listener never heard the close and never came back. A
+   * pool without `ensureRelay` (the fakes in tests) is subscribed through `subscribeMany`.
+   *
+   * **And it never opens again once the Distress is over** [#1] — finished, or stopped by the
+   * operator. A burn stops the Distress before it destroys the pool, and a listener that came
+   * back through the destroyed pool would put this operator's key and their watch's on the wire
+   * a second after the phone was meant to have gone quiet.
+   *
+   * The filter is deliberately wide and the narrowing happens in the handler, against the ids
+   * this Distress has sent. A filter cannot be widened after it is opened, and what lives in a
+   * handler can be tested anywhere.
+   */
+  const RESPONSES = { kinds: [KIND_RESPONSE], authors: [watchtower.pubkey], '#p': [ourPubkey] };
+  interface Listening {
+    sub: { close(reason?: string): void } | null;
+    /** True once its own `onclose` has fired, or once this closed it. Never closed twice. */
+    closed: boolean;
+    /** The wait before it is opened again. */
+    wait: number;
+  }
+  const listeners = new Map<string, Listening>();
+  const reopening = new Map<string, ReturnType<typeof setTimeout>>();
+  const own = pool as unknown as OwnRelayPool;
+
+  const reopenLater = (url: string, entry: Listening) => {
+    if (over() || listeners.get(url) !== entry || reopening.has(url)) return;
+    const next = Math.min(entry.wait * 2, LISTENER_REOPEN_MAX_MS);
+    reopening.set(
+      url,
+      setTimeout(() => {
+        reopening.delete(url);
+        listen(url, next);
+      }, entry.wait)
+    );
   };
+
+  const listen = (url: string, wait = 1_000) => {
+    if (over()) return;
+    const pending = reopening.get(url);
+    if (pending !== undefined) clearTimeout(pending);
+    reopening.delete(url);
+    const entry: Listening = { sub: null, closed: false, wait };
+    listeners.set(url, entry);
+    const handlers = {
+      onevent: heard,
+      // Any reason at all, of any type: it is wire data.
+      onclose: () => {
+        entry.closed = true;
+        reopenLater(url, entry);
+      }
+    };
+
+    if (typeof own.ensureRelay !== 'function') {
+      try {
+        entry.sub = pool.subscribeMany([url], RESPONSES, handlers);
+      } catch {
+        // Unparseable: it would fail identically every time. Not retried, never fatal.
+        listeners.delete(url);
+      }
+      return;
+    }
+    // A pool that has been told not to connect — a burned one — is not argued with.
+    if (own.allowConnectingToRelay?.(url, ['read', [RESPONSES]]) === false) {
+      listeners.delete(url);
+      return;
+    }
+    own.ensureRelay.call(pool, url, { connectionTimeout: LISTENER_CONNECT_MS }).then(
+      (relay) => {
+        // Over, or superseded, while it was connecting: there is nothing to open.
+        if (over() || listeners.get(url) !== entry || entry.closed) return;
+        if (!relay.connected) {
+          entry.closed = true;
+          reopenLater(url, entry);
+          return;
+        }
+        try {
+          entry.sub = relay.subscribe([RESPONSES], handlers);
+        } catch {
+          entry.closed = true;
+          reopenLater(url, entry);
+        }
+      },
+      () => {
+        if (listeners.get(url) !== entry) return;
+        entry.closed = true;
+        reopenLater(url, entry);
+      }
+    );
+  };
+
+  /** Opens again, now, any listener that has closed. An attempt going out is a moment the network is being used anyway. */
+  const relisten = () => {
+    for (const [url, entry] of listeners) if (entry.closed) listen(url, entry.wait);
+  };
+
+  /** Closes every listener and stops every reopen. Safe to call twice. */
+  const silence = () => {
+    for (const timer of reopening.values()) clearTimeout(timer);
+    reopening.clear();
+    for (const entry of listeners.values()) {
+      if (entry.closed) continue;
+      entry.closed = true;
+      entry.sub?.close();
+    }
+  };
+
+  /**
+   * Waits `ms`, or less: until the operator stops, a person answers this Distress, or — for the
+   * backoff only — the watch says nobody can be reached. The window is a timer of its own, so a
+   * test's injected sleep stands only for the backoff, as it always has.
+   */
+  const pause = async (ms: number, exhaustedEnds: boolean) => {
+    if (latched || stopped()) return;
+    const controller = new AbortController();
+    const forward = () => controller.abort();
+    opts.signal?.addEventListener('abort', forward, { once: true });
+    waiting = { controller, exhaustedEnds };
+    try {
+      await (exhaustedEnds ? sleep : defaultSleep)(ms, controller.signal);
+    } finally {
+      waiting = null;
+      opts.signal?.removeEventListener('abort', forward);
+    }
+  };
+
+  const acknowledged = (response: ResponsePayload): ResponsePayload => {
+    say({ phase: 'acknowledged', response });
+    return response;
+  };
+
+  // One listener per relay however it is spelled, and none for an address the pool cannot parse:
+  // that fails the same way every time, and the attempt's own send already says so.
+  const urls = [...new Set(parseable(relays).map((url) => normalizeURL(url)))];
+  opts.signal?.addEventListener('abort', silence, { once: true });
+  for (const url of urls) listen(url);
 
   try {
-  for (;;) {
-    if (stopped()) throw cancelled();
-    const early = answered();
-    if (early) {
-      report({ phase: 'acknowledged', response: early });
-      return early;
-    }
-    attempt++;
-    heardAgent = null;
-    relisten();
+    for (;;) {
+      // A person's answer first, after every await: one heard a moment before a stand-down is
+      // still the answer, and the operator is owed "Wren has it" rather than "nobody answered".
+      if (latched) return acknowledged(latched);
+      if (stopped()) throw cancelled();
+      attempt++;
+      answeredNow = false;
+      agentSaidNow = false;
+      earlierSaidNow = false;
+      relisten();
 
-    report({ phase: 'sending', attempt });
-    let sent: Event | null = null;
-    try {
-      sent = await sendDistress(pool, relays, secret, watchtower, payload, (signed) => {
-        // Recorded before it is sent, so an answer that beats a slow relay's OK names an id
-        // this loop knows [audit: relay paths, D2 review].
-        outstanding.push(signed);
-        if (outstanding.length > OUTSTANDING) outstanding.shift();
-      });
-      report({ phase: 'sent', attempt });
-    } catch (e) {
-      report({ phase: 'unreachable', attempt, error: e instanceof Error ? e.message : String(e) });
-    }
-    if (stopped()) throw cancelled();
-
-    // Anything that came back while the attempt was still going out — waiting a whole window
-    // for it to arrive a second time would tell somebody who has been answered "no answer".
-    const meanwhile = answered();
-    if (meanwhile) {
-      report({ phase: 'acknowledged', response: meanwhile });
-      return meanwhile;
-    }
-    reportHeard();
-
-    if (sent) {
+      say({ phase: 'sending', attempt });
+      held = [];
+      let left = false;
       try {
-        const response = await waitForResponse(
-          pool, relays, secret, ourPubkey, watchtower.pubkey, outstanding, ackWindow, opts.signal
-        );
-        // An absent responder kind is treated as not-a-human. The spec requires the field on
-        // every response, so a missing one is a broken responder, and guessing "human"
-        // there is the one wrong guess this loop must never make.
-        if (response.responder?.kind === 'human') {
-          report({ phase: 'acknowledged', response });
-          return response;
-        }
-        // The watch's own ladder speaks as the node: not a person, and not an agent. Its word
-        // that nobody can be reached is reported the moment it arrives. It used to fall through
-        // to "an agent answered" with its text thrown away, and the operator learned it ten
-        // minutes later from `nobody-answering`.
-        if (response.responder?.kind === 'node') {
-          if (response.ladder === 'exhausted') reportExhausted(response);
-          else {
-            // A later status means a new ladder opened on a resend, so its own end is news.
-            exhaustedShown = false;
-            report({ phase: 'watch-status', attempt, response });
-          }
-        } else {
-          report({ phase: 'agent-holding', attempt, response });
-        }
-      } catch {
-        if (stopped()) throw cancelled();
-        // Heard on the always-open subscription while the per-attempt one was not yet open.
-        const late = answered();
-        if (late) {
-          report({ phase: 'acknowledged', response: late });
-          return late;
-        }
-        if (heardAgent) report({ phase: 'agent-holding', attempt, response: heardAgent });
-        else report({ phase: 'no-answer', attempt });
+        await sendDistress(pool, relays, secret, watchtower, payload, (signed) => {
+          // Recorded before it is sent, so an answer that beats a slow relay's OK names an id
+          // this loop knows [audit: relay paths, D2 review].
+          sent.add(signed.id);
+        });
+        left = true;
+        say({ phase: 'sent', attempt });
+      } catch (e) {
+        say({ phase: 'unreachable', attempt, error: e instanceof Error ? e.message : String(e) });
+      } finally {
+        const meanwhile = held ?? [];
+        held = null;
+        for (const phase of meanwhile) say(phase);
       }
-    }
-    reportHeard();
+      if (latched) return acknowledged(latched);
+      if (stopped()) throw cancelled();
 
-    // Said once, and it changes nothing. The loop keeps going because only the operator
-    // ends a Distress — but an operator who knows nobody is coming can act on that, and one
-    // who is still watching attempt numbers tick up has been told nothing useful.
-    const elapsedMs = clock() - startedAt;
-    if (!saidNobodyAnswering && elapsedMs >= localExhaustedAfter) {
-      saidNobodyAnswering = true;
-      report({ phase: 'nobody-answering', attempt, elapsedMs });
-    }
+      if (left) {
+        await pause(ackWindow, false);
+        if (latched) return acknowledged(latched);
+        if (stopped()) throw cancelled();
+        if (!answeredNow) report({ phase: 'no-answer', attempt });
+      }
 
-    await sleep(backoff, opts.signal);
-    if (stopped()) throw cancelled();
-    backoff = Math.min(backoff * 2, maxBackoff);
+      // Said once, and it changes nothing. The loop keeps going because only the operator
+      // ends a Distress — but an operator who knows nobody is coming can act on that, and one
+      // who is still watching attempt numbers tick up has been told nothing useful.
+      const elapsedMs = clock() - startedAt;
+      if (!saidNobodyAnswering && elapsedMs >= localExhaustedAfter) {
+        saidNobodyAnswering = true;
+        report({ phase: 'nobody-answering', attempt, elapsedMs });
+      }
 
-    // The gap is exactly where an ephemeral response goes unheard, so it is checked on the
-    // way out of it as well as on the way in.
-    reportHeard();
-    const late = answered();
-    if (late) {
-      report({ phase: 'acknowledged', response: late });
-      return late;
+      await pause(backoff, true);
+      if (latched) return acknowledged(latched);
+      if (stopped()) throw cancelled();
+      backoff = Math.min(backoff * 2, maxBackoff);
     }
-  }
   } finally {
     finished = true;
-    for (const t of reopening.values()) clearTimeout(t);
-    for (const l of listeners.values()) l.sub?.close();
+    opts.signal?.removeEventListener('abort', silence);
+    silence();
   }
 }

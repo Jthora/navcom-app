@@ -41,15 +41,16 @@ function configPath(): string {
  * with the operator's own filter, so a box whose daemon has died reports exactly what an
  * operator would be told rather than a state the command created for itself.
  *
- * Exits non-zero when an operator would be shown Dark, so it can be a cron line or the last
- * step of a restore drill rather than something somebody has to remember to read.
+ * Exits non-zero when an operator would be shown Dark, or when no relay answers the box's own
+ * subscription -- a watch an operator can see and cannot reach [#38] -- so it can be a cron line or
+ * the last step of a restore drill rather than something somebody has to remember to read.
  */
 async function checkNow(path: string): Promise<never> {
   const config = loadDaemonConfig(path);
   const { pubkey } = loadOrCreateKeypair(config.identity.privkeyPath);
   const result = await checkWatch({ pubkey, relays: config.relays.urls });
   for (const line of report(result)) console.log(line);
-  process.exit(result.visible ? 0 : 1);
+  process.exit(result.visible && result.hearing ? 0 : 1);
 }
 
 async function main(): Promise<void> {
@@ -99,7 +100,7 @@ async function main(): Promise<void> {
   }
 
   const daemon = new WatchtowerDaemon({ config, secretKey, pubkey, ...(log ? { log } : {}) });
-  const accepted = await daemon.start();
+  await daemon.start();
   const total = new Set(config.relays.urls).size;
   /*
    * What actually happened, not what was attempted.
@@ -107,17 +108,13 @@ async function main(): Promise<void> {
    * This printed "published watch state (automated). Listening for signals." whatever the
    * relays said [F05, F13] -- including on a box that booted into an outage, where nothing had
    * been published and nothing was listening. Each relay now says for itself when it starts
-   * listening, and the heartbeat says when one refuses.
+   * listening, the watch state goes to a relay only once it is [#38], and the heartbeat says when
+   * each relay first takes it, with how many carry it then, and when one refuses.
    */
-  if (accepted > 0) {
-    console.log(`[daemon] published watch state (automated) to ${accepted}/${total} relays`);
-  } else {
-    console.error(
-      `[daemon] WARNING: no relay accepted the watch state (0/${total}). Operators read Dark ` +
-        "until one does; retrying on every heartbeat.",
-    );
-  }
-  console.log(`[daemon] subscribing for signals on ${total} relay(s); each says when it is listening`);
+  console.log(
+    `[daemon] subscribing for signals on ${total} relay(s); each says when it is listening, and the ` +
+      "watch state is published on a relay only while it is",
+  );
 
   let shuttingDown = false;
   const shutdown = (signal: string) => {

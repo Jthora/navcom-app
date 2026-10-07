@@ -36,8 +36,12 @@ query_timeout_seconds = 8
 # How far from now a signal or Distress may be stamped, either way, and still be acted on.
 # A signed event is valid for ever and any relay can serve one again, so without this a relay
 # replaying a captured Distress makes the watch act on it again. The executor holds the same
-# rule with its paging window. A phone whose clock is further off than this is not heard, and
-# the daemon logs each one it drops.
+# rule. A phone whose clock is further off than this is not heard, and the daemon logs each one
+# it drops.
+#
+# At least 300, refused below that at startup: a phone reads this watch as up until its state
+# is 300s old by the phone's own clock, so a narrower window ignores phones that believe they
+# are heard -- and their sign-on, Query and Distress all get silence.
 max_event_age_seconds = 300
 
 [authorization]

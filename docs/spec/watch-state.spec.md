@@ -64,7 +64,16 @@ stopped saying — a claim nobody made. v2 added `log_root`; v3 made it required
   themselves, which is safe; *"this phone's clock is wrong"* is fixable in thirty seconds and
   gets the watch back.
   `stale_after_seconds` is *configurable*, and should be a small multiple of the daemon's
-  publish interval. The daemon MUST republish at that interval even when nothing changed
+  publish interval. The daemon MUST republish at that interval even when nothing changed — **on
+  every relay it can hear on, and on no other.**
+- **A node MUST NOT publish its watch state to a relay on which it is not listening for signals**
+  — one that refuses its `#p` subscription, or takes it and never answers. Such a relay carried a
+  fresh `automated` watch for as long as the box ran while nothing on the box could hear a
+  `Distress` sent there, and a client cannot detect that from a fresh event: only the publisher can
+  withhold it. Withheld, that relay's copy ages to Dark within `stale_after_seconds`, which is the
+  truth. The first watch state, and the first after a relay comes back, go out when that relay
+  answers the subscription, not before it is asked. *(The executor's subscription is not yet
+  consulted — see [`stationkeeper.md`](../watch/stationkeeper.md).)*
 
 ### On-call is a list of statements, not a count
 

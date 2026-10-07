@@ -1,10 +1,13 @@
 import type { SimplePool } from "nostr-tools/pool";
 import type { Event } from "nostr-tools/pure";
+import type { Filter } from "nostr-tools/filter";
 import { nodePool } from "../shared/nostr-node.js";
+import { KIND_DISTRESS, KIND_SIGNAL } from "../shared/kinds.js";
 import {
   KIND_WATCH_STATE,
   STALE_AFTER_SECONDS,
   readWatchStateAt,
+  sanitizeForLog,
   type WatchStateRead,
 } from "@navcom/core";
 
@@ -42,6 +45,18 @@ export interface RelayReach {
   url: string;
   reached: boolean;
   error?: string;
+  /**
+   * Whether the relay answered **the box's own subscription** -- the `#p` REQ the daemon and the
+   * executor hear every signal and Distress through [#38]. Absent where it was not reached.
+   *
+   * A relay can take writes and serve the watch state to anybody while refusing that one REQ (an
+   * inbox that wants AUTH) or holding it unanswered. This command used to read only the watch
+   * state, so it reported such a box as seen and exited zero while no Distress sent there could
+   * reach it.
+   */
+  hears?: boolean;
+  /** Why it does not: the relay's refusal, or that it never answered. */
+  deaf?: string;
 }
 
 export interface WatchCheck {
@@ -53,6 +68,78 @@ export interface WatchCheck {
   read: WatchStateRead;
   /** True when an operator signing on right now would be told a watch is up. */
   visible: boolean;
+  /** True when at least one reachable relay answered the box's own subscription. */
+  hearing: boolean;
+}
+
+/**
+ * How long a relay may take to connect. Bounded, because `ws` sets no handshake timeout of its
+ * own: a relay that took the TCP connection and never answered the upgrade left this command
+ * printing nothing and never exiting, so its cron line never failed [#11].
+ */
+const CONNECT_MS = 5_000;
+
+/** nostr-tools' longest timer, so its own stand-in for an EOSE never answers for a relay. */
+const NEVER_MS = 2_147_483_647;
+
+/** A relay as `ensureRelay` hands it over, as far as this needs it. */
+interface Subscribing {
+  subscribe(
+    filters: Filter[],
+    params: { oneose?: () => void; onclose?: (reason: string) => void; eoseTimeout?: number },
+  ): { close(reason?: string): void };
+}
+
+/**
+ * Asks the relay for exactly what the daemon and the executor ask it for, and says whether it
+ * answered. A refusal is the relay's own words; silence past `timeoutMs` is said as silence.
+ * Nothing is published, and `limit: 0` asks for nothing stored.
+ */
+function hears(relay: Subscribing, pubkey: string, timeoutMs: number): Promise<Pick<RelayReach, "hears" | "deaf">> {
+  return new Promise((resolve) => {
+    let settled = false;
+    let closed = false;
+    let sub: { close(reason?: string): void } | null = null;
+    const finish = (result: Pick<RelayReach, "hears" | "deaf">) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      // Never closed twice: nostr-tools counts a second close as a second operation ending.
+      if (sub && !closed) {
+        closed = true;
+        sub.close("checked");
+      }
+      resolve(result);
+    };
+    const timer = setTimeout(
+      () =>
+        finish({
+          hears: false,
+          deaf: `took the box's subscription and did not answer in ${
+            timeoutMs >= 1_000 ? `${Math.round(timeoutMs / 1_000)}s` : `${timeoutMs}ms`
+          }`,
+        }),
+      timeoutMs,
+    );
+    try {
+      sub = relay.subscribe([{ kinds: [KIND_SIGNAL, KIND_DISTRESS], "#p": [pubkey], limit: 0 }], {
+        oneose: () => finish({ hears: true }),
+        onclose: (reason: unknown) => {
+          closed = true;
+          const said = typeof reason === "string" && reason !== "" ? sanitizeForLog(reason, 160) : "no reason given";
+          finish({ hears: false, deaf: `refused the box's subscription: ${said}` });
+        },
+        eoseTimeout: NEVER_MS,
+      });
+      clearTimeout((sub as unknown as { eoseTimeoutHandle?: ReturnType<typeof setTimeout> }).eoseTimeoutHandle);
+      if (settled && !closed) {
+        closed = true;
+        sub.close("checked");
+      }
+    } catch (err: unknown) {
+      finish({ hears: false, deaf: err instanceof Error ? err.message : String(err) });
+    }
+  });
 }
 
 /**
@@ -61,11 +148,25 @@ export interface WatchCheck {
  * Deliberately not the terminal's wording. The operator is told what it means for them —
  * "nothing here can tell a live watch from a dead one" — and the Stationkeeper needs what to
  * go and change, which is a different sentence about the same fact.
+ *
+ * `hearing` is whether any relay answered the box's own subscription. Where none did, a running
+ * daemon withholds the watch state from every relay [#38], so "absent" and "stale" have a third
+ * cause, and it is the one to fix first: told only the other two, a Stationkeeper went to restart
+ * a daemon that was running and doing what it should [review: relay paths].
  */
-export function remedy(read: WatchStateRead, staleAfterSeconds = STALE_AFTER_SECONDS): string {
+export function remedy(read: WatchStateRead, staleAfterSeconds = STALE_AFTER_SECONDS, hearing = true): string {
   if (!read.dark) return "An operator signing on now would see this watch.";
+  const withheld =
+    "No relay answers the box's subscription, and the daemon publishes the watch state only on relays " +
+    "that do, so a running daemon is withholding it from all of them. Fix that first (above).";
   switch (read.reason) {
     case "absent":
+      if (!hearing) {
+        return (
+          `No relay served anything for this key. ${withheld} If the watch is still absent after that, ` +
+          "the daemon is not running, or it is publishing to relays this config does not list."
+        );
+      }
       return (
         "No relay served anything for this key. Either the daemon is not running, or it is " +
         "publishing to relays this config does not list."
@@ -83,6 +184,13 @@ export function remedy(read: WatchStateRead, staleAfterSeconds = STALE_AFTER_SEC
         "for it. Fix the clock before trusting anything else here."
       );
     case "stale":
+      if (!hearing) {
+        return (
+          `The last watch state is ${read.ageSeconds ?? "?"}s old and operators treat anything ` +
+          `over ${staleAfterSeconds}s as Dark. ${withheld} If it is still stale after that, the daemon ` +
+          "has stopped republishing, or it cannot reach the relays it thinks it can."
+        );
+      }
       return (
         `The last watch state is ${read.ageSeconds ?? "?"}s old and operators treat anything ` +
         `over ${staleAfterSeconds}s as Dark. The daemon has stopped republishing, or it cannot ` +
@@ -114,12 +222,13 @@ export async function checkWatch(opts: {
 
   const reach: RelayReach[] = await Promise.all(
     opts.relays.map(async (url): Promise<RelayReach> => {
+      let relay: Subscribing;
       try {
-        await pool.ensureRelay(url);
-        return { url, reached: true };
+        relay = (await pool.ensureRelay(url, { connectionTimeout: Math.min(timeoutMs, CONNECT_MS) })) as unknown as Subscribing;
       } catch (err: unknown) {
         return { url, reached: false, error: err instanceof Error ? err.message : String(err) };
       }
+      return { url, reached: true, ...(await hears(relay, opts.pubkey, timeoutMs)) };
     }),
   );
 
@@ -167,6 +276,7 @@ export async function checkWatch(opts: {
     found: at ? { createdAt: at.created_at, ageSeconds: now() - at.created_at } : null,
     read,
     visible: !read.dark,
+    hearing: reach.some((r) => r.hears === true),
   };
 }
 
@@ -174,7 +284,16 @@ export async function checkWatch(opts: {
 export function report(check: WatchCheck, staleAfterSeconds = STALE_AFTER_SECONDS): string[] {
   const lines = [`[check] watch ${check.pubkey}`];
   for (const r of check.relays) {
-    lines.push(`[check]   ${r.url}: ${r.reached ? "reached" : `UNREACHABLE -- ${r.error ?? "no reason given"}`}`);
+    if (!r.reached) {
+      lines.push(`[check]   ${r.url}: UNREACHABLE -- ${r.error ?? "no reason given"}`);
+    } else if (r.hears) {
+      lines.push(`[check]   ${r.url}: reached, and it answers the box's subscription`);
+    } else {
+      lines.push(
+        `[check]   ${r.url}: reached, but it ${r.deaf ?? "did not answer the box's subscription"} -- a Distress ` +
+          "sent only there is not heard, and the daemon does not publish the watch state there",
+      );
+    }
   }
 
   /*
@@ -199,6 +318,13 @@ export function report(check: WatchCheck, staleAfterSeconds = STALE_AFTER_SECOND
     `[check] an operator would see: ${check.visible ? `${check.read.state.state.toUpperCase()}` : "DARK"}` +
       (check.read.reason ? ` (${check.read.reason})` : ""),
   );
-  lines.push(`[check] ${remedy(check.read, staleAfterSeconds)}`);
+  // First when it is true: it is the cause of what follows, and the remedy below says so.
+  if (!check.hearing) {
+    lines.push(
+      "[check] NO RELAY ANSWERS THE BOX'S SUBSCRIPTION, so no signal and no Distress reaches it. Pick a relay " +
+        "that serves this box without NIP-42 AUTH, or fix the one that is not answering.",
+    );
+  }
+  lines.push(`[check] ${remedy(check.read, staleAfterSeconds, check.hearing)}`);
   return lines;
 }

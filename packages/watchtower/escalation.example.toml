@@ -33,6 +33,11 @@ retention_days = 90
 # How long to wait for an on-call human before moving on. Configurable; the spec's default
 # is 300. Shortening it does not make help arrive sooner -- it only reaches "nobody is
 # coming" sooner, which is sometimes the more useful truth.
+#
+# It is not how far off a phone's clock may be. A Distress stamped up to this many seconds
+# from this machine's clock is heard, but never fewer than 300: a phone reads this watch as up
+# until its state is 300s old, so it has to be heard that far off. The executor says so at
+# startup when this is shorter.
 paging_window_seconds = 300
 contact_window_seconds = 300
 

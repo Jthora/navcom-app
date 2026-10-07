@@ -7,9 +7,11 @@ import {
   drillSentence,
   LadderRegistry,
   ladderReport,
+  STALE_AFTER_SECONDS,
   type Author,
   type DistressAckPayload,
   type Ladder,
+  type LadderState,
   type ResponsePayload,
 } from "@navcom/core";
 import { nodePool } from "../shared/nostr-node.js";
@@ -64,14 +66,35 @@ export { RELISTEN_SECONDS } from "../shared/relay-listener.js";
 /**
  * How long after re-sending a held acknowledgement it is sent once more.
  *
- * Past the longest a phone can take to record its own attempt: core's loop listens only for
+ * For a client from before 2026-10-07, which stays cached on phones: its loop listens only for
  * answers to ids it has recorded, and records an attempt only once the publish has settled on
- * every relay -- three seconds to connect and 4.4 to give up on an OK. A phone that started its
- * Distress again knows none of the ids the watch acknowledged, so the first re-send can only
- * name its new one, and lands before it is recorded whenever one of its relays is slow [review:
- * D2]. The second lands after.
+ * every relay -- three seconds to connect and 4.4 to give up on an OK. Such a phone, having
+ * started its Distress again, knows none of the ids the watch acknowledged, so the first re-send
+ * names only an id it has not recorded yet whenever one of its relays is slow [review: D2]. The
+ * second lands after. A current client records an attempt before sending it and listens for the
+ * whole Distress, so it hears the first -- when a relay took the first. One no relay took is
+ * reached by the second, which is why the hold stands until it has gone [review: relay paths, R2].
  */
 export const RESEND_AGAIN_SECONDS = 10;
+
+/**
+ * How far from this machine's clock a `20911` may be stamped and still be acted on, either way.
+ *
+ * **Never less than {@link STALE_AFTER_SECONDS}**, the age at which a phone reads this watch as
+ * Dark [review: relay paths, #4]. It was the paging window, so a Stationkeeper who shortened that
+ * to reach "nobody is coming" sooner also narrowed which clocks the watch could hear: at 120, a
+ * phone 200s fast read the watch as up -- its state was 200s old, short of 300 -- while every
+ * Distress it sent was ignored, with no page and no "nobody is coming" from the watch. At 300 or
+ * more, a phone whose clock is off by enough to be ignored already reads the watch as Dark.
+ */
+export function ageWindowSeconds(config: EscalationConfig): number {
+  return Math.max(config.escalation.pagingWindowSeconds, STALE_AFTER_SECONDS);
+}
+
+/** What the watch says when the page budget is spent. It states the outcome; "Paging Wren." would not be true. */
+const BUDGET_SPENT = "The watch could not page anyone -- too many alerts at once. Nobody has been woken.";
+/** What the watch says when every paging command failed. */
+const EVERY_CHANNEL_FAILED = "No page could be sent -- every channel failed. Nobody has been woken.";
 
 /** A human acknowledgement this executor is still holding for an operator. */
 interface HeldAck {
@@ -79,6 +102,12 @@ interface HeldAck {
   ladder: Ladder;
   /** Unix seconds the acknowledgement arrived. The window runs from here. */
   at: number;
+  /**
+   * How many of its sends a relay has taken, all attempts together. An attempt whose two sends
+   * both reached nothing ends the hold only if no other attempt's got through meanwhile: then the
+   * operator has been told, and the hold is doing its job.
+   */
+  taken: number;
 }
 
 export class EscalationExecutor {
@@ -116,8 +145,17 @@ export class EscalationExecutor {
    * own retention, and the hold must not end early because a ladder was tidied away.
    */
   private readonly heldAcks = new Map<string, HeldAck>();
-  /** Second sends of held acknowledgements still waiting, so `stop()` can cancel them. */
-  private readonly resends = new Set<ReturnType<typeof setTimeout>>();
+  /**
+   * Second sends of held acknowledgements still waiting, so `stop()` can cancel them -- each with
+   * the record it still owes, where its first send reached no relay and nothing is written yet.
+   */
+  private readonly resends = new Map<ReturnType<typeof setTimeout>, (() => void) | null>();
+  /**
+   * What only this process knows about each live ladder -- that a page did not go out -- and the
+   * state it was said in, so a retry joining the ladder is told it too [#31]. Dropped with the
+   * ladder.
+   */
+  private readonly notes = new Map<string, { state: LadderState; text: string }>();
   private stopped = false;
   /**
    * The executor's own accountability log -- separate from the daemon's, and the only
@@ -181,7 +219,7 @@ export class EscalationExecutor {
    * human acknowledgement means somebody has it. Get this wrong and a phone stops retrying
    * because a machine said "paging".
    */
-  private async report(ladder: Ladder, distressId: string, note?: string): Promise<void> {
+  private async report(ladder: Ladder, distressId: string, said?: string): Promise<number> {
     const responder: Author =
       ladder.state === "acknowledged" && ladder.acknowledgedBy
         ? ladder.acknowledgedBy
@@ -190,14 +228,18 @@ export class EscalationExecutor {
     const payload: ResponsePayload = {
       type: ladder.state === "acknowledged" ? "ack" : "escalation-status",
       responder,
-      // `note` is what only this process knows: whether a page actually went out. The
-      // ladder's own sentence describes the state machine, and the state machine cannot see
-      // a command that exited non-zero.
-      text: note ? `${ladderReport(ladder)} ${note}` : ladderReport(ladder),
+      /*
+       * `said` is what only this process knows: whether a page actually went out. The ladder's
+       * own sentence describes the state machine, and the state machine cannot see a command that
+       * exited non-zero -- so where nobody was woken, `said` replaces it rather than following
+       * "Paging Wren." with a sentence that takes it back [#31].
+       */
+      text: said ?? ladderReport(ladder),
       provenance: null,
       // The state itself, so a phone can act on `exhausted` without parsing the sentence.
       ladder: ladder.state,
     };
+    if (said !== undefined) this.notes.set(ladder.distressId, { state: ladder.state, text: said });
 
     const event = this.sign({
       kind: KIND_RESPONSE,
@@ -216,7 +258,34 @@ export class EscalationExecutor {
       this.recordOutcome(ladder);
     }
 
-    await this.send(ladder, distressId, event, payload);
+    return this.send(ladder, distressId, event, payload);
+  }
+
+  /**
+   * Tells a retry that joined a live ladder where that ladder is [#31].
+   *
+   * A retry used to be answered with nothing: the ladder had said where it was once, to the
+   * attempt that opened it, and a phone that missed that -- a connection that dropped, a
+   * Distress started again -- never heard "Paging Wren.", or that nobody could be woken. Now each
+   * attempt is told the ladder's state and whatever this process has added to it, naming the
+   * retry and the ladder's own Distress. Not a transition, so nothing is recorded.
+   */
+  private async reportAgain(ladder: Ladder, retryId: string): Promise<number> {
+    const note = this.notes.get(ladder.distressId);
+    const payload: ResponsePayload = {
+      type: "escalation-status",
+      responder: { kind: "node", callsign: "escalation" },
+      text: note && note.state === ladder.state ? note.text : ladderReport(ladder),
+      provenance: null,
+      ladder: ladder.state,
+    };
+    const event = this.sign({
+      kind: KIND_RESPONSE,
+      created_at: now(),
+      tags: [["p", ladder.operator], ["e", retryId], ["e", ladder.distressId]],
+      content: sealResponse(this.secretKey, ladder.operator, payload),
+    });
+    return this.send(ladder, retryId, event, payload);
   }
 
   /** Returns how many relays took it. 0 is invariant 2 failing, and is said so. */
@@ -244,32 +313,76 @@ export class EscalationExecutor {
    *
    * **The cost, stated in the spec:** a genuinely new emergency from the same operator inside
    * the window is read as the old one until it closes. Nothing is sent to the human who
-   * acknowledged, or to anyone else: the operator's phone is told who has them, and that is all.
+   * acknowledged, or to anyone else: the operator's phone is told who acknowledged and when, and
+   * a current phone tells that apart from an answer to the Distress it is sending [#0].
    *
-   * **It names the acknowledged Distress as well as the new one** [review: D2]. core's loop drops
-   * an answer to an id it has not recorded, and records an attempt only once its publish has
-   * settled on every relay -- so an answer naming only the new attempt, sent the moment it lands,
-   * was thrown away whenever one of the phone's relays was slow to say OK, on every attempt for
-   * the whole hold. The acknowledged id is one the loop has held since it sent it. A phone that
-   * started again holds neither, so the answer goes once more {@link RESEND_AGAIN_SECONDS} later.
+   * **It names the acknowledged Distress as well as the new one** [review: D2], for clients from
+   * before 2026-10-07, still cached on phones. Their loop drops an answer to an id it has not
+   * recorded, and records an attempt only once its publish has settled on every relay -- so an
+   * answer naming only the new attempt, sent the moment it lands, was thrown away whenever one of
+   * the phone's relays was slow to say OK, on every attempt for the whole hold. The acknowledged
+   * id is one such a loop has held since it sent it. One that started again holds neither, so
+   * the answer goes once more {@link RESEND_AGAIN_SECONDS} later. A current client records an
+   * attempt before sending it, and reads the two ids to know which Distress was answered.
+   *
+   * **A held answer stands through its second send** [#14, review: relay paths, R2]. One that no
+   * relay took is sent again {@link RESEND_AGAIN_SECONDS} later all the same: a refusal is often
+   * a moment's -- the daemon's agent acknowledgement on the same key a millisecond earlier, under a
+   * relay's rate limit, or a blip on a box with one relay -- and the second send lands outside it.
+   * Ending the hold at the first refusal opened a ladder in the same breath and paged a person who
+   * had already answered. Only when the second send reaches no relay either, and nothing has
+   * reached the operator from this hold meanwhile, does the hold end: they were told nothing, so
+   * nothing is being held for them, and their next attempt opens a ladder and pages -- the same
+   * direction a restart or a clock step fails in. It is the next attempt rather than this one so
+   * that a phone that did hear, through a relay that never said OK, and stopped, is not paged for.
    *
    * Recorded as `acked`, which this log otherwise never writes -- its own entries are
    * `escalated` and drills -- so a re-sent acknowledgement cannot be read as a second
    * escalation, or as none. Published first and recorded after, as the daemon does for its
-   * acknowledgements: the record says whether anything left this machine. Recorded once per
-   * attempt: the second send is the same answer to the same attempt.
+   * acknowledgements: the record says whether anything left this machine. **Once per attempt, when
+   * that is settled** [#25]: `acknowledged` as soon as a relay takes either send, `ack-not-sent`
+   * once neither did -- including a second send that never went because the hold had ended, or
+   * the executor stopped first.
    */
   private async resendAck(held: HeldAck, distressId: string): Promise<void> {
-    const accepted = await this.sendHeld(held, distressId);
+    const before = held.taken;
+    const first = await this.sendHeld(held, distressId);
+    if (first > 0) this.recordResent(held, distressId, true);
+    else {
+      console.error(
+        `[ladder] ${distressId.slice(0, 8)}: no relay took the held acknowledgement -- still holding it, ` +
+          `and sending it again in ${RESEND_AGAIN_SECONDS}s`,
+      );
+    }
+
     const again = setTimeout(() => {
       this.resends.delete(again);
-      if (this.stopped) return;
-      this.sendHeld(held, distressId).catch((err: unknown) => {
+      this.sendAgain(held, distressId, first > 0, before).catch((err: unknown) => {
         console.error(`[ladder] re-sending the held ack for ${distressId.slice(0, 8)} failed: ${String(err)}`);
       });
     }, RESEND_AGAIN_SECONDS * 1000);
-    this.resends.add(again);
+    // What `stop()` writes if it cancels this: neither send reached a relay.
+    this.resends.set(again, first > 0 ? null : () => this.recordResent(held, distressId, false));
+  }
 
+  /** The second send, and -- where the first reached nobody -- the record, and the end of the hold. */
+  private async sendAgain(held: HeldAck, distressId: string, firstTaken: boolean, before: number): Promise<void> {
+    const operator = held.ladder.operator;
+    // Only while this same hold stands: one that has ended, or a newer answer, is not re-sent.
+    const standing = () => !this.stopped && this.heldAcks.get(operator) === held;
+    const second = standing() ? await this.sendHeld(held, distressId) : 0;
+    if (firstTaken) return;
+    this.recordResent(held, distressId, second > 0);
+    if (second > 0 || !standing() || held.taken !== before) return;
+    // Told nothing, twice, and nothing since: held for nobody. Fails toward paging.
+    this.heldAcks.delete(operator);
+    console.error(
+      `[ladder] ${distressId.slice(0, 8)}: no relay took the held acknowledgement, twice -- no longer holding ` +
+        `it for ${operator.slice(0, 8)}; their next attempt is escalated as new`,
+    );
+  }
+
+  private recordResent(held: HeldAck, distressId: string, sent: boolean): void {
     if (!this.accountability) return;
     try {
       this.accountability.record({
@@ -277,7 +390,7 @@ export class EscalationExecutor {
         actor: { kind: "node", callsign: "escalation", pubkey: this.pubkey },
         action: "acked",
         subject: { kind: "human", pubkey: held.ladder.operator },
-        outcome: accepted > 0 ? "acknowledged" : "ack-not-sent",
+        outcome: sent ? "acknowledged" : "ack-not-sent",
       });
     } catch (err: unknown) {
       console.error(`[escalation-log] FAILED TO RECORD re-sent ack for ${distressId.slice(0, 8)}: ${String(err)}`);
@@ -287,21 +400,26 @@ export class EscalationExecutor {
   /** One send of a held acknowledgement, freshly signed. Returns how many relays took it. */
   private async sendHeld(held: HeldAck, distressId: string): Promise<number> {
     const ladder = held.ladder;
-    const minutes = Math.max(0, Math.round((now() - held.at) / 60));
+    const age = Math.max(0, now() - held.at);
+    const minutes = Math.round(age / 60);
+    const left = Math.max(0, this.config.escalation.ackHoldsSeconds - age);
     const payload: ResponsePayload = {
       type: "ack",
-      // Load-bearing: the human, because a human answer is what ends the phone's retry.
+      // The human who answered, because that is who did. A current phone ends its Distress on it
+      // only when it names nothing but that phone's own attempts, or a ladder it joined [#0].
       responder: ladder.acknowledgedBy ?? { kind: "node", callsign: "escalation" },
       /*
-       * What is true whichever case this is [review: D2]. The phone heads it with the responder
-       * -- "Wren has it" -- so the text carries the rest: when that was, and that nothing about
-       * this attempt reached anybody. "Is responding" and "your phone was still asking" were
-       * true for a phone that missed the answer and false for a new emergency, where they told
-       * the operator help was coming to something nobody had heard about.
+       * Only what this process knows [review: D2, #0, relay paths R2]: when the answer was given,
+       * that this executor has not escalated the attempt it reached, and when that changes. Not
+       * "nobody has been told" or "the watch has paged nobody": a keyless pager beside this box
+       * cannot know a Distress was answered and pages for it all the same, and somebody holding the
+       * board sees it. "Your phone sent another" called a new emergency a duplicate.
        */
       text:
-        `Acknowledged ${minutes === 0 ? "less than a minute" : `${minutes} min`} ago. This repeats that ` +
-        "answer because your phone sent another; nobody has been told about that one.",
+        `Acknowledged ${minutes === 0 ? "less than a minute" : `${minutes} min`} ago. The watch has not ` +
+        `escalated this one. If your phone is still sending in ${
+          left < 60 ? "less than a minute" : `${Math.ceil(left / 60)} min`
+        }, the watch treats it as new.`,
       provenance: null,
       ladder: "acknowledged",
     };
@@ -311,7 +429,9 @@ export class EscalationExecutor {
       tags: [["p", ladder.operator], ["e", distressId], ["e", ladder.distressId]],
       content: sealResponse(this.secretKey, ladder.operator, payload),
     });
-    return this.send(ladder, distressId, event, payload);
+    const accepted = await this.send(ladder, distressId, event, payload);
+    if (accepted > 0) held.taken++;
+    return accepted;
   }
 
   /**
@@ -346,9 +466,13 @@ export class EscalationExecutor {
   }
 
   private async handleDistress(event: Event): Promise<void> {
-    // A new attempt from somebody a human has already answered: the acknowledgement again,
-    // not a new ladder. The same event again is the registry's to recognise, below.
-    if (!this.ladders.get(event.id)) {
+    // The same event again -- relay redelivery, or a retry already joined -- is the registry's
+    // to recognise, below, and is answered once.
+    const known = this.ladders.get(event.id) !== undefined;
+
+    // A new attempt from somebody a human has already answered: the acknowledgement again, not a
+    // new ladder. A hold that has reached nobody, twice, ends itself, and the next attempt pages.
+    if (!known) {
       const held = this.heldAcks.get(event.pubkey);
       if (held && !this.holding(held, now())) this.heldAcks.delete(event.pubkey);
       else if (held) {
@@ -375,90 +499,102 @@ export class EscalationExecutor {
     });
 
     if (!started) {
-      console.log(`[ladder] ${event.id.slice(0, 8)} already running -- not starting a second`);
+      if (known) {
+        console.log(`[ladder] ${event.id.slice(0, 8)} already running -- not starting a second`);
+        return;
+      }
+      // A retry that joined the live ladder: it pages nobody again, and is told where the ladder is.
+      console.log(
+        `[ladder] ${event.id.slice(0, 8)} joins ${ladder.distressId.slice(0, 8)}, already ${ladder.state} -- not paging again`,
+      );
+      await this.reportAgain(ladder, event.id);
       return;
     }
 
+    if (ladder.state !== "paging") {
+      await this.report(ladder, event.id);
+      return;
+    }
+
+    /*
+     * The budget is spent before the roster is touched -- and before anything is said, so a
+     * ladder that will page nobody never opens with "Paging Wren." [#31].
+     *
+     * Anybody holding this watch's address -- which is meant to be handed out -- can publish a
+     * signed 20911 from a key made a second ago. Unbounded, three hundred of them woke a real
+     * person three hundred times, which is how escalation dies: not by being wrong, but by being
+     * ignored on the night it is right.
+     */
+    if (!this.budget.take(now())) {
+      console.error(
+        `[page] BUDGET SPENT -- refusing to page for ${event.id.slice(0, 8)}. ` +
+          `More than ${this.config.escalation.maxPagesPerWindow} pages in ` +
+          `${this.config.escalation.pageBudgetWindowSeconds}s. This watch is being flooded.`,
+      );
+      await this.report(ladder, event.id, BUDGET_SPENT);
+      return;
+    }
+
+    // Said before the roster is touched, and not held until the commands finish: a command may
+    // take thirty seconds, and the operator is owed the ladder's first word before then.
     await this.report(ladder, event.id);
 
-    if (ladder.state === "paging") {
-      /*
-       * The budget is spent before the roster is touched.
-       *
-       * Anybody holding this watch's address -- which is meant to be handed out -- can
-       * publish a signed 20911 from a key made a second ago. Unbounded, three hundred of
-       * them woke a real person three hundred times, which is how escalation dies: not by
-       * being wrong, but by being ignored on the night it is right.
-       */
-      if (!this.budget.take(now())) {
-        console.error(
-          `[page] BUDGET SPENT -- refusing to page for ${event.id.slice(0, 8)}. ` +
-            `More than ${this.config.escalation.maxPagesPerWindow} pages in ` +
-            `${this.config.escalation.pageBudgetWindowSeconds}s. This watch is being flooded.`,
-        );
-        await this.report(
-          ladder,
-          event.id,
-          "The watch could not page anyone -- too many alerts at once. Nobody has been woken.",
-        );
-        return;
-      }
-
-      /*
-       * The id goes with the page, because it cannot be fetched afterwards.
-       *
-       * `20911` is ephemeral, so a phone that was asleep when this fired and wakes on the
-       * notification finds nothing on the relay to acknowledge. Carrying it here is what makes
-       * a one-tap ack possible at all [2.5]; a channel that cannot carry it ignores the
-       * placeholder and that operator uses the console.
-       */
-      const results = await this.page(
-        this.config.escalation.oncall,
-        `NavCom DISTRESS from ${event.pubkey.slice(0, 8)} -- ack in the console`,
-        undefined,
-        event.id,
+    /*
+     * The id goes with the page, because it cannot be fetched afterwards.
+     *
+     * `20911` is ephemeral, so a phone that was asleep when this fired and wakes on the
+     * notification finds nothing on the relay to acknowledge. Carrying it here is what makes
+     * a one-tap ack possible at all [2.5]; a channel that cannot carry it ignores the
+     * placeholder and that operator uses the console.
+     */
+    const results = await this.page(
+      this.config.escalation.oncall,
+      `NavCom DISTRESS from ${event.pubkey.slice(0, 8)} -- ack in the console`,
+      undefined,
+      event.id,
+    );
+    for (const r of results) {
+      console.log(
+        `[page] ${r.callsign} via ${r.channel}: ${r.dispatched ? "dispatched" : `FAILED ${r.error}`}`,
       );
-      for (const r of results) {
-        console.log(
-          `[page] ${r.callsign} via ${r.channel}: ${r.dispatched ? "dispatched" : `FAILED ${r.error}`}`,
-        );
-      }
+    }
 
+    /*
+     * Whether the page went out is something only this process knows, and until now it
+     * went into the log and nowhere else. Every command could exit non-zero -- a dead SMS
+     * gateway, a missing binary -- and the operator was still told "Paging Wren." That is
+     * a silent failure of invariant 2 dressed as a success.
+     *
+     * An empty result is not a failure: a roster of console-open entries dispatches
+     * nothing because those people are already watching a console.
+     *
+     * Said only if the ladder is still paging: an answer that arrived while the commands ran has
+     * moved it on, and its own report has said so.
+     */
+    const current = this.ladders.get(ladder.distressId);
+    if (current?.state !== "paging") return;
+    const failed = results.filter((r) => !r.dispatched);
+    if (results.length > 0 && failed.length === results.length) {
+      console.error(`[page] EVERY CHANNEL FAILED for ${event.id.slice(0, 8)}`);
+      await this.report(current, event.id, EVERY_CHANNEL_FAILED);
+    } else if (failed.length > 0) {
       /*
-       * Whether the page went out is something only this process knows, and until now it
-       * went into the log and nowhere else. Every command could exit non-zero -- a dead SMS
-       * gateway, a missing binary -- and the operator was still told "Paging Wren." That is
-       * a silent failure of invariant 2 dressed as a success.
+       * A partial failure was reported to the operator as a success.
        *
-       * An empty result is not a failure: a roster of console-open entries dispatches
-       * nothing because those people are already watching a console.
+       * `ladder.paged` is built from the roster when the ladder opens, never from what was
+       * dispatched, so the status said "Paging Wren, Raven, Kestrel." when Kestrel's channel
+       * had exited non-zero -- and the operator spent the paging window believing three
+       * people were being woken. `runDrill` already names only those that dispatched; the two
+       * paths disagreed about what "paged" means. Now it names both, each for what happened.
        */
-      const failed = results.filter((r) => !r.dispatched);
-      if (results.length > 0 && failed.length === results.length) {
-        console.error(`[page] EVERY CHANNEL FAILED for ${event.id.slice(0, 8)}`);
-        await this.report(
-          ladder,
-          event.id,
-          "No page could be sent -- every channel failed. Nobody has been woken.",
-        );
-      } else if (failed.length > 0) {
-        /*
-         * A partial failure was reported to the operator as a success.
-         *
-         * `ladder.paged` is built from the roster when the ladder opens, never from what was
-         * dispatched, so the status said "Paging Wren, Raven, Kestrel." when Kestrel's channel
-         * had exited non-zero -- and the operator spent the paging window believing three
-         * people were being woken. `runDrill` already names only those that dispatched; the two
-         * paths disagreed about what "paged" means.
-         */
-        const names = failed.map((r) => r.callsign).join(", ");
-        console.error(`[page] PARTIAL FAILURE for ${event.id.slice(0, 8)}: ${names}`);
-        await this.report(
-          ladder,
-          event.id,
-          `${names} could not be reached -- their channel failed. The rest were paged.`,
-        );
-      }
+      const names = failed.map((r) => r.callsign).join(", ");
+      const paged = results.filter((r) => r.dispatched).map((r) => r.callsign).join(", ");
+      console.error(`[page] PARTIAL FAILURE for ${event.id.slice(0, 8)}: ${names}`);
+      await this.report(
+        current,
+        event.id,
+        `Paging ${paged}. ${names} could not be reached -- their channel failed.`,
+      );
     }
   }
 
@@ -505,7 +641,7 @@ export class EscalationExecutor {
     if (next) {
       // Only a human gets here -- `acknowledge` refuses anything else -- and only a human's
       // answer is held for the operator's later attempts.
-      if (next.state === "acknowledged") this.heldAcks.set(next.operator, { ladder: next, at: now() });
+      if (next.state === "acknowledged") this.heldAcks.set(next.operator, { ladder: next, at: now(), taken: 0 });
       await this.report(next, payload.distress_id);
     }
   }
@@ -534,10 +670,10 @@ export class EscalationExecutor {
      * somebody about an emergency that is over".
      */
     const age = Math.floor(Date.now() / 1000) - event.created_at;
-    const window = this.config.escalation.pagingWindowSeconds;
+    const window = ageWindowSeconds(this.config);
     if (age > window || age < -window) {
       console.warn(
-        `[executor] ${event.id.slice(0, 8)} stamped ${age}s away -- outside the paging window, ignored`,
+        `[executor] ${event.id.slice(0, 8)} stamped ${age}s away -- outside the age window (${window}s), ignored`,
       );
       return;
     }
@@ -569,7 +705,7 @@ export class EscalationExecutor {
   private listen(): void {
     // Once. `drillOnce` calls `start()`, and a second listener would orphan the first.
     if (this.listener) return;
-    const window = this.config.escalation.pagingWindowSeconds;
+    const window = ageWindowSeconds(this.config);
     this.listener = new RelayListener({
       pool: this.pool,
       urls: this.config.relays.urls,
@@ -682,6 +818,9 @@ export class EscalationExecutor {
       // Finished ladders are dropped here rather than at the moment they finish, so a late
       // duplicate of the same 20911 still finds one and does not open a second.
       this.ladders.reap(now(), this.config.escalation.ladderRetentionSeconds);
+      for (const id of this.notes.keys()) {
+        if (!this.ladders.get(id)) this.notes.delete(id);
+      }
       for (const [operator, held] of this.heldAcks) {
         if (!this.holding(held, now())) this.heldAcks.delete(operator);
       }
@@ -716,7 +855,12 @@ export class EscalationExecutor {
 
   async stop(): Promise<void> {
     this.stopped = true;
-    for (const handle of this.resends) clearTimeout(handle);
+    // A second send that will not go now, after a first that reached no relay: recorded as that,
+    // so a restart between the two cannot leave the attempt out of the log.
+    for (const [handle, unsent] of this.resends) {
+      clearTimeout(handle);
+      unsent?.();
+    }
     this.resends.clear();
     if (this.sweepHandle) clearInterval(this.sweepHandle);
     this.listener?.stop();

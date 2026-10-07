@@ -59,8 +59,15 @@ function fakePool(refuse = false) {
         refuse ? Promise.reject(new Error("relay refused")) : Promise.resolve("ok"),
       );
     },
-    subscribeMany: (_relays: string[], _filter: unknown, params: { onevent: (e: Event) => void }) => {
+    subscribeMany: (
+      _relays: string[],
+      _filter: unknown,
+      params: { onevent: (e: Event) => void; oneose?: () => void },
+    ) => {
       onEvent = params.onevent;
+      // The relay answers the subscription, as a real one does: the daemon announces the watch on
+      // a relay only once it is listening there [#38].
+      queueMicrotask(() => params.oneose?.());
       return { close: () => {} };
     },
     destroy: () => {},
@@ -132,6 +139,8 @@ async function started(
   const ctx = buildDaemon(configOverrides, allowedPubkeys, log, escalationLogPath, refusePublish);
   await ctx.daemon.start();
   activeDaemons.push(ctx.daemon);
+  // The first watch state goes out once the relay has answered the subscription [#38].
+  await vi.waitFor(() => expect(ctx.publishedEvents.some((e) => e.kind === KIND_WATCH_STATE)).toBe(true));
   return ctx;
 }
 

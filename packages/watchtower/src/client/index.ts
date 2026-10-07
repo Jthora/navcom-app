@@ -236,6 +236,13 @@ program
                 case "nobody-answering":
                   console.log(`   ${Math.round(p.elapsedMs / 60000)} min with no human -- assume nobody is coming; still sending`);
                   break;
+                // A person answered an earlier Distress, not this one [#0]. Not closure.
+                case "acknowledged-earlier":
+                  console.log(
+                    `   attempt ${p.attempt} ${p.response.responder?.callsign ?? "someone"} acknowledged an EARLIER Distress, ` +
+                      `not this one: ${p.response.text ?? "(no detail)"} -- still sending; Ctrl-C to stand down`,
+                  );
+                  break;
                 case "acknowledged": break;
               }
             }

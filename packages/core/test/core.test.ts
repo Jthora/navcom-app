@@ -596,6 +596,14 @@ describe('distress keeps trying until a human acknowledges', () => {
   const ourPubkey = publicKeyOf(secret);
   const payload = { position: null, area: 'north side' };
 
+  /**
+   * A watch that answers each attempt the moment it is published, to whatever is listening then,
+   * naming the attempt it answers — as a relay that keeps no ephemeral event delivers it.
+   *
+   * It used to answer only a subscription opened after the publish, and with no `e` tag: the
+   * loop's per-attempt wait was the only thing it could reach. That wait is gone [#31, #32], and
+   * the loop's own listener accepts only an answer naming an id it sent.
+   */
   function fakePool(behaviour: {
     publishFails?: number;
     ackOnAttempt?: number;
@@ -608,49 +616,51 @@ describe('distress keeps trying until a human acknowledges', () => {
   }) {
     let publishes = 0;
     const subs: ((e: unknown) => void)[] = [];
+    const answerFor = (attempt: number, signalId: string) => {
+      const agent = behaviour.agentOnAttempts?.includes(attempt);
+      const faceless = behaviour.facelessOnAttempts?.includes(attempt);
+      const node = behaviour.nodeOnAttempts?.find((n) => n.attempt === attempt);
+      if (attempt !== behaviour.ackOnAttempt && !agent && !faceless && !node) return null;
+      const responder = faceless
+        ? undefined
+        : node
+          ? { kind: 'node' as const, callsign: 'escalation' }
+          : agent
+            ? { kind: 'agent' as const, callsign: 'Mecha Jono' }
+            : { kind: 'human' as const, callsign: 'Wren' };
+      // Really signed by the Watchtower key: the loop verifies the signature, so an unsigned
+      // fake would be dropped exactly as a forged one should be.
+      return finalizeEvent(
+        {
+          kind: KIND_RESPONSE,
+          created_at: Math.floor(Date.now() / 1000),
+          tags: [['p', ourPubkey], ['e', signalId]],
+          content: seal(
+            wt,
+            ourPubkey,
+            node
+              ? {
+                  type: 'escalation-status',
+                  responder,
+                  text: node.ladder === 'exhausted' ? "Couldn't reach anyone. Nobody is coming." : 'Paging Wren.',
+                  provenance: null,
+                  ladder: node.ladder
+                }
+              : { type: 'ack', responder, text: null, provenance: null }
+          )
+        },
+        wt
+      );
+    };
     return {
-      publish(relays: string[]) {
+      publish(relays: string[], event: { id: string }) {
         publishes++;
         const failing = publishes <= (behaviour.publishFails ?? 0);
+        const answer = failing ? null : answerFor(publishes, event.id);
+        if (answer) queueMicrotask(() => { for (const onevent of [...subs]) onevent(answer); });
         return relays.map(() => (failing ? Promise.reject(new Error('relay refused')) : Promise.resolve('ok')));
       },
       subscribeMany(_r: string[], _f: unknown, params: { onevent(e: unknown): void }) {
-        const agent = behaviour.agentOnAttempts?.includes(publishes);
-        const faceless = behaviour.facelessOnAttempts?.includes(publishes);
-        const node = behaviour.nodeOnAttempts?.find((n) => n.attempt === publishes);
-        if (publishes === behaviour.ackOnAttempt || agent || faceless || node) {
-          const responder = faceless
-            ? undefined
-            : node
-              ? { kind: 'node' as const, callsign: 'escalation' }
-              : agent
-                ? { kind: 'agent' as const, callsign: 'Mecha Jono' }
-                : { kind: 'human' as const, callsign: 'Wren' };
-          // Really signed by the Watchtower key: waitForResponse verifies the signature,
-          // so an unsigned fake would be dropped exactly as a forged one should be.
-          const event = finalizeEvent(
-            {
-              kind: KIND_RESPONSE,
-              created_at: Math.floor(Date.now() / 1000),
-              tags: [['p', ourPubkey]],
-              content: seal(
-                wt,
-                ourPubkey,
-                node
-                  ? {
-                      type: 'escalation-status',
-                      responder,
-                      text: node.ladder === 'exhausted' ? "Couldn't reach anyone. Nobody is coming." : 'Paging Wren.',
-                      provenance: null,
-                      ladder: node.ladder
-                    }
-                  : { type: 'ack', responder, text: null, provenance: null }
-              )
-            },
-            wt
-          );
-          queueMicrotask(() => params.onevent(event));
-        }
         subs.push(params.onevent);
         return { close() {} };
       },
@@ -687,15 +697,15 @@ describe('distress keeps trying until a human acknowledges', () => {
     expect(phases.indexOf('acknowledged')).toBeGreaterThan(phases.indexOf('watch-exhausted'));
   });
 
-  it('hears the watch saying nobody can be reached even when it lands between listening windows', async () => {
+  it('hears the watch saying nobody can be reached when it lands between attempts, and says it then', async () => {
     /*
-     * At default timings the per-attempt listener is closed for about a minute at the point a
-     * ladder with people on call runs out, and responses are not stored. A report landing there
-     * was lost, and the phone's own timer was the first warning after all. This delivers
-     * `exhausted` only to the always-open subscription — exactly that case — and the earlier
-     * test, which delivers inside a window, could not see it.
+     * A ladder with people on call runs out about 300s in, which at default timings is usually
+     * inside a backoff, and responses are not stored. A report landing there was lost, and then
+     * held for the loop's next look — up to a minute on [#33]. This delivers `exhausted` from
+     * inside the backoff, to the one listener there is, and asserts it was said before the
+     * backoff ended, and that the backoff was cut short.
      */
-    const subs: { filter: Record<string, unknown>; onevent: (e: unknown) => void }[] = [];
+    const subs: ((e: unknown) => void)[] = [];
     let publishes = 0;
     let lastId = '';
     const respond = (signalId: string, body: Record<string, unknown>) =>
@@ -712,42 +722,45 @@ describe('distress keeps trying until a human acknowledges', () => {
       publish(relays: string[], event: { id: string }) {
         publishes++;
         lastId = event.id;
+        if (publishes === 3) {
+          const ack = respond(event.id, { type: 'ack', responder: { kind: 'human', callsign: 'Wren' }, text: null, provenance: null });
+          queueMicrotask(() => { for (const s of [...subs]) s(ack); });
+        }
         return relays.map(() => Promise.resolve('ok'));
       },
-      subscribeMany(_r: string[], filter: Record<string, unknown>, params: { onevent(e: unknown): void }) {
-        subs.push({ filter, onevent: params.onevent });
-        const perAttempt = '#e' in filter;
-        const id = lastId;
-        if (perAttempt && publishes === 1) {
-          // Not to this subscription: to the always-open one, as if it arrived in the gap.
-          queueMicrotask(() => subs[0]!.onevent(respond(id, {
-            type: 'escalation-status',
-            responder: { kind: 'node', callsign: 'escalation' },
-            text: "Couldn't reach anyone. Nobody is coming.",
-            provenance: null,
-            ladder: 'exhausted'
-          })));
-        }
-        if (perAttempt && publishes === 3) {
-          queueMicrotask(() => params.onevent(respond(id, {
-            type: 'ack',
-            responder: { kind: 'human', callsign: 'Wren' },
-            text: null,
-            provenance: null
-          })));
-        }
+      subscribeMany(_r: string[], _f: unknown, params: { onevent(e: unknown): void }) {
+        subs.push(params.onevent);
         return { close() {} };
       },
       close() {}
     };
 
     const phases: string[] = [];
+    let saidDuringSleep = false;
+    let sleepWasCut = false;
     await sendDistressUntilAcknowledged(
       pool as never, ['wss://r'], secret, ourPubkey, watchtower, payload,
-      { ackWindowMs: 30, sleep: noSleep, onPhase: (p) => phases.push(p.phase) }
+      {
+        ackWindowMs: 30,
+        sleep: async (_ms, signal) => {
+          if (publishes !== 1) return;
+          const exhausted = respond(lastId, {
+            type: 'escalation-status',
+            responder: { kind: 'node', callsign: 'escalation' },
+            text: "Couldn't reach anyone. Nobody is coming.",
+            provenance: null,
+            ladder: 'exhausted'
+          });
+          for (const s of [...subs]) s(exhausted);
+          saidDuringSleep = phases.includes('watch-exhausted');
+          sleepWasCut = signal?.aborted === true;
+        },
+        onPhase: (p) => phases.push(p.phase)
+      }
     );
 
-    expect(phases).toContain('watch-exhausted');
+    expect(saidDuringSleep, 'heard in the gap and held until the loop next looked').toBe(true);
+    expect(sleepWasCut, 'an exhausted ladder holds nothing, and the backoff was waited out anyway').toBe(true);
     expect(phases.filter((p) => p === 'watch-exhausted'), 'said once').toHaveLength(1);
     expect(phases).not.toContain('nobody-answering');
     expect(phases.indexOf('acknowledged')).toBeGreaterThan(phases.indexOf('watch-exhausted'));

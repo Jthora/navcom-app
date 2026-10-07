@@ -1,5 +1,6 @@
 import { readFileSync, existsSync } from "node:fs";
 import { parse } from "smol-toml";
+import { STALE_AFTER_SECONDS } from "@navcom/core";
 import { relayList } from "../shared/relay-urls.js";
 
 /**
@@ -50,8 +51,11 @@ export interface DaemonConfig {
      * How far from now a signal or Distress may be stamped and still be acted on, either way.
      *
      * A signed event is valid for ever and any relay can serve one again [F12]. `since` is the
-     * relay's to honour, so it is not a defence; this is. Same rule the executor holds with its
-     * paging window.
+     * relay's to honour, so it is not a defence; this is. The executor holds the same rule.
+     *
+     * **Never below {@link STALE_AFTER_SECONDS}**, refused at load [#4]: a phone reads this watch as
+     * up until its state is that old, so a window narrower than that ignores phones that have
+     * every reason to believe they are heard.
      */
     maxEventAgeSeconds: number;
   };
@@ -98,8 +102,9 @@ const DEFAULTS = {
   // waiting past their own client's timeout with the daemon still "working
   // on it" indefinitely.
   queryTimeoutSeconds: 8,
-  // Five minutes either way -- the executor's paging window. A phone whose clock is further off
-  // than that is not heard by either process, and both say so in their logs.
+  // Five minutes either way: the age at which a phone reads this watch as Dark, and the least the
+  // executor accepts too. A phone whose clock is further off than that is not heard by either
+  // process, already reads the watch as Dark, and both processes say so in their logs.
   maxEventAgeSeconds: 300,
   // The spec's default. The board is Live and expires; the log is the opposite, and this
   // is the only number that says how long "retained" means.
@@ -156,6 +161,27 @@ function positiveNumber(raw: unknown, fieldName: string, fallback: number, confi
 }
 
 
+/**
+ * `max_event_age_seconds`, refused below the phone's staleness threshold [#4].
+ *
+ * The phone reads this watch as up until the watch state is {@link STALE_AFTER_SECONDS} old, and
+ * judges that age by its own clock. A window narrower than that ignores every signal from a phone
+ * whose clock is off by more than the window and less than the threshold -- a phone that reads the
+ * watch as up, and whose sign-on, Query and Distress get silence. Refused rather than raised
+ * quietly, the way every other bad value here is.
+ */
+function eventAgeWindow(raw: unknown, configPath: string): number {
+  const seconds = positiveNumber(raw, "max_event_age_seconds", DEFAULTS.maxEventAgeSeconds, configPath);
+  if (seconds < STALE_AFTER_SECONDS) {
+    throw new Error(
+      `Config [watch] max_event_age_seconds must be at least ${STALE_AFTER_SECONDS}, got ${seconds} (${configPath}). ` +
+        `A phone reads this watch as up until its state is ${STALE_AFTER_SECONDS}s old by the phone's own clock, so a ` +
+        `narrower window ignores phones that believe they are heard.`,
+    );
+  }
+  return seconds;
+}
+
 // ADDED (Stage 2, allowlist): empty/missing allowed_pubkeys means "any
 // pubkey may sign on" -- the exact MVP policy documented in
 // src/daemon/authorization.ts's own docstring, preserved as the default
@@ -206,7 +232,7 @@ export function loadDaemonConfig(path: string): DaemonConfig {
       heartbeatIntervalSeconds: positiveNumber(raw.watch?.heartbeat_interval_seconds, "heartbeat_interval_seconds", DEFAULTS.heartbeatIntervalSeconds, path),
       sweepIntervalSeconds: positiveNumber(raw.watch?.sweep_interval_seconds, "sweep_interval_seconds", DEFAULTS.sweepIntervalSeconds, path),
       queryTimeoutSeconds: positiveNumber(raw.watch?.query_timeout_seconds, "query_timeout_seconds", DEFAULTS.queryTimeoutSeconds, path),
-      maxEventAgeSeconds: positiveNumber(raw.watch?.max_event_age_seconds, "max_event_age_seconds", DEFAULTS.maxEventAgeSeconds, path),
+      maxEventAgeSeconds: eventAgeWindow(raw.watch?.max_event_age_seconds, path),
     },
     authorization: {
       allowedPubkeys: parseAllowedPubkeys(raw.authorization?.allowed_pubkeys, path),

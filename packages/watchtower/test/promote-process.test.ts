@@ -12,7 +12,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { generateSecretKey } from "nostr-tools/pure";
 import { buildCorrection, buildPlace, placeId } from "@navcom/core";
-import { collect } from "../src/promote/index.js";
+import { collect, json } from "../src/promote/index.js";
 import { nodePool } from "../src/shared/nostr-node.js";
 import { startRelay, freePort, type LocalRelay } from "./helpers/local-relay.js";
 
@@ -24,10 +24,11 @@ afterEach(async () => {
   await Promise.all(relays.splice(0).map((r) => r.close()));
 });
 
-async function promote(urls: string[], opts: { node20?: boolean } = {}) {
+async function promote(urls: string[], opts: { node20?: boolean; json?: boolean } = {}) {
   const args = [
     ...(opts.node20 ? ["--no-experimental-websocket"] : []),
     "--import", "tsx", PROMOTE, "--relays", urls.join(","), "--since", "7",
+    ...(opts.json ? ["--json"] : []),
   ];
   const started = Date.now();
   const child = spawn(process.execPath, args, { cwd: PACKAGE, stdio: ["ignore", "pipe", "pipe"] });
@@ -134,4 +135,75 @@ describe("collect, against a relay that takes the REQ and never answers [F23]", 
       pool.destroy();
     }
   }, 20_000);
+});
+
+describe("what a stranger's place can do to the maintainer's terminal [#24]", () => {
+  it("prints none of the control characters it carries, so it cannot rewrite the lines above it", async () => {
+    // Anybody can publish a place. One whose hours moved the cursor up a line and erased it showed
+    // the maintainer a different address where an honest place had been, before they edited the CSV.
+    const up = await startRelay();
+    relays.push(up);
+    const name = "Mercy Shelter Annex";
+    const address = "1 Anywhere Ln";
+    up.deliver(
+      buildPlace(
+        generateSecretKey(),
+        {
+          id: placeId(name, address), region: "nashville", name, type: "shelter", address,
+          verified_by: "Wr\u001b[8m", method: "in_person", last_verified: today,
+          fields: { hours: "9am\r\u001b[2K\u001b[1A\u009b2K-5pm" },
+        },
+        nowS(),
+      ),
+    );
+    const run = await promote([up.url]);
+
+    expect(run.code, run.stdout + run.stderr).toBe(0);
+    expect(run.stdout).toContain(name);
+    // eslint-disable-next-line no-control-regex
+    expect(run.stdout.replace(/\n/g, ""), "a control character reached the terminal").not.toMatch(/[\u0000-\u001f\u007f-\u009f]/);
+    expect(run.stdout).toContain("hours=9am[2K[1A2K-5pm");
+  }, 45_000);
+});
+
+describe("--json, read in a terminal [review: relay paths]", () => {
+  it("escapes DEL and the C1 controls JSON leaves raw, and still parses to the same values", () => {
+    const value = { hours: "9am\u009b2K\u007f\u001b[1A-5pm", name: "Caf\u00e9 \u00a0Annex" };
+    const out = json(value);
+    // eslint-disable-next-line no-control-regex
+    expect(out, "a control character reached the terminal").not.toMatch(/[\u0000-\u0009\u000b-\u001f\u007f-\u009f]/);
+    expect(out).toContain("\\u009b");
+    expect(out).toContain("\\u007f");
+    // Letters past the controls are left alone.
+    expect(out).toContain("Caf\u00e9 \u00a0Annex");
+    expect(JSON.parse(out)).toEqual(value);
+  });
+
+  it("prints none of a stranger's control characters from the command itself", async () => {
+    const up = await startRelay();
+    relays.push(up);
+    const name = "Mercy Shelter Annex";
+    const address = "1 Anywhere Ln";
+    const hours = "9am\r\u001b[2K\u001b[1A\u009b2K\u007f-5pm";
+    up.deliver(
+      buildPlace(
+        generateSecretKey(),
+        {
+          id: placeId(name, address), region: "nashville", name, type: "shelter", address,
+          verified_by: "Wr\u009b8m", method: "in_person", last_verified: today,
+          fields: { hours },
+        },
+        nowS(),
+      ),
+    );
+    const run = await promote([up.url], { json: true });
+
+    expect(run.code, run.stdout + run.stderr).toBe(0);
+    // eslint-disable-next-line no-control-regex
+    expect(run.stdout.replace(/\n/g, ""), "a control character reached the terminal").not.toMatch(/[\u0000-\u001f\u007f-\u009f]/);
+    const parsed = JSON.parse(run.stdout) as { places: { name: string; verified_by: string; fields?: Record<string, string> }[] };
+    const place = parsed.places.find((p) => p.name === name)!;
+    expect(place.fields?.hours, "what the JSON says is still what was published").toBe(hours);
+    expect(place.verified_by).toBe("Wr\u009b8m");
+  }, 45_000);
 });

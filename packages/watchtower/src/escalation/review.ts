@@ -57,7 +57,11 @@ export interface Escalation {
  */
 export interface Resent {
   at: number;
-  /** Whether any relay took it. One that none took told that operator nothing, and paged nobody. */
+  /**
+   * Whether any relay took it, on either of its two sends. When neither did, the watch stopped
+   * holding that answer, and that operator's next attempt was escalated as a new Distress [#14]
+   * -- and a relay refusing this watch's own events is the reviewer's business either way.
+   */
   sent: boolean;
 }
 
@@ -124,12 +128,17 @@ export function buildReview(input: ReviewInput): Review {
     );
   }
 
+  /*
+   * Said as what the log knows. A held answer that reached no relay on either send ends the hold,
+   * and the operator's next attempt is escalated as new [#14], so "nobody was paged" stopped being
+   * true; and what the operator heard is not something this log can see [#25].
+   */
   const unsent = resent.filter((r) => !r.sent);
   if (unsent.length > 0) {
     attention.push(
       unsent.length === 1
-        ? `a repeat Distress was answered with an earlier acknowledgement that no relay took (${iso(unsent[0]!.at)}): that operator was told nothing, and nobody was paged`
-        : `${unsent.length} repeat Distress answers reached no relay: those operators were told nothing, and nobody was paged`,
+        ? `an earlier acknowledgement re-sent to a repeat Distress reached no relay (${iso(unsent[0]!.at)}), so the watch stopped holding it and escalated that operator's next attempt as new -- check the relays still take this watch's events`
+        : `${unsent.length} earlier acknowledgements re-sent to a repeat Distress reached no relay, so the watch stopped holding them and escalated the next attempt as new -- check the relays still take this watch's events`,
     );
   }
 

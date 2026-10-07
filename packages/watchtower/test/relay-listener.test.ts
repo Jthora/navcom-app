@@ -111,7 +111,9 @@ describe("a relay that takes the subscription and never answers it", () => {
     relay.deliver(e);
     await eventually(() => expect(heard).toContain(e.id));
     expect(listener.listening()).toBe(1);
-    expect(said(log)).toMatch(/reachable again/);
+    // Its first answer, so "listening": it was never reachable to be reachable again [#26].
+    expect(said(log)).toMatch(/listening/);
+    expect(said(log)).not.toMatch(/reachable again/);
   }, 20_000);
 
   it("is counted as listening once it does send EOSE", async () => {
@@ -149,4 +151,46 @@ describe("a pool that reconnects by itself, handed to the listener [F04]", () =>
     await eventually(() => expect(relay.reqs.length).toBe(2), 15_000);
     expect(relay.reqs[1]!.filters[0]!.since, "since was rewritten by the reconnect").toBe(floor);
   }, 20_000);
+});
+
+describe("what the log says about a relay that went [#26]", () => {
+  it("says a relay that is up and closes the subscription closed it, rather than that it is unreachable", async () => {
+    // "unreachable" sent the Stationkeeper after a network that was fine, while the relay was up and
+    // turning the box away with a reason that had no NIP-01 prefix.
+    const { error } = quiet();
+    const relay = await startRelay();
+    relays.push(relay);
+    const { listener } = listen(relay);
+    await eventually(() => expect(listener.listening()).toBe(1), 3_000);
+
+    relay.closeSubs("subscription limit exceeded, try again later");
+    await eventually(() => expect(said(error)).toMatch(/closed the subscription \(subscription limit exceeded, try again later\) while connected/));
+    expect(said(error)).not.toMatch(/unreachable/);
+  });
+
+  it("says no reason was given when the relay gave none, rather than blaming this side", async () => {
+    // A CLOSED with no reason reaches nostr-tools' default, "closed by caller", which read as though
+    // this process had closed it.
+    const { error } = quiet();
+    const relay = await startRelay();
+    relays.push(relay);
+    const { listener } = listen(relay);
+    await eventually(() => expect(listener.listening()).toBe(1), 3_000);
+
+    relay.closeSubs(undefined);
+    await eventually(() => expect(said(error)).toMatch(/closed the subscription \(no reason given\) while connected/));
+    expect(said(error)).not.toMatch(/closed by caller|unreachable/);
+  });
+
+  it("keeps 'unreachable' for a connection that went", async () => {
+    const { error } = quiet();
+    const relay = await startRelay();
+    relays.push(relay);
+    const { listener } = listen(relay);
+    await eventually(() => expect(listener.listening()).toBe(1), 3_000);
+
+    relay.dropAll();
+    await eventually(() => expect(said(error)).toMatch(/unreachable \(relay connection closed\)/));
+    expect(said(error)).not.toMatch(/closed the subscription/);
+  });
 });

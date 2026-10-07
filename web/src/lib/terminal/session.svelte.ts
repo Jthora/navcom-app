@@ -20,7 +20,7 @@ import {
   type WatchStatePayload
 } from '@navcom/core';
 
-import { loadConfig } from './config';
+import { loadConfig, storedWatch } from './config';
 import { loadIdentity } from './identity';
 import { get, set, clearField } from './storage';
 import { watch, whenWatchChangesHands } from './watch.svelte';
@@ -80,8 +80,12 @@ function ctx() {
   if (!identity) throw new Error('Create a callsign first — everything else needs one.');
   const config = loadConfig();
   if (!config) {
+    // A watch whose every relay is refused here was added, and saying it was not sent its
+    // operator looking for a setup step they had already done [audit: relay paths, review].
     throw new Error(
-      'This goes to a watch, and you have not added one. Nothing to send it to.'
+      storedWatch()
+        ? 'This goes to your watch, and none of its relays can be reached from this page. Fix them on the setup screen.'
+        : 'This goes to a watch, and you have not added one. Nothing to send it to.'
     );
   }
   return { config, identity };
@@ -212,6 +216,8 @@ export const operator = {
    * of the app works without one, and nothing may imply otherwise.
    */
   get hasWatch(): boolean { return loadConfig() !== null; },
+  /** A watch was added, and none of its relays can be reached from this page: it sends nowhere. */
+  get watchStranded(): boolean { return loadConfig() === null && storedWatch() !== null; },
   get busy(): boolean { return busy; },
   get error(): string | null { return error; },
   get lastResponse(): ResponsePayload | null { return lastResponse; },
@@ -459,10 +465,12 @@ export const operator = {
   },
 
   /**
-   * Sends Distress and keeps sending until a human acknowledges.
+   * Sends Distress and keeps sending until a human acknowledges this one.
    *
    * Never stops on its own. Every attempt is reported, including the ones that never left
-   * the device — an operator who knows nothing is getting through can act on that.
+   * the device — an operator who knows nothing is getting through can act on that. A person's
+   * answer to an earlier Distress, which the watch repeats for a while, is reported as that
+   * (`acknowledged-earlier`) and does not stop it [#0].
    */
   async raiseDistress(text: string) {
     distressPhases = [];

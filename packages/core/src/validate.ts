@@ -60,10 +60,14 @@ function isNonEmptyString(value: unknown): value is string {
  * could forge additional log lines, undermining the manual, human-read
  * console verification the whole no-persistence design leans on for
  * checks 02/03/05.
+ *
+ * C1 controls too (U+0080 to U+009F). U+009B is a one-character CSI, so
+ * a string carrying it can move the cursor and rewrite a line already on
+ * the screen without an ESC anywhere in it [review: relay paths, #24].
  */
 export function sanitizeForLog(value: string, maxLen = 64): string {
   // eslint-disable-next-line no-control-regex
-  const stripped = value.replace(/[\x00-\x1f\x7f]/g, "");
+  const stripped = value.replace(/[\x00-\x1f\x7f-\x9f]/g, "");
   return stripped.length > maxLen ? stripped.slice(0, maxLen) + "…" : stripped;
 }
 

@@ -60,13 +60,22 @@ names each relay separately, because being up on one of three is real and otherw
 and it exits non-zero when an operator would be shown Dark, so it can be a cron line rather
 than something you have to remember to read.
 
+It also asks each relay for exactly what your box asks it for — the subscription every signal
+and every `Distress` arrives through — and says which relays answer it. A relay can serve your
+watch state to anybody and still refuse that one request (an inbox that wants NIP-42 AUTH, which
+neither process does) or take it and never answer. Operators can see the watch there and cannot
+reach it. `NO RELAY ANSWERS THE BOX'S SUBSCRIPTION` means that is true of every relay, and the
+command exits non-zero; it is printed before the Dark remedy, because a running daemon publishes
+nothing where it cannot hear, and that is then the cause of the Dark. A relay that never finishes
+connecting is named unreachable after five seconds rather than leaving the command waiting.
+
 When it says Dark it says **which** Dark, because the four causes have four different fixes
 and only one of them is "the daemon is not running":
 
 | What it says | What to go and change |
 |---|---|
-| `absent` | The daemon is not running, or it is publishing to relays this config does not list |
-| `stale` | It is running and has stopped republishing, or cannot reach the relays it thinks it can. **The quietest of the four** — everything looks right from the box and every operator reads Dark |
+| `absent` | The daemon is not running, or it is publishing to relays this config does not list — or, when the same report says `NO RELAY ANSWERS THE BOX'S SUBSCRIPTION`, it is running and withholding the watch state, because it publishes only where its subscription is answered. Fix the subscription first |
+| `stale` | It is running and has stopped republishing, or cannot reach the relays it thinks it can — or, with `NO RELAY ANSWERS THE BOX'S SUBSCRIPTION` beside it, the relays stopped answering its subscription and it stopped publishing there, as it should. **The quietest of the four** — everything looks right from the box and every operator reads Dark |
 | `corrupt` | Something else is publishing `10910` from this key, or your daemon is a different version than the operators are reading |
 | `clock` | This machine's clock has moved backwards. Fix that before trusting anything else here |
 
@@ -105,16 +114,29 @@ What to look for in their output:
 
 | Line | What it means |
 |---|---|
-| `[relay] <url> listening` / `reachable again` | The relay answered the subscription — end of stored events, or an event — and signals sent there are heard (`[executor]` and `[pager]` say the same for theirs) |
-| `<url> unreachable (...) -- retrying` | Nothing sent only to that relay is heard until it answers. Said once, not on every retry |
-| `<url> took the subscription and has not answered in 10s` | Connected, and nothing back: a relay that has hung. Treat it as down. The subscription stays open, and `reachable again` follows if it ever answers |
-| `<url> refused the subscription: ...` | The relay is up and said no — a rate limit, a policy. `auth-required` means it wants NIP-42 AUTH, which none of these processes do: pick another relay |
-| `[heartbeat] <url> refused watch state: ...` | Operators reading that relay see Dark. `NO RELAY ACCEPTED` means everyone does |
+| `[relay] <url> listening` | The relay answered the subscription — end of stored events, or an event — and signals sent there are heard (`[executor]` and `[pager]` say the same for theirs). Said the first time a relay answers, even one that was down at boot |
+| `<url> reachable again` | A relay that had been listening, and went, is listening again |
+| `<url> unreachable (...) -- retrying` | The connection went, or never came. Nothing sent only to that relay is heard until it answers. Said once, not on every retry |
+| `<url> closed the subscription (...) while connected` | The relay is up and closed the subscription without saying why in NIP-01's terms — "subscription limit exceeded", or no reason at all. Not your network. Treat it as a refusal |
+| `<url> took the subscription and has not answered in 10s` | Connected, and nothing back: a relay that has hung. Treat it as down. The subscription stays open, and `listening` — or `reachable again`, if it had been listening before — follows if it ever answers |
+| `<url> refused the subscription: ...` | The relay is up and said no — a rate limit, a policy. `auth-required` means it wants NIP-42 AUTH, which none of these processes do: pick another relay. On a `[relay]` line — the daemon's — operators reading only that relay see the watch go Dark within five minutes, because the daemon stops publishing there. On an `[executor]` or `[pager]` line the watch stays visible there while a `Distress` sent only there pages nobody: see *What the daemon cannot see yet*, below |
+| `[heartbeat] watch state (automated) published on <url> -- k/N relay(s) carry it now` | That relay took the watch state for the first time. It goes only to relays the daemon is listening on, and to each one as soon as it starts listening, so one of these follows each `[relay] <url> listening`; on a healthy box the last says N/N |
+| `[heartbeat] <url> refused watch state: ...` / `could not reach <url> to publish ...` | Operators reading that relay see Dark. `NO RELAY ACCEPTED` means everyone does |
+| `[heartbeat] LISTENING ON NO RELAY` | The daemon is subscribed nowhere, so it publishes the watch state nowhere and every operator reads Dark. Said on every heartbeat until a relay answers |
 | `[pager] watching on k/N relay(s)` | Printed only once a relay has answered. `NOT WATCHING` means no relay is listening — since one stopped, or since the pager started fifteen seconds ago |
-| `[signal] dropped: … stamped Ns away` / `[executor] … outside the paging window, ignored` | A signal or `Distress` stamped more than five minutes from this machine's clock: replayed by a relay, or sent from a phone whose clock is wrong. Not acted on and not answered. If one operator's signals keep dropping, it is their clock — that phone already reads the watch as Dark |
+| `[signal] dropped: … stamped Ns away` / `[executor] … outside the age window (Ns), ignored` | A signal or `Distress` stamped further from this machine's clock than the age window: replayed by a relay, or sent from a phone whose clock is wrong. Not acted on and not answered. The window is never under five minutes — the daemon refuses a smaller `max_event_age_seconds` at startup, and the executor uses five minutes whenever `paging_window_seconds` is shorter — so if one operator's signals keep dropping, it is their clock, and that phone already reads the watch as Dark. If every operator's do, check this machine's clock |
 
-The daemon's first lines now say how many relays took the watch state (`published watch state
-… to k/N relays`) instead of announcing that it was listening whatever had happened.
+The daemon's first lines no longer announce that it was listening whatever had happened: each
+relay says when it is listening, and the heartbeat says when each relay first takes the watch
+state.
+
+**What the daemon cannot see yet.** It withholds the watch state from a relay *it* cannot hear on.
+It does not know about the executor's subscription, which is a different process and is kept
+that way: a relay that answers the daemon and refuses or ignores the executor still shows a fresh
+watch while a `Distress` sent only there pages nobody — the operator's phone says "nobody is
+coming" from its own timer. Reading the executor's state, one way, the way the daemon reads its
+drill results, is not built. Until it is, run `watchtower-daemon --check`, which asks each relay
+for the subscription both processes make, and read the executor's own `[executor]` lines.
 
 ## What it actually costs
 

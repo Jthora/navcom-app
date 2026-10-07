@@ -4,6 +4,12 @@ import WebSocket from "ws";
 let installed = false;
 
 /**
+ * The longest any node-side handshake may take, for a connect nobody bounded. Longer than every
+ * connection timeout in use (promote waits nineteen seconds), so it never decides one that is.
+ */
+const HANDSHAKE_MS = 30_000;
+
+/**
  * `ws`, with one listener on `error` that is never taken away.
  *
  * nostr-tools detaches its own handlers when it gives up on a socket -- `ws.onerror = null`
@@ -14,24 +20,47 @@ let installed = false;
  * stalled relay). One permanent no-op listener makes that error what it already is, a socket
  * nobody wants any more; nostr-tools' own handlers still fire while it holds them.
  *
- * **And a socket nobody owns is closed when it opens** [review: relay paths]. The same give-up
- * never closes the socket, so a handshake that finished after the three-second timeout -- a
- * congested uplink, an overloaded relay -- left an open connection behind, kept alive by `ws`
- * answering the relay's pings. The listeners retry a slow relay every fifteen seconds, so that was
- * one leaked connection per attempt, and a relay that caps connections per address would in the
- * end refuse the box. nostr-tools sets `onopen` straight after construction and nulls it when it
- * abandons a socket, so a null `onopen` at open is exactly a socket nobody holds. This listener
- * is added first, so it runs before nostr-tools' own.
+ * **And a socket nobody owns is closed** [review: relay paths, #12]. The same give-up never
+ * closes the socket. nostr-tools sets `onopen` straight after construction and nulls it when it
+ * abandons a socket, so a null `onopen` is exactly a socket nobody holds:
+ *
+ * - **Abandoned while still connecting, it is terminated there and then.** A relay that took the
+ *   TCP connection and never answered the upgrade -- a wedged relay process -- left one socket
+ *   open per retry for as long as it held them, about two hundred an hour from a listener
+ *   retrying it, and `pool.destroy()` could not reach them because the pool had already let go
+ * - **A handshake that finishes after the give-up is closed when it opens**, rather than being
+ *   kept alive by `ws` answering the relay's pings. That listener is added first, so it runs
+ *   before nostr-tools' own
+ *
+ * Each caller's own connection timeout still decides when a socket is abandoned -- three seconds
+ * for a subscription, longer for the conformance and promote tools. {@link HANDSHAKE_MS} is only
+ * the backstop for a caller that sets none, which once left `--check` waiting for ever [#11].
  */
 class NodeWebSocket extends WebSocket {
-  constructor(...args: ConstructorParameters<typeof WebSocket>) {
-    super(...args);
+  constructor(address: string | URL, protocols?: string | string[], options?: WebSocket.ClientOptions) {
+    super(address, protocols, { handshakeTimeout: HANDSHAKE_MS, ...options });
     this.on("error", () => {});
     this.on("open", () => {
       if (this.onopen === null) this.close();
     });
+    // An own accessor over ws's: nostr-tools assigning null to a socket still connecting is it
+    // giving up on that socket, and nothing else will ever close it.
+    const slot = Object.getOwnPropertyDescriptor(WebSocket.prototype, "onopen");
+    if (!slot?.get || !slot.set) return;
+    const get = slot.get;
+    const set = slot.set;
+    Object.defineProperty(this, "onopen", {
+      configurable: true,
+      enumerable: true,
+      get: () => get.call(this) as unknown,
+      set: (handler: unknown) => {
+        set.call(this, handler);
+        if (handler === null && this.readyState === WebSocket.CONNECTING) this.terminate();
+      },
+    });
   }
 }
+
 
 /**
  * nostr-tools' relay/pool code expects a global WebSocket (browser-native

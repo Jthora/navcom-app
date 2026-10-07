@@ -258,9 +258,11 @@ exists — so the separation is about who *receives* it, not about tidiness.
   correlates them by author and rebuilds the same graph.
 
   So each peer gets an event signed by a fresh key that is discarded immediately, and the
-  real sender rides inside the ciphertext. A relay sees unrelated one-off keys publishing to
-  unrelated recipients and can link none of them — not across peers, and not across
-  heartbeats
+  real sender rides inside the ciphertext. Somebody reading a relay sees one-off keys publishing
+  to recipients and cannot tell who sent any of them. That is the whole of the claim (corrected
+  2026-10-07): the relay carrying them sees which connection published each, and every wrap in
+  one heartbeat carries the same `created_at`, so the wraps of a beat can be grouped by anyone
+  reading — which says how many peers an unnamed sender has, never who
 - **The inner content is a complete signed event**, not a payload naming its author. A
   payload that merely *says* who it is from can say anything; an inner signature is checked
   with the same function used everywhere else. The wrapper hides who is talking, the
@@ -421,6 +423,14 @@ no tag on the event. Both parts were wrong, and the implementation deliberately 
   end it** — a client that gives up after N attempts has failed silently, which invariant 2
   forbids. Every attempt is reported to the operator, including ones that never left the
   device
+- **Acknowledged** means a `20912` from a `human` responder that answers this `Distress`: every id
+  its `e` tags name is this `Distress`'s — one it sent, or a ladder id a `node` report named beside
+  one of them, which is the watch saying that attempt joined that ladder — or one of the ids is a
+  ladder the watch has reported this `Distress` part of. One that also names an id this `Distress`
+  never sent and was never told it joined is a person's answer to an *earlier* `Distress`, repeated
+  by the watch ([`escalation.spec.md`](escalation.spec.md), *An acknowledged Distress, sent again*):
+  the client MUST show it as that, with who answered, and MUST keep sending. A person's answer never
+  adds to what this `Distress` joined; only a ladder's report does
 
 ## `20912` — Response
 
@@ -451,6 +461,10 @@ no tag on the event. Both parts were wrong, and the implementation deliberately 
   quietly. Responses are ephemeral and not stored, so this includes one that arrives while
   the client is between resends: a client MUST keep listening for the whole Distress, not only
   inside each attempt's window
+- **And every other report the ladder sends, as it arrives.** No answer may end a client's
+  listening for the others: the first answer to an attempt is usually an agent's, and the
+  ladder's "nobody has been woken" follows it by a round trip. A person's answer heard between
+  attempts is shown at once, not when the backoff ends
 - A `log-review` response carries `review: { root, entries[{entry, proof}], more }`. The
   node MUST cap `entries` and set `more` rather than exceeding a relay's message size —
   a response too large to publish is silence, and silence is never an answer
@@ -461,10 +475,15 @@ no tag on the event. Both parts were wrong, and the implementation deliberately 
 - `provenance` MUST be present on any directory-derived answer [C32, H5]. An answer
   without provenance MUST render as unverified
 - Every signal MUST receive at least an `ack`. Silence is never a response — with one exception
-  (2026-10-07): a signal stamped more than `max_event_age_seconds` (default 300) from the watch's
-  clock is neither acted on nor answered, because an answer to it would be an answer to anything
-  a relay or a stranger replays. The phone is not left to guess: one whose clock is that far off
-  already reads the watch as Dark — stale, or a clock it cannot trust — before it sends
+  (2026-10-07): a signal stamped further from the watch's clock than the node's age window is
+  neither acted on nor answered, because an answer to it would be an answer to anything a relay
+  or a stranger replays. **Each node-side age window MUST be at least the client's staleness
+  threshold** (`stale_after_seconds`, 300 by default): the daemon's `max_event_age_seconds`, and
+  the executor's, which is the larger of its paging window and that threshold. A node refuses a
+  narrower window at startup. That is what keeps the phone from guessing: one whose clock is far
+  enough off to be ignored already reads the watch as Dark — stale, or a clock it cannot trust —
+  before it sends. A narrower window broke exactly this: at 120 seconds, a phone 200 seconds fast
+  read the watch as up while every Distress it sent was ignored
 
 ## Acknowledgement windows
 

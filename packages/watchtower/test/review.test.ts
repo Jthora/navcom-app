@@ -65,12 +65,17 @@ describe("a repeat Distress answered with an earlier acknowledgement [review: D2
     expect(render(review).join("\n")).toMatch(/HELD[^\n]*\n {2}\d{4}-\d{2}-\d{2} {2}sent/);
   });
 
-  it("is a reason to look when no relay took it: that operator was told nothing, and nobody was paged", () => {
+  it("is a reason to look when no relay took it, and says what the watch did then [#14, #25]", () => {
     const review = buildReview({ ...base, entries: [escalation(NOW - day, true), resent(NOW - day + 300, false)] });
     const page = render(review).join("\n");
     expect(page).toContain("REACHED NO RELAY");
     expect(page).toContain("NEEDS A LOOK");
-    expect(review.attention.join(" ")).toMatch(/told nothing, and nobody was paged/);
+    // A held answer no relay takes, on either send, ends the hold and the operator's next attempt
+    // is escalated as new, so "nobody was paged" is no longer true -- and what the operator heard is
+    // not something this log can see.
+    const said = review.attention.join(" ");
+    expect(said).toMatch(/reached no relay .*stopped holding it .*next attempt as new/);
+    expect(said).not.toMatch(/nobody was paged|told nothing/);
   });
 });
 

@@ -287,7 +287,10 @@ describe("bookkeeping the real pool depends on", () => {
     await settle(16_000);
     subs.at(-1)?.params.oneose?.();
     await settle(0);
-    expect(log.mock.calls.flat().join("\n")).toMatch(/b\.relay reachable again/);
+    // B had never answered, so its first answer is "listening", which is what the README says to
+    // look for -- not "reachable again" [#26].
+    expect(log.mock.calls.flat().join("\n")).toMatch(/b\.relay listening/);
+    expect(log.mock.calls.flat().join("\n")).not.toMatch(/b\.relay reachable again/);
   });
 
   it("stops retrying when stopped", async () => {

@@ -47,6 +47,13 @@ describe("sanitizeForLog", () => {
     expect(sanitizeForLog("a\x00b\x1bc\x7fd")).toBe("abcd");
   });
 
+  it("strips C1 controls too, so a one-character CSI cannot rewrite a line on the screen [#24]", () => {
+    // U+009B is CSI on its own: "\u009b1A\u009b2K" moves up a line and erases it, no ESC needed.
+    expect(sanitizeForLog("a\u009b1A\u009b2Kb\u0085c\u009fd")).toBe("a1A2Kbcd");
+    // And nothing printable above them goes.
+    expect(sanitizeForLog("café ñ €")).toBe("café ñ €");
+  });
+
   it("truncates long strings with an ellipsis marker", () => {
     const long = "x".repeat(100);
     const cleaned = sanitizeForLog(long, 10);

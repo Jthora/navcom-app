@@ -42,11 +42,14 @@
    * and what actually happened is reported the instant they let go.
    */
   let hasWatch = $state(true);
+  /** Added, and unreachable from this page: not the same thing as never added. */
+  let stranded = $state(false);
   let contact = $state<EmergencyContact | null>(null);
   let callsign = $state<string | null>(null);
 
   onMount(() => {
     hasWatch = operator.hasWatch;
+    stranded = operator.watchStranded;
     contact = loadContact();
     // The early block has done its job. Svelte's version carries the written message and
     // the full wording; leaving both would show the same person twice.
@@ -70,19 +73,42 @@
   );
 
   /**
-   * The watch said nobody can be reached — going by its **latest** report.
+   * A person answered an **earlier** Distress from this operator — not this one [#0].
+   *
+   * The watch holds a person's answer for a while and repeats it to a new Distress from the same
+   * phone. A run that started after that answer — the app reopened or the phone wiped once that
+   * ladder was over, or a new emergency — never sent, or joined, the one they answered. It used to
+   * close this run under "Answered" and "Wren has it", though the watch had not escalated this
+   * Distress. Shown as what it is, by name and in the watch's words, with the sending still going:
+   * only a person answering this one ends it. The latest, because the watch's words say how long
+   * ago. (A run started while that ladder was still paging is told it joined it, and ends on the
+   * person's answer as its own — core's `sendDistressUntilAcknowledged`.)
+   */
+  const earlier = $derived.by(() => {
+    for (let i = phases.length - 1; i >= 0; i--) {
+      const p = phases[i];
+      if (p.phase === 'acknowledged-earlier') return p;
+    }
+    return undefined;
+  });
+
+  /**
+   * The watch said nobody can be reached — and once it has, that stays said.
    *
    * The ladder's own word, shown when it arrives. Until this existed it was filed under "an
    * agent answered" with its text thrown away, and an operator with nobody on call was told
-   * something was still happening for ten minutes. The latest report rather than the first:
-   * a resend can open a fresh ladder that is paging again, and a panel still saying nobody can
-   * be reached would then be stale.
+   * something was still happening for ten minutes.
+   *
+   * It used to go by the latest report, so a fresh ladder paging again hid it. The phone now
+   * sends again as soon as a ladder runs out, so the next ladder's "Paging Wren." arrives within
+   * a second and took the panel with it. A watch that has already failed to raise anyone for one
+   * whole ladder has not made anybody more likely to come by trying again; the list below says it
+   * is trying.
    */
   const watchSaidNobody = $derived.by(() => {
     for (let i = phases.length - 1; i >= 0; i--) {
       const p = phases[i];
       if (p.phase === 'watch-exhausted') return p;
-      if (p.phase === 'watch-status') return undefined;
     }
     return undefined;
   });
@@ -169,6 +195,8 @@
         return `Attempt ${p.attempt} — the watch: ${clip(p.response.text) ?? 'no detail'}`;
       case 'nobody-answering':
         return `${Math.round(p.elapsedMs / 60000)} minutes, no human. Still sending`;
+      case 'acknowledged-earlier':
+        return `Attempt ${p.attempt} — ${p.response.responder?.callsign ?? 'A person'} answered an earlier Distress, not this one`;
       case 'acknowledged': return `${p.response.responder?.callsign ?? 'A human'} has it`;
     }
   }
@@ -226,8 +254,11 @@
        finding out by holding it. The button still works: see the note on `hasWatch`. -->
   <section data-no-watch>
     <p class="error">
-      <strong>There is nowhere to send this.</strong> Distress goes to a watch and you have
-      not added one, so holding the button would raise nobody.
+      <strong>There is nowhere to send this.</strong>
+      {#if stranded}Distress goes to your watch, and none of its relays can be reached from this
+        page,{:else}Distress goes to a watch and you have not added one,{/if} so holding the button
+      would raise nobody.{#if stranded}
+        <a href="/terminal/setup/#relays">Fix them in setup</a>.{/if}
     </p>
     <!--
       Peers named, because "raise nobody" is true and the person most likely to read past it
@@ -364,7 +395,7 @@
       <h2>Nobody is coming</h2>
       {#if watchSaidNobody}
         <p>
-          <strong>The watch says nobody can be reached.</strong> Assume no one is on their way
+          <strong>The watch said nobody could be reached.</strong> Assume no one is on their way
           and act on that.
         </p>
         {#if clip(watchSaidNobody.response.text)}
@@ -384,6 +415,21 @@
           does not mean the sending stopped. It hasn't. Only you can stop it.
         </p>
       {/if}
+    </section>
+  {/if}
+
+  <!--
+    Not "has it", not "Answered", not the station colour: the person answered a Distress this one
+    never sent or joined, and the watch has not escalated this one. The watch's own words say when
+    the earlier answer was given and what happens next, and the sending below goes on.
+  -->
+  {#if earlier && !acknowledged}
+    <section class="earlier" data-acknowledged-earlier>
+      <p>
+        <strong>{earlier.response.responder?.callsign ?? 'Someone'}</strong> acknowledged an earlier
+        Distress from you, not this one.
+      </p>
+      {#if clip(earlier.response.text)}<p class="cost">{clip(earlier.response.text)}</p>{/if}
     </section>
   {/if}
 
@@ -465,6 +511,10 @@
   li.watch-status { color: var(--t-ink); }
   li.watch-exhausted { color: var(--t-dark); font-weight: 650; }
   li.nobody-answering { color: var(--t-dark); font-weight: 650; }
+  /* Somebody, about something else: the colour of "getting through", never of "has it". */
+  li.acknowledged-earlier { color: var(--t-oncall); }
+  .earlier { border: 2px solid var(--t-oncall); background: var(--t-raised); padding: 1rem 1.1rem; }
+  .earlier p { color: var(--t-ink); }
 
   .person { border: 2px solid var(--t-station); background: var(--t-raised); padding: 1rem 1.1rem; }
   .person h2 { color: var(--t-station); }

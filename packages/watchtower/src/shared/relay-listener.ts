@@ -85,7 +85,8 @@ const PRUNE_EVERY_SECONDS = 60;
 
 /**
  * NIP-01's machine-readable prefixes. A close reason that starts with one of these came from the
- * relay refusing; anything else is the connection going.
+ * relay refusing. Without one, whether the relay closed the subscription or the connection went is
+ * told from the socket, where there is one to ask (see `openOwn`).
  */
 const REFUSALS = [
   "auth-required",
@@ -144,6 +145,8 @@ interface Slot {
   current: Attempt | null;
   /** Last state said out loud. Undefined until the first one. */
   up: boolean | undefined;
+  /** Whether it has ever been listening, so its first time is "listening" and not "reachable again". */
+  everUp: boolean;
   /** What the last "down" line was about, so a different reason is still said. */
   downAs: string | undefined;
   upSince: number | null;
@@ -175,6 +178,30 @@ function refusalOf(reason: string): string | null {
   return (REFUSALS as readonly string[]).includes(prefix) ? prefix : null;
 }
 
+/**
+ * The reasons nostr-tools gives for a close it made itself, not the relay. "closed by caller" is
+ * also what a relay's `CLOSED` with no reason arrives as, which is why it is read with the socket.
+ */
+const OUR_OWN_CLOSE = "relay connection closed by us";
+const NO_REASON = "closed by caller";
+
+/**
+ * Why a subscription went, in the three kinds the log says differently [#26]:
+ *
+ * - `refused`: a NIP-01 prefix -- the relay is up and said no
+ * - `closed`: the relay is up and closed it without one -- "subscription limit exceeded", `null`
+ * - `unreachable`: the connection went, or never came
+ *
+ * `connected` is the socket's own state when the close arrived, where there is a socket to ask; a
+ * relay's `CLOSED` arrives on a live connection, and a dropped connection closes its subscriptions
+ * after it has gone. Without it -- the fakes in tests -- only the prefix can be read.
+ */
+function closeKind(reason: string, connected: boolean | undefined): "refused" | "closed" | "unreachable" {
+  if (refusalOf(reason)) return "refused";
+  if (connected === true && reason !== OUR_OWN_CLOSE) return "closed";
+  return "unreachable";
+}
+
 export class RelayListener {
   private readonly slots: Slot[];
   private readonly seen = new Map<string, number>();
@@ -195,6 +222,7 @@ export class RelayListener {
       url,
       current: null,
       up: undefined,
+      everUp: false,
       downAs: undefined,
       upSince: null,
       failures: 0,
@@ -278,12 +306,13 @@ export class RelayListener {
       // nostr-tools calls `oneose` immediately before `onclose` when a subscription fails, in
       // the same tick. Deferred, so a refusal is never mistaken for a moment of listening.
       oneose: () => queueMicrotask(answered),
-      onclose: (reasons: unknown) => {
+      onclose: (reasons: unknown, connected?: boolean) => {
         attempt.closed = true;
         clearTimeout(attempt.silence);
         // The previous subscription reporting the close this asked for, or the end of a stop.
         if (slot.current !== attempt || this.stopped) return;
-        this.markDown(slot, reasonOf(reasons));
+        const reason = reasonOf(reasons);
+        this.markDown(slot, reason, closeKind(reason, connected));
         this.scheduleRetry(slot);
       },
     };
@@ -291,7 +320,7 @@ export class RelayListener {
       if (attempt.closed) return;
       attempt.closed = true;
       if (slot.current !== attempt || this.stopped) return;
-      this.markDown(slot, err instanceof Error ? err.message : String(err));
+      this.markDown(slot, err instanceof Error ? err.message : String(err), "unreachable");
       this.scheduleRetry(slot);
     };
 
@@ -325,7 +354,7 @@ export class RelayListener {
   private openOwn(
     slot: Slot,
     attempt: Attempt,
-    handlers: { onevent: (e: Event) => void; oneose: () => void; onclose: (reason: unknown) => void },
+    handlers: { onevent: (e: Event) => void; oneose: () => void; onclose: (reason: unknown, connected?: boolean) => void },
     failed: (err: unknown) => void,
   ): void {
     this.opts.pool.ensureRelay!(slot.url, { connectionTimeout: CONNECT_TIMEOUT_MS }).then(
@@ -338,7 +367,12 @@ export class RelayListener {
           // cleared, because nostr-tools never clears it on close and a 24-day timer left behind
           // holds a process open. The field is private in nostr-tools' types and public at runtime;
           // if it is renamed, the clear does nothing and NEVER_MS still holds the rule.
-          const sub = relay.subscribe([this.filter()], { ...handlers, eoseTimeout: NEVER_MS });
+          // The socket is asked at the moment of the close: still up means the relay closed it.
+          const sub = relay.subscribe([this.filter()], {
+            ...handlers,
+            onclose: (reason: unknown) => handlers.onclose(reason, relay.connected),
+            eoseTimeout: NEVER_MS,
+          });
           clearTimeout((sub as unknown as { eoseTimeoutHandle?: ReturnType<typeof setTimeout> }).eoseTimeoutHandle);
           attempt.closer = sub;
         } catch (err: unknown) {
@@ -390,7 +424,10 @@ export class RelayListener {
     slot.up = true;
     slot.downAs = undefined;
     if (was === true) return;
-    console.log(`[${this.opts.label}] ${slot.url} ${was === false ? "reachable again" : "listening"}`);
+    // "listening" the first time, whatever came before it: a relay down at boot that answers later
+    // was never "reachable" to be reachable again, and the systemd README looks for "listening".
+    console.log(`[${this.opts.label}] ${slot.url} ${slot.everUp ? "reachable again" : "listening"}`);
+    slot.everUp = true;
     this.opts.onchange?.(this.listening(), this.slots.length);
   }
 
@@ -407,12 +444,21 @@ export class RelayListener {
     if (was !== false) this.opts.onchange?.(this.listening(), this.slots.length);
   }
 
-  private markDown(slot: Slot, rawReason: string): void {
+  /**
+   * Says a relay went, once per change, and in terms that point at the right cause [#26].
+   *
+   * "Unreachable" is kept for a connection that went or never came. A relay that is up and closes
+   * the subscription without a NIP-01 prefix -- "subscription limit exceeded", or no reason at all
+   * -- was logged as unreachable too, and sent the reader after a network that was fine; it is now
+   * "closed the subscription", with its own bucket, so a change between the two is still said.
+   */
+  private markDown(slot: Slot, rawReason: string, kind: "refused" | "closed" | "unreachable"): void {
     if (slot.upSince !== null && this.now() - slot.upSince >= STABLE_SECONDS) slot.failures = 0;
     slot.upSince = null;
-    const reason = sanitizeForLog(rawReason, 160);
-    const refusal = refusalOf(rawReason);
-    const as = refusal ?? "unreachable";
+    const given = kind === "closed" && rawReason === NO_REASON ? "no reason given" : rawReason;
+    const reason = sanitizeForLog(given, 160);
+    const refusal = kind === "refused" ? refusalOf(rawReason) : null;
+    const as = refusal ?? kind;
     const was = slot.up;
     slot.up = false;
     if (was === false && slot.downAs === as) return;
@@ -426,6 +472,10 @@ export class RelayListener {
       );
     } else if (refusal) {
       console.error(`[${label}] ${slot.url} refused the subscription: ${reason} -- retrying; ${missing}`);
+    } else if (kind === "closed") {
+      console.error(
+        `[${label}] ${slot.url} closed the subscription (${reason}) while connected -- retrying; ${missing}`,
+      );
     } else {
       console.error(`[${label}] ${slot.url} unreachable (${reason}) -- retrying; ${missing}`);
     }

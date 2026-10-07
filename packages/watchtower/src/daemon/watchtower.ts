@@ -97,6 +97,20 @@ export class WatchtowerDaemon {
    * Absent until the first heartbeat reaches it.
    */
   private readonly refusing = new Map<string, boolean>();
+  /** The relays that have taken a watch state at least once, so the first time is said. */
+  private readonly carried = new Set<string>();
+  /** The relays it was listening on when that last changed, so a relay coming back is announced at once. */
+  private announcedOn = new Set<string>();
+  /**
+   * The publish in flight, and whether another was asked for meanwhile [review: relay paths].
+   *
+   * Overlapping publishes in the same second sign the same event, and nostr-tools keeps one
+   * pending OK per event id: the earlier call never settled, so what each relay said to it was
+   * never logged. A relay that starts listening mid-publish is covered by the one that follows.
+   */
+  private publishing: Promise<number> | null = null;
+  private publishAgain = false;
+  private stopped = false;
 
   constructor(opts: WatchtowerDaemonOptions) {
     this.config = opts.config;
@@ -186,13 +200,80 @@ export class WatchtowerDaemon {
   }
 
   /**
-   * Publishes `10910`, and returns how many relays took it -- 0 means operators read Dark.
+   * The relays this daemon can hear on right now: the only ones it announces itself on [#38].
+   *
+   * A relay that takes writes and author-only reads but refuses the box's `#p` subscription -- an
+   * inbox that wants AUTH, or one that holds such a REQ and never answers -- carried a fresh
+   * "automated" watch for as long as the box ran, while nothing on the box could hear a Distress
+   * sent there. Withheld instead, the state there ages to Dark within `stale_after_seconds`: the
+   * rule a phone holding the watch already keeps [F09].
+   */
+  private hearing(): string[] {
+    return this.listener?.relays().filter((r) => r.listening).map((r) => r.url) ?? [];
+  }
+
+  /** Announces at once on a relay that has just started listening, rather than at the next beat. */
+  private listeningChanged(): void {
+    const now = new Set(this.hearing());
+    const fresh = [...now].some((url) => !this.announcedOn.has(url));
+    this.announcedOn = now;
+    if (!fresh) return;
+    this.publishWatchState().catch((err: unknown) => {
+      console.error(`[heartbeat] publish failed: ${String(err)}`);
+    });
+  }
+
+  /**
+   * Publishes `10910` on every relay this daemon is listening on, and returns how many took it --
+   * 0 means operators read Dark. One at a time: asked for while one is going out, it publishes once
+   * more after that one has settled, rather than beside it.
+   */
+  private publishWatchState(): Promise<number> {
+    if (this.publishing) {
+      this.publishAgain = true;
+      return this.publishing;
+    }
+    const run = (async () => {
+      try {
+        let accepted = 0;
+        do {
+          this.publishAgain = false;
+          try {
+            accepted = await this.publishWatchStateOnce();
+          } catch (err: unknown) {
+            // Said here, so one that fails does not take the one asked for meanwhile with it.
+            console.error(`[heartbeat] publish failed: ${String(err)}`);
+            accepted = 0;
+          }
+        } while (this.publishAgain && !this.stopped);
+        return accepted;
+      } finally {
+        this.publishing = null;
+      }
+    })();
+    this.publishing = run;
+    return run;
+  }
+
+  /**
+   * One publish of `10910`.
    *
    * The results were thrown away [F13]. A relay that refused every heartbeat (a write allowlist,
    * a rate limit, a policy against this kind) left the daemon logging nothing at all while
    * operators reading that relay were told nobody was on watch.
    */
-  private async publishWatchState(): Promise<number> {
+  private async publishWatchStateOnce(): Promise<number> {
+    if (this.stopped) return 0;
+    const urls = this.hearing();
+    const total = new Set(this.relayUrls).size;
+    if (urls.length === 0) {
+      // Every time, as below: the watch is invisible, and stays so until a relay answers.
+      console.error(
+        `[heartbeat] LISTENING ON NO RELAY (0/${total}) -- the watch state goes nowhere, and operators read Dark ` +
+          "until a relay answers this box's subscription",
+      );
+      return 0;
+    }
     const payload: WatchStatePayload = {
       v: WATCH_STATE_VERSION,
       state: "automated",
@@ -224,30 +305,47 @@ export class WatchtowerDaemon {
       content: JSON.stringify(payload),
       created_at: now(),
     });
-    const urls = this.relayUrls;
     const results = await Promise.allSettled(this.pool.publish(urls, event));
     let accepted = 0;
+    const first: string[] = [];
     results.forEach((result, i) => {
       const url = urls[i] ?? "?";
       const was = this.refusing.get(url);
       if (result.status === "fulfilled") {
         accepted++;
         this.refusing.set(url, false);
-        if (was === true) console.log(`[heartbeat] ${url} accepting watch state again`);
+        if (!this.carried.has(url)) {
+          this.carried.add(url);
+          first.push(url);
+        } else if (was === true) console.log(`[heartbeat] ${url} accepting watch state again`);
         return;
       }
       this.refusing.set(url, true);
       // Once per change. A relay that refuses every minute would otherwise bury everything else.
       if (was !== true) {
         const reason = result.reason instanceof Error ? result.reason.message : String(result.reason);
-        console.error(`[heartbeat] ${url} refused watch state: ${sanitizeForLog(reason, 160)}`);
+        // By cause [#26]: a publish that never connected is not a write policy.
+        console.error(
+          reason.startsWith("connection failure:")
+            ? `[heartbeat] could not reach ${url} to publish the watch state: ${sanitizeForLog(reason, 160)}`
+            : `[heartbeat] ${url} refused watch state: ${sanitizeForLog(reason, 160)}`,
+        );
       }
     });
     if (accepted === 0) {
       // Every time, not once. This is the watch being invisible, and it stays true until it stops.
       console.error(
-        `[heartbeat] NO RELAY ACCEPTED the watch state (0/${urls.length}) -- operators read Dark until one does`,
+        `[heartbeat] NO RELAY ACCEPTED the watch state (0/${urls.length} listening, ${total} configured) -- ` +
+          "operators read Dark until one does",
       );
+    }
+    /*
+     * Each relay the first time it takes the watch state, with how many carry it now. One line for
+     * the whole first publish said "2/3" on a healthy box whose third relay answered a moment
+     * later, and nothing after -- while the systemd README told the Stationkeeper to look for N/N.
+     */
+    for (const url of first) {
+      console.log(`[heartbeat] watch state (automated) published on ${url} -- ${accepted}/${total} relay(s) carry it now`);
     }
     return accepted;
   }
@@ -605,11 +703,12 @@ export class WatchtowerDaemon {
    * Everything a relay hands over, before any of it is acted on.
    *
    * **An age window, because a signed event is valid for ever** [F12]. The executor has always
-   * refused a `20911` stamped outside its paging window; this daemon had only `since`, which a
+   * refused a `20911` stamped outside its own window; this daemon had only `since`, which a
    * relay can ignore. A relay rewriting frames -- or serving a captured one -- made it mark an
    * operator in distress again and acknowledge them again. The same event arriving twice is
    * answered once: the listener remembers verified ids for longer than twice this window, so an
-   * event cannot outlive its own memory and come back inside it.
+   * event cannot outlive its own memory and come back inside it. Never under five minutes, the age
+   * at which a phone reads this watch as Dark; the config refuses less [#4].
    */
   private onEvent(event: Event): void {
     if (!verifyEvent(event)) {
@@ -648,7 +747,10 @@ export class WatchtowerDaemon {
    *
    * This was one subscription across every relay, opened once. A relay unreachable at boot was
    * never subscribed at all, while the heartbeat went on reconnecting to it and publishing
-   * `10910` there -- so operators on that relay saw a watch that could not hear them.
+   * `10910` there -- so operators on that relay saw a watch that could not hear them. Reopening
+   * fixed only the reconnect: the heartbeat still published to every configured relay, and a relay
+   * that refused the box's subscription for good carried a fresh watch for as long as the box ran.
+   * The watch state now goes only where this listens, and goes there the moment it starts [#38].
    */
   private startListening(): void {
     const window = this.config.watch.maxEventAgeSeconds;
@@ -658,9 +760,10 @@ export class WatchtowerDaemon {
       filter: { kinds: [KIND_SIGNAL, KIND_DISTRESS], "#p": [this.pubkey] },
       since: this.since,
       label: "relay",
-      missing: "signals sent only there are not heard",
+      missing: "signals sent only there are not heard, and the watch state is not published there",
       seenRetentionSeconds: 2 * window + 60,
       onevent: (event) => this.onEvent(event),
+      onchange: () => this.listeningChanged(),
     });
     this.listener.start();
   }
@@ -670,10 +773,15 @@ export class WatchtowerDaemon {
     return this.listener?.listening() ?? 0;
   }
 
-  /** Returns how many relays took the first watch state. */
-  async start(): Promise<number> {
+  /**
+   * Takes the watch: listens first, and announces the watch on each relay as it starts listening.
+   *
+   * It used to publish the first state before subscribing anywhere, so a relay the box would never
+   * hear on was told a watch was up before anything had checked [#38]. Each relay now says when it
+   * is listening (`[relay] <url> listening`), and the first watch state follows at once.
+   */
+  async start(): Promise<void> {
     this.note("took-watch", null, "held");
-    const accepted = await this.publishWatchState();
     this.startListening();
     this.heartbeatHandle = setInterval(() => {
       this.publishWatchState().catch((err: unknown) => {
@@ -696,10 +804,10 @@ export class WatchtowerDaemon {
         });
       });
     }, this.config.watch.sweepIntervalSeconds * 1000);
-    return accepted;
   }
 
   async stop(): Promise<void> {
+    this.stopped = true;
     if (this.heartbeatHandle) clearInterval(this.heartbeatHandle);
     if (this.sweepHandle) clearInterval(this.sweepHandle);
     this.listener?.stop();

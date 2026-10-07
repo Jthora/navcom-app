@@ -42,6 +42,7 @@ export interface LocalRelay {
   /**
    * Sends CLOSED for every open subscription, keeping the connection. The reason is sent as given,
    * whatever its type: a relay that sends `null` or an object is the case being modelled.
+   * `undefined` sends a frame with no reason element at all, `["CLOSED", id]`.
    */
   closeSubs(reason: unknown): void;
   /**
@@ -110,7 +111,7 @@ export async function startRelay(opts: { port?: number } = {}): Promise<LocalRel
     },
     closeSubs(reason) {
       for (const [ws, mine] of subs) {
-        for (const id of mine.keys()) send(ws, ["CLOSED", id, reason]);
+        for (const id of mine.keys()) send(ws, reason === undefined ? ["CLOSED", id] : ["CLOSED", id, reason]);
         mine.clear();
       }
     },
