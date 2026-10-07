@@ -12,7 +12,7 @@
   import { page } from '$app/state';
   import { PairError, pair, peers, setBuddy, unpair, type Peer } from '$lib/terminal/peers';
   import { loadIdentity } from '$lib/terminal/identity';
-  import { relays, setRelays, usingDefaults } from '$lib/terminal/relays';
+  import { ownRelays, relays, setRelays, usingDefaults } from '$lib/terminal/relays';
   import { whyNotReachable } from '$lib/terminal/relay-url';
   import { loadConfig } from '$lib/terminal/config';
   import encodeQR from '@paulmillr/qr';
@@ -44,7 +44,7 @@
     using = relays();
     defaults = usingDefaults();
     watchRelays = (loadConfig()?.relays?.length ?? 0) > 0;
-    relayDraft = using.join('\n');
+    relayDraft = ownRelays().join('\n');
     scannable = canScan();
     mine = peers();
     myPubkey = loadIdentity()?.pubkey ?? null;
@@ -96,7 +96,7 @@
     setRelays([]);
     using = relays();
     defaults = usingDefaults();
-    relayDraft = using.join('\n');
+    relayDraft = ownRelays().join('\n');
     relayNote = 'Back to the two that ship with the app.';
   }
 
@@ -266,35 +266,35 @@
 -->
 <Why summary="Where this goes">
   <p>
-    Presence travels through {defaults ? 'these public relays, which ship as defaults' : 'the relays you configured'}.
-    They carry sealed messages they cannot read, and none of them learns who your peers are.
+    Everything this phone publishes outside a watch — presence, invites, your card, corrections,
+    places — travels through these: {watchRelays ? 'your watch’s relays, and beside them ' : ''}{defaults ? 'the public relays NavCom ships with' : 'the relays you chose'}.
+    Presence and invites are sealed and those relays cannot read them; a card and a correction
+    are public.
   </p>
   <p class="blocks">{#each using as r (r)}<span>{r}</span>{/each}</p>
   {#if watchRelays}
     <p>
-      These are your watch's relays, and that is why they are not changed here — the watch and
-      your peers share one connection rather than opening two. They are on
-      <a href="/terminal/setup/">the setup screen</a>, with the watch they belong to.
+      Your watch’s relays are always included, and changed only on
+      <a href="/terminal/setup/">the setup screen</a> with the watch they belong to.
     </p>
-  {:else}
-    <label for="relay-list">Where presence is published</label>
-    <textarea
-      id="relay-list"
-      bind:value={relayDraft}
-      rows="3"
-      autocomplete="off"
-      spellcheck="false"
-      data-relay-list
-    ></textarea>
-    {#if relayError}<p class="error" role="alert" data-relay-error>{relayError}</p>{/if}
-    {#if relayNote}<p data-relay-note>{relayNote}</p>{/if}
-    <div class="relay-acts">
-      <button data-relay-save onclick={useRelays}>Use these</button>
-      {#if !defaults}
-        <button class="drop" data-relay-reset onclick={backToDefaults}>Back to the defaults</button>
-      {/if}
-    </div>
   {/if}
+  <label for="relay-list">Your own relays</label>
+  <textarea
+    id="relay-list"
+    bind:value={relayDraft}
+    rows="3"
+    autocomplete="off"
+    spellcheck="false"
+    data-relay-list
+  ></textarea>
+  {#if relayError}<p class="error" role="alert" data-relay-error>{relayError}</p>{/if}
+  {#if relayNote}<p data-relay-note>{relayNote}</p>{/if}
+  <div class="relay-acts">
+    <button data-relay-save onclick={useRelays}>Use these</button>
+    {#if !defaults}
+      <button class="drop" data-relay-reset onclick={backToDefaults}>Back to the defaults</button>
+    {/if}
+  </div>
 </Why>
 
 {#if invites.waiting.length > 0}

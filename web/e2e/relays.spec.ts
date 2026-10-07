@@ -41,16 +41,20 @@ const WIRED = {
   peers: [{ pubkey: 'c'.repeat(64), callsign: 'Raven', since: 0 }]
 };
 
+/** The watch's relay, and beside it the defaults everything else also goes to [audit: relay paths, F15]. */
+const DIALLED = ['wss://relay.example', 'wss://relay.damus.io', 'wss://nos.lol'];
+
 test('opens one connection per relay, not one per module', async ({ page }) => {
   // Status alone starts the watch reader, peer presence and the key-bundle fetcher. Three
-  // subscriptions, one socket.
+  // subscriptions, and one socket to each relay they use between them — never two to one.
   await countingSockets(page, WIRED);
   await page.goto('/terminal/');
   await page.waitForSelector('html[data-hydrated="true"]');
-  await page.waitForFunction(() => (window as unknown as { __ws: string[] }).__ws.length > 0, undefined, { timeout: 10_000 });
+  await page.waitForFunction(() => (window as unknown as { __ws: string[] }).__ws.length >= 3, undefined, { timeout: 10_000 });
 
   const urls = await page.evaluate(() => (window as unknown as { __ws: string[] }).__ws);
-  expect(urls, `opened ${urls.length} sockets to ${urls.length && urls[0]}`).toHaveLength(1);
+  expect(new Set(urls).size, `opened ${urls.length} sockets: ${urls.join(', ')}`).toBe(urls.length);
+  expect(new Set(urls.map((u) => u.replace(/\/$/, '')))).toEqual(new Set(DIALLED));
 });
 
 test('does not open one per screen either', async ({ page }) => {
@@ -63,8 +67,9 @@ test('does not open one per screen either', async ({ page }) => {
   await page.waitForSelector('html[data-hydrated="true"]');
 
   const urls = await page.evaluate(() => (window as unknown as { __ws: string[] }).__ws);
-  expect(new Set(urls).size, 'distinct relays').toBe(1);
-  expect(urls.length, 'total sockets across two screens').toBeLessThanOrEqual(2);
+  expect(new Set(urls.map((u) => u.replace(/\/$/, ''))), 'distinct relays').toEqual(new Set(DIALLED));
+  // Two page loads: at most one socket per relay for each.
+  expect(urls.length, 'total sockets across two screens').toBeLessThanOrEqual(2 * DIALLED.length);
 });
 
 test('opens nothing at all for an operator who has no relay reason to', async ({ page }) => {

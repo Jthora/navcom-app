@@ -8,7 +8,7 @@
 
 import { describe, expect, it, beforeEach, vi } from 'vitest';
 import type { Event } from 'nostr-tools/core';
-import { buildSignal, buildDistress, newSecretKey, publicKeyOf } from '@navcom/core';
+import { KIND_WATCH_STATE, buildSignal, buildDistress, buildWatchStateEvent, newSecretKey, publicKeyOf } from '@navcom/core';
 import { finalizeEvent } from 'nostr-tools/pure';
 
 const watch = newSecretKey();
@@ -21,10 +21,12 @@ vi.mock('./identity', () => ({
 }));
 vi.mock('./config', () => ({ loadConfig: () => ({ watchtower: watchPub, relays: ['wss://r'] }) }));
 vi.mock('./watch-key', () => ({ watchKey: () => watch, watchPubkey: () => watchPub }));
-vi.mock('./relays', () => ({ relays: () => ['wss://r'] }));
+vi.mock('./relays', () => ({ relays: () => ['wss://r'], watchRelays: () => ['wss://r'] }));
 vi.mock('./pq.svelte', () => ({ kemKeys: () => ({}), pq: { known: {} } }));
 /** Whether relays accept anything. A watch on a phone is offline as often as an operator. */
 let relaysUp = true;
+/** Everything the board published, in order. */
+const published: Event[] = [];
 
 vi.mock('./pool', () => ({
   pool: () => ({
@@ -40,10 +42,13 @@ vi.mock('./pool', () => ({
      */
     subscribeMap: (_r: unknown, p: { onevent: (e: Event) => void }) => {
       deliver = p.onevent;
-      return { close: () => {} };
+      // A closed subscription hears nothing more, as on a relay.
+      return { close: () => void (deliver = () => {}) };
     },
-    publish: () =>
-      relaysUp ? [Promise.resolve('ok')] : [Promise.reject(new Error('no relay accepted'))]
+    publish: (_u: string[], event: Event) => {
+      published.push(event);
+      return relaysUp ? [Promise.resolve('ok')] : [Promise.reject(new Error('no relay accepted'))];
+    }
   })
 }));
 
@@ -87,6 +92,7 @@ const distress = (): Event => {
 
 beforeEach(async () => {
   relaysUp = true;
+  published.length = 0;
   vi.resetModules();
   ({ board } = await import('./board.svelte'));
   board.start();
@@ -249,5 +255,52 @@ describe('state changes arriving out of order', () => {
     deliver(backdated);
 
     expect(board.waiting.map((w) => w.text)).toEqual(['q1', 'jumped the queue']);
+  });
+});
+
+/** The watch's own state, as a relay serves it. */
+const advertisedState = (holder: string, at: number): Event =>
+  finalizeEvent(
+    buildWatchStateEvent(
+      { state: 'station', holder, holder_kind: 'human', oncall: [], since: at, agent_health: 'down', last_drill: null, now: at },
+      at
+    ),
+    watch
+  );
+const states = () => published.filter((e) => e.kind === KIND_WATCH_STATE).map((e) => JSON.parse(e.content).state as string);
+
+describe('a watch held while its screen is closed [audit: relay paths]', () => {
+  it('still hears a Distress after the holder leaves the Watch screen', async () => {
+    await board.takeWatch();
+    board.stop();
+    deliver(distress());
+    expect(board.distress, 'the holder is announced on station and heard nothing').toHaveLength(1);
+  });
+
+  it('goes quiet when forgotten: nothing heard, nothing announced, nothing sent', async () => {
+    vi.useFakeTimers();
+    try {
+      await board.takeWatch();
+      const before = published.length;
+      board.forget();
+      deliver(distress());
+      vi.advanceTimersByTime(600_000);
+      expect(board.onStation).toBe(false);
+      expect(board.distress).toHaveLength(0);
+      expect(published.length, 'a forgotten watch went on announcing its holder').toBe(before);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe('the watch’s own state, from relays that disagree [audit: relay paths]', () => {
+  it('lets a stand-down say Dark when a lagging relay still serves an older holder', async () => {
+    const now = Math.floor(Date.now() / 1000);
+    await board.takeWatch();
+    deliver(advertisedState('Watch', now));
+    deliver(advertisedState('Raven', now - 180));
+    await board.standDown();
+    expect(states().at(-1), 'an older Station from one relay stopped the stand-down').toBe('dark');
   });
 });

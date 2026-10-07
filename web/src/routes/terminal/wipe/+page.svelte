@@ -20,6 +20,7 @@
   import { loadIdentity } from '$lib/terminal/identity';
   import { forgetPaging } from '$lib/terminal/paging';
   import { operator } from '$lib/terminal/session.svelte';
+  import { board } from '$lib/terminal/board.svelte';
 
   import { Slot, Readout, Action } from '$lib/components/panel';
 
@@ -49,6 +50,8 @@
     panicWipe();
     // Also stops a Distress still sending, the public listing and position -- see `forget`.
     operator.forget();
+    // And a watch this phone holds goes quiet, decided 2026-10-07 [audit: relay paths, F10].
+    board.forget();
     // Straight back to an ordinary-looking terminal. No receipt, no confirmation.
     goto('/terminal/');
   }
@@ -57,6 +60,8 @@
     // The gate is enforced in storage, not here — this button being disabled is a courtesy.
     if (!burnConfirmed(typed, callsign)) return;
     operator.forget();
+    // Before the sockets go: a held watch's timers would otherwise reopen them afterwards.
+    board.forget();
     // Every relay connection, not just the subscriptions. A burned device that is still
     // holding sockets open to relays is a live signal from a phone that is supposed to be
     // finished.
@@ -123,8 +128,9 @@
   -->
   <p class="cost">
     <strong>It also stops what this phone is still sending</strong> — a Distress still going,
-    your name on the board as out tonight, and your position. If you are wiping because you are
-    in trouble, that silences your own call for help: send it again once you can.
+    your name on the board as out tonight, your position, and a watch you are holding, which
+    reads Dark to everyone within five minutes. If you are wiping because you are in trouble,
+    that silences your own call for help: send it again once you can.
   </p>
   <Action label="Hold to wipe tonight" holdingLabel="Keep holding…" hold={800} tone="alarm" onfire={fireWipe} />
 </section>

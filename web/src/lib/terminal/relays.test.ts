@@ -7,7 +7,8 @@
  */
 
 import { describe, expect, it, beforeEach } from 'vitest';
-import { DEFAULT_RELAYS, relays, setRelays, usingDefaults } from './relays';
+import { DEFAULT_RELAYS, ownRelays, relays, setRelays, usingDefaults, watchRelays } from './relays';
+import { set } from './storage';
 
 beforeEach(() => {
   const store = new Map<string, string>();
@@ -67,5 +68,22 @@ describe('ws:// from a page served over https [audit: relay paths, F21]', () => 
   it('is kept only for a relay on this device', () => {
     setRelays(['ws://relay.example.com', 'ws://192.168.1.50:7777', 'ws://127.0.0.1:7777', 'wss://relay.example']);
     expect(relays()).toEqual(['ws://127.0.0.1:7777', 'wss://relay.example']);
+  });
+});
+
+describe('a Watched operator [audit: relay paths, F15]', () => {
+  it('publishes beside the watch, not only where the watch listens', () => {
+    set('accruing', 'watchtower', 'f'.repeat(64));
+    set('accruing', 'relays', ['wss://watch.example']);
+    expect(relays()).toEqual(['wss://watch.example', ...DEFAULT_RELAYS]);
+    expect(watchRelays(), 'the watch itself stays on its own relays').toEqual(['wss://watch.example']);
+    expect(ownRelays(), 'what the operator edits is their own part').toEqual([...DEFAULT_RELAYS]);
+  });
+
+  it('keeps the operator’s own list beside the watch’s, each relay once', () => {
+    set('accruing', 'watchtower', 'f'.repeat(64));
+    set('accruing', 'relays', ['wss://watch.example']);
+    setRelays(['wss://mine.example', 'wss://watch.example']);
+    expect(relays()).toEqual(['wss://watch.example', 'wss://mine.example']);
   });
 });

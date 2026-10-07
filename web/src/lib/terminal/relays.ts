@@ -30,18 +30,27 @@ export { DEFAULT_RELAYS };
 const FIELD = 'relays_own';
 
 /**
- * The relays to use, in preference order.
+ * Where an operator publishes and reads: their watch's relays, if they have a watch, beside their
+ * own list or else the shipped defaults. **Added, never substituted** [audit: relay paths, F15].
  *
- * A configured Watchtower's relays win, because peers and the watch sharing a relay means
- * one connection instead of two on a phone that is counting them. Otherwise the operator's
- * own list, otherwise the defaults.
+ * A configured watch's relays used to replace the rest, to save a phone one connection. A watch
+ * handed over on relays that left out both defaults then took everything else with it: presence,
+ * invites, key bundles, the card, public presence, corrections, places, observations and
+ * revocations went only where the watch listened — split, silently, from every Alone peer, from
+ * the public roster and from the maintainer's intake. Missions had already been fixed the same way.
  */
 export function relays(): string[] {
-  const watch = usable(loadConfig()?.relays ?? []);
-  if (watch.length) return watch;
+  const watch = loadConfig()?.relays ?? [];
   const own = usable(get<string[]>('accruing', FIELD) ?? []);
-  if (own.length) return own;
-  return [...DEFAULT_RELAYS];
+  return usable([...watch, ...(own.length ? own : DEFAULT_RELAYS)]);
+}
+
+/**
+ * Where a watch is heard: its own relays, and nowhere else. The board, the watch's state and its
+ * answers stay here — widening them would put a privately relayed watch's state on public relays.
+ */
+export function watchRelays(): string[] {
+  return loadConfig()?.relays ?? relays();
 }
 
 /**
@@ -52,9 +61,15 @@ export function relays(): string[] {
  */
 export { usable } from './relay-url';
 
-/** Whether the list in use is the shipped default rather than anything chosen. */
+/** The part of the list an operator edits: their own relays, or the shipped defaults. */
+export function ownRelays(): string[] {
+  const own = usable(get<string[]>('accruing', FIELD) ?? []);
+  return own.length ? own : [...DEFAULT_RELAYS];
+}
+
+/** Whether the operator's own list is the shipped default rather than anything they chose. */
 export function usingDefaults(): boolean {
-  return !loadConfig()?.relays?.length && !get<string[]>('accruing', FIELD)?.length;
+  return usable(get<string[]>('accruing', FIELD) ?? []).length === 0;
 }
 
 export function setRelays(list: string[]): void {

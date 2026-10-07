@@ -36,6 +36,7 @@ import {
   KIND_DISTRESS,
   KIND_SIGNAL,
   KIND_WATCH_STATE,
+  STALE_AFTER_SECONDS,
   buildResponse,
   buildWatchStateEvent,
   darkState,
@@ -48,7 +49,7 @@ import {
 } from '@navcom/core';
 import { loadIdentity } from './identity';
 import { loadConfig } from './config';
-import { relays } from './relays';
+import { watchRelays } from './relays';
 import { pool } from './pool';
 import { watchKey, watchPubkey } from './watch-key';
 
@@ -114,6 +115,10 @@ let stateAt: Record<string, number> = {};
 let onStation = $state(false);
 let since = $state(0);
 let closer: { close(): void } | null = null;
+/** Which watch the listener is open for, so returning to the screen does not reopen it. */
+let listeningTo: string | null = null;
+/** When the advertised state was published: only a newer one replaces it. */
+let advertisedAt = 0;
 let beat: ReturnType<typeof setInterval> | null = null;
 
 /** Anything sealed to us that we could not open is dropped, never guessed at. */
@@ -222,10 +227,14 @@ export const board = {
   start(): void {
     const identity = loadIdentity();
     const address = watchPubkey() ?? loadConfig()?.pubkey;
-    const urls = relays();
+    const urls = watchRelays();
     if (!identity || !address || urls.length === 0) return;
+    // Already listening for this watch: reopening would leave a gap a Distress could fall into.
+    if (closer && listeningTo === address) return;
 
     closer?.close();
+    listeningTo = address;
+    advertisedAt = 0;
     /*
      * `subscribeMap`, not `subscribeMany` with an array.
      *
@@ -255,8 +264,12 @@ export const board = {
       {
         onevent: (event: Event) => {
           if (event.kind === KIND_WATCH_STATE) {
+            // Newest wins, whichever relay answers last [audit: relay paths, F11]: the stand-down
+            // guard below trusts this, and a lagging relay's old Station made it refuse to say Dark.
+            if (event.created_at < advertisedAt) return;
             try {
               advertised = JSON.parse(event.content) as { state: string; holder: string | null };
+              advertisedAt = event.created_at;
             } catch {
               advertised = null;
             }
@@ -284,11 +297,13 @@ export const board = {
   async takeWatch(): Promise<void> {
     const secret = watchKey();
     const identity = loadIdentity();
-    const urls = relays();
+    const urls = watchRelays();
     if (!secret || !identity?.callsign || urls.length === 0) return;
 
     since = Math.floor(Date.now() / 1000);
     onStation = true;
+    // Holding a watch is hearing it: the listener is opened here if no screen opened it.
+    board.start();
     // Reported, not assumed. Everyone out sees the callsign of whoever took it — so if
     // nothing was published, this operator is covering nobody and needs to know now rather
     // than at the moment somebody needs them.
@@ -299,7 +314,12 @@ export const board = {
       const who = loadIdentity()?.callsign;
       // The beat is also the retry: a watch that could not announce itself heals here as
       // soon as there is signal, and the warning clears with it.
-      if (onStation && s && who) {
+      //
+      // **Only while this phone is listening** [audit: relay paths, F09]. The beat used to
+      // outlive the board, so a holder who left the Watch screen went on being announced as a
+      // human on station while nothing on the phone could hear a Distress. Without the listener
+      // the claim goes unrefreshed and reads Dark within five minutes, which is then true.
+      if (onStation && s && who && closer) {
         void publishState(s, who, since).then((ok) => {
           unannounced = !ok;
         });
@@ -316,7 +336,7 @@ export const board = {
    */
   async standDown(): Promise<void> {
     const secret = watchKey();
-    const urls = relays();
+    const urls = watchRelays();
     onStation = false;
     unannounced = false;
     if (beat) clearInterval(beat);
@@ -336,7 +356,9 @@ export const board = {
      * watch*, and somebody who has already handed over does not.
      */
     const mine = loadIdentity()?.callsign;
-    if (advertised?.state === 'station' && advertised.holder && mine && advertised.holder !== mine) {
+    // A Station old enough to read as Dark speaks for nobody, and must not silence this one.
+    const fresh = Math.floor(Date.now() / 1000) - advertisedAt < STALE_AFTER_SECONDS;
+    if (fresh && advertised?.state === 'station' && advertised.holder && mine && advertised.holder !== mine) {
       console.info('[watch] handed over to ' + advertised.holder + ' — not publishing Dark over them');
       return;
     }
@@ -391,7 +413,7 @@ export const board = {
    */
   async answer(item: Waiting, text: string, declining = false): Promise<boolean> {
     const secret = watchKey();
-    const urls = relays();
+    const urls = watchRelays();
     if (!secret || urls.length === 0) return false;
 
     // Refused in core, not here, so no second surface can forget. A watch able to decline a
@@ -439,16 +461,51 @@ export const board = {
     return true;
   },
 
+  /**
+   * A screen closing. **Not the end of a watch** — while this phone holds one, the listener
+   * stays open with the beat, so a holder who steps away to Status still hears a Distress, and
+   * is never announced as listening when they are not [audit: relay paths, F09].
+   */
   stop(): void {
+    if (onStation) return;
     closer?.close();
     closer = null;
-    // The beat deliberately survives: closing a screen does not end a watch.
+    listeningTo = null;
+  },
+
+  /**
+   * Everything this phone holds for a watch, gone, and nothing sent [audit: relay paths, F10].
+   *
+   * For a panic wipe and a burn. A wipe used to leave the beat running, so a phone wiped in a
+   * hurry went on announcing its holder's callsign every two minutes; a burn left a Dark retry
+   * that could reopen sockets afterwards. Going quiet is decided: the watch reads Dark to
+   * everyone within five minutes, which is true — nobody on this phone is watching.
+   */
+  forget(): void {
+    closer?.close();
+    closer = null;
+    listeningTo = null;
+    if (beat) clearInterval(beat);
+    beat = null;
+    if (darkRetry) clearInterval(darkRetry);
+    darkRetry = null;
+    onStation = false;
+    since = 0;
+    unannounced = false;
+    stillAdvertised = false;
+    entries = [];
+    waiting = [];
+    stateAt = {};
+    advertised = null;
+    advertisedAt = 0;
+    routineDropped = false;
+    distressDropped = false;
   }
 };
 
 /** Publishes Dark, reporting whether any relay took it. */
 async function publishDark(secret: Uint8Array): Promise<boolean> {
-  const urls = relays();
+  const urls = watchRelays();
   if (urls.length === 0) return false;
   const event = finalizeEvent(
     {
@@ -476,7 +533,7 @@ function darkInput() {
 }
 
 async function publishState(secret: Uint8Array, callsign: string, at: number): Promise<boolean> {
-  const urls = relays();
+  const urls = watchRelays();
   const event = finalizeEvent(
     buildWatchStateEvent(
       {
