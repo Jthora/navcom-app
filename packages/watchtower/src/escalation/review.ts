@@ -65,6 +65,26 @@ export interface Resent {
   sent: boolean;
 }
 
+/**
+ * The person who acknowledged, paged again about a repeat `Distress` inside `ack_holds_seconds`
+ * (decided 2026-10-07). Recorded as `contacted`, about the person paged -- the only `contacted`
+ * this log writes.
+ */
+export interface Repaged {
+  at: number;
+  /** Who, by callsign, as the roster named them when they acknowledged. */
+  who: string | null;
+  /**
+   * `paged`: a channel took it, which is not anybody waking. `failed`: every channel failed.
+   * `unpaged`: there was nothing to try -- off the roster, reachable only at a console, or the page
+   * budget spent; the entry does not say which, and the executor's output from that moment does.
+   *
+   * Not what came after. The watch escalates such an attempt as new, unless it was stopping as the
+   * page failed -- and nothing here records which [review: hold decisions].
+   */
+  outcome: "paged" | "failed" | "unpaged";
+}
+
 export interface Review {
   from: number;
   to: number;
@@ -73,6 +93,7 @@ export interface Review {
   nextDrillAt: number | null;
   escalations: Escalation[];
   resent: Resent[];
+  repaged: Repaged[];
   oncall: readonly string[];
   log: ReviewInput["log"];
   /** The whole point: what a person has to do something about. Empty is the good week. */
@@ -95,12 +116,23 @@ export function buildReview(input: ReviewInput): Review {
     .sort((a, b) => a.at - b.at);
 
   /*
-   * Listed, because a held acknowledgement is the one thing this log records that pages nobody
-   * -- a week of them read "nothing needs a look" until the reviewer could see them [review: D2].
+   * Listed, because a held acknowledgement is the one thing this log records that pages nobody else
+   * on the roster -- a week of them read "nothing needs a look" until the reviewer could see them
+   * [review: D2]. The one person it does page, the one who gave it, is listed below.
    */
   const resent: Resent[] = input.entries
     .filter((e) => e.action === "acked" && e.at >= from)
     .map((e) => ({ at: e.at, sent: e.outcome !== "ack-not-sent" }))
+    .sort((a, b) => a.at - b.at);
+
+  const repaged: Repaged[] = input.entries
+    .filter((e) => e.action === "contacted" && e.at >= from)
+    .map((e) => ({
+      at: e.at,
+      who: e.subject?.callsign ?? null,
+      outcome:
+        e.outcome === "contact-attempted" ? ("paged" as const) : e.outcome === "contact-failed" ? ("failed" as const) : ("unpaged" as const),
+    }))
     .sort((a, b) => a.at - b.at);
 
   // Overdue means the schedule has passed, or nothing has ever run. Both demote the watch
@@ -142,6 +174,23 @@ export function buildReview(input: ReviewInput): Review {
     );
   }
 
+  /*
+   * A person who answered and could not be told the operator was still sending -- and a channel that
+   * fails here fails on the night it is the only one. Said as what the entry knows: that the page did
+   * not go, and for a failed one that their channel is why. Not "the watch escalated it as new",
+   * which an executor stopping as the page failed does not do [review: hold decisions]; whether a
+   * ladder that opened reached anybody is that ladder's own `escalated` entry.
+   */
+  for (const r of repaged) {
+    if (r.outcome === "paged") continue;
+    const who = r.who ?? "the person who acknowledged";
+    attention.push(
+      r.outcome === "failed"
+        ? `${who} could not be paged again about a repeat Distress (${iso(r.at)}) -- every channel failed; check their channel`
+        : `${who} could not be paged again about a repeat Distress (${iso(r.at)}) -- off the roster, only at a console, or the page budget spent; the executor's output from then says which`,
+    );
+  }
+
   if (input.oncall.length === 0) {
     attention.push("nobody is on call, so a Distress would page nobody and say so");
   } else if (input.oncall.length === 1) {
@@ -164,6 +213,7 @@ export function buildReview(input: ReviewInput): Review {
     nextDrillAt: input.nextDrillAt,
     escalations,
     resent,
+    repaged,
     oncall: input.oncall,
     log: input.log,
     attention,
@@ -201,6 +251,13 @@ export function render(review: Review): string[] {
   out.push("", "HELD -- a repeat Distress answered with an earlier acknowledgement");
   if (review.resent.length === 0) out.push("  none in this window");
   for (const r of review.resent) out.push(`  ${iso(r.at)}  ${r.sent ? "sent" : "REACHED NO RELAY"}`);
+
+  out.push("", "PAGED AGAIN -- the person who acknowledged, about a repeat Distress");
+  if (review.repaged.length === 0) out.push("  none in this window");
+  for (const r of review.repaged) {
+    const what = r.outcome === "paged" ? "paged" : r.outcome === "failed" ? "EVERY CHANNEL FAILED" : "COULD NOT BE PAGED";
+    out.push(`  ${iso(r.at)}  ${r.who ?? "?"}  ${what}`);
+  }
 
   out.push("", "THE LOG");
   out.push(

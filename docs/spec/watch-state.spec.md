@@ -74,6 +74,20 @@ stopped saying — a claim nobody made. v2 added `log_root`; v3 made it required
   truth. The first watch state, and the first after a relay comes back, go out when that relay
   answers the subscription, not before it is asked. *(The executor's subscription is not yet
   consulted — see [`stationkeeper.md`](../watch/stationkeeper.md).)*
+- **A relay that leaves the list of a watch held on a phone is told Dark, once.** Decided
+  2026-10-07. Withholding is too slow there: that relay's copy of the holder's `station` read On
+  station for up to `stale_after_seconds` after the phone stopped listening on it. When a phone
+  holding the watch follows a change of relays and a relay leaves the list while it is on station,
+  it MUST publish the watch's `dark` state to that relay once, signed by the watch key, with a
+  `created_at` later than any watch state it has signed — and MUST NOT publish it to a relay still
+  on the list. It is not retried: refused, that copy still ages to Dark. A phone that stands down
+  before it has followed such a change MUST send its stand-down `dark` to the relays it was
+  listening on as well as to the list — the same relays its handover check reads — so a relay that
+  left while it was on station is told then. A relay that left before the phone took the watch is
+  told nothing: this holding never announced anybody there, and a Dark could land on whoever does
+  hold the watch on it. An operator who reads both an old relay and a current one may read Dark
+  until the next `station` beat reaches the current one — false in the safe direction, and
+  accepted.
 
 ### On-call is a list of statements, not a count
 

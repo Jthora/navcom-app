@@ -90,10 +90,14 @@ what it is for.
 
 **`--review` is the fourth, and it is not for you.** It prints one week: the last drill and who
 answered it, every escalation with its date, every repeat `Distress` answered with an
-acknowledgement somebody had already given, whether the accountability log still verifies, and
+acknowledgement somebody had already given, every time the person who gave it was paged again
+about one — and whether a channel took it — whether the accountability log still verifies, and
 who is on call — then a closing **NEEDS A LOOK** section, which on a good week reads *nothing
-needs a look*. It exits non-zero only when that section has something in it, so it can be a
-weekly cron that stays silent until it shouldn't.
+needs a look*. A person who could not be paged again is in it, because why the watch could not
+reach them is the thing to fix. A dead channel it names; off the roster, a console-only entry and
+a spent budget it cannot tell apart, because the log records only that there was nothing to try —
+the executor's output from that moment says which. It exits non-zero only when that section has
+something in it, so it can be a weekly cron that stays silent until it shouldn't.
 
 It exists because `CLAUDE.md` asks for a **log reviewer** — *"minutes per week, and it cannot be
 the agent or verification is theatre"* — and nobody has taken the job. That is not surprising

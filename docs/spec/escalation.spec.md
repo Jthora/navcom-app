@@ -45,8 +45,9 @@ assessment [invariant 3].
 
 Escalation is not a decision. No component — human or agent — chooses whether to run the
 ladder; receipt of the event runs it — unless a human already acknowledged that operator
-inside the hold window, when receipt re-sends that acknowledgement instead (see *An
-acknowledged Distress, sent again*, below).
+inside the hold window and no ladder of theirs is still running, when receipt re-sends that
+acknowledgement and pages the person who gave it instead (see *An acknowledged Distress, sent
+again*, below). Even then, a person who cannot be paged sends it back to the ladder.
 
 ## The ladder
 
@@ -101,16 +102,77 @@ arriving late is still somebody arriving.
 **Decided 2026-10-07, reversing "terminal ladders do not adopt".**
 
 For `ack_holds_seconds` after a **human** acknowledged an operator's ladder (default 1800), a
-new `20911` from that operator MUST NOT open a ladder or page anyone. The executor answers it
+new `20911` from that operator MUST NOT open a ladder or page anyone **but the person who
+acknowledged** — while no ladder of that operator's is live (below). The executor answers it
 with the acknowledgement it already has: a `20912` authored by the same human, with ladder state
 `acknowledged`, whose `e` tags name **both** the new `20911` and the one the human acknowledged.
-Its text says when the acknowledgement was given, that the executor has not escalated the new
-attempt, and when the watch will treat it as new — only what the executor knows: a keyless pager
-beside it may still page for the attempt, so it does not say nobody was paged. It sends that
-again, freshly signed, about ten seconds later. It records a re-sent acknowledgement in its
-accountability log (`acked`) once per attempt, when the outcome is settled, never a second
-escalation. Once the window closes, a new `20911` opens a new ladder as before. A clock that steps
-back past the moment of the acknowledgement closes the window too: the hold fails toward paging.
+Its text says when the acknowledgement was given, what the executor has done about the person
+who gave it — paging them again about this attempt, or when it paged them — and when the watch
+will treat an attempt as new: *"Acknowledged 12 min ago. The watch is paging Wren again about
+this one. If your phone is still sending in 18 min, the watch treats it as new."* Only what the
+executor knows: a keyless pager beside it may still page for the attempt, so it does not say
+nobody else was paged. It sends that again, freshly signed, about ten seconds later, saying
+what is true by then. It records a re-sent acknowledgement in its accountability log (`acked`)
+once per attempt, when the outcome is settled, never a second escalation. Once the window
+closes, a new `20911` opens a new ladder as before. A clock that steps back past the moment of
+the acknowledgement closes the window too: the hold fails toward paging.
+
+**A live ladder comes before the hold.** Decided 2026-10-07. If the operator has a ladder still
+running — `PAGING` or `CONTACT` — a new `20911` joins it, as the registry joins any retry, and
+is told where that ladder is, even inside the window. The hold applies only when no ladder of
+that operator's is live. The two meet when a person acknowledges an earlier ladder late — one
+that had reached `EXHAUSTED`, after the operator's next attempt had opened another — and an
+attempt answered from the hold then was told a person had it while the roster was still being
+paged for it.
+
+**The person who acknowledged is paged.** Decided 2026-10-07. Beside the re-sent
+acknowledgement the executor pages the human who gave it — only them, through their own roster
+entries, found by the key they acknowledged with — and wakes nobody else. A phone retries every
+20 to 80 seconds, so they are paged **at most once per `paging_window_seconds` for that
+operator**, and never more often than once in 300 seconds however short that window is set:
+shortened below a phone's retry cycle, it paged them on every attempt. An attempt inside that
+interval is told when they were paged, and pages nobody. The interval is theirs and that
+operator's, not the hold's: an acknowledgement that replaces the hold — the hold ended, a ladder
+opened, and the same person answered it — does not start it over. A page that every channel
+failed does not count, because it woke nobody. A page stamped after the executor's clock — the
+clock stepped back past it — does not count either, and the next attempt pages: the direction to
+be wrong in. The acknowledgement says the page is going out while it does, as the ladder's
+`"Paging Wren."` does. The page carries no `Distress` id: an acknowledgement names a ladder, and
+this attempt has none, so one naming it would be ignored — and a channel offering a one-tap
+acknowledgement for it would tell the person tapping that the operator had heard them. The page
+is recorded in the accountability log as `contacted`, about the person paged, as the daemon's own
+contact entries are: `contact-attempted` when a channel took it, which claims nobody woke;
+`contact-failed` when every channel failed; `contact-not-attempted` when there was nothing to try.
+
+**The page budget applies, as to every page**, and each page to the person who acknowledged takes
+a unit of it as a ladder's page does. That is the cost of this rule: up to six for one operator
+through a 30-minute hold at the defaults, so a few operators each still sending through a hold —
+a `Distress` started again after a wipe keeps sending for the whole window — can spend what a
+first page needs. A new `Distress` after that opens its ladder, and is told nobody could be paged.
+
+**Somebody who cannot be paged is holding nothing: the hold fails toward paging.** When the
+person who acknowledged is no longer on call, can be reached only at a console, the page budget
+is spent, or every one of their channels fails, the hold ends and this attempt is escalated as
+new: a ladder opens for it and pages the roster as for any new `Distress`, budget included, and
+the operator is told why. Where that is known before anything is sent, the acknowledgement says
+what the ladder will do — *"Wren could not be paged again -- no longer on call. The watch is
+paging Raven about this one."*, or that nobody else could be paged, or that nobody on call can
+be — and the ladder's first report says it ahead of its own sentence: *"Wren could not be paged
+again -- no longer on call. Paging Raven."* — except when the budget is spent, where the ladder's
+own sentence already says why nobody could be paged. An expired entry is neither named nor paged.
+A ladder lists a console-open entry among those it pages and runs no command for it — that person
+is reached at the console — so somebody who could be reached only at a console is not named as
+being paged beside the reason they could not be: *"Wren could not be paged again -- only reachable
+at a console. Paging Raven."* Where the page went out and every channel failed, the
+acknowledgement has already said it was going out, and the ladder's first report corrects it the
+moment the commands return: *"Wren could not be paged again -- every channel failed. Paging Wren,
+Raven."* The operator's later attempts join that ladder, and once it has run out the hold is still
+over: the next attempt inside the window opens a ladder of its own. An attempt whose page failed
+after another attempt had opened a ladder — the hold ran out while the page was going out — joins
+that one, and is told where it is. A phone that ended its `Distress`
+on the acknowledgement — one that had missed the answer to that very `Distress` — does not hear
+the correction; it was told, truly, that the page was going out, and the roster is paged
+whatever it heard.
 
 **A held acknowledgement that no relay takes on either send ends the hold.** A first send that no
 relay takes is sent again ten seconds later like any other, and the hold stands until then: a
@@ -156,14 +218,18 @@ phone still in the same `Distress` has held since it sent it; a phone that start
 `Distress` again holds neither, and the second send arrives after it has recorded the new one.
 
 **The cost: a genuinely new emergency from the same operator inside the window is read as the
-old one until it closes.** The executor tells nobody about it — not the person who acknowledged,
-and not the rest of the roster. The operator's phone is told who acknowledged the earlier one and
-when, and that the watch has not escalated this one; a current phone shows that as an answer to
-an earlier `Distress` and keeps sending, so its first attempt after the window is paged for. Two
-things outside the executor still see the new `20911`: the watch's board marks the operator in
-distress again, so whoever is holding the watch on a console sees it; and a keyless pager, which
-cannot know a `Distress` was acknowledged, pages as it always does. An `EXHAUSTED` ladder holds
-nothing — nobody answered it, so a new attempt pages as before.
+old one until it closes — by everybody but the person who acknowledged.** The executor wakes that
+person about it, at most once per paging window, and nobody else: the rest of the roster is not
+paged unless that person cannot be. Somebody woken at 3am for a phone that only missed their
+answer is the price of the one person who knows the operator hearing about a new emergency, and
+each of those pages comes out of the page budget a first page needs (above). The
+operator's phone is told who acknowledged the earlier one and when, and that they are being paged
+about this one; a current phone shows that as an answer to an earlier `Distress` and keeps
+sending, so its first attempt after the window is paged for. Two things outside the executor
+still see the new `20911`: the watch's board marks the operator in distress again, so whoever is
+holding the watch on a console sees it; and a keyless pager, which cannot know a `Distress` was
+acknowledged, pages as it always does. An `EXHAUSTED` ladder holds nothing — nobody answered
+it, so a new attempt pages as before.
 
 The ladder state machine in core is unchanged. The hold is the executor's, applied before it
 would open a ladder, and **it is kept in memory only**: an executor that restarts inside the
@@ -258,7 +324,10 @@ fail; it is never allowed to fail silently** [invariant 2]. Refusing to page whi
 
 The bound is global rather than per-key: a flood already arrives from one fresh key per
 event, so a per-key limit is free to defeat. Defaults are deliberately generous — 20 pages an
-hour — so that a real night never reaches the limit and a flood passes it immediately.
+hour — so that a real night never reaches the limit and a flood passes it immediately. Pages to a
+person who acknowledged, about an operator still sending inside `ack_holds_seconds`, take from the
+same budget (decided 2026-10-07): at the defaults, three operators each still sending through a
+hold can spend all twenty.
 
 Live ladders MUST NOT be dropped at any age. Terminal ladders MAY be dropped after a
 retention window, which must be long enough that a late duplicate `20911` still finds the
@@ -312,9 +381,22 @@ Not optional — these are the point of the spec:
    that is told the same — including on a box whose daemon answers every attempt first
 10. Operator sends a new `Distress` inside `ack_holds_seconds` of a human acknowledgement →
     the acknowledgement again, naming the new id and the acknowledged one, and heard by the
-    phone's own loop when one of its relays is slow to say OK; nobody paged. A phone whose
-    `Distress` started after the acknowledgement says a person answered an earlier `Distress` and
-    keeps sending; one whose attempts joined that ladder while it was paging ends on the person's
-    answer to it. A held acknowledgement that no relay takes on either send ends the hold, and the
-    next attempt pages; one the second send gets through does not.
+    phone's own loop when one of its relays is slow to say OK; the person who acknowledged paged
+    through their own entries, once per paging window however often the phone sends — never more
+    often than once in 300 seconds, and not again for a newer acknowledgement by the same person —
+    and nobody else; again once the clock steps back past that page. A phone whose `Distress` started after the acknowledgement says a person answered an
+    earlier `Distress` and keeps sending; one whose attempts joined that ladder while it was paging
+    ends on the person's answer to it. A held acknowledgement that no relay takes on either send
+    ends the hold, and the next attempt pages; one the second send gets through does not.
     After the window, or once the clock has stepped back past the acknowledgement, a new ladder
+11. The person who acknowledged cannot be paged — no longer on call, reachable only at a console,
+    the budget spent, every channel failing → the hold ends, this attempt opens a ladder that pages
+    the roster, and the operator is told who could not be paged and what the ladder is doing —
+    including that nobody could be paged, or that nobody on call can be. An expired entry is neither
+    named nor paged, and a person reachable only at a console is not named as being paged beside
+    the reason they could not be. The hold stays ended once that ladder has run out:
+    the next attempt inside the window opens a ladder of its own. An attempt whose page failed after
+    another attempt had opened a ladder joins it, and is told where it is. Nothing is opened by an
+    executor that has stopped
+12. Operator sends a new `Distress` inside the window while a ladder of theirs is still paging →
+    it joins that ladder and is told where it is; neither the hold's answer nor its page

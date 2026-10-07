@@ -111,6 +111,9 @@ async function until(check: () => boolean, ms: number, what: string): Promise<vo
 /** The holder's claims a relay received. */
 const stationsOn = (r: Relay) =>
   r.events.filter((e) => e.kind === KIND_WATCH_STATE && JSON.parse(e.content).state === 'station');
+/** The watch's Dark states a relay received. */
+const darksOn = (r: Relay) =>
+  r.events.filter((e) => e.kind === KIND_WATCH_STATE && JSON.parse(e.content).state === 'dark');
 
 let board: typeof import('./board.svelte').board;
 let pools: typeof import('./pool');
@@ -159,5 +162,29 @@ describe('a holder whose relay answers the board and ends it again a moment late
     await until(() => stationsOn(r).length === 1, 3_000, 'the claim reaching the relay');
     expect(board.announced).toBe(true);
     expect(board.deaf).toBe(false);
+  }, 10_000);
+});
+
+describe('a holder who drops a relay from the watch while on station (decided 2026-10-07)', () => {
+  it('tells the relay it dropped Dark, once and newer than its Station, and the one it kept nothing', async () => {
+    const old = await relay();
+    const kept = await relay();
+    list = [old.url, kept.url];
+    board.start();
+    await until(() => old.reqs.length >= 1 && kept.reqs.length >= 1, 3_000, 'the board asking both');
+    await sleep(200);
+    await board.takeWatch();
+    await until(() => stationsOn(old).length === 1 && stationsOn(kept).length === 1, 3_000, 'the claim reaching both');
+
+    list = [kept.url];
+    board.start();
+    await until(() => darksOn(old).length === 1, 3_000, 'the dropped relay being told Dark');
+    const dark = darksOn(old)[0]!;
+    expect(dark.pubkey).toBe(watchPub);
+    expect(dark.created_at, 'Dark no newer than the Station it has to replace').toBeGreaterThan(stationsOn(old)[0]!.created_at);
+    await sleep(300);
+    expect(darksOn(kept), 'Dark on a relay still in the list').toEqual([]);
+    expect(darksOn(old)).toHaveLength(1);
+    expect(board.onStation).toBe(true);
   }, 10_000);
 });

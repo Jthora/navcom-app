@@ -227,7 +227,9 @@ describe("a person's answer, on a box [#33, #34]", () => {
     const secondAt = p.said("sending")[1]!.at;
     await eventually(() => expect(p.said("acknowledged")).toHaveLength(1), 10_000);
     expect(p.said("acknowledged")[0]!.at - secondAt, "the held answer waited behind the agent's").toBeLessThan(1_500);
-    expect(page).toHaveBeenCalledTimes(1);
+    // Wren, paged alone about the attempt the hold answered (decided 2026-10-07); the roster, not.
+    await eventually(() => expect(page).toHaveBeenCalledTimes(2));
+    expect(page.mock.calls[1]![3]).toBe("");
   }, 25_000);
 });
 

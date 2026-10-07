@@ -79,6 +79,52 @@ describe("a repeat Distress answered with an earlier acknowledgement [review: D2
   });
 });
 
+const repaged = (at: number, outcome: "contact-attempted" | "contact-failed" | "contact-not-attempted"): LogEntry => ({
+  at,
+  actor: { kind: "node", callsign: "escalation" },
+  action: "contacted",
+  subject: { kind: "human", callsign: "Wren", pubkey: "a".repeat(64) },
+  outcome,
+  hash: "0".repeat(64),
+  prev: null,
+});
+
+describe("the person who acknowledged, paged again about a repeat Distress (decided 2026-10-07)", () => {
+  it("is listed by date and name, and is not a reason to look when a channel took it", () => {
+    const review = buildReview({ ...base, entries: [escalation(NOW - 2 * day, true), repaged(NOW - 2 * day + 600, "contact-attempted")] });
+    expect(review.repaged).toEqual([{ at: NOW - 2 * day + 600, who: "Wren", outcome: "paged" }]);
+    expect(review.attention).toEqual([]);
+    expect(render(review).join("\n")).toMatch(/PAGED AGAIN[^\n]*\n {2}\d{4}-\d{2}-\d{2} {2}Wren {2}paged/);
+  });
+
+  it("is a reason to look when every channel failed, and says only what the log knows", () => {
+    const review = buildReview({ ...base, entries: [repaged(NOW - day, "contact-failed")] });
+    const page = render(review).join("\n");
+    expect(page).toMatch(/PAGED AGAIN[^\n]*\n {2}\d{4}-\d{2}-\d{2} {2}Wren {2}EVERY CHANNEL FAILED\n/);
+    expect(page).toContain("NEEDS A LOOK");
+    expect(review.attention.join(" ")).toMatch(/Wren could not be paged again .*every channel failed; check their channel/);
+    // An executor stopping as the page failed escalates nothing, and the entry cannot tell that
+    // apart [review: hold decisions]: "escalated as new" was said of a ladder that never opened.
+    expect(page).not.toMatch(/escalated/i);
+  });
+
+  it("is a reason to look when there was nothing to try, and does not claim to know why", () => {
+    const review = buildReview({ ...base, entries: [repaged(NOW - day, "contact-not-attempted")] });
+    const page = render(review).join("\n");
+    expect(page).toMatch(/PAGED AGAIN[^\n]*\n {2}\d{4}-\d{2}-\d{2} {2}Wren {2}COULD NOT BE PAGED\n/);
+    expect(review.attention.join(" ")).toMatch(
+      /Wren could not be paged again .*off the roster, only at a console, or the page budget spent; the executor.s output from then says which/,
+    );
+    expect(page).not.toMatch(/escalated/i);
+  });
+
+  it("ignores pages from before the window", () => {
+    const review = buildReview({ ...base, entries: [repaged(NOW - 30 * day, "contact-failed")] });
+    expect(review.repaged).toEqual([]);
+    expect(review.attention).toEqual([]);
+  });
+});
+
 describe("what a reviewer is shown", () => {
   it("says nothing needs a look on a good week", () => {
     const review = buildReview({ ...base, entries: [escalation(NOW - day, true)] });

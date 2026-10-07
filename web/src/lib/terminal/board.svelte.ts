@@ -23,6 +23,17 @@
  *   look. A phone that promised to interrupt them would be promising something a
  *   backgrounded web page cannot deliver
  *
+ * ## Where the holder is announced
+ *
+ * Station goes only to relays this phone hears on, renewed each beat on those that have kept
+ * answering, so a relay it cannot hear on reads Dark within five minutes. **A relay that leaves the
+ * watch's list while this phone is on station is told Dark at once**, a single time, signed by the
+ * watch key and stamped later than any state this phone has signed — never a relay still on the
+ * list (decided 2026-10-07; `watch-state.spec.md`). An operator reading an old relay and a current
+ * one may read Dark until the next beat lands on the current one: false in the safe direction, and
+ * accepted. A holder who stands down before the board has followed such a change tells it with the
+ * stand-down's own Dark, which goes to the relays the board was listening on as well as the list.
+ *
  * ## Who can read what
  *
  * Signals are sealed to the **holders** — each member's own operator key — so a member
@@ -174,7 +185,8 @@ let listeningTo: string | null = null;
  * Only the watch was compared, so a holder who changed relays while on station went on being heard
  * on the old ones and announced on the new — operators who followed the change read On station
  * and nothing on this phone heard their `Distress` [review: relay paths]. A different list is
- * followed now, on the next `start()` or beat.
+ * followed now, on the next `start()` or beat — and a relay that leaves it while this phone holds
+ * the watch is told Dark, once, so it stops saying a human is on station where nobody here hears.
  */
 let listeningOn: string[] = [];
 /** The listener these callbacks belong to; anything from one it replaced is ignored. */
@@ -326,8 +338,19 @@ export const board = {
       // subscription untouched; a new one is asked once its connection is up, and a dropped one
       // is let go at once.
       if (!sameRelays(urls, listeningOn)) {
+        const dropped = listeningOn.filter((url) => !urls.includes(url));
         listeningOn = urls;
         closer.follow(urls);
+        /*
+         * A relay that left the list while this phone holds the watch is told Dark, once
+         * (decided 2026-10-07). Nothing here hears a Distress sent there any more, and its copy of
+         * this holder's Station otherwise read On station for up to five minutes. Only to the
+         * relays that left: one still on the list is renewed by the beat, and Dark there would be
+         * false. Stamped later than anything this phone has signed, so it replaces the Station.
+         * An operator reading both an old relay and a current one may read Dark until the next
+         * Station beat lands on the current one — accepted, and the safe direction.
+         */
+        if (onStation && dropped.length > 0) void tellDark(dropped);
       }
       return;
     }
@@ -429,6 +452,10 @@ export const board = {
     if (!secret || !identity?.callsign || urls.length === 0) return;
 
     const mine = ++generation;
+    // Holding a watch is hearing it: the listener is opened here if no screen opened it. Before this
+    // take counts as on station, so a relay that left the list while nobody here held the watch is
+    // let go without a Dark this phone never owed it — it was never told this holder was there.
+    board.start();
     since = Math.floor(Date.now() / 1000);
     onStation = true;
     // A stand-down still retrying its Dark would land it on top of this claim.
@@ -437,8 +464,6 @@ export const board = {
     stillAdvertised = false;
     unannounced = false;
     setAnnounced(false);
-    // Holding a watch is hearing it: the listener is opened here if no screen opened it.
-    board.start();
     if (beat) clearInterval(beat);
     beat = setInterval(() => {
       if (!onStation) return;
@@ -519,6 +544,12 @@ export const board = {
      * the listener had not heard the new ones — so Dark went out over a holder who had taken over
      * there. The relays Dark is about to reach and the ones the board listens on are asked now,
      * briefly; nothing answering is not a reason to stay quiet.
+     *
+     * **And Dark goes to both** [review: hold decisions]. A relay that left the list while this
+     * phone was on station, before the board followed the change — saved on another screen, with
+     * the next beat up to two minutes off — still carries this holder's Station. The guard read it
+     * and Dark skipped it, so it went on saying a human was on station after they had stood down,
+     * and a later take, which follows the list before it counts as on station, never told it either.
      */
     const callsign = loadIdentity()?.callsign;
     const newest = await newestState(author, usable([...urls, ...listenedOn]));
@@ -549,7 +580,7 @@ export const board = {
      * Unless the holder took the watch back, or wiped the phone, while it was out: then there is
      * nothing to retry — a Dark retried over a holder back on station would land on their claim.
      */
-    const landed = await publishDark(secret);
+    const landed = await publishDark(secret, listenedOn);
     if (generation !== mine) return;
     stillAdvertised = !landed;
     if (landed) return;
@@ -564,7 +595,7 @@ export const board = {
      * to prevent it.
      */
     darkRetry = setInterval(() => {
-      void publishDark(secret).then((ok) => {
+      void publishDark(secret, listenedOn).then((ok) => {
         // One that lands after the watch was taken back, or another stand-down began, speaks for
         // neither: the warning and the retry belong to whatever is current.
         if (!ok || generation !== mine) return;
@@ -822,18 +853,34 @@ async function publishEach(urls: string[], event: Event): Promise<string[]> {
   return urls.filter((_, i) => results[i]?.status === 'fulfilled');
 }
 
-/** Publishes Dark, reporting whether any relay took it. */
-async function publishDark(secret: Uint8Array): Promise<boolean> {
-  const urls = usable(watchRelays());
-  if (urls.length === 0) return false;
-  const event = finalizeEvent(
+/** The watch's Dark state, signed now and stamped later than anything this phone has signed. */
+function darkEvent(secret: Uint8Array): Event {
+  return finalizeEvent(
     {
       ...buildWatchStateEvent(darkInput(), stateTime()),
       content: JSON.stringify(darkState())
     },
     secret
   );
-  return (await publishEach(urls, event)).length > 0;
+}
+
+/** Publishes Dark to the watch's relays and to `also`, reporting whether any relay took it. */
+async function publishDark(secret: Uint8Array, also: readonly string[] = []): Promise<boolean> {
+  const urls = usable([...watchRelays(), ...also]);
+  if (urls.length === 0) return false;
+  return (await publishEach(urls, darkEvent(secret))).length > 0;
+}
+
+/**
+ * Dark, once, to relays that have left the list of a watch this phone holds — and to no other.
+ *
+ * Not retried. A relay that refuses it still lets this holder's last Station there age to Dark
+ * within five minutes, and nothing on this phone listens there any more to keep it fresh.
+ */
+async function tellDark(urls: string[]): Promise<void> {
+  const secret = watchKey();
+  if (!secret) return;
+  await publishEach(urls, darkEvent(secret));
 }
 
 function darkInput() {

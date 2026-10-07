@@ -484,6 +484,166 @@ describe('a holder who changes relays while on station [review: relay paths]', (
   });
 });
 
+describe('a relay that leaves the list of a watch this phone holds (decided 2026-10-07)', () => {
+  /*
+   * The board followed the change and let the old relay go, and nothing told it anything: its copy
+   * of this holder's Station went on reading On station for up to five minutes to operators there,
+   * while nothing on this phone heard a Distress sent there.
+   */
+  const darks = () =>
+    published.filter((p) => p.event.kind === KIND_WATCH_STATE && JSON.parse(p.event.content).state === 'dark');
+  const signed = () => published.filter((p) => p.event.kind === KIND_WATCH_STATE).map((p) => p.event);
+
+  it('is told Dark once, signed by the watch, and no relay still on the list is', async () => {
+    vi.useFakeTimers();
+    watchList = ['wss://r', 'wss://b', 'wss://c'];
+    board.start();
+    await settle();
+    await board.takeWatch();
+    expect(stations().sort(), 'the take reached every relay: nothing was tested').toEqual(['wss://b', 'wss://c', 'wss://r']);
+
+    watchList = ['wss://b', 'wss://c'];
+    board.start();
+    await settle();
+    expect(darks().map((p) => p.url), 'the relay that left was never told').toEqual(['wss://r']);
+    const dark = darks()[0]!.event;
+    expect(dark.pubkey, 'signed by something other than the watch').toBe(watchPub);
+    expect(JSON.parse(dark.content).holder).toBeNull();
+    expect(board.onStation, 'telling an old relay Dark stood this holder down').toBe(true);
+
+    // The next screen, and the next beats: said once, never again, and the holder still announced
+    // where this phone hears.
+    board.start();
+    const before = stations().length;
+    await vi.advanceTimersByTimeAsync(3 * 120_000);
+    expect(darks().map((p) => p.url)).toEqual(['wss://r']);
+    expect(stations().length, 'the beat stopped: nothing was tested').toBeGreaterThan(before);
+    expect(stations().slice(before)).not.toContain('wss://r');
+  });
+
+  it('is told on the beat, for a holder who changed relays on another screen', async () => {
+    vi.useFakeTimers();
+    watchList = ['wss://r', 'wss://b'];
+    board.start();
+    await settle();
+    await board.takeWatch();
+    watchList = ['wss://b'];
+    await vi.advanceTimersByTimeAsync(120_000);
+    expect(darks().map((p) => p.url)).toEqual(['wss://r']);
+  });
+
+  it('is stamped later than every state this phone has signed, inside the same second', async () => {
+    // Replaceable events from one second are settled by id, so a Dark sharing the take's second
+    // would leave the Station standing on that relay half the time.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(T * 1000 + 100));
+    watchList = ['wss://r', 'wss://b'];
+    board.start();
+    await vi.advanceTimersByTimeAsync(0);
+    await board.takeWatch();
+    watchList = ['wss://b'];
+    board.start();
+    await vi.advanceTimersByTimeAsync(0);
+    const dark = darks()[0]?.event;
+    expect(dark, 'never told').toBeDefined();
+    const others = signed().filter((e) => e.id !== dark!.id);
+    expect(others.length).toBeGreaterThan(0);
+    expect(dark!.created_at).toBeGreaterThan(Math.max(...others.map((e) => e.created_at)));
+  });
+
+  it('is not told again after refusing it', async () => {
+    vi.useFakeTimers();
+    watchList = ['wss://r', 'wss://b'];
+    board.start();
+    await settle();
+    await board.takeWatch();
+    refusing = new Set(['wss://r']);
+    watchList = ['wss://b'];
+    board.start();
+    await settle();
+    expect(darks().map((p) => p.url)).toEqual(['wss://r']);
+    await vi.advanceTimersByTimeAsync(3 * 120_000);
+    expect(darks().map((p) => p.url), 'a Dark retried at a relay nobody here hears on any more').toEqual(['wss://r']);
+  });
+
+  it('is told nothing by a phone that is not holding the watch', async () => {
+    // A member listening to the board was never announced anywhere, and owes no relay a Dark.
+    watchList = ['wss://r', 'wss://b'];
+    board.start();
+    await settle();
+    watchList = ['wss://b'];
+    board.start();
+    await settle();
+    expect(signed()).toEqual([]);
+  });
+
+  it('is told nothing when it left before this phone took the watch', async () => {
+    // The take follows the list first, while nobody here holds the watch: this phone never told the
+    // old relay a human was there, and a Dark there could land on whoever holds the watch on it.
+    watchList = ['wss://r', 'wss://b'];
+    board.start();
+    await settle();
+    watchList = ['wss://b'];
+    await board.takeWatch();
+    await settle();
+    expect(darks()).toEqual([]);
+    expect(stations()).toEqual(['wss://b']);
+  });
+
+  it('is told nothing after a stand-down', async () => {
+    watchList = ['wss://r', 'wss://b'];
+    board.start();
+    await settle();
+    await board.takeWatch();
+    await board.standDown();
+    const after = published.length;
+    watchList = ['wss://b'];
+    board.start();
+    await settle();
+    expect(published.slice(after), 'a holder who stood down went on speaking for the watch').toEqual([]);
+  });
+
+  it('is told by the stand-down, when the holder stands down before the board has followed the change', async () => {
+    // Saved without it on another screen, the next beat up to two minutes off, and the holder stands
+    // down here. The handover check read that relay, and Dark went everywhere but there; a later take
+    // follows the list before it counts as on station, so nothing ever told it [review: hold decisions].
+    watchList = ['wss://r', 'wss://b'];
+    board.start();
+    await settle();
+    await board.takeWatch();
+    expect(stations().sort(), 'the take reached every relay: nothing was tested').toEqual(['wss://b', 'wss://r']);
+
+    watchList = ['wss://b'];
+    await board.standDown();
+    expect(darks().map((p) => p.url).sort(), 'a relay left saying a human is on station').toEqual(['wss://b', 'wss://r']);
+    const dark = darks().find((p) => p.url === 'wss://r')!.event;
+    expect(dark.created_at).toBeGreaterThan(published.find((p) => p.url === 'wss://r')!.event.created_at);
+
+    // Told once: the next take lets it go without another.
+    await board.takeWatch();
+    await settle();
+    expect(darks().map((p) => p.url).sort()).toEqual(['wss://b', 'wss://r']);
+    expect(stations().at(-1)).toBe('wss://b');
+  });
+
+  it('is told by the stand-down’s retry, when its first Dark reached no relay', async () => {
+    vi.useFakeTimers();
+    watchList = ['wss://r', 'wss://b'];
+    board.start();
+    await settle();
+    await board.takeWatch();
+    watchList = ['wss://b'];
+    relaysUp = false;
+    await board.standDown();
+    expect(board.stillAdvertised).toBe(true);
+    relaysUp = true;
+    const before = darks().length;
+    await vi.advanceTimersByTimeAsync(120_000);
+    expect(darks().slice(before).map((p) => p.url).sort()).toEqual(['wss://b', 'wss://r']);
+    expect(board.stillAdvertised).toBe(false);
+  });
+});
+
 describe('an answer to somebody heard on a relay the watch has since left [review: relay paths]', () => {
   /*
    * The answer went only to the watch's relays as they are now and counted as sent if any took

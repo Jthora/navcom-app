@@ -34,6 +34,11 @@ retention_days = 90
 # is 300. Shortening it does not make help arrive sooner -- it only reaches "nobody is
 # coming" sooner, which is sometimes the more useful truth.
 #
+# It is also how often the person who acknowledged a Distress may be paged again about that
+# operator (ack_holds_seconds, below) -- but never more often than once in 300 seconds, so
+# shortening it does not page them more often. A phone resends every 20 to 80 seconds; a window
+# shorter than that paged them on every attempt.
+#
 # It is not how far off a phone's clock may be. A Distress stamped up to this many seconds
 # from this machine's clock is heard, but never fewer than 300: a phone reads this watch as up
 # until its state is 300s old, so it has to be heard that far off. The executor says so at
@@ -55,6 +60,12 @@ contact_window_seconds = 300
 # Twenty an hour is deliberately generous. A squad having twenty separate emergencies in an
 # hour has a situation this number is not relevant to; a flood passes it in under a second.
 # If you raise it, raise it because your squad is large, not because it looks low.
+#
+# Pages to the person who acknowledged a Distress, about an operator still sending inside
+# ack_holds_seconds, come out of this too: up to six for one operator through a 30-minute hold.
+# Three operators each still sending through a hold -- a Distress started again after a wipe keeps
+# sending for the whole window -- can spend all twenty, and a new Distress is then told nobody
+# could be paged.
 max_pages_per_window = 20
 page_budget_window_seconds = 3600
 
@@ -68,13 +79,23 @@ ladder_retention_seconds = 3600
 # A phone that missed the acknowledgement -- its connection dropped at that moment -- keeps
 # sending, and each new attempt used to open a fresh ladder and page the roster again for an
 # emergency somebody was already answering. Inside this window a new attempt from that operator
-# gets the same acknowledgement back, from the same human, and nobody is woken. Recorded in the
-# log as `acked`.
+# gets the same acknowledgement back, from the same human, and the person who acknowledged is
+# paged about it -- only them, on their own entries below, and nobody else. A phone resends every
+# 20 to 80 seconds, so they are paged at most once per paging_window_seconds for that operator,
+# never more often than once in 300 seconds, and the page budget applies (above). Recorded in the
+# log as `acked`, and the page as `contacted`.
 #
 # The cost: a genuinely new emergency from the same operator inside the window is read as the
-# old one until it closes, and nobody is told -- not the person who acknowledged, and not the
-# rest of the roster. A keyless pager still pages, because it cannot see the acknowledgement.
-# An EXHAUSTED ladder holds nothing -- nobody answered that one, so a new attempt pages as before.
+# old one until it closes by everybody except the person who acknowledged -- the rest of the
+# roster is not woken -- and each page to that person spends a unit of the page budget. A keyless
+# pager still pages, because it cannot see the acknowledgement.
+#
+# If the person who acknowledged cannot be paged -- no longer on call, console-open only, the
+# budget spent, or every channel of theirs failing -- the hold ends and that attempt opens a ladder
+# for the whole roster, as a new Distress would, and the operator is told why and what that ladder
+# could do. A ladder still running for that operator comes first: a new attempt joins it rather
+# than being answered from the hold. An EXHAUSTED ladder holds nothing -- nobody answered that one,
+# so a new attempt pages as before.
 ack_holds_seconds = 1800
 
 # Drills. Unannounced, randomised inside the window, and published -- a watch that cannot

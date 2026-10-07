@@ -83,6 +83,22 @@ let executors: EscalationExecutor[] = [];
 /** Typed to pageAll's signature so `mock.calls[0][0]` is the roster, not `never`. */
 const noopPager = () => vi.fn<typeof pageAll>(async () => []);
 
+/**
+ * A pager whose every command exits zero, reported as `pageAll` reports it: one result per entry
+ * that is not `console-open`. `fails` names callsigns whose channels exit non-zero instead.
+ */
+const workingPager = (fails: string[] = []) =>
+  vi.fn<typeof pageAll>(async (roster) =>
+    roster
+      .filter((e) => e.declaration.channel !== "console-open")
+      .map((e) => {
+        const callsign = e.declaration.author.callsign ?? "unnamed";
+        return fails.includes(callsign)
+          ? { callsign, channel: e.declaration.channel, dispatched: false, error: "exit 1" }
+          : { callsign, channel: e.declaration.channel, dispatched: true };
+      }),
+  );
+
 function build(
   oncall: OnCallEntry[] = [],
   page: ReturnType<typeof noopPager> = noopPager(),
@@ -102,10 +118,10 @@ function build(
 const answering = (published: Event[], id: string) =>
   published.filter((e) => e.kind === KIND_RESPONSE && e.tags.some((t) => t[0] === "e" && t[1] === id));
 
-/** The accountability log's entries, as action/outcome. */
+/** The accountability log's entries, as action/outcome/subject. */
 const logged = (logPath: string) =>
   readFileSync(logPath, "utf8").trim().split("\n").filter(Boolean)
-    .map((l) => JSON.parse(l) as { action: string; outcome: string });
+    .map((l) => JSON.parse(l) as { action: string; outcome: string; subject: { pubkey?: string; callsign?: string } | null });
 
 function distressFrom(operator: Uint8Array, watchtower: string): Event {
   return finalizeEvent(
@@ -275,13 +291,21 @@ describe("a Distress a human already acknowledged, sent again [decision 2026-10-
    * A phone that missed the acknowledgement -- its connection dropped at that moment -- keeps
    * sending, and every new attempt opened a fresh ladder and paged the roster again for an
    * emergency somebody was already responding to. Inside the window the executor answers the new
-   * attempt with the acknowledgement it already has, and wakes nobody.
+   * attempt with the acknowledgement it already has, and wakes nobody on the roster but the person
+   * who gave it.
    */
-  async function acknowledged() {
+  async function acknowledged(
+    opts: {
+      page?: ReturnType<typeof noopPager>;
+      /** The roster, given the key the person who acknowledges answers with. Wren alone by default. */
+      oncall?: (wren: string) => OnCallEntry[];
+      over?: Partial<EscalationConfig["escalation"]>;
+    } = {},
+  ) {
     const operator = generateSecretKey();
     const responder = generateSecretKey();
-    const page = noopPager();
-    const ctx = build([onCallEntry("Wren", getPublicKey(responder))], page);
+    const page = opts.page ?? workingPager();
+    const ctx = build(opts.oncall?.(getPublicKey(responder)) ?? [onCallEntry("Wren", getPublicKey(responder))], page, opts.over);
     const first = distressFrom(operator, ctx.pubkey);
     ctx.deliver(first);
     await vi.waitFor(() => expect(page).toHaveBeenCalledTimes(1));
@@ -290,42 +314,45 @@ describe("a Distress a human already acknowledged, sent again [decision 2026-10-
     return { ...ctx, operator, responder, page, first };
   }
 
-  it("re-sends the acknowledgement to the new attempt and pages nobody", async () => {
-    const { executor, pubkey, published, deliver, page, operator } = await acknowledged();
+  it("re-sends the acknowledgement to the new attempt, and pages the person who gave it and nobody else", async () => {
+    const raven = getPublicKey(generateSecretKey());
+    const { executor, pubkey, published, deliver, page, operator } = await acknowledged({
+      oncall: (wren) => [onCallEntry("Wren", wren), onCallEntry("Raven", raven)],
+    });
 
     // A fresh event, as the client signs one per attempt.
     const again = distressFrom(operator, pubkey);
     deliver(again);
 
-    await vi.waitFor(() => {
-      const answering = published.filter(
-        (e) => e.kind === KIND_RESPONSE && e.tags.some((t) => t[0] === "e" && t[1] === again.id),
-      );
-      expect(answering).toHaveLength(1);
-    });
+    await vi.waitFor(() => expect(answering(published, again.id)).toHaveLength(1));
+    await vi.waitFor(() => expect(page).toHaveBeenCalledTimes(2));
     await new Promise((r) => setTimeout(r, 100));
-    expect(page, "the roster was woken again for a Distress somebody is answering").toHaveBeenCalledTimes(1);
-    expect(executor.ladders.all()).toHaveLength(1);
+    expect(page, "paged once for the attempt, and only once").toHaveBeenCalledTimes(2);
+    const [roster, message, , id] = page.mock.calls[1]!;
+    expect(roster.map((e) => e.declaration.author.callsign), "the roster was woken again for a Distress somebody is answering").toEqual(["Wren"]);
+    expect(message).toMatch(/DISTRESS from [0-9a-f]{8} again, less than a minute after you acknowledged it/);
+    // An acknowledgement naming this attempt finds no ladder, so a page offering one would be a lie.
+    expect(id, "a one-tap acknowledgement that answers nothing").toBe("");
+    expect(executor.ladders.all(), "a new ladder opened").toHaveLength(1);
 
-    const reply = published.find(
-      (e) => e.kind === KIND_RESPONSE && e.tags.some((t) => t[0] === "e" && t[1] === again.id),
-    )!;
-    const payload = openResponse<ResponsePayload>(operator, pubkey, reply.content);
+    const [reply] = answering(published, again.id);
+    const payload = openResponse<ResponsePayload>(operator, pubkey, reply!.content);
     // Authored by the human who acknowledged: that is what ends the phone's retry.
     expect(payload.type).toBe("ack");
     expect(payload.responder.kind).toBe("human");
     expect(payload.responder.callsign).toBe("Wren");
     expect(payload.ladder).toBe("acknowledged");
     // Only what this process knows, whether the phone missed the answer or this is a new emergency
-    // [review: D2, #0, relay paths R2]: when it was acknowledged, that this executor has not
-    // escalated the attempt, and when that changes.
-    expect(payload.text).toMatch(/acknowledged less than a minute ago/i);
-    expect(payload.text).toMatch(/the watch has not escalated this one/i);
-    expect(payload.text).toMatch(/still sending in 30 min, the watch treats it as new/i);
-    // "Nobody has been told" and "paged nobody" are false wherever a keyless pager runs, which
-    // pages for a Distress it cannot know was answered; "your phone sent another" called a new
-    // emergency a duplicate.
-    expect(payload.text).not.toMatch(/is responding|still asking|nobody has been told|paged nobody|sent another/i);
+    // [review: D2, #0, relay paths R2]: when it was acknowledged, that the person who did is being
+    // paged about this attempt, and when the watch treats an attempt as new.
+    expect(payload.text).toBe(
+      "Acknowledged less than a minute ago. The watch is paging Wren again about this one. " +
+        "If your phone is still sending in 30 min, the watch treats it as new.",
+    );
+    // "Nobody else has been paged" is false wherever a keyless pager runs, which pages for a
+    // Distress it cannot know was answered; "your phone sent another" called a new emergency a
+    // duplicate; "has not escalated" stopped being the whole truth once the person is paged.
+    expect(payload.text).not.toMatch(/is responding|nobody else|nobody has been told|paged nobody|sent another|not escalated/i);
   });
 
   it("sends it again ten seconds later, freshly signed, for a phone that recorded its attempt late [#13]", async () => {
@@ -346,6 +373,10 @@ describe("a Distress a human already acknowledged, sent again [decision 2026-10-
       for (const e of [one!, two!]) {
         expect(e.tags.filter((t) => t[0] === "e").map((t) => t[1])).toEqual([again.id, first.id]);
       }
+      // Each send says what is true as it goes: the page was going out, and then it had.
+      expect(openResponse<ResponsePayload>(operator, pubkey, two!.content).text).toMatch(
+        /^Acknowledged less than a minute ago\. Wren was paged again about this one less than a minute ago\. /,
+      );
       // One record per attempt: the second send is the same answer to the same attempt.
       expect(logged(logPath).filter((e) => e.action === "acked")).toHaveLength(1);
     } finally {
@@ -388,18 +419,19 @@ describe("a Distress a human already acknowledged, sent again [decision 2026-10-
           expect.objectContaining({ outcome: "ack-not-sent" }),
         ]),
       );
-      expect(page, "paged for the attempt the hold answered").toHaveBeenCalledTimes(1);
+      expect(page, "Wren, paged again about the attempt the hold answered, and the roster not").toHaveBeenCalledTimes(2);
+      expect(page.mock.calls[1]![0].map((e) => e.declaration.author.callsign)).toEqual(["Wren"]);
 
       const next = distressFrom(operator, pubkey);
       deliver(next);
-      await vi.waitFor(() => expect(page, "the hold went on paging nobody").toHaveBeenCalledTimes(2));
+      await vi.waitFor(() => expect(page, "the hold went on paging nobody").toHaveBeenCalledTimes(3));
       expect(executor.ladders.get(next.id)?.distressId, "no ladder of its own").toBe(next.id);
     } finally {
       vi.useRealTimers();
     }
   });
 
-  it("goes on holding when only the first send is refused, and wakes nobody again [review: relay paths, R2]", async () => {
+  it("goes on holding when only the first send is refused, and wakes nobody but the person who acknowledged [review: relay paths, R2]", async () => {
     // The daemon's agent acknowledgement on the same key a moment earlier, under a relay's rate
     // limit, or a blip on a one-relay box. Ending the hold at that first refusal opened a ladder in
     // the same breath and paged Wren for a Distress she had answered; the second send, ten seconds
@@ -430,7 +462,10 @@ describe("a Distress a human already acknowledged, sent again [decision 2026-10-
       });
       expect(openResponse<ResponsePayload>(operator, pubkey, reply!.content).ladder, "a new ladder answered it").toBe("acknowledged");
       expect(executor.ladders.all()).toHaveLength(1);
-      expect(page, "Wren was paged again for a Distress she had answered").toHaveBeenCalledTimes(1);
+      // Wren is paged once about the attempts, as decided; the roster, which ending the hold here
+      // used to page, is not.
+      expect(page).toHaveBeenCalledTimes(2);
+      expect(page.mock.calls[1]![0].map((e) => e.declaration.author.callsign)).toEqual(["Wren"]);
     } finally {
       vi.useRealTimers();
     }
@@ -463,7 +498,8 @@ describe("a Distress a human already acknowledged, sent again [decision 2026-10-
       });
       expect(openResponse<ResponsePayload>(operator, pubkey, reply!.content).ladder, "the hold was ended and a ladder answered").toBe("acknowledged");
       expect(executor.ladders.all()).toHaveLength(1);
-      expect(page).toHaveBeenCalledTimes(1);
+      // Wren once, about the first of the three: the rest fall inside the paging window.
+      expect(page).toHaveBeenCalledTimes(2);
     } finally {
       vi.useRealTimers();
     }
@@ -490,7 +526,7 @@ describe("a Distress a human already acknowledged, sent again [decision 2026-10-
     deliver(again);
     await vi.waitFor(() => expect(answering(published, again.id)).toHaveLength(1));
     await new Promise((r) => setTimeout(r, 50));
-    expect(page).toHaveBeenCalledTimes(1);
+    expect(page, "Wren, and nobody else").toHaveBeenCalledTimes(2);
     expect(logged(logPath).filter((e) => e.action === "acked")).toEqual([
       expect.objectContaining({ outcome: "acknowledged" }),
     ]);
@@ -575,6 +611,491 @@ describe("a Distress a human already acknowledged, sent again [decision 2026-10-
     deliver(distressFrom(generateSecretKey(), pubkey));
     await vi.waitFor(() => expect(page).toHaveBeenCalledTimes(2));
     expect(executor.ladders.all()).toHaveLength(2);
+  });
+
+  describe("the person who acknowledged, paged about it (decided 2026-10-07)", () => {
+    /*
+     * The hold's cost was that a genuinely new emergency from the same operator inside the window
+     * was read as the old one and nobody was told -- not even the person who had answered. They are
+     * paged now, through their own entries, and nobody else is. Somebody who cannot be paged is not
+     * holding anything: the hold ends and the attempt is escalated as new, saying why.
+     */
+    const said = (published: Event[], operator: Uint8Array, watch: string, id: string) =>
+      answering(published, id).map((e) => openResponse<ResponsePayload>(operator, watch, e.content));
+    const real = Date.now.bind(Date);
+    const expiring = (callsign: string, pubkey: string, inSeconds: number): OnCallEntry => {
+      const entry = onCallEntry(callsign, pubkey);
+      return { ...entry, declaration: { ...entry.declaration, expires: Math.floor(Date.now() / 1000) + inSeconds } };
+    };
+
+    it("pages every one of their own entries that can wake them, and nobody else's", async () => {
+      const raven = getPublicKey(generateSecretKey());
+      const { pubkey, deliver, page, operator } = await acknowledged({
+        oncall: (wren) => [
+          onCallEntry("Wren", wren, "sms"),
+          onCallEntry("Raven", raven, "sms"),
+          onCallEntry("Wren", wren, "push"),
+          onCallEntry("Wren", wren, "console-open"),
+        ],
+      });
+      deliver(distressFrom(operator, pubkey));
+      await vi.waitFor(() => expect(page).toHaveBeenCalledTimes(2));
+      expect(page.mock.calls[1]![0].map((e) => `${e.declaration.author.callsign} ${e.declaration.channel}`)).toEqual([
+        "Wren sms",
+        "Wren push",
+      ]);
+    });
+
+    it("pages them once per paging window, and tells a later attempt inside it when", async () => {
+      // A phone retries every 20 to 80 seconds. Paged on every one, the person who answered is the
+      // one being worn out.
+      const { pubkey, published, deliver, page, operator } = await acknowledged();
+      deliver(distressFrom(operator, pubkey));
+      await vi.waitFor(() => expect(page).toHaveBeenCalledTimes(2));
+
+      const clock = vi.spyOn(Date, "now").mockImplementation(() => real() + 120_000);
+      const later = distressFrom(operator, pubkey);
+      deliver(later);
+      await vi.waitFor(() => expect(said(published, operator, pubkey, later.id)).toHaveLength(1));
+      expect(said(published, operator, pubkey, later.id)[0]!.text).toBe(
+        "Acknowledged 2 min ago. Wren was paged again 2 min ago. If your phone is still sending in 28 min, the watch treats it as new.",
+      );
+      await new Promise((r) => setTimeout(r, 50));
+      expect(page, "paged again inside the paging window").toHaveBeenCalledTimes(2);
+
+      clock.mockImplementation(() => real() + 301_000);
+      const after = distressFrom(operator, pubkey);
+      deliver(after);
+      await vi.waitFor(() => expect(page, "never paged again once the window had passed").toHaveBeenCalledTimes(3));
+      expect(page.mock.calls[2]![0].map((e) => e.declaration.author.callsign)).toEqual(["Wren"]);
+      expect(said(published, operator, pubkey, after.id)[0]!.text).toBe(
+        "Acknowledged 5 min ago. The watch is paging Wren again about this one. If your phone is still sending in 25 min, the watch treats it as new.",
+      );
+    });
+
+    it("says in its own output that it paged them only when it did", async () => {
+      // The executor's output said "paging Wren alone" for every held attempt, before anything was
+      // decided -- and most of them, inside the window, page nobody [review: hold decisions].
+      const { pubkey, published, deliver, page, operator } = await acknowledged();
+      const log = vi.spyOn(console, "log");
+      deliver(distressFrom(operator, pubkey));
+      await vi.waitFor(() => expect(page).toHaveBeenCalledTimes(2));
+      const paging = log.mock.calls.map((c) => String(c[0]));
+
+      log.mockClear();
+      const inside = distressFrom(operator, pubkey);
+      deliver(inside);
+      await vi.waitFor(() => expect(said(published, operator, pubkey, inside.id)).toHaveLength(1));
+      const lines = log.mock.calls.map((c) => String(c[0]));
+      expect(lines.filter((l) => /paging Wren/.test(l)), "said it was paging somebody it did not").toEqual([]);
+      expect(lines.some((l) => /Wren was paged about [0-9a-f]{8} \d+s ago -- not again/.test(l))).toBe(true);
+      // And where it does page them, it says so, once.
+      expect(paging.filter((l) => /^\[page\] paging Wren again/.test(l))).toHaveLength(1);
+    });
+
+    it("tells an attempt while the page is still going out that it is, and pages nobody again", async () => {
+      let release: () => void = () => {};
+      const working = workingPager();
+      const page = vi.fn<typeof pageAll>(async (roster, ...rest) => {
+        if (page.mock.calls.length === 2) await new Promise<void>((r) => (release = r));
+        return working(roster, ...rest);
+      });
+      const { pubkey, published, deliver, operator } = await acknowledged({ page });
+      deliver(distressFrom(operator, pubkey));
+      await vi.waitFor(() => expect(page).toHaveBeenCalledTimes(2));
+
+      const meanwhile = distressFrom(operator, pubkey);
+      deliver(meanwhile);
+      await vi.waitFor(() => expect(said(published, operator, pubkey, meanwhile.id)).toHaveLength(1));
+      expect(said(published, operator, pubkey, meanwhile.id)[0]!.text).toBe(
+        "Acknowledged less than a minute ago. The watch is paging Wren again. If your phone is still sending in 30 min, the watch treats it as new.",
+      );
+      expect(page).toHaveBeenCalledTimes(2);
+      release();
+    });
+
+    it("records the page as contact with the person paged, not with the operator", async () => {
+      const { pubkey, published, deliver, operator, responder, logPath } = await acknowledged();
+      const again = distressFrom(operator, pubkey);
+      deliver(again);
+      await vi.waitFor(() => expect(answering(published, again.id)).toHaveLength(1));
+      await vi.waitFor(() =>
+        expect(logged(logPath).filter((e) => e.action === "contacted")).toEqual([
+          expect.objectContaining({
+            outcome: "contact-attempted",
+            subject: expect.objectContaining({ pubkey: getPublicKey(responder), callsign: "Wren" }),
+          }),
+        ]),
+      );
+      // The operator reading their own record would be told the watch contacted them.
+      const { log } = AccountabilityLog.open(logPath, 90);
+      expect(log.about(getPublicKey(operator)).map((e) => e.action)).not.toContain("contacted");
+    });
+
+    it("escalates the attempt as new when every channel of theirs fails, and says so", async () => {
+      const raven = getPublicKey(generateSecretKey());
+      const { executor, pubkey, published, deliver, page, operator, responder, logPath } = await acknowledged({
+        page: workingPager(["Wren"]),
+        oncall: (wren) => [onCallEntry("Wren", wren), onCallEntry("Raven", raven)],
+      });
+      const again = distressFrom(operator, pubkey);
+      deliver(again);
+
+      // The roster, paged for this attempt with its own id, once Wren's page came back failed.
+      await vi.waitFor(() => expect(page).toHaveBeenCalledTimes(3));
+      expect(page.mock.calls[1]![0].map((e) => e.declaration.author.callsign)).toEqual(["Wren"]);
+      expect(page.mock.calls[2]![0].map((e) => e.declaration.author.callsign)).toEqual(["Wren", "Raven"]);
+      expect(page.mock.calls[2]![3]).toBe(again.id);
+      expect(executor.ladders.get(again.id)?.distressId, "no ladder of its own").toBe(again.id);
+
+      await vi.waitFor(() => expect(said(published, operator, pubkey, again.id)).toHaveLength(3));
+      const [held, opened, corrected] = said(published, operator, pubkey, again.id);
+      // Said while it went out, as "Paging Wren." is; corrected the moment it failed.
+      expect(held!.responder.kind).toBe("human");
+      expect(held!.text).toMatch(/^Acknowledged less than a minute ago\. The watch is paging Wren again about this one\. /);
+      expect(opened!.responder.kind, "a machine's report read as a person").toBe("node");
+      expect(opened!.ladder).toBe("paging");
+      expect(opened!.text).toBe("Wren could not be paged again -- every channel failed. Paging Wren, Raven.");
+      expect(corrected!.text).toBe("Paging Raven. Wren could not be reached -- their channel failed.");
+      expect(logged(logPath).filter((e) => e.action === "contacted")).toEqual([
+        expect.objectContaining({ outcome: "contact-failed", subject: expect.objectContaining({ pubkey: getPublicKey(responder) }) }),
+      ]);
+
+      // The hold is over: the next attempt joins the ladder, and is told where it is.
+      const next = distressFrom(operator, pubkey);
+      deliver(next);
+      await vi.waitFor(() => expect(said(published, operator, pubkey, next.id)).toHaveLength(1));
+      const [joined] = said(published, operator, pubkey, next.id);
+      expect(joined!.responder.kind, "answered from a hold that had ended").toBe("node");
+      expect(joined!.text).toBe("Paging Raven. Wren could not be reached -- their channel failed.");
+      expect(executor.ladders.get(next.id)?.distressId).toBe(again.id);
+      expect(page).toHaveBeenCalledTimes(3);
+    });
+
+    it("escalates the attempt as new when they are no longer on call, before anything is sent", async () => {
+      const raven = getPublicKey(generateSecretKey());
+      const { executor, pubkey, published, deliver, page, operator, logPath } = await acknowledged({
+        oncall: (wren) => [expiring("Wren", wren, 60), onCallEntry("Raven", raven)],
+      });
+      vi.spyOn(Date, "now").mockImplementation(() => real() + 120_000);
+      const again = distressFrom(operator, pubkey);
+      deliver(again);
+
+      await vi.waitFor(() => expect(said(published, operator, pubkey, again.id)).toHaveLength(2));
+      const [held, opened] = said(published, operator, pubkey, again.id);
+      expect(held!.responder.callsign).toBe("Wren");
+      expect(held!.text).toBe(
+        "Acknowledged 2 min ago. Wren could not be paged again -- no longer on call. The watch is paging Raven about this one.",
+      );
+      expect(opened!.responder.kind).toBe("node");
+      expect(opened!.text).toBe("Wren could not be paged again -- no longer on call. Paging Raven.");
+      await vi.waitFor(() => expect(page).toHaveBeenCalledTimes(2));
+      expect(page.mock.calls[1]![3], "the roster was paged without the attempt's id").toBe(again.id);
+      // Told Raven, and Wren's expired entry paged all the same [review: hold decisions].
+      expect(page.mock.calls[1]![0].map((e) => e.declaration.author.callsign), "paged somebody the operator was told was not").toEqual(["Raven"]);
+      expect(executor.ladders.get(again.id)?.distressId).toBe(again.id);
+      expect(logged(logPath).filter((e) => e.action === "contacted")).toEqual([
+        expect.objectContaining({ outcome: "contact-not-attempted" }),
+      ]);
+    });
+
+    it("tells the operator nobody is coming when nobody else is on call either", async () => {
+      const { executor, pubkey, published, deliver, page, operator, logPath } = await acknowledged({
+        oncall: (wren) => [expiring("Wren", wren, 60)],
+      });
+      vi.spyOn(Date, "now").mockImplementation(() => real() + 120_000);
+      const again = distressFrom(operator, pubkey);
+      deliver(again);
+
+      await vi.waitFor(() => expect(said(published, operator, pubkey, again.id)).toHaveLength(2));
+      const [held, opened] = said(published, operator, pubkey, again.id);
+      expect(held!.text).toBe(
+        "Acknowledged 2 min ago. Wren could not be paged again -- no longer on call. Nobody on call can be paged about this one.",
+      );
+      expect(opened!.ladder).toBe("exhausted");
+      expect(opened!.text).toBe(
+        "Wren could not be paged again -- no longer on call. Couldn't reach anyone, and you have no emergency contact set. Nobody is coming.",
+      );
+      expect(executor.ladders.get(again.id)?.state).toBe("exhausted");
+      expect(page).toHaveBeenCalledTimes(1);
+      expect(logged(logPath).filter((e) => e.action === "escalated").map((e) => e.outcome)).toContain("escalation-reached-nobody");
+    });
+
+    it("escalates the attempt as new when they can only be reached at a console, and does not name them as paged", async () => {
+      // console-open is not a channel anybody asleep hears [C40]. A ladder names a console-open entry
+      // among those it pages and runs no command for it, so beside "only reachable at a console",
+      // "Paging Wren, Raven." told the operator Wren both could not be paged and was being paged
+      // [review: hold decisions].
+      const raven = getPublicKey(generateSecretKey());
+      const { pubkey, published, deliver, page, operator } = await acknowledged({
+        oncall: (wren) => [onCallEntry("Wren", wren, "console-open"), onCallEntry("Raven", raven)],
+      });
+      const again = distressFrom(operator, pubkey);
+      deliver(again);
+      await vi.waitFor(() => expect(said(published, operator, pubkey, again.id)).toHaveLength(2));
+      const [held, opened] = said(published, operator, pubkey, again.id);
+      expect(held!.text).toBe(
+        "Acknowledged less than a minute ago. Wren could not be paged again -- only reachable at a console. " +
+          "The watch is paging Raven about this one.",
+      );
+      expect(opened!.text).toBe("Wren could not be paged again -- only reachable at a console. Paging Raven.");
+      await vi.waitFor(() => expect(page).toHaveBeenCalledTimes(2));
+      expect(page.mock.calls[1]![3]).toBe(again.id);
+      // Raven is the one a command runs for.
+      const ran = (await page.mock.results[1]!.value) as Awaited<ReturnType<typeof pageAll>>;
+      expect(ran.map((r) => r.callsign)).toEqual(["Raven"]);
+
+      // A later attempt joins that ladder and is told the same.
+      const next = distressFrom(operator, pubkey);
+      deliver(next);
+      await vi.waitFor(() => expect(said(published, operator, pubkey, next.id)).toHaveLength(1));
+      expect(said(published, operator, pubkey, next.id)[0]!.text).toBe(opened!.text);
+    });
+
+    it("pages them no more often than once in five minutes, however short the paging window", async () => {
+      // A Stationkeeper who shortened the paging window to reach "nobody is coming" sooner, as the
+      // example config invites. A phone resends every 80 seconds at its steadiest, so a 60-second
+      // window paged the person who answered on every attempt for the whole hold, and spent the
+      // watch's page budget doing it [review: hold decisions].
+      const { pubkey, published, deliver, page, operator } = await acknowledged({ over: { pagingWindowSeconds: 60 } });
+      const clock = vi.spyOn(Date, "now");
+      for (const offset of [0, 80, 160, 240]) {
+        clock.mockImplementation(() => real() + offset * 1000);
+        const attempt = distressFrom(operator, pubkey);
+        deliver(attempt);
+        await vi.waitFor(() => expect(said(published, operator, pubkey, attempt.id)).toHaveLength(1));
+        await new Promise((r) => setTimeout(r, 20));
+      }
+      expect(page, "paged again on an attempt inside five minutes of the last page").toHaveBeenCalledTimes(2);
+
+      clock.mockImplementation(() => real() + 301_000);
+      const later = distressFrom(operator, pubkey);
+      deliver(later);
+      await vi.waitFor(() => expect(page).toHaveBeenCalledTimes(3));
+      expect(page.mock.calls[2]![0].map((e) => e.declaration.author.callsign)).toEqual(["Wren"]);
+    });
+
+    it("pages them once per window for that operator, even when a newer acknowledgement has replaced the hold", async () => {
+      // A hold ended -- every relay refused its answers -- and the next attempt opened a ladder that
+      // paged the roster. The same person answered that one, and the operator's next attempt, seconds
+      // later, paged them again: three pages inside one window [review: hold decisions].
+      const { executor, pubkey, published, relay, deliver, page, operator, responder } = await acknowledged();
+      vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+      try {
+        relay.refuses = (e) => e.kind === KIND_RESPONSE;
+        const a = distressFrom(operator, pubkey);
+        deliver(a);
+        await vi.waitFor(() => expect(page).toHaveBeenCalledTimes(2));
+        await vi.advanceTimersByTimeAsync(RESEND_AGAIN_SECONDS * 1000);
+        await vi.waitFor(() => expect(answering(published, a.id)).toHaveLength(2));
+        relay.refuses = () => false;
+
+        // The hold is over: a ladder of its own, the roster paged.
+        const b = distressFrom(operator, pubkey);
+        deliver(b);
+        await vi.waitFor(() => expect(page).toHaveBeenCalledTimes(3));
+        expect(page.mock.calls[2]![3]).toBe(b.id);
+        deliver(ackFrom(responder, pubkey, b.id));
+        await vi.waitFor(() => expect(executor.ladders.get(b.id)?.state).toBe("acknowledged"));
+
+        const c = distressFrom(operator, pubkey);
+        deliver(c);
+        await vi.waitFor(() => expect(said(published, operator, pubkey, c.id)).toHaveLength(1));
+        await vi.advanceTimersByTimeAsync(50);
+        expect(page, "paged again about the same operator inside one window").toHaveBeenCalledTimes(3);
+        const [held] = said(published, operator, pubkey, c.id);
+        expect(held!.responder.kind).toBe("human");
+        expect(held!.text).toBe(
+          "Acknowledged less than a minute ago. Wren was paged again less than a minute ago. " +
+            "If your phone is still sending in 30 min, the watch treats it as new.",
+        );
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("pages them again when the clock steps back past the page, failing toward paging", async () => {
+      // Back past the page but not past the acknowledgement, so the hold stands. A page stamped in
+      // the future held every page after it back for the rest of the hold.
+      const { pubkey, published, deliver, page, operator } = await acknowledged();
+      const clock = vi.spyOn(Date, "now").mockImplementation(() => real() + 60_000);
+      deliver(distressFrom(operator, pubkey));
+      await vi.waitFor(() => expect(page).toHaveBeenCalledTimes(2));
+
+      clock.mockImplementation(() => real() + 30_000);
+      const after = distressFrom(operator, pubkey);
+      deliver(after);
+      await vi.waitFor(() => expect(page, "a page stamped ahead of the clock held this one back").toHaveBeenCalledTimes(3));
+      expect(page.mock.calls[2]![0].map((e) => e.declaration.author.callsign)).toEqual(["Wren"]);
+      expect(said(published, operator, pubkey, after.id)[0]!.responder.kind, "the hold had ended").toBe("human");
+    });
+
+    it.each([
+      ["every channel of theirs failed", ["Wren"], "sms"],
+      ["they can only be reached at a console", [], "console-open"],
+    ] as const)("holds nothing once it has escalated an attempt because %s, after that ladder runs out", async (_why, fails, channel) => {
+      // Escalated as new is the hold over. Kept, it answered the operator's next attempt with the old
+      // acknowledgement once the escalated ladder had run out, still inside the window: a phone in a
+      // new emergency, told a person had it. Nothing tested this, because while that ladder is live
+      // every later attempt joins it, hold or none [review: hold decisions].
+      const raven = getPublicKey(generateSecretKey());
+      const { executor, pubkey, published, deliver, operator } = await acknowledged({
+        page: workingPager([...fails]),
+        oncall: (wren) => [onCallEntry("Wren", wren, channel), onCallEntry("Raven", raven)],
+      });
+      const again = distressFrom(operator, pubkey);
+      deliver(again);
+      await vi.waitFor(() => expect(executor.ladders.get(again.id)?.distressId).toBe(again.id));
+
+      // Nobody answers it, and it runs out five minutes on -- well inside the half hour.
+      vi.spyOn(Date, "now").mockImplementation(() => real() + 301_000);
+      await vi.waitFor(() => expect(executor.ladders.get(again.id)?.state).toBe("exhausted"), { timeout: 3_000 });
+
+      const next = distressFrom(operator, pubkey);
+      deliver(next);
+      await vi.waitFor(() => expect(executor.ladders.get(next.id)?.distressId, "no ladder of its own").toBe(next.id));
+      await new Promise((r) => setTimeout(r, 50));
+      const replies = said(published, operator, pubkey, next.id);
+      expect(replies.length).toBeGreaterThan(0);
+      expect(replies.map((p) => p.responder.kind), "answered with an acknowledgement the hold had given up").not.toContain("human");
+    });
+
+    it("tells an attempt whose page failed where the ladder is, when another attempt opened one meanwhile", async () => {
+      // The hold ran out while the page about one attempt was still going out, and the operator's next
+      // attempt opened a ladder. When the page failed, the first attempt joined that ladder -- and its
+      // last word, otherwise, was that the page was going out [review: hold decisions].
+      const raven = getPublicKey(generateSecretKey());
+      let fail: () => void = () => {};
+      const working = workingPager();
+      const page = vi.fn<typeof pageAll>(async (roster, ...rest) => {
+        if (page.mock.calls.length !== 2) return working(roster, ...rest);
+        await new Promise<void>((r) => (fail = r));
+        return roster.map((e) => ({ callsign: e.declaration.author.callsign ?? "", channel: e.declaration.channel, dispatched: false, error: "exit 1" }));
+      });
+      const { executor, pubkey, published, deliver, operator } = await acknowledged({
+        page,
+        oncall: (wren) => [onCallEntry("Wren", wren), onCallEntry("Raven", raven)],
+      });
+      const clock = vi.spyOn(Date, "now").mockImplementation(() => real() + 1_790_000);
+      const slow = distressFrom(operator, pubkey);
+      deliver(slow);
+      await vi.waitFor(() => expect(page).toHaveBeenCalledTimes(2));
+
+      clock.mockImplementation(() => real() + 1_801_000);
+      const next = distressFrom(operator, pubkey);
+      deliver(next);
+      await vi.waitFor(() => expect(page).toHaveBeenCalledTimes(3));
+      expect(executor.ladders.get(next.id)?.distressId).toBe(next.id);
+
+      fail();
+      await vi.waitFor(() => expect(answering(published, slow.id)).toHaveLength(2));
+      const last = answering(published, slow.id).at(-1)!;
+      const told = openResponse<ResponsePayload>(operator, pubkey, last.content);
+      expect(told.responder.kind).toBe("node");
+      expect(told.ladder).toBe("paging");
+      expect(last.tags.filter((t) => t[0] === "e").map((t) => t[1])).toEqual([slow.id, next.id]);
+      expect(executor.ladders.get(slow.id)?.distressId).toBe(next.id);
+      expect(page, "the roster paged twice for one emergency").toHaveBeenCalledTimes(3);
+    });
+
+    it("escalates the attempt as new when the page budget is spent, and says nobody could be paged", async () => {
+      const { executor, pubkey, published, deliver, page, operator, logPath } = await acknowledged({ over: { maxPagesPerWindow: 1 } });
+      const again = distressFrom(operator, pubkey);
+      deliver(again);
+      await vi.waitFor(() => expect(said(published, operator, pubkey, again.id)).toHaveLength(2));
+      const [held, opened] = said(published, operator, pubkey, again.id);
+      expect(held!.text).toBe(
+        "Acknowledged less than a minute ago. Wren could not be paged again, and nobody else could be -- too many alerts at once.",
+      );
+      expect(opened!.text).toBe("The watch could not page anyone -- too many alerts at once. Nobody has been woken.");
+      expect(opened!.ladder).toBe("paging");
+      expect(executor.ladders.get(again.id)?.distressId).toBe(again.id);
+      await new Promise((r) => setTimeout(r, 50));
+      expect(page, "paged past the budget").toHaveBeenCalledTimes(1);
+      expect(logged(logPath).filter((e) => e.action === "contacted")).toEqual([
+        expect.objectContaining({ outcome: "contact-not-attempted" }),
+      ]);
+    });
+
+    it("opens nothing for a page that fails after the executor has stopped", async () => {
+      let fail: () => void = () => {};
+      const page = vi.fn<typeof pageAll>(async (roster) => {
+        if (page.mock.calls.length === 2) {
+          await new Promise<void>((r) => (fail = r));
+          return roster.map((e) => ({ callsign: e.declaration.author.callsign ?? "", channel: e.declaration.channel, dispatched: false, error: "exit 1" }));
+        }
+        return roster.map((e) => ({ callsign: e.declaration.author.callsign ?? "", channel: e.declaration.channel, dispatched: true }));
+      });
+      const { executor, pubkey, published, deliver, operator } = await acknowledged({ page });
+      const again = distressFrom(operator, pubkey);
+      deliver(again);
+      await vi.waitFor(() => expect(page).toHaveBeenCalledTimes(2));
+      await executor.stop();
+      fail();
+      await new Promise((r) => setTimeout(r, 50));
+      expect(executor.ladders.get(again.id), "a ladder opened by a stopped executor").toBeUndefined();
+      expect(answering(published, again.id)).toHaveLength(1);
+      expect(page).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe("a ladder still running for the operator comes before the hold (decided 2026-10-07)", () => {
+    it("joins the attempt to that ladder rather than answering it from the hold, and pages nobody", async () => {
+      // A late answer to a ladder that ran out, while a second ladder for the same operator is still
+      // paging. Answered from the hold, the attempt was told a person had it while the roster was
+      // still being paged, and named a ladder nobody was running.
+      const operator = generateSecretKey();
+      const responder = generateSecretKey();
+      const page = workingPager();
+      const { executor, pubkey, published, deliver } = build([onCallEntry("Wren", getPublicKey(responder))], page);
+      const first = distressFrom(operator, pubkey);
+      deliver(first);
+      await vi.waitFor(() => expect(page).toHaveBeenCalledTimes(1));
+
+      // Nobody answers, and the ladder runs out.
+      const real = Date.now.bind(Date);
+      vi.spyOn(Date, "now").mockImplementation(() => real() + 301_000);
+      await vi.waitFor(() => expect(executor.ladders.get(first.id)?.state).toBe("exhausted"), { timeout: 3_000 });
+      const second = distressFrom(operator, pubkey);
+      deliver(second);
+      await vi.waitFor(() => expect(page).toHaveBeenCalledTimes(2));
+      expect(executor.ladders.get(second.id)?.state).toBe("paging");
+
+      // Wren answers the first, late, from the page she got for it.
+      deliver(ackFrom(responder, pubkey, first.id));
+      await vi.waitFor(() => expect(executor.ladders.get(first.id)?.state).toBe("acknowledged"));
+
+      const third = distressFrom(operator, pubkey);
+      deliver(third);
+      const [reply] = await vi.waitFor(() => {
+        const found = answering(published, third.id);
+        expect(found).toHaveLength(1);
+        return found;
+      });
+      const payload = openResponse<ResponsePayload>(operator, pubkey, reply!.content);
+      expect(payload.responder.kind, "answered from the hold while a ladder was paging").toBe("node");
+      expect(payload.ladder).toBe("paging");
+      expect(payload.text).toBe("Paging Wren.");
+      expect(reply!.tags.filter((t) => t[0] === "e").map((t) => t[1])).toEqual([third.id, second.id]);
+      expect(executor.ladders.get(third.id)?.distressId, "not joined to the ladder still running").toBe(second.id);
+      await new Promise((r) => setTimeout(r, 50));
+      expect(page, "the hold paged Wren alone while the roster was being paged").toHaveBeenCalledTimes(2);
+
+      // Once that ladder is answered too, the hold is back -- on the newer answer.
+      deliver(ackFrom(responder, pubkey, second.id));
+      await vi.waitFor(() => expect(executor.ladders.get(second.id)?.state).toBe("acknowledged"));
+      const fourth = distressFrom(operator, pubkey);
+      deliver(fourth);
+      const [held] = await vi.waitFor(() => {
+        const found = answering(published, fourth.id);
+        expect(found).toHaveLength(1);
+        return found;
+      });
+      expect(openResponse<ResponsePayload>(operator, pubkey, held!.content).responder.kind).toBe("human");
+      expect(held!.tags.filter((t) => t[0] === "e").map((t) => t[1])).toEqual([fourth.id, second.id]);
+      await vi.waitFor(() => expect(page).toHaveBeenCalledTimes(3));
+      expect(page.mock.calls[2]![0].map((e) => e.declaration.author.callsign)).toEqual(["Wren"]);
+    });
   });
 });
 

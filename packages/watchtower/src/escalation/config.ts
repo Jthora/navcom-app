@@ -64,10 +64,13 @@ export interface EscalationConfig {
     /**
      * How long a human's acknowledgement answers that operator's later `20911`s.
      *
-     * Inside it, a new attempt from somebody already acknowledged is answered with that
-     * acknowledgement again and pages nobody (decided 2026-10-07; `escalation.spec.md`). The
-     * cost is that a genuinely new emergency from the same operator inside the window is read as
-     * the old one until it closes.
+     * Inside it, and while no ladder of theirs is running, a new attempt from somebody already
+     * acknowledged is answered with that acknowledgement again, and the person who gave it is paged
+     * -- nobody else, at most once per paging window and never more often than once in 300 seconds
+     * (decided 2026-10-07; `escalation.spec.md`; `repageWindowSeconds`). The cost is that a genuinely
+     * new emergency from the same operator inside the window is read as the old one until it closes,
+     * by everybody but that person, and each of those pages takes a unit of the page budget. One who
+     * cannot be paged ends the hold, and the attempt is escalated as new.
      */
     ackHoldsSeconds: number;
     oncall: OnCallEntry[];
@@ -100,7 +103,11 @@ const DEFAULTS = {
   maxPagesPerWindow: 20, pageBudgetWindowSeconds: 3_600,
   /* An hour after it finishes, so a late duplicate still finds it. */
   ladderRetentionSeconds: 3_600,
-  /* Half an hour: long enough to outlast a phone that missed the ack and keeps asking. */
+  /*
+   * Half an hour: long enough to outlast a phone that missed the ack and keeps asking. The person
+   * who acknowledged is paged at most once per paging window inside it, and never more often than
+   * once in 300 seconds: six times at the most, each out of the page budget above.
+   */
   ackHoldsSeconds: 1_800,
   logPath: "/var/lib/navcom/escalation-log.jsonl", logRetentionDays: 90,
 };

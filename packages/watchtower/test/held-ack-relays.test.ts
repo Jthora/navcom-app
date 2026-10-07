@@ -202,10 +202,11 @@ async function acknowledgedEarlier(fast: LocalRelay, executor: EscalationExecuto
 }
 
 describe("a phone that missed the acknowledgement, with one relay slow to say OK [D2, #13]", () => {
-  it("hears it re-sent to its next attempt, ends on it, and nobody is paged again", async () => {
+  it("hears it re-sent to its next attempt, ends on it, and nobody but Wren is paged again", async () => {
     // Wren answers attempt one in 300ms, and the relay loses the report of it on the way to the
-    // phone. Attempt two is answered from the hold, naming both attempts -- both this run's.
-    const { fast, hung, pubkey, page } = await watch({ dropFirstAnswer: true });
+    // phone. Attempt two is answered from the hold, naming both attempts -- both this run's -- and
+    // Wren is paged about it, alone (decided 2026-10-07).
+    const { fast, hung, executor, pubkey, page } = await watch({ dropFirstAnswer: true });
     const operator = generateSecretKey();
 
     const { answer, phases, attempts } = await phone(operator, [fast.url, hung.url], pubkey, 25_000);
@@ -213,10 +214,12 @@ describe("a phone that missed the acknowledgement, with one relay slow to say OK
     expect(answer, `not acknowledged after ${attempts()} attempts`).not.toBeNull();
     expect(answer!.responder.kind).toBe("human");
     expect(answer!.responder.callsign).toBe("Wren");
-    expect(answer!.text, "answered by something other than the hold").toMatch(/has not escalated this one/);
+    expect(answer!.text, "answered by something other than the hold").toMatch(/The watch is paging Wren again about this one/);
     expect(attempts()).toBeGreaterThanOrEqual(2);
     expect(phases.map((p) => p.phase), "the phone's own attempts read as an earlier Distress").not.toContain("acknowledged-earlier");
-    expect(page, "the roster was woken again for a Distress Wren already has").toHaveBeenCalledTimes(1);
+    await eventually(() => expect(page).toHaveBeenCalledTimes(2));
+    expect(page.mock.calls[1]![3], "the roster's page, not Wren's alone").toBe("");
+    expect(executor.ladders.all(), "the roster was woken again for a Distress Wren already has").toHaveLength(1);
   }, 40_000);
 });
 
@@ -237,7 +240,9 @@ describe("a phone that started its Distress again after the acknowledgement [D2,
     expect(answer, `not acknowledged after ${attempts()} attempts`).not.toBeNull();
     // Ended by Wren answering this Distress, once the hold had closed and she was paged for it.
     expect(answer!.text).toBe("Wren is responding.");
-    expect(page).toHaveBeenCalledTimes(2);
+    // The first ladder; Wren alone, about this run, while the hold stood; and the ladder once it closed.
+    expect(page).toHaveBeenCalledTimes(3);
+    expect(page.mock.calls.map((c) => c[3] === "")).toEqual([false, true, false]);
     const names = phases.map((p) => p.phase);
     expect(names.indexOf("acknowledged")).toBeGreaterThan(names.indexOf("acknowledged-earlier"));
   }, 45_000);
@@ -256,9 +261,11 @@ describe("a phone still running the loop from before 2026-10-07 [#13]", () => {
 
     expect(answer, `not acknowledged after ${attempts()} attempts`).not.toBeNull();
     expect(answer!.responder.callsign).toBe("Wren");
-    expect(answer!.text).toMatch(/has not escalated this one/);
+    // The second send says what had happened by then: Wren had been paged.
+    expect(answer!.text).toMatch(/Wren was paged again/);
     expect(ms, "heard before the second send could have reached it, so this proves nothing").toBeGreaterThan(9_000);
-    expect(page).toHaveBeenCalledTimes(1);
+    expect(page).toHaveBeenCalledTimes(2);
+    expect(page.mock.calls[1]![3]).toBe("");
   }, 40_000);
 });
 
@@ -305,21 +312,23 @@ describe("a phone that started its Distress again while the first was still pagi
     const { answer, again, page } = await restarted({ loseWrensReport: true });
     expect(answer, `still sending after ${again.attempts()} attempts`).not.toBeNull();
     expect(answer!.responder.callsign).toBe("Wren");
-    expect(answer!.text, "answered by something other than the hold").toMatch(/has not escalated this one/);
+    expect(answer!.text, "answered by something other than the hold").toMatch(/The watch is paging Wren again about this one/);
     expect(again.phases.map((p) => p.phase), "told Wren answered an earlier Distress, about the one she answered").not.toContain(
       "acknowledged-earlier",
     );
-    expect(page).toHaveBeenCalledTimes(1);
+    // Wren, paged alone about the attempt the hold answered; nobody else.
+    await eventually(() => expect(page).toHaveBeenCalledTimes(2));
+    expect(page.mock.calls[1]![3]).toBe("");
   }, 30_000);
 });
 
 describe("a held answer the relay refuses the first time [review: relay paths, R2]", () => {
-  it("reaches the phone on the second send, and nobody is paged again", async () => {
+  it("reaches the phone on the second send, and nobody but Wren is paged again", async () => {
     // Wren's report is lost on the way to the phone, and the relay refuses the hold's first answer
     // to the next attempt -- a rate limit, a blip. Ending the hold there paged Wren again for a
     // Distress she had answered; the second send, ten seconds on, reaches the phone. The window is
     // longer than that here, as the phone's twenty seconds are, so no later attempt answers first.
-    const { fast, pubkey, page, refuseResponses, wrenAnswers } = await watch({ wrenAnswers: false });
+    const { fast, executor, pubkey, page, refuseResponses, wrenAnswers } = await watch({ wrenAnswers: false });
     const operator = generateSecretKey();
     const run = running(operator, [fast.url], pubkey, "current", 12_000);
     await eventually(() => expect(run.texts("watch-status")).toContain("Paging Wren."), 5_000);
@@ -332,8 +341,11 @@ describe("a held answer the relay refuses the first time [review: relay paths, R
     const answer = await Promise.race([run.done, deadline]);
     run.abort.abort();
     expect(answer, `not acknowledged after ${run.attempts()} attempts`).not.toBeNull();
-    expect(answer!.text).toMatch(/has not escalated this one/);
+    expect(answer!.text).toMatch(/Wren was paged again about this one/);
     expect(run.attempts(), "answered by a later attempt, not the second send").toBe(2);
-    expect(page, "Wren was paged again for a Distress she had answered").toHaveBeenCalledTimes(1);
+    // Wren once, alone, as decided -- not the roster, which ending the hold at the refusal paged.
+    expect(page).toHaveBeenCalledTimes(2);
+    expect(page.mock.calls[1]![3]).toBe("");
+    expect(executor.ladders.all(), "the hold ended at the first refusal and a ladder opened").toHaveLength(1);
   }, 45_000);
 });
