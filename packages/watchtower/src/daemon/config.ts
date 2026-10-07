@@ -1,5 +1,6 @@
 import { readFileSync, existsSync } from "node:fs";
 import { parse } from "smol-toml";
+import { relayList } from "../shared/relay-urls.js";
 
 /**
  * Daemon configuration, per the brief's exact TOML shape:
@@ -45,6 +46,14 @@ export interface DaemonConfig {
     heartbeatIntervalSeconds: number;
     sweepIntervalSeconds: number;
     queryTimeoutSeconds: number;
+    /**
+     * How far from now a signal or Distress may be stamped and still be acted on, either way.
+     *
+     * A signed event is valid for ever and any relay can serve one again [F12]. `since` is the
+     * relay's to honour, so it is not a defence; this is. Same rule the executor holds with its
+     * paging window.
+     */
+    maxEventAgeSeconds: number;
   };
   authorization: {
     allowedPubkeys: string[];
@@ -89,6 +98,9 @@ const DEFAULTS = {
   // waiting past their own client's timeout with the daemon still "working
   // on it" indefinitely.
   queryTimeoutSeconds: 8,
+  // Five minutes either way -- the executor's paging window. A phone whose clock is further off
+  // than that is not heard by either process, and both say so in their logs.
+  maxEventAgeSeconds: 300,
   // The spec's default. The board is Live and expires; the log is the opposite, and this
   // is the only number that says how long "retained" means.
   logRetentionDays: 90,
@@ -106,6 +118,7 @@ interface RawToml {
     heartbeat_interval_seconds?: number;
     sweep_interval_seconds?: number;
     query_timeout_seconds?: number;
+    max_event_age_seconds?: number;
   };
   authorization?: {
     allowed_pubkeys?: string[];
@@ -142,7 +155,6 @@ function positiveNumber(raw: unknown, fieldName: string, fallback: number, confi
   return raw;
 }
 
-const RELAY_URL = /^wss?:\/\/.+/;
 
 // ADDED (Stage 2, allowlist): empty/missing allowed_pubkeys means "any
 // pubkey may sign on" -- the exact MVP policy documented in
@@ -182,14 +194,7 @@ export function loadDaemonConfig(path: string): DaemonConfig {
     throw new Error(`Config missing required [identity] privkey_path (${path})`);
   }
 
-  const urls = raw.relays?.urls;
-  if (!urls || urls.length === 0) {
-    throw new Error(`Config missing required [relays] urls (${path})`);
-  }
-  const badUrl = urls.find((u) => typeof u !== "string" || !RELAY_URL.test(u));
-  if (badUrl !== undefined) {
-    throw new Error(`Config [relays] urls contains an invalid entry (must start with ws:// or wss://): ${JSON.stringify(badUrl)} (${path})`);
-  }
+  const urls = relayList(raw.relays?.urls, path);
 
   return {
     identity: { privkeyPath },
@@ -201,6 +206,7 @@ export function loadDaemonConfig(path: string): DaemonConfig {
       heartbeatIntervalSeconds: positiveNumber(raw.watch?.heartbeat_interval_seconds, "heartbeat_interval_seconds", DEFAULTS.heartbeatIntervalSeconds, path),
       sweepIntervalSeconds: positiveNumber(raw.watch?.sweep_interval_seconds, "sweep_interval_seconds", DEFAULTS.sweepIntervalSeconds, path),
       queryTimeoutSeconds: positiveNumber(raw.watch?.query_timeout_seconds, "query_timeout_seconds", DEFAULTS.queryTimeoutSeconds, path),
+      maxEventAgeSeconds: positiveNumber(raw.watch?.max_event_age_seconds, "max_event_age_seconds", DEFAULTS.maxEventAgeSeconds, path),
     },
     authorization: {
       allowedPubkeys: parseAllowedPubkeys(raw.authorization?.allowed_pubkeys, path),

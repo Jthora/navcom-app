@@ -43,6 +43,7 @@ function config(statePath: string, ackSeconds: number, oncall: OnCallEntry[]): E
       pagingWindowSeconds: 300, contactWindowSeconds: 300, drillWindowDays: 7,
       drillAckWindowSeconds: ackSeconds, drillStatePath: statePath,
       maxPagesPerWindow: 20, pageBudgetWindowSeconds: 3_600, ladderRetentionSeconds: 3_600,
+      ackHoldsSeconds: 1_800,
       oncall,
     },
     log: { path: join(dirname(statePath), "escalation-log.jsonl"), retentionDays: 90 },

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { Command } from "commander";
-import { SimplePool } from "nostr-tools/pool";
-import { installNodeWebSocket } from "../shared/nostr-node.js";
+import type { SimplePool } from "nostr-tools/pool";
+import { nodePool } from "../shared/nostr-node.js";
 import { loadOrCreateKeypair } from "../shared/identity.js";
 import { loadClientConfig, type ClientConfig } from "./config.js";
 import { sendSignal, sendDistressUntilAcknowledged, waitForResponse } from "./signal.js";
@@ -45,14 +45,17 @@ async function withClient<T>(
     pubkey: string;
   }) => Promise<T>,
 ): Promise<T> {
-  installNodeWebSocket();
   const config = loadClientConfig(configPath(configFlag));
   const { secretKey, pubkey } = loadOrCreateKeypair(config.identity.privkeyPath);
-  // enableReconnect: true -- consistent with the daemon (see
-  // watchtower.ts); matters less for a short one-shot CLI command, but
-  // still helps a command that's mid-wait (e.g. waitForResponse's 10s
-  // window) survive a transient relay drop instead of just timing out.
-  const pool = new SimplePool({ enableReconnect: true });
+  /*
+   * No pool-level reconnect [F04]. It was on so a command mid-wait could survive a relay drop,
+   * but nostr-tools' first reconnect waits ten seconds -- the whole of the response window --
+   * and on reconnect it rewrote the response subscription's `since` to one past the newest
+   * `created_at` any relay had sent, verified or not, in a filter shared by every relay. A
+   * `Distress` retried until acknowledged already heals its own listener per relay (core's
+   * transport); a one-shot command that times out says so.
+   */
+  const pool = nodePool();
   try {
     return await fn({ pool, config, secretKey, pubkey });
   } finally {

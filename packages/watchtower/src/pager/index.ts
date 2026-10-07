@@ -1,12 +1,17 @@
 #!/usr/bin/env node
 import { execFile } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { SimplePool } from "nostr-tools/pool";
 import type { Event } from "nostr-tools/core";
 import { parse } from "smol-toml";
 import { KIND_DISTRESS } from "@navcom/core";
 import { isValidHexPubkey } from "../shared/validate.js";
+import { nodePool } from "../shared/nostr-node.js";
+import { RelayListener } from "../shared/relay-listener.js";
+import { relayList } from "../shared/relay-urls.js";
 import { emptyState, forgetOld, markPaged, shouldPage, REPAGE_AFTER_SECONDS } from "./decide.js";
+
+/** How long a starting pager waits for a first relay before saying it is not watching. */
+const BOOT_GRACE_SECONDS = 15;
 
 /**
  * A pager that holds no key.
@@ -66,10 +71,7 @@ function load(path: string): PagerConfig {
     );
   }
 
-  const urls = raw.relays?.urls;
-  if (!urls?.length || urls.some((u) => typeof u !== "string" || !/^wss?:\/\//.test(u))) {
-    throw new Error(`Config [relays] urls must list at least one ws:// or wss:// URL (${path})`);
-  }
+  const urls = relayList(raw.relays?.urls, path);
 
   const command = raw.page?.command;
   if (!Array.isArray(command) || command.length === 0 || command.some((a) => typeof a !== "string")) {
@@ -97,13 +99,46 @@ function main(): void {
   const path = process.argv[2] ?? "/etc/navcom/pager.toml";
   const config = load(path);
   const state = emptyState();
-  const pool = new SimplePool();
+  // Through the factory: on Node 20 there is no global WebSocket, and a bare SimplePool printed
+  // that it was watching while it could not open a single socket [F07]. Ping, so a connection a
+  // router reboot killed without a word is noticed rather than trusted for ever [F06].
+  const pool = nodePool({ enablePing: true });
 
-  console.log(`[pager] watching for Distress addressed to ${config.watchtower}`);
+  // "Starting", not "watching". This said it was watching before it had connected to anything,
+  // and went on saying nothing when every relay dropped [F06]. It says it is watching when a
+  // relay is actually listening, and says loudly when none is.
+  console.log(`[pager] starting: will watch for Distress addressed to ${config.watchtower}`);
   console.log(`[pager] relays: ${config.relays.join(", ")}`);
   console.log(`[pager] holds no key. It can see that a Distress arrived and nothing inside it.`);
 
-  pool.subscribeMany(config.relays, { kinds: [KIND_DISTRESS], "#p": [config.watchtower] }, {
+  let watching = false;
+  /** Whether NOT WATCHING is the last thing said, so it is said once per fall rather than per relay. */
+  let saidNot = false;
+  const notWatching = (why: string) => {
+    saidNot = true;
+    console.error(
+      `[pager] NOT WATCHING -- ${why}. A Distress raised now pages nobody from here until one ` +
+        "answers; retrying.",
+    );
+  };
+  const listener = new RelayListener({
+    pool,
+    urls: config.relays,
+    filter: { kinds: [KIND_DISTRESS], "#p": [config.watchtower] },
+    label: "pager",
+    missing: "a Distress sent only there pages nobody from here",
+    onchange: (listening, total) => {
+      if (listening > 0 && !watching) {
+        watching = true;
+        saidNot = false;
+        console.log(`[pager] watching on ${listening}/${total} relay(s)`);
+      } else if (listening === 0 && watching) {
+        watching = false;
+        // "Listening", not "reachable": a relay that is up and refusing, or hung, is not listening
+        // either, and its own line above says which [review: relay paths].
+        notWatching("no relay is listening");
+      }
+    },
     onevent: (event: Event) => {
       const now = Math.floor(Date.now() / 1000);
       if (!shouldPage(state, { id: event.id, author: event.pubkey, at: event.created_at }, now, config.repageAfterSeconds)) {
@@ -144,6 +179,13 @@ function main(): void {
       });
     },
   });
+  listener.start();
+
+  // A pager that boots into an outage never fell from watching, so it said nothing at all
+  // [review: relay paths]. Said once, after every relay has had its first try.
+  setTimeout(() => {
+    if (!watching && !saidNot) notWatching("no relay has answered since this started");
+  }, BOOT_GRACE_SECONDS * 1000).unref();
 
   setInterval(() => forgetOld(state, Math.floor(Date.now() / 1000)), 600_000);
 }

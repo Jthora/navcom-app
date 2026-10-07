@@ -99,8 +99,25 @@ async function main(): Promise<void> {
   }
 
   const daemon = new WatchtowerDaemon({ config, secretKey, pubkey, ...(log ? { log } : {}) });
-  await daemon.start();
-  console.log("[daemon] published watch state (automated). Listening for signals.");
+  const accepted = await daemon.start();
+  const total = new Set(config.relays.urls).size;
+  /*
+   * What actually happened, not what was attempted.
+   *
+   * This printed "published watch state (automated). Listening for signals." whatever the
+   * relays said [F05, F13] -- including on a box that booted into an outage, where nothing had
+   * been published and nothing was listening. Each relay now says for itself when it starts
+   * listening, and the heartbeat says when one refuses.
+   */
+  if (accepted > 0) {
+    console.log(`[daemon] published watch state (automated) to ${accepted}/${total} relays`);
+  } else {
+    console.error(
+      `[daemon] WARNING: no relay accepted the watch state (0/${total}). Operators read Dark ` +
+        "until one does; retrying on every heartbeat.",
+    );
+  }
+  console.log(`[daemon] subscribing for signals on ${total} relay(s); each says when it is listening`);
 
   let shuttingDown = false;
   const shutdown = (signal: string) => {

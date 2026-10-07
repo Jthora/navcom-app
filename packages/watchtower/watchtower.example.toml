@@ -33,6 +33,13 @@ sweep_interval_seconds     = 15
 # becomes a real network call to a Mecha Jono bridge.
 query_timeout_seconds = 8
 
+# How far from now a signal or Distress may be stamped, either way, and still be acted on.
+# A signed event is valid for ever and any relay can serve one again, so without this a relay
+# replaying a captured Distress makes the watch act on it again. The executor holds the same
+# rule with its paging window. A phone whose clock is further off than this is not heard, and
+# the daemon logs each one it drops.
+max_event_age_seconds = 300
+
 [authorization]
 # Stage 2. Leave this section out entirely (or allowed_pubkeys = [])
 # during an early closed pilot -- that's Session One's original "any

@@ -51,6 +51,7 @@ function fakeConfig(oncall: OnCallEntry[] = [], over: Partial<EscalationConfig["
       pagingWindowSeconds: 300, contactWindowSeconds: 300,
       drillWindowDays: 7, drillAckWindowSeconds: 1, drillStatePath: "/dev/null/nope",
       maxPagesPerWindow: 20, pageBudgetWindowSeconds: 3_600, ladderRetentionSeconds: 3_600,
+      ackHoldsSeconds: 1_800,
       oncall,
       ...over,
     },
@@ -254,6 +255,140 @@ describe("the trigger", () => {
     deliver(distressFrom(generateSecretKey(), pubkey));
     await vi.waitFor(() => expect(page).toHaveBeenCalledTimes(2));
 
+    expect(executor.ladders.all()).toHaveLength(2);
+  });
+});
+
+describe("a Distress a human already acknowledged, sent again [decision 2026-10-07]", () => {
+  /*
+   * A phone that missed the acknowledgement -- its connection dropped at that moment -- keeps
+   * sending, and every new attempt opened a fresh ladder and paged the roster again for an
+   * emergency somebody was already responding to. Inside the window the executor answers the new
+   * attempt with the acknowledgement it already has, and wakes nobody.
+   */
+  async function acknowledged() {
+    const operator = generateSecretKey();
+    const responder = generateSecretKey();
+    const page = noopPager();
+    const ctx = build([onCallEntry("Wren", getPublicKey(responder))], page);
+    const first = distressFrom(operator, ctx.pubkey);
+    ctx.deliver(first);
+    await vi.waitFor(() => expect(page).toHaveBeenCalledTimes(1));
+    ctx.deliver(ackFrom(responder, ctx.pubkey, first.id));
+    await vi.waitFor(() => expect(ctx.executor.ladders.get(first.id)?.state).toBe("acknowledged"));
+    return { ...ctx, operator, responder, page, first };
+  }
+
+  it("re-sends the acknowledgement to the new attempt and pages nobody", async () => {
+    const { executor, pubkey, published, deliver, page, operator } = await acknowledged();
+
+    // A fresh event, as the client signs one per attempt.
+    const again = distressFrom(operator, pubkey);
+    deliver(again);
+
+    await vi.waitFor(() => {
+      const answering = published.filter(
+        (e) => e.kind === KIND_RESPONSE && e.tags.some((t) => t[0] === "e" && t[1] === again.id),
+      );
+      expect(answering).toHaveLength(1);
+    });
+    await new Promise((r) => setTimeout(r, 100));
+    expect(page, "the roster was woken again for a Distress somebody is answering").toHaveBeenCalledTimes(1);
+    expect(executor.ladders.all()).toHaveLength(1);
+
+    const reply = published.find(
+      (e) => e.kind === KIND_RESPONSE && e.tags.some((t) => t[0] === "e" && t[1] === again.id),
+    )!;
+    const payload = openResponse<ResponsePayload>(operator, pubkey, reply.content);
+    // Authored by the human who acknowledged: that is what ends the phone's retry.
+    expect(payload.type).toBe("ack");
+    expect(payload.responder.kind).toBe("human");
+    expect(payload.responder.callsign).toBe("Wren");
+    expect(payload.ladder).toBe("acknowledged");
+    // True whether the phone missed the answer or this is a new emergency [review: D2]: when it
+    // was acknowledged, and that nothing about this attempt reached anybody.
+    expect(payload.text).toMatch(/acknowledged less than a minute ago/i);
+    expect(payload.text).toMatch(/nobody has been told/i);
+    expect(payload.text).not.toMatch(/is responding|still asking/i);
+  });
+
+  it("names the acknowledged Distress as well, an id the phone's loop already holds [D2]", async () => {
+    // core's loop drops an answer to an id it has not recorded yet, and records an attempt only
+    // once its publish has settled on every relay. An answer naming only the new attempt lands
+    // before that whenever a relay is slow to say OK; the first id is one it has had for minutes.
+    const { pubkey, published, deliver, operator, first } = await acknowledged();
+    const again = distressFrom(operator, pubkey);
+    deliver(again);
+
+    const reply = await vi.waitFor(() => {
+      const found = published.find(
+        (e) => e.kind === KIND_RESPONSE && e.tags.some((t) => t[0] === "e" && t[1] === again.id),
+      );
+      expect(found).toBeDefined();
+      return found!;
+    });
+    expect(reply.tags.filter((t) => t[0] === "e").map((t) => t[1])).toEqual([again.id, first.id]);
+  });
+
+  it("ends when the clock steps back past the acknowledgement, failing toward paging", async () => {
+    // Acknowledged while the box's clock read an hour fast -- an RTC kept in local time -- then
+    // corrected. Measured from a moment that is now in the future, the hold lasted the window plus
+    // the step, and a new emergency forty minutes on was answered with the old acknowledgement.
+    const real = Date.now.bind(Date);
+    const clock = vi.spyOn(Date, "now").mockImplementation(() => real() + 3_600_000);
+    const { executor, pubkey, deliver, page, operator } = await acknowledged();
+
+    clock.mockImplementation(() => real() + 2_400_000);
+    deliver(distressFrom(operator, pubkey));
+    await vi.waitFor(() => expect(page).toHaveBeenCalledTimes(2));
+    expect(executor.ladders.all()).toHaveLength(2);
+  });
+
+  it("records the re-sent acknowledgement, and nothing claiming a second escalation", async () => {
+    const { pubkey, deliver, operator, logPath, published } = await acknowledged();
+    const again = distressFrom(operator, pubkey);
+    deliver(again);
+    await vi.waitFor(() =>
+      expect(published.some((e) => e.tags.some((t) => t[0] === "e" && t[1] === again.id))).toBe(true),
+    );
+
+    await vi.waitFor(() => {
+      const entries = readFileSync(logPath, "utf8").trim().split("\n").map((l) => JSON.parse(l) as { action: string; outcome: string });
+      expect(entries.filter((e) => e.action === "acked")).toEqual([
+        expect.objectContaining({ action: "acked", outcome: "acknowledged" }),
+      ]);
+      expect(entries.filter((e) => e.action === "escalated")).toHaveLength(1);
+    });
+  });
+
+  it("opens a new ladder once the window has closed", async () => {
+    const { executor, pubkey, deliver, page, operator } = await acknowledged();
+    const real = Date.now.bind(Date);
+    vi.spyOn(Date, "now").mockImplementation(() => real() + 1_801_000);
+
+    deliver(distressFrom(operator, pubkey));
+    await vi.waitFor(() => expect(page).toHaveBeenCalledTimes(2));
+    expect(executor.ladders.all()).toHaveLength(2);
+  });
+
+  it("does not hold for an exhausted ladder: nobody answered that one", async () => {
+    // Exhausted is the watch having failed. A new attempt is somebody still in trouble with
+    // nobody on the other end, and holding it would be silence.
+    const operator = generateSecretKey();
+    const page = noopPager();
+    const { executor, pubkey, deliver } = build([], page);
+    const first = distressFrom(operator, pubkey);
+    deliver(first);
+    await vi.waitFor(() => expect(executor.ladders.get(first.id)?.state).toBe("exhausted"));
+
+    deliver(distressFrom(operator, pubkey));
+    await vi.waitFor(() => expect(executor.ladders.all()).toHaveLength(2));
+  });
+
+  it("holds for that operator only", async () => {
+    const { executor, pubkey, deliver, page } = await acknowledged();
+    deliver(distressFrom(generateSecretKey(), pubkey));
+    await vi.waitFor(() => expect(page).toHaveBeenCalledTimes(2));
     expect(executor.ladders.all()).toHaveLength(2);
   });
 });

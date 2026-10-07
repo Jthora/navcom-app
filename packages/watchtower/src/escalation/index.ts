@@ -178,7 +178,7 @@ function main(): void {
   console.log(`[executor] relays: ${config.relays.urls.join(", ")}`);
   console.log(
     `[executor] windows: paging=${config.escalation.pagingWindowSeconds}s ` +
-      `contact=${config.escalation.contactWindowSeconds}s`,
+      `contact=${config.escalation.contactWindowSeconds}s ack_holds=${config.escalation.ackHoldsSeconds}s`,
   );
 
   // By name, never as a total -- and the empty case is stated rather than left to inference.
@@ -225,7 +225,12 @@ function main(): void {
     "[executor] drills every " + config.escalation.drillWindowDays + "d (randomised), " +
       "results -> " + config.escalation.drillStatePath,
   );
-  console.log("[executor] listening for 20911. The agent is not in this path.");
+  // Not "listening": each relay says so itself once its subscription is answered, and says
+  // when it is not [F05, F08]. Announcing it here was true only if every relay was.
+  console.log(
+    `[executor] subscribing for 20911 on ${new Set(config.relays.urls).size} relay(s); ` +
+      "each says when it is listening. The agent is not in this path.",
+  );
 
   let shuttingDown = false;
   const shutdown = (signal: string) => {

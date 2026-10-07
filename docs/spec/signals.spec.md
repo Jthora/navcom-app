@@ -460,7 +460,11 @@ no tag on the event. Both parts were wrong, and the implementation deliberately 
   something when they did not
 - `provenance` MUST be present on any directory-derived answer [C32, H5]. An answer
   without provenance MUST render as unverified
-- Every signal MUST receive at least an `ack`. Silence is never a response
+- Every signal MUST receive at least an `ack`. Silence is never a response — with one exception
+  (2026-10-07): a signal stamped more than `max_event_age_seconds` (default 300) from the watch's
+  clock is neither acted on nor answered, because an answer to it would be an answer to anything
+  a relay or a stranger replays. The phone is not left to guess: one whose clock is that far off
+  already reads the watch as Dark — stale, or a clock it cannot trust — before it sends
 
 ## Acknowledgement windows
 

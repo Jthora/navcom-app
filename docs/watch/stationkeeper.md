@@ -80,7 +80,8 @@ else would be testing something nobody depends on. Expect the first drill to fai
 what it is for.
 
 **`--review` is the fourth, and it is not for you.** It prints one week: the last drill and who
-answered it, every escalation with its date, whether the accountability log still verifies, and
+answered it, every escalation with its date, every repeat `Distress` answered with an
+acknowledgement somebody had already given, whether the accountability log still verifies, and
 who is on call — then a closing **NEEDS A LOOK** section, which on a good week reads *nothing
 needs a look*. It exits non-zero only when that section has something in it, so it can be a
 weekly cron that stays silent until it shouldn't.
@@ -96,6 +97,24 @@ It does not score anybody. Escalations are listed with their dates rather than c
 If you are running a station and no reviewer exists yet, run it yourself and mail the output
 somewhere you will read it — but note that a reviewer who is also the Stationkeeper is the
 theatre the role was defined to avoid, and the arrangement is a stopgap, not the answer.
+
+**The running processes say the same thing about each relay, once per change.** The daemon,
+the executor and the keyless pager each keep one subscription per relay and reopen it by
+themselves when it closes, so a box that boots before its network does catches up on its own.
+What to look for in their output:
+
+| Line | What it means |
+|---|---|
+| `[relay] <url> listening` / `reachable again` | The relay answered the subscription — end of stored events, or an event — and signals sent there are heard (`[executor]` and `[pager]` say the same for theirs) |
+| `<url> unreachable (...) -- retrying` | Nothing sent only to that relay is heard until it answers. Said once, not on every retry |
+| `<url> took the subscription and has not answered in 10s` | Connected, and nothing back: a relay that has hung. Treat it as down. The subscription stays open, and `reachable again` follows if it ever answers |
+| `<url> refused the subscription: ...` | The relay is up and said no — a rate limit, a policy. `auth-required` means it wants NIP-42 AUTH, which none of these processes do: pick another relay |
+| `[heartbeat] <url> refused watch state: ...` | Operators reading that relay see Dark. `NO RELAY ACCEPTED` means everyone does |
+| `[pager] watching on k/N relay(s)` | Printed only once a relay has answered. `NOT WATCHING` means no relay is listening — since one stopped, or since the pager started fifteen seconds ago |
+| `[signal] dropped: … stamped Ns away` / `[executor] … outside the paging window, ignored` | A signal or `Distress` stamped more than five minutes from this machine's clock: replayed by a relay, or sent from a phone whose clock is wrong. Not acted on and not answered. If one operator's signals keep dropping, it is their clock — that phone already reads the watch as Dark |
+
+The daemon's first lines now say how many relays took the watch state (`published watch state
+… to k/N relays`) instead of announcing that it was listening whatever had happened.
 
 ## What it actually costs
 

@@ -1,8 +1,8 @@
 import { readFileSync, existsSync } from "node:fs";
 import { parse } from "smol-toml";
+import { relayList } from "../shared/relay-urls.js";
 import { isValidHexPubkey } from "../shared/validate.js";
 
-const RELAY_URL = /^wss?:\/\/.+/;
 const MAX_CALLSIGN_LENGTH = 32;
 
 export interface ClientConfig {
@@ -76,12 +76,7 @@ export function loadClientConfig(path: string): ClientConfig {
     }
   }
 
-  const urls = raw.relays?.urls;
-  if (!urls || urls.length === 0) throw new Error(`Config missing required [relays] urls (${path})`);
-  const badUrl = urls.find((u) => typeof u !== "string" || !RELAY_URL.test(u));
-  if (badUrl !== undefined) {
-    throw new Error(`Config [relays] urls contains an invalid entry (must start with ws:// or wss://): ${JSON.stringify(badUrl)} (${path})`);
-  }
+  const urls = relayList(raw.relays?.urls, path);
 
   const callsign = raw.operator?.callsign;
   if (callsign !== undefined && (typeof callsign !== "string" || callsign.length === 0 || callsign.length > MAX_CALLSIGN_LENGTH)) {

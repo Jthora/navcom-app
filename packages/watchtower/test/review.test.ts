@@ -47,6 +47,33 @@ const escalation = (at: number, reachedHuman: boolean): LogEntry => ({
   prev: null,
 });
 
+const resent = (at: number, sent: boolean): LogEntry => ({
+  at,
+  actor: { kind: "node", callsign: "escalation" },
+  action: "acked",
+  subject: null,
+  outcome: sent ? "acknowledged" : "ack-not-sent",
+  hash: "0".repeat(64),
+  prev: null,
+});
+
+describe("a repeat Distress answered with an earlier acknowledgement [review: D2]", () => {
+  it("is listed by date, and is not a reason to look when it went out", () => {
+    const review = buildReview({ ...base, entries: [escalation(NOW - 2 * day, true), resent(NOW - 2 * day + 600, true)] });
+    expect(review.resent).toEqual([{ at: NOW - 2 * day + 600, sent: true }]);
+    expect(review.attention).toEqual([]);
+    expect(render(review).join("\n")).toMatch(/HELD[^\n]*\n {2}\d{4}-\d{2}-\d{2} {2}sent/);
+  });
+
+  it("is a reason to look when no relay took it: that operator was told nothing, and nobody was paged", () => {
+    const review = buildReview({ ...base, entries: [escalation(NOW - day, true), resent(NOW - day + 300, false)] });
+    const page = render(review).join("\n");
+    expect(page).toContain("REACHED NO RELAY");
+    expect(page).toContain("NEEDS A LOOK");
+    expect(review.attention.join(" ")).toMatch(/told nothing, and nobody was paged/);
+  });
+});
+
 describe("what a reviewer is shown", () => {
   it("says nothing needs a look on a good week", () => {
     const review = buildReview({ ...base, entries: [escalation(NOW - day, true)] });

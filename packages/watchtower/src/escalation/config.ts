@@ -1,5 +1,6 @@
 import { readFileSync, existsSync } from "node:fs";
 import { parse } from "smol-toml";
+import { relayList } from "../shared/relay-urls.js";
 import type { OnCall } from "@navcom/core";
 
 /**
@@ -60,6 +61,15 @@ export interface EscalationConfig {
     pageBudgetWindowSeconds: number;
     /** How long a finished ladder is kept before it is dropped. */
     ladderRetentionSeconds: number;
+    /**
+     * How long a human's acknowledgement answers that operator's later `20911`s.
+     *
+     * Inside it, a new attempt from somebody already acknowledged is answered with that
+     * acknowledgement again and pages nobody (decided 2026-10-07; `escalation.spec.md`). The
+     * cost is that a genuinely new emergency from the same operator inside the window is read as
+     * the old one until it closes.
+     */
+    ackHoldsSeconds: number;
     oncall: OnCallEntry[];
   };
   /**
@@ -90,11 +100,12 @@ const DEFAULTS = {
   maxPagesPerWindow: 20, pageBudgetWindowSeconds: 3_600,
   /* An hour after it finishes, so a late duplicate still finds it. */
   ladderRetentionSeconds: 3_600,
+  /* Half an hour: long enough to outlast a phone that missed the ack and keeps asking. */
+  ackHoldsSeconds: 1_800,
   logPath: "/var/lib/navcom/escalation-log.jsonl", logRetentionDays: 90,
 };
 const CHANNELS = ["sms", "voice", "push", "console-open"] as const;
 const PUBKEY = /^[0-9a-f]{64}$/i;
-const RELAY_URL = /^wss?:\/\/.+/;
 
 /**
  * A config-declared roster is the NODE saying who is reachable, not those people saying it.
@@ -193,6 +204,7 @@ export function loadEscalationConfig(path: string): EscalationConfig {
       max_pages_per_window?: number;
       page_budget_window_seconds?: number;
       ladder_retention_seconds?: number;
+      ack_holds_seconds?: number;
       oncall?: unknown;
     };
     log?: { path?: string; retention_days?: number };
@@ -201,12 +213,7 @@ export function loadEscalationConfig(path: string): EscalationConfig {
   const privkeyPath = raw.identity?.privkey_path;
   if (!privkeyPath) throw new Error(`Config missing required [identity] privkey_path (${path})`);
 
-  const urls = raw.relays?.urls;
-  if (!urls || urls.length === 0) throw new Error(`Config missing required [relays] urls (${path})`);
-  const badUrl = urls.find((u) => typeof u !== "string" || !RELAY_URL.test(u));
-  if (badUrl !== undefined) {
-    throw new Error(`Config [relays] urls contains an invalid entry: ${JSON.stringify(badUrl)} (${path})`);
-  }
+  const urls = relayList(raw.relays?.urls, path);
 
   return {
     identity: { privkeyPath },
@@ -220,6 +227,7 @@ export function loadEscalationConfig(path: string): EscalationConfig {
       maxPagesPerWindow: positiveNumber(raw.escalation?.max_pages_per_window, "max_pages_per_window", DEFAULTS.maxPagesPerWindow, path),
       pageBudgetWindowSeconds: positiveNumber(raw.escalation?.page_budget_window_seconds, "page_budget_window_seconds", DEFAULTS.pageBudgetWindowSeconds, path),
       ladderRetentionSeconds: positiveNumber(raw.escalation?.ladder_retention_seconds, "ladder_retention_seconds", DEFAULTS.ladderRetentionSeconds, path),
+      ackHoldsSeconds: positiveNumber(raw.escalation?.ack_holds_seconds, "ack_holds_seconds", DEFAULTS.ackHoldsSeconds, path),
       oncall: parseOnCall(raw.escalation?.oncall, path),
     },
     log: {

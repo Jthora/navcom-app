@@ -51,6 +51,16 @@ export interface Escalation {
   reachedHuman: boolean;
 }
 
+/**
+ * A repeat `Distress` answered with an acknowledgement a person had already given, inside
+ * `ack_holds_seconds` (`escalation.spec.md`, "An acknowledged Distress, sent again").
+ */
+export interface Resent {
+  at: number;
+  /** Whether any relay took it. One that none took told that operator nothing, and paged nobody. */
+  sent: boolean;
+}
+
 export interface Review {
   from: number;
   to: number;
@@ -58,6 +68,7 @@ export interface Review {
   drillOverdue: boolean;
   nextDrillAt: number | null;
   escalations: Escalation[];
+  resent: Resent[];
   oncall: readonly string[];
   log: ReviewInput["log"];
   /** The whole point: what a person has to do something about. Empty is the good week. */
@@ -77,6 +88,15 @@ export function buildReview(input: ReviewInput): Review {
   const escalations: Escalation[] = input.entries
     .filter((e) => e.action === "escalated" && e.at >= from)
     .map((e) => ({ at: e.at, reachedHuman: e.outcome === "escalation-reached-human" }))
+    .sort((a, b) => a.at - b.at);
+
+  /*
+   * Listed, because a held acknowledgement is the one thing this log records that pages nobody
+   * -- a week of them read "nothing needs a look" until the reviewer could see them [review: D2].
+   */
+  const resent: Resent[] = input.entries
+    .filter((e) => e.action === "acked" && e.at >= from)
+    .map((e) => ({ at: e.at, sent: e.outcome !== "ack-not-sent" }))
     .sort((a, b) => a.at - b.at);
 
   // Overdue means the schedule has passed, or nothing has ever run. Both demote the watch
@@ -104,6 +124,15 @@ export function buildReview(input: ReviewInput): Review {
     );
   }
 
+  const unsent = resent.filter((r) => !r.sent);
+  if (unsent.length > 0) {
+    attention.push(
+      unsent.length === 1
+        ? `a repeat Distress was answered with an earlier acknowledgement that no relay took (${iso(unsent[0]!.at)}): that operator was told nothing, and nobody was paged`
+        : `${unsent.length} repeat Distress answers reached no relay: those operators were told nothing, and nobody was paged`,
+    );
+  }
+
   if (input.oncall.length === 0) {
     attention.push("nobody is on call, so a Distress would page nobody and say so");
   } else if (input.oncall.length === 1) {
@@ -125,6 +154,7 @@ export function buildReview(input: ReviewInput): Review {
     drillOverdue,
     nextDrillAt: input.nextDrillAt,
     escalations,
+    resent,
     oncall: input.oncall,
     log: input.log,
     attention,
@@ -158,6 +188,10 @@ export function render(review: Review): string[] {
   for (const e of review.escalations) {
     out.push(`  ${iso(e.at)}  ${e.reachedHuman ? "reached a human" : "REACHED NOBODY"}`);
   }
+
+  out.push("", "HELD -- a repeat Distress answered with an earlier acknowledgement");
+  if (review.resent.length === 0) out.push("  none in this window");
+  for (const r of review.resent) out.push(`  ${iso(r.at)}  ${r.sent ? "sent" : "REACHED NO RELAY"}`);
 
   out.push("", "THE LOG");
   out.push(

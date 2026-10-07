@@ -1,7 +1,8 @@
-import { SimplePool } from "nostr-tools/pool";
+import type { SimplePool } from "nostr-tools/pool";
 import { finalizeEvent, generateSecretKey, getPublicKey } from "nostr-tools/pure";
 import type { Event } from "nostr-tools/pure";
 import type { Filter } from "nostr-tools/filter";
+import { nodePool } from "../shared/nostr-node.js";
 
 /**
  * Can these relays carry this app's traffic?
@@ -225,7 +226,8 @@ export async function checkRelay(
   now = Date.now,
   opts: CheckOptions = {}
 ): Promise<RelayResult> {
-  const pool = new SimplePool();
+  // Through the factory, so the check runs on Node 20, which has no global WebSocket [F07].
+  const pool = nodePool();
   const secret = generateSecretKey();
   const pubkey = getPublicKey(secret);
   const mine = hex(64);

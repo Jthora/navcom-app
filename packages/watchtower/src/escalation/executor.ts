@@ -1,5 +1,4 @@
-import { SimplePool } from "nostr-tools/pool";
-import { normalizeURL } from "nostr-tools/utils";
+import type { SimplePool } from "nostr-tools/pool";
 import { finalizeEvent, verifyEvent } from "nostr-tools/pure";
 import type { Event, EventTemplate } from "nostr-tools/core";
 import { randomBytes } from "node:crypto";
@@ -13,7 +12,8 @@ import {
   type Ladder,
   type ResponsePayload,
 } from "@navcom/core";
-import { installNodeWebSocket } from "../shared/nostr-node.js";
+import { nodePool } from "../shared/nostr-node.js";
+import { RelayListener } from "../shared/relay-listener.js";
 import { sealResponse, openSignal } from "../shared/crypto.js";
 import { KIND_SIGNAL, KIND_DISTRESS, KIND_RESPONSE } from "../shared/kinds.js";
 import { pageAll } from "./pager.js";
@@ -58,8 +58,28 @@ export interface ExecutorOptions {
   drillStatePath?: string;
 }
 
-/** How often a relay that is not connected is tried again. */
-export const RELISTEN_SECONDS = 15;
+/** The longest wait before a relay whose subscription closed is tried again. */
+export { RELISTEN_SECONDS } from "../shared/relay-listener.js";
+
+/**
+ * How long after re-sending a held acknowledgement it is sent once more.
+ *
+ * Past the longest a phone can take to record its own attempt: core's loop listens only for
+ * answers to ids it has recorded, and records an attempt only once the publish has settled on
+ * every relay -- three seconds to connect and 4.4 to give up on an OK. A phone that started its
+ * Distress again knows none of the ids the watch acknowledged, so the first re-send can only
+ * name its new one, and lands before it is recorded whenever one of its relays is slow [review:
+ * D2]. The second lands after.
+ */
+export const RESEND_AGAIN_SECONDS = 10;
+
+/** A human acknowledgement this executor is still holding for an operator. */
+interface HeldAck {
+  /** The acknowledged ladder, as it stood when the human answered. */
+  ladder: Ladder;
+  /** Unix seconds the acknowledgement arrived. The window runs from here. */
+  at: number;
+}
 
 export class EscalationExecutor {
   readonly ladders = new LadderRegistry();
@@ -87,17 +107,18 @@ export class EscalationExecutor {
    */
   private drilling = false;
   private sweepHandle: ReturnType<typeof setInterval> | undefined;
-  private relistenHandle: ReturnType<typeof setInterval> | undefined;
-  private subCloser: { close: (reason?: string) => void } | undefined;
+  /** One subscription per relay, each reopened by itself. See `shared/relay-listener.ts`. */
+  private listener: RelayListener | undefined;
   /**
-   * The subscription currently trusted to be open, or null once every relay has closed it.
+   * Operators a human answered recently, by pubkey -- the decision of 2026-10-07.
    *
-   * A token rather than a boolean because re-subscribing closes the previous subscription on
-   * purpose, and that close must not mark the new one dead.
+   * Kept here rather than read from the ladder registry: terminal ladders are reaped on their
+   * own retention, and the hold must not end early because a ladder was tidied away.
    */
-  private listening: object | null = null;
-  /** Last reachability logged per relay, so a relay that stays down is said once, not every retry. */
-  private readonly relayUp = new Map<string, boolean>();
+  private readonly heldAcks = new Map<string, HeldAck>();
+  /** Second sends of held acknowledgements still waiting, so `stop()` can cancel them. */
+  private readonly resends = new Set<ReturnType<typeof setTimeout>>();
+  private stopped = false;
   /**
    * The executor's own accountability log -- separate from the daemon's, and the only
    * place a Distress's real outcome (paged, acknowledged by whom, or exhausted) is
@@ -107,13 +128,14 @@ export class EscalationExecutor {
   private accountability: AccountabilityLog | null = null;
 
   constructor(opts: ExecutorOptions) {
-    installNodeWebSocket();
     this.config = opts.config;
     this.secretKey = opts.secretKey;
     this.pubkey = opts.pubkey;
     this.page = opts.page ?? pageAll;
     this.drillStatePath = opts.drillStatePath;
-    this.pool = opts.pool ?? new SimplePool({ enableReconnect: true });
+    // Ping so a dead connection is noticed; no pool-level reconnect, because nostr-tools' rewrote
+    // `since` past anything a relay sent [F04]. The listener reopens what closes.
+    this.pool = opts.pool ?? nodePool({ enablePing: true });
     this.budget = pageBudget(
       this.config.escalation.maxPagesPerWindow,
       this.config.escalation.pageBudgetWindowSeconds,
@@ -194,13 +216,116 @@ export class EscalationExecutor {
       this.recordOutcome(ladder);
     }
 
+    await this.send(ladder, distressId, event, payload);
+  }
+
+  /** Returns how many relays took it. 0 is invariant 2 failing, and is said so. */
+  private async send(ladder: Ladder, distressId: string, event: Event, payload: ResponsePayload): Promise<number> {
     console.log(`[ladder] ${distressId.slice(0, 8)} ${ladder.state}: ${payload.text}`);
     const results = await Promise.allSettled(this.pool.publish(this.config.relays.urls, event));
-    if (results.every((r) => r.status === "rejected")) {
+    const accepted = results.filter((r) => r.status === "fulfilled").length;
+    if (accepted === 0) {
       // The operator cannot be told. Loud, because invariant 2 is failing right here and
       // there is nothing further this process can do about it.
       console.error(`[ladder] COULD NOT REPORT ${ladder.state} TO OPERATOR -- no relay accepted`);
     }
+    return accepted;
+  }
+
+  /**
+   * Answers a new `20911` with the acknowledgement this operator already has.
+   *
+   * **Decided 2026-10-07, reversing "terminal ladders do not adopt".** A phone that missed the
+   * acknowledgement -- its connection dropped at that moment -- keeps sending, because only a
+   * human answer ends a Distress on the phone. Each new attempt opened a fresh ladder and paged
+   * the roster again for an emergency somebody was already responding to. For
+   * `ack_holds_seconds` after a human acknowledged, a new attempt from that operator is
+   * answered with the same acknowledgement, authored by the same human, and nobody is woken.
+   *
+   * **The cost, stated in the spec:** a genuinely new emergency from the same operator inside
+   * the window is read as the old one until it closes. Nothing is sent to the human who
+   * acknowledged, or to anyone else: the operator's phone is told who has them, and that is all.
+   *
+   * **It names the acknowledged Distress as well as the new one** [review: D2]. core's loop drops
+   * an answer to an id it has not recorded, and records an attempt only once its publish has
+   * settled on every relay -- so an answer naming only the new attempt, sent the moment it lands,
+   * was thrown away whenever one of the phone's relays was slow to say OK, on every attempt for
+   * the whole hold. The acknowledged id is one the loop has held since it sent it. A phone that
+   * started again holds neither, so the answer goes once more {@link RESEND_AGAIN_SECONDS} later.
+   *
+   * Recorded as `acked`, which this log otherwise never writes -- its own entries are
+   * `escalated` and drills -- so a re-sent acknowledgement cannot be read as a second
+   * escalation, or as none. Published first and recorded after, as the daemon does for its
+   * acknowledgements: the record says whether anything left this machine. Recorded once per
+   * attempt: the second send is the same answer to the same attempt.
+   */
+  private async resendAck(held: HeldAck, distressId: string): Promise<void> {
+    const accepted = await this.sendHeld(held, distressId);
+    const again = setTimeout(() => {
+      this.resends.delete(again);
+      if (this.stopped) return;
+      this.sendHeld(held, distressId).catch((err: unknown) => {
+        console.error(`[ladder] re-sending the held ack for ${distressId.slice(0, 8)} failed: ${String(err)}`);
+      });
+    }, RESEND_AGAIN_SECONDS * 1000);
+    this.resends.add(again);
+
+    if (!this.accountability) return;
+    try {
+      this.accountability.record({
+        at: now(),
+        actor: { kind: "node", callsign: "escalation", pubkey: this.pubkey },
+        action: "acked",
+        subject: { kind: "human", pubkey: held.ladder.operator },
+        outcome: accepted > 0 ? "acknowledged" : "ack-not-sent",
+      });
+    } catch (err: unknown) {
+      console.error(`[escalation-log] FAILED TO RECORD re-sent ack for ${distressId.slice(0, 8)}: ${String(err)}`);
+    }
+  }
+
+  /** One send of a held acknowledgement, freshly signed. Returns how many relays took it. */
+  private async sendHeld(held: HeldAck, distressId: string): Promise<number> {
+    const ladder = held.ladder;
+    const minutes = Math.max(0, Math.round((now() - held.at) / 60));
+    const payload: ResponsePayload = {
+      type: "ack",
+      // Load-bearing: the human, because a human answer is what ends the phone's retry.
+      responder: ladder.acknowledgedBy ?? { kind: "node", callsign: "escalation" },
+      /*
+       * What is true whichever case this is [review: D2]. The phone heads it with the responder
+       * -- "Wren has it" -- so the text carries the rest: when that was, and that nothing about
+       * this attempt reached anybody. "Is responding" and "your phone was still asking" were
+       * true for a phone that missed the answer and false for a new emergency, where they told
+       * the operator help was coming to something nobody had heard about.
+       */
+      text:
+        `Acknowledged ${minutes === 0 ? "less than a minute" : `${minutes} min`} ago. This repeats that ` +
+        "answer because your phone sent another; nobody has been told about that one.",
+      provenance: null,
+      ladder: "acknowledged",
+    };
+    const event = this.sign({
+      kind: KIND_RESPONSE,
+      created_at: now(),
+      tags: [["p", ladder.operator], ["e", distressId], ["e", ladder.distressId]],
+      content: sealResponse(this.secretKey, ladder.operator, payload),
+    });
+    return this.send(ladder, distressId, event, payload);
+  }
+
+  /**
+   * Whether a held acknowledgement still answers for its operator at `at`.
+   *
+   * A clock that stepped back past the moment it was given ends it [review: D2]. Measured from a
+   * moment now in the future, the hold lasted the window plus the step -- an hour, for a box
+   * whose clock was kept in local time and then corrected -- and a genuinely new emergency was
+   * answered with an old acknowledgement. Ending it fails toward paging, which is the direction
+   * to be wrong in; core's ladder re-anchors on the same step for the same reason.
+   */
+  private holding(held: HeldAck, at: number): boolean {
+    const age = at - held.at;
+    return age >= 0 && age < this.config.escalation.ackHoldsSeconds;
   }
 
   private recordOutcome(ladder: Ladder): void {
@@ -221,6 +346,21 @@ export class EscalationExecutor {
   }
 
   private async handleDistress(event: Event): Promise<void> {
+    // A new attempt from somebody a human has already answered: the acknowledgement again,
+    // not a new ladder. The same event again is the registry's to recognise, below.
+    if (!this.ladders.get(event.id)) {
+      const held = this.heldAcks.get(event.pubkey);
+      if (held && !this.holding(held, now())) this.heldAcks.delete(event.pubkey);
+      else if (held) {
+        console.log(
+          `[ladder] ${event.id.slice(0, 8)} from ${event.pubkey.slice(0, 8)}: already acknowledged by ` +
+            `${held.ladder.acknowledgedBy?.callsign ?? "a human"} -- re-sending that, not paging`,
+        );
+        await this.resendAck(held, event.id);
+        return;
+      }
+    }
+
     // Idempotent by event id. A client is REQUIRED to retry an unacknowledged Distress
     // indefinitely, so duplicates are the normal case, not an edge one.
     const { ladder, started } = this.ladders.open({
@@ -362,103 +502,86 @@ export class EscalationExecutor {
       { kind: "human", callsign, pubkey: event.pubkey },
       now(),
     );
-    if (next) await this.report(next, payload.distress_id);
+    if (next) {
+      // Only a human gets here -- `acknowledge` refuses anything else -- and only a human's
+      // answer is held for the operator's later attempts.
+      if (next.state === "acknowledged") this.heldAcks.set(next.operator, { ladder: next, at: now() });
+      await this.report(next, payload.distress_id);
+    }
   }
 
-  private listen(): void {
-    const token = {};
-    this.listening = token;
-    this.subCloser = this.pool.subscribeMany(
-      this.config.relays.urls,
-      { kinds: [KIND_DISTRESS, KIND_SIGNAL], "#p": [this.pubkey], since: this.since },
-      {
-        onevent: (event: Event) => {
-          if (!verifyEvent(event)) return;
-          // The relay's own `#p` filter is not re-checked by anything downstream --
-          // signature validity says who sent it, not who it was sent to. A relay that
-          // mis-honors its own filter, or forwards from one that does, could otherwise
-          // deliver a validly-signed Distress addressed to a *different* Watchtower and
-          // have it open a ladder and page this roster.
-          if (!event.tags.some((t) => t[0] === "p" && t[1] === this.pubkey)) {
-            console.warn(`[executor] ${event.id.slice(0, 8)} not addressed to this watch -- ignored`);
-            return;
-          }
+  private onEvent(event: Event): void {
+    if (!verifyEvent(event)) return;
+    // The relay's own `#p` filter is not re-checked by anything downstream --
+    // signature validity says who sent it, not who it was sent to. A relay that
+    // mis-honors its own filter, or forwards from one that does, could otherwise
+    // deliver a validly-signed Distress addressed to a *different* Watchtower and
+    // have it open a ladder and page this roster.
+    if (!event.tags.some((t) => t[0] === "p" && t[1] === this.pubkey)) {
+      console.warn(`[executor] ${event.id.slice(0, 8)} not addressed to this watch -- ignored`);
+      return;
+    }
 
-          /*
-           * A signed `20911` is valid forever, and any relay can re-serve one.
-           *
-           * The `#p` re-check above exists because a relay may mis-honour its own filter, which
-           * is the same reason the `since` in the subscription cannot be trusted as a defence.
-           * Without an age check a captured Distress from months ago opens a ladder and wakes
-           * the whole roster -- and, because terminal ladders are reaped hourly, wakes them
-           * again every hour. The keyless pager has guarded exactly this from the start:
-           * "something stamped well in the past is not news, and paging for it would wake
-           * somebody about an emergency that is over".
-           */
-          const age = Math.floor(Date.now() / 1000) - event.created_at;
-          const window = this.config.escalation.pagingWindowSeconds;
-          if (age > window || age < -window) {
-            console.warn(
-              `[executor] ${event.id.slice(0, 8)} stamped ${age}s away -- outside the paging window, ignored`,
-            );
-            return;
-          }
+    /*
+     * A signed `20911` is valid forever, and any relay can re-serve one.
+     *
+     * The `#p` re-check above exists because a relay may mis-honour its own filter, which
+     * is the same reason the `since` in the subscription cannot be trusted as a defence.
+     * Without an age check a captured Distress from months ago opens a ladder and wakes
+     * the whole roster -- and, because terminal ladders are reaped hourly, wakes them
+     * again every hour. The keyless pager has guarded exactly this from the start:
+     * "something stamped well in the past is not news, and paging for it would wake
+     * somebody about an emergency that is over".
+     */
+    const age = Math.floor(Date.now() / 1000) - event.created_at;
+    const window = this.config.escalation.pagingWindowSeconds;
+    if (age > window || age < -window) {
+      console.warn(
+        `[executor] ${event.id.slice(0, 8)} stamped ${age}s away -- outside the paging window, ignored`,
+      );
+      return;
+    }
 
-          const task =
-            event.kind === KIND_DISTRESS
-              ? this.handleDistress(event)
-              : this.maybeAck(event);
+    const task =
+      event.kind === KIND_DISTRESS
+        ? this.handleDistress(event)
+        : this.maybeAck(event);
 
-          task.catch((err: unknown) => {
-            console.error(`[executor] handling ${event.id.slice(0, 8)} failed: ${String(err)}`);
-          });
-        },
-        // Every relay has closed its part. Fires when all of them refused at boot, too.
-        onclose: () => {
-          if (this.listening === token) this.listening = null;
-        },
-      },
-    );
+    task.catch((err: unknown) => {
+      console.error(`[executor] handling ${event.id.slice(0, 8)} failed: ${String(err)}`);
+    });
   }
 
   /**
-   * Gives every relay that is not connected another chance, and says when one comes or goes.
+   * One subscription per relay, each of which reopens itself when it closes.
    *
-   * **The executor went deaf if a relay was unreachable when it started.** The pool marks a
-   * relay that fails its first connection as never to be retried, nothing logged it, and
-   * nothing subscribed again -- so an executor that booted into an outage came up looking
-   * healthy and could not hear a `Distress` for the rest of its life. On a box that restarts
-   * after a power cut, booting into the outage is the ordinary case rather than the edge one,
-   * and invariant 2 forbids exactly this: a ladder that fails silently.
+   * **The executor went deaf if a relay was unreachable when it started**, and the fix for that
+   * asked the wrong question [F08]. It re-subscribed when the pool said a relay was not
+   * connected -- but a relay can stay connected and send `CLOSED` (`auth-required`, a rate
+   * limit, `restricted`), and a heartbeat publish makes a relay read connected for twenty
+   * seconds with no subscription on it. Such a relay was re-subscribed only when the pool's
+   * idle reaper happened to close the socket, the log blamed an outage, and in some sequences
+   * closing a subscription the relay had already closed made nostr-tools count it twice, so the
+   * socket was never reaped and the relay never heard from again.
    *
-   * A fresh subscription retries what the pool gave up on. The new one opens before the old
-   * one closes, so a relay that was fine is never left without a subscription between the two.
-   * `Distress` and acknowledgements are ephemeral, so relays hold nothing to replay into the
-   * overlap, and a duplicate that did arrive would find its ladder already open.
+   * Liveness is now each relay's own subscription. What changes is said once.
    */
-  private relisten(): void {
-    const status = this.pool.listConnectionStatus?.() ?? new Map<string, boolean>();
-    const urls = this.config.relays.urls;
-    let anyDown = false;
-    for (const url of urls) {
-      const up = status.get(normalizeURL(url)) === true;
-      if (!up) anyDown = true;
-      const was = this.relayUp.get(url);
-      if (was === up) continue;
-      this.relayUp.set(url, up);
-      if (!up) {
-        console.error(
-          `[executor] ${url} unreachable -- retrying every ${RELISTEN_SECONDS}s. ` +
-            "A Distress sent only there is not heard until it answers.",
-        );
-      } else if (was === false) {
-        console.log(`[executor] ${url} reachable again`);
-      }
-    }
-    if (!anyDown && this.listening) return;
-    const previous = this.subCloser;
-    this.listen();
-    previous?.close("relisten");
+  private listen(): void {
+    // Once. `drillOnce` calls `start()`, and a second listener would orphan the first.
+    if (this.listener) return;
+    const window = this.config.escalation.pagingWindowSeconds;
+    this.listener = new RelayListener({
+      pool: this.pool,
+      urls: this.config.relays.urls,
+      filter: { kinds: [KIND_DISTRESS, KIND_SIGNAL], "#p": [this.pubkey] },
+      since: this.since,
+      label: "executor",
+      missing: "a Distress sent only there is not heard until it answers",
+      // Longer than twice the age window, so a duplicate cannot outlive being remembered.
+      seenRetentionSeconds: 2 * window + 60,
+      onevent: (event) => this.onEvent(event),
+    });
+    this.listener.start();
   }
 
   private async maybeAck(event: Event): Promise<void> {
@@ -542,8 +665,8 @@ export class EscalationExecutor {
   }
 
   start(): void {
+    this.stopped = false;
     this.listen();
-    this.relistenHandle = setInterval(() => this.relisten(), RELISTEN_SECONDS * 1000);
     // The ladder advances on a clock the executor owns. This is not a trigger -- no timer
     // in this process can START a ladder, only move one that a 20911 already began.
     this.sweepHandle = setInterval(() => {
@@ -559,6 +682,9 @@ export class EscalationExecutor {
       // Finished ladders are dropped here rather than at the moment they finish, so a late
       // duplicate of the same 20911 still finds one and does not open a second.
       this.ladders.reap(now(), this.config.escalation.ladderRetentionSeconds);
+      for (const [operator, held] of this.heldAcks) {
+        if (!this.holding(held, now())) this.heldAcks.delete(operator);
+      }
 
       for (const ladder of this.ladders.tickAll(now(), this.windows)) {
         this.report(ladder, ladder.distressId).catch((err: unknown) => {
@@ -589,10 +715,12 @@ export class EscalationExecutor {
   }
 
   async stop(): Promise<void> {
+    this.stopped = true;
+    for (const handle of this.resends) clearTimeout(handle);
+    this.resends.clear();
     if (this.sweepHandle) clearInterval(this.sweepHandle);
-    if (this.relistenHandle) clearInterval(this.relistenHandle);
-    this.listening = null;
-    this.subCloser?.close("shutdown");
+    this.listener?.stop();
+    this.listener = undefined;
     this.pool.destroy();
   }
 }

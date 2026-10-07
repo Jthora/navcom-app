@@ -44,7 +44,9 @@ Only a `20911` Distress event. Never a timer, a missed window, an overdue, or an
 assessment [invariant 3].
 
 Escalation is not a decision. No component — human or agent — chooses whether to run the
-ladder; receipt of the event runs it.
+ladder; receipt of the event runs it — unless a human already acknowledged that operator
+inside the hold window, when receipt re-sends that acknowledgement instead (see *An
+acknowledged Distress, sent again*, below).
 
 ## The ladder
 
@@ -93,6 +95,45 @@ somebody who is not coming is not.
 
 A ladder that has already reached `EXHAUSTED` still accepts an acknowledgement. Somebody
 arriving late is still somebody arriving.
+
+### An acknowledged Distress, sent again
+
+**Decided 2026-10-07, reversing "terminal ladders do not adopt".**
+
+For `ack_holds_seconds` after a **human** acknowledged an operator's ladder (default 1800), a
+new `20911` from that operator MUST NOT open a ladder or page anyone. The executor answers it
+with the acknowledgement it already has: a `20912` authored by the same human, with ladder state
+`acknowledged`, whose `e` tags name **both** the new `20911` and the one the human acknowledged.
+It sends that again, freshly signed, about ten seconds later. It records a re-sent
+acknowledgement in its accountability log (`acked`) once per attempt, never a second escalation.
+Once the window closes, a new `20911` opens a new ladder as before. A clock that steps back past
+the moment of the acknowledgement closes the window too: the hold fails toward paging.
+
+The reason is a phone that missed the acknowledgement — its connection dropped at that moment.
+It keeps sending, because only a human answer ends a `Distress` on the phone, and every new
+attempt used to page the whole roster again for an emergency somebody was already answering.
+
+Both ids, and the second send, because of how a phone listens. It accepts an answer only to an
+id it has recorded, and a client before 2026-10-07 recorded an attempt only once the publish had
+settled on every relay — up to about seven seconds when one of them is slow — so an answer
+naming only the new attempt, sent the moment it lands, arrived first and was discarded, on every
+attempt, for the whole window. A current client records the attempt before sending it; the
+executor still covers the older ones, which stay cached on phones. The acknowledged id is one a
+phone still in the same `Distress` has held since it sent it; a phone that started its
+`Distress` again holds neither, and the second send arrives after it has recorded the new one.
+
+**The cost: a genuinely new emergency from the same operator inside the window is read as the
+old one until it closes.** Nobody is told about it — not the person who acknowledged, and not the
+rest of the roster. The operator's phone is told who acknowledged and when, and that nobody has
+been told about the new attempt; that is the whole of what the executor does. Two things outside it still see the new `20911`: the watch's board marks the
+operator in distress again, so whoever is holding the watch on a console sees it; and a keyless
+pager, which cannot know a `Distress` was acknowledged, pages as it always does. An `EXHAUSTED`
+ladder holds nothing — nobody answered it, so a new attempt pages as before.
+
+The ladder state machine in core is unchanged. The hold is the executor's, applied before it
+would open a ladder, and **it is kept in memory only**: an executor that restarts inside the
+window has no hold, and the next attempt pages as before. That fails toward paging, which is the
+direction to be wrong in.
 
 ## Reporting
 
@@ -211,3 +252,7 @@ Not optional — these are the point of the spec:
 8. Flood of `20911` from unknown keys → paging bounded, **every** operator still told, and
    what they are told is that nobody could be paged
 9. Every paging channel fails → operator told nobody was woken, not told they were paged
+10. Operator sends a new `Distress` inside `ack_holds_seconds` of a human acknowledgement →
+    the acknowledgement again, naming the new id and the acknowledged one, and heard by the
+    phone's own loop when one of its relays is slow to say OK; nobody paged; after the window,
+    or once the clock has stepped back past the acknowledgement, a new ladder

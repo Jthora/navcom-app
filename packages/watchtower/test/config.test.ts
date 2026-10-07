@@ -116,6 +116,26 @@ hard_expiry             = 14400
       writeFileSync(path, `[identity]\nprivkey_path = "./k"\n\n[relays]\nurls = ["ws://local.relay", "wss://remote.relay"]\n`);
       expect(() => loadDaemonConfig(path)).not.toThrow();
     });
+
+    it("keeps one relay once, however it was written [review: relay paths]", () => {
+      // Two spellings were two entries here and one connection in the pool, which refused the
+      // second publish -- so the heartbeat logged a refusal and an acceptance on every beat.
+      dir = mkdtempSync(join(tmpdir(), "watchtower-cfg-"));
+      const path = join(dir, "watchtower.toml");
+      writeFileSync(
+        path,
+        `[identity]\nprivkey_path = "./k"\n\n[relays]\nurls = ["wss://nos.lol", "wss://nos.lol/", "WSS://NOS.LOL", "wss://relay.damus.io"]\n`,
+      );
+      expect(loadDaemonConfig(path).relays.urls).toEqual(["wss://nos.lol", "wss://relay.damus.io"]);
+    });
+
+    it("refuses an address the pool could not dial, by name, at startup", () => {
+      // nostr-tools throws for the whole list on one of these, so it would have failed later, everywhere.
+      dir = mkdtempSync(join(tmpdir(), "watchtower-cfg-"));
+      const path = join(dir, "watchtower.toml");
+      writeFileSync(path, `[identity]\nprivkey_path = "./k"\n\n[relays]\nurls = ["wss://exa mple"]\n`);
+      expect(() => loadDaemonConfig(path)).toThrow(/invalid entry.*exa mple/);
+    });
   });
 
   describe("[authorization] allowlist (Stage 2)", () => {

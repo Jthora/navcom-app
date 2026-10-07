@@ -1,5 +1,6 @@
-import { SimplePool } from "nostr-tools/pool";
+import type { SimplePool } from "nostr-tools/pool";
 import type { Event } from "nostr-tools/pure";
+import { nodePool } from "../shared/nostr-node.js";
 import {
   KIND_WATCH_STATE,
   STALE_AFTER_SECONDS,
@@ -106,7 +107,8 @@ export async function checkWatch(opts: {
   timeoutMs?: number;
   staleAfterSeconds?: number;
 }): Promise<WatchCheck> {
-  const pool = opts.pool ?? new SimplePool();
+  // Through the factory, so it works on Node 20, which has no global WebSocket [F07].
+  const pool = opts.pool ?? nodePool();
   const now = opts.now ?? (() => Math.floor(Date.now() / 1000));
   const timeoutMs = opts.timeoutMs ?? 8_000;
 

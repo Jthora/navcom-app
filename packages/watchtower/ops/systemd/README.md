@@ -51,8 +51,13 @@ sudo systemctl status navcom-watchtower
 sudo journalctl -u navcom-watchtower -f
 ```
 
-Look for `[daemon] published watch state (automated). Listening for
-signals.` and `[relay] connected: ...` for each configured relay. Then
+Look for `[daemon] published watch state (automated) to N/N relays` and
+`[relay] <url> listening` for each configured relay. A relay that says
+`unreachable` or `refused the subscription` is retried by itself; one
+that says `auth-required` never will deliver, because the daemon does not
+do NIP-42 AUTH. One that says `has not answered` took the subscription and
+went quiet: treat it as down. A `[heartbeat] NO RELAY ACCEPTED` line means operators
+read Dark. Then
 run the CLI's `status` command from any machine with the right pubkey in
 its `client.toml` to confirm `LIVE` end to end.
 

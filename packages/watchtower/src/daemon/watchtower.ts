@@ -1,7 +1,8 @@
-import { SimplePool } from "nostr-tools/pool";
+import type { SimplePool } from "nostr-tools/pool";
 import { finalizeEvent, verifyEvent } from "nostr-tools/pure";
 import type { Event, EventTemplate } from "nostr-tools/core";
-import { installNodeWebSocket } from "../shared/nostr-node.js";
+import { nodePool } from "../shared/nostr-node.js";
+import { RelayListener } from "../shared/relay-listener.js";
 import { sealResponse, openSignal } from "../shared/crypto.js";
 import { existsSync, readFileSync } from "node:fs";
 import { WATCH_STATE_VERSION, type Drill, type LogAction, type LogOutcome, type LogReviewPayload } from "@navcom/core";
@@ -89,11 +90,15 @@ export class WatchtowerDaemon {
   private readonly since: number;
   private heartbeatHandle: ReturnType<typeof setInterval> | undefined;
   private sweepHandle: ReturnType<typeof setInterval> | undefined;
-  private subCloser: { close: (reason?: string) => void } | undefined;
+  private listener: RelayListener | undefined;
   private readonly accountability: AccountabilityLog | undefined;
+  /**
+   * Whether each relay refused the last watch state, so a change is said once [F13].
+   * Absent until the first heartbeat reaches it.
+   */
+  private readonly refusing = new Map<string, boolean>();
 
   constructor(opts: WatchtowerDaemonOptions) {
-    installNodeWebSocket();
     this.config = opts.config;
     this.secretKey = opts.secretKey;
     this.pubkey = opts.pubkey;
@@ -104,23 +109,15 @@ export class WatchtowerDaemon {
       this.pool = opts.pool;
       return;
     }
-    // enableReconnect: true -- found in review: nostr-tools' SimplePool
-    // defaults this to false. A daemon that silently stops receiving
-    // signals after a transient network blip, with no auto-recovery and
-    // no indication to anyone that it happened, is unacceptable for a
-    // safety-coordination system.
-    this.pool = new SimplePool({ enableReconnect: true });
-    // Connection callbacks aren't part of SimplePool's typed constructor
-    // (only enablePing/enableReconnect are) but ARE public, assignable
-    // properties on the underlying AbstractSimplePool -- set them so a
-    // relay drop/recovery is at least visible in the daemon's own logs,
-    // even though there's no remote alerting in session one.
-    this.pool.onRelayConnectionFailure = (url: string) => {
-      console.warn(`[relay] connection failed: ${url}`);
-    };
-    this.pool.onRelayConnectionSuccess = (url: string) => {
-      console.log(`[relay] connected: ${url}`);
-    };
+    // enablePing so a connection that died without a word is noticed and closed. Reconnection
+    // is the listener's job, not the pool's: nostr-tools' own reconnect rewrote `since` to one
+    // past the newest `created_at` anybody sent, so a single future-dated event made this daemon
+    // deaf after the next drop [F04]. See `shared/relay-listener.ts`.
+    //
+    // The pool's connection callbacks are no longer logged here. They fired on every heartbeat
+    // to a relay that was down -- once a minute, for ever -- and the listener and the heartbeat
+    // now each say once when a relay goes and once when it comes back.
+    this.pool = nodePool({ enablePing: true });
   }
 
   private get relayUrls(): string[] {
@@ -188,7 +185,14 @@ export class WatchtowerDaemon {
     return finalizeEvent(template, this.secretKey);
   }
 
-  private async publishWatchState(): Promise<void> {
+  /**
+   * Publishes `10910`, and returns how many relays took it -- 0 means operators read Dark.
+   *
+   * The results were thrown away [F13]. A relay that refused every heartbeat (a write allowlist,
+   * a rate limit, a policy against this kind) left the daemon logging nothing at all while
+   * operators reading that relay were told nobody was on watch.
+   */
+  private async publishWatchState(): Promise<number> {
     const payload: WatchStatePayload = {
       v: WATCH_STATE_VERSION,
       state: "automated",
@@ -220,7 +224,32 @@ export class WatchtowerDaemon {
       content: JSON.stringify(payload),
       created_at: now(),
     });
-    await Promise.allSettled(this.pool.publish(this.relayUrls, event));
+    const urls = this.relayUrls;
+    const results = await Promise.allSettled(this.pool.publish(urls, event));
+    let accepted = 0;
+    results.forEach((result, i) => {
+      const url = urls[i] ?? "?";
+      const was = this.refusing.get(url);
+      if (result.status === "fulfilled") {
+        accepted++;
+        this.refusing.set(url, false);
+        if (was === true) console.log(`[heartbeat] ${url} accepting watch state again`);
+        return;
+      }
+      this.refusing.set(url, true);
+      // Once per change. A relay that refuses every minute would otherwise bury everything else.
+      if (was !== true) {
+        const reason = result.reason instanceof Error ? result.reason.message : String(result.reason);
+        console.error(`[heartbeat] ${url} refused watch state: ${sanitizeForLog(reason, 160)}`);
+      }
+    });
+    if (accepted === 0) {
+      // Every time, not once. This is the watch being invisible, and it stays true until it stops.
+      console.error(
+        `[heartbeat] NO RELAY ACCEPTED the watch state (0/${urls.length}) -- operators read Dark until one does`,
+      );
+    }
+    return accepted;
   }
 
   /** Returns how many relays accepted it — 0 means nothing left this machine. */
@@ -572,41 +601,79 @@ export class WatchtowerDaemon {
     this.note("acked", event.pubkey, accepted > 0 ? "acknowledged" : "ack-not-sent", callsign);
   }
 
-  private startListening(): void {
-    this.subCloser = this.pool.subscribeMany(
-      this.relayUrls,
-      { kinds: [KIND_SIGNAL, KIND_DISTRESS], "#p": [this.pubkey], since: this.since },
-      {
-        onevent: (event: Event) => {
-          if (!verifyEvent(event)) {
-            console.log(`[signal] dropped: bad signature (${event.id.slice(0, 8)})`);
-            return;
-          }
-          if (!isAuthorizedOperator(event.pubkey, this.config.authorization.allowedPubkeys)) {
-            // Silent drop, not an ack -- an unauthorized sender doesn't
-            // get confirmation that anything was even received. With no
-            // allowed_pubkeys configured this never fires (matches
-            // Session One's "any pubkey" MVP policy); once a real
-            // allowlist is set, telling a rejected party "yes, I'm here,
-            // and no" is strictly worse than saying nothing.
-            console.log(`[signal] dropped: unauthorized operator (${shortId(event.pubkey)})`);
-            return;
-          }
-          const task =
-            event.kind === KIND_DISTRESS
-              ? this.handleDistressEvent(event)
-              : this.handleSignalEvent(event);
-          task.catch((err: unknown) => {
-            console.error(`[signal] handler error: ${String(err)}`);
-          });
-        },
-      },
-    );
+  /**
+   * Everything a relay hands over, before any of it is acted on.
+   *
+   * **An age window, because a signed event is valid for ever** [F12]. The executor has always
+   * refused a `20911` stamped outside its paging window; this daemon had only `since`, which a
+   * relay can ignore. A relay rewriting frames -- or serving a captured one -- made it mark an
+   * operator in distress again and acknowledge them again. The same event arriving twice is
+   * answered once: the listener remembers verified ids for longer than twice this window, so an
+   * event cannot outlive its own memory and come back inside it.
+   */
+  private onEvent(event: Event): void {
+    if (!verifyEvent(event)) {
+      console.log(`[signal] dropped: bad signature (${event.id.slice(0, 8)})`);
+      return;
+    }
+    const age = now() - event.created_at;
+    const window = this.config.watch.maxEventAgeSeconds;
+    if (age > window || age < -window) {
+      console.log(
+        `[signal] dropped: ${event.id.slice(0, 8)} stamped ${age}s away -- outside max_event_age_seconds (${window}s)`,
+      );
+      return;
+    }
+    if (!isAuthorizedOperator(event.pubkey, this.config.authorization.allowedPubkeys)) {
+      // Silent drop, not an ack -- an unauthorized sender doesn't
+      // get confirmation that anything was even received. With no
+      // allowed_pubkeys configured this never fires (matches
+      // Session One's "any pubkey" MVP policy); once a real
+      // allowlist is set, telling a rejected party "yes, I'm here,
+      // and no" is strictly worse than saying nothing.
+      console.log(`[signal] dropped: unauthorized operator (${shortId(event.pubkey)})`);
+      return;
+    }
+    const task =
+      event.kind === KIND_DISTRESS
+        ? this.handleDistressEvent(event)
+        : this.handleSignalEvent(event);
+    task.catch((err: unknown) => {
+      console.error(`[signal] handler error: ${String(err)}`);
+    });
   }
 
-  async start(): Promise<void> {
+  /**
+   * One subscription per relay, each reopened by itself when it closes [F05].
+   *
+   * This was one subscription across every relay, opened once. A relay unreachable at boot was
+   * never subscribed at all, while the heartbeat went on reconnecting to it and publishing
+   * `10910` there -- so operators on that relay saw a watch that could not hear them.
+   */
+  private startListening(): void {
+    const window = this.config.watch.maxEventAgeSeconds;
+    this.listener = new RelayListener({
+      pool: this.pool,
+      urls: this.relayUrls,
+      filter: { kinds: [KIND_SIGNAL, KIND_DISTRESS], "#p": [this.pubkey] },
+      since: this.since,
+      label: "relay",
+      missing: "signals sent only there are not heard",
+      seenRetentionSeconds: 2 * window + 60,
+      onevent: (event) => this.onEvent(event),
+    });
+    this.listener.start();
+  }
+
+  /** How many relays this daemon is actually subscribed on right now. */
+  listening(): number {
+    return this.listener?.listening() ?? 0;
+  }
+
+  /** Returns how many relays took the first watch state. */
+  async start(): Promise<number> {
     this.note("took-watch", null, "held");
-    await this.publishWatchState();
+    const accepted = await this.publishWatchState();
     this.startListening();
     this.heartbeatHandle = setInterval(() => {
       this.publishWatchState().catch((err: unknown) => {
@@ -629,12 +696,13 @@ export class WatchtowerDaemon {
         });
       });
     }, this.config.watch.sweepIntervalSeconds * 1000);
+    return accepted;
   }
 
   async stop(): Promise<void> {
     if (this.heartbeatHandle) clearInterval(this.heartbeatHandle);
     if (this.sweepHandle) clearInterval(this.sweepHandle);
-    this.subCloser?.close("shutdown");
+    this.listener?.stop();
     this.pool.destroy();
     this.accountability?.close();
   }

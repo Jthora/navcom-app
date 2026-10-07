@@ -58,6 +58,20 @@ page_budget_window_seconds = 3600
 # dropped at any age.
 ladder_retention_seconds = 3600
 
+# How long a human's acknowledgement answers that operator's later Distress attempts.
+#
+# A phone that missed the acknowledgement -- its connection dropped at that moment -- keeps
+# sending, and each new attempt used to open a fresh ladder and page the roster again for an
+# emergency somebody was already answering. Inside this window a new attempt from that operator
+# gets the same acknowledgement back, from the same human, and nobody is woken. Recorded in the
+# log as `acked`.
+#
+# The cost: a genuinely new emergency from the same operator inside the window is read as the
+# old one until it closes, and nobody is told -- not the person who acknowledged, and not the
+# rest of the roster. A keyless pager still pages, because it cannot see the acknowledgement.
+# An EXHAUSTED ladder holds nothing -- nobody answered that one, so a new attempt pages as before.
+ack_holds_seconds = 1800
+
 # Drills. Unannounced, randomised inside the window, and published -- a watch that cannot
 # demonstrate a passing drill is presumed broken, and 10910 carries the last result so a
 # client sees it before signing on.

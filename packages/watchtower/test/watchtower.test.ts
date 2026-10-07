@@ -37,6 +37,7 @@ function fakeConfig(
       heartbeatIntervalSeconds: 3600, // long, so it never fires mid-test
       sweepIntervalSeconds: 3600,
       queryTimeoutSeconds: 8,
+      maxEventAgeSeconds: 300,
       ...overrides,
     },
     authorization: { allowedPubkeys },
