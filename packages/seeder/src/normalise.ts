@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { RESOURCE_TYPES, abroad, type ResourceType } from "@navcom/core";
+import { ADDRESS_DECIMALS, RESOURCE_TYPES, abroad, atPrecision, type ResourceType } from "@navcom/core";
 import type { RawRecord, SeededRecord } from "./seeded.js";
 
 /**
@@ -249,8 +249,9 @@ export function normalise(region: string, raw: RawRecord, country = "US"): Seede
     name,
     type,
     ...(address ? { address } : {}),
-    ...(typeof raw.lat === "number" && Number.isFinite(raw.lat) ? { lat: raw.lat } : {}),
-    ...(typeof raw.lon === "number" && Number.isFinite(raw.lon) ? { lon: raw.lon } : {}),
+    // At the precision a geocoded address earns, and no more [core: directory/precision.ts].
+    ...(typeof raw.lat === "number" && Number.isFinite(raw.lat) ? { lat: atPrecision(raw.lat, ADDRESS_DECIMALS) } : {}),
+    ...(typeof raw.lon === "number" && Number.isFinite(raw.lon) ? { lon: atPrecision(raw.lon, ADDRESS_DECIMALS) } : {}),
     ...(phone ? { phone } : {}),
     ...(hours ? { hours } : {}),
     ...(raw.languages?.length ? { languages: raw.languages } : {}),

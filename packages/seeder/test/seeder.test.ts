@@ -50,6 +50,16 @@ describe("ids survive a re-scrape", () => {
   });
 });
 
+describe("coordinates arrive at the precision an address earns", () => {
+  it("rounds Overture's 32-bit floats to five decimals, about a metre", () => {
+    const out = normalise("clarke-ga", raw({
+      category: "soup_kitchen", lat: 33.95924377441406, lon: -83.38137817382812,
+    }))!;
+    expect(out.lat).toBe(33.95924);
+    expect(out.lon).toBe(-83.38138);
+  });
+});
+
 describe("types fail toward `other`", () => {
   it("maps what it recognises", () => {
     expect(mapType("homeless_shelter")).toBe("shelter");

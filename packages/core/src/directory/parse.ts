@@ -12,6 +12,7 @@ import {
 import type { ResourceRecord } from './types.js';
 import { isValidIsoDate } from './iso-date.js';
 import { confidentialRefusal, locatingLeaks } from './confidential.js';
+import { ADDRESS_DECIMALS, decimalsOf } from './precision.js';
 
 export interface ParseIssue {
   row: number;
@@ -115,6 +116,29 @@ function numOf(
   return undefined;
 }
 
+/**
+ * A coordinate, at no more precision than an address earns [precision.ts]. Refused rather than
+ * rounded: the fix belongs in the file, which is published as it stands.
+ */
+function coordOf(
+  raw: string | undefined, column: string, rowNo: number, issues: ParseIssue[]
+): number | undefined {
+  const n = numOf(raw, column, rowNo, issues);
+  if (n === undefined) return undefined;
+  const decimals = decimalsOf(raw!);
+  if (decimals === null || decimals > ADDRESS_DECIMALS) {
+    issues.push({
+      row: rowNo,
+      column,
+      message:
+        `"${raw!.trim()}" claims more precision than an address earns — write it as a decimal ` +
+        `with at most ${ADDRESS_DECIMALS} places, about a metre`
+    });
+    return undefined;
+  }
+  return n;
+}
+
 function dateOf(
   raw: string | undefined, column: string, rowNo: number, issues: ParseIssue[]
 ): string | undefined {
@@ -183,8 +207,8 @@ export function parseDirectory(csv: string): ParseResult {
       name,
       type,
       address: str(get('address')),
-      lat: numOf(get('lat'), 'lat', rowNo, issues),
-      lon: numOf(get('lon'), 'lon', rowNo, issues),
+      lat: coordOf(get('lat'), 'lat', rowNo, issues),
+      lon: coordOf(get('lon'), 'lon', rowNo, issues),
       phone: str(get('phone')),
 
       accepts: multiOf(ACCEPTS, get('accepts'), 'accepts', rowNo, issues),

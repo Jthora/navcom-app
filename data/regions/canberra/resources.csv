@@ -1,2 +1,2 @@
 id,name,type,address,lat,lon,phone,accepts,pets,sobriety,id_required,referral_required,sex_offender_ok,reports_to,curfew,max_stay,belongings,accessibility,languages,cost,hours,intake_hours,seasonal,capacity_signal,last_verified,verified_by,method,flag,notes
-canberra-overture-71ba368f,ACT Shelter,shelter,"Maribyrnong House, 159 Maribyrnong Ave, Belconnen",-35.22411346435547,149.11167907714844,+61251342969,,,,,,,,,,,,,,,,,,2026-09-14,,website,ok,Source: https://www.actshelter.net.au/
+canberra-overture-71ba368f,ACT Shelter,shelter,"Maribyrnong House, 159 Maribyrnong Ave, Belconnen",-35.22411,149.11168,+61251342969,,,,,,,,,,,,,,,,,,2026-09-14,,website,ok,Source: https://www.actshelter.net.au/

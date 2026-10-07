@@ -31,13 +31,18 @@ Two things follow, and neither was a plan.
 would be broken on the day it shipped, for records that are already published. This settles
 the question rather than deferring it.
 
-**The coordinates claim a precision nothing earned.** They ship at seven decimal places —
-`34.97105026245117` — which is centimetre resolution on a record whose own confidence is
-`low` and whose address was read off a website. Seven decimals of noise also costs about
-320 KB across the file. The fix is in the data, not the renderer: **round each coordinate to
-the precision its method earned** — five places (~1 m) for a geocoded street address, two
-(~1.1 km) for anything placed by region or by hand. A renderer that truncates on the way out
-still ships the lie in the file anyone can download.
+**The coordinates claimed a precision nothing earned.** They shipped at fourteen decimal places —
+`34.97105026245117`, Overture's 32-bit floats printed at 64-bit length — which is nanometre
+resolution on a record whose own confidence is `low` and whose address was read off a website.
+The fix is in the data, not the renderer: **round each coordinate to the precision its method
+earned** — five places (~1 m) for a geocoded street address, two (~1.1 km) for anything placed by
+region or by hand. A renderer that truncates on the way out still ships the lie in the file
+anyone can download.
+
+**Done 2026-10-06.** All 9,623 coordinates were geocoded addresses, and all were rounded to five
+places in the source files, with every other byte left as it was. The parser now refuses more than
+five, the importer rounds on the way in, and region centres are published to two. A test reads the
+built directory, the region centres and every record page's map link.
 
 ---
 
@@ -228,7 +233,7 @@ Budgets, all of them targets to measure rather than claims:
 ## 7. Open, and who answers it
 
 - ~~**Measure the geometry.**~~ Done 2026-10-06; §3 has the numbers and what they changed.
-- **The seven-decimal coordinates are a data fix**, affecting 9,623 published records. It is
-  separable from the map and should not wait for it.
+- ~~**The over-precise coordinates are a data fix**~~ Done 2026-10-06, in the data rather than the
+  map (§0): all 9,623 published coordinates.
 - **Satellite is declined**, per [`declined.md`](../declined.md)'s rule that a gap may be
   closed rather than carried.

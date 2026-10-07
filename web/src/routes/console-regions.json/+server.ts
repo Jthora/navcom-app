@@ -15,6 +15,7 @@
  *
  * Prerendered, so this is a static file on a CDN and the service worker can keep it.
  */
+import { REGION_DECIMALS, atPrecision } from '@navcom/core';
 import { loadDirectory, loadRegions } from '$lib/directory/load';
 import { regionFigures } from '$lib/console/figures';
 
@@ -35,8 +36,9 @@ export function GET() {
   const centroids = [...sums.entries()].map(([slug, s]) => ({
     region: slug,
     name: byRegion.get(slug) ?? slug,
-    lat: s.lat / s.n,
-    lon: s.lon / s.n
+    // A region's centre is placed by region, so it is published to a kilometre [map.md §0].
+    lat: atPrecision(s.lat / s.n, REGION_DECIMALS),
+    lon: atPrecision(s.lon / s.n, REGION_DECIMALS)
   }));
 
   return new Response(JSON.stringify({ centroids, figures: regionFigures(records, regions) }), {

@@ -8,6 +8,7 @@ export * from './confidential.js';
 export * from './abroad.js';
 export * from './decisive.js';
 export * from './parse.js';
+export * from './precision.js';
 export * from './export.js';
 export * from './fields.js';
 export * from './region.js';

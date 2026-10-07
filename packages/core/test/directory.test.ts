@@ -52,6 +52,21 @@ describe('parseDirectory', () => {
     expect(issues[0].column).toBe('pets');
   });
 
+  it('refuses a coordinate more precise than an address earns, and says what to write instead', () => {
+    // Overture's 32-bit floats printed at 64-bit length claim nanometres for a pin off a website.
+    const { issues, records } = parseDirectory('id,name,type,lat,lon\na,A,shelter,33.95924377441406,-83.38138\n');
+    expect(issues).toHaveLength(1);
+    expect(issues[0].column).toBe('lat');
+    expect(issues[0].message).toMatch(/at most 5 places/);
+    expect(records[0].lat).toBeUndefined();
+    expect(records[0].lon).toBe(-83.38138);
+  });
+
+  it('accepts five decimals or fewer, and refuses a coordinate whose precision cannot be read', () => {
+    expect(parseDirectory('id,name,type,lat,lon\na,A,shelter,33.95924,-83.4\n').issues).toEqual([]);
+    expect(parseDirectory('id,name,type,lat,lon\na,A,shelter,3.4e1,-83.4\n').issues[0].column).toBe('lat');
+  });
+
   it('rejects a duplicate id — ids are never reused', () => {
     const { issues, records } = parseDirectory('id,name,type\na,A,shelter\na,B,meal\n');
     expect(records).toHaveLength(1);
