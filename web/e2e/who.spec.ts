@@ -195,8 +195,8 @@ test('tells no platform which card was being read', async ({ page }) => {
 
 test('an address with no card says so without claiming the card does not exist', async ({ page }) => {
   const { contact } = await cardFor({ callsign: 'Raven' });
-  // Seeded with no events at all.
-  await seedDevice(page, { callsign: 'Wren' });
+  // A relay that answers, with nothing stored for this address.
+  await seedDevice(page, { callsign: 'Wren', relayEvents: [] });
   await open(page, `/terminal/who/?k=${contact}`);
 
   await expect(page.getByText(/nothing here/i)).toBeVisible();
@@ -204,6 +204,18 @@ test('an address with no card says so without claiming the card does not exist',
   // explanation moved behind a `Why` with the prose reduction; it is still there, one tap in.
   await page.getByText(/why that is not the same as no card/i).click();
   await expect(page.getByText(/cannot tell them apart/i)).toBeVisible();
+});
+
+test('an address nobody could be asked about is unknown, not without a card', async ({ page }) => {
+  // No relay answers at all [audit: relay paths, F20]. "Nothing here" would be a claim about
+  // the address made from no answer.
+  const { contact } = await cardFor({ callsign: 'Raven' });
+  await seedDevice(page, { callsign: 'Wren' });
+  await open(page, `/terminal/who/?k=${contact}`);
+
+  // A dead connection gives up after the pool's three-second wait.
+  await expect(page.getByText(/no relay answered/i)).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText(/nothing here/i)).toHaveCount(0);
 });
 
 test('a link carrying no address says that, rather than looking broken', async ({ page }) => {

@@ -127,6 +127,11 @@
   <section>
     {#if board.loading}
       <p class="cost">Asking the relays…</p>
+    {:else if board.entries.length === 0 && board.unanswered}
+      <!-- Nobody answering is not nobody here [audit: relay paths, F20]. -->
+      <Slot k="Cards">
+        <Readout value="Unknown" tone="cold" sub="no relay answered; try again with signal" />
+      </Slot>
     {:else if board.entries.length === 0}
       <!-- Said plainly rather than as an error. An empty board in a real metro is the
            ordinary case early on, and it is not a failure of anything. -->

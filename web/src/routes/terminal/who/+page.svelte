@@ -187,6 +187,11 @@
   <section class="act">
     <Slot k="Card"><Readout value="Asking" tone="neutral" sub="relays have not answered yet" /></Slot>
   </section>
+{:else if !card && profile.unanswered}
+  <section class="act">
+    <!-- Nobody answering is not no card [audit: relay paths, F20]. -->
+    <Slot k="Card"><Readout value="Unknown" tone="cold" sub="no relay answered; try again with signal" /></Slot>
+  </section>
 {:else if !card}
   <section class="act">
     <!--

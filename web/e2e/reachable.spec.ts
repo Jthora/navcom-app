@@ -529,11 +529,24 @@ test.describe('finding somebody', () => {
 
   test('an empty area says so rather than looking broken', async ({ page }) => {
     // The ordinary case early on, and in most metros for a long time. It is not an error.
-    await seedDevice(page, OUT);
+    // A relay that answers, with nobody published there.
+    await seedDevice(page, { ...OUT, relayEvents: [] });
     await open(page, '/terminal/find/');
     await page.locator('#area').selectOption('st-louis');
 
     await expect(page.getByText(/nobody has published a card here/i)).toBeVisible();
+  });
+
+  test('an area nobody could be asked about is unknown, not empty', async ({ page }) => {
+    // No relay answers at all [audit: relay paths, F20]. "Nobody has published a card here"
+    // would be a claim about the area made from no answer.
+    await seedDevice(page, OUT);
+    await open(page, '/terminal/find/');
+    await page.locator('#area').selectOption('st-louis');
+
+    // A dead connection gives up after the pool's three-second wait.
+    await expect(page.getByText(/no relay answered/i)).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/nobody has published a card here/i)).toHaveCount(0);
   });
 });
 
@@ -1374,6 +1387,18 @@ test.describe('being shown Dark, and being told why', () => {
     // Both fixes named, because neither is guessable from "Dark".
     await expect(said).toContainText(/relay list/i);
     await expect(said).toContainText(/not running/i);
+  });
+
+  test('says when no relay answered, rather than blaming the list or the watch', async ({ page }) => {
+    // No relay answers at all [audit: relay paths, F20]. The absent panel's two fixes — a wrong
+    // relay list, a watch not running — are both wrong advice to somebody with no signal.
+    await seedDevice(page, { callsign: 'Wren', watchtower: watch });
+    await open(page, '/terminal/');
+
+    const said = page.locator('[data-watch-unanswered]');
+    await expect(said).toBeVisible({ timeout: 10_000 });
+    await expect(said).toContainText(/could not reach the watch/i);
+    await expect(page.locator('[data-watch-absent]')).toHaveCount(0);
   });
 
   test('says when the watch is publishing something it cannot read', async ({ page }) => {

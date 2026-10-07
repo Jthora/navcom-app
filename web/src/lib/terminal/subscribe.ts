@@ -14,8 +14,9 @@
  * every closed one reopened at once when the phone comes back online or back to the screen. The
  * same event from two relays, or from a reopened one, reaches the caller once.
  *
- * `oneose` is called once, when every relay has first answered or failed, with how many answered:
- * nobody answering is not nothing there [audit: relay paths, F20].
+ * `oneose` is called when every relay has first answered or failed, with how many answered — and,
+ * if that was none, once more when one first does: nobody answering is not nothing there [audit:
+ * relay paths, F20].
  */
 import type { Event } from 'nostr-tools/core';
 import type { Filter } from 'nostr-tools/filter';
@@ -24,7 +25,10 @@ import { usable } from './relay-url';
 
 export interface LiveParams {
   onevent: (event: Event) => void;
-  /** Once, after every relay has first answered or failed: how many of them answered. */
+  /**
+   * After every relay has first answered or failed: how many of them answered. Called a second
+   * time, with one, only if that was none and a relay answers later.
+   */
   oneose?: (answered: number) => void;
 }
 
@@ -46,13 +50,23 @@ export function subscribeLive(urls: readonly string[], filters: Filter | Filter[
     params.onevent(event);
   };
 
-  // The first round: every relay answers or fails once, and then the caller is told how many answered.
+  /*
+   * Once every relay has answered or failed, the caller is told how many have answered — counting
+   * one that failed, reopened and answered while a slower one was still trying. If none had, the
+   * caller is told again the first time one does: "nobody answered" must not stay on a screen
+   * after somebody has, saying the opposite of "nothing there" for as long as it is open.
+   */
   const pending = new Set(relays);
-  let answered = 0;
+  const answered = new Set<string>();
+  let told: number | null = null;
   const settled = (url: string, ok: boolean) => {
-    if (!pending.delete(url)) return;
-    if (ok) answered += 1;
-    if (pending.size === 0) params.oneose?.(answered);
+    if (ok) answered.add(url);
+    pending.delete(url);
+    if (pending.size > 0) return;
+    if (told === null || (told === 0 && answered.size > 0)) {
+      told = answered.size;
+      params.oneose?.(told);
+    }
   };
 
   type Live = { token: object | null; sub: { close(): void } | null; wait: number; timer: ReturnType<typeof setTimeout> | null };

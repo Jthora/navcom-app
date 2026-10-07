@@ -21,6 +21,7 @@ test.describe('a stranger opens the terminal', () => {
     // The claim that would be false for them, and the panic it reads as.
     await expect(page.getByText(/a watchtower is configured/i)).toHaveCount(0);
     await expect(page.locator('[data-watch-absent]')).toHaveCount(0);
+    await expect(page.locator('[data-watch-unanswered]')).toHaveCount(0);
     await expect(page.getByText(/assume nobody is reading what you send/i)).toHaveCount(0);
   });
 

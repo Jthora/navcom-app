@@ -72,7 +72,8 @@ export function watchWatchtower(
       },
       oneose(answered) {
         // Every relay has answered or failed. Nothing heard from any that answered is genuinely
-        // absent; no relay answering at all is this phone being unable to ask.
+        // absent; no relay answering at all is this phone being unable to ask. Called again if a
+        // relay answers after none did, which turns the second reading into the first.
         if (!closed && !sawEvent) onRead(readWatchStateAt(null), { unanswered: answered === 0 });
       }
     }

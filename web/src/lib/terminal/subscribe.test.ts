@@ -99,4 +99,43 @@ describe('what reaches the screen', () => {
     await Promise.resolve();
     expect(answered).toBe(0);
   });
+
+  it('says so again when a relay answers after none did', async () => {
+    const told: number[] = [];
+    const live = subscribeLive(['wss://a.example'], { kinds: [1] }, { onevent: () => {}, oneose: (n) => told.push(n) });
+    fail(opened('wss://a.example')[0]!);
+    await Promise.resolve();
+    vi.advanceTimersByTime(1_100);
+    answer(opened('wss://a.example')[1]!);
+    await Promise.resolve();
+    expect(told, 'the screen would go on saying nobody answered after somebody had').toEqual([0, 1]);
+    live.close();
+  });
+
+  it('counts a relay that answered on its second try while another was still trying', async () => {
+    let answered: number | null = null;
+    const live = subscribeLive(['wss://a.example', 'wss://b.example'], { kinds: [1] }, { onevent: () => {}, oneose: (n) => (answered = n) });
+    fail(opened('wss://a.example')[0]!);
+    await Promise.resolve();
+    vi.advanceTimersByTime(1_100);
+    answer(opened('wss://a.example')[1]!);
+    await Promise.resolve();
+    fail(opened('wss://b.example')[0]!);
+    await Promise.resolve();
+    expect(answered, 'a relay that had answered was reported as nobody answering').toBe(1);
+    live.close();
+  });
+
+  it('says nothing more once somebody has answered', async () => {
+    const told: number[] = [];
+    const live = subscribeLive(['wss://a.example'], { kinds: [1] }, { onevent: () => {}, oneose: (n) => told.push(n) });
+    answer(opened('wss://a.example')[0]!);
+    await Promise.resolve();
+    drop(opened('wss://a.example')[0]!);
+    vi.advanceTimersByTime(1_100);
+    answer(opened('wss://a.example')[1]!);
+    await Promise.resolve();
+    expect(told).toEqual([1]);
+    live.close();
+  });
 });

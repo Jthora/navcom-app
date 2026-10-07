@@ -87,6 +87,8 @@ const MAX_CARDS = 200;
 let cards = $state<Record<string, PublishedCard>>({});
 let outNow = $state<Record<string, number>>({});
 let loading = $state(false);
+/** No relay answered the last question this board asked. */
+let unanswered = $state(false);
 /** Whether more cards are being published to this region than the board will show. */
 let partial = $state(false);
 let closer: { close(): void } | null = null;
@@ -109,6 +111,11 @@ export const board = {
    */
   get partial(): boolean {
     return partial;
+  },
+
+  /** No relay answered: an empty board here means nothing [audit: relay paths, F20]. */
+  get unanswered(): boolean {
+    return unanswered;
   },
 
   get entries(): BoardEntry[] {
@@ -139,6 +146,7 @@ export const board = {
     cards = {};
     outNow = {};
     loading = true;
+    unanswered = false;
 
     closer = subscribeLive(
       urls,
@@ -183,8 +191,9 @@ export const board = {
           if (!(who in outNow) && Object.keys(outNow).length >= MAX_CARDS) return;
           outNow = { ...outNow, [who]: event.created_at };
         },
-        oneose: () => {
+        oneose: (answered) => {
           loading = false;
+          unanswered = answered === 0;
         }
       }
     );
@@ -209,6 +218,8 @@ export const board = {
 let one = $state<PublishedCard | null>(null);
 let oneOut = $state(false);
 let oneLoading = $state(false);
+/** No relay answered the question about this address [audit: relay paths, F20]. */
+let oneUnanswered = $state(false);
 let oneCloser: { close(): void } | null = null;
 
 export const profile = {
@@ -222,6 +233,9 @@ export const profile = {
   get loading(): boolean {
     return oneLoading;
   },
+  get unanswered(): boolean {
+    return oneUnanswered;
+  },
 
   /** Watches one contact key. Safe to call repeatedly. */
   watch(contact: string): void {
@@ -232,6 +246,7 @@ export const profile = {
     one = null;
     oneOut = false;
     oneLoading = true;
+    oneUnanswered = false;
 
     oneCloser = subscribeLive(
       urls,
@@ -257,8 +272,9 @@ export const profile = {
             oneOut = event.created_at >= Math.floor(Date.now() / 1000) - OUT_FOR_SECONDS;
           }
         },
-        oneose: () => {
+        oneose: (answered) => {
           oneLoading = false;
+          oneUnanswered = answered === 0;
         }
       }
     );
