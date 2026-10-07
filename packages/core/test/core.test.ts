@@ -603,6 +603,9 @@ describe('distress keeps trying until a human acknowledges', () => {
    * It used to answer only a subscription opened after the publish, and with no `e` tag: the
    * loop's per-attempt wait was the only thing it could reach. That wait is gone [#31, #32], and
    * the loop's own listener accepts only an answer naming an id it sent.
+   *
+   * And it ends each subscription's stored events, as a relay does: the loop counts a listener only
+   * once its relay has, and says `could-not-hear` rather than `no-answer` until then [G3 phase 1].
    */
   function fakePool(behaviour: {
     publishFails?: number;
@@ -660,8 +663,9 @@ describe('distress keeps trying until a human acknowledges', () => {
         if (answer) queueMicrotask(() => { for (const onevent of [...subs]) onevent(answer); });
         return relays.map(() => (failing ? Promise.reject(new Error('relay refused')) : Promise.resolve('ok')));
       },
-      subscribeMany(_r: string[], _f: unknown, params: { onevent(e: unknown): void }) {
+      subscribeMany(_r: string[], _f: unknown, params: { onevent(e: unknown): void; oneose?(): void }) {
         subs.push(params.onevent);
+        queueMicrotask(() => params.oneose?.());
         return { close() {} };
       },
       close() {},
@@ -728,8 +732,9 @@ describe('distress keeps trying until a human acknowledges', () => {
         }
         return relays.map(() => Promise.resolve('ok'));
       },
-      subscribeMany(_r: string[], _f: unknown, params: { onevent(e: unknown): void }) {
+      subscribeMany(_r: string[], _f: unknown, params: { onevent(e: unknown): void; oneose?(): void }) {
         subs.push(params.onevent);
+        queueMicrotask(() => params.oneose?.());
         return { close() {} };
       },
       close() {}

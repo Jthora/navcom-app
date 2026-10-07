@@ -60,6 +60,9 @@ function humanAck(signalId: string) {
  * REQ from. Relays mostly keep no `20912` at all [audit: relay paths, F25], and the loop no longer
  * opens a subscription per attempt: its listener, open from the start, is the only thing that can
  * hear this [#30].
+ *
+ * Every pool here sends an end-of-stored-events for each subscription, as a relay does: the loop
+ * counts a listener only once its relay has, and says it could not hear until then [G3 phase 1].
  */
 function fakePool(plan: { ackFor: number; deliverOn: number }) {
   const sent: { id: string }[] = [];
@@ -86,9 +89,11 @@ function fakePool(plan: { ackFor: number; deliverOn: number }) {
     subscribeMany(
       _urls: string[],
       filter: Record<string, unknown>,
-      params: { onevent: (e: unknown) => void }
+      params: { onevent: (e: unknown) => void; oneose?: () => void }
     ) {
       subs.push({ filter, onevent: params.onevent });
+      // The end of stored events, as a relay sends it: nothing is kept, so it comes at once.
+      queueMicrotask(() => params.oneose?.());
       return {
         close() {
           const i = subs.findIndex((s) => s.onevent === params.onevent);
@@ -233,10 +238,17 @@ function droppingPool() {
       sent.push(event);
       return urls.map(() => Promise.resolve('ok'));
     },
-    subscribeMany(urls: string[], filter: Record<string, unknown>, params: { onevent: (e: unknown) => void; onclose?: () => void }) {
+    subscribeMany(
+      urls: string[],
+      filter: Record<string, unknown>,
+      params: { onevent: (e: unknown) => void; oneose?: () => void; onclose?: () => void }
+    ) {
       if (bad(urls)) throw new Error(`Invalid URL: ${bad(urls)}`);
       const sub: Sub = { urls, filter, onevent: params.onevent, onclose: params.onclose };
       subs.push(sub);
+      queueMicrotask(() => {
+        if (subs.includes(sub)) params.oneose?.();
+      });
       return {
         close() {
           const i = subs.indexOf(sub);
@@ -347,9 +359,10 @@ function slowOkPool(reply: (signalId: string) => unknown) {
       }
       return urls.map((u) => (u.includes('slow') ? new Promise((r) => setTimeout(() => r('ok'), 150)) : Promise.resolve('ok')));
     },
-    subscribeMany(_urls: string[], filter: Record<string, unknown>, params: { onevent: (e: unknown) => void }) {
+    subscribeMany(_urls: string[], filter: Record<string, unknown>, params: { onevent: (e: unknown) => void; oneose?: () => void }) {
       const sub: Sub = { filter, onevent: params.onevent };
       subs.push(sub);
+      queueMicrotask(() => params.oneose?.());
       return {
         close() {
           const i = subs.indexOf(sub);
@@ -464,10 +477,14 @@ function ownRelayPool(opts: { reply?: (id: string, attempt: number) => unknown[]
   const subs: Sub[] = [];
   let subscribes = 0;
   let refuse = false;
-  const track = (onevent: (e: unknown) => void, onclose: (reason: unknown) => void) => {
+  const track = (onevent: (e: unknown) => void, onclose: (reason: unknown) => void, oneose?: () => void) => {
     subscribes++;
     const sub: Sub = { onevent, onclose, open: true };
     subs.push(sub);
+    // The relay's end of stored events, unless it has closed the subscription first.
+    queueMicrotask(() => {
+      if (sub.open) oneose?.();
+    });
     return {
       close() {
         if (!sub.open) return;
@@ -491,12 +508,20 @@ function ownRelayPool(opts: { reply?: (id: string, attempt: number) => unknown[]
         opts.hang ? new Promise((r) => setTimeout(() => r('ok'), opts.hang)) : Promise.resolve('ok')
       );
     },
-    subscribeMany(_urls: string[], _filter: unknown, params: { onevent: (e: unknown) => void; onclose?: (r: unknown) => void }) {
-      return track(params.onevent, (reason) => {
-        // nostr-tools' wrapper, verbatim in effect.
-        if ((reason as string).startsWith('auth-required: ')) return;
-        params.onclose?.([{ reason }]);
-      });
+    subscribeMany(
+      _urls: string[],
+      _filter: unknown,
+      params: { onevent: (e: unknown) => void; oneose?: () => void; onclose?: (r: unknown) => void }
+    ) {
+      return track(
+        params.onevent,
+        (reason) => {
+          // nostr-tools' wrapper, verbatim in effect.
+          if ((reason as string).startsWith('auth-required: ')) return;
+          params.onclose?.([{ reason }]);
+        },
+        params.oneose
+      );
     },
     close() {},
     deliver,
@@ -529,8 +554,8 @@ function ownRelayPool(opts: { reply?: (id: string, attempt: number) => unknown[]
     Object.assign(pool, {
       ensureRelay: async () => ({
         connected: true,
-        subscribe: (_f: unknown[], params: { onevent: (e: unknown) => void; onclose?: (r: unknown) => void }) =>
-          track(params.onevent, (reason) => params.onclose?.(reason))
+        subscribe: (_f: unknown[], params: { onevent: (e: unknown) => void; oneose?: () => void; onclose?: (r: unknown) => void }) =>
+          track(params.onevent, (reason) => params.onclose?.(reason), params.oneose)
       })
     });
   }
@@ -758,7 +783,10 @@ describe('everything the watch says reaches the operator, not only the first ans
           signal?.addEventListener('abort', () => { clearTimeout(t); r(undefined); }, { once: true });
         })
     });
-    expect(names).toEqual(['sending', 'sent', 'agent-holding', 'acknowledged']);
+    // Where the attempt went is said too, once every relay has answered [G3 phase 1]; the order of
+    // everything else is the point here.
+    expect(names.filter((n) => n !== 'accounted')).toEqual(['sending', 'sent', 'agent-holding', 'acknowledged']);
+    expect(names.indexOf('accounted'), 'accounted for before it left').toBeGreaterThan(names.indexOf('sent'));
     expect(ms, 'the person was heard and then waited on').toBeLessThan(1_000);
   }, 15_000);
 

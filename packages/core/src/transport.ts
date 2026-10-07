@@ -18,58 +18,343 @@ import type { SecretKey } from './crypto/keys.js';
 import { KIND_DISTRESS, KIND_RESPONSE, KIND_SIGNAL, type SignalType } from './events/kinds.js';
 import { checkedText, type DistressPayload, type SignalPayload } from './events/signal.js';
 import type { ResponsePayload } from './events/response.js';
+import { CLOCK_TOLERANCE_SECONDS, STALE_AFTER_SECONDS } from './events/watch-state.js';
+import { whyNotListable } from './relays.js';
 
-export class PublishError extends Error {}
-
-/**
- * The addresses this pool can parse. A subscription across several relays is refused whole when
- * any one address is malformed, which turned one typo into "nobody answered" from every relay.
- */
-function parseable(relays: string[]): string[] {
-  return relays.filter((url) => {
-    try {
-      normalizeURL(url);
-      return true;
-    } catch {
-      return false;
-    }
-  });
+/** A relay address, and something said about it: why it refused, or why nothing was sent there. */
+export interface RelayReason {
+  /** The address, as it was given. */
+  url: string;
+  /** One line of plain text. Often a relay's own words, and so wire data: clipped, never markup. */
+  reason: string;
 }
 
 /**
- * Throws when no relay accepted. Silence downstream would otherwise be misdiagnosed.
+ * Why a relay did not take an event. Three different things, and a screen must not say one for
+ * another [review: G3 phase 1]:
  *
- * **One relay at a time.** nostr-tools normalises the whole list before it opens anything, so one
- * address it cannot parse threw for every relay at once — a typo on one line of a watch config
- * made every Distress attempt read "never left the phone" while the other relays were fine.
- * Published one by one, a bad address is one refusal among the rest [audit: relay paths, F01].
+ * - `refused`: it answered, and the answer was no -- `OK false`, in its own words (`blocked: …`)
+ * - `unconfirmed`: it was handed the event and said nothing in time, or its connection dropped while
+ *   the event was out. **It may have it.** A relay on a congested cell that says OK after nostr-tools
+ *   has stopped waiting holds the event, and was accounted as having refused a `Distress` it carried
+ * - `unreached`: it was never handed the event. The connection failed, this pool would not connect,
+ *   or the `Distress` was over before the event went
  */
-async function publishOrThrow(pool: SimplePool, relays: string[], event: Event): Promise<void> {
-  const results = await Promise.allSettled(
-    relays.flatMap((url) => {
+export type RelayFailure = 'refused' | 'unconfirmed' | 'unreached';
+
+/** What one relay said when it was handed one event. */
+export interface RelayAnswer {
+  /** The address, as it was given. */
+  url: string;
+  /** It said OK: it took the event. */
+  ok: boolean;
+  /** Present exactly when `ok` is false: which of the three ways it did not take it. */
+  failure?: RelayFailure;
+  /**
+   * What it said, or what stood in for it: a relay's reason (`blocked: …`, `rate-limited: …`),
+   * `publish timed out`, or why it could not be reached. Usually empty on an OK; never empty
+   * otherwise.
+   */
+  reason: string;
+}
+
+/** Where one event went, relay by relay, once every relay has answered or run out of time. */
+export interface PublishResult {
+  /** One for each relay it was handed to, in the order given, each relay once however it was spelled. */
+  answers: RelayAnswer[];
+  /** Each address it was never handed to, and why: a mission relay, or one this pool cannot parse. */
+  withheld: RelayReason[];
+}
+
+export class PublishError extends Error {
+  /** Where it went: every relay refused it, could not be reached, or ran out of time. */
+  readonly result?: PublishResult;
+
+  constructor(message: string, result?: PublishResult) {
+    super(message);
+    this.result = result;
+  }
+}
+
+/**
+ * How long one relay may take over one publish before it is accounted as not having answered.
+ *
+ * nostr-tools gives up sooner by itself -- three seconds to connect and 4.4 to say OK -- so this
+ * bounds only a pool that does not. Every attempt is accounted for, and this is what makes that a
+ * promise rather than a hope.
+ */
+const PUBLISH_ACCOUNT_MS = 10_000;
+
+/** The longest reason passed on, as given. A relay chooses what it puts there. */
+const REASON_MAX = 200;
+/** Control, line-separator and direction-override characters: nothing a reason needs, all of them ways to mislead. */
+// eslint-disable-next-line no-control-regex
+const UNPRINTABLE = /[\u0000-\u001f\u007f-\u009f\u2028\u2029\u202a-\u202e\u2066-\u2069]/g;
+
+/** Whatever a relay or the pool gave as a reason, as one clipped line of plain text. */
+function reasonText(reason: unknown): string {
+  let text = '';
+  if (typeof reason === 'string') text = reason;
+  else if (reason instanceof Error) text = reason.message;
+  else if (Array.isArray(reason)) {
+    // The pool's own close, one `{ url, reason }` per relay.
+    const first = reason[0] as { reason?: unknown } | undefined;
+    if (typeof first?.reason === 'string') text = first.reason;
+  }
+  text = text.replace(UNPRINTABLE, ' ').replace(/\s+/g, ' ').trim();
+  return text.length > REASON_MAX ? `${text.slice(0, REASON_MAX - 1)}…` : text;
+}
+
+/** What stands in for a reason nobody gave, by what happened. */
+const UNSAID: Record<RelayFailure, string> = {
+  refused: 'refused, with no reason given',
+  unconfirmed: 'no answer',
+  unreached: 'not sent'
+};
+
+/**
+ * What a failed publish means, from what the pool gave as its reason.
+ *
+ * nostr-tools 2.24 rejects with an `Error` carrying the relay's own words for an `OK false`, and with
+ * words of its own for everything else: `publish timed out`; `relay connection …` when the socket went
+ * while the event was out; a `SendingOnClosedConnection` when it went before; and a bare string,
+ * `connection failure: …`, when it never connected. Its words are matched exactly. A version that
+ * changed them would read every failure as a refusal, as all of them read before this, and the
+ * real-pool tests would say so.
+ */
+function whatFailed(reason: unknown): RelayFailure {
+  if (reason instanceof Error) {
+    if (reason.name === 'SendingOnClosedConnection') return 'unreached';
+    if (reason.message === 'publish timed out' || reason.message.startsWith('relay connection ')) return 'unconfirmed';
+    return 'refused';
+  }
+  if (typeof reason === 'string' && /^(connection failure|connection skipped|duplicate url)/.test(reason)) {
+    return 'unreached';
+  }
+  // Nothing says the relay answered no, or that it was never handed the event.
+  return 'unconfirmed';
+}
+
+/** Whatever was given as an address, as text -- even an entry that cannot be made into any. */
+function printable(value: unknown): string {
+  if (typeof value === 'string') return value;
+  try {
+    return String(value);
+  } catch {
+    // An object with no prototype, or a hostile `toString`: a caller's bug, never a fatal one.
+    return '(an address that cannot be printed)';
+  }
+}
+
+/** An address, as given, kept short enough to quote back. */
+function addressText(url: unknown): string {
+  const text = printable(url).replace(UNPRINTABLE, ' ').trim();
+  return text.length > REASON_MAX ? `${text.slice(0, REASON_MAX - 1)}…` : text;
+}
+
+/** One relay, as given and as the pool will dial it. */
+interface Relay {
+  url: string;
+  key: string;
+}
+
+/**
+ * The relays an event may go to, each once however it is spelled, and those it may not.
+ *
+ * **Once, because nostr-tools keys a publish by the event's id on each connection.** Two spellings of
+ * one relay -- `wss://r` and `wss://r/` -- were two publishes over one socket, the second replaced the
+ * first's place in that table, and the first never settled: `allSettled` waited for ever, and a
+ * `Distress` sat at its first attempt, saying nothing more, for as long as the phone was open.
+ */
+function sortRelays(relays: readonly unknown[]): { tried: Relay[]; withheld: (RelayReason & { key: string })[] } {
+  const tried: Relay[] = [];
+  const withheld: (RelayReason & { key: string })[] = [];
+  const seen = new Set<string>();
+  for (const url of relays) {
+    const why = whyNotListable(url);
+    let key: string;
+    if (typeof url !== 'string') {
+      // Never the key of a real address: `42` must not stand in for `wss://42` and push it out.
+      key = `unparseable:${typeof url}:${printable(url)}`;
+    } else {
       try {
-        return pool.publish([url], event);
-      } catch (e) {
-        return [Promise.reject(e)];
+        key = normalizeURL(url.trim());
+      } catch {
+        key = `unparseable:${url}`;
       }
+    }
+    if (seen.has(key)) continue;
+    seen.add(key);
+    if (why === null) tried.push({ url: url as string, key });
+    else withheld.push({ url: addressText(url), reason: why, key });
+  }
+  return { tried, withheld };
+}
+
+/** Said of an attempt still waiting on its relay's listener when the `Distress` ended. */
+const NOT_SENT_OVER = 'not sent: the Distress was over before it went';
+
+/**
+ * Hands one event to one relay, and says what it said -- always, within {@link PUBLISH_ACCOUNT_MS}.
+ *
+ * `gate`, when given, is waited on first: the listener on a relay this `Distress` has not used yet.
+ * `ended` is asked when the gate opens, and **an attempt still waiting when the `Distress` ends is
+ * never handed over** [review: G3 phase 1]. It went out after a stand-down, a wipe or a person's
+ * answer, to a relay nothing had listened on, and was dialled afresh when that relay's listener had
+ * failed to connect.
+ */
+function answerOf(
+  pool: SimplePool,
+  url: string,
+  event: Event,
+  gate?: Promise<void>,
+  ended?: () => boolean
+): Promise<RelayAnswer> {
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (ok: boolean, reason: unknown, failure: RelayFailure = 'unconfirmed') => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      const text = reasonText(reason);
+      resolve(ok ? { url, ok, reason: text } : { url, ok, failure, reason: text || UNSAID[failure] });
+    };
+    const timer = setTimeout(
+      () => finish(false, `no answer from the relay in ${PUBLISH_ACCOUNT_MS / 1_000}s`, 'unconfirmed'),
+      PUBLISH_ACCOUNT_MS
+    );
+    const go = () => {
+      if (done) return;
+      if (ended?.()) {
+        finish(false, NOT_SENT_OVER, 'unreached');
+        return;
+      }
+      let pending: unknown;
+      try {
+        pending = pool.publish([url], event);
+      } catch (e) {
+        // An address nostr-tools cannot use throws for the whole call: one refusal, not every one.
+        finish(false, e, 'unreached');
+        return;
+      }
+      const each = Array.isArray(pending) ? (pending as unknown[]) : [];
+      if (each.length === 0) {
+        finish(false, 'the pool did not send it', 'unreached');
+        return;
+      }
+      let failed = 0;
+      const why: string[] = [];
+      const how = new Set<RelayFailure>();
+      for (const one of each) {
+        Promise.resolve(one).then(
+          (said) => finish(true, said),
+          (e: unknown) => {
+            how.add(whatFailed(e));
+            // Its own words quote the whole event back; that it never went is all worth saying.
+            const text =
+              e instanceof Error && e.name === 'SendingOnClosedConnection'
+                ? 'the connection closed before it was sent'
+                : reasonText(e);
+            if (text) why.push(text);
+            if (++failed === each.length) {
+              // One promise per relay from a real pool. For more, the likeliest that it has it.
+              finish(false, why.join('; '), how.has('unconfirmed') ? 'unconfirmed' : how.has('refused') ? 'refused' : 'unreached');
+            }
+          }
+        );
+      }
+    };
+    if (gate) gate.then(go, go);
+    else go();
+  });
+}
+
+/** One event on its way: when it first left, who has it so far, and where it went once every relay has answered. */
+interface Publishing {
+  /** True at the first relay's OK; false once every relay has refused, failed or run out of time. */
+  left: Promise<boolean>;
+  settled: Promise<PublishResult>;
+  /** Each relay that has said OK so far, as the pool dials it. It grows until `settled`. */
+  took: ReadonlySet<string>;
+}
+
+/**
+ * Hands an event to each relay on its own, and hears each answer [audit: relay paths, F01].
+ *
+ * nostr-tools normalises a whole list before it opens anything, so one address it could not parse
+ * threw for every relay at once: a typo on one line of a watch config made every `Distress` attempt
+ * read "never left the phone" while the other relays were fine. One by one, a bad address is one
+ * refusal among the rest -- and an address `whyNotListable` refuses is never handed over at all.
+ */
+function publishEach(
+  pool: SimplePool,
+  relays: readonly unknown[],
+  event: Event,
+  how: { gate?: (key: string) => Promise<void> | undefined; ended?: () => boolean } = {}
+): Publishing {
+  const { tried, withheld } = sortRelays(relays);
+  const took = new Set<string>();
+  let leave!: (left: boolean) => void;
+  const left = new Promise<boolean>((resolve) => {
+    leave = resolve;
+  });
+  const answers = tried.map(({ url, key }) =>
+    answerOf(pool, url, event, how.gate?.(key), how.ended).then((answer) => {
+      if (answer.ok) {
+        took.add(key);
+        leave(true);
+      }
+      return answer;
     })
   );
-  if (results.some((r) => r.status === 'fulfilled')) return;
-  const reasons = results
-    .map((r) => (r.status === 'rejected' ? String(r.reason) : null))
-    .filter((r): r is string => r !== null);
-  throw new PublishError(
-    `Failed to publish to any relay (${relays.length} tried): ${reasons.join('; ') || 'unknown error'}`
-  );
+  const settled = Promise.all(answers).then((list) => {
+    leave(list.some((a) => a.ok));
+    return { answers: list, withheld: withheld.map(({ url, reason }) => ({ url, reason })) };
+  });
+  return { left, settled, took };
+}
+
+/** Why nothing took it, relay by relay. */
+function failureOf(result: PublishResult): string {
+  const why = [
+    ...result.answers.map((a) => `${a.url}: ${a.reason || 'refused, with no reason given'}`),
+    ...result.withheld.map((w) => `${w.url}: not sent, ${w.reason}`)
+  ];
+  return `Failed to publish to any relay (${result.answers.length} tried): ${why.join('; ') || 'no relay was given'}`;
+}
+
+/**
+ * Hands an event to every relay it may go to, and says what each said. Throws when none took it,
+ * because silence downstream would otherwise be misdiagnosed.
+ */
+async function publishOrThrow(pool: SimplePool, relays: readonly unknown[], event: Event): Promise<PublishResult> {
+  const result = await publishEach(pool, relays, event).settled;
+  if (result.answers.some((a) => a.ok)) return result;
+  throw new PublishError(failureOf(result), result);
+}
+
+/** A caller's own callback, which must not turn a signal that left into one that did not. */
+function tell(onPublished: ((result: PublishResult) => void) | undefined, result: PublishResult): void {
+  try {
+    onPublished?.(result);
+  } catch {
+    /* the caller's to fix; the signal is out either way */
+  }
 }
 
 export async function sendSignal(
   pool: SimplePool,
-  relays: string[],
+  relays: readonly string[],
   secret: SecretKey,
   watchtower: WatchtowerAddress,
   type: SignalType,
-  payload: SignalPayload
+  payload: SignalPayload,
+  /**
+   * Told where it went, relay by relay, once every relay has answered or run out of time. A signal
+   * no relay took throws a {@link PublishError} carrying the same, so both outcomes say which relay
+   * refused it and why.
+   */
+  onPublished?: (result: PublishResult) => void
 ): Promise<Event> {
   // Enforced here, not only in buildSignal/buildDistress: this is the path every real
   // sender actually uses (the terminal and the CLI both call this, not the builders), and
@@ -86,13 +371,28 @@ export async function sendSignal(
     },
     secret
   );
-  await publishOrThrow(pool, relays, event);
+  tell(onPublished, await publishOrThrow(pool, relays, event));
   return event;
+}
+
+/** A `Distress`, signed and sealed to whoever holds the watch. */
+function sealDistress(secret: SecretKey, watchtower: WatchtowerAddress, payload: DistressPayload): Event {
+  checkedText(payload);
+  return finalizeEvent(
+    {
+      kind: KIND_DISTRESS,
+      // No `t` tag: identified by kind, so a subscriber filtering signal types cannot miss it.
+      tags: [['p', watchtower.pubkey]],
+      content: sealToGroup(secret, watchtower.holders, payload, watchtower.kem),
+      created_at: Math.floor(Date.now() / 1000)
+    },
+    secret
+  );
 }
 
 export async function sendDistress(
   pool: SimplePool,
-  relays: string[],
+  relays: readonly string[],
   secret: SecretKey,
   watchtower: WatchtowerAddress,
   payload: DistressPayload,
@@ -103,21 +403,13 @@ export async function sendDistress(
    * seconds to give up — and a caller that learns the id only when the publish settles throws
    * that answer away as naming a signal it never sent [audit: relay paths, D2 review].
    */
-  onSigned?: (event: Event) => void
+  onSigned?: (event: Event) => void,
+  /** Told where it went, relay by relay, as {@link sendSignal}'s is. */
+  onPublished?: (result: PublishResult) => void
 ): Promise<Event> {
-  checkedText(payload);
-  const event = finalizeEvent(
-    {
-      kind: KIND_DISTRESS,
-      // No `t` tag: identified by kind, so a subscriber filtering signal types cannot miss it.
-      tags: [['p', watchtower.pubkey]],
-      content: sealToGroup(secret, watchtower.holders, payload, watchtower.kem),
-      created_at: Math.floor(Date.now() / 1000)
-    },
-    secret
-  );
+  const event = sealDistress(secret, watchtower, payload);
   onSigned?.(event);
-  await publishOrThrow(pool, relays, event);
+  tell(onPublished, await publishOrThrow(pool, relays, event));
   return event;
 }
 
@@ -129,10 +421,13 @@ export async function sendDistress(
  * took on every attempt, and everything the ladder said after it — "nobody has been woken"
  * included — was dropped [audit: relay paths, #31, #32]. `sendDistressUntilAcknowledged` learns
  * every answer from its own listener instead.
+ *
+ * It asks no relay that `whyNotListable` refuses: the signal was never sent there, so no answer can
+ * come from there, and the request would name this operator's key to a relay that keeps logs.
  */
 export function waitForResponse(
   pool: SimplePool,
-  relays: string[],
+  relays: readonly string[],
   secret: SecretKey,
   ourPubkey: string,
   /**
@@ -182,7 +477,7 @@ export function waitForResponse(
 
     try {
       closer = pool.subscribeMany(
-        parseable(relays),
+        relays.filter((url) => whyNotListable(url) === null),
         {
           kinds: [KIND_RESPONSE],
           authors: [watchtower],
@@ -222,10 +517,106 @@ export function waitForResponse(
 
 export type DistressPhase =
   | { phase: 'sending'; attempt: number }
+  /**
+   * **The attempt left the phone: the first relay said OK.**
+   *
+   * Said at that OK, not once every relay has answered. One relay slow to answer -- nostr-tools
+   * waits 4.4 seconds for an OK, and some relays take longer -- used to hold this, and the window
+   * after it, for the whole of that time. Where the attempt went is `accounted`, once every relay
+   * has answered or run out of time.
+   */
   | { phase: 'sent'; attempt: number }
+  /**
+   * Nothing took it: no relay said OK. Every relay refused it, could not be reached or ran out of
+   * time, or there was no relay it may go to. `error` names each, and why.
+   *
+   * **Not always "it never left."** A relay that says OK after nostr-tools has stopped waiting holds
+   * the attempt. The attempt's `accounted`, said after this, puts each relay under `refused`,
+   * `unconfirmed` (it may have it) or `unreached` (it does not).
+   */
   | { phase: 'unreachable'; attempt: number; error: string }
-  /** Nothing answered this attempt — not a person, not an agent, not the watch's ladder. */
+  /**
+   * Nothing answered this attempt — not a person, not an agent, not the watch's ladder — **and
+   * this phone was listening, for the whole of its window, on a relay where an answer would
+   * come**: a listener whose relay had answered it -- a real end-of-stored-events, or an event --
+   * before the window began, and that was still open when it ended, on a relay `could-not-hear`
+   * describes. When there was none, the attempt is `could-not-hear` instead.
+   */
   | { phase: 'no-answer'; attempt: number }
+  /**
+   * **This attempt left, and this phone cannot say it was listening where an answer would come.**
+   *
+   * Said instead of `no-answer` when no listener heard the whole window on a relay where the watch
+   * would answer. That is a relay the watch has been heard on in the last five minutes, when the
+   * caller gives `watchStateAgeMs` and the watch has been heard on any; otherwise, a relay that took
+   * this attempt. On every such relay, the listener was refused (one that wants AUTH refuses it at
+   * once), dropped during the window, still waiting for its relay's end-of-stored-events when the
+   * window began, or never answered at all. "No answer" there was a claim about the watch that was
+   * really about the phone [G3 phase 1]: somebody may have answered, and the answer gone past.
+   *
+   * It is not proof that nothing was heard. A relay that takes a subscription and never ends its
+   * stored events may still deliver live ones, and an answer that arrives is an answer, whatever
+   * this said. The loop keeps sending, and keeps trying to listen.
+   */
+  | { phase: 'could-not-hear'; attempt: number }
+  /**
+   * **This phone is listening for answers on no relay, and an answer now would most likely be missed.**
+   *
+   * Said once when it becomes true: every listener has closed, failed to connect, or taken its
+   * subscription and said nothing for ten seconds. `relays` is each relay this `Distress` is
+   * using, with why it is not listening there -- a relay's own words where it gave any, such as
+   * `auth-required: …`. Not closure, and nothing stops: attempts still go out. A listener that
+   * closed is opened again after a wait that grows to fifteen seconds, and at once with every
+   * attempt; one whose relay took the subscription and has said nothing is closed and asked again
+   * with every attempt.
+   */
+  | { phase: 'listening-nowhere'; attempt: number; relays: RelayReason[] }
+  /**
+   * **Listening again**, after `listening-nowhere`: a relay sent its end-of-stored-events, or an
+   * event, on a listener that is still open. `relays` is each relay listening now.
+   */
+  | { phase: 'listening-again'; attempt: number; relays: string[] }
+  /**
+   * **From this attempt on, also sent to these relays.**
+   *
+   * When the relays are given as a function, it is read again before every attempt, and the set
+   * only widens: a relay once used is used until the operator stands down. A listener is opened
+   * on each new relay before this attempt is handed to it. Said before this attempt's `sending`.
+   */
+  | { phase: 'also-sending'; attempt: number; relays: string[] }
+  /**
+   * **Where an attempt went, once every relay has answered or run out of time.**
+   *
+   * `took` is each relay that said OK. Each relay that did not is in one of three lists, because
+   * they are three different things ({@link RelayFailure}) [review: G3 phase 1]:
+   *
+   * - `refused`: it answered no, and `reason` is its own words (`blocked: …`)
+   * - `unconfirmed`: it was handed the attempt and said nothing in time (`publish timed out`), or
+   *   its connection dropped while the attempt was out. **It may have it**, and a screen must not
+   *   call it a refusal
+   * - `unreached`: it was never handed the attempt, because it could not be reached
+   *
+   * `withheld` is each address this `Distress` will not send to at all, and why: a mission relay,
+   * or one this phone cannot parse. A relay left out is named, not silently gone.
+   *
+   * `heard`, only when the caller gave `watchStateAgeMs`: those of `took` that this phone has read
+   * the watch's state from in the last five minutes. A relay that took the attempt but where the
+   * watch has not been heard is a relay where nobody may be listening. It counts relays, never
+   * people. Without the function the account says only which relays took it.
+   *
+   * It can arrive after the attempt's window, and after the next attempt's `sending`: `attempt`
+   * says which it accounts for. Never said once the `Distress` is over.
+   */
+  | {
+      phase: 'accounted';
+      attempt: number;
+      took: string[];
+      refused: RelayReason[];
+      unconfirmed: RelayReason[];
+      unreached: RelayReason[];
+      withheld: RelayReason[];
+      heard?: string[];
+    }
   /**
    * A response arrived, and it was an agent.
    *
@@ -285,10 +676,20 @@ export type DistressPhase =
    * which is the case where the operator most needs to be told, and the one where the node
    * is least able to tell them.
    *
+   * **And it says when the phone could not hear**: `couldNotHear` is set when any attempt's
+   * window passed with nothing listening (`could-not-hear`), with how many of the attempts that
+   * left that was. Then "nobody answered" is partly, or wholly, "this phone could not have heard
+   * them". Absent when every window was heard.
+   *
    * Emitted **once**, and it does not stop anything. Retrying continues, because only the
    * operator ends a Distress. It is a message, not a state.
    */
-  | { phase: 'nobody-answering'; attempt: number; elapsedMs: number }
+  | {
+      phase: 'nobody-answering';
+      attempt: number;
+      elapsedMs: number;
+      couldNotHear?: { attempts: number; of: number };
+    }
   | { phase: 'acknowledged'; response: ResponsePayload };
 
 export interface DistressOptions {
@@ -319,6 +720,20 @@ export interface DistressOptions {
   sleep?: (ms: number, signal?: AbortSignal) => Promise<void>;
   /** Injected for tests. Real code has no business reading a clock it cannot control. */
   clock?: () => number;
+  /**
+   * How long ago this phone last read the watch's state from a relay, in milliseconds, or null when
+   * it has read none there.
+   *
+   * Given, each attempt's `accounted` names which of the relays that took it the watch was heard
+   * on in the last five minutes ({@link STALE_AFTER_SECONDS}); a state dated further ahead of this
+   * phone's clock than {@link CLOCK_TOLERANCE_SECONDS} does not count. And each window is heard only
+   * through a relay the watch was heard on, when it was heard on any (`could-not-hear`).
+   *
+   * Called with each address as it was first given: for each relay that took an attempt, when the
+   * attempt is accounted for, and for each relay this `Distress` uses, as each window ends. Never
+   * fatal: a throw counts as not heard.
+   */
+  watchStateAgeMs?: (url: string) => number | null | undefined;
 }
 
 /** Ends early when the signal aborts, so a stop never waits out a backoff of up to a minute. */
@@ -338,11 +753,31 @@ const defaultSleep = (ms: number, signal?: AbortSignal) =>
 const LISTENER_CONNECT_MS = 3_000;
 /** The longest wait before a closed listener is opened again. */
 const LISTENER_REOPEN_MAX_MS = 15_000;
+/**
+ * How long a relay may hold a listener's subscription without answering before it counts as not
+ * listening. The box and the rest of the phone use the same ten seconds.
+ */
+const LISTENER_SILENT_MS = 10_000;
+/** nostr-tools' longest timer, as a subscription's EOSE timeout: its stand-in for an EOSE never fires. */
+const NEVER_MS = 2_147_483_647;
 
 /** A pool that can hand over its relay, as `SimplePool` does, and may refuse to connect. */
 interface OwnRelayPool {
   ensureRelay?: SimplePool['ensureRelay'];
   allowConnectingToRelay?: (url: string, operation: ['read', unknown[]]) => boolean;
+}
+
+/** Resolves when `p` does, or after `ms`, whichever is first. */
+function within(p: Promise<void> | undefined, ms: number): Promise<void> | undefined {
+  if (!p) return undefined;
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, ms);
+    const done = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+    p.then(done, done);
+  });
 }
 
 /**
@@ -375,10 +810,27 @@ interface OwnRelayPool {
  * "an agent answered" until the watch gave up five minutes on. Now an attempt's window ends
  * only when it runs out or a person answers, and everything the watch says is reported as it
  * arrives.
+ *
+ * **And what it says about answers is only as good as its listening** [G3 phase 1]. A
+ * listener counts once its relay has sent a real end-of-stored-events. Nothing counted before:
+ * a relay that wants AUTH closed the listener at once, it reopened for ever, and the screen said
+ * "no answer" after every attempt and "nobody is answering" ten minutes on, about a phone that
+ * could not have heard anybody. Now it says `could-not-hear`, and says when it is listening
+ * nowhere and when it is listening again. A window counts as heard only through a listener whose
+ * relay had answered it before the window began, on a relay where an answer would come.
+ *
+ * **Where it goes.** `relays` is a list, or a function returning one that is read again before
+ * every attempt; the set only ever widens, and a new relay gets a listener before an attempt goes
+ * there. The first attempt goes at once, to what was given, and waits on no read and no handshake.
+ * Nothing is ever sent, or asked, where {@link whyNotListable} refuses -- The Record and its
+ * mirrors above all -- and each attempt's `accounted` says so. Nothing more is handed to the pool
+ * once the operator has stood down or a person has answered: an attempt still waiting on a new
+ * relay's listener never goes. One the pool already holds, for a relay whose connection is still
+ * opening, goes when it opens; the pool keeps no way to take it back.
  */
 export async function sendDistressUntilAcknowledged(
   pool: SimplePool,
-  relays: string[],
+  relays: readonly string[] | (() => readonly string[]),
   secret: SecretKey,
   ourPubkey: string,
   watchtower: WatchtowerAddress,
@@ -397,6 +849,9 @@ export async function sendDistressUntilAcknowledged(
   let backoff = opts.backoffMs ?? 2_000;
   let attempt = 0;
   let saidNobodyAnswering = false;
+  /** Attempts that left and whose window ran out, and of those, how many this phone could not hear. */
+  let windows = 0;
+  let unheard = 0;
 
   /**
    * Every id this Distress has sent, uncapped.
@@ -527,6 +982,48 @@ export async function sendDistressUntilAcknowledged(
   };
 
   /*
+   * **Where it goes: every relay it has been given, in the order first given, and never fewer.**
+   *
+   * Read again before every attempt when `relays` is a function, so a watch that says it moved is
+   * followed while a `Distress` runs. A relay that drops out of a later read is kept: a running
+   * `Distress` never narrows, because the one it drops may be the one somebody is listening on.
+   * An address that may not carry operator traffic is kept too, as `withheld`, so every account
+   * names it and says why nothing went there.
+   */
+  const targets: Relay[] = [];
+  const withheld = new Map<string, RelayReason>();
+  const read = (): readonly unknown[] => {
+    if (typeof relays !== 'function') return relays;
+    try {
+      const got: unknown = relays();
+      return Array.isArray(got) ? got : [];
+    } catch {
+      // A broken read is no new relay, never a fatal one: the Distress keeps what it has.
+      return [];
+    }
+  };
+  const widen = (): Relay[] => {
+    let sorted: ReturnType<typeof sortRelays>;
+    try {
+      sorted = sortRelays(read());
+    } catch {
+      // A list that throws while it is read, entry by entry, is no new relay, and never a fatal one:
+      // an entry that could not be printed ended the Distress before its first attempt [review: G3
+      // phase 1]. `sortRelays` survives any entry; this is for a list that will not be iterated.
+      return [];
+    }
+    const { tried, withheld: refused } = sorted;
+    const added: Relay[] = [];
+    for (const relay of tried) {
+      if (targets.some((known) => known.key === relay.key)) continue;
+      targets.push(relay);
+      added.push(relay);
+    }
+    for (const { key, url, reason } of refused) if (!withheld.has(key)) withheld.set(key, { url, reason });
+    return added;
+  };
+
+  /*
    * **One listener per relay, open for the whole Distress, and each one heals itself**
    * [audit: relay paths, F03].
    *
@@ -544,11 +1041,21 @@ export async function sendDistressUntilAcknowledged(
    * gone. A closed listener is opened again after a wait that doubles to fifteen seconds, and at
    * once when an attempt goes out.
    *
+   * **A listener counts only once its relay has answered it**: a real end-of-stored-events, or an
+   * event on it, and not closed since. nostr-tools fires a stand-in for an EOSE 4.4 seconds after a
+   * request nobody answered; it is put out of reach, as the box's listener and the rest of the phone
+   * already do (`relay-listener.ts`, `subscribe.ts`). A relay that takes the subscription and says
+   * nothing for {@link LISTENER_SILENT_MS} counts as not listening. Its subscription is left open in
+   * case it does, and is closed and asked again with the next attempt [review: G3 phase 1]: a
+   * relay that dropped the request without a word was otherwise never asked again, however long the
+   * Distress ran.
+   *
    * **Subscribed on the relay itself** where the pool can hand it over, as the box's listener is
    * [#3]. The pool's own wrapper calls `reason.startsWith(...)` on every close, so a relay that
    * sent `CLOSED` with a reason that was not a string — `null`, or the `{}` a JavaScript relay
    * makes of an Error — threw there: the listener never heard the close and never came back. A
-   * pool without `ensureRelay` (the fakes in tests) is subscribed through `subscribeMany`.
+   * pool without `ensureRelay` (the fakes in tests) is subscribed through `subscribeMany`, and
+   * counts once that subscription's `oneose` fires.
    *
    * **And it never opens again once the Distress is over** [#1] — finished, or stopped by the
    * operator. A burn stops the Distress before it destroys the pool, and a listener that came
@@ -564,12 +1071,48 @@ export async function sendDistressUntilAcknowledged(
     sub: { close(reason?: string): void } | null;
     /** True once its own `onclose` has fired, or once this closed it. Never closed twice. */
     closed: boolean;
+    /** Closed for good: it would fail the same way every time, or this pool connects to nothing. */
+    final: boolean;
     /** The wait before it is opened again. */
     wait: number;
+    /** Its relay answered it: a real end-of-stored-events, or an event on it. */
+    answered: boolean;
+    /** Taken and never answered for {@link LISTENER_SILENT_MS}. Still open, in case it does. */
+    silent: boolean;
+    silence: ReturnType<typeof setTimeout> | null;
+    /** Why it is not listening, in its relay's words where it gave any. */
+    why: string | null;
+    /** Settles once the subscription has been handed to the relay, or could not be, or the Distress is over. */
+    ready: Promise<void>;
+    /** Settles `ready`. */
+    release: () => void;
   }
   const listeners = new Map<string, Listening>();
   const reopening = new Map<string, ReturnType<typeof setTimeout>>();
   const own = pool as unknown as OwnRelayPool;
+
+  /** What has been said about listening: once each way, so a relay retrying is not a line a second. */
+  let hearing: 'unknown' | 'nowhere' | 'somewhere' = 'unknown';
+  /** Says when this phone starts listening nowhere, and when it is listening again. */
+  const changed = () => {
+    if (over() || attempt === 0) return;
+    const now = targets.map((relay) => ({ relay, entry: listeners.get(relay.key) }));
+    const on = now.filter(({ entry }) => entry?.answered && !entry.closed).map(({ relay }) => relay.url);
+    if (on.length > 0) {
+      if (hearing === 'nowhere') report({ phase: 'listening-again', attempt, relays: on });
+      hearing = 'somewhere';
+      return;
+    }
+    // Still being asked: a relay that has not yet answered, failed or gone quiet may yet.
+    if (now.some(({ entry }) => entry && !entry.closed && !entry.silent)) return;
+    if (hearing === 'nowhere') return;
+    hearing = 'nowhere';
+    report({
+      phase: 'listening-nowhere',
+      attempt,
+      relays: now.map(({ relay, entry }) => ({ url: relay.url, reason: entry?.why ?? 'not listening' }))
+    });
+  };
 
   const reopenLater = (url: string, entry: Listening) => {
     if (over() || listeners.get(url) !== entry || reopening.has(url)) return;
@@ -588,68 +1131,169 @@ export async function sendDistressUntilAcknowledged(
     const pending = reopening.get(url);
     if (pending !== undefined) clearTimeout(pending);
     reopening.delete(url);
-    const entry: Listening = { sub: null, closed: false, wait };
+    let subscribed!: () => void;
+    const ready = new Promise<void>((resolve) => {
+      subscribed = resolve;
+    });
+    const entry: Listening = {
+      sub: null,
+      closed: false,
+      final: false,
+      wait,
+      answered: false,
+      silent: false,
+      silence: null,
+      why: null,
+      ready,
+      release: subscribed
+    };
     listeners.set(url, entry);
+    const current = () => !over() && listeners.get(url) === entry && !entry.closed;
+    const quiet = () => {
+      if (entry.silence) clearTimeout(entry.silence);
+      entry.silence = null;
+    };
+    const answer = () => {
+      if (!current() || entry.answered) return;
+      entry.answered = true;
+      entry.silent = false;
+      entry.why = null;
+      quiet();
+      changed();
+    };
+    /** Gone: closed by its relay, dropped with its connection, or never opened. */
+    const lost = (why: string, final = false) => {
+      subscribed();
+      if (entry.closed) return;
+      entry.closed = true;
+      entry.final = final;
+      entry.why = why;
+      quiet();
+      if (listeners.get(url) !== entry) return;
+      if (!final) reopenLater(url, entry);
+      changed();
+    };
     const handlers = {
-      onevent: heard,
+      onevent: (event: Event) => {
+        // An event on the subscription is the relay answering it, whether or not EOSE follows.
+        if (!entry.answered) answer();
+        heard(event);
+      },
+      // Deferred: nostr-tools' pool reports a failed subscription as an end-of-stored-events and a
+      // close in the same moment, so only a subscription still open a moment later has answered.
+      oneose: () => queueMicrotask(answer),
       // Any reason at all, of any type: it is wire data.
-      onclose: () => {
-        entry.closed = true;
-        reopenLater(url, entry);
-      }
+      onclose: (reason: unknown) => lost(reasonText(reason) || 'closed, with no reason given')
+    };
+    /** Handed to the relay. Said not listening if the relay takes it and says nothing. */
+    const asked = () => {
+      subscribed();
+      if (!current() || entry.answered) return;
+      entry.silence = setTimeout(() => {
+        entry.silence = null;
+        if (!current() || entry.answered) return;
+        entry.silent = true;
+        entry.why = `took the subscription and has not answered in ${LISTENER_SILENT_MS / 1_000}s`;
+        changed();
+      }, LISTENER_SILENT_MS);
     };
 
     if (typeof own.ensureRelay !== 'function') {
       try {
-        entry.sub = pool.subscribeMany([url], RESPONSES, handlers);
-      } catch {
-        // Unparseable: it would fail identically every time. Not retried, never fatal.
-        listeners.delete(url);
+        entry.sub = pool.subscribeMany([url], { ...RESPONSES }, handlers);
+      } catch (e) {
+        // It would fail identically every time. Not retried, never fatal.
+        lost(`could not subscribe: ${reasonText(e) || 'refused'}`, true);
+        return;
       }
+      asked();
       return;
     }
     // A pool that has been told not to connect — a burned one — is not argued with.
     if (own.allowConnectingToRelay?.(url, ['read', [RESPONSES]]) === false) {
-      listeners.delete(url);
+      lost('this phone is not connecting to relays', true);
       return;
     }
-    own.ensureRelay.call(pool, url, { connectionTimeout: LISTENER_CONNECT_MS }).then(
+    let connecting: ReturnType<SimplePool['ensureRelay']>;
+    try {
+      connecting = own.ensureRelay.call(pool, url, { connectionTimeout: LISTENER_CONNECT_MS });
+    } catch (e) {
+      lost(`could not connect: ${reasonText(e) || 'no reason given'}`);
+      return;
+    }
+    connecting.then(
       (relay) => {
         // Over, or superseded, while it was connecting: there is nothing to open.
-        if (over() || listeners.get(url) !== entry || entry.closed) return;
+        if (!current()) {
+          subscribed();
+          return;
+        }
         if (!relay.connected) {
-          entry.closed = true;
-          reopenLater(url, entry);
+          lost('the connection dropped as it opened');
           return;
         }
         try {
-          entry.sub = relay.subscribe([RESPONSES], handlers);
-        } catch {
-          entry.closed = true;
-          reopenLater(url, entry);
+          // Only a real EOSE counts: the stand-in is put off as far as a timer goes, and then
+          // cleared, because nostr-tools never clears it on close. The field is private in its
+          // types and public at runtime; if it is renamed, NEVER_MS still holds the rule.
+          const sub = relay.subscribe([{ ...RESPONSES }], { ...handlers, eoseTimeout: NEVER_MS });
+          clearTimeout((sub as unknown as { eoseTimeoutHandle?: ReturnType<typeof setTimeout> }).eoseTimeoutHandle);
+          entry.sub = sub;
+        } catch (e) {
+          lost(`could not subscribe: ${reasonText(e) || 'refused'}`);
+          return;
         }
+        asked();
       },
-      () => {
-        if (listeners.get(url) !== entry) return;
-        entry.closed = true;
-        reopenLater(url, entry);
+      (e: unknown) => {
+        if (listeners.get(url) !== entry) {
+          subscribed();
+          return;
+        }
+        lost(`could not connect: ${reasonText(e) || 'no reason given'}`);
       }
     );
   };
 
-  /** Opens again, now, any listener that has closed. An attempt going out is a moment the network is being used anyway. */
-  const relisten = () => {
-    for (const [url, entry] of listeners) if (entry.closed) listen(url, entry.wait);
+  /** Lets go of a listener: closed, and nothing it says is heard. Safe to call twice. */
+  const retire = (entry: Listening) => {
+    if (entry.silence) clearTimeout(entry.silence);
+    entry.silence = null;
+    if (entry.closed) return;
+    entry.closed = true;
+    try {
+      entry.sub?.close();
+    } catch {
+      /* it is gone either way */
+    }
   };
 
-  /** Closes every listener and stops every reopen. Safe to call twice. */
+  /**
+   * Asks again, now, wherever this phone is not listening: on a relay whose listener closed, and on
+   * one that took the subscription and has said nothing for {@link LISTENER_SILENT_MS}. An attempt
+   * going out is a moment the network is being used anyway.
+   *
+   * A silent one is closed first and asked afresh [review: G3 phase 1]. A relay that dropped the
+   * request without a word -- an older one at its subscription limit, saying so in a `NOTICE` -- was
+   * never asked again, and the phone stayed deaf there for the whole Distress. One that kept the
+   * request loses nothing by being asked again.
+   */
+  const relisten = () => {
+    for (const [url, entry] of listeners) {
+      if (entry.closed ? entry.final : !entry.silent) continue;
+      retire(entry);
+      listen(url, entry.wait);
+    }
+  };
+
+  /** Closes every listener, stops every reopen, and lets nothing wait on a listener. Safe to call twice. */
   const silence = () => {
     for (const timer of reopening.values()) clearTimeout(timer);
     reopening.clear();
     for (const entry of listeners.values()) {
-      if (entry.closed) continue;
-      entry.closed = true;
-      entry.sub?.close();
+      retire(entry);
+      // An attempt waiting on this listener learns at once that it goes nowhere.
+      entry.release();
     }
   };
 
@@ -672,16 +1316,89 @@ export async function sendDistressUntilAcknowledged(
     }
   };
 
+  /**
+   * Waits for an attempt to leave, or not, ending at once when the operator stops or a person
+   * answers: a relay slow to say OK must not hold either of those. `ended` when it was cut short.
+   */
+  const leaving = async (going: Promise<boolean>): Promise<boolean | 'ended'> => {
+    if (latched || stopped()) return 'ended';
+    const controller = new AbortController();
+    const forward = () => controller.abort();
+    opts.signal?.addEventListener('abort', forward, { once: true });
+    waiting = { controller, exhaustedEnds: false };
+    try {
+      return await Promise.race([
+        going,
+        new Promise<'ended'>((resolve) => controller.signal.addEventListener('abort', () => resolve('ended'), { once: true }))
+      ]);
+    } finally {
+      waiting = null;
+      opts.signal?.removeEventListener('abort', forward);
+    }
+  };
+
+  /** Whether this phone read the watch's state from `url` in the last five minutes, as the caller says. */
+  const heardWithin = (url: string): boolean => {
+    let age: unknown;
+    try {
+      age = opts.watchStateAgeMs?.(url);
+    } catch {
+      return false;
+    }
+    return (
+      typeof age === 'number' &&
+      Number.isFinite(age) &&
+      age >= -CLOCK_TOLERANCE_SECONDS * 1_000 &&
+      age <= STALE_AFTER_SECONDS * 1_000
+    );
+  };
+
+  /**
+   * Where an answer to an attempt would come [review: G3 phase 1]: the relays the watch has been
+   * heard on in the last five minutes, when the caller says and it has been heard on any; otherwise
+   * the relays that took the attempt.
+   *
+   * The watch answers on its own relays, so a listener anywhere else hears nothing, however well it
+   * listens. A relay that served this phone's request and refused every write, beside one that took
+   * the attempt and refused the request, read as listening: "no answer" was said while Wren's
+   * answer went past on the relay this phone could not read. And a watch heard nowhere is not a
+   * phone that cannot hear. The attempts went where they went, and "could not hear" there would be
+   * a hope that nothing supports.
+   */
+  const answerable = (took: ReadonlySet<string>): ReadonlySet<string> => {
+    if (opts.watchStateAgeMs) {
+      const on = targets.filter((relay) => heardWithin(relay.url)).map((relay) => relay.key);
+      if (on.length > 0) return new Set(on);
+    }
+    return took;
+  };
+
+  const accountOf = (n: number, result: PublishResult, away: RelayReason[]): DistressPhase => {
+    const took = result.answers.filter((a) => a.ok).map((a) => a.url);
+    const not = (failure: RelayFailure): RelayReason[] =>
+      result.answers
+        .filter((a) => !a.ok && (a.failure ?? 'unconfirmed') === failure)
+        .map(({ url, reason }) => ({ url, reason: reason || UNSAID[failure] }));
+    return {
+      phase: 'accounted',
+      attempt: n,
+      took,
+      refused: not('refused'),
+      unconfirmed: not('unconfirmed'),
+      unreached: not('unreached'),
+      withheld: away,
+      ...(opts.watchStateAgeMs ? { heard: took.filter(heardWithin) } : {})
+    };
+  };
+
   const acknowledged = (response: ResponsePayload): ResponsePayload => {
     say({ phase: 'acknowledged', response });
     return response;
   };
 
-  // One listener per relay however it is spelled, and none for an address the pool cannot parse:
-  // that fails the same way every time, and the attempt's own send already says so.
-  const urls = [...new Set(parseable(relays).map((url) => normalizeURL(url)))];
   opts.signal?.addEventListener('abort', silence, { once: true });
-  for (const url of urls) listen(url);
+  // The first attempt goes where it was given, at once, and waits on nothing [G3 phase 1].
+  for (const relay of widen()) listen(relay.key);
 
   try {
     for (;;) {
@@ -693,34 +1410,80 @@ export async function sendDistressUntilAcknowledged(
       answeredNow = false;
       agentSaidNow = false;
       earlierSaidNow = false;
+
+      // A relay first named now is listened on before anything goes there, so an answer to this
+      // attempt that arrives only there is not published to nobody.
+      const added = attempt === 1 ? [] : widen();
+      for (const relay of added) listen(relay.key);
+      if (added.length > 0) say({ phase: 'also-sending', attempt, relays: added.map((r) => r.url) });
       relisten();
+      changed();
 
       say({ phase: 'sending', attempt });
       held = [];
       let left = false;
+      /** The relays that have taken this attempt so far. */
+      let took: ReadonlySet<string> = new Set();
       try {
-        await sendDistress(pool, relays, secret, watchtower, payload, (signed) => {
-          // Recorded before it is sent, so an answer that beats a slow relay's OK names an id
-          // this loop knows [audit: relay paths, D2 review].
-          sent.add(signed.id);
+        const event = sealDistress(secret, watchtower, payload);
+        // Recorded before it is sent, so an answer that beats a slow relay's OK names an id this
+        // loop knows [audit: relay paths, D2 review].
+        sent.add(event.id);
+        const fresh = new Set(added.map((r) => r.key));
+        const going = publishEach(pool, targets.map((r) => r.url), event, {
+          gate: (key) => (fresh.has(key) ? within(listeners.get(key)?.ready, LISTENER_CONNECT_MS + 1_000) : undefined),
+          // Nothing still waiting on a new relay's listener goes out once this is over, a person
+          // having answered included [review: G3 phase 1].
+          ended: () => over() || latched !== null
         });
-        left = true;
-        say({ phase: 'sent', attempt });
+        took = going.took;
+        const n = attempt;
+        const away = [...withheld.values()];
+        void going.settled.then((result) => {
+          if (!over()) report(accountOf(n, result, away));
+        });
+        const outcome = await leaving(going.left);
+        if (outcome === true) {
+          left = true;
+          say({ phase: 'sent', attempt });
+        } else if (outcome === false) {
+          const result = await going.settled;
+          say({ phase: 'unreachable', attempt, error: failureOf({ answers: result.answers, withheld: away }) });
+        }
       } catch (e) {
         say({ phase: 'unreachable', attempt, error: e instanceof Error ? e.message : String(e) });
       } finally {
         const meanwhile = held ?? [];
         held = null;
-        for (const phase of meanwhile) say(phase);
+        // Nothing is said once the operator has stood down, held or not: an `accounted` that
+        // arrived while this attempt was going out reached the screen after "stopped" [review: G3
+        // phase 1].
+        if (!over()) for (const phase of meanwhile) say(phase);
       }
       if (latched) return acknowledged(latched);
       if (stopped()) throw cancelled();
 
       if (left) {
+        /*
+         * Who could hear this window: a listener whose relay had answered it before the window
+         * began, and that is still open when it ends [review: G3 phase 1]. One still connecting
+         * then, or still waiting on its relay's end-of-stored-events, was asked too late for an
+         * answer sent at once -- an agent's hold comes within a second, and relays keep no `20912`
+         * to hand a request that arrives after it. This can only err towards `could-not-hear`: a
+         * relay that says OK before it ends a request's stored events costs the first window.
+         */
+        const listening = [...listeners].filter(([, entry]) => entry.answered && !entry.closed);
         await pause(ackWindow, false);
         if (latched) return acknowledged(latched);
         if (stopped()) throw cancelled();
-        if (!answeredNow) report({ phase: 'no-answer', attempt });
+        // ...and only where an answer would come.
+        const where = answerable(took);
+        const couldHear = listening.some(([key, entry]) => where.has(key) && !entry.closed);
+        windows++;
+        if (!answeredNow) {
+          if (!couldHear) unheard++;
+          report(couldHear ? { phase: 'no-answer', attempt } : { phase: 'could-not-hear', attempt });
+        }
       }
 
       // Said once, and it changes nothing. The loop keeps going because only the operator
@@ -729,7 +1492,12 @@ export async function sendDistressUntilAcknowledged(
       const elapsedMs = clock() - startedAt;
       if (!saidNobodyAnswering && elapsedMs >= localExhaustedAfter) {
         saidNobodyAnswering = true;
-        report({ phase: 'nobody-answering', attempt, elapsedMs });
+        report({
+          phase: 'nobody-answering',
+          attempt,
+          elapsedMs,
+          ...(unheard > 0 ? { couldNotHear: { attempts: unheard, of: windows } } : {})
+        });
       }
 
       await pause(backoff, true);
