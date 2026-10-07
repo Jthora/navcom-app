@@ -35,6 +35,7 @@ import {
 import { ensureContactKey } from './card';
 import { loadIdentity } from './identity';
 import { pool } from './pool';
+import { subscribeLive } from './subscribe';
 import { relays } from './relays';
 import { get, set } from './storage';
 
@@ -146,7 +147,7 @@ export const corrections = {
     if (urls.length === 0 || records.length === 0) return;
 
     closer?.close();
-    closer = pool().subscribeMany(urls, { kinds: [KIND_CORRECTION], '#d': [...records] }, {
+    closer = subscribeLive(urls, { kinds: [KIND_CORRECTION], '#d': [...records] }, {
       onevent: (event: Event) => {
         const read = readCorrection(event);
         if (!read) return;

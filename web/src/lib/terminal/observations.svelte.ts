@@ -42,6 +42,7 @@ import { contactKey, ensureContactKey } from './card';
 import { loadIdentity } from './identity';
 import { relays } from './relays';
 import { pool } from './pool';
+import { subscribeLive } from './subscribe';
 
 export interface ReportInput {
   record: ResourceRecord;
@@ -149,7 +150,7 @@ export const observed = {
     watching?.close();
     seenByRecord = {};
 
-    watching = pool().subscribeMany(
+    watching = subscribeLive(
       urls,
       { kinds: [KIND_OBSERVATION], '#d': [...recordIds] },
       {

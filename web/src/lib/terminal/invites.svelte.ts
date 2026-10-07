@@ -34,6 +34,7 @@ import { loadIdentity } from './identity';
 import { pair, peerPubkeys } from './peers';
 import { relays } from './relays';
 import { pool } from './pool';
+import { subscribeLive } from './subscribe';
 import { kemKeys } from './pq.svelte';
 
 export interface Waiting extends Invite {
@@ -139,7 +140,7 @@ export const invites = {
       waiting = { ...waiting, [event.id]: { ...read, id: event.id } };
     };
     const subs = addresses.map((address) =>
-      pool().subscribeMany(urls, { kinds: [KIND_INVITE], '#p': [address] }, { onevent: handle })
+      subscribeLive(urls, { kinds: [KIND_INVITE], '#p': [address] }, { onevent: handle })
     );
     closer = { close: () => subs.forEach((s) => s.close()) };
   },

@@ -29,7 +29,7 @@
 import type { Event } from 'nostr-tools/core';
 import { KIND_CARD, PUBLIC_LABEL, readCard, type PublishedCard } from '@navcom/core';
 import { relays } from './terminal/relays';
-import { pool } from './terminal/pool';
+import { subscribeLive } from './terminal/subscribe';
 import { isHidden } from './hidden';
 
 /**
@@ -74,7 +74,7 @@ export const publicRoster = {
     loading = true;
     asked = true;
 
-    closer = pool().subscribeMany(
+    closer = subscribeLive(
       urls,
       // The one query in this app with no region. `l` because a relay indexes only
       // single-letter tags -- see `PUBLIC_LABEL`.

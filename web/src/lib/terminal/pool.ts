@@ -27,9 +27,15 @@ import { SimplePool } from 'nostr-tools/pool';
 
 let shared: SimplePool | null = null;
 
-/** The app's relay pool. Created on first use, never per module. */
+/**
+ * The app's relay pool. Created on first use, never per module.
+ *
+ * Pinged, so a socket that died without closing — a sleeping phone, a network switch — is noticed
+ * and closed, which is what lets `subscribe.ts` reopen what it carried [audit: relay paths, F19].
+ * Not reconnected by the library: that is done in `subscribe.ts`, with fresh filters.
+ */
 export function pool(): SimplePool {
-  return (shared ??= new SimplePool());
+  return (shared ??= new SimplePool({ enablePing: true }));
 }
 
 /**

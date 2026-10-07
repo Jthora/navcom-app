@@ -13,13 +13,20 @@
 
 import { KIND_WATCH_STATE, readWatchStateAt, type WatchStateRead } from '@navcom/core';
 import type { WatchtowerConfig } from './config';
-import { pool } from './pool';
+import { subscribeLive } from './subscribe';
 
 export interface Connection {
   close(): void;
 }
 
-export type WatchStateHandler = (read: WatchStateRead) => void;
+/**
+ * `heard.unanswered` is set when no relay answered at all: this phone could not ask, which is a
+ * different thing from the watch having published nothing [audit: relay paths, F20].
+ */
+export type WatchStateHandler = (read: WatchStateRead, heard?: { unanswered: boolean }) => void;
+
+/** How often a held reading is aged again, so a screen left open goes Dark once it is stale. */
+const REREAD_MS = 30_000;
 
 /**
  * Opens a subscription and reports every reading, including the ones that mean Dark.
@@ -46,30 +53,27 @@ export function watchWatchtower(
    * relay answered last decided — so a dark watch could read "On station". The NIP-01 tie-break
    * settles two copies from the same second, the way `--check` already does.
    */
-  let newest: { at: number; id: string } | null = null;
+  let newest: { at: number; id: string; content: string } | null = null;
+  const reread = () =>
+    newest && onRead(readWatchStateAt(newest.content, { createdAt: newest.at, staleAfterSeconds: opts.staleAfterSeconds }));
 
   let sub: { close(): void };
   try {
-    sub = pool().subscribeMany(
+    sub = subscribeLive(
     config.relays,
     { kinds: [KIND_WATCH_STATE], authors: [config.pubkey], limit: 1 },
     {
       onevent(event) {
         if (closed) return;
         if (newest && (event.created_at < newest.at || (event.created_at === newest.at && event.id >= newest.id))) return;
-        newest = { at: event.created_at, id: event.id };
+        newest = { at: event.created_at, id: event.id, content: event.content };
         sawEvent = true;
-        onRead(
-          readWatchStateAt(event.content, {
-            createdAt: event.created_at,
-            staleAfterSeconds: opts.staleAfterSeconds
-          })
-        );
+        reread();
       },
-      oneose() {
-        // The relay has sent everything it holds. If that was nothing, this is genuinely
-        // absent rather than still arriving — a real signal, not a timeout guess.
-        if (!closed && !sawEvent) onRead(readWatchStateAt(null));
+      oneose(answered) {
+        // Every relay has answered or failed. Nothing heard from any that answered is genuinely
+        // absent; no relay answering at all is this phone being unable to ask.
+        if (!closed && !sawEvent) onRead(readWatchStateAt(null), { unanswered: answered === 0 });
       }
     }
   );
@@ -79,9 +83,17 @@ export function watchWatchtower(
     return { close() {} };
   }
 
+  /*
+   * Aged on the screen, not only on arrival [invariant 7]. A reading was judged once, when it
+   * arrived, so a Status screen left open showed "On station" for as long as nothing new came —
+   * which, with the subscription dead, was forever.
+   */
+  const aging = setInterval(() => !closed && reread(), REREAD_MS);
+
   return {
     close() {
       closed = true;
+      clearInterval(aging);
       try {
         sub.close();
         // The subscription, not the connection. Closing the connection here used to be

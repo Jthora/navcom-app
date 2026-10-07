@@ -34,6 +34,7 @@ import { loadIdentity } from './identity';
 import { relays } from './relays';
 import { address } from './funding';
 import { pool } from './pool';
+import { subscribeLive } from './subscribe';
 import { isHidden } from '../hidden';
 
 /**
@@ -139,7 +140,7 @@ export const board = {
     outNow = {};
     loading = true;
 
-    closer = pool().subscribeMany(
+    closer = subscribeLive(
       urls,
       // One filter, not two: both kinds are tagged with the region, so a single
       // subscription fetches the board and who is on it in one round trip.
@@ -232,7 +233,7 @@ export const profile = {
     oneOut = false;
     oneLoading = true;
 
-    oneCloser = pool().subscribeMany(
+    oneCloser = subscribeLive(
       urls,
       // By author, not by region -- a card that is address-only carries no region tag and
       // would be unreachable any other way. That is the whole point of that tier.

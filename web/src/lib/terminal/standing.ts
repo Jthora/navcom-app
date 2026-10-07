@@ -38,6 +38,7 @@ import {
 import type { Event } from 'nostr-tools/core';
 import { loadIdentity } from './identity';
 import { pool } from './pool';
+import { subscribeLive } from './subscribe';
 import { relays } from './relays';
 import { get, set } from './storage';
 
@@ -172,7 +173,7 @@ export function start(): void {
   if (urls.length === 0 || endorsers.length === 0) return;
 
   closer?.close();
-  closer = pool().subscribeMany(urls, { kinds: [KIND_REVOCATION], authors: endorsers }, {
+  closer = subscribeLive(urls, { kinds: [KIND_REVOCATION], authors: endorsers }, {
     onevent: (event: Event) => {
       const seen = get<Event[]>('accruing', REVOKED) ?? [];
       if (seen.some((r) => r.id === event.id)) return;

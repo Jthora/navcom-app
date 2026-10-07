@@ -30,7 +30,7 @@
 import { KIND_RESPONSE, open, type ResponsePayload } from '@navcom/core';
 import { loadConfig } from './config';
 import { loadIdentity } from './identity';
-import { pool } from './pool';
+import { subscribeLive } from './subscribe';
 
 /** When the watch last said we were past our window, or null. Unix seconds. */
 let saidAt = $state<number | null>(null);
@@ -65,7 +65,7 @@ export const overdue = {
     closer?.close();
     // Never out of a screen's onMount [audit: relay paths, F01]: unopened is the same as silent.
     try {
-    closer = pool().subscribeMany(
+    closer = subscribeLive(
       config.relays,
       { kinds: [KIND_RESPONSE], authors: [config.pubkey], '#p': [identity.pubkey] },
       {

@@ -61,8 +61,14 @@ describe('two relays that disagree', () => {
 describe('a list the pool cannot open', () => {
   it('leaves the reading Dark and throws nothing out of the screen', () => {
     throws = true;
-    const reads: WatchStateRead[] = [];
-    expect(() => watchWatchtower({ pubkey: getPublicKey(watch), relays: ['wss://'], holders: [] }, (r) => reads.push(r))).not.toThrow();
-    expect(reads).toHaveLength(1);
+    const reads: { read: WatchStateRead; heard?: { unanswered: boolean } }[] = [];
+    expect(() =>
+      watchWatchtower({ pubkey: getPublicKey(watch), relays: ['wss://', 'wss://bad.example'], holders: [] }, (read, heard) =>
+        reads.push({ read, heard })
+      )
+    ).not.toThrow();
+    expect(reads.every((r) => r.read.dark)).toBe(true);
+    // And it says nobody answered, rather than that the watch published nothing [F20].
+    expect(reads.at(-1)!.heard).toEqual({ unanswered: true });
   });
 });

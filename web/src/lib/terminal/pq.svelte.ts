@@ -27,6 +27,7 @@ import { contactPubkey } from './card';
 import { peerPubkeys } from './peers';
 import { relays } from './relays';
 import { pool } from './pool';
+import { subscribeLive } from './subscribe';
 import { get, set } from './storage';
 
 const FIELD = 'kem_keys';
@@ -125,7 +126,7 @@ export const pq = {
     if (wanted.length === 0) return;
 
     closer?.close();
-    closer = pool().subscribeMany(
+    closer = subscribeLive(
       urls,
       { kinds: [KIND_KEY_BUNDLE], authors: wanted },
       {

@@ -22,6 +22,7 @@ import { loadIdentity } from './identity';
 import { buddies, peerPubkeys, peers } from './peers';
 import { relays } from './relays';
 import { pool } from './pool';
+import { subscribeLive } from './subscribe';
 import { kemKeys } from './pq.svelte';
 
 /** How often presence is republished, and therefore how quickly a peer appears. */
@@ -101,7 +102,7 @@ export const presence = {
     if (!identity || urls.length === 0 || peerPubkeys().length === 0) return;
 
     closer?.close();
-    closer = pool().subscribeMany(
+    closer = subscribeLive(
       urls,
       { kinds: [KIND_PEER_PRESENCE], '#p': [identity.pubkey] },
       {

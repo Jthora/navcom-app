@@ -51,6 +51,7 @@ import { loadIdentity } from './identity';
 import { loadConfig } from './config';
 import { watchRelays } from './relays';
 import { pool } from './pool';
+import { subscribeLive } from './subscribe';
 import { watchKey, watchPubkey } from './watch-key';
 
 /** How often watch state is republished. A stale state reads Dark, which is the point. */
@@ -236,7 +237,7 @@ export const board = {
     listeningTo = address;
     advertisedAt = 0;
     /*
-     * `subscribeMap`, not `subscribeMany` with an array.
+     * Two filters per relay, not `subscribeMany` with an array.
      *
      * `subscribeMany(relays, filter, params)` takes **one** filter. This passed two in an
      * array with an `as never` cast, and the cast is the whole story: the array was wrapped
@@ -254,13 +255,15 @@ export const board = {
      * operator -- so the cost was bandwidth, battery and a stranger's relay rather than a
      * wrong board.
      */
-    closer = pool().subscribeMap(
-      urls.flatMap((url) => [
-        { url, filter: { kinds: [KIND_SIGNAL, KIND_DISTRESS], '#p': [address] } },
+    // Live: a watch held for hours outlasts any one socket [audit: relay paths, F19].
+    closer = subscribeLive(
+      urls,
+      [
+        { kinds: [KIND_SIGNAL, KIND_DISTRESS], '#p': [address] },
         // This watch's own published state, so a holder can tell whether they are still the
         // one the world is being told about.
-        { url, filter: { kinds: [KIND_WATCH_STATE], authors: [address] } }
-      ]),
+        { kinds: [KIND_WATCH_STATE], authors: [address] }
+      ],
       {
         onevent: (event: Event) => {
           if (event.kind === KIND_WATCH_STATE) {

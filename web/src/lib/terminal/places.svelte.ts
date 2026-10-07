@@ -29,6 +29,7 @@ import {
 import { ensureContactKey } from './card';
 import { loadIdentity } from './identity';
 import { pool } from './pool';
+import { subscribeLive } from './subscribe';
 import { relays } from './relays';
 import { get, set } from './storage';
 
@@ -112,7 +113,7 @@ export const places = {
     if (urls.length === 0 || !region) return;
 
     closer?.close();
-    closer = pool().subscribeMany(urls, { kinds: [KIND_PLACE], '#g': [region] }, {
+    closer = subscribeLive(urls, { kinds: [KIND_PLACE], '#g': [region] }, {
       onevent: (event: Event) => {
         const read = readPlace(event);
         if (!read) return;

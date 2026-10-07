@@ -38,6 +38,8 @@ export function whenWatchChangesHands(cb: () => void): void {
 }
 
 let read = $state<WatchStateRead>(readWatchStateAt(null));
+/** No relay answered: this phone could not ask, which is not the same as nothing published. */
+let unanswered = $state(false);
 let connected = $state(false);
 let alarms = $state<RootAlarm[]>([]);
 let connection: Connection | null = null;
@@ -52,6 +54,11 @@ export const watch = {
   /** True once a subscription is open — not that a watch exists. */
   get connected(): boolean {
     return connected;
+  },
+
+  /** Whether the Dark being shown is because no relay answered at all [audit: relay paths, F20]. */
+  get unanswered(): boolean {
+    return unanswered;
   },
 
   /**
@@ -70,8 +77,10 @@ export const watch = {
     if (!config) return;
     connection?.close();
     alarms = rootAlarms();
-    connection = watchWatchtower(config, (r) => {
+    connection = watchWatchtower(config, (r, heard) => {
       read = r;
+      // Said when the relays were asked; any reading that came from an event means one answered.
+      unanswered = heard ? heard.unanswered : false;
 
       const holder = r.dark ? null : r.state.holder;
       if (holder) {
@@ -92,6 +101,7 @@ export const watch = {
     connection?.close();
     connection = null;
     connected = false;
+    unanswered = false;
     read = readWatchStateAt(null);
   }
 };

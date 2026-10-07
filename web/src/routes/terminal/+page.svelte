@@ -592,6 +592,16 @@
             enough that the daemon may be gone. <strong>Old is treated as Dark</strong> — a
             stale event says what was true, not what is.
           </p>
+        {:else if configured && watch.read.reason === 'absent' && watch.unanswered}
+          <!-- No relay answered at all: the phone could not ask, so it blames neither the list
+               nor the watch [audit: relay paths, F20]. -->
+          <div data-watch-unanswered>
+            <h2>This phone could not reach the watch</h2>
+            <p>
+              None of the watch's relays answered, so this phone cannot tell whether anybody is watching.
+              <strong>Dark is the safe answer</strong> until one does. It is usually the signal; Distress keeps trying regardless.
+            </p>
+          </div>
         {:else if configured && watch.read.reason === 'absent'}
           <!-- The marker wraps the whole explanation, not its first paragraph: what the test
                is asserting is that the operator was told why, and the why is both halves. -->
