@@ -26,6 +26,19 @@ import type { AddressInfo } from 'node:net';
  * rate limits and retention differ, and this deliberately implements NIP-01 plainly. So it
  * closes *"the client has never spoken to a relay"* and leaves *"this works against
  * relay.damus.io"* open, which still needs two phones and a person.
+ *
+ * ## What it keeps
+ *
+ * **No ephemeral event** (kinds 20000-29999): each reaches whoever is subscribed when it
+ * arrives, and nobody after. That is what most relays do and the case the app has to survive —
+ * strfry keeps them for five minutes, others not at all. It used to keep them for the whole run
+ * and hand an hour-old acknowledgement to any later subscription, so a test could pass because
+ * an answer was published before anybody was listening [audit: relay paths, F25]. A test that
+ * publishes one waits on `subscribers` first.
+ *
+ * Everything else is kept in every version, and `limit` is ignored: a real relay keeps only the
+ * newest replaceable event and honours the limit, so a client depending on either is not tested
+ * here.
  */
 
 interface Filter {
@@ -85,10 +98,15 @@ function matches(filter: Filter, event: Event): boolean {
 
 export interface LocalRelay {
   url: string;
-  /** Everything published to it, in arrival order. */
+  /** Everything it accepted, in arrival order — ephemeral events too, though none is kept for a later subscription. */
   received: Event[];
+  /** How many open subscriptions this event would reach: wait on it before publishing an ephemeral one. */
+  subscribers(event: Event): number;
   close(): Promise<void>;
 }
+
+/** NIP-01's ephemeral range: forwarded to whoever is listening, kept for nobody. */
+const ephemeral = (kind: number) => kind >= 20000 && kind < 30000;
 
 export interface RelayOptions {
   /**
@@ -105,6 +123,7 @@ export interface RelayOptions {
 export async function startRelay(options: RelayOptions = {}): Promise<LocalRelay> {
   const wss = new WebSocketServer({ port: 0, host: '127.0.0.1' });
   const stored: Event[] = [];
+  const received: Event[] = [];
   /** Open subscriptions, so a later event reaches a subscriber that asked before it existed. */
   const subs = new Map<WebSocket, Map<string, Filter[]>>();
 
@@ -130,7 +149,8 @@ export async function startRelay(options: RelayOptions = {}): Promise<LocalRelay
           return;
         }
 
-        stored.push(event);
+        received.push(event);
+        if (!ephemeral(event.kind)) stored.push(event);
         // Acknowledged, because a client that awaits its own publish hangs without this —
         // the same omission the stubbed socket was fixed for.
         socket.send(JSON.stringify(['OK', event.id, true, '']));
@@ -170,7 +190,15 @@ export async function startRelay(options: RelayOptions = {}): Promise<LocalRelay
 
   return {
     url: `ws://127.0.0.1:${port}`,
-    received: stored,
+    received,
+    subscribers: (event) => {
+      let reached = 0;
+      for (const [peer, theirs] of subs) {
+        if (peer.readyState !== peer.OPEN) continue;
+        for (const filters of theirs.values()) if (filters.some((f) => matches(f, event))) reached += 1;
+      }
+      return reached;
+    },
     close: () =>
       new Promise<void>((resolve) => {
         for (const socket of subs.keys()) socket.terminate();

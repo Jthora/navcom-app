@@ -16,8 +16,9 @@ import { startRelay, type LocalRelay } from './relay-server';
  *
  * **What it does not prove**, said plainly so the gap does not get quietly closed in somebody's
  * head: that `relay.damus.io` behaves. Public relays differ in filter handling, rate limits and
- * retention, and this implements NIP-01 plainly. Two phones on two networks is still a human
- * task, and it is still `0.2` in the build order.
+ * retention, and this implements NIP-01 plainly — keeping no ephemeral event, as most do not, so
+ * every one published here waits for its listener first (see `relay-server.ts`). Two phones on
+ * two networks is still a human task, and it is still `0.2` in the build order.
  *
  * Not in the default run. `npm run test:relay`.
  */
@@ -37,6 +38,19 @@ test.afterAll(async () => {
 async function pubkeyOf(hex: string) {
   const { getPublicKey } = await import('nostr-tools/pure');
   return getPublicKey(Uint8Array.from((hex.match(/../g) ?? []).map((b) => parseInt(b, 16))));
+}
+
+/**
+ * Waits until the relay holds a subscription this event would reach.
+ *
+ * For an ephemeral event. The relay keeps none, as most do not, so one published before the page
+ * under test is listening is gone — and the test would pass or fail on how fast the page loaded,
+ * or pass a "never shown" assertion because nobody was listening yet [audit: relay paths, F25].
+ */
+async function listenedFor(event: Parameters<LocalRelay['subscribers']>[0], what: string) {
+  await expect
+    .poll(() => relay.subscribers(event), { timeout: 20_000, message: `nothing subscribed for ${what}` })
+    .toBeGreaterThan(0);
 }
 
 test.describe('over a relay that is actually running', () => {
@@ -79,6 +93,11 @@ test.describe('over a relay that is actually running', () => {
 
     // Raven is watching her status screen, which is where a peer's presence lands.
     await open(raven, '/terminal/');
+    // Presence is ephemeral: listened for before anybody goes out, or the first one is gone.
+    await listenedFor(
+      { id: '0'.repeat(64), pubkey: wrenKey, created_at: Math.floor(Date.now() / 1000), kind: 20913, tags: [['p', ravenKey]], content: '', sig: '' },
+      "a peer's presence on the status screen"
+    );
 
     // Wren goes out.
     await open(wren, '/terminal/sign-on/');
@@ -192,7 +211,9 @@ test.describe('the watch reaching an overdue operator, over a real relay', () =>
     await open(wren, '/terminal/');
     await expect(wren.locator('[data-nudged]')).toHaveCount(0);
 
-    await publish(await contactEvent('You are past the time you gave.'));
+    const contact = await contactEvent('You are past the time you gave.');
+    await listenedFor(contact, 'the watch contacting an overdue operator');
+    await publish(contact);
 
     // Nothing about this was faked: a real socket, a real REQ the client composed, a relay
     // that would have dropped the event had any of the three filter terms been wrong.
@@ -242,43 +263,53 @@ test.describe('the return leg of every signal, over a real relay', () => {
     watch = { secret, pubkey: getPublicKey(secret) };
   });
 
-  /** Answers the operator's signal the way a daemon would: same relay, real frames. */
-  async function answerNext(text: string, opts: { wrongTarget?: boolean } = {}) {
+  /**
+   * Answers the operator's signal the way a daemon would: same relay, real frames.
+   *
+   * `after` is how many events the relay had before the operator asked. The relay is shared by
+   * the whole file, so the first signal on it is an earlier test's — answering that one is how
+   * the wrong-target test could pass without the page under test ever listening.
+   */
+  async function answerNext(text: string, after: number, opts: { wrongTarget?: boolean } = {}) {
     const { finalizeEvent } = await import('nostr-tools/pure');
     const { buildResponse } = await import('@navcom/core');
     const { WebSocket } = await import('ws');
 
     // The signal the terminal actually published, found on the relay rather than guessed.
+    const asked = () => relay.received.slice(after).find((e) => e.kind === 20910) ?? null;
     const signal = await expect
-      .poll(
-        () => relay.received.find((e) => e.kind === 20910) ?? null,
-        { timeout: 20_000, message: 'the terminal never published a signal to the relay' }
-      )
+      .poll(asked, { timeout: 20_000, message: 'the terminal never published a signal to the relay' })
       .not.toBeNull()
-      .then(() => relay.received.find((e) => e.kind === 20910)!);
+      .then(() => asked()!);
+
+    const answering = async (target: string) =>
+      finalizeEvent(
+        buildResponse(
+          watch.secret,
+          await pubkeyOf(TEST_SECRET),
+          target,
+          {
+            type: 'answer',
+            responder: { kind: 'human', callsign: 'Vale' },
+            text,
+            provenance: { record_id: 'st-louis-example', verified: '2026-08-01', method: 'phone' }
+          } as never,
+          Math.floor(Date.now() / 1000)
+        ),
+        watch.secret
+      );
+    // The whole point of the `#e` term. A response to some other signal must not be read as the
+    // answer to this one.
+    const event = await answering(opts.wrongTarget ? 'f'.repeat(64) : signal.id);
+    // Listened for with the right target either way: the wrong one reaches no subscription by
+    // design, and waiting on it would wait forever.
+    await listenedFor(opts.wrongTarget ? await answering(signal.id) : event, 'the answer to a signal');
 
     const socket = new WebSocket(relay.url);
     await new Promise<void>((resolve, reject) => {
       socket.once('open', resolve);
       socket.once('error', reject);
     });
-    const event = finalizeEvent(
-      buildResponse(
-        watch.secret,
-        await pubkeyOf(TEST_SECRET),
-        // The whole point of the `#e` term. A response to some other signal must not be
-        // read as the answer to this one.
-        opts.wrongTarget ? 'f'.repeat(64) : signal.id,
-        {
-          type: 'answer',
-          responder: { kind: 'human', callsign: 'Vale' },
-          text,
-          provenance: { record_id: 'st-louis-example', verified: '2026-08-01', method: 'phone' }
-        } as never,
-        Math.floor(Date.now() / 1000)
-      ),
-      watch.secret
-    );
     socket.send(JSON.stringify(['EVENT', event]));
     await new Promise((r) => setTimeout(r, 250));
     socket.close();
@@ -294,14 +325,15 @@ test.describe('the return leg of every signal, over a real relay', () => {
     });
     await open(page, '/terminal/query/');
     await page.locator('#q').fill('anywhere open past midnight that takes a dog');
+    const after = relay.received.length;
     await page.getByRole('button', { name: /ask/i }).first().click();
-    return { context, page };
+    return { context, page, after };
   }
 
   test('an answer to the operator’s own signal reaches them', async ({ browser }: { browser: Browser }) => {
-    const { context, page } = await askSomething(browser);
+    const { context, page, after } = await askSomething(browser);
 
-    await answerNext('Our Lady’s Inn takes dogs. Ring the bell at the side door.');
+    await answerNext('Our Lady’s Inn takes dogs. Ring the bell at the side door.', after);
 
     const answer = page.locator('[data-answer]');
     await expect(answer).toBeVisible({ timeout: 20_000 });
@@ -321,9 +353,9 @@ test.describe('the return leg of every signal, over a real relay', () => {
      * behaviour an operator's safety rests on: the answer they see is the answer to the
      * question they asked.
      */
-    const { context, page } = await askSomething(browser);
+    const { context, page, after } = await askSomething(browser);
 
-    await answerNext('this answers something else entirely', { wrongTarget: true });
+    await answerNext('this answers something else entirely', after, { wrongTarget: true });
 
     // Long enough that a wrong filter would have shown it.
     await page.waitForTimeout(3_000);
@@ -696,24 +728,26 @@ test.describe('the board, the one filter that resisted a naive test', () => {
     await expect(page.locator('[data-empty-board]')).toBeVisible({ timeout: 20_000 });
 
     const wren = generateSecretKey();
-    await publish(
-      finalizeEvent(
-        {
-          kind: KIND_SIGNAL,
-          created_at: Math.floor(Date.now() / 1000),
-          tags: [['p', watchPub], ['t', 'on-station']],
-          content: sealToGroup(wren, [holder], {
-            callsign: 'Wren',
-            area: 'Downtown',
-            expected_duration: 7200,
-            routine_interval: null,
-            share_position: false,
-            position: null
-          })
-        },
-        wren
-      )
+    const signal = finalizeEvent(
+      {
+        kind: KIND_SIGNAL,
+        created_at: Math.floor(Date.now() / 1000),
+        tags: [['p', watchPub], ['t', 'on-station']],
+        content: sealToGroup(wren, [holder], {
+          callsign: 'Wren',
+          area: 'Downtown',
+          expected_duration: 7200,
+          routine_interval: null,
+          share_position: false,
+          position: null
+        })
+      },
+      wren
     );
+    // An empty board is drawn before its subscription reaches the relay, so it proves nothing
+    // about who is listening.
+    await listenedFor(signal, 'a signal on the phone holding the watch');
+    await publish(signal);
 
     const row = page.locator('.nc-floor-row');
     await expect(row).toHaveCount(1, { timeout: 25_000 });

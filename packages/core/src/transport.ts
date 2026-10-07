@@ -139,9 +139,11 @@ export function waitForResponse(
    * between windows the loop sleeps with no subscription open at all, so an answer arriving
    * in the gap is missed even when the id does match.
    *
-   * Passing every id fixes both at once: the response is accepted whichever signal it names,
-   * and one published during a gap is served from the relay's store when the next
-   * subscription opens.
+   * Passing every id fixes the first: the response is accepted whichever signal it names. It
+   * does not fix the second, though this once said it did. **Responses are ephemeral, and
+   * relays keep them briefly or not at all** — strfry for five minutes, most never — so one
+   * published in a gap reaches only a subscription already open. That is the Distress-long
+   * listener in `sendDistressUntilAcknowledged`, not this wait [audit: relay paths, F25].
    */
   sent: Event | readonly Event[],
   timeoutMs: number,
