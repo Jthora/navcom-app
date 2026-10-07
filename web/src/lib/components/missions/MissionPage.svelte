@@ -14,7 +14,7 @@
   import { effort, endsIn, endsSoon, placeName, stampUtc } from './format';
   import TakePart from './TakePart.svelte';
 
-  let { mission: m, now }: { mission: Mission; now: number } = $props();
+  let { mission: m, now, onreports }: { mission: Mission; now: number; onreports?: () => void } = $props();
 
   const state = $derived(m.state === 'closed' ? 'Closed' : m.state === 'claimed' ? 'Taken' : 'Open');
   const paragraphs = $derived((m.summary ?? '').split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean));
@@ -118,10 +118,39 @@
         {/if}
       </div>
     {/if}
+
+    {#if onreports}
+      <!-- A tap, not a read on open: asking relays for a mission's reports is a choice [ReportsScreen]. -->
+      <button type="button" class="nc-mission-reports" data-reports onclick={onreports}>
+        <span>Reports on this mission</span>
+        <span class="nc-mission-reports-sub">read from the relays operators use</span>
+      </button>
+    {/if}
   </Panel>
 </div>
 
 <style>
+  .nc-mission-reports {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+    min-height: 3rem;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid var(--t-line);
+    background: var(--t-sunk);
+    color: var(--t-ink);
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+  }
+  .nc-mission-reports-sub {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--t-faint);
+  }
   .nc-mission-title {
     margin: 0;
     font-size: 1.05rem;

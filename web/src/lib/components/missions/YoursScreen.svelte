@@ -7,11 +7,10 @@
    * sent is a list, never a count of it [C20].
    */
   import { onMount } from 'svelte';
-  import type { Settlement } from '@navcom/core';
   import { Panel, Readout, Slot } from '$lib/components/panel';
   import { held, tookPart } from '$lib/missions/claims';
   import { sent, settlements, withdraw, type Sent } from '$lib/missions/reports';
-  import { endsIn, placeName, stampUtc } from './format';
+  import { endsIn, placeName, standingOf } from './format';
 
   let {
     now,
@@ -30,22 +29,19 @@
     void version;
     return sent().slice().reverse();
   });
-  let standing = $state<Map<string, Settlement> | null>(null);
+  let standing = $state<Awaited<ReturnType<typeof settlements>> | null>(null);
 
   onMount(() => {
     void settlements(Math.floor(Date.now() / 1000))
       .then((m) => (standing = m))
-      .catch(() => (standing = new Map()));
+      .catch(() => (standing = { standing: new Map(), names: new Map() }));
   });
 
   function shown(r: Sent): { value: string; tone: 'neutral' | 'good' | 'cold' | 'warn'; sub: string } {
     if (r.withdrawn) return { value: 'Withdrawn', tone: 'cold', sub: 'relays were asked to drop it; copies already taken stay' };
-    const s = standing?.get(r.id);
+    const s = standing?.standing.get(r.id);
     if (!s) return { value: standing ? 'Unknown' : 'Checking', tone: 'cold', sub: 'where it stands could not be read' };
-    const challenged = s.challengedBy.length > 0 ? ` · challenged by ${s.challengedBy.map((k) => k.slice(0, 8)).join(', ')}` : '';
-    if (s.state === 'pending') return { value: 'Waiting', tone: 'neutral', sub: `settles by itself ${stampUtc(s.until)} unless challenged${challenged}` };
-    const how = s.how === 'poster' ? 'by the poster' : s.how === 'witness' ? 'by a witness' : 'unchallenged';
-    return { value: 'Settled', tone: 'good', sub: `${how}${challenged}` };
+    return standingOf(s, standing!.names);
   }
 
   async function takeBack(r: Sent) {

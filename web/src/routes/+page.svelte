@@ -143,7 +143,8 @@
     | { kind: 'missions'; province: string | null }
     | { kind: 'mission'; address: string }
     | { kind: 'yours' }
-    | { kind: 'report'; address: string };
+    | { kind: 'report'; address: string }
+    | { kind: 'reports'; address: string };
   let stack = $state<Screen[]>([]);
   const top = $derived(stack.at(-1) ?? null);
   /** Loaded the first time a screen opens: code first paint never needs [com.md §6]. */
@@ -604,11 +605,13 @@
                 />
               {:else if top.kind === 'report'}
                 <screens.ReportScreen address={top.address} {now} ondone={back} />
+              {:else if top.kind === 'reports'}
+                <screens.ReportsScreen address={top.address} missions={active} {now} />
               {:else if top.kind === 'mission'}
                 {@const address = top.address}
                 {@const m = active.find((x) => x.address === address)}
                 {#if m}
-                  <screens.MissionPage mission={m} {now} />
+                  <screens.MissionPage mission={m} {now} onreports={() => open({ kind: 'reports', address })} />
                 {:else if feed.status === 'connecting'}
                   <Readout value="Loading" tone="cold" />
                 {:else}

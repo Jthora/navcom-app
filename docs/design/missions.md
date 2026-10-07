@@ -132,6 +132,15 @@ least.
 - **Who sees it is asked each time, as for a claim.** A public report is a permanent record of who
   worked where; a sealed one still settles, so privacy never costs recognition.
 
+**And two for what others say about a report:**
+
+- **A witness is somebody whose device took part.** That is as near as a phone can come to *was
+  there*; a witness settles the report at once, so the cheapest lie — two friends vouching for each
+  other — buys only the days silence would have taken anyway.
+- **A challenge is anybody's, by name, inside the seven days, and says nothing else.** No reason
+  field, because there is nothing to adjudicate and a box is where a description gets in; no
+  anonymous flag, because a name is what keeps a challenge from being free.
+
 **`settled` is where the points come from, so it is where the gaming comes from.** Who settles:
 
 | Model | Works when | Fails when |

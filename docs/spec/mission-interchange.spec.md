@@ -60,7 +60,7 @@ from whether a builder exists, and this document follows the same discipline.
 | Kind `1911` observation (raw intel) | BUILT — builder and contract exist; published at `/.well-known/navcom-intel.json` |
 | Kind `1912` report | LIVE — operators on navcom.app send them, open or sealed (§5.2); the contract says `emitted: true` |
 | Claims (§5.1) | LIVE — operators on navcom.app send them, open and sealed; three rules PROPOSED (§10, Q11–Q13) |
-| Settlement, challenge (§5.3) | LIVE on NavCom's side as a reading: each operator sees how their reports settled. Witnessing and challenging another's report from NavCom is not built |
+| Settlement, challenge, witness (§5.3) | LIVE on NavCom's side: each operator sees how their reports settled, and any operator can read a mission's reports, witness one (if their device took part) or challenge one, by name |
 | Standing, Writs, bounties (§8) | DESIGNED |
 | The grid's rules — no reader records, relay lists, declared policies (§11) | DESIGNED, decided 2026-10-06. The reader rule is The Record's to apply |
 
@@ -353,6 +353,20 @@ All NIP-32 labels on the **report**, namespace `navcom.mission`:
 unchallenged*. Silence is acceptance. **To dispute a report, label it `challenged` within seven
 days.** Nothing adjudicates: there is no tribunal, no vote and no appeal, and both statements
 stand for the reader to weigh.
+
+**Every label on a report MUST name the mission too** — the report's `e` and the package's `a`, as
+in the appendix's example. NavCom reads labels by mission and never by report: asking a relay for the
+labels on a list of report ids tells it which reports a device cares about, and for an operator's own
+that is as good as a name. A label naming only the report is never found, and the report settles by
+silence instead.
+
+**LIVE, 2026-10-06.** An operator opens a mission's reports on purpose — reading them is a request to
+public relays, so it is a tap rather than a side effect of opening the mission — and sees each in the
+poster's words, with how it stands. **Witnessing** is offered only on a device that took part in the
+mission, which is the nearest NavCom can come to *anyone who was there*; a hand-rolled client may
+witness anything, and every reader names who did. **Challenging** is offered to any signed-on
+operator inside the seven days, since a late one counts for nothing. Neither carries text, because
+nothing is adjudicated, and neither is offered on the operator's own report.
 
 **Mecha Jono settles and challenges; it does not score people.** There is no input anywhere for an
 agent to rate an operator. Standing is derived by NavCom from these events alone.

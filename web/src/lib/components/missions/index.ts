@@ -6,3 +6,4 @@ export { default as MissionList } from './MissionList.svelte';
 export { default as MissionPage } from './MissionPage.svelte';
 export { default as YoursScreen } from './YoursScreen.svelte';
 export { default as ReportScreen } from './ReportScreen.svelte';
+export { default as ReportsScreen } from './ReportsScreen.svelte';

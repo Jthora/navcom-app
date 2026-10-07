@@ -6,13 +6,16 @@ import {
   ReportError,
   againstMission,
   buildReport,
+  buildReportLabel,
   buildSealedReport,
   posterOf,
   readReport,
   settlementOf,
+  withdrawnReports,
   type Report
 } from '../src/events/report';
 import { KIND_REPORT } from '../src/events/kinds';
+import { buildDeletion } from '../src/missions/claim';
 import type { Mission } from '../src/missions/package';
 
 /**
@@ -197,8 +200,59 @@ describe('where a report stands', () => {
     expect(settlementOf(report, poster, [late], NOW + CHALLENGE_WINDOW_SECONDS + 2).challengedBy).toEqual([]);
   });
 
+  it('names who settled it, when somebody did', () => {
+    const witness = generateSecretKey();
+    expect(settlementOf(report, poster, [label(witness, 'witnessed')], NOW + 7_200)).toMatchObject({ how: 'witness', by: getPublicKey(witness) });
+    expect(settlementOf(report, poster, [label(posterSecret, 'settled')], NOW + 7_200)).toMatchObject({ how: 'poster', by: poster });
+  });
+
   it('ignores a label whose signature does not verify', () => {
     const forged = { ...label(posterSecret, 'settled'), created_at: NOW + 1 };
     expect(settlementOf(report, poster, [forged], NOW + 7_200).state).toBe('pending');
+  });
+});
+
+describe('a label on somebody’s report', () => {
+  const id = 'e'.repeat(64);
+  const signer = generateSecretKey();
+
+  it('names the report and the mission, says one word, and carries no text', () => {
+    const l = buildReportLabel(signer, 'challenged', { id, mission: ADDRESS }, NOW);
+    expect(verifyEvent(l)).toBe(true);
+    expect(l.kind).toBe(1985);
+    expect(l.content).toBe('');
+    expect(l.tags).toEqual([
+      ['L', 'navcom.mission'],
+      ['l', 'challenged', 'navcom.mission'],
+      ['e', id],
+      ['a', ADDRESS]
+    ]);
+  });
+
+  it('is read by the settlement reader as what it says', () => {
+    const report = { id, author: getPublicKey(contact), at: NOW };
+    const witnessed = buildReportLabel(signer, 'witnessed', { id, mission: ADDRESS }, NOW + 60);
+    expect(settlementOf(report, poster, [witnessed], NOW + 120)).toMatchObject({ state: 'settled', how: 'witness', by: getPublicKey(signer) });
+  });
+
+  it('refuses anything that is not a report on a mission', () => {
+    expect(() => buildReportLabel(signer, 'stakeout' as never, { id, mission: ADDRESS }, NOW)).toThrow(ReportError);
+    expect(() => buildReportLabel(signer, 'witnessed', { id: 'not-an-id', mission: ADDRESS }, NOW)).toThrow(/event id/);
+    expect(() => buildReportLabel(signer, 'witnessed', { id, mission: 'somewhere' }, NOW)).toThrow(/mission/);
+  });
+});
+
+describe('a report its author withdrew', () => {
+  const r = buildReport(contact, missionReport(), NOW);
+  const mine = [{ id: r.id, author: r.pubkey }];
+
+  it('is gone once its author asks, and not when anybody else does', () => {
+    expect(withdrawnReports(mine, [buildDeletion(contact, r.id, KIND_REPORT, NOW + 60)])).toEqual(new Set([r.id]));
+    expect(withdrawnReports(mine, [buildDeletion(generateSecretKey(), r.id, KIND_REPORT, NOW + 60)]).size).toBe(0);
+  });
+
+  it('stays when the request does not verify', () => {
+    const forged = { ...buildDeletion(contact, r.id, KIND_REPORT, NOW + 60), created_at: NOW + 61 };
+    expect(withdrawnReports(mine, [forged]).size).toBe(0);
   });
 });

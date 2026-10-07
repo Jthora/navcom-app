@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { finalizeEvent, generateSecretKey } from 'nostr-tools/pure';
 import { blankDevice, open, seedDevice } from './device';
 
 /**
@@ -653,6 +654,80 @@ test.describe('the landing page: missions you can open', () => {
     await listed.locator('[data-withdraw]').click();
     await expect(listed).toContainText('Withdrawn');
     await expect(listed).toContainText('copies already taken stay');
+  });
+
+  /** Another operator's open report on the heat mission, the day before, signed in Node where keys belong. */
+  const ADDRESS = `30079:${HEAT.pubkey}:${HEAT_D}`;
+  const wrens = () =>
+    finalizeEvent(
+      {
+        kind: 1912,
+        created_at: Math.floor(DURING.getTime() / 1000) - 3_600,
+        content: JSON.stringify({ callsign: 'Wren', date: '2026-10-05' }),
+        tags: [['a', ADDRESS], ['ask', 'field:heat_relief:CA:2026-10-02#handout:water']]
+      },
+      generateSecretKey()
+    );
+  const labelsSent = (page: Page) =>
+    page.evaluate(() => {
+      const sent = (globalThis as unknown as { __navcomPublished?: { id: string; kind: number; tags: string[][]; content: string }[] })
+        .__navcomPublished ?? [];
+      return [...new Map(sent.filter((e) => e.kind === 1985 && e.tags.some((t) => t[0] === 'e')).map((e) => [e.id, e])).values()];
+    });
+
+  test('somebody who took part can say they were there, under their own card, and it settles the report', async ({ page }) => {
+    const theirs = wrens();
+    await withHeat(page, { __noStorage: false, callsign: 'kestrel', relayEvents: [HEAT, theirs] });
+    await page.locator('[data-missions="open"]').click();
+    await page.locator(`[data-mission="${HEAT_D}"]`).click();
+    await page.getByRole('button', { name: 'Take part' }).click();
+    await page.locator('[data-visibility="open"]').click();
+    await expect(page.locator('[data-slot="you"]')).toContainText('Taking part');
+
+    await page.locator('[data-reports]').click();
+    const item = page.locator(`[data-screen="reports"] [data-report="${theirs.id}"]`);
+    await expect(item).toContainText('Wren');
+    await expect(item).toContainText('Waiting');
+    await item.locator('[data-witness]').click();
+    await expect(item).toContainText('It settles this report now');
+    await item.locator('[data-confirm="witnessed"]').click();
+    await expect(item).toContainText('by a witness, kestrel');
+
+    // What left: one label, naming the report and the mission, and no words.
+    const sent = await labelsSent(page);
+    expect(sent).toHaveLength(1);
+    expect(sent[0]!.tags).toEqual([['L', 'navcom.mission'], ['l', 'witnessed', 'navcom.mission'], ['e', theirs.id], ['a', ADDRESS]]);
+    expect(sent[0]!.content).toBe('');
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations.map((v) => v.id)).toEqual([]);
+  });
+
+  test('without having taken part, only a challenge is offered, by name, and it reverses nothing', async ({ page }) => {
+    const theirs = wrens();
+    await withHeat(page, { __noStorage: false, callsign: 'kestrel', relayEvents: [HEAT, theirs] });
+    await page.locator('[data-missions="open"]').click();
+    await page.locator(`[data-mission="${HEAT_D}"]`).click();
+    await page.locator('[data-reports]').click();
+    const item = page.locator(`[data-screen="reports"] [data-report="${theirs.id}"]`);
+    await expect(item).toContainText('Wren');
+    await expect(item.locator('[data-witness]')).toHaveCount(0);
+    await item.locator('[data-challenge]').click();
+    await expect(item).toContainText('reverses nothing');
+    await item.locator('[data-confirm="challenged"]').click();
+    await expect(item).toContainText('challenged by kestrel');
+    await expect(item).toContainText('Waiting');
+    expect((await labelsSent(page)).map((l) => l.tags[1])).toEqual([['l', 'challenged', 'navcom.mission']]);
+  });
+
+  test('signed out, reports can be read and nothing can be said about them', async ({ page }) => {
+    const theirs = wrens();
+    await withHeat(page, { relayEvents: [HEAT, theirs] });
+    await page.locator('[data-missions="open"]').click();
+    await page.locator(`[data-mission="${HEAT_D}"]`).click();
+    await page.locator('[data-reports]').click();
+    const item = page.locator(`[data-screen="reports"] [data-report="${theirs.id}"]`);
+    await expect(item).toContainText('Wren');
+    await expect(item.locator('button')).toHaveCount(0);
   });
 
   test('signed out, Com’s root is the search, with no missions of your own above it', async ({ page }) => {

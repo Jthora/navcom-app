@@ -6,6 +6,7 @@
  * filed by US state today, so those have names; anything else reads as its code, upper-case,
  * rather than as a guess.
  */
+import type { Settlement } from '@navcom/core';
 
 const US: Record<string, string> = {
   al: 'Alabama', ak: 'Alaska', az: 'Arizona', ar: 'Arkansas', ca: 'California', co: 'Colorado',
@@ -63,4 +64,25 @@ export function effort(minutes: number | null): string | null {
   if (minutes < 60) return `about ${minutes} minutes`;
   const hours = Math.round((minutes / 60) * 2) / 2;
   return `about ${hours} hour${hours === 1 ? '' : 's'}`;
+}
+
+/** A contact key by the name it gave, or by its first eight characters when it gave none. */
+export function nameOf(key: string, names: ReadonlyMap<string, string>): string {
+  return names.get(key) ?? key.slice(0, 8);
+}
+
+/**
+ * Where a report stands, said the way economy.md §7–§8 says it: **how** it settled is part of the
+ * fact — *settled by poster* and *settled unchallenged* are different evidence and are never
+ * laundered into one word — and a challenge is shown by name beside the settlement, reversing
+ * nothing.
+ */
+export function standingOf(
+  s: Settlement,
+  names: ReadonlyMap<string, string>
+): { value: string; tone: 'neutral' | 'good'; sub: string } {
+  const challenged = s.challengedBy.length > 0 ? ` · challenged by ${s.challengedBy.map((k) => nameOf(k, names)).join(', ')}` : '';
+  if (s.state === 'pending') return { value: 'Waiting', tone: 'neutral', sub: `settles by itself ${stampUtc(s.until)} unless challenged${challenged}` };
+  if (s.how === 'silence') return { value: 'Settled', tone: 'good', sub: `unchallenged for seven days${challenged}` };
+  return { value: 'Settled', tone: 'good', sub: `${s.how === 'poster' ? 'by the poster' : 'by a witness'}, ${nameOf(s.by, names)}${challenged}` };
 }

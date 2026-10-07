@@ -51,6 +51,7 @@ clear** — that is how a relay routes anything at all.
 | Taking part, for the poster only | `1059` | **The poster's pubkey**, and when it ends | Everything else: that it is a claim, which mission, and that it is yours | Throwaway outside, Contact inside |
 | A report of your work, for everyone | `1912` | The mission's address and which of its objectives you did | Nothing — your callsign, the day (never a time) and counts of what you handed out are in the content, for anybody to read. No free text anywhere | Contact |
 | A report, for the poster only | `1059` | **The poster's pubkey** | Everything else | Throwaway outside, Contact inside |
+| Saying you were there, or challenging a report | `1985` | The report's id, the mission's address, and `witnessed` or `challenged` | Nothing — and there is no text to it. Your card's key is the name it is under | Contact |
 | Withdrawing an open claim or report | `5` | The claim's or report's id | Nothing | Contact |
 | Post-quantum key bundle | `10912` | Your public KEM key. **No tags at all** | Nothing to seal — it is a public key | **Operational** |
 | Endorsement withdrawal | `30914` | The credential id | Nothing | **Operational** |

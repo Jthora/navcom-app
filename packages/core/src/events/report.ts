@@ -26,7 +26,7 @@ import { KIND_REPORT } from './kinds.js';
 import { DOES, DOES_MAX } from './profile.js';
 import { CALLSIGN_MAX, withinLimit } from '../limits.js';
 import { isValidIsoDate } from '../directory/iso-date.js';
-import { KIND_LABEL, MISSION_NAMESPACE } from '../missions/claim.js';
+import { KIND_DELETION, KIND_LABEL, MISSION_NAMESPACE } from '../missions/claim.js';
 import { MISSION_PACKAGE_KIND, type Mission } from '../missions/package.js';
 import { sealToPoster, type Sealed } from '../missions/seal.js';
 
@@ -68,6 +68,18 @@ export interface Report {
 }
 
 export class ReportError extends Error {}
+
+/**
+ * Whether an event's signature verifies, checked on a copy carrying only the seven signed fields:
+ * nostr-tools caches a verdict on the object itself, so an event that verified once and was then
+ * edited would otherwise still read as verified.
+ */
+function verified(e: Partial<Event>): boolean {
+  return verifyEvent({
+    id: e.id!, pubkey: e.pubkey!, created_at: e.created_at!, kind: e.kind!,
+    tags: e.tags!, content: e.content!, sig: e.sig!
+  } as Event);
+}
 
 /** The poster of a mission, from its address: the pubkey between the kind and the `d`. */
 export function posterOf(missionAddress: string): string | null {
@@ -150,13 +162,7 @@ export function readReport(event: unknown, opts: { signed?: boolean } = {}): Pub
   const e = event as Partial<Event> | null;
   if (!e || e.kind !== KIND_REPORT || typeof e.content !== 'string' || !Array.isArray(e.tags)) return null;
   if (typeof e.id !== 'string' || typeof e.pubkey !== 'string' || typeof e.created_at !== 'number') return null;
-  if (opts.signed !== false) {
-    const own = {
-      id: e.id, pubkey: e.pubkey, created_at: e.created_at, kind: e.kind,
-      tags: e.tags, content: e.content, sig: e.sig!
-    } as Event;
-    if (!verifyEvent(own)) return null;
-  }
+  if (opts.signed !== false && !verified(e)) return null;
   let raw: unknown;
   try {
     raw = JSON.parse(e.content);
@@ -227,7 +233,8 @@ export const CHALLENGE_WINDOW_SECONDS = 7 * 86_400;
 
 export type Settlement =
   | { state: 'pending'; until: number; challengedBy: string[] }
-  | { state: 'settled'; how: 'poster' | 'witness' | 'silence'; at: number; challengedBy: string[] };
+  | { state: 'settled'; how: 'poster' | 'witness'; by: string; at: number; challengedBy: string[] }
+  | { state: 'settled'; how: 'silence'; at: number; challengedBy: string[] };
 
 /**
  * Where a report stands, from the labels on it [spec §5.3]. **Nothing here adjudicates:** a
@@ -245,29 +252,80 @@ export function settlementOf(
   now: number
 ): Settlement {
   const until = report.at + CHALLENGE_WINDOW_SECONDS;
-  let settled: { how: 'poster' | 'witness'; at: number } | null = null;
+  let settled: { how: 'poster' | 'witness'; by: string; at: number } | null = null;
   const challengedBy: string[] = [];
   for (const raw of labels) {
     const l = raw as Partial<Event> | null;
     if (!l || l.kind !== KIND_LABEL || !Array.isArray(l.tags) || typeof l.pubkey !== 'string') continue;
-    const own = {
-      id: l.id!, pubkey: l.pubkey, created_at: l.created_at!, kind: l.kind,
-      tags: l.tags, content: l.content!, sig: l.sig!
-    } as Event;
-    if (!verifyEvent(own)) continue;
+    if (!verified(l)) continue;
     if (!l.tags.some((t) => t[0] === 'L' && t[1] === MISSION_NAMESPACE)) continue;
     if (!l.tags.some((t) => t[0] === 'e' && t[1] === report.id)) continue;
     const kind = l.tags.find((t) => t[0] === 'l' && t[2] === MISSION_NAMESPACE)?.[1];
     const at = l.created_at!;
     if (kind === 'settled' && l.pubkey === poster) {
-      if (!settled || at < settled.at) settled = { how: 'poster', at };
+      if (!settled || at < settled.at) settled = { how: 'poster', by: l.pubkey, at };
     } else if (kind === 'witnessed' && l.pubkey !== report.author) {
-      if (!settled || at < settled.at) settled = { how: 'witness', at };
+      if (!settled || at < settled.at) settled = { how: 'witness', by: l.pubkey, at };
     } else if (kind === 'challenged' && l.pubkey !== report.author && at <= until) {
       if (!challengedBy.includes(l.pubkey)) challengedBy.push(l.pubkey);
     }
   }
-  if (settled) return { state: 'settled', how: settled.how, at: settled.at, challengedBy };
+  if (settled) return { state: 'settled', how: settled.how, by: settled.by, at: settled.at, challengedBy };
   if (now >= until) return { state: 'settled', how: 'silence', at: until, challengedBy };
   return { state: 'pending', until, challengedBy };
+}
+
+/** What a label on a report can say [spec §5.3]. `settled` is the poster's; the other two anybody's. */
+export const REPORT_LABELS = ['settled', 'witnessed', 'challenged'] as const;
+export type ReportLabel = (typeof REPORT_LABELS)[number];
+
+/**
+ * A label on a report, signed by the contact key: **a statement under the signer's own name**,
+ * never an anonymous flag [economy.md §8]. There is no text to it, because there is nothing to
+ * adjudicate — a challenge reverses nothing and stands beside the report for a reader to weigh.
+ *
+ * It names the report and the mission both, so a reader can find every label on a mission by its
+ * `a` tag without telling a relay which reports it is asking about.
+ */
+export function buildReportLabel(
+  contactSecret: Uint8Array,
+  label: ReportLabel,
+  report: { id: string; mission: string },
+  createdAt: number
+): Event {
+  if (!(REPORT_LABELS as readonly string[]).includes(label)) throw new ReportError('That is not something a report can be labelled.');
+  if (!EVENT_ID.test(report.id)) throw new ReportError('A label names a report by its event id.');
+  if (!posterOf(report.mission)) throw new ReportError('A label names the mission the report is on.');
+  return finalizeEvent(
+    {
+      kind: KIND_LABEL,
+      created_at: createdAt,
+      content: '',
+      tags: [
+        ['L', MISSION_NAMESPACE],
+        ['l', label, MISSION_NAMESPACE],
+        ['e', report.id],
+        ['a', report.mission]
+      ]
+    },
+    contactSecret
+  );
+}
+
+/**
+ * Reports their own authors asked to withdraw [NIP-09]. A relay that ignored the request still
+ * serves the report; a reader that has seen the request does not show it. Only the author's own
+ * request counts, and only one whose signature verifies — anybody else's would be a way to hide
+ * somebody's work.
+ */
+export function withdrawnReports(reports: readonly { id: string; author: string }[], deletions: readonly unknown[]): Set<string> {
+  const authorOf = new Map(reports.map((r) => [r.id, r.author]));
+  const gone = new Set<string>();
+  for (const raw of deletions) {
+    const d = raw as Partial<Event> | null;
+    if (!d || d.kind !== KIND_DELETION || !Array.isArray(d.tags) || typeof d.pubkey !== 'string') continue;
+    if (!verified(d)) continue;
+    for (const t of d.tags) if (t[0] === 'e' && authorOf.get(t[1] ?? '') === d.pubkey) gone.add(t[1]!);
+  }
+  return gone;
 }
