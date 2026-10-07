@@ -102,7 +102,9 @@ all it says.
 
 Being findable costs **no operational exposure**. A card and its *"out tonight"* are signed
 by a **contact key**, generated when the first card is published and used for nothing but
-the card and receiving invites. It is never a presence recipient and never known to a watch.
+the card and receiving invites. It is never a presence recipient and never given to a watch —
+though a watch that runs one of your relays sees it and your operational key arrive on the one
+connection your phone keeps there.
 
 Without that separation, publishing a card would silently undo peer presence: presence is
 `p`-tagged to its recipient in plaintext, so a public operational key lets anyone watching a

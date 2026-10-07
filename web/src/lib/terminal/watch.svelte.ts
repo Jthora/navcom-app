@@ -6,10 +6,27 @@
  * holding message.
  */
 
-import { readWatchStateAt, type RootAlarm, type WatchStateRead } from '@navcom/core';
+import { readWatchStateAt, type LogRoot, type RootAlarm, type WatchStateRead } from '@navcom/core';
 import { loadConfig } from './config';
 import { watchWatchtower, type Connection } from './relay';
-import { recordRoot, rootAlarms } from './roots';
+import { recordRoot, rootAlarms, seenRoots } from './roots';
+
+/**
+ * Whether a published root says nothing the device's record does not already hold.
+ *
+ * A null root raises "stopped" every time it is read, because the null is never recorded — so the
+ * same stop was appended again with every reading: each heartbeat, each screen that started the
+ * watch, and since readings are aged on screen, every thirty seconds, into a record only a burn
+ * clears [audit: relay paths, review]. A stop is recorded once, against the root it stopped at;
+ * one that follows a newer root is a new stop and is recorded again.
+ */
+function restated(root: LogRoot | null): boolean {
+  const last = seenRoots().at(-1);
+  if (root) return !!last && last.root === root.root && last.size === root.size;
+  if (!last) return true;
+  const said = rootAlarms().at(-1);
+  return said?.kind === 'stopped' && said.was.root === last.root && said.was.size === last.size;
+}
 
 /**
  * The last holder this device actually saw, and who to tell when it changes.
@@ -77,22 +94,27 @@ export const watch = {
     if (!config) return;
     connection?.close();
     alarms = rootAlarms();
+    /** The live reading last acted on, so one aged again on screen is not taken for a new one. */
+    let acted: string | null = null;
     connection = watchWatchtower(config, (r, heard) => {
       read = r;
       // Said when the relays were asked; any reading that came from an event means one answered.
       unanswered = heard ? heard.unanswered : false;
 
-      const holder = r.dark ? null : r.state.holder;
+      // Only a live read tells us anything about the log. A Dark read means we could not
+      // reach the watch, which is not the same as a watch that stopped committing.
+      if (r.dark) return;
+      const said = JSON.stringify(r.state);
+      if (said === acted) return;
+      acted = said;
+
+      const holder = r.state.holder;
       if (holder) {
         if (knownHolder !== null && holder !== knownHolder) onHandover?.();
         knownHolder = holder;
       }
-      // Only a live read tells us anything about the log. A Dark read means we could not
-      // reach the watch, which is not the same as a watch that stopped committing.
-      if (!r.dark) {
-        recordRoot(r.state.log_root);
-        alarms = rootAlarms();
-      }
+      if (!restated(r.state.log_root)) recordRoot(r.state.log_root);
+      alarms = rootAlarms();
     });
     connected = true;
   },

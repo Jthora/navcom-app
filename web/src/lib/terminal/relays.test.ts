@@ -7,8 +7,19 @@
  */
 
 import { describe, expect, it, beforeEach } from 'vitest';
-import { DEFAULT_RELAYS, ownRelays, relays, setRelays, usingDefaults, watchRelays } from './relays';
+import {
+  DEFAULT_RELAYS,
+  missionRelays,
+  ownRelays,
+  refusedOwnRelays,
+  relays,
+  savedOwnRelays,
+  setRelays,
+  usingDefaults,
+  watchRelays
+} from './relays';
 import { set } from './storage';
+import { operatorRelays } from '$lib/missions/claims';
 
 beforeEach(() => {
   const store = new Map<string, string>();
@@ -85,5 +96,60 @@ describe('a Watched operator [audit: relay paths, F15]', () => {
     set('accruing', 'relays', ['wss://watch.example']);
     setRelays(['wss://mine.example', 'wss://watch.example']);
     expect(relays()).toEqual(['wss://watch.example', 'wss://mine.example']);
+  });
+});
+
+describe('an own list saved before the check, that this page refuses [audit: relay paths, review]', () => {
+  // Written straight to storage: `setRelays` filters today, and the list was saved before it did.
+  const LAN = ['ws://192.168.1.50:7777', 'ws://192.168.1.51:7777'];
+
+  it('is said, line by line, rather than swapped for the defaults in silence', () => {
+    set('accruing', 'relays_own', LAN);
+    expect(usingDefaults(), 'the defaults do stand in').toBe(true);
+    expect(refusedOwnRelays().map((r) => r.address), 'and the screen can say why').toEqual(LAN);
+    expect(refusedOwnRelays()[0]?.why).toMatch(/needs wss:\/\//);
+  });
+
+  it('is still there as saved, so it can be fixed rather than retyped', () => {
+    set('accruing', 'relays_own', [...LAN, 'wss://mine.example']);
+    expect(savedOwnRelays()).toEqual([...LAN, 'wss://mine.example']);
+    expect(relays()).toEqual(['wss://mine.example']);
+  });
+
+  it('names nothing when nothing was refused', () => {
+    setRelays(['wss://mine.example']);
+    expect(refusedOwnRelays()).toEqual([]);
+  });
+});
+
+describe('where mission traffic goes [audit: relay paths, review]', () => {
+  /*
+   * Peers named "everything" as following the operator's own list, while claims and reports go to
+   * the shipped defaults as well, where posters read [mission-interchange spec §5.0]. The screen
+   * now names them from `missionRelays`; this holds that to the rule the claims are sent by.
+   */
+  it('adds the shipped defaults to a list that left them out', () => {
+    setRelays(['wss://mine.example']);
+    expect(missionRelays()).toEqual(['wss://mine.example', ...DEFAULT_RELAYS]);
+  });
+
+  it('is the list claims and reports are actually sent to, in every arrangement', () => {
+    const arrangements: (() => void)[] = [
+      () => {},
+      () => setRelays(['wss://mine.example']),
+      () => {
+        set('accruing', 'watchtower', 'f'.repeat(64));
+        set('accruing', 'relays', ['wss://watch.example']);
+      },
+      () => {
+        set('accruing', 'watchtower', 'f'.repeat(64));
+        set('accruing', 'relays', ['wss://watch.example']);
+        setRelays(['wss://mine.example', 'wss://nos.lol']);
+      }
+    ];
+    for (const arrange of arrangements) {
+      arrange();
+      expect(missionRelays()).toEqual(operatorRelays());
+    }
   });
 });

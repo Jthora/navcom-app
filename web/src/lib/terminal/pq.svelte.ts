@@ -25,7 +25,7 @@ import { loadIdentity } from './identity';
 import { loadConfig } from './config';
 import { contactPubkey } from './card';
 import { peerPubkeys } from './peers';
-import { relays } from './relays';
+import { relays, watchRelays } from './relays';
 import { pool } from './pool';
 import { subscribeLive } from './subscribe';
 import { get, set } from './storage';
@@ -79,10 +79,10 @@ export const pq = {
     if (!identity || urls.length === 0) return;
 
     const config = loadConfig();
-    const wanted = [
-      ...peerPubkeys(),
-      ...(config ? [config.pubkey, ...config.holders] : [])
-    ].filter((k, i, all) => all.indexOf(k) === i);
+    const once = (k: string, i: number, all: string[]) => all.indexOf(k) === i;
+    const peerKeys = peerPubkeys().filter(once);
+    const watchKeys = (config ? [config.pubkey, ...config.holders] : []).filter(once);
+    const wanted = [...peerKeys, ...watchKeys].filter(once);
 
     /*
      * Keys for people this device no longer sends to are dropped.
@@ -125,22 +125,34 @@ export const pq = {
 
     if (wanted.length === 0) return;
 
+    /*
+     * Asked for where each one is, and named nowhere else [audit: relay paths, review].
+     *
+     * One request named every peer, the watch and each of its holders, and once the watch's
+     * relays were added to the rest it went to the shipped public relays too — on the connection
+     * carrying this operator's own bundle and card. Strangers' relays could then read, member by
+     * member, who holds a watch its squad had kept off them. The watch's and its holders' bundles
+     * are where the watch is, so they are asked for there; peers' are asked for where peers are.
+     */
+    const keep = (from: string[]) => (event: Event) => {
+      // Checked against the pubkeys we asked for, so a relay answering with a key it
+      // generated is refused rather than cached.
+      const bundle = readKeyBundle(event, from);
+      if (!bundle) return;
+      if (known[bundle.pubkey] === bundle.kem) return;
+      known = { ...known, [bundle.pubkey]: bundle.kem };
+      set('accruing', FIELD, known);
+    };
+    const filter = (authors: string[]) => ({ kinds: [KIND_KEY_BUNDLE], authors });
+
     closer?.close();
-    closer = subscribeLive(
-      urls,
-      { kinds: [KIND_KEY_BUNDLE], authors: wanted },
-      {
-        onevent: (event: Event) => {
-          // Checked against the pubkeys we already hold, so a relay answering with a key it
-          // generated is refused rather than cached.
-          const bundle = readKeyBundle(event, wanted);
-          if (!bundle) return;
-          if (known[bundle.pubkey] === bundle.kem) return;
-          known = { ...known, [bundle.pubkey]: bundle.kem };
-          set('accruing', FIELD, known);
-        }
-      }
-    );
+    const open = [
+      ...(peerKeys.length > 0 ? [subscribeLive(urls, filter(peerKeys), { onevent: keep(peerKeys) })] : []),
+      ...(watchKeys.length > 0
+        ? [subscribeLive(watchRelays(), filter(watchKeys), { onevent: keep(watchKeys) })]
+        : [])
+    ];
+    closer = { close: () => open.forEach((sub) => sub.close()) };
   },
 
   stop(): void {

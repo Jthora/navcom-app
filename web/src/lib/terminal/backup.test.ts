@@ -10,7 +10,7 @@ import { openBackup, sealBackup } from '@navcom/core';
 import { RestoreError, lastMade, makeBackup, restore, restoreCode } from './backup';
 import { get, set } from './storage';
 import { loadIdentity } from './identity';
-import { loadConfig } from './config';
+import { addOfferedWatch, loadConfig, offeredWatch } from './config';
 import { relays } from './relays';
 
 const PASS = 'correct horse battery staple';
@@ -235,5 +235,45 @@ describe('a watch named in a backup [audit: relay paths, F02]', () => {
 
   it('is still a backup worth restoring when it names only a watch', () => {
     expect(restore(PASS, handed({ watchtower: W, relays: ['wss://watch.example'] })).watch?.pubkey).toBe(W);
+  });
+});
+
+describe('moving a watch to a new phone [audit: relay paths, review]', () => {
+  const W = 'a'.repeat(64);
+  const H = 'b'.repeat(64);
+  const fresh = () => {
+    const store = new Map<string, string>();
+    (globalThis as Record<string, unknown>).localStorage = {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+      removeItem: (k: string) => void store.delete(k)
+    };
+  };
+
+  it('arrives with the relays the old phone was still using, and its holders', () => {
+    // Saved where any ws:// prefix passed: one line the old phone drops, beside one it uses.
+    set('accruing', 'callsign', 'Wren');
+    set('accruing', 'watchtower', W);
+    set('accruing', 'relays', ['ws://192.168.1.50:7777', 'wss://watch.example']);
+    set('accruing', 'watch_holders', [H]);
+    expect(loadConfig()?.relays, 'the old phone still reaches its watch').toEqual(['wss://watch.example']);
+    const blob = makeBackup(PASS);
+
+    fresh();
+    restore(PASS, blob);
+    addOfferedWatch(offeredWatch()!);
+    expect(loadConfig()).toEqual({ pubkey: W, relays: ['wss://watch.example'], holders: [H] });
+  });
+
+  it('is still on offer after the screen that showed it has gone', () => {
+    // The restore screen said "reopen the terminal", and the offer lived only in that screen.
+    restore(PASS, handed({ callsign: 'Wren', watchtower: W, relays: ['wss://watch.example'], watch_holders: [H] }));
+    expect(offeredWatch()).toEqual({ pubkey: W, relays: ['wss://watch.example'], holders: [H] });
+    expect(loadConfig(), 'and still not installed').toBeNull();
+  });
+
+  it('offers nothing when the backup names no watch', () => {
+    restore(PASS, handed({ callsign: 'Wren' }));
+    expect(offeredWatch()).toBeNull();
   });
 });

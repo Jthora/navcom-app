@@ -35,6 +35,7 @@ import { clearField, get, set } from './storage';
 const SECRET = 'contact_secret';
 const CARD = 'card';
 const LISTED = 'card_listed';
+const SENT = 'card_sent';
 
 export interface MyCard {
   /** A directory region slug. The same coarse unit the public directory uses. */
@@ -95,7 +96,16 @@ export function myCard(): MyCard | null {
   return get<MyCard>('accruing', CARD);
 }
 
+/**
+ * Saves the card, and forgets how the last one went.
+ *
+ * The outcome is recorded once the send settles, seconds after this. A send cut off before then —
+ * the app swiped away on a weak signal — left the previous card's outcome standing beside a card
+ * that never left the phone, so an edit nobody had received read as published
+ * [audit: relay paths, review].
+ */
 export function saveCard(card: MyCard): void {
+  clearField('accruing', SENT);
   set('accruing', CARD, card);
 }
 
@@ -107,12 +117,28 @@ export function saveCard(card: MyCard): void {
  * had it [audit: relay paths, F18].
  */
 export type CardSent = 'all' | 'some' | 'none';
-const SENT = 'card_sent';
 export function cardSent(): CardSent | null {
   return get<CardSent>('accruing', SENT);
 }
 export function setCardSent(sent: CardSent): void {
   set('accruing', SENT, sent);
+}
+
+/**
+ * What the card screen says about the last send. **Only every relay taking it reads as published.**
+ *
+ * A card saved before outcomes were kept, one restored from such a backup, and one whose send was
+ * cut off all have none recorded — and each read "Published", including the card no relay ever
+ * took. No record reads as not known [invariant 7: blank reads unknown].
+ */
+export function sentReadout(
+  sent: CardSent | null,
+  callsign: string | null
+): { value: string; tone: 'good' | 'warn'; sub: string } {
+  if (sent === 'all') return { value: 'Published', tone: 'good', sub: `as ${callsign ?? '—'}` };
+  if (sent === 'some') return { value: 'Partly sent', tone: 'warn', sub: 'some relays did not take it; try again to reach them' };
+  if (sent === 'none') return { value: 'Not sent', tone: 'warn', sub: 'no relay took it; saved on this phone — try again with signal' };
+  return { value: 'Not known if sent', tone: 'warn', sub: 'no record of a relay taking it; replace it to check' };
 }
 
 /**

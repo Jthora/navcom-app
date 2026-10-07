@@ -13,12 +13,14 @@
   // No watch added and a watch that is down are different situations, and an operator
   // acts differently on each. They must not render as the same sentence.
   let hasWatch = $state(true);
+  let stranded = $state(false);
 
   let text = $state('');
   let sentAt = $state<number | null>(null);
 
   onMount(() => {
     hasWatch = operator.hasWatch;
+    stranded = operator.watchStranded;
     watch.start();
     return () => watch.stop();
   });
@@ -53,9 +55,9 @@
   <section>
     <Slot k="Watch">
       <Readout
-        value="No watch"
-        tone="cold"
-        sub="Query goes to a watch, and you have not added one. There is nobody to ask."
+        value={stranded ? 'Unreachable' : 'No watch'}
+        tone={stranded ? 'warn' : 'cold'}
+        sub={stranded ? 'Query goes to your watch, and none of its relays can be reached from this page. Fix them on the setup screen.' : 'Query goes to a watch, and you have not added one. There is nobody to ask.'}
       />
     </Slot>
   </section>

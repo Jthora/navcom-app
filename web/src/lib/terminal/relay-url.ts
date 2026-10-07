@@ -51,6 +51,28 @@ export function usable(urls: readonly string[], pageProtocol = pageScheme()): st
   return [...out];
 }
 
+/** A stored address this phone will not dial, and why, in words an operator can act on. */
+export interface Refused {
+  address: string;
+  why: string;
+}
+
+/**
+ * The lines `usable` leaves out, each with its reason.
+ *
+ * A list read back from storage or a backup is filtered rather than refused, so that one bad
+ * line does not take the good ones with it — and what was left out is named, never just gone.
+ */
+export function refusedOf(urls: readonly unknown[], pageProtocol = pageScheme()): Refused[] {
+  const out: Refused[] = [];
+  for (const u of urls) {
+    if (typeof u !== 'string' || !u.trim()) continue;
+    const why = whyNotReachable(u, pageProtocol);
+    if (why) out.push({ address: u, why });
+  }
+  return out;
+}
+
 function pageScheme(): string {
   return globalThis.location?.protocol ?? 'https:';
 }

@@ -8,7 +8,8 @@
 
 import { describe, expect, it, beforeEach } from 'vitest';
 import {
-  contactKey, contactPubkey, ensureContactKey, listed, myCard, saveCard, setListed, withdrawCard
+  cardSent, contactKey, contactPubkey, ensureContactKey, listed, myCard, saveCard, sentReadout, setCardSent,
+  setListed, withdrawCard, type CardSent
 } from './card';
 import { get } from './storage';
 
@@ -95,5 +96,35 @@ describe('a contact key', () => {
 
   it('is absent until something needs it', () => {
     expect(contactKey()).toBeNull();
+  });
+});
+
+describe('whether anybody has the card [audit: relay paths, review]', () => {
+  /*
+   * The outcome of a send is kept beside the card, and the screen read every value but two as
+   * "Published" — including no value at all: a card saved before outcomes were kept, one restored
+   * from a backup made then, and one whose send was cut off before it settled.
+   */
+  it('reads as published only when every relay took it', () => {
+    expect(sentReadout('all', 'Wren')).toMatchObject({ value: 'Published', tone: 'good', sub: 'as Wren' });
+    // Including a value this build does not know, as a backup from some other build could carry.
+    const others: (CardSent | null)[] = [null, 'some', 'none', 'yes' as unknown as CardSent];
+    for (const sent of others) {
+      expect(sentReadout(sent, 'Wren').value, String(sent)).not.toBe('Published');
+    }
+  });
+
+  it('says it is not known when nothing was recorded, rather than guessing', () => {
+    expect(sentReadout(null, 'Wren')).toMatchObject({ value: 'Not known if sent', tone: 'warn' });
+  });
+
+  it('forgets the last outcome the moment a new card is saved, so a cut-off send is not known', () => {
+    // The previous card's "every relay took it" stood beside an edit that never left the phone.
+    ensureContactKey();
+    saveCard(aCard);
+    setCardSent('all');
+    saveCard({ ...aCard, region: 'chicago' });
+    expect(cardSent()).toBeNull();
+    expect(sentReadout(cardSent(), 'Wren').value).toBe('Not known if sent');
   });
 });

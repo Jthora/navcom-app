@@ -1,6 +1,7 @@
 <script lang="ts">
   import { DEFAULT_RELAYS } from '@navcom/core';
-  import { ConfigError, loadConfig, saveConfig } from '$lib/terminal/config';
+  import { ConfigError, forgetOfferedWatch, saveConfig, watchForm } from '$lib/terminal/config';
+  import type { Refused } from '$lib/terminal/relay-url';
   import { ContactError, clearContact, loadContact, saveContact } from '$lib/terminal/contact';
   import { createIdentity, loadIdentity, setCallsign } from '$lib/terminal/identity';
   import { askToKeep } from '$lib/terminal/persist';
@@ -13,11 +14,25 @@
   let relays = $state(DEFAULT_RELAYS.join('\n'));
   let holders = $state('');
   let error = $state<string | null>(null);
+  /**
+   * Why the watch was not saved, shown beside the button that was pressed. It shared the error at
+   * the top of the page, two sections up and off a phone's screen, while the readout under the
+   * button still said Saved [audit: relay paths, review].
+   */
+  let watchError = $state<string | null>(null);
   let contactLabel = $state('');
   let contactNumber = $state('');
   let contact = $state<ReturnType<typeof loadContact>>(null);
   let identity = $state<ReturnType<typeof loadIdentity>>(null);
   let configured = $state(false);
+  /** Lines of the watch as saved that this page will not dial, each with why. */
+  let refused = $state<Refused[]>([]);
+  /** How many of its saved relays this page can reach. */
+  let reachable = $state(0);
+  /** The last Update was refused, so what is saved is still the watch as it was before. */
+  let notUpdated = $state(false);
+  /** The form holds a watch a backup named, which is not added until it is saved here. */
+  let fromBackup = $state(false);
   /** The callsign field in the identity branch — a rename, not a second identity. */
   let renamed = $state('');
 
@@ -29,12 +44,27 @@
       contactLabel = contact.label;
       contactNumber = contact.number;
     }
-    const c = loadConfig();
-    configured = c !== null;
-    if (c) {
-      pubkey = c.pubkey;
-      relays = c.relays.join('\n');
-      holders = c.holders.join('\n');
+    /*
+     * The watch as it was saved, with its key and its holders, even when this page reaches none of
+     * its relays.
+     *
+     * Prefilled from the filtered config, a watch whose every relay is refused here opened as a
+     * blank form: no key, no holders, a Connect button. The operator needed the key and the
+     * holders back from a person, and a squad member who re-entered only the key saved a watch
+     * with no holders, which seals every Distress to nobody's phone [audit: relay paths, review].
+     * A watch a backup named fills it the same way when nothing is saved yet, and is added only
+     * by saving it here. Which lines go in the field, and which are named beside it, is
+     * `watchForm`'s rule.
+     */
+    const w = watchForm();
+    configured = w?.from === 'saved';
+    fromBackup = w?.from === 'backup';
+    if (w) {
+      pubkey = w.pubkey;
+      relays = w.relays.join('\n');
+      holders = w.holders.join('\n');
+      refused = w.refused;
+      reachable = w.reachable;
     }
   });
 
@@ -96,11 +126,20 @@
   function connect(event: SubmitEvent) {
     event.preventDefault();
     error = null;
+    watchError = null;
     try {
-      saveConfig(pubkey, relays, holders);
+      const saved = saveConfig(pubkey, relays, holders);
       configured = true;
+      notUpdated = false;
+      refused = [];
+      reachable = saved.relays.length;
+      // Saved by the operator's own hand, so the backup's offer has been answered.
+      if (fromBackup) forgetOfferedWatch();
+      fromBackup = false;
     } catch (e) {
-      error = e instanceof ConfigError ? e.message : 'Could not save that.';
+      // Nothing was written: `saveConfig` checks every part before it stores any of them.
+      watchError = e instanceof ConfigError ? e.message : 'Could not save that.';
+      notUpdated = configured;
     }
   }
 </script>
@@ -299,10 +338,34 @@
     </p>
   </Why>
   <form onsubmit={connect}>
+    {#if fromBackup}
+      <Slot k="Watch">
+        <span data-from-backup>
+          <Readout value="From your backup" tone="warn" sub="not added until you save it here" />
+        </span>
+      </Slot>
+    {/if}
     <label for="pubkey">Pubkey</label>
     <input id="pubkey" bind:value={pubkey} autocomplete="off" spellcheck="false" placeholder="64 hex characters" />
     <label for="relays">Relays</label>
     <textarea id="relays" bind:value={relays} rows="3" autocomplete="off" spellcheck="false"></textarea>
+    {#if refused.length > 0}
+      <!-- Each line this page will not dial, and why, beside the field. Left out of it while the
+           watch has a relay this page reaches, so that an edit to anything else still saves; in
+           it, to be fixed, when there is none. -->
+      <div data-relays-refused>
+        <Slot k={reachable > 0 ? 'Left out' : 'Relays'}>
+          <Readout
+            value="Not reachable from here"
+            tone="warn"
+            sub={reachable > 0
+              ? 'not in the list above, and not kept when you save'
+              : 'nothing reaches this watch until one is fixed above'}
+          />
+        </Slot>
+        <ul class="refused">{#each refused as r, i (i)}<li>{r.why}</li>{/each}</ul>
+      </div>
+    {/if}
 
     <label for="holders">Who holds it</label>
     <textarea id="holders" bind:value={holders} rows="3" autocomplete="off" spellcheck="false"
@@ -324,11 +387,22 @@
         here. It comes from the same person who gave you the pubkey; nothing discovers it.
       </p>
     </Why>
+    {#if watchError}
+      <p class="error" role="alert" data-watch-error>{watchError}</p>
+    {/if}
     <button type="submit" disabled={!pubkey.trim()}>{configured ? 'Update' : 'Connect'}</button>
   </form>
   {#if configured}
     <Slot k="Watch config">
-      <Readout value="Saved" tone="good" />
+      {#if notUpdated}
+        <span data-not-updated>
+          <Readout value="Not updated" tone="warn" sub="the watch as it was saved before is unchanged" />
+        </span>
+      {:else if reachable === 0}
+        <Readout value="Saved, not reachable" tone="warn" sub="fix a relay above" />
+      {:else}
+        <Readout value="Saved" tone="good" />
+      {/if}
     </Slot>
     <p class="done"><a href="/terminal/">Back to status</a></p>
   {/if}
@@ -365,6 +439,10 @@
   .note { font-size: .9rem; color: var(--t-faint); margin: 0 0 .3rem; line-height: 1.5; }
   .note strong { color: var(--t-ink); }
   .done { color: var(--t-muted); display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; }
+  .refused {
+    margin: .2rem 0 .3rem; padding-inline-start: 1.1rem; display: grid; gap: .3rem;
+    font-size: .9rem; color: var(--t-ink); overflow-wrap: anywhere;
+  }
   .error {
     color: var(--t-dark); border: 2px solid var(--t-dark); padding: .7rem .9rem; margin: 0;
   }

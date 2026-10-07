@@ -17,7 +17,7 @@
 import { DEFAULT_RELAYS } from '@navcom/core';
 import { get, set } from './storage';
 import { loadConfig } from './config';
-import { usable } from './relay-url';
+import { refusedOf, usable, type Refused } from './relay-url';
 
 /**
  * Where an operator starts.
@@ -41,8 +41,17 @@ const FIELD = 'relays_own';
  */
 export function relays(): string[] {
   const watch = loadConfig()?.relays ?? [];
-  const own = usable(get<string[]>('accruing', FIELD) ?? []);
+  const own = usable(savedOwnRelays());
   return usable([...watch, ...(own.length ? own : DEFAULT_RELAYS)]);
+}
+
+/**
+ * Where taking part in a mission goes: everywhere `relays()` does, and the shipped defaults beside
+ * it, because that is where whoever posted it reads [mission-interchange spec §5.0]. The rule
+ * `missions/claims.ts` sends by, here as well so the screen that lists where things go can name it.
+ */
+export function missionRelays(): string[] {
+  return usable([...relays(), ...DEFAULT_RELAYS]);
 }
 
 /**
@@ -63,13 +72,34 @@ export { usable } from './relay-url';
 
 /** The part of the list an operator edits: their own relays, or the shipped defaults. */
 export function ownRelays(): string[] {
-  const own = usable(get<string[]>('accruing', FIELD) ?? []);
+  const own = usable(savedOwnRelays());
   return own.length ? own : [...DEFAULT_RELAYS];
 }
 
-/** Whether the operator's own list is the shipped default rather than anything they chose. */
+/**
+ * Whether the shipped defaults stand in for the operator's own list: nothing chosen, or nothing
+ * chosen that this page can reach — `refusedOwnRelays` says which of the two.
+ */
 export function usingDefaults(): boolean {
-  return usable(get<string[]>('accruing', FIELD) ?? []).length === 0;
+  return usable(savedOwnRelays()).length === 0;
+}
+
+/** The operator's own list as saved, every line, whether or not this page can reach it. */
+export function savedOwnRelays(): string[] {
+  const raw = get<unknown>('accruing', FIELD);
+  return Array.isArray(raw) ? raw.filter((x): x is string => typeof x === 'string') : [];
+}
+
+/**
+ * Lines of the operator's own list this page will not dial, each with why.
+ *
+ * Said, never swapped in silence [audit: relay paths, review]. A list saved before the check, all of
+ * it `ws://` to a relay on the operator's own network, leaves nothing usable from https: the
+ * shipped defaults then carried presence, the card and the key bundle to relays the operator had
+ * left out, while the editor showed the defaults as though nothing had ever been chosen.
+ */
+export function refusedOwnRelays(): Refused[] {
+  return refusedOf(savedOwnRelays());
 }
 
 export function setRelays(list: string[]): void {

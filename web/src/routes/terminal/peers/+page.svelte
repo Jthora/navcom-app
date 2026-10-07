@@ -12,9 +12,18 @@
   import { page } from '$app/state';
   import { PairError, pair, peers, setBuddy, unpair, type Peer } from '$lib/terminal/peers';
   import { loadIdentity } from '$lib/terminal/identity';
-  import { ownRelays, relays, setRelays, usingDefaults } from '$lib/terminal/relays';
-  import { whyNotReachable } from '$lib/terminal/relay-url';
+  import {
+    missionRelays,
+    ownRelays,
+    refusedOwnRelays,
+    relays,
+    savedOwnRelays,
+    setRelays,
+    usingDefaults
+  } from '$lib/terminal/relays';
+  import { whyNotReachable, type Refused } from '$lib/terminal/relay-url';
   import { loadConfig } from '$lib/terminal/config';
+  import { watchPubkey } from '$lib/terminal/watch-key';
   import encodeQR from '@paulmillr/qr';
   import { canScan, pubkeyFrom, scan, ScanError, type Scanner } from '$lib/terminal/scan';
   import { invites, type Waiting } from '$lib/terminal/invites.svelte';
@@ -31,6 +40,21 @@
   let defaults = $state(false);
   /** Whether a configured watch is supplying the list, in which case it wins. */
   let watchRelays = $state(false);
+  /** Lines of the operator's own list this page will not dial: said, never swapped in silence. */
+  let ownRefused = $state<Refused[]>([]);
+  /**
+   * Whether "Where this goes" opens by itself: decided once, when the screen opens. It followed
+   * `ownRefused`, so the save that fixed the list emptied it and closed the section over the line
+   * saying what the save had done [audit: relay paths, review].
+   */
+  let openWhere = $state(false);
+  /** Where mission traffic goes beyond `using` — the relays whoever posted a mission reads. */
+  let missionsAlso = $state<string[]>([]);
+  /**
+   * This phone holds a watch and is under none, so the watch it holds runs on this list: editing
+   * it moves the watch away from the relays its operators were given [audit: relay paths, review].
+   */
+  let holdsWatchHere = $state(false);
   let relayDraft = $state('');
   let relayError = $state<string | null>(null);
   let relayNote = $state<string | null>(null);
@@ -40,11 +64,21 @@
   let scanner: Scanner | null = null;
   let naming = $state<Record<string, string>>({});
 
-  onMount(() => {
+  /** Everything this screen says about where things go, read again after any change to the list. */
+  function readRelays() {
     using = relays();
     defaults = usingDefaults();
+    ownRefused = refusedOwnRelays();
+    missionsAlso = missionRelays().filter((u) => !using.includes(u));
+  }
+
+  onMount(() => {
+    readRelays();
+    openWhere = ownRefused.length > 0;
     watchRelays = (loadConfig()?.relays?.length ?? 0) > 0;
-    relayDraft = ownRelays().join('\n');
+    holdsWatchHere = !watchRelays && watchPubkey() !== null;
+    // The list as saved when any of it was left out, so the line can be fixed rather than lost.
+    relayDraft = (ownRefused.length > 0 ? savedOwnRelays() : ownRelays()).join('\n');
     scannable = canScan();
     mine = peers();
     myPubkey = loadIdentity()?.pubkey ?? null;
@@ -84,20 +118,21 @@
       return;
     }
     setRelays(list);
-    using = relays();
-    defaults = usingDefaults();
+    readRelays();
     relayNote =
-      'Saved. Anything that starts after this uses the new list; what is already running keeps the old one until you reopen the app.';
+      'Saved. Anything that starts after this uses the new list; what is already running keeps the old one until you reopen the app.' +
+      (holdsWatchHere ? ' The watch this phone holds moves with it, so tell its operators.' : '');
   }
 
   /** Back to the shipped pair. An empty own-list is how `relays()` falls through to them. */
   function backToDefaults() {
     relayError = null;
     setRelays([]);
-    using = relays();
-    defaults = usingDefaults();
+    readRelays();
     relayDraft = ownRelays().join('\n');
-    relayNote = 'Back to the two that ship with the app.';
+    relayNote =
+      'Back to the two that ship with the app.' +
+      (holdsWatchHere ? ' The watch this phone holds moves with it, so tell its operators.' : '');
   }
 
   const link = $derived(myPubkey ? `https://navcom.app/terminal/peers/#${myPubkey}` : '');
@@ -263,15 +298,41 @@
   pointing a proxy at it. Relays carry sealed envelopes they cannot read, and using one
   reveals no Watchtower -- but an operator should still know which strangers' machines
   their presence travels through.
+
+  The kinds that follow this list are named rather than called "everything": mission traffic also
+  goes to the relays whoever posted a mission reads [mission-interchange spec §5.0], and a watch
+  this phone holds with no config of its own runs on this list too [audit: relay paths, review].
 -->
-<Why summary="Where this goes">
+<Why summary="Where this goes" open={openWhere}>
   <p>
-    Everything this phone publishes outside a watch — presence, invites, your card, corrections,
-    places — travels through these: {watchRelays ? 'your watch’s relays, and beside them ' : ''}{defaults ? 'the public relays NavCom ships with' : 'the relays you chose'}.
+    Presence, invites, your card, corrections and places travel through these: {watchRelays ? 'your watch’s relays, and beside them ' : ''}{defaults ? 'the public relays NavCom ships with' : 'the relays you chose'}.
     Presence and invites are sealed and those relays cannot read them; a card and a correction
     are public.
   </p>
   <p class="blocks">{#each using as r (r)}<span>{r}</span>{/each}</p>
+  <p data-mission-relays>
+    {missionsAlso.length > 0
+      ? `Anything you send about a mission also goes to ${missionsAlso.join(' and ')}, where whoever posted it reads.`
+      : 'Anything you send about a mission goes through these too.'}
+    What you seal to a mission’s poster goes to the relays that poster names.
+  </p>
+  {#if ownRefused.length > 0}
+    <!-- A list saved before the check, refused here: said, never replaced in silence. -->
+    <div data-relays-set-aside>
+      <p>
+        {defaults
+          ? 'Nothing in your saved list can be opened from this page, so the defaults carry all of this until you change it:'
+          : 'Part of your saved list cannot be opened from this page, and is left out:'}
+      </p>
+      <ul class="refused">{#each ownRefused as r, i (i)}<li>{r.why}</li>{/each}</ul>
+    </div>
+  {/if}
+  {#if holdsWatchHere}
+    <p data-held-watch-relays>
+      <strong>The watch this phone holds runs on these too.</strong> Change them and it moves
+      with them, away from the relays its operators were given.
+    </p>
+  {/if}
   {#if watchRelays}
     <p>
       Your watch’s relays are always included, and changed only on
@@ -291,7 +352,7 @@
   {#if relayNote}<p data-relay-note>{relayNote}</p>{/if}
   <div class="relay-acts">
     <button data-relay-save onclick={useRelays}>Use these</button>
-    {#if !defaults}
+    {#if !defaults || ownRefused.length > 0}
       <button class="drop" data-relay-reset onclick={backToDefaults}>Back to the defaults</button>
     {/if}
   </div>
@@ -420,6 +481,7 @@
 
 <style>
   .relay-acts { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .5rem; }
+  .refused { margin: 0 0 .6rem; padding-inline-start: 1.1rem; display: grid; gap: .3rem; overflow-wrap: anywhere; }
   .over {
     margin: 0 0 0.6rem;
     padding: 0.6rem 0.75rem;

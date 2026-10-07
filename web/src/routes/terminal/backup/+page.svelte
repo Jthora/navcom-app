@@ -7,9 +7,10 @@
    */
   import { onMount } from 'svelte';
   import { Slot, Readout, Why } from '$lib/components/panel';
-  import { ageInDays, secretToHex } from '@navcom/core';
+  import { ageInDays, keyPrint, secretToHex } from '@navcom/core';
   import { RestoreError, lastMade, makeBackup, restore, restoreCode, type NamedWatch } from '$lib/terminal/backup';
-  import { ConfigError, saveConfig } from '$lib/terminal/config';
+  import { ConfigError, addOfferedWatch, forgetOfferedWatch, offeredWatch } from '$lib/terminal/config';
+  import { refusedOf, usable } from '$lib/terminal/relay-url';
   import { loadIdentity } from '$lib/terminal/identity';
 
   let identity = $state<ReturnType<typeof loadIdentity>>(null);
@@ -24,13 +25,19 @@
   let restoreBlob = $state('');
   let error = $state<string | null>(null);
   let done = $state<string | null>(null);
-  /** A watch the backup named, waiting for the operator to say yes: nothing routes there until then. */
+  /**
+   * A watch the backup named, waiting for the operator to say yes: nothing routes there until then.
+   * Read back from storage, so leaving this screen — which its own success line says to do — does
+   * not lose it [audit: relay paths, review].
+   */
   let named = $state<NamedWatch | null>(null);
   let watchError = $state<string | null>(null);
   let watchAdded = $state(false);
+  /** The relays it would be added with, and the ones left out with why: the same rule as everywhere. */
+  const reach = $derived(named ? { relays: usable(named.relays), left: refusedOf(named.relays) } : null);
 
   onMount(() => {
-    made = lastMade(); identity = loadIdentity(); });
+    made = lastMade(); identity = loadIdentity(); named = offeredWatch(); });
 
   function make() {
     error = null;
@@ -65,7 +72,14 @@
         const { keys, watch } = restore(restorePass, text);
         named = watch;
         watchAdded = false;
-        done = `Restored ${keys} thing${keys === 1 ? '' : 's'}. Reopen the terminal.`;
+        watchError = null;
+        const restored = `Restored ${keys} thing${keys === 1 ? '' : 's'}.`;
+        // Not "reopen the terminal" while a watch is still to be decided on below it.
+        done = !watch
+          ? `${restored} Reopen the terminal.`
+          : keys === 0
+            ? 'This backup holds only a watch. Add it or forget it below.'
+            : `${restored} It also names a watch: add it or forget it below, then reopen the terminal.`;
       }
       identity = loadIdentity();
     } catch (e) {
@@ -73,16 +87,26 @@
     }
   }
 
-  /** Adds the named watch through the same checks the setup screen uses, or says what is wrong. */
+  /**
+   * Adds the named watch with the relays this page can reach — the ones left out are listed above
+   * the button — through the setup screen's checks on everything else, or says what is wrong.
+   */
   function addWatch() {
     if (!named) return;
     watchError = null;
     try {
-      saveConfig(named.pubkey, named.relays.join('\n'), named.holders.join('\n'));
+      addOfferedWatch(named);
       watchAdded = true;
     } catch (e) {
       watchError = e instanceof ConfigError ? e.message : 'That watch could not be added.';
     }
+  }
+
+  /** Declining is something the operator does, not what happens to them by leaving the screen. */
+  function forgetWatch() {
+    forgetOfferedWatch();
+    named = null;
+    watchError = null;
   }
 </script>
 
@@ -219,18 +243,58 @@
   <p class="cost">Leave the passphrase blank if you are pasting a recovery code.</p>
   {#if error}<p class="error">{error}</p>{/if}
   {#if done}<p class="ok" data-restored>{done}</p>{/if}
-  {#if named && !watchAdded}
-    <!-- Where a Distress will go, and who can read it, said before anything routes there. -->
-    <Slot k="Watch">
-      <Readout value="Named in this backup" tone="warn" sub={`${named.relays.length} relay${named.relays.length === 1 ? '' : 's'} · ${named.holders.length || 'no'} holder${named.holders.length === 1 ? '' : 's'}`} />
-    </Slot>
-    <p data-named-watch>
-      Not added yet. Add it only if this is your watch: every Distress you send goes to it, and
-      whoever holds it can read everything you send.
-    </p>
-    <p class="blocks">{#each named.relays as r, i (i)}<span>{r}</span>{/each}</p>
-    {#if watchError}<p class="error" role="alert">{watchError}</p>{/if}
-    <button onclick={addWatch} data-add-watch>Add this watch</button>
+  {#if named && reach && !watchAdded}
+    <!--
+      Where a Distress will go, and who can read it, said before anything routes there.
+
+      By key, not only by relay: the relays a setup screen prefills are the same two for nearly
+      every watch, so they told one watch from another not at all, and a kit handed over with its
+      passphrase could name somebody else's key on them [audit: relay paths, review]. And an
+      empty holder list is a box reading with its own key — "no holders" sat directly above
+      "whoever holds it can read everything you send".
+    -->
+    <div class="named" data-named-watch>
+      <Slot k="Watch">
+        <Readout
+          value="Named in this backup"
+          tone="warn"
+          sub={`${reach.relays.length} of ${named.relays.length} relay${named.relays.length === 1 ? '' : 's'} usable from here`}
+        />
+      </Slot>
+      <Slot k="Address">
+        <span data-named-print>
+          <Readout value={keyPrint(named.pubkey) ?? 'Not a key'} verbatim tone="neutral" sub="check every character against what you were given" />
+        </span>
+      </Slot>
+      <Slot k="Read by">
+        {#each named.holders as h, i (i)}
+          <span data-holder-print><Readout value={keyPrint(h) ?? 'Not a key'} verbatim tone="neutral" /></span>
+        {:else}
+          <Readout value="Its own key" tone="neutral" sub="a box holds the watch itself" />
+        {/each}
+      </Slot>
+      <p>
+        Not added yet. Add it only if this is your watch: every Distress you send goes to it, and
+        whoever holds it can read everything you send.
+      </p>
+      <p class="prints">{#each reach.relays as r (r)}<span>{r}</span>{/each}</p>
+      {#if reach.left.length > 0}
+        <!-- Left out by the rule every relay list follows, and named rather than dropped. -->
+        <ul class="left" data-relays-left-out>
+          {#each reach.left as r, i (i)}<li>{r.why}</li>{/each}
+        </ul>
+      {/if}
+      {#if watchError}<p class="error" role="alert">{watchError}</p>{/if}
+      <div class="row">
+        {#if reach.relays.length > 0}
+          <button onclick={addWatch} data-add-watch>Add this watch</button>
+        {:else}
+          <!-- Nothing here to add it with. Setup has it filled in, where a line can be fixed. -->
+          <a class="fix" href="/terminal/setup/#relays" data-fix-watch>Fix its relays in setup</a>
+        {/if}
+        <button class="drop" onclick={forgetWatch} data-forget-watch>Not my watch</button>
+      </div>
+    </div>
   {:else if named && watchAdded}
     <p class="ok" data-watch-added>Watch added.</p>
   {/if}
@@ -245,11 +309,15 @@
     background: var(--t-sunk); border: 1px solid var(--t-line); padding: .6rem;
     overflow-x: auto; margin: 0; color: var(--t-muted); max-height: 9rem;
   }
-  .blocks {
+  .blocks, .prints {
     display: flex; flex-wrap: wrap; gap: .35rem .6rem; margin: 0;
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .95rem;
     color: var(--t-ink);
   }
-  .blocks span { background: var(--t-sunk); padding: .2rem .4rem; }
+  .blocks span, .prints span { background: var(--t-sunk); padding: .2rem .4rem; overflow-wrap: anywhere; }
   .ok { color: var(--t-station); margin: 0; }
+  .named { display: flex; flex-direction: column; gap: .6rem; }
+  .left { margin: 0; padding-inline-start: 1.1rem; display: grid; gap: .3rem; overflow-wrap: anywhere; }
+  .row { display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; }
+  .drop { border-color: var(--t-line); color: var(--t-faint); }
 </style>

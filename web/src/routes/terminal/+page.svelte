@@ -9,7 +9,7 @@
   import { battery } from '$lib/terminal/battery.svelte';
   import { pq } from '$lib/terminal/pq.svelte';
   import { overdue } from '$lib/terminal/overdue.svelte';
-  import { loadConfig } from '$lib/terminal/config';
+  import { loadConfig, offeredWatch, storedWatch, type StoredWatch } from '$lib/terminal/config';
   import { peers } from '$lib/terminal/peers';
   import { formatDuration } from '$lib/terminal/patrol';
   import { notes } from '$lib/terminal/notes';
@@ -20,6 +20,11 @@
   import { readClock, type ClockRead } from '$lib/terminal/clock';
 
   const s = $derived(watch.state);
+  /**
+   * A watch this phone was given whose every relay this page refuses. Not "no watch": somebody
+   * added it, and is told what is wrong with it and where to fix it [audit: relay paths, review].
+   */
+  let stranded = $state<StoredWatch | null>(null);
 
   /*
    * The capability receipt as a panel rather than a sentence [docs/design/panel.md].
@@ -36,13 +41,15 @@
   const reachable = $derived(pageableNow(s.oncall, nowS).map((o) => o.author.callsign));
   const watchRead = $derived(
     s.state === 'dark'
-      ? { value: 'Dark', tone: 'cold' as const, sub: null }
+      ? { value: 'Dark', tone: 'cold' as const, sub: stranded ? 'its relays cannot be reached from here' : null }
       : s.state === 'station'
         ? { value: 'On station', tone: 'good' as const, sub: s.holder }
         // Invariant 5. An agent is always identified as an agent, including here.
         : { value: 'Automated', tone: 'warn' as const, sub: 'agent · not a human' }
   );
   let configured = $state(false);
+  /** A backup named a watch and the operator has not yet added or forgotten it. */
+  let offered = $state(false);
   let identity = $state<ReturnType<typeof loadIdentity>>(null);
   let damaged = $state(false);
   /** The `20911` this device was paged about, if it arrived through a notification. */
@@ -124,6 +131,8 @@
     if (q && /^[0-9a-f]{64}$/.test(q)) ackId = q;
     clock = readClock(data?.built, Date.now());
     configured = loadConfig() !== null;
+    stranded = configured ? null : storedWatch();
+    offered = !configured && !stranded && offeredWatch() !== null;
     identity = loadIdentity();
     damaged = corruptTiers().length > 0;
     const all = notes();
@@ -510,7 +519,16 @@
       {/if}
 
       <Why open={!identity || !configured || watch.read.reason !== null}>
-        <p>{capabilitySentence(s, nowS)}</p>
+        {#if stranded}
+          <!-- The receipt for a watch this page cannot reach. Core's sentence for Dark opens "No
+               watch.", and a watch somebody added is not none [audit: relay paths, review]. -->
+          <p>
+            Your watch's relays cannot be reached from this page. Distress will page nobody — the
+            terminal will tell you so, and it still works offline.
+          </p>
+        {:else}
+          <p>{capabilitySentence(s, nowS)}</p>
+        {/if}
 
         {#if !identity}
           <h2>Start here</h2>
@@ -532,11 +550,12 @@
         {/if}
 
         {#if s.state === 'dark' && configured}
+          <!-- "Not a failure to connect" went: with no relay answering, or a reading gone stale
+               because the signal did, a failure to connect is exactly what it can be. -->
           <p>
-            <strong>Dark is not an error.</strong> Nothing is watching. That is a state, not a
-            failure to connect — this screen, your identity and the
-            <a href="/terminal/directory/">cached directory</a> all work with no watch and no
-            signal, and Distress will keep trying regardless.
+            <strong>Dark is not an error.</strong> Nothing this phone can hear is watching — this
+            screen, your identity and the <a href="/terminal/directory/">cached directory</a> all
+            work with no watch and no signal, and Distress will keep trying regardless.
           </p>
           <p>
             It leaves you less capable, and there is no way around that. <strong>Query needs a
@@ -551,14 +570,41 @@
           this app has — somebody with no callsign and no watch, for whom `!configured &&
           identity` is false — and told them "A Watchtower is configured, but its relays are
           not serving anything from it", followed by "assume nobody is reading what you send".
-          Both false, and to a stranger they read as the app being broken on arrival.
+          Both false, and to a stranger they read as the app being broken on arrival. A watch
+          saved on relays this page will not open is gated on `stranded` instead: it exists, and
+          `configured` is false only because nothing can be sent to it.
         -->
-        {#if !configured && identity}
-          <h2>No watch, and that is a normal way to work</h2>
-          <p>
-            Nobody is watching. Most operators patrol alone and this is what that looks like —
-            it is not unfinished setup, and nothing here is waiting on you.
-          </p>
+        {#if stranded}
+          <!-- A watch somebody added, on relays this page will not open. Said as that, never as
+               no watch, with each line that is wrong and where it is fixed [audit: relay paths,
+               review]. -->
+          <div data-watch-unreachable>
+            <h2>This page cannot reach your watch</h2>
+            <p>
+              None of the relays saved with it can be opened from here, so Query, Assist and
+              Distress have nowhere to go. <a href="/terminal/setup/#relays">Setup</a> shows the
+              watch as it was saved: fix the line that is wrong there.
+            </p>
+            <ul class="refused">
+              {#each stranded.refused as r, i (i)}<li>{r.why}</li>{:else}<li>No relay is saved with it.</li>{/each}
+            </ul>
+          </div>
+        {:else if !configured && identity}
+          {#if offered}
+            <!-- Kept until the operator adds it or forgets it, so leaving the backup screen does
+                 not lose it — and while it waits, "nothing here is waiting on you" is not true. -->
+            <h2 data-watch-offered>Your backup named a watch</h2>
+            <p>
+              It has not been added, so nothing goes to it.
+              <a href="/terminal/backup/">Add it, or forget it, on the backup screen.</a>
+            </p>
+          {:else}
+            <h2>No watch, and that is a normal way to work</h2>
+            <p>
+              Nobody is watching. Most operators patrol alone and this is what that looks like —
+              it is not unfinished setup, and nothing here is waiting on you.
+            </p>
+          {/if}
           <p>
             <strong>What works right now:</strong> the cached directory, with no signal at all,
             and everything on this device.
@@ -586,11 +632,17 @@
           </p>
         {:else if configured && watch.read.reason === 'stale'}
           <h2>Last word was {watch.read.ageSeconds ?? '?'}s ago</h2>
+          <!-- Every cause, because this phone cannot tell them apart: a screen left open keeps
+               ageing what it last heard after the signal goes, and blaming the watch then sent
+               the operator to its holder instead of to their own signal. A clock set fast ages a
+               reading that arrived a moment ago, and only the phone's own setting fixes that
+               [audit: relay paths, review]. -->
           <p>
-            A Watchtower is
-            configured and the relay is still serving its last message, but that message is old
-            enough that the daemon may be gone. <strong>Old is treated as Dark</strong> — a
-            stale event says what was true, not what is.
+            It is one of three things, and this phone cannot tell which. The watch may have
+            stopped publishing. This phone may have lost its relays, as it does when the signal
+            goes. Or the two clocks disagree: a phone set fast reads a live watch as old, and
+            automatic date and time in its settings fixes that.
+            <strong>Old is treated as Dark</strong> — a stale event says what was true, not what is.
           </p>
         {:else if configured && watch.read.reason === 'absent' && watch.unanswered}
           <!-- No relay answered at all: the phone could not ask, so it blames neither the list
@@ -1079,6 +1131,7 @@
   /* Logical, not physical: `rtl.test.ts` fails a stylesheet that would indent the wrong
      side in a right-to-left language, and 8.2 puts a second one in scope. */
   .jotted { margin: .4rem 0 0; padding-inline-start: 1.1rem; display: grid; gap: .35rem; }
+  .refused { margin: .2rem 0 0; padding-inline-start: 1.1rem; display: grid; gap: .3rem; overflow-wrap: anywhere; }
   .jotted li { line-height: 1.4; }
   .closing textarea { margin-bottom: .2rem; }
   .opt { color: var(--t-faint); font-size: .8rem; }

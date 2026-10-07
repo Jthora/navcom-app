@@ -13,7 +13,7 @@
   import { watch } from '$lib/terminal/watch.svelte';
   import { operator } from '$lib/terminal/session.svelte';
   import { precision, setPrecision, type Precision } from '$lib/terminal/position.svelte';
-  import { loadConfig } from '$lib/terminal/config';
+  import { loadConfig, storedWatch } from '$lib/terminal/config';
 
   /**
    * Whether a Watchtower is configured at all — not whether it is reachable.
@@ -23,6 +23,8 @@
    * arrangement the operator set up. Dark is reported on its own, above.
    */
   let configured = $state(false);
+  /** Added, and none of its relays reachable from this page. */
+  let stranded = $state(false);
 
   let area = $state('');
   let hours = $state(2);
@@ -32,6 +34,7 @@
   onMount(() => {
     share = precision();
     configured = loadConfig() !== null;
+    stranded = !configured && storedWatch() !== null;
     watch.start();
     return () => watch.stop();
   });
@@ -58,7 +61,9 @@
     // did -- on the panel labelled "what is behind you", read immediately before they
     // decide to go out. Query, Assist and Resupply already separate these two; this screen
     // did not, and it is the one where the distinction is acted on.
-    !configured
+    stranded
+      ? { value: 'Unreachable', tone: 'warn' as const, sub: 'its relays cannot be reached from here' }
+      : !configured
       ? { value: 'No watch', tone: 'cold' as const, sub: 'you have not added one' }
       : watch.state.state === 'dark'
         ? { value: 'Dark', tone: 'cold' as const, sub: null }

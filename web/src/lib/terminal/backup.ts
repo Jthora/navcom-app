@@ -9,6 +9,9 @@
 
 import { openBackup, publicKeyOf, sealBackup, secretFromHex } from '@navcom/core';
 import { get, set } from './storage';
+import { forgetOfferedWatch, offeredWatch, offerWatch, type NamedWatch } from './config';
+
+export type { NamedWatch } from './config';
 
 /** Keys that are this device's business rather than this operator's. */
 const DEVICE_ONLY = ['relays_own'];
@@ -19,13 +22,6 @@ const DEVICE_ONLY = ['relays_own'];
  * decide who reads a Distress, were written straight in.
  */
 const WATCH_FIELDS = ['watchtower', 'relays', 'watch_holders'];
-
-/** What a backup says about a watch, before anything is done with it. */
-export interface NamedWatch {
-  pubkey: string;
-  relays: string[];
-  holders: string[];
-}
 
 /**
  * The most keys a real backup carries, with room to spare.
@@ -184,6 +180,10 @@ export function restore(passphrase: string, blob: string): { keys: number; watch
   if (typeof kit.at === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(kit.at)) {
     set('accruing', MADE, kit.at);
   }
+  // Held until the operator adds it or forgets it, rather than for as long as one screen is open
+  // [audit: relay paths, review]. Offered, never installed: nothing that sends reads it.
+  if (watch) offerWatch(watch);
+  else if (offeredWatch()) forgetOfferedWatch();
   return { keys: restored.length, watch };
 }
 

@@ -24,15 +24,18 @@ kept apart on purpose.
 |---|---|---|
 | **Operational** | Signals, `Distress`, the *inner* peer-presence message, your post-quantum key bundle, endorsement withdrawals | Your identity as an operator. Anything signed with it is linkable to everything else it signs |
 | **Contact** | Your card, public presence, corrections, places you add, missions you take part in | So that **publishing costs no operational exposure**. Somebody watching the directory learns nothing about when you are out |
-| **Throwaway** | The *outer* wrapper of peer presence, invites and a mission claim sealed to its poster — one per message, never stored | So two messages from you are unlinkable to anyone but their recipients |
+| **Throwaway** | The *outer* wrapper of peer presence, invites and a mission claim sealed to its poster — one per message, never stored | So the outside of each names who it is for and never who sent it. It does not stop them being grouped: the relay carrying them sees which connection sent each one, and the wraps of one heartbeat all carry the same timestamp |
 
 The separation is the point. A correction you file at a door and a `Distress` you raise an
 hour later are signed by different keys, and nothing in either event ties them together.
 
 **What the separation does not hide** (corrected 2026-10-07): a relay that carries both kinds
 of traffic from one phone sees them arrive over the same connection, from the same address.
-The events cannot be tied together; the phone sending them can. An operator who needs the two
-apart has to keep them on different relays, which the app does not yet do for them.
+The events cannot be tied together; the phone sending them can. No setting keeps them apart.
+With a watch, its relays carry every `Distress` and, beside it, everything this phone publishes
+except what you seal to a mission's poster, which goes only to the relays that poster names.
+Without one, the relays that carry your card and corrections also carry the requests that name
+your operational key.
 
 ## What goes out, exactly
 
@@ -83,11 +86,18 @@ Stated as capability rather than intent, because you do not get to choose who ru
 - That an operator pubkey sent a signal to a particular Watchtower, and its type — but not
   the area, the position, or the question
 - That a `Distress` occurred, addressed to a Watchtower — but nothing inside it
-- **Who receives peer presence, and how often.** The sender is unlinkable; the recipient is
-  not. Somebody watching one relay learns that a given pubkey is being kept updated by
-  *somebody*, on a rhythm
+- **Who receives peer presence, and how often.** The recipient is in the clear. Somebody
+  reading one relay learns that a given pubkey is being kept updated by *somebody*, on a
+  rhythm — and every wrap in one heartbeat carries the same timestamp, so they can group the
+  recipients of one beat together
+- **Which peers you have, and who holds your watch with you** (corrected 2026-10-07). Over the
+  one connection your phone keeps to each relay, it asks for its own presence inbox, publishes
+  your key bundle, asks for your peers' bundles by name and sends a wrap to each peer. The
+  throwaway key hides you from other readers of the relay, not from the relay carrying the
+  connection. The request that names your watch and its holders goes only to the watch's own
+  relays — so they can see who holds it with you, and no other relay is asked
 - Everything about your card, public presence, corrections and places — all public by
-  design, and none of it tied to your operational key
+  design, and none of it signed by your operational key
 - **Everything in an observation, and the pair of them together.** An observation publishes at
   ±20 km immediately and its exact position 48 hours later, which defeats *"that operator is
   standing there now"* and does not defeat pattern reconstruction from many observations over
@@ -107,10 +117,7 @@ Stated as capability rather than intent, because you do not get to choose who ru
 **They cannot see:**
 
 - Anything sealed, which is every operational payload
-- Which peers you have, from your presence traffic — each message is wrapped in its own
-  throwaway key
-- Who holds a Watchtower with you. A single-holder watch and a squad produce the same shape
-  on the wire
+- Who holds a Watchtower with you, unless they are one of its relays
 
 ## What never leaves at all
 

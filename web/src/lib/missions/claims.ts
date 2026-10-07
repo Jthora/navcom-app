@@ -11,7 +11,6 @@ import type { Event } from 'nostr-tools/core';
 import type { Filter } from 'nostr-tools/filter';
 import {
   CLAIM_CAP,
-  DEFAULT_RELAYS,
   KIND_INBOX_RELAYS,
   buildClaimDeletion,
   buildMissionClaim,
@@ -23,7 +22,7 @@ import {
 } from '@navcom/core';
 import { get, set } from '$lib/terminal/storage';
 import { contactPubkey, ensureContactKey } from '$lib/terminal/card';
-import { relays, usable } from '$lib/terminal/relays';
+import { missionRelays, usable } from '$lib/terminal/relays';
 import { pool } from '$lib/terminal/pool';
 
 export type Visibility = 'open' | 'sealed';
@@ -122,10 +121,11 @@ export const wire: Wire = {
 /**
  * Where an operator's public mission traffic goes: this device's relays and the ones every poster
  * reads [interchange spec §5.0]. A Watched operator's relays are the watch's, and a claim or report
- * sent only there never reached the poster, who would then settle it by silence [11.E].
+ * sent only there never reached the poster, who would then settle it by silence [11.E]. One rule,
+ * kept in `relays.ts` beside the others, so the screen that says where things go names this one.
  */
 export function operatorRelays(): string[] {
-  return usable([...relays(), ...DEFAULT_RELAYS]);
+  return missionRelays();
 }
 
 const STORE = 'mission_claims';

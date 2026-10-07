@@ -335,18 +335,20 @@ itself:
 
   Fixed in two parts, because the first commit's account of the second hole was **wrong** and
   is corrected here. Listening for a response to *any* signal the Distress has sent fixes the
-  late-answer case, and is capped at 64 ids because a relay filter is not unbounded. It does
+  late-answer case — the cap of 64 it had then went with the relay filter that needed it. It does
   **not** fix the gap: `20912` is ephemeral, so relays do not store responses, and an
   acknowledgement published while nothing is subscribed is not delayed — it is gone. There is
   no store to serve it from.
 
-  So the gap needed its own fix: one subscription open for the whole Distress, beside the
-  per-attempt one. At steady state the per-attempt wait listens twenty seconds in every
-  eighty, so roughly **three quarters of the time a human could answer in had no listener at
-  all**, and the executor publishes its ack exactly once, on the ladder's transition. The
-  persistent filter is deliberately wider and the narrowing happens in the handler against the
-  ids actually outstanding — a filter cannot be widened after it is opened, and what lives in
-  a handler can be tested anywhere
+  So the gap needed its own fix: a subscription open for the whole Distress. At steady state
+  the per-attempt wait listened twenty seconds in every eighty, so roughly **three quarters of
+  the time a human could answer in had no listener at all**, and the executor published its ack
+  once, on the ladder's transition. Since 2026-10-07 that listener is one per relay, reopens
+  itself, and is the only place the loop learns an answer — the per-attempt wait is gone, after
+  a box's own agent acknowledgement was shown to end each attempt's listening before the ladder
+  could report [audit: relay paths]. The filter is deliberately wide and the narrowing happens
+  in the handler against the ids this Distress sent — a filter cannot be widened after it is
+  opened, and what lives in a handler can be tested anywhere
 - **Carrying it for a night.** Nothing here finds text that is too long to read in the cold,
   a flow with a step too many, or a control in the wrong place
 - ~~**iPhone.**~~ **Mostly closed, and it found something.** Chromium is not WebKit, and the

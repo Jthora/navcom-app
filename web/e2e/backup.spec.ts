@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { readDevice, seedDevice, open } from './device';
+import { blankDevice, readDevice, seedDevice, open, TEST_SECRET } from './device';
 
 /**
  * Carrying an identity to another phone, and getting it back after a dropped one.
@@ -118,4 +118,69 @@ test('carries the decade and not tonight', async ({ page }) => {
 
   // Encrypted, so assert on what comes back rather than on the blob.
   await expect(page.getByText(/not tonight's patrol/i)).toBeVisible();
+});
+
+test.describe('a watch named in a backup [audit: relay paths, review]', () => {
+  const WATCH = 'e'.repeat(63) + '5';
+  const HOLDER = 'c'.repeat(64);
+
+  /** A kit as the old phone sealed it, restored on a phone with nothing on it. */
+  async function restoreKit(page: import('@playwright/test').Page, accruing: Record<string, unknown>) {
+    const { sealBackup } = await import('@navcom/core');
+    const blob = sealBackup('pw', { v: 1, at: '2026-10-01', accruing: { secret: TEST_SECRET, callsign: 'Wren', ...accruing } });
+    await blankDevice(page);
+    await open(page, '/terminal/backup/');
+    await page.locator('#rblob').fill(blob);
+    await page.locator('#rpass').fill('pw');
+    await page.getByRole('button', { name: /^restore$/i }).click();
+    await expect(page.locator('[data-restored]')).toBeVisible();
+  }
+
+  test('is shown by its key and its holders’ keys, survives leaving the screen, and adds with what this page can reach', async ({ page }) => {
+    const { keyPrint } = await import('@navcom/core');
+    // One line the old phone had long stopped dialling, beside the one it used.
+    await restoreKit(page, { watchtower: WATCH, relays: ['wss://relay.example:99999', 'wss://watch.example'], watch_holders: [HOLDER] });
+    await expect(page.locator('[data-restored]')).toContainText(/names a watch/i);
+
+    const panel = page.locator('[data-named-watch]');
+    await expect(panel).toBeVisible();
+    await expect(panel.locator('[data-named-print]')).toContainText(keyPrint(WATCH)!);
+    await expect(panel.locator('[data-holder-print]')).toContainText(keyPrint(HOLDER)!);
+    await expect(panel.locator('[data-relays-left-out]')).toContainText('wss://relay.example:99999');
+
+    // The success line said to reopen the terminal. Doing that used to lose the watch.
+    await open(page, '/terminal/');
+    await expect(page.locator('[data-watch-offered]')).toBeVisible();
+    await open(page, '/terminal/backup/');
+    await expect(page.locator('[data-named-watch]')).toBeVisible();
+
+    await page.locator('[data-add-watch]').click();
+    await expect(page.locator('[data-watch-added]')).toBeVisible();
+    const device = await readDevice(page);
+    expect(device.accruing['watchtower']).toBe(WATCH);
+    expect(device.accruing['relays']).toEqual(['wss://watch.example']);
+    expect(device.accruing['watch_holders']).toEqual([HOLDER]);
+
+    // And Distress has somewhere to go.
+    await open(page, '/terminal/distress/');
+    await expect(page.locator('[data-no-watch]')).toHaveCount(0);
+  });
+
+  test('says a box-held watch is read by its own key, never that it has no holders', async ({ page }) => {
+    await restoreKit(page, { watchtower: WATCH, relays: ['wss://watch.example'] });
+    const panel = page.locator('[data-named-watch]');
+    await expect(panel).toContainText(/its own key/i);
+    await expect(panel).not.toContainText(/no holders/i);
+  });
+
+  test('is forgotten when the operator says it is not theirs, and nothing is installed', async ({ page }) => {
+    await restoreKit(page, { watchtower: WATCH, relays: ['wss://watch.example'], watch_holders: [HOLDER] });
+    await page.locator('[data-forget-watch]').click();
+    await expect(page.locator('[data-named-watch]')).toHaveCount(0);
+
+    await open(page, '/terminal/backup/');
+    await expect(page.locator('[data-named-watch]')).toHaveCount(0);
+    const device = await readDevice(page);
+    expect(device.accruing['watchtower']).toBeUndefined();
+  });
 });
