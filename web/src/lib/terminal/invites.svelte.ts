@@ -107,33 +107,41 @@ export const invites = {
     const addresses = contact ? [identity.pubkey, contact] : [identity.pubkey];
 
     closer?.close();
-    closer = pool().subscribeMany(urls, { kinds: [KIND_INVITE], '#p': addresses }, {
-      onevent: (event: Event) => {
-        // Tried against both keys, because the two inboxes are the same kind and a relay
-        // does not say which address matched.
-        const secret = contactKey();
-        const read =
-          readInvite(identity.secretKey, event) ?? (secret ? readInvite(secret, event) : null);
-        if (!read) return;
-        if (read.from === identity.pubkey) return;
-        if (event.id in waiting) return;
+    /*
+     * One subscription per key, never both in one filter [audit: relay paths, F16]. A single
+     * `#p` naming the operational key beside the contact key handed every relay the link between
+     * them, in writing. Two subscriptions on one connection still come from one phone — a relay
+     * can see that, and `what-leaves.md` now says so — but the filter no longer states it.
+     */
+    const handle = (event: Event) => {
+      // Tried against both keys, because the two inboxes are the same kind and a relay
+      // does not say which address matched.
+      const secret = contactKey();
+      const read =
+        readInvite(identity.secretKey, event) ?? (secret ? readInvite(secret, event) : null);
+      if (!read) return;
+      if (read.from === identity.pubkey) return;
+      if (event.id in waiting) return;
 
-        /*
-         * Full: the ones already here are kept and this one is refused.
-         *
-         * Evicting the oldest instead would let a flood push out the invite the operator is
-         * actually waiting for. Neither direction is free — a flood that arrives first does
-         * block a later real invite — so the answer is not a cleverer rule but telling the
-         * operator and letting them clear it. `ignoreAll` is the other half of this, and
-         * without it the cap would be worse than the flood.
-         */
-        if (Object.keys(waiting).length >= MAX_WAITING) {
-          flooded = true;
-          return;
-        }
-        waiting = { ...waiting, [event.id]: { ...read, id: event.id } };
+      /*
+       * Full: the ones already here are kept and this one is refused.
+       *
+       * Evicting the oldest instead would let a flood push out the invite the operator is
+       * actually waiting for. Neither direction is free — a flood that arrives first does
+       * block a later real invite — so the answer is not a cleverer rule but telling the
+       * operator and letting them clear it. `ignoreAll` is the other half of this, and
+       * without it the cap would be worse than the flood.
+       */
+      if (Object.keys(waiting).length >= MAX_WAITING) {
+        flooded = true;
+        return;
       }
-    });
+      waiting = { ...waiting, [event.id]: { ...read, id: event.id } };
+    };
+    const subs = addresses.map((address) =>
+      pool().subscribeMany(urls, { kinds: [KIND_INVITE], '#p': [address] }, { onevent: handle })
+    );
+    closer = { close: () => subs.forEach((s) => s.close()) };
   },
 
   /**

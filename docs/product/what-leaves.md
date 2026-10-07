@@ -27,8 +27,12 @@ kept apart on purpose.
 | **Throwaway** | The *outer* wrapper of peer presence, invites and a mission claim sealed to its poster — one per message, never stored | So two messages from you are unlinkable to anyone but their recipients |
 
 The separation is the point. A correction you file at a door and a `Distress` you raise an
-hour later are signed by different keys and cannot be tied together by anyone watching a
-relay.
+hour later are signed by different keys, and nothing in either event ties them together.
+
+**What the separation does not hide** (corrected 2026-10-07): a relay that carries both kinds
+of traffic from one phone sees them arrive over the same connection, from the same address.
+The events cannot be tied together; the phone sending them can. An operator who needs the two
+apart has to keep them on different relays, which the app does not yet do for them.
 
 ## What goes out, exactly
 
@@ -105,7 +109,6 @@ Stated as capability rather than intent, because you do not get to choose who ru
 - Anything sealed, which is every operational payload
 - Which peers you have, from your presence traffic — each message is wrapped in its own
   throwaway key
-- Any link between your operational key and your contact key
 - Who holds a Watchtower with you. A single-holder watch and a squad produce the same shape
   on the wire
 

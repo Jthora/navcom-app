@@ -168,9 +168,10 @@
         The claim that makes a card safe to publish, stated before the form rather than after
         it. It is also the reason the contact key exists at all.
       -->
-      A card is signed by a <strong>separate key</strong> that is used for nothing else. It
-      cannot be connected to your patrols, your peers or your watch — publishing one tells the
-      network your callsign and your metro, and nothing about how you work.
+      A card is signed by a <strong>separate key</strong> that is used for nothing else. Nothing
+      in it connects it to your patrols, your peers or your watch — publishing one tells the
+      network your callsign and your metro, and nothing about how you work. A relay carrying
+      both from this phone can still see they come from one phone.
     </p>
     <p>
       <strong>A card carries no position.</strong> Not your address, not your neighbourhood,

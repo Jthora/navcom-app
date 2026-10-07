@@ -9,7 +9,7 @@
   "src/lib/components/missions/ReportScreen.svelte": 0,
   "src/lib/components/missions/ReportsScreen.svelte": 0,
   "src/lib/components/missions/TakePart.svelte": 0,
-  "src/lib/components/missions/YoursScreen.svelte": 23,
+  "src/lib/components/missions/YoursScreen.svelte": 20,
   "src/lib/components/panel/Action.svelte": 0,
   "src/lib/components/panel/Board.svelte": 0,
   "src/lib/components/panel/Elapsed.svelte": 0,
@@ -35,7 +35,7 @@
   "src/routes/terminal/+layout.svelte": 0,
   "src/routes/terminal/+page.svelte": 143,
   "src/routes/terminal/assist/+page.svelte": 137,
-  "src/routes/terminal/backup/+page.svelte": 357,
+  "src/routes/terminal/backup/+page.svelte": 386,
   "src/routes/terminal/card/+page.svelte": 39,
   "src/routes/terminal/directory/+page.svelte": 100,
   "src/routes/terminal/directory/[region]/+page.svelte": 519,
@@ -53,5 +53,5 @@
   "src/routes/terminal/standing/+page.svelte": 331,
   "src/routes/terminal/watch/+page.svelte": 374,
   "src/routes/terminal/who/+page.svelte": 12,
-  "src/routes/terminal/wipe/+page.svelte": 321
+  "src/routes/terminal/wipe/+page.svelte": 334
 }

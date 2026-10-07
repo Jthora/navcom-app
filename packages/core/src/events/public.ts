@@ -40,7 +40,8 @@ import {
  * Two consequences worth stating plainly, because they are the point:
  *
  * - Being findable costs an operator **no operational exposure**. The public key and the
- *   working key are different keys, and nothing links them but the operator's own say-so
+ *   working key are different keys, and nothing in the events links them. A relay carrying
+ *   both from one phone can see they arrive together; the events cannot be tied, the phone can
  * - Withdrawing means **discarding the contact key**. The published card survives on
  *   whatever relays kept it — nothing can unpublish it — but it now names a key nobody
  *   holds and nobody listens on. That is an honest withdrawal rather than a promised one
