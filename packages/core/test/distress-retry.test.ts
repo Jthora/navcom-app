@@ -323,3 +323,112 @@ describe('the listener between attempts, when the connection drops [audit: relay
     expect(phases).toContain('acknowledged');
   });
 });
+
+/**
+ * A pool where one relay is slow to say OK, and the watch answers through the other first
+ * [audit: relay paths, D2 review].
+ *
+ * The answer is delivered while the publish is still settling — once, to whatever is listening
+ * at that moment, and kept nowhere, as on a relay that keeps no ephemeral event. The loop used to
+ * learn an attempt's id only when every relay had settled, so this answer named a signal it had
+ * never sent, and was dropped. The watch's re-sent acknowledgement goes out the moment a new
+ * attempt lands, which made this its ordinary case.
+ */
+function slowOkPool(reply: (signalId: string) => unknown) {
+  const sent: { id: string }[] = [];
+  type Sub = { filter: Record<string, unknown>; onevent: (e: unknown) => void };
+  const subs: Sub[] = [];
+  return {
+    publish(urls: string[], event: { id: string }) {
+      if (!sent.some((e) => e.id === event.id)) sent.push(event);
+      // The fast relay has it, and the watch answers through it at once.
+      if (urls.some((u) => u.includes('fast'))) {
+        const answer = reply(event.id);
+        for (const sub of [...subs]) {
+          const want = sub.filter['#e'] as string[] | undefined;
+          if (want && !want.includes(event.id)) continue;
+          sub.onevent(answer);
+        }
+      }
+      return urls.map((u) => (u.includes('slow') ? new Promise((r) => setTimeout(() => r('ok'), 150)) : Promise.resolve('ok')));
+    },
+    subscribeMany(_urls: string[], filter: Record<string, unknown>, params: { onevent: (e: unknown) => void }) {
+      const sub: Sub = { filter, onevent: params.onevent };
+      subs.push(sub);
+      return {
+        close() {
+          const i = subs.indexOf(sub);
+          if (i >= 0) subs.splice(i, 1);
+        }
+      };
+    },
+    close() {},
+    get attempts() {
+      return sent.length;
+    }
+  };
+}
+
+function responseFrom(responder: { kind: string; callsign: string }, signalId: string, ladder?: string) {
+  return finalizeEvent(
+    {
+      kind: KIND_RESPONSE,
+      created_at: Math.floor(Date.now() / 1000),
+      tags: [
+        ['p', OUR_PUBKEY],
+        ['e', signalId]
+      ],
+      content: seal(WATCH, OUR_PUBKEY, { type: 'ack', responder, text: null, provenance: null, ...(ladder ? { ladder } : {}) })
+    },
+    WATCH
+  );
+}
+
+async function racing(reply: (signalId: string) => unknown) {
+  const pool = slowOkPool(reply);
+  const phases: string[] = [];
+  const controller = new AbortController();
+  let clock = 0;
+  await sendDistressUntilAcknowledged(
+    pool as never,
+    ['wss://fast', 'wss://slow'],
+    OPERATOR,
+    OUR_PUBKEY,
+    { pubkey: WATCH_PUBKEY, holders: [WATCH_PUBKEY] } as never,
+    { area: 'Downtown' } as never,
+    {
+      ackWindowMs: 1,
+      backoffMs: 1_000,
+      localExhaustedAfterMs: 600_000,
+      clock: () => clock,
+      sleep: async (ms: number) => {
+        clock += ms;
+        if (clock > 5_000) controller.abort();
+      },
+      signal: controller.signal,
+      onPhase: (p: { phase: string }) => phases.push(p.phase)
+    } as never
+  ).catch(() => {});
+  return { phases, attempts: pool.attempts };
+}
+
+describe('an answer that comes back before a slow relay has said OK [audit: relay paths, D2 review]', () => {
+  it('ends the Distress when it is a person, on the attempt it answered', async () => {
+    const { phases, attempts } = await racing((id) => responseFrom({ kind: 'human', callsign: 'Wren' }, id));
+    expect(phases, 'a person answered while the attempt was still going out, and it was dropped').toContain('acknowledged');
+    expect(attempts).toBe(1);
+    expect(phases).not.toContain('no-answer');
+  });
+
+  it('says nobody can be reached when the watch says so', async () => {
+    const { phases } = await racing((id) => responseFrom({ kind: 'node', callsign: 'escalation' }, id, 'exhausted'));
+    expect(phases.slice(0, phases.indexOf('watch-exhausted') + 1)).toEqual(['sending', 'sent', 'watch-exhausted']);
+  });
+
+  it('says an agent is holding, rather than that nobody answered', async () => {
+    const { phases } = await racing((id) => responseFrom({ kind: 'agent', callsign: 'watchtower' }, id));
+    expect(phases.slice(0, 3)).toEqual(['sending', 'sent', 'agent-holding']);
+    // An agent closes nothing [invariant 4]: the loop goes on asking for a person.
+    expect(phases).not.toContain('acknowledged');
+  });
+});

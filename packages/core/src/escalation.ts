@@ -200,10 +200,13 @@ export function ladderReport(ladder: Ladder): string {
  * alarm fatigue the budget exists to prevent.
  *
  * So a `Distress` from an operator who already has a **live** ladder joins it. Terminal
- * ladders do not adopt: an operator whose ladder was acknowledged or exhausted and who is
- * still sending is somebody whose situation has outlived the last attempt to answer it, and
- * that deserves a fresh ladder rather than silence. Escalation still retries; it retries on
- * the ladder's own windows instead of on the client's backoff.
+ * ladders do not adopt here: an operator whose ladder was exhausted and who is still sending is
+ * somebody whose situation has outlived the last attempt to answer it, and that deserves a
+ * fresh ladder rather than silence. **An acknowledged one is held by the executor instead**, for
+ * `ack_holds_seconds` (decided 2026-10-07, `escalation.spec.md`): a phone still sending after a
+ * human answered has usually missed the answer, so it is sent the acknowledgement again rather
+ * than paging the roster again. After the window, a fresh ladder. Escalation still retries; it
+ * retries on the ladder's own windows instead of on the client's backoff.
  *
  * Retry ids are **aliased**, not dropped, because the acknowledgement names whichever id the
  * responder saw and `acknowledge()` has to find the ladder from it.

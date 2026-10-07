@@ -234,9 +234,10 @@ describe('7 — duplicate distress', () => {
 
   it('and a terminal ladder does not adopt: a later distress starts fresh', () => {
     /*
-     * An operator whose ladder was acknowledged or exhausted, still sending, is somebody
-     * whose situation has outlived the last attempt to answer it. Adopting into a finished
-     * ladder would be silence.
+     * An operator whose ladder was exhausted, still sending, is somebody whose situation has
+     * outlived the last attempt to answer it. Adopting into a finished ladder would be silence.
+     * Holding an acknowledged one for a while is the executor's, not this primitive's
+     * (`escalation.spec.md`, 2026-10-07), so the registry stays this simple.
      */
     const registry = new LadderRegistry();
     const base = { operator: 'a'.repeat(64), oncall: [oncall('Wren')], hasEmergencyContact: true, now: T0 };

@@ -95,7 +95,15 @@ export async function sendDistress(
   relays: string[],
   secret: SecretKey,
   watchtower: WatchtowerAddress,
-  payload: DistressPayload
+  payload: DistressPayload,
+  /**
+   * Told the event once it is signed, before it is sent.
+   *
+   * An answer can come back before every relay has said OK — one slow relay takes up to seven
+   * seconds to give up — and a caller that learns the id only when the publish settles throws
+   * that answer away as naming a signal it never sent [audit: relay paths, D2 review].
+   */
+  onSigned?: (event: Event) => void
 ): Promise<Event> {
   checkedText(payload);
   const event = finalizeEvent(
@@ -108,6 +116,7 @@ export async function sendDistress(
     },
     secret
   );
+  onSigned?.(event);
   await publishOrThrow(pool, relays, event);
   return event;
 }
@@ -381,6 +390,11 @@ export async function sendDistressUntilAcknowledged(
   let heardExhausted: ResponsePayload | null = null;
   /** Whether the current ladder's `exhausted` has been reported, so it is said once. */
   let exhaustedShown = false;
+  /**
+   * An agent's answer heard on the always-open subscription during this attempt, for the one
+   * case the per-attempt wait cannot see: it came back while this attempt was still being sent.
+   */
+  let heardAgent: ResponsePayload | null = null;
 
   const heard = (event: Event) => {
     if (latched || !verifyEvent(event)) return;
@@ -388,13 +402,13 @@ export async function sendDistressUntilAcknowledged(
     if (!outstanding.some((o) => answers.includes(o.id))) return;
     try {
       const payload = open<ResponsePayload>(secret, watchtower.pubkey, event.content);
-      // Only a human closes a Distress [invariant 5]. An agent seen here changes
-      // nothing; the per-attempt path already reports it when it lands in a window.
+      // Only a human closes a Distress [invariant 5]. An agent seen here changes nothing; it
+      // is kept only to be said if the per-attempt wait, which reports it, never sees it.
       if (payload.responder?.kind === 'human') latched = payload;
       // The one non-human report that must never be lost to the gap. It closes nothing.
       else if (payload.responder?.kind === 'node' && payload.ladder === 'exhausted') {
         heardExhausted = payload;
-      }
+      } else if (payload.responder?.kind === 'agent') heardAgent = payload;
     } catch {
       // Not for us.
     }
@@ -477,19 +491,32 @@ export async function sendDistressUntilAcknowledged(
       return early;
     }
     attempt++;
+    heardAgent = null;
     relisten();
 
     report({ phase: 'sending', attempt });
     let sent: Event | null = null;
     try {
-      sent = await sendDistress(pool, relays, secret, watchtower, payload);
-      outstanding.push(sent);
-      if (outstanding.length > OUTSTANDING) outstanding.shift();
+      sent = await sendDistress(pool, relays, secret, watchtower, payload, (signed) => {
+        // Recorded before it is sent, so an answer that beats a slow relay's OK names an id
+        // this loop knows [audit: relay paths, D2 review].
+        outstanding.push(signed);
+        if (outstanding.length > OUTSTANDING) outstanding.shift();
+      });
       report({ phase: 'sent', attempt });
     } catch (e) {
       report({ phase: 'unreachable', attempt, error: e instanceof Error ? e.message : String(e) });
     }
     if (stopped()) throw cancelled();
+
+    // Anything that came back while the attempt was still going out — waiting a whole window
+    // for it to arrive a second time would tell somebody who has been answered "no answer".
+    const meanwhile = answered();
+    if (meanwhile) {
+      report({ phase: 'acknowledged', response: meanwhile });
+      return meanwhile;
+    }
+    reportHeard();
 
     if (sent) {
       try {
@@ -519,7 +546,14 @@ export async function sendDistressUntilAcknowledged(
         }
       } catch {
         if (stopped()) throw cancelled();
-        report({ phase: 'no-answer', attempt });
+        // Heard on the always-open subscription while the per-attempt one was not yet open.
+        const late = answered();
+        if (late) {
+          report({ phase: 'acknowledged', response: late });
+          return late;
+        }
+        if (heardAgent) report({ phase: 'agent-holding', attempt, response: heardAgent });
+        else report({ phase: 'no-answer', attempt });
       }
     }
     reportHeard();
