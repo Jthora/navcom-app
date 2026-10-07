@@ -12,6 +12,7 @@
   import type { Mission } from '@navcom/core';
   import { Panel, Readout, Slot, Why } from '$lib/components/panel';
   import { effort, endsIn, endsSoon, placeName, stampUtc } from './format';
+  import TakePart from './TakePart.svelte';
 
   let { mission: m, now }: { mission: Mission; now: number } = $props();
 
@@ -21,6 +22,7 @@
 
 <div data-screen="mission" data-mission={m.d}>
   <Panel label="Mission" post={state}>
+    {#snippet action()}<TakePart mission={m} {now} />{/snippet}
     <h3 class="nc-mission-title">{m.title}</h3>
 
     <Slot k="Posted by">
@@ -37,13 +39,27 @@
         sub={stampUtc(m.validUntil)}
       />
     </Slot>
-    <Slot k="Taking part">
+    <Slot k="Open to">
       {#if m.state === 'claimed'}
         <Readout value="Taken" tone="cold" sub="somebody has claimed it" />
       {:else if m.claims === 'many'}
-        <Readout value="Open to all" sub="anyone may take part" />
+        <Readout value="All" sub="anyone may take part" />
       {:else}
         <Readout value="One person" sub="the first claim takes it" />
+      {/if}
+    </Slot>
+    <Slot k="Taking part">
+      <!--
+        As the poster counts them: only the poster sees private claims, so a count made here would
+        leave those people out. Unknown until the poster says [interchange spec §5.1].
+      -->
+      {#if m.takingPart}
+        <Readout
+          value={String(m.takingPart.operators + m.takingPart.agents)}
+          sub="{m.takingPart.operators} operator{m.takingPart.operators === 1 ? '' : 's'} · {m.takingPart.agents} agent{m.takingPart.agents === 1 ? '' : 's'} · {m.publisher.name}'s count"
+        />
+      {:else}
+        <Readout value="—" tone="cold" sub="the poster has not said" />
       {/if}
     </Slot>
 

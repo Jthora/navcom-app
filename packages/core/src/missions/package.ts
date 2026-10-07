@@ -120,6 +120,12 @@ export interface Mission {
   effect: string[];
   /** How many lines of `effect` were removed for counting people. Shown, never silent. */
   omittedPeopleCounts: number;
+  /**
+   * Who is taking part, as the poster counts them: operators and agents apart, private claims
+   * included, which only the poster can see. Never names. `null` until the poster says
+   * [PROPOSED, interchange spec §5.1] — and unknown is what the screen then shows.
+   */
+  takingPart: { operators: number; agents: number } | null;
   publishedAt: number;
 }
 
@@ -138,6 +144,15 @@ const DISTRESS_KINDS = /^2091[0-4]$/;
 const JURISDICTION = /^[a-z]{2}(-[a-z0-9]{1,3})?$/;
 /** Words that make a line of `effect` a count of people. Deliberately plain. */
 const PEOPLE = /\b(people|persons?|individuals?|residents|clients|guests)\b/i;
+
+function takingPartOf(e: Event): Mission['takingPart'] {
+  const t = e.tags.find((x) => x[0] === 'taking_part');
+  if (!t) return null;
+  const operators = Number(t[1]);
+  const agents = Number(t[2] ?? '0');
+  const count = (n: number) => Number.isInteger(n) && n >= 0;
+  return count(operators) && count(agents) ? { operators, agents } : null;
+}
 
 function placementOf(e: Event): MissionPlacement {
   const raw = tag(e, 'jurisdiction')?.toLowerCase() ?? null;
@@ -284,6 +299,7 @@ export function readMissionPackage(
       clock: strings(format['clock']),
       effect,
       omittedPeopleCounts: effectAll.length - effect.length,
+      takingPart: takingPartOf(e),
       publishedAt: e.created_at
     }
   };

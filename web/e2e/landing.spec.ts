@@ -542,4 +542,61 @@ test.describe('the landing page: missions you can open', () => {
     const results = await new AxeBuilder({ page }).analyze();
     expect(results.violations.map((v) => v.id)).toEqual([]);
   });
+
+  test('signed out, taking part asks for sign-on first, and the mission waits for them', async ({ page }) => {
+    await withHeat(page);
+    await page.locator('[data-missions="open"]').click();
+    await page.locator(`[data-mission="${HEAT_D}"]`).click();
+    const signon = page.locator('[data-signon]');
+    await expect(signon).toContainText('Sign on to take part');
+    await signon.click();
+    await page.waitForURL('**/terminal/**');
+    // The mission they chose is remembered for when they come back signed on.
+    const pending = await page.evaluate(() => sessionStorage.getItem('navcom.pending-mission'));
+    expect(pending).toContain(HEAT_D);
+  });
+
+  test('an operator chooses who sees it, with nothing preselected, takes part, and lets it go', async ({ page }) => {
+    await withHeat(page, { __noStorage: false, callsign: 'kestrel' });
+    await page.locator('[data-missions="open"]').click();
+    await page.locator(`[data-mission="${HEAT_D}"]`).click();
+    await page.getByRole('button', { name: 'Take part' }).click();
+    const open = page.locator('[data-visibility="open"]');
+    const sealed = page.locator('[data-visibility="sealed"]');
+    await expect(open).toBeVisible();
+    await expect(sealed).toContainText('Only Mecha Jono');
+    // Two equal options and no default: neither is pressed, checked or focused for them.
+    for (const b of [open, sealed]) {
+      expect(await b.getAttribute('aria-pressed')).toBeNull();
+      expect(await b.evaluate((el) => el === document.activeElement)).toBe(false);
+    }
+
+    await open.click();
+    const you = page.locator('[data-slot="you"]');
+    await expect(you).toContainText('Taking part');
+    await expect(you).toContainText('everyone can see');
+    // What left the phone: one label — sent to each of the operator's relays, so counted by id —
+    // in navcom.mission, naming the package and nothing else.
+    const labels = await page.evaluate(() => {
+      const sent = (globalThis as unknown as { __navcomPublished?: { id: string; kind: number; tags: string[][] }[] })
+        .__navcomPublished ?? [];
+      return [...new Map(sent.filter((e) => e.kind === 1985).map((e) => [e.id, e])).values()];
+    });
+    expect(labels).toHaveLength(1);
+    expect(labels[0]!.tags.map((t) => t[0]).sort()).toEqual(['L', 'a', 'expiration', 'l']);
+
+    await page.locator('[data-letgo]').click();
+    await expect(page.getByRole('button', { name: 'Take part' })).toBeVisible();
+  });
+
+  test('a private claim with no inbox to send it to says nothing was sent', async ({ page }) => {
+    await withHeat(page, { __noStorage: false, callsign: 'kestrel' });
+    await page.locator('[data-missions="open"]').click();
+    await page.locator(`[data-mission="${HEAT_D}"]`).click();
+    await page.getByRole('button', { name: 'Take part' }).click();
+    await page.locator('[data-visibility="sealed"]').click();
+    await expect(page.locator('[data-takepart]')).toContainText('Not sent');
+    await expect(page.locator('[data-takepart]')).toContainText('inbox could not be found');
+    await expect(page.locator('[data-slot="you"]')).toHaveCount(0);
+  });
 });

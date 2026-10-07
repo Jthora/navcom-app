@@ -20,7 +20,9 @@ import {
   KIND_CORRECTION,
   KIND_CREDENTIAL,
   KIND_DISTRESS,
+  KIND_GIFT_WRAP,
   KIND_INVITE,
+  KIND_LABEL,
   KIND_OBSERVATION,
   KIND_KEY_BUNDLE,
   KIND_PEER_PRESENCE,
@@ -49,6 +51,8 @@ describe('what the page says leaves', () => {
       ['Public presence', KIND_PUBLIC_PRESENCE],
       ['Correction', KIND_CORRECTION],
       ['Place', KIND_PLACE],
+      ['Mission claim', KIND_LABEL],
+      ['Sealed mission claim', KIND_GIFT_WRAP],
       ['Revocation', KIND_REVOCATION],
       ['Watch state', KIND_WATCH_STATE],
       ['Response', KIND_RESPONSE]

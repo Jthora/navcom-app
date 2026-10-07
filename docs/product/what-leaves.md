@@ -23,8 +23,8 @@ kept apart on purpose.
 | Key | Signs | Why separate |
 |---|---|---|
 | **Operational** | Signals, `Distress`, the *inner* peer-presence message, your post-quantum key bundle, endorsement withdrawals | Your identity as an operator. Anything signed with it is linkable to everything else it signs |
-| **Contact** | Your card, public presence, corrections, places you add | So that **publishing costs no operational exposure**. Somebody watching the directory learns nothing about when you are out |
-| **Throwaway** | The *outer* wrapper of peer presence and invites — one per message, never stored | So two messages from you are unlinkable to anyone but their recipients |
+| **Contact** | Your card, public presence, corrections, places you add, missions you take part in | So that **publishing costs no operational exposure**. Somebody watching the directory learns nothing about when you are out |
+| **Throwaway** | The *outer* wrapper of peer presence, invites and a mission claim sealed to its poster — one per message, never stored | So two messages from you are unlinkable to anyone but their recipients |
 
 The separation is the point. A correction you file at a door and a `Distress` you raise an
 hour later are signed by different keys and cannot be tied together by anyone watching a
@@ -47,6 +47,9 @@ clear** — that is how a relay routes anything at all.
 | Its refinement | `1911` | The same, with **exact coordinates**, published 48 hours later | Nothing | Contact |
 | Correction | `30911` | The record id | Nothing — a correction is meant to be read | Contact |
 | A place you add | `30915` | Place id, region | Nothing | Contact |
+| Taking part in a mission, for everyone | `1985` | The mission's address, `claimed` or `released`, and when the claim ends — at most a day away | Nothing — it says only that this card took this mission | Contact |
+| Taking part, for the poster only | `1059` | **The poster's pubkey**, and when it ends | Everything else: that it is a claim, which mission, and that it is yours | Throwaway outside, Contact inside |
+| Withdrawing an open claim | `5` | The claim's id | Nothing | Contact |
 | Post-quantum key bundle | `10912` | Your public KEM key. **No tags at all** | Nothing to seal — it is a public key | **Operational** |
 | Endorsement withdrawal | `30914` | The credential id | Nothing | **Operational** |
 | Watch state | `10910` | All of it | Nothing | Watch key, if you hold the watch |

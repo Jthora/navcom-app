@@ -168,3 +168,17 @@ describe('what it repairs instead, and records', () => {
     expect(ok(pkg([]), TEST).publisher.agent).toBe(false);
   });
 });
+
+describe('who is taking part, as the poster counts them', () => {
+  it('reads operators and agents apart, from the poster’s own tag', () => {
+    expect(ok(pkg([['taking_part', '3', '1']]), TEST).takingPart).toEqual({ operators: 3, agents: 1 });
+    expect(ok(pkg([['taking_part', '2']]), TEST).takingPart).toEqual({ operators: 2, agents: 0 });
+  });
+
+  it('is unknown when the poster has not said, or said something that is not a count', () => {
+    expect(ok(pkg([]), TEST).takingPart).toBeNull();
+    expect(ok(pkg([['taking_part', 'many']]), TEST).takingPart).toBeNull();
+    expect(ok(pkg([['taking_part', '-1', '0']]), TEST).takingPart).toBeNull();
+    expect(ok(pkg([['taking_part', '1.5', '0']]), TEST).takingPart).toBeNull();
+  });
+});

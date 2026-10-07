@@ -1,6 +1,6 @@
 # Mission interchange — NavCom ⇄ Starcom / Mecha Jono
 
-**NavCom's side of the boundary, rev 3 — 2026-10-06.** Starcom's side is
+**NavCom's side of the boundary, rev 4 — 2026-10-06.** Starcom's side is
 [`starcom.app/spec/starcom-navcom-interchange.spec.md`](https://starcom.app/spec/starcom-navcom-interchange.spec.md)
 (rev 10 at the time of writing; rev 11 will carry the answers below). Each spec owns its own
 side; neither restates the other's.
@@ -14,6 +14,10 @@ questions about it.
 NavCom's rulings on the three things Mecha Jono asked in return (§10), and a decision that reaches
 past this boundary: **reading is private and acting is accountable.** Relays are chosen from what
 each node declares, and the grid's relays, The Record included, keep no record of who reads (§11).
+
+**Rev 4**: NavCom's devices now send claims, and three rules for them need your answer — a claim
+that ends within a day unless renewed, a `released` label for letting go, and a count of who is
+taking part that only the poster can make (§5.1, §10).
 
 Written for Mecha Jono's development agent first, and for any human on either team second. It
 says what NavCom now is, exactly how to serve it missions, how raw intel moves in both directions,
@@ -55,7 +59,8 @@ from whether a builder exists, and this document follows the same discipline.
 | The grid (the map missions appear on) | LIVE as the landing page at [`navcom.app`](https://navcom.app/), lighting each mission's province |
 | Kind `1911` observation (raw intel) | BUILT — builder and contract exist; published at `/.well-known/navcom-intel.json` |
 | Kind `1912` report | Reserved, **not emitted** — the contract says `emitted: false` |
-| Claims, settlement, challenge (§5) | AGREED — Starcom reads them once built on its side |
+| Claims (§5.1) | BUILT — NavCom's devices send them, open and sealed; three rules PROPOSED (§10, Q11–Q13) |
+| Settlement, challenge (§5.3) | AGREED — waits on reports (kind `1912`), which are not emitted yet |
 | Standing, Writs, bounties (§8) | DESIGNED |
 | The grid's rules — no reader records, relay lists, declared policies (§11) | DESIGNED, decided 2026-10-06. The reader rule is The Record's to apply |
 
@@ -288,6 +293,27 @@ MUST still publish `mission_state: claimed`** — a private claim withholds *who
 A claim expires by itself (NIP-40). Walking away costs the operator nothing: **abandoning a claim
 MUST NOT affect anything about them** — not standing, not a score, not a note. That is invariant 8.
 
+**BUILT, 2026-10-06.** NavCom's devices send claims this way. The rules were worked out as a game
+between claimant, other operators, poster and adversary — the reasoning is in
+[`../design/missions.md`](../design/missions.md) §3 — and three of them ask something of you:
+
+- **A lease, not a lock** (Q11). A claim's `expiration` is a day after it is made, or the mission's
+  end if that is sooner. Taking part again sends a fresh label; an open one also withdraws the old
+  with a NIP-09 request. Please read a claim as ended at its `expiration`
+- **Letting go** (Q12). A `released` label, same namespace, same `a`: in the open beside a NIP-09
+  request to delete the claim, or sealed to you exactly as the claim was. Please read it as the
+  claimant's withdrawal. Without it, a private claim could not be let go, and privacy would cost the
+  option of changing your mind
+- **Who is taking part** (Q13). NavCom shows the count you publish on the package,
+  `["taking_part", "<operators>", "<agents>"]`, and nothing else. Only you can see private claims, so
+  only your count is whole; it carries no names, and agents are counted apart (§4.7). Until you
+  publish one, NavCom shows it as unknown
+
+NavCom's own rules, for your information: an operator holds at most three claims at once; taking part
+needs somebody signed on, because every mission here is field work and nobody should set out without
+`Distress`; and a sealed claim goes only to the relays your kind-`10050` list names, never anywhere
+else.
+
 ### 5.2 Doing it — a report
 
 Kind `1912`, **reserved and not emitted yet**. When it ships it carries:
@@ -493,6 +519,14 @@ Answered by Starcom on 2026-10-06; all eight accepted. Three are Mecha Jono's to
 **Settling waits for reports** — agreed. §5.3's seven days start when kind `1912` is emitted; until
 then Mecha Jono records each claim against its package, and no claim on a campaign moves its
 `mission_state`.
+
+### New in rev 4 — for Mecha Jono
+
+| | Question | NavCom's default if unanswered |
+|---|---|---|
+| Q11 | Will you read a claim as ended at its `expiration`, a day at most, with taking part again as a fresh claim? | Claims still lapse on NavCom's side; you would go on counting one until it ends |
+| Q12 | Will you read a `released` label, open or sealed, as the claimant letting go? | An open claim is still withdrawn by its NIP-09 request; a sealed one counts until it lapses, a day at most |
+| Q13 | Will you publish `["taking_part", "<operators>", "<agents>"]` on your packages, counting private claims and naming nobody? | NavCom shows who is taking part as unknown |
 
 ### New in rev 3 — what Mecha Jono asked, answered
 

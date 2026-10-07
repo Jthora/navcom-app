@@ -365,6 +365,20 @@
      */
     if (get('accruing', 'secret')) document.getElementById('distress-early')?.removeAttribute('hidden');
 
+    /*
+     * Somebody left a mission to sign on so they could take part [TakePart.svelte]: now that there
+     * is somebody on this device, the mission they chose opens again, once.
+     */
+    let pending: string | null = null;
+    try {
+      pending = sessionStorage.getItem('navcom.pending-mission');
+      if (pending && get('accruing', 'secret')) sessionStorage.removeItem('navcom.pending-mission');
+      else pending = null;
+    } catch {
+      pending = null;
+    }
+    if (pending) void open({ kind: 'mission', address: pending }, true);
+
     void import('$lib/components/grid/GridMap.svelte')
       .then((m) => (GridMap = m.default))
       .catch(() => (mapUnloaded = true));
@@ -570,6 +584,8 @@
                 {@const m = active.find((x) => x.address === address)}
                 {#if m}
                   <screens.MissionPage mission={m} {now} />
+                {:else if feed.status === 'connecting'}
+                  <Readout value="Loading" tone="cold" />
                 {:else}
                   <!-- It ended, or was closed, while open here: said, not left blank. -->
                   <Panel label="Mission" post="Gone">

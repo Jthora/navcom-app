@@ -96,6 +96,29 @@ who, never that.**
 `takers` includes `agent`, shown marked as an agent's and counted like any other claim. The mark is
 invariant 4; the wire form is in the interchange spec, §4.7.
 
+**Four rules for a claim, worked out as a game** (decided 2026-10-06). The players are the claimant,
+the other operators, the poster, and three adversaries — a griefer who claims to lock, a doxxer who
+reads claims, a sybil whose identities cost nothing — with the people served bearing the cost of
+work left undone. Each rule is the one under which honest play costs least and the adversary gains
+least.
+
+- **A lease, not a lock: a day, or the mission's end if sooner, renewed with one tap.** An unbounded
+  lock pays the griefer and strands a forgetful operator's task; a day caps the griefer at three tasks
+  a day per persona, caps how long a public claim says where somebody intends to be, and keeps the
+  poster's "is anybody behind it" true to within a day. Lapsing costs the honest operator nothing,
+  because a report is accepted if any claim came before the mission's end.
+- **Letting go is the same for public and private claims: a `released` label, open or sealed.** If a
+  private claim could not be withdrawn, privacy would carry a hidden price, and the rational choice
+  would be to claim in public to keep the option. The griefer gains nothing either way.
+- **The poster publishes how many are taking part — operators and agents apart, never names.** Only the
+  poster can see private claims, so any count a device made would leave the private claimants out and
+  distort exactly the coordination it exists for; it would also send every visitor to public relays.
+  The poster already reads every claim and has every reason to report it truly. Until it does, the
+  count reads unknown.
+- **Sign on before taking part.** Both kinds of identity are free, so this is not about sybils. Every
+  mission here is field work, and nobody should set out without `Distress` in their pocket; signing on
+  asks for a callsign and nothing else, and the mission reopens when they come back.
+
 **`settled` is where the points come from, so it is where the gaming comes from.** Who settles:
 
 | Model | Works when | Fails when |
