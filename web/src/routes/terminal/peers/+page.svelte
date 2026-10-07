@@ -13,6 +13,7 @@
   import { PairError, pair, peers, setBuddy, unpair, type Peer } from '$lib/terminal/peers';
   import { loadIdentity } from '$lib/terminal/identity';
   import { relays, setRelays, usingDefaults } from '$lib/terminal/relays';
+  import { whyNotReachable } from '$lib/terminal/relay-url';
   import { loadConfig } from '$lib/terminal/config';
   import encodeQR from '@paulmillr/qr';
   import { canScan, pubkeyFrom, scan, ScanError, type Scanner } from '$lib/terminal/scan';
@@ -77,9 +78,9 @@
     }
     // Named rather than dropped. `setRelays` filters silently, and a typo that vanishes with
     // no reason is the silent failure this project refuses everywhere else.
-    const bad = list.find((r) => !/^wss?:\/\//.test(r));
-    if (bad) {
-      relayError = `"${bad}" is not a relay URL — expected wss://`;
+    const why = list.map((r) => whyNotReachable(r)).find(Boolean);
+    if (why) {
+      relayError = why;
       return;
     }
     setRelays(list);

@@ -62,3 +62,10 @@ describe('setting your own relays', () => {
     expect(DEFAULT_RELAYS.length).toBeGreaterThan(1);
   });
 });
+
+describe('ws:// from a page served over https [audit: relay paths, F21]', () => {
+  it('is kept only for a relay on this device', () => {
+    setRelays(['ws://relay.example.com', 'ws://192.168.1.50:7777', 'ws://127.0.0.1:7777', 'wss://relay.example']);
+    expect(relays()).toEqual(['ws://127.0.0.1:7777', 'wss://relay.example']);
+  });
+});

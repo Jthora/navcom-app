@@ -39,12 +39,25 @@ export function watchWatchtower(
 
   let sawEvent = false;
 
-  const sub = pool().subscribeMany(
+  /*
+   * Newest wins [audit: relay paths, F11]. Each relay serves its own last copy of this
+   * replaceable event, and they need not agree: a stand-down's Dark that reached one relay and
+   * not the other left the other serving the old Station. Applied in arrival order, whichever
+   * relay answered last decided — so a dark watch could read "On station". The NIP-01 tie-break
+   * settles two copies from the same second, the way `--check` already does.
+   */
+  let newest: { at: number; id: string } | null = null;
+
+  let sub: { close(): void };
+  try {
+    sub = pool().subscribeMany(
     config.relays,
     { kinds: [KIND_WATCH_STATE], authors: [config.pubkey], limit: 1 },
     {
       onevent(event) {
         if (closed) return;
+        if (newest && (event.created_at < newest.at || (event.created_at === newest.at && event.id >= newest.id))) return;
+        newest = { at: event.created_at, id: event.id };
         sawEvent = true;
         onRead(
           readWatchStateAt(event.content, {
@@ -60,6 +73,11 @@ export function watchWatchtower(
       }
     }
   );
+  } catch {
+    // Never out of a screen's onMount: a throw here froze the start screen without its Distress
+    // control [audit: relay paths, F01]. The reading already given stands — Dark, the safe one.
+    return { close() {} };
+  }
 
   return {
     close() {

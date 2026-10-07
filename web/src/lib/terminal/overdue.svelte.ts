@@ -63,6 +63,8 @@ export const overdue = {
     const identity = loadIdentity();
     if (!config || !identity) return;
     closer?.close();
+    // Never out of a screen's onMount [audit: relay paths, F01]: unopened is the same as silent.
+    try {
     closer = pool().subscribeMany(
       config.relays,
       { kinds: [KIND_RESPONSE], authors: [config.pubkey], '#p': [identity.pubkey] },
@@ -84,6 +86,9 @@ export const overdue = {
         }
       }
     );
+    } catch {
+      closer = null;
+    }
   },
 
   /**

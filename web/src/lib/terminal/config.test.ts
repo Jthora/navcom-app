@@ -58,3 +58,26 @@ describe('saving a watch', () => {
     expect(loadConfig()?.holders).toEqual([]);
   });
 });
+
+describe('a relay address this phone cannot reach [audit: relay paths, F01/F21]', () => {
+  it('is refused on saving, by name, rather than stored to fail every Distress later', () => {
+    for (const bad of ['wss://', 'wss://relay.example:99999', 'wss://relay.example>', 'ws://relay.example.com']) {
+      expect(() => saveConfig(KEY, `wss://good.example\n${bad}`), bad).toThrow(ConfigError);
+    }
+    expect(loadConfig()).toBeNull();
+  });
+
+  it('is accepted for a relay on this device', () => {
+    expect(saveConfig(KEY, 'ws://127.0.0.1:7777').relays).toEqual(['ws://127.0.0.1:7777']);
+  });
+
+  it('is dropped on loading, so a config saved before this check, or restored, still sends', () => {
+    localStorage.setItem('navcom.accruing', JSON.stringify({ watchtower: KEY, relays: ['wss://', 'wss://good.example', 'wss://x.example:99999'] }));
+    expect(loadConfig()?.relays).toEqual(['wss://good.example']);
+  });
+
+  it('leaves no watch at all when none of its relays can be reached', () => {
+    localStorage.setItem('navcom.accruing', JSON.stringify({ watchtower: KEY, relays: ['wss://', 'ws://relay.example.com'] }));
+    expect(loadConfig()).toBeNull();
+  });
+});

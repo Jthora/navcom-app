@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { DEFAULT_RELAYS } from '@navcom/core';
   import { ConfigError, loadConfig, saveConfig } from '$lib/terminal/config';
   import { ContactError, clearContact, loadContact, saveContact } from '$lib/terminal/contact';
   import { createIdentity, loadIdentity, setCallsign } from '$lib/terminal/identity';
@@ -8,7 +9,8 @@
 
   let callsign = $state('');
   let pubkey = $state('');
-  let relays = $state('wss://relay.damus.io\nwss://nos.lol');
+  // The shipped starting point, read from the one place it is defined, never a copy that can drift.
+  let relays = $state(DEFAULT_RELAYS.join('\n'));
   let holders = $state('');
   let error = $state<string | null>(null);
   let contactLabel = $state('');

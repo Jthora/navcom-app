@@ -17,6 +17,7 @@
 import { DEFAULT_RELAYS } from '@navcom/core';
 import { get, set } from './storage';
 import { loadConfig } from './config';
+import { usable } from './relay-url';
 
 /**
  * Where an operator starts.
@@ -44,22 +45,12 @@ export function relays(): string[] {
 }
 
 /**
- * Only addresses a socket could open, each once. A prefix check let `wss://` alone through, and
+ * Only addresses this phone can reach, each once. A prefix check let `wss://` alone through, and
  * nostr-tools throws on that inside a promise that never settles — so a screen waiting on it said
- * "Checking" for as long as it was open [audit 11.E].
+ * "Checking" for as long as it was open [audit 11.E]. The rule itself lives in `relay-url.ts`,
+ * where the watch config uses it too.
  */
-export function usable(urls: readonly string[]): string[] {
-  const out = new Set<string>();
-  for (const u of urls) {
-    try {
-      const url = new URL(u.trim());
-      if ((url.protocol === 'wss:' || url.protocol === 'ws:') && url.hostname) out.add(url.href.replace(/\/$/, ''));
-    } catch {
-      /* not an address */
-    }
-  }
-  return [...out];
-}
+export { usable } from './relay-url';
 
 /** Whether the list in use is the shipped default rather than anything chosen. */
 export function usingDefaults(): boolean {

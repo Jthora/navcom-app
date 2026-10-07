@@ -14,6 +14,7 @@
 
 import { isPubkey } from '@navcom/core';
 import { get, set } from './storage';
+import { usable, whyNotReachable } from './relay-url';
 
 export interface WatchtowerConfig {
   pubkey: string;
@@ -28,10 +29,19 @@ export interface WatchtowerConfig {
   holders: string[];
 }
 
+/**
+ * The watch this phone belongs to, with only the relay addresses it can reach.
+ *
+ * Filtered here, on the way out, as well as checked on the way in: a config saved before the
+ * check existed, or restored from a backup, could hold an address nostr-tools throws on — and
+ * every Distress, signal and watch-state read goes through this one function [audit: relay
+ * paths, F01]. A watch with no reachable relay is no watch at all, said as such.
+ */
 export function loadConfig(): WatchtowerConfig | null {
   const pubkey = get<string>('accruing', 'watchtower');
-  const relays = get<string[]>('accruing', 'relays');
-  if (!pubkey || !relays?.length) return null;
+  const stored = get<string[]>('accruing', 'relays');
+  const relays = Array.isArray(stored) ? usable(stored) : [];
+  if (!pubkey || relays.length === 0) return null;
   return { pubkey, relays, holders: get<string[]>('accruing', 'watch_holders') ?? [] };
 }
 
@@ -51,8 +61,10 @@ export function saveConfig(
     .map((r) => r.trim())
     .filter(Boolean);
   if (relays.length === 0) throw new ConfigError('At least one relay is needed.');
+  // Named, never dropped: the line an operator typed wrong is the one they need to see.
   for (const r of relays) {
-    if (!/^wss?:\/\//.test(r)) throw new ConfigError(`"${r}" is not a relay URL — expected wss://`);
+    const why = whyNotReachable(r);
+    if (why) throw new ConfigError(why);
   }
   /*
    * Everything validated before anything is written.
