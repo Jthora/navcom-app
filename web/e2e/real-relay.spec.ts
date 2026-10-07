@@ -453,7 +453,10 @@ test.describe('the rest of the filters, against a relay that honours them', () =
           record: 'st-louis-st-patrick-center',
           verified_by: 'Raven',
           method: 'in_person',
-          last_verified: '2026-08-30',
+          // Today, not a fixed date. Hours go stale after fourteen days, and a stale correction
+          // never outranks the published record — so a fixed date made this test start failing
+          // by itself two weeks after it was written, with nothing wrong with the filter.
+          last_verified: new Date().toISOString().slice(0, 10),
           fields: { hours: 'closed Sundays' }
         },
         Math.floor(Date.now() / 1000)

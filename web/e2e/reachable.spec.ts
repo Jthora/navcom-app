@@ -390,13 +390,14 @@ test.describe('peers', () => {
     await where.locator('[data-relay-list]').fill('relay.example');
     await where.locator('[data-relay-save]').click();
 
-    await expect(where.locator('[data-relay-error]')).toContainText(/not a relay URL/i);
+    await expect(where.locator('[data-relay-error]')).toContainText(/not a relay address/i);
     await expect(where.locator('p.blocks')).not.toContainText('relay.example');
   });
 
-  test('and the choice is put back where a watch supplies the list', async ({ page }) => {
-    // A watch's relays win in `relays()`, so offering a control that silently loses to them
-    // would be a worse lie than having none. The screen says where they live instead.
+  test('and a watch’s relays stay beside the ones chosen here, not instead of them', async ({ page }) => {
+    // A watch's relays used to replace an operator's own, so this control was hidden rather than
+    // left to lose silently. They are added now [audit: relay paths, F15], which makes the
+    // control real either way — and the screen says which are the watch's and where those change.
     await seedDevice(page, {
       ...OUT,
       watchtower: { pubkey: 'a'.repeat(64), relays: ['wss://watch.example'] }
@@ -405,8 +406,12 @@ test.describe('peers', () => {
 
     const where = page.locator('details', { has: page.getByText('Where this goes') });
     await where.locator('summary').click();
-    await expect(where.locator('[data-relay-list]')).toHaveCount(0);
-    await expect(page.getByText(/these are your watch's relays/i)).toBeVisible();
+    await expect(where.getByText(/your watch.s relays are always included/i)).toBeVisible();
+
+    await where.locator('[data-relay-list]').fill('wss://relay.example');
+    await where.locator('[data-relay-save]').click();
+    await expect(where.locator('p.blocks')).toContainText('wss://watch.example');
+    await expect(where.locator('p.blocks')).toContainText('wss://relay.example');
   });
 });
 
