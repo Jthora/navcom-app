@@ -131,6 +131,29 @@ test.describe('the root console — search works with nothing set up', () => {
     await expect(freshest).not.toContainText(/clock is wrong/i);
   });
 
+  test('allowing location fetches nothing until the visitor searches', async ({ page, context }) => {
+    /*
+     * Decided 2026-10-06. A location fix used to fetch that region's records at once, so the
+     * host's request log held the visitor's address beside the region they were standing in,
+     * before they had asked for anything. Location now only places them; their region's records
+     * load when they search, like any page they choose to read.
+     */
+    await context.grantPermissions(['geolocation']);
+    await context.setGeolocation({ latitude: 39.9526, longitude: -75.1652 });
+    const fetched: string[] = [];
+    page.on('request', (r) => {
+      if (r.url().includes('/console-index/')) fetched.push(r.url());
+    });
+    await blankDevice(page);
+    await open(page, '/');
+    await expect(page.getByText(/^Near /)).toBeVisible({ timeout: 10_000 });
+    await page.waitForTimeout(1_000);
+    expect(fetched).toEqual([]);
+
+    await page.getByLabel(/where are you, or what do you need/i).fill('shelter');
+    await expect.poll(() => fetched.length).toBe(1);
+  });
+
   test('the manual region picker is the fallback when nothing is typed', async ({ page }) => {
     await blankDevice(page);
     await open(page, '/');

@@ -19,7 +19,7 @@
   import type {
     ConsoleRecordEntry, ConsoleCentroid, ConsoleRegionFigures
   } from '$lib/console/types';
-  import { locateOnce, nearest } from '$lib/console/position-once';
+  import { locateOnce, nearest, type Fix } from '$lib/console/position-once';
   import { get, set } from '$lib/terminal/storage';
   import type { Feed } from '$lib/missions/live';
   import type GridMapType from '$lib/components/grid/GridMap.svelte';
@@ -197,8 +197,8 @@
   /**
    * Fetch one region's records so the search can see them.
    *
-   * Driven by whichever of the two ways the visitor told us where they are -- the one-shot
-   * location fix, or the region they picked by hand. **Picking by hand must not buy less than
+   * Driven by whichever of the two ways the visitor told us where they are -- the region they
+   * picked by hand, or the one location found, once they search. **Picking by hand must not buy less than
    * allowing location**, which is the trap in offering both: the manual control existed for
    * "geolocation said no", and it would have been the weaker path.
    *
@@ -222,6 +222,10 @@
     const r = regionList.find((x) => x.region === manualRegion);
     if (r) void loadRegionIndex(r.region, r.name);
   });
+  /** Searching is the visitor's own act: only then does the region location chose load its records. */
+  $effect(() => {
+    if (query.trim() && !manualRegion && nearRegion) void loadRegionIndex(nearRegion.region, nearRegion.name);
+  });
   /** `regionFigures` is keyed by slug; the search wants them in a stable order. */
   /*
    * Search runs off the embedded [slug, name] pairs; `records` comes from `figures` once it
@@ -239,6 +243,17 @@
   const typed = $derived(search({ regions: regionList, loaded }, query));
 
   let nearRegion = $state<ConsoleCentroid | null>(null);
+  /**
+   * The one-shot fix, coarsened, held only until the regions' centroids arrive to place it, then
+   * dropped. Placing it the moment it came missed whenever it came first — a fast fix and a slow
+   * network — and the visitor was never placed at all [found writing the location test].
+   */
+  let fix = $state<Fix | null>(null);
+  $effect(() => {
+    if (!fix || centroids.length === 0) return;
+    nearRegion = nearest(fix, centroids);
+    fix = null;
+  });
   /*
    * What is shown before anybody types: the nearest region's own places, once loaded.
    *
@@ -348,17 +363,14 @@
       }
     })();
 
-    void locateOnce().then(async (fix) => {
-      if (fix) nearRegion = nearest(fix, centroids);
-      /*
-       * Load the one region's records the visitor is most likely to test us on.
-       *
-       * A failed fetch is a silent no-op, exactly as a denied location is: the search still
-       * covers every region, and a console that shouted about a missing index would be
-       * reporting its own plumbing to somebody deciding whether to trust the project.
-       */
-      if (nearRegion) await loadRegionIndex(nearRegion.region, nearRegion.name);
-    });
+    /*
+     * Where the visitor is stays on the phone [decided 2026-10-06]. It places them — which
+     * region's figures Com shows, which region the search starts from — and fetches nothing:
+     * a fetch here put the visitor's address and the region they were standing in side by side
+     * in the host's request log, before they had asked for anything. Their region's records load
+     * when they search, like any page they choose to read.
+     */
+    void locateOnce().then((f) => (fix = f));
     /*
      * Bounded, because a fetch that *hangs* is the case this readout is worst at.
      *

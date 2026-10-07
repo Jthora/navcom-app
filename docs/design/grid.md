@@ -39,9 +39,12 @@ spec, §11.1.
 addresses, and no page may imply otherwise. It removes the one long-lived copy the grid itself would
 hold. Anyone who needs more can read the Pi's mirror over Tor (§4).
 
-**Open, not decided.** NavCom's own host has the same shape of problem. When a visitor allows
-location, the landing page fetches their region's index from navcom.app, so a request log can pair
-an address with a region.
+**Decided 2026-10-06: location stays on the phone.** NavCom's own host had the same shape of
+problem: when a visitor allowed location, the landing page fetched their region's index from
+navcom.app at once, so the host's request log could pair an address with the region somebody was
+standing in, before they had asked for anything. Location now only places them — which region's
+figures Com shows, which region the search starts from — and their region's records load when they
+search or pick a region, like any page somebody chooses to read.
 
 ---
 

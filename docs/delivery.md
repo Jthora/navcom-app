@@ -44,8 +44,9 @@ second keeps the front page's most compelling behaviour.
 
 **Both were taken, and the directory went national.** The console embeds `[slug, name]` pairs
 for every region — search works on the first keystroke with nothing fetched — and fetches one
-region's records on demand from `/console-index/<region>.json` once a location fix or a manual
-pick says which region matters. So the front page kept record search *and* stopped carrying
+region's records on demand from `/console-index/<region>.json` once the visitor searches or picks
+a region. A location fix alone fetches nothing — it places the visitor, and its region loads when
+they search [`grid.md`](design/grid.md) §1. So the front page kept record search *and* stopped carrying
 the corpus.
 
 The directory now holds **9,635 records across 1,912 regions** and the console page measures
