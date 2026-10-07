@@ -100,6 +100,22 @@ export function saveCard(card: MyCard): void {
 }
 
 /**
+ * How the last publish of the card went: every relay took it, some did, or none.
+ *
+ * Kept, because the card is saved on the phone before it is sent — so that a draft survives no
+ * signal — and the screen read "Published" from the saved card alone, whether or not any relay
+ * had it [audit: relay paths, F18].
+ */
+export type CardSent = 'all' | 'some' | 'none';
+const SENT = 'card_sent';
+export function cardSent(): CardSent | null {
+  return get<CardSent>('accruing', SENT);
+}
+export function setCardSent(sent: CardSent): void {
+  set('accruing', SENT, sent);
+}
+
+/**
  * Discards the card and the key that signed it.
  *
  * Also clears `listed`, because being listed as out is meaningless without a card to
@@ -110,6 +126,7 @@ export function withdrawCard(): void {
   clearField('accruing', SECRET);
   clearField('accruing', CARD);
   clearField('accruing', LISTED);
+  clearField('accruing', SENT);
 }
 
 /**

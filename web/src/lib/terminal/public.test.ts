@@ -13,6 +13,8 @@ const me = newSecretKey();
 
 /** What actually reached a relay. */
 let published: { kind: number }[] = [];
+/** Whether the relay takes anything: a card can be saved here and reach nobody. */
+let relaysUp = true;
 
 vi.mock('./identity', () => ({
   loadIdentity: () => ({ secretKey: me, pubkey: publicKeyOf(me), callsign: 'Wren' })
@@ -24,7 +26,7 @@ vi.mock('./pool', () => ({
     subscribeMany: () => ({ close: () => {} }),
     publish: (_u: string[], e: { kind: number }) => {
       published.push(e);
-      return [Promise.resolve('ok')];
+      return [relaysUp ? Promise.resolve('ok') : Promise.reject(new Error('no relay accepted'))];
     }
   })
 }));
@@ -34,6 +36,7 @@ let card: typeof import('./card');
 
 beforeEach(async () => {
   published = [];
+  relaysUp = true;
   const store = new Map<string, string>();
   (globalThis as Record<string, unknown>).localStorage = {
     getItem: (k: string) => store.get(k) ?? null,
@@ -85,6 +88,20 @@ describe('announcing that somebody is out here', () => {
 
     await mod.announceListed();
     expect(published).toHaveLength(0);
+  });
+});
+
+describe('publishing a card [audit: relay paths, F18]', () => {
+  it('says when no relay took it, so the screen cannot read Published', async () => {
+    relaysUp = false;
+    expect(await mod.publishCard({ region: 'st-louis' })).toEqual({ took: 0, of: 1 });
+    expect(card.cardSent()).toBe('none');
+    expect(card.myCard(), 'the draft is still kept on the phone').not.toBeNull();
+  });
+
+  it('says it was sent when it was', async () => {
+    expect(await mod.publishCard({ region: 'st-louis' })).toEqual({ took: 1, of: 1 });
+    expect(card.cardSent()).toBe('all');
   });
 });
 

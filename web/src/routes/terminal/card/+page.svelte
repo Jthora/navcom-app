@@ -22,7 +22,7 @@
     type CardLink,
     type Visibility
   } from '@navcom/core';
-  import { contactPubkey, listed, myCard, setListed, withdrawCard, type MyCard } from '$lib/terminal/card';
+  import { cardSent, contactPubkey, listed, myCard, setListed, withdrawCard, type CardSent, type MyCard } from '$lib/terminal/card';
   import { hiddenOn } from '$lib/hidden';
   import { loadIdentity } from '$lib/terminal/identity';
   import { publishCard } from '$lib/terminal/public.svelte';
@@ -44,8 +44,12 @@
   let newPlatform = $state('');
   let newHandle = $state('');
 
+  /** How the last publish went: the card is saved before it is sent, so saved is not sent. */
+  let sent = $state<CardSent | null>(null);
+
   onMount(() => {
     published = myCard();
+    sent = cardSent();
     contact = contactPubkey();
     callsign = loadIdentity()?.callsign ?? null;
     showListed = listed();
@@ -73,6 +77,7 @@
       });
       published = myCard();
       contact = contactPubkey();
+      sent = cardSent();
     } finally {
       busy = false;
     }
@@ -81,6 +86,7 @@
   function withdraw() {
     withdrawCard();
     published = null;
+    sent = null;
     contact = null;
     showListed = false;
     confirming = false;
@@ -324,6 +330,11 @@
             it belongs to never told, is the silent lever the notice procedure is shaped against.
           -->
           <Readout value="Not shown here" tone="warn" sub="on navcom.app since {hiddenOn(contact)}" />
+        {:else if sent === 'none'}
+          <!-- Said, never assumed [audit: relay paths, F18]: it is saved here and nobody has it yet. -->
+          <Readout value="Not sent" tone="warn" sub="no relay took it; saved on this phone — try again with signal" />
+        {:else if sent === 'some'}
+          <Readout value="Partly sent" tone="warn" sub="some relays did not take it; try again to reach them" />
         {:else}
           <Readout value="Published" tone="good" sub="as {callsign}" />
         {/if}

@@ -29,7 +29,7 @@ import {
   type CardLink,
   type PublishedCard
 } from '@navcom/core';
-import { contactKey, ensureContactKey, listed, myCard, saveCard, type MyCard } from './card';
+import { contactKey, ensureContactKey, listed, myCard, saveCard, setCardSent, type MyCard } from './card';
 import { loadIdentity } from './identity';
 import { relays } from './relays';
 import { address } from './funding';
@@ -271,15 +271,15 @@ export const profile = {
 };
 
 /**
- * Publishes or replaces your card.
+ * Publishes or replaces your card, and says how many relays took it.
  *
  * Generates the contact key on first use — which is the moment an operator stops being
  * invisible, and the only moment it happens.
  */
-export async function publishCard(card: MyCard): Promise<void> {
+export async function publishCard(card: MyCard): Promise<{ took: number; of: number }> {
   const identity = loadIdentity();
   const urls = relays();
-  if (!identity?.callsign || urls.length === 0) return;
+  if (!identity?.callsign || urls.length === 0) return { took: 0, of: 0 };
 
   const secret = ensureContactKey();
   const event = buildCard(
@@ -299,8 +299,12 @@ export async function publishCard(card: MyCard): Promise<void> {
     // difference between an addition and every older client dropping this operator.
     { visibility: card.visibility, does: card.does, links: card.links }
   );
+  // Saved first, so a draft survives no signal; then sent, and the outcome kept beside it.
   saveCard(card);
-  await Promise.allSettled(pool().publish(urls, event));
+  const results = await Promise.allSettled(pool().publish(urls, event));
+  const took = results.filter((r) => r.status === 'fulfilled').length;
+  setCardSent(took === 0 ? 'none' : took < urls.length ? 'some' : 'all');
+  return { took, of: urls.length };
 }
 
 /**
