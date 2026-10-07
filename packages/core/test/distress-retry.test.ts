@@ -221,3 +221,105 @@ describe('an acknowledgement that arrives after the client has retried', () => {
   });
 
 });
+
+/**
+ * A pool whose connections can drop, the way a phone's do: on a network handoff, or when the app
+ * is set aside to dial somebody. A dropped subscription hears its `onclose` and nothing after it;
+ * an address the pool cannot parse throws for the whole call, as nostr-tools does.
+ */
+function droppingPool() {
+  const sent: { id: string }[] = [];
+  type Sub = { urls: string[]; filter: Record<string, unknown>; onevent: (e: unknown) => void; onclose?: () => void };
+  const subs: Sub[] = [];
+  const bad = (urls: string[]) => urls.find((u) => !/^wss?:\/\/[a-z0-9.-]+/.test(u));
+  return {
+    publish(urls: string[], event: { id: string }) {
+      if (bad(urls)) throw new Error(`Invalid URL: ${bad(urls)}`);
+      sent.push(event);
+      return urls.map(() => Promise.resolve('ok'));
+    },
+    subscribeMany(urls: string[], filter: Record<string, unknown>, params: { onevent: (e: unknown) => void; onclose?: () => void }) {
+      if (bad(urls)) throw new Error(`Invalid URL: ${bad(urls)}`);
+      const sub: Sub = { urls, filter, onevent: params.onevent, onclose: params.onclose };
+      subs.push(sub);
+      return {
+        close() {
+          const i = subs.indexOf(sub);
+          if (i >= 0) subs.splice(i, 1);
+        }
+      };
+    },
+    close() {},
+    /** Every connection goes: each open subscription is told, and hears nothing more. */
+    dropAll() {
+      for (const sub of subs.splice(0)) sub.onclose?.();
+    },
+    /** An acknowledgement, delivered once to whatever is listening at that moment and kept nowhere. */
+    deliverAckFor(attempt: number) {
+      const target = sent[attempt - 1];
+      if (!target) return;
+      const ack = humanAck(target.id);
+      for (const sub of [...subs]) {
+        const want = sub.filter['#e'] as string[] | undefined;
+        if (want && !want.includes(target.id)) continue;
+        sub.onevent(ack);
+      }
+    },
+    get attempts() {
+      return sent.length;
+    }
+  };
+}
+
+async function runOn(pool: ReturnType<typeof droppingPool>, relays: string[], onSleep: (p: ReturnType<typeof droppingPool>) => void | Promise<void>) {
+  const controller = new AbortController();
+  const phases: string[] = [];
+  let clock = 0;
+  await sendDistressUntilAcknowledged(
+    pool as never,
+    relays,
+    OPERATOR,
+    OUR_PUBKEY,
+    { pubkey: WATCH_PUBKEY, holders: [WATCH_PUBKEY] } as never,
+    { area: 'Downtown' } as never,
+    {
+      ackWindowMs: 1,
+      backoffMs: 1_000,
+      clock: () => clock,
+      sleep: async (ms: number) => {
+        await onSleep(pool);
+        clock += ms;
+        if (clock > 30_000) controller.abort();
+      },
+      signal: controller.signal,
+      onPhase: (p: { phase: string }) => phases.push(p.phase)
+    } as never
+  ).catch(() => {});
+  return phases;
+}
+
+describe('the listener between attempts, when the connection drops [audit: relay paths]', () => {
+  it('opens again by itself, so an acknowledgement after the drop still ends the Distress', async () => {
+    let step = 0;
+    const phases = await runOn(droppingPool(), ['wss://r'], async (p) => {
+      step += 1;
+      if (step === 1) {
+        // Every socket goes in the first gap. The listener comes back a second later, by itself.
+        p.dropAll();
+        await new Promise((r) => setTimeout(r, 1_200));
+        // Answered in the gap, where only the Distress-long listener could hear it.
+        p.deliverAckFor(1);
+      }
+    });
+    expect(phases, 'a human answered after the connection came back, and the operator was not told').toContain('acknowledged');
+  });
+
+  it('is not stopped by one address the pool cannot parse', async () => {
+    const phases = await runOn(droppingPool(), ['wss://', 'wss://r'], (p) => {
+      if (p.attempts === 1) p.deliverAckFor(1);
+    });
+    expect(phases).toContain('sent');
+    expect(phases).not.toContain('unreachable');
+    expect(phases).toContain('acknowledged');
+  });
+});

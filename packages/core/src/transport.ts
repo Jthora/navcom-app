@@ -10,6 +10,7 @@
 import type { Event } from 'nostr-tools/core';
 import { finalizeEvent, verifyEvent } from 'nostr-tools/pure';
 import type { SimplePool } from 'nostr-tools/pool';
+import { normalizeURL } from 'nostr-tools/utils';
 
 import { open } from './crypto/envelope.js';
 import { sealToGroup, type WatchtowerAddress } from './crypto/group.js';
@@ -20,9 +21,39 @@ import type { ResponsePayload } from './events/response.js';
 
 export class PublishError extends Error {}
 
-/** Throws when no relay accepted. Silence downstream would otherwise be misdiagnosed. */
+/**
+ * The addresses this pool can parse. A subscription across several relays is refused whole when
+ * any one address is malformed, which turned one typo into "nobody answered" from every relay.
+ */
+function parseable(relays: string[]): string[] {
+  return relays.filter((url) => {
+    try {
+      normalizeURL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  });
+}
+
+/**
+ * Throws when no relay accepted. Silence downstream would otherwise be misdiagnosed.
+ *
+ * **One relay at a time.** nostr-tools normalises the whole list before it opens anything, so one
+ * address it cannot parse threw for every relay at once — a typo on one line of a watch config
+ * made every Distress attempt read "never left the phone" while the other relays were fine.
+ * Published one by one, a bad address is one refusal among the rest [audit: relay paths, F01].
+ */
 async function publishOrThrow(pool: SimplePool, relays: string[], event: Event): Promise<void> {
-  const results = await Promise.allSettled(pool.publish(relays, event));
+  const results = await Promise.allSettled(
+    relays.flatMap((url) => {
+      try {
+        return pool.publish([url], event);
+      } catch (e) {
+        return [Promise.reject(e)];
+      }
+    })
+  );
   if (results.some((r) => r.status === 'fulfilled')) return;
   const reasons = results
     .map((r) => (r.status === 'rejected' ? String(r.reason) : null))
@@ -144,7 +175,7 @@ export function waitForResponse(
 
     try {
       closer = pool.subscribeMany(
-        relays,
+        parseable(relays),
         {
           kinds: [KIND_RESPONSE],
           authors: [watchtower],
@@ -348,36 +379,68 @@ export async function sendDistressUntilAcknowledged(
   let heardExhausted: ResponsePayload | null = null;
   /** Whether the current ladder's `exhausted` has been reported, so it is said once. */
   let exhaustedShown = false;
-  let persistent: { close(): void } | null = null;
-  try {
-    persistent = pool.subscribeMany(
-      relays,
-      { kinds: [KIND_RESPONSE], authors: [watchtower.pubkey], '#p': [ourPubkey] },
-      {
-        onevent(event) {
-          if (latched || !verifyEvent(event)) return;
-          const answers = event.tags.filter((t) => t[0] === 'e').map((t) => t[1]);
-          if (!outstanding.some((o) => answers.includes(o.id))) return;
-          try {
-            const payload = open<ResponsePayload>(secret, watchtower.pubkey, event.content);
-            // Only a human closes a Distress [invariant 5]. An agent seen here changes
-            // nothing; the per-attempt path already reports it when it lands in a window.
-            if (payload.responder?.kind === 'human') latched = payload;
-            // The one non-human report that must never be lost to the gap. It closes nothing.
-            else if (payload.responder?.kind === 'node' && payload.ladder === 'exhausted') {
-              heardExhausted = payload;
-            }
-          } catch {
-            // Not for us.
-          }
-        }
+
+  const heard = (event: Event) => {
+    if (latched || !verifyEvent(event)) return;
+    const answers = event.tags.filter((t) => t[0] === 'e').map((t) => t[1]);
+    if (!outstanding.some((o) => answers.includes(o.id))) return;
+    try {
+      const payload = open<ResponsePayload>(secret, watchtower.pubkey, event.content);
+      // Only a human closes a Distress [invariant 5]. An agent seen here changes
+      // nothing; the per-attempt path already reports it when it lands in a window.
+      if (payload.responder?.kind === 'human') latched = payload;
+      // The one non-human report that must never be lost to the gap. It closes nothing.
+      else if (payload.responder?.kind === 'node' && payload.ladder === 'exhausted') {
+        heardExhausted = payload;
       }
-    );
-  } catch {
-    // A subscription that cannot be opened must not stop the sending. The per-attempt path
-    // is unchanged and still reports everything it always did.
-    persistent = null;
-  }
+    } catch {
+      // Not for us.
+    }
+  };
+
+  /*
+   * **One listener per relay, and each one heals itself** [audit: relay paths, F03].
+   *
+   * The listener used to be one subscription across every relay, opened once. The phone's pool
+   * does not reconnect, so the first time every socket dropped — a network handoff, or the app
+   * set aside to dial somebody — the listener was gone for the rest of the Distress and nothing
+   * said so. An acknowledgement that then landed between attempts was lost, and the watch,
+   * hearing the next attempt, paged its roster again. Per relay, because a pool reports a
+   * subscription across several relays closed only once every one of them has gone.
+   *
+   * A closed listener is reopened after a short wait that doubles to fifteen seconds, until
+   * the Distress ends. An address this pool cannot parse is not retried: it fails the same way
+   * every time, and the per-attempt path already says so.
+   */
+  const RESPONSES = { kinds: [KIND_RESPONSE], authors: [watchtower.pubkey], '#p': [ourPubkey] };
+  let finished = false;
+  const listeners = new Map<string, { token: object; sub: { close(): void } | null }>();
+  const reopening = new Map<string, ReturnType<typeof setTimeout>>();
+  const listen = (url: string, wait = 1_000) => {
+    if (finished) return;
+    reopening.delete(url);
+    const token = {};
+    listeners.set(url, { token, sub: null });
+    try {
+      const sub = pool.subscribeMany([url], RESPONSES, {
+        onevent: heard,
+        onclose: () => {
+          if (finished || listeners.get(url)?.token !== token) return;
+          listeners.set(url, { token, sub: null });
+          if (!reopening.has(url)) reopening.set(url, setTimeout(() => listen(url, Math.min(wait * 2, 15_000)), wait));
+        }
+      });
+      if (listeners.get(url)?.token === token) listeners.set(url, { token, sub });
+    } catch {
+      // Unparseable: it will fail identically every time. Not retried, never fatal.
+      listeners.delete(url);
+    }
+  };
+  for (const url of relays) listen(url);
+  /** Reopens, now, any listener that is down and not already waiting to come back. */
+  const relisten = () => {
+    for (const [url, l] of listeners) if (!l.sub && !reopening.has(url)) listen(url);
+  };
 
   /** Closes the Distress if a human answered while nothing else was listening. */
   const answered = (): ResponsePayload | null => latched;
@@ -412,6 +475,7 @@ export async function sendDistressUntilAcknowledged(
       return early;
     }
     attempt++;
+    relisten();
 
     report({ phase: 'sending', attempt });
     let sent: Event | null = null;
@@ -481,6 +545,8 @@ export async function sendDistressUntilAcknowledged(
     }
   }
   } finally {
-    persistent?.close();
+    finished = true;
+    for (const t of reopening.values()) clearTimeout(t);
+    for (const l of listeners.values()) l.sub?.close();
   }
 }
