@@ -6,6 +6,10 @@ build/
 .svelte-kit/
 *.tsbuildinfo
 
+# The host's own directory, written beside the source during a Vercel build. Never ours, and
+# until it was ignored every deploy's health file read `clean: false` because of it.
+.vercel/
+
 .DS_Store
 .env
 .env.*

@@ -127,6 +127,11 @@ describe('the verified-build receipt', () => {
     // `git()` trims its output, which eats the first line's leading status column.
     expect(changedPaths('M package-lock.json\n?? .vercel/\n M web/src/x.ts')).toEqual(['package-lock.json', '.vercel/', 'web/src/x.ts']);
     expect(changedPaths(Array.from({ length: 30 }, (_, i) => `?? f${i}`).join('\n'))).toHaveLength(20);
+    // How much moved, never what: a host's lockfile addition reads differently from an edit.
+    expect(changedPaths('M package-lock.json\n M vercel.json', '18\t0\tpackage-lock.json\n1\t1\tvercel.json')).toEqual([
+      'package-lock.json (+18 -0)',
+      'vercel.json (+1 -1)'
+    ]);
   });
 
   it('points at the refusals, and the refusals point back', () => {

@@ -131,16 +131,25 @@ export function refusalsDocument() {
 
 /**
  * `git status --porcelain` as paths, at most twenty: enough to see why, never a listing of a tree.
+ * A modified file says how many lines moved, from `git diff --numstat` — enough to tell a host
+ * adding its own platform's binary to a lockfile from somebody's edit, without publishing either.
  * @param {string} porcelain
+ * @param {string | null} [numstat]
  * @returns {string[]}
  */
-export function changedPaths(porcelain) {
+export function changedPaths(porcelain, numstat = null) {
+  const moved = new Map();
+  for (const line of (numstat ?? '').split('\n')) {
+    const [added, removed, path] = line.split('\t');
+    if (path) moved.set(path, `+${added} -${removed}`);
+  }
   return porcelain
     .split('\n')
     .filter(Boolean)
     .slice(0, 20)
     // The status column, however much of it survived: `git()` trims, which eats the first line's.
-    .map((line) => line.replace(/^\s*\S{1,2}\s+/, ''));
+    .map((line) => line.replace(/^\s*\S{1,2}\s+/, ''))
+    .map((path) => (moved.has(path) ? `${path} (${moved.get(path)})` : path));
 }
 
 /** `git`, or nothing. A build from a tarball is a real case and must not crash the build. */
@@ -248,7 +257,7 @@ export function healthDocument(
      * the same commit is clean, and a bare false could not say whether the host had rewritten a
      * lockfile or dropped a directory of its own beside the source. Named, a reader can judge.
      */
-    ...(dirty ? { changed: changedPaths(dirty) } : {}),
+    ...(dirty ? { changed: changedPaths(dirty, git('diff', '--numstat', 'HEAD')) } : {}),
     built: new Date().toISOString(),
     suites: suites ?? { ran: 'unknown', at: null, counts: null },
     // `CI` is set by every runner worth trusting and by nothing else.
