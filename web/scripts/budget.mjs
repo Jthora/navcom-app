@@ -12,7 +12,7 @@
  */
 
 import { gzipSync } from 'node:zlib';
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join, normalize, relative, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -194,7 +194,14 @@ pages.sort((a, b) => b.total - a.total);
 
 let failed = false;
 
-for (const surface of Object.values(SURFACES)) {
+/*
+ * What the gate measured, written where the health file reads it [well-known.mjs]. For six weeks
+ * nothing wrote this, and `/.well-known/navcom-health.json` published `budget: null` on every
+ * deploy: the reader existed, the writer did not, and no test joined them.
+ */
+const report = { unit: 'bytes, gzipped', surfaces: {}, deferred: null, passed: false };
+
+for (const [key, surface] of Object.entries(SURFACES)) {
   const own = pages.filter((p) => surface.match(p.name));
   if (own.length === 0) continue;
 
@@ -209,6 +216,7 @@ for (const surface of Object.values(SURFACES)) {
 
   const worstJs = Math.max(...own.map((p) => p.js));
   const worst = own[0];
+  report.surfaces[key] = { pages: own.length, js: worstJs, js_budget: surface.js, page: worst.total, page_budget: surface.page, worst_page: worst.name };
 
   console.log('');
   if (surface.js > 0) {
@@ -348,6 +356,7 @@ if (deferred?.stale) {
  */
 const DEFERRED = { limit: 33 * 1024, warn: 30 * 1024 };
 if (deferred && !deferred.stale) {
+  report.deferred = { bytes: deferred.bytes, limit: DEFERRED.limit };
   const ok = deferred.bytes <= DEFERRED.limit;
   if (!ok) failed = true;
   const warned = ok && deferred.bytes > DEFERRED.warn;
@@ -442,5 +451,8 @@ if (over.length) {
   }).filter(Boolean);
   if (biggest.length) console.log(`\n  PASS  Artifacts    ${biggest.join(' · ')}`);
 }
+
+report.passed = !failed;
+writeFileSync(join(BUILD, '.budget.json'), JSON.stringify(report, null, 2) + '\n');
 
 process.exit(failed ? 1 : 0);

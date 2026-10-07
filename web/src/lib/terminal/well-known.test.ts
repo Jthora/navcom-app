@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { REFUSALS, PERMITTED, BROADCAST, buildObservation } from '@navcom/core';
 import { generateSecretKey } from 'nostr-tools/pure';
 // Plain .mjs, deliberately: this is the file node runs during a build, long after the
 // TypeScript is gone, and testing the thing that actually runs is the point.
-import { refusalsDocument, healthDocument, metroFigures, nodeIdentity, intelDocument, vocabularyCid, canonicalVocabulary } from '../../../scripts/well-known.mjs';
+import { refusalsDocument, healthDocument, changedPaths, metroFigures, nodeIdentity, intelDocument, vocabularyCid, canonicalVocabulary } from '../../../scripts/well-known.mjs';
 
 /**
  * The descriptor cannot drift.
@@ -92,6 +94,39 @@ describe('the verified-build receipt', () => {
     // A receipt that could not express that would have been worth nothing.
     expect(healthDocument({}).built_on).toBe('local');
     expect(healthDocument({ CI: 'true' }).built_on).toBe('ci');
+  });
+
+  it('publishes what the budget gate measured, and nothing it did not', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'navcom-budget-'));
+    const measured = { unit: 'bytes, gzipped', surfaces: { root: { js: 59_290 } }, deferred: { bytes: 32_460, limit: 33_792 }, passed: true };
+    writeFileSync(join(dir, '.budget.json'), JSON.stringify(measured));
+    expect(healthDocument({}, '/nonexistent/.verify-receipt.json', join(dir, '.budget.json')).budget).toEqual(measured);
+    expect(healthDocument({}, '/nonexistent/.verify-receipt.json', '/nonexistent/.budget.json').budget).toBeNull();
+  });
+
+  it('is handed the budget by the step that measures it, which runs first', () => {
+    /*
+     * The join that was missing. From 2026-08-25 the health file read `.budget.json` and nothing
+     * wrote it, and it ran before the budget step besides — so every deploy published
+     * `budget: null`, and both halves passed their own tests. This checks the two halves meet,
+     * in the order the deploy actually runs them.
+     */
+    const web = (path: string) => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), 'utf8');
+    expect(web('scripts/budget.mjs')).toMatch(/writeFileSync\(join\(BUILD, '\.budget\.json'\)/);
+    const scripts = JSON.parse(web('package.json')).scripts as Record<string, string>;
+    for (const name of ['verify', 'verify:deploy']) {
+      const steps = scripts[name]!.split('&&').map((x) => x.trim());
+      expect(steps.indexOf('npm run budget'), `${name} runs no budget step`).toBeGreaterThan(-1);
+      expect(steps.indexOf('npm run budget'), `${name} writes the health file before the budget is measured`).toBeLessThan(
+        steps.indexOf('npm run wellknown')
+      );
+    }
+  });
+
+  it('names what made a build unclean, from the first line as well as the rest', () => {
+    // `git()` trims its output, which eats the first line's leading status column.
+    expect(changedPaths('M package-lock.json\n?? .vercel/\n M web/src/x.ts')).toEqual(['package-lock.json', '.vercel/', 'web/src/x.ts']);
+    expect(changedPaths(Array.from({ length: 30 }, (_, i) => `?? f${i}`).join('\n'))).toHaveLength(20);
   });
 
   it('points at the refusals, and the refusals point back', () => {

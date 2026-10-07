@@ -58,9 +58,9 @@ from whether a builder exists, and this document follows the same discipline.
 | Reading kind `30079` packages | LIVE — every device subscribes to The Record and its mirror at `wss://blackpi.cosmiccodex.app` at once, verifies each package itself, shows the newest signed copy of each, and keeps both subscriptions open, so a new or closed mission shows without a reload |
 | The grid (the map missions appear on) | LIVE as the landing page at [`navcom.app`](https://navcom.app/), lighting each mission's province |
 | Kind `1911` observation (raw intel) | BUILT — builder and contract exist; published at `/.well-known/navcom-intel.json` |
-| Kind `1912` report | BUILT — NavCom's devices send them, open or sealed (§5.2); the contract now says `emitted: true` |
-| Claims (§5.1) | BUILT — NavCom's devices send them, open and sealed; three rules PROPOSED (§10, Q11–Q13) |
-| Settlement, challenge (§5.3) | BUILT on NavCom's side as a reading: each operator sees how their reports settled. Witnessing and challenging another's report from NavCom is not built |
+| Kind `1912` report | LIVE — operators on navcom.app send them, open or sealed (§5.2); the contract says `emitted: true` |
+| Claims (§5.1) | LIVE — operators on navcom.app send them, open and sealed; three rules PROPOSED (§10, Q11–Q13) |
+| Settlement, challenge (§5.3) | LIVE on NavCom's side as a reading: each operator sees how their reports settled. Witnessing and challenging another's report from NavCom is not built |
 | Standing, Writs, bounties (§8) | DESIGNED |
 | The grid's rules — no reader records, relay lists, declared policies (§11) | DESIGNED, decided 2026-10-06. The reader rule is The Record's to apply |
 
@@ -293,7 +293,7 @@ MUST still publish `mission_state: claimed`** — a private claim withholds *who
 A claim expires by itself (NIP-40). Walking away costs the operator nothing: **abandoning a claim
 MUST NOT affect anything about them** — not standing, not a score, not a note. That is invariant 8.
 
-**BUILT, 2026-10-06.** NavCom's devices send claims this way. The rules were worked out as a game
+**LIVE, 2026-10-06.** Operators on navcom.app send claims this way. The rules were worked out as a game
 between claimant, other operators, poster and adversary — the reasoning is in
 [`../design/missions.md`](../design/missions.md) §3 — and three of them ask something of you:
 
@@ -316,7 +316,7 @@ else.
 
 ### 5.2 Doing it — a report
 
-Kind `1912` — **BUILT, 2026-10-06**. It carries:
+Kind `1912` — **LIVE, 2026-10-06**. It carries:
 
 - `["a", "30079:…"]` — the package — and `["ask", "<objective id>"]` for each objective covered
 - **no `g` tag**, deliberately: a region-indexed history of who worked where is the queryable

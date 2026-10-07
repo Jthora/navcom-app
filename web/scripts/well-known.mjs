@@ -129,6 +129,20 @@ export function refusalsDocument() {
   };
 }
 
+/**
+ * `git status --porcelain` as paths, at most twenty: enough to see why, never a listing of a tree.
+ * @param {string} porcelain
+ * @returns {string[]}
+ */
+export function changedPaths(porcelain) {
+  return porcelain
+    .split('\n')
+    .filter(Boolean)
+    .slice(0, 20)
+    // The status column, however much of it survived: `git()` trims, which eats the first line's.
+    .map((line) => line.replace(/^\s*\S{1,2}\s+/, ''));
+}
+
 /** `git`, or nothing. A build from a tarball is a real case and must not crash the build. */
 /** @param {...string} args @returns {string|null} */
 function git(...args) {
@@ -140,13 +154,14 @@ function git(...args) {
 }
 
 /**
- * What a browser actually downloads for the terminal, gzipped.
+ * What a browser actually downloads, per surface, gzipped.
  *
  * Deliberately the same measurement `budget.mjs` makes rather than a second opinion on it:
- * two numbers for one budget is how a receipt starts disagreeing with the gate.
+ * two numbers for one budget is how a receipt starts disagreeing with the gate. So the budget
+ * step writes this report and runs first — until 2026-10-06 nothing wrote it, and this read null
+ * on every deploy since it was added.
  */
-function terminalBytes() {
-  const report = join(BUILD, '.budget.json');
+function budgetReport(report = join(BUILD, '.budget.json')) {
   if (!existsSync(report)) return null;
   try {
     return JSON.parse(readFileSync(report, 'utf8'));
@@ -200,7 +215,11 @@ function directoryCid() {
  */
 export { nodeIdentity };
 
-export function healthDocument(env = process.env, receiptPath = join(BUILD, '.verify-receipt.json')) {
+export function healthDocument(
+  env = process.env,
+  receiptPath = join(BUILD, '.verify-receipt.json'),
+  budgetPath = join(BUILD, '.budget.json')
+) {
   /*
    * The path is a parameter so a test can assert the *absent* case, which is the one that
    * matters — a receipt that could not say "unknown" would be worth nothing, and after a real
@@ -224,11 +243,17 @@ export function healthDocument(env = process.env, receiptPath = join(BUILD, '.ve
     commit,
     // A build from a working tree with uncommitted changes is not the commit it names.
     clean: dirty === null ? null : dirty === '',
+    /*
+     * Which paths, when it is not. Every deploy has read `clean: false` while every local build of
+     * the same commit is clean, and a bare false could not say whether the host had rewritten a
+     * lockfile or dropped a directory of its own beside the source. Named, a reader can judge.
+     */
+    ...(dirty ? { changed: changedPaths(dirty) } : {}),
     built: new Date().toISOString(),
     suites: suites ?? { ran: 'unknown', at: null, counts: null },
     // `CI` is set by every runner worth trusting and by nothing else.
     built_on: env.CI ? 'ci' : 'local',
-    budget: terminalBytes(),
+    budget: budgetReport(budgetPath),
     /*
      * What the directory is, independent of where it is hosted. Null until it has been
      * packed, and `held_by` says plainly that computing an identifier is not the same as
