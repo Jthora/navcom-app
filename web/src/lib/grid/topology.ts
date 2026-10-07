@@ -97,6 +97,21 @@ function stitch(indices: number[], arcs: number[][][]): Ring {
   return Float32Array.from(points);
 }
 
+/**
+ * Whether a projected point is inside a shape: even-odd across every ring, so a hole and an
+ * island count the way the fill draws them. How a tap on the map finds the province under it.
+ */
+export function inside(rings: readonly Ring[], [x, y]: readonly [number, number]): boolean {
+  let c = false;
+  for (const r of rings) {
+    for (let i = 0, j = r.length - 2; i < r.length; j = i, i += 2) {
+      const xi = r[i]!, yi = r[i + 1]!, xj = r[j]!, yj = r[j + 1]!;
+      if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) c = !c;
+    }
+  }
+  return c;
+}
+
 /** Every layer in the file, decoded and projected. */
 export function decode(topology: Topology): Record<string, Layer> {
   const arcs = absoluteArcs(topology);

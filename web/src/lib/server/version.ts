@@ -43,7 +43,13 @@ function read(): Version {
   // The host knows better than git does: a CI checkout may be detached or shallow, and
   // Vercel sets this from the deployment itself.
   const fromHost = process.env['VERCEL_GIT_COMMIT_SHA'];
-  const commit = fromHost ? fromHost.slice(0, 7) : (git(['rev-parse', '--short', 'HEAD']) ?? 'unknown');
+  /*
+   * Seven characters, from either source. `git rev-parse --short` lengthens the prefix once seven
+   * become ambiguous in the repository — which this one did, the day 1,911 data files changed in
+   * one commit — and a stamp that is seven characters on the host and eight on a laptop is two
+   * formats for one fact.
+   */
+  const commit = (fromHost ?? git(['rev-parse', 'HEAD']))?.slice(0, 7) ?? 'unknown';
 
   return {
     commit,

@@ -437,3 +437,109 @@ test.describe('the landing page: Com over the map', () => {
   });
 });
 
+
+test.describe('the landing page: missions you can open', () => {
+  /** Real packages signed by Mecha Jono; [0] is the California heat-relief campaign. */
+  const [HEAT] = JSON.parse(readFileSync(new URL('../../packages/core/test/fixtures/mission-packages.json', import.meta.url), 'utf8'));
+  const DURING = new Date('2026-10-06T20:00:00Z');
+  const HEAT_D = 'starcom_mission_package_field-heat_relief-CA-2026-10-02';
+
+  async function withHeat(page: Page, seed: Record<string, unknown> = {}) {
+    await page.clock.setFixedTime(DURING);
+    await seedDevice(page, { relayEvents: [HEAT], __noStorage: true, ...seed } as Parameters<typeof seedDevice>[1]);
+    await open(page, '/');
+    await expect(page.locator('[data-missions="open"]')).toContainText('Open missions · live', { timeout: 15_000 });
+  }
+
+  test('the missions line opens the list, and a mission opens with its limits above every ask', async ({ page }) => {
+    await withHeat(page);
+    await page.locator('[data-missions="open"]').click();
+    const list = page.locator('[data-screen="missions"]');
+    await expect(list).toBeVisible();
+    // Half, never full: the map stays in view behind a mission [com.md §7].
+    await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'half');
+    const row = list.locator(`[data-mission="${HEAT_D}"]`);
+    await expect(row).toContainText('posted by an agent');
+
+    await row.click();
+    const mission = page.locator(`[data-screen="mission"][data-mission="${HEAT_D}"]`);
+    await expect(mission).toBeVisible();
+    await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'half');
+    // Invariant 4, said on the mission itself.
+    await expect(mission.locator('[data-slot="posted-by"]')).toContainText('Mecha Jono');
+    await expect(mission.locator('[data-slot="posted-by"]')).toContainText('an agent, not a person');
+    // The limits, verbatim, above the ask, on every objective [spec §4.3].
+    const objectives = mission.locator('[data-objective]');
+    await expect(objectives).toHaveCount(4);
+    const order = await objectives.evaluateAll((els) =>
+      els.map((el) => {
+        const limits = el.querySelector('[data-limits]');
+        const ask = el.querySelector('[data-ask]');
+        return !!limits && !!ask && !!(limits.compareDocumentPosition(ask) & Node.DOCUMENT_POSITION_FOLLOWING);
+      })
+    );
+    expect(order).toEqual([true, true, true, true]);
+    // A count of people the package carried is left out, and the page says so.
+    await expect(mission.locator('[data-omitted]')).toContainText('counted people');
+  });
+
+  test('tapping a lit province opens its missions; Back and Escape step out again', async ({ page }) => {
+    await withHeat(page);
+    const canvas = page.locator('.grid canvas');
+    await expect(page.locator('[data-grid="ready"]')).toBeVisible();
+    // Where central California is on screen, from the view the map is drawing right now.
+    const spot = await canvas.evaluate((c: HTMLCanvasElement) => {
+      const [cx, cy, scale] = (c.dataset.view ?? '').split(' ').map(Number) as [number, number, number];
+      const r = c.getBoundingClientRect();
+      const lat = 36.8 * (Math.PI / 180);
+      const ux = (-119.4 + 180) / 360;
+      const uy = (1 - Math.log(Math.tan(lat) + 1 / Math.cos(lat)) / Math.PI) / 2;
+      const x = r.left + (ux - cx) * scale + r.width / 2;
+      const y = r.top + (uy - cy) * scale + r.height / 2;
+      // Only a tap the map itself would receive: nothing may be over it there.
+      return document.elementFromPoint(x, y) === c ? { x, y } : null;
+    });
+    expect(spot, 'California should be on screen and uncovered').not.toBeNull();
+    await page.mouse.click(spot!.x, spot!.y);
+    const list = page.locator('[data-screen="missions"][data-province="us-ca"]');
+    await expect(list).toBeVisible();
+    await expect(list.locator('[data-post]')).toHaveText('California');
+
+    await page.locator('[data-back]').click();
+    await expect(page.getByLabel(/where are you, or what do you need/i)).toBeVisible();
+
+    await page.locator('[data-missions="open"]').click();
+    await page.locator(`[data-mission="${HEAT_D}"]`).click();
+    await expect(page.locator('[data-screen="mission"]')).toBeVisible();
+    // Focus moved to the screen that opened, so Escape belongs to Com.
+    await page.keyboard.press('Escape');
+    await expect(page.locator('[data-screen="missions"]')).toBeVisible();
+  });
+
+  test('an operator can still reach Distress, uncovered, with a mission open', async ({ page }) => {
+    // Storage this time: an operator is somebody with a key on this device.
+    await withHeat(page, { __noStorage: false, callsign: 'kestrel' });
+    await page.locator('[data-missions="open"]').click();
+    await page.locator(`[data-mission="${HEAT_D}"]`).click();
+    await expect(page.locator('[data-screen="mission"]')).toBeVisible();
+    const distress = page.locator('.distress-layer a');
+    await expect(distress).toBeVisible();
+    expect(await uncovered(distress)).toBe(true);
+  });
+
+  test('when the screens’ own code cannot arrive, the sheet says so instead of a blank', async ({ page }) => {
+    await page.route(chunkOf('src/lib/components/missions/index.ts'), (r) => r.abort());
+    await withHeat(page);
+    await page.locator('[data-missions="open"]').click();
+    await expect(page.locator('[data-screen-failed]')).toContainText('needs one visit with a connection');
+  });
+
+  test('no axe violations with a mission open', async ({ page }) => {
+    await withHeat(page);
+    await page.locator('[data-missions="open"]').click();
+    await page.locator(`[data-mission="${HEAT_D}"]`).click();
+    await expect(page.locator('[data-screen="mission"]')).toBeVisible();
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations.map((v) => v.id)).toEqual([]);
+  });
+});

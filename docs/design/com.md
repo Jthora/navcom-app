@@ -8,8 +8,9 @@ more than a panel holds and exactly what a stack is for. Bottom sheets are how a
 phone, which is why both arrived in the same sentence.
 
 Status: **design, decided 2026-10-06. The shell is built** — the two containers, the three detents,
-the search-first root and the `Distress` layer, as the landing page. The stack itself, the signed-in
-root, profile, groups and chat are not. Companions: [`panel.md`](panel.md) for the readout rules,
+the search-first root and the `Distress` layer, as the landing page — **and the stack's first
+screens**: the mission list, opened from the map's missions line or a tapped province, and a
+mission's page, both loaded on first open. The signed-in root, profile, groups and chat are not. Companions: [`panel.md`](panel.md) for the readout rules,
 [`map.md`](map.md) for Nav, [`delivery.md`](../delivery.md) for the budgets this is measured against.
 
 ---
@@ -158,9 +159,10 @@ worse than a budget that fails.
 
 So the script needs a **third measurement**: the weight reachable by dynamic import from a page,
 reported separately from first paint. The Vite manifest already records `dynamicImports` per chunk, so
-the graph is available without parsing JavaScript. Reported now, enforced once there is something to
-enforce — which is how every other budget here was set, derived from a measurement rather than chosen
-to fit.
+the graph is available without parsing JavaScript. Reported first, then enforced once there was
+something to enforce — which is how every other budget here was set, derived from a measurement rather
+than chosen to fit. **Set 2026-10-06** when the mission screens split off: 27.7 kB measured, a 33 kB
+ceiling and a 30 kB warning line.
 
 **An opened sheet on a dead connection must say so.** A chunk that fails to arrive is a blank sheet,
 and offline is a normal state here [C10]. The service worker's whole-origin cache covers this after

@@ -213,6 +213,8 @@ Three rules on top of the table, and these are the part that matters:
 dots make the map look alive at once, and they also compete with the missions for the eye. So the
 landing map opens on what there is to do, and one control shows or hides where the directory
 reaches. Built the same day: the landing page opens on the missions, and **Coverage** is the switch.
+**A lit province is a door**: tapping it opens its missions in Com, and the missions line in the map's
+key opens all of them, for anybody who cannot or does not use the map.
 
 Open and claimed missions, and public reports. **Not the 9,623 directory records.** The
 landing map is a situation, not an inventory — the directory stays searched rather than

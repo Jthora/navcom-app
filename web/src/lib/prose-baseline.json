@@ -4,6 +4,8 @@
   "src/lib/components/PickACallsign.svelte": 8,
   "src/lib/components/RecordSummary.svelte": 11,
   "src/lib/components/grid/GridMap.svelte": 0,
+  "src/lib/components/missions/MissionList.svelte": 6,
+  "src/lib/components/missions/MissionPage.svelte": 2,
   "src/lib/components/panel/Action.svelte": 0,
   "src/lib/components/panel/Board.svelte": 0,
   "src/lib/components/panel/Elapsed.svelte": 0,

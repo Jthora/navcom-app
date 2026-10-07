@@ -250,9 +250,10 @@ for (const surface of Object.values(SURFACES)) {
  * delivered to readers while being invisible to every number here — and the `dead` note below would
  * go on calling them "loaded by no page".
  *
- * Reported rather than enforced, deliberately. There is nothing to enforce against yet, and every
- * budget in this file was **derived from a measurement** rather than chosen to fit. This is how the
- * measurement becomes available before the decision has to be made.
+ * Enforced since 2026-10-06, when Com's stack first split [build-order 11.3]. It was reported for a
+ * while first on purpose: every budget in this file was **derived from a measurement** rather than
+ * chosen to fit, and the measurement did not exist until something loaded later. The ceiling is
+ * below the note.
  *
  * The graph comes from Vite's manifest, which records `dynamicImports` per chunk, so no JavaScript
  * is parsed. Missing manifest is not an error: a build without one simply has nothing to say here.
@@ -336,6 +337,23 @@ if (deferred?.stale) {
     `\n  note  ${deferred.count} chunk(s) reachable by dynamic import, ${kb(deferred.bytes)} gzipped —` +
       `\n        not at first paint, so no budget above measures them. Largest:` +
       `\n        ${worst} at ${kb(deferred.worst.bytes)}.`
+  );
+}
+
+/*
+ * The ceiling 11.3 owed [build-order, Milestone 11 gates]. Derived, not chosen: measured at 27.7 kB
+ * gzipped on 2026-10-06, once the mission list and a mission's page split off to load on first open,
+ * with the ~20% headroom every surface here gets. Reachable, not delivered: it caps what the app can
+ * pull in later across every page, not what any one visit downloads.
+ */
+const DEFERRED = { limit: 33 * 1024, warn: 30 * 1024 };
+if (deferred && !deferred.stale) {
+  const ok = deferred.bytes <= DEFERRED.limit;
+  if (!ok) failed = true;
+  const warned = ok && deferred.bytes > DEFERRED.warn;
+  console.log(
+    `\n  ${!ok ? 'FAIL' : warned ? 'WARN' : 'PASS'}  ${'Deferred'.padEnd(11)} ${kb(deferred.bytes).padStart(9)} / ${kb(DEFERRED.limit).padStart(9)}` +
+      `  (${Math.round((deferred.bytes / DEFERRED.limit) * 100)}%)  loaded later, by dynamic import`
   );
 }
 

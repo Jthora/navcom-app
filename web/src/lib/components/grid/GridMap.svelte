@@ -14,13 +14,14 @@
    * redraw, never per-frame geometry. Redraws happen on demand, at most once per frame.
    */
   import { onMount } from 'svelte';
-  import { decode, mercator, type Layer, type Topology } from '$lib/grid/topology';
+  import { decode, inside, mercator, type Layer, type Topology } from '$lib/grid/topology';
 
   let {
     marks = [],
     frame,
     highlight = new Set<string>(),
-    label = 'Map'
+    label = 'Map',
+    onpick
   }: {
     /** Points to draw, in longitude and latitude. Constant size on screen whatever the zoom. */
     marks?: readonly { lon: number; lat: number }[];
@@ -33,6 +34,11 @@
     highlight?: ReadonlySet<string>;
     /** What the map shows, for anybody who cannot see the canvas. */
     label?: string;
+    /**
+     * A lit province was tapped: its code. A shortcut, never the only way in — whatever opens
+     * from here must also be reachable without the map, by keyboard and screen reader alike.
+     */
+    onpick?: (province: string) => void;
   } = $props();
 
   let canvas = $state<HTMLCanvasElement>();
@@ -112,6 +118,8 @@
 
     const ox = width / 2 - cx * scale;
     const oy = height / 2 - cy * scale;
+    // The view, where a browser test can read it to tap a place by its longitude and latitude.
+    canvas!.dataset.view = `${cx} ${cy} ${scale}`;
     ctx.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * ox, dpr * oy);
     ctx.fillStyle = token('--t-raised', '#141920');
     ctx.fill(land, 'evenodd');
@@ -212,9 +220,23 @@
   // Pointers: one drags, two pinch. Pointer events cover mouse, touch and pen alike.
   const pointers = new Map<number, { x: number; y: number }>();
   let pinch = 0;
+  /** Where a gesture began, while it can still turn out to be a tap: one finger, barely moved. */
+  let tap: { id: number; x: number; y: number } | null = null;
+  /** How far a finger may drift and still have tapped, in CSS px. */
+  const TAP_SLOP = 8;
+
+  /** The lit province under a point on screen, if any. */
+  function pick(sx: number, sy: number) {
+    if (!onpick || highlight.size === 0 || scale === 0) return;
+    const at: [number, number] = [cx + (sx - width / 2) / scale, cy + (sy - height / 2) / scale];
+    for (const s of provinceShapes) {
+      if (s.id !== null && highlight.has(s.id) && inside(s.rings, at)) return onpick(s.id);
+    }
+  }
 
   function onPointerDown(e: PointerEvent) {
     canvas?.setPointerCapture(e.pointerId);
+    tap = pointers.size === 0 ? { id: e.pointerId, x: e.offsetX, y: e.offsetY } : null;
     pointers.set(e.pointerId, { x: e.offsetX, y: e.offsetY });
     if (pointers.size === 2) {
       const [a, b] = [...pointers.values()];
@@ -226,6 +248,8 @@
     const last = pointers.get(e.pointerId);
     if (!last) return;
     const now = { x: e.offsetX, y: e.offsetY };
+    // A drag that wanders back to where it started was still a drag.
+    if (tap && Math.hypot(now.x - tap.x, now.y - tap.y) >= TAP_SLOP) tap = null;
     if (pointers.size === 1) {
       panBy(now.x - last.x, now.y - last.y);
     } else if (pointers.size === 2) {
@@ -240,6 +264,10 @@
   }
 
   function onPointerUp(e: PointerEvent) {
+    if (tap?.id === e.pointerId && Math.hypot(e.offsetX - tap.x, e.offsetY - tap.y) < TAP_SLOP) {
+      pick(e.offsetX, e.offsetY);
+    }
+    tap = null;
     pointers.delete(e.pointerId);
     pinch = 0;
   }
@@ -348,7 +376,10 @@
     onpointerdown={onPointerDown}
     onpointermove={onPointerMove}
     onpointerup={onPointerUp}
-    onpointercancel={onPointerUp}
+    onpointercancel={(e) => {
+      tap = null;
+      onPointerUp(e);
+    }}
     onkeydown={onKey}
   ></canvas>
   <div class="controls">

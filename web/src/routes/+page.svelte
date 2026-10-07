@@ -10,7 +10,7 @@
    * mid-shift with both hands full; this is for someone deciding whether this is worth their
    * trust at all, with a keyboard in front of them. The two are allowed to differ on purpose.
    */
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import '$lib/terminal/tokens.css';
   import '$lib/terminal/screen.css';
   import '$lib/terminal/panel.css';
@@ -134,6 +134,43 @@
   const lift = () => {
     if (detent === 'peek') detent = 'half';
   };
+
+  /**
+   * Com is a navigation stack whose root is the search [com.md §1, §2]. Missions are its first
+   * screens: the list, narrowed to a province when one is tapped, and one mission.
+   */
+  type Screen = { kind: 'missions'; province: string | null } | { kind: 'mission'; address: string };
+  let stack = $state<Screen[]>([]);
+  const top = $derived(stack.at(-1) ?? null);
+  /** Loaded the first time a screen opens: code first paint never needs [com.md §6]. */
+  let screens = $state<typeof import('$lib/components/missions') | null>(null);
+  let screensUnloaded = $state(false);
+  let screenEl = $state<HTMLElement>();
+  let comEl = $state<HTMLElement>();
+  /** Escape steps back, when focus is in Com: anywhere else it belongs to whatever has it. */
+  function onKey(e: KeyboardEvent) {
+    if (e.key === 'Escape' && stack.length > 0 && comEl?.contains(document.activeElement)) back();
+  }
+
+  /** Open a screen. A mission opens with the map still in view: half, never full [com.md §7]. */
+  async function open(s: Screen, fresh = false) {
+    stack = fresh ? [s] : [...stack, s];
+    if (detent === 'peek') detent = 'half';
+    if (!screens) {
+      screensUnloaded = false;
+      try {
+        screens = await import('$lib/components/missions');
+      } catch {
+        screensUnloaded = true;
+      }
+    }
+    // Where a keyboard or screen reader goes next: the screen that just opened.
+    await tick();
+    screenEl?.focus();
+  }
+  function back() {
+    stack = stack.slice(0, -1);
+  }
 
   /**
    * Fetch one region's records so the search can see them.
@@ -403,6 +440,8 @@
   />
 </svelte:head>
 
+<svelte:window onkeydown={onKey} />
+
 <div class="terminal landing">
   <!--
     Distress, first in the document and outside both panes, so that no sheet, map or detail can
@@ -428,6 +467,7 @@
           frame={regionPoints}
           highlight={lit}
           label="Map of the provinces with an open mission{coverage ? ', and every directory region' : ''}"
+          onpick={(province) => open({ kind: 'missions', province }, true)}
         />
       {:else}
         <div class="nav-loading" data-grid={mapUnloaded ? 'failed' : 'loading'}>
@@ -453,7 +493,14 @@
         {:else if active.length === 0}
           <strong data-missions="none" data-feed={feed.status}>No open missions · {missionAge}</strong>
         {:else}
-          <span data-missions="open" data-feed={feed.status}><b class="lit" aria-hidden="true"></b>Open missions · {missionAge}</span>
+          <!-- The way into the missions that needs no map: a keyboard and a screen reader get here too. -->
+          <button
+            type="button"
+            class="missions-open"
+            data-missions="open"
+            data-feed={feed.status}
+            onclick={() => open({ kind: 'missions', province: null }, true)}
+          ><b class="lit" aria-hidden="true"></b>Open missions · {missionAge}</button>
         {/if}
         <button type="button" class="layer" aria-pressed={coverage} onclick={() => (coverage = !coverage)}>
           Coverage
@@ -461,12 +508,16 @@
       </div>
     </section>
 
-    <section class="com" data-com data-detent={detent} aria-label="Com">
+    <section class="com" data-com data-detent={detent} aria-label="Com" bind:this={comEl}>
       <!--
         The sheet's handle: drag it, or tap it, to change how much of Com shows. A real button,
         so a keyboard can reach it — a click with no pointer behind it (detail 0) is a key.
       -->
       <div class="com-head">
+        {#if top}
+          <!-- Escape does the same, anywhere in Com. -->
+          <button type="button" class="back" data-back onclick={back}>Back</button>
+        {/if}
       <button
         type="button"
         class="grab"
@@ -502,6 +553,38 @@
         >{sig === 'low' ? 'Document' : 'Low signature'}</button>
       </div>
       <div class="com-body">
+        {#if top}
+          <!-- The screen on top of Com's stack. Focus lands here when it opens. -->
+          <div class="com-screen" bind:this={screenEl} tabindex="-1">
+            {#if screens}
+              {#if top.kind === 'missions'}
+                <screens.MissionList
+                  missions={active}
+                  province={top.province}
+                  status={missionsUnloaded ? 'unloaded' : feed.status}
+                  {now}
+                  onopen={(address) => open({ kind: 'mission', address })}
+                />
+              {:else if top.kind === 'mission'}
+                {@const address = top.address}
+                {@const m = active.find((x) => x.address === address)}
+                {#if m}
+                  <screens.MissionPage mission={m} {now} />
+                {:else}
+                  <!-- It ended, or was closed, while open here: said, not left blank. -->
+                  <Panel label="Mission" post="Gone">
+                    <Slot k="Open"><Readout value="No longer open" tone="cold" sub="it ended or was closed" /></Slot>
+                  </Panel>
+                {/if}
+              {/if}
+            {:else if screensUnloaded}
+              <!-- The same words the map uses for the same failure [com.md §6]. -->
+              <strong class="screen-unloaded" data-screen-failed>Not loaded — it needs one visit with a connection</strong>
+            {:else}
+              <Readout value="Loading" tone="cold" />
+            {/if}
+          </div>
+        {:else}
   <div class="nc-bridge">
     <Panel label="Find" post={nearRegion ? `Near ${nearRegion.name}` : null}>
       <label for="lookup" class="nc-lookup-label">Where are you, or what do you need</label>
@@ -701,7 +784,7 @@
   <a class="nc-act" data-act data-tone="warn" href="/terminal/" data-sveltekit-reload>
     <span class="nc-act-label">Open the Field Terminal</span>
   </a>
-
+        {/if}
 
       </div>
     </section>
@@ -908,6 +991,9 @@
       justify-content: flex-end;
       padding-block-start: 0.75rem;
     }
+    .com-head .back {
+      margin-inline-end: auto;
+    }
   }
 
   /*
@@ -928,6 +1014,49 @@
   }
   .com-head .signature {
     position: static;
+  }
+  .com-head .back {
+    flex: none;
+    min-height: 2.75rem;
+    padding: 0 0.9rem;
+    margin-inline-start: 0.75rem;
+    border: 1px solid var(--t-line);
+    background: transparent;
+    color: var(--t-ink);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .com-screen {
+    display: grid;
+    gap: 1rem;
+    outline: none;
+  }
+  .com-screen :global(.nc-panel) {
+    margin: 0;
+  }
+  .screen-unloaded {
+    color: var(--t-ink);
+    font-size: 0.9rem;
+  }
+  /* The missions line in the map's key, as the button it is. */
+  .missions-open {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 2.75rem;
+    padding: 0 0.6rem;
+    margin-inline-start: -0.6rem;
+    border: 1px solid transparent;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+  }
+  .missions-open:hover {
+    border-color: var(--t-line);
   }
 
   .nc-bridge {

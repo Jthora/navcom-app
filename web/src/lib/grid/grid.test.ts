@@ -11,7 +11,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
-import { MAX_LAT, decode, mercator, unmercator, type Ring, type Topology } from './topology';
+import { MAX_LAT, decode, inside, mercator, unmercator, type Topology } from './topology';
 
 const ROOT = fileURLToPath(new URL('../../../../', import.meta.url));
 const FILE = fileURLToPath(new URL('../../../static/grid/world.json', import.meta.url));
@@ -19,17 +19,6 @@ const raw = readFileSync(FILE);
 const topology = JSON.parse(raw.toString('utf8')) as Topology;
 const layers = decode(topology);
 
-/** Even-odd across every ring in a layer: inside one province, or inside none. */
-function inside(rings: Ring[], [x, y]: [number, number]): boolean {
-  let c = false;
-  for (const r of rings) {
-    for (let i = 0, j = r.length - 2; i < r.length; j = i, i += 2) {
-      const xi = r[i]!, yi = r[i + 1]!, xj = r[j]!, yj = r[j + 1]!;
-      if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) c = !c;
-    }
-  }
-  return c;
-}
 
 describe('the projection', () => {
   it('puts the equator and the meridian at the centre', () => {
