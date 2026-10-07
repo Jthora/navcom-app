@@ -85,12 +85,12 @@ link carries `rel="noreferrer"`; and no handoff is ever offered for a confidenti
 looking at the map — tells nobody anything about where you are looking.** That is the property
 worth protecting, and it is why the heavy layer is opt-in rather than lazy.
 
-**The one connection it does make is to the relay that holds the missions** (2026-10-06). Every
-device reads the missions itself from The Record and verifies each one, because each device
-drawing its own picture is the architecture [CLAUDE.md]. An earlier version had the site's build
+**The connections it does make are to the relays that hold the missions** (2026-10-06). Every
+device reads the missions itself, from The Record and its mirror at once, and verifies each one,
+because each device drawing its own picture is the architecture [CLAUDE.md]. An earlier version had the site's build
 take a snapshot instead, to keep even that connection off the page; it made one build draw the
 picture for everyone and tied freshness to deploys, which is the centralisation this design
-exists to avoid. The cost of the direct route is small and named: The Record learns that a device
+exists to avoid. The cost of the direct route is small and named: each relay learns that a device
 opened NavCom's missions — one subscription to all of them, never which part of the map anybody
 looked at, which is exactly what a tile server would learn and why tiles stay opt-in. **It also logged
 the address each connection came from**, which the grid's reader rule now says a relay must not keep
@@ -156,7 +156,7 @@ Three layers. Only the first is on at first paint.
 
 | Layer | Source | Default |
 |---|---|---|
-| **Grid** | Ours | **On.** No third-party request; one subscription to The Record for missions |
+| **Grid** | Ours | **On.** No third-party request; one subscription each to The Record and its mirror, for missions |
 | **Roads** | [OpenFreeMap](https://openfreemap.org) public instance — OSM vector tiles, no key, no registration, no cookies, dark styles available | Off. Loads when chosen, and says what choosing costs |
 | **Satellite** | — | **Declined.** No free keyless source whose terms permit it |
 
@@ -219,7 +219,7 @@ Budgets, all of them targets to measure rather than claims:
 | | Target |
 |---|---|
 | Grid geometry, world outlines + provinces where regions are | ≤ 250 KB gzipped — **measured 55.8 KB** |
-| Requests at first paint to anyone but navcom.app | **None** — the mission subscription opens after first paint, to The Record only |
+| Requests at first paint to anyone but navcom.app | **None** — the mission subscriptions open after first paint, to The Record and its mirror only |
 | Repeat visit, no new deploy | Zero network for the grid — service worker now covers the whole origin |
 | Device floor | Interactive on a prepaid Android 8, 400 MB free |
 

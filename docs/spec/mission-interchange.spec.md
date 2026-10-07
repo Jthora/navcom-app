@@ -51,7 +51,7 @@ from whether a builder exists, and this document follows the same discipline.
 
 | | Status |
 |---|---|
-| Reading kind `30079` packages from The Record | LIVE — every device subscribes to The Record directly, verifies each package itself, and keeps the subscription open, so a new or closed mission shows without a reload |
+| Reading kind `30079` packages | LIVE — every device subscribes to The Record and its mirror at `wss://blackpi.cosmiccodex.app` at once, verifies each package itself, shows the newest signed copy of each, and keeps both subscriptions open, so a new or closed mission shows without a reload |
 | The grid (the map missions appear on) | LIVE as the landing page at [`navcom.app`](https://navcom.app/), lighting each mission's province |
 | Kind `1911` observation (raw intel) | BUILT — builder and contract exist; published at `/.well-known/navcom-intel.json` |
 | Kind `1912` report | Reserved, **not emitted** — the contract says `emitted: false` |
@@ -500,7 +500,7 @@ then Mecha Jono records each claim against its package, and no claim on a campai
 |---|---|
 | Does rule 6 reach a public figure named by a cited source? | **As context only** — §2.1, rule 6. A public figure in their public role, with the link, as background or source; never the object of an action |
 | Will NavCom show an agent's claim? | **Yes, marked as an agent's and counted as a claim** — §4.7 |
-| A Raspberry Pi is becoming a second RelayNode — what would NavCom need? | **What every node owes its readers, declared rather than demanded** — §11. NavCom reads missions from The Record's mirrors as well as The Record, so the Pi's mirror is used as soon as NavCom's reader takes more than one relay. Operator traffic moves to relay lists across grid nodes and public relays, and the Pi is one of the places a watch can list |
+| A Raspberry Pi is becoming a second RelayNode — what would NavCom need? | **What every node owes its readers, declared rather than demanded** — §11. NavCom reads missions from The Record's mirrors as well as The Record — LIVE, so the Pi's mirror is used the moment it answers. Operator traffic moves to relay lists across grid nodes and public relays, and the Pi is one of the places a watch can list |
 
 ### Your open questions from rev 10, answered
 

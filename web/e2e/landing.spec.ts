@@ -80,10 +80,13 @@ test.describe('the landing map draws, and tells nobody', () => {
     expect((await picture(page)).colours).toBeGreaterThan(3);
   });
 
-  test('it talks to nobody but navcom.app and the relay that holds the missions', async ({ page }) => {
+  test('it talks to nobody but navcom.app and the relays that hold the missions', async ({ page }) => {
     // The property map.md is built around, as refined when missions moved onto the device: no
-    // tile server, no font host, no analytics — and one socket, to The Record, because every
-    // device reads the missions itself rather than being handed a picture.
+    // tile server, no font host, no analytics — and sockets only to The Record and its mirror,
+    // because every device reads the missions itself rather than being handed a picture. Listed
+    // here by name on purpose: a new host on this page should fail this test until somebody
+    // decides it belongs [docs/design/grid.md].
+    const RELAYS = ['wss://record.cosmiccodex.app', 'wss://blackpi.cosmiccodex.app'];
     const requested: string[] = [];
     page.on('request', (r) => requested.push(r.url()));
     await ready(page);
@@ -94,8 +97,9 @@ test.describe('the landing map draws, and tells nobody', () => {
     const home = new URL(page.url()).origin;
     expect(requested.length).toBeGreaterThan(1);
     expect(requested.filter((u) => new URL(u).origin !== home)).toEqual([]);
-    expect(await sockets()).toEqual(expect.arrayContaining(['wss://record.cosmiccodex.app']));
-    expect((await sockets()).filter((u) => u !== 'wss://record.cosmiccodex.app')).toEqual([]);
+    await expect.poll(async () => new Set(await sockets()).size, { timeout: 10_000 }).toBe(RELAYS.length);
+    expect(await sockets()).toEqual(expect.arrayContaining(RELAYS));
+    expect((await sockets()).filter((u) => !RELAYS.includes(u))).toEqual([]);
   });
 
   test('it moves when asked, by button and by key', async ({ page }) => {
@@ -246,6 +250,44 @@ test.describe('the landing map draws, and tells nobody', () => {
       await expect.poll(() => brightness(page), { timeout: 5_000 }).toBeGreaterThan(dark);
     });
 
+    test('with The Record down, its mirror alone lights the province', async ({ page }) => {
+      // Both relays at once, and either answering alone draws the map [docs/design/grid.md].
+      await page.clock.setFixedTime(DURING);
+      await blankDevice(page);
+      await load(page);
+      const dark = await brightness(page);
+
+      // Installed last, so it wins: The Record refuses the connection, the mirror holds the mission.
+      await page.addInitScript((heat) => {
+        class Split extends EventTarget {
+          readyState = 0;
+          constructor(readonly url: string) {
+            super();
+            setTimeout(() => {
+              if (url.includes('record.cosmiccodex.app')) return void this.dispatchEvent(new Event('error'));
+              this.readyState = 1;
+              this.dispatchEvent(new Event('open'));
+            }, 0);
+          }
+          send(data: string): void {
+            const [type, sub] = JSON.parse(data) as [string, string];
+            if (type !== 'REQ') return;
+            const say = (f: unknown[]) =>
+              this.dispatchEvent(Object.assign(new Event('message'), { data: JSON.stringify(f) }));
+            setTimeout(() => {
+              say(['EVENT', sub, heat]);
+              say(['EOSE', sub]);
+            }, 0);
+          }
+          close(): void {}
+        }
+        (globalThis as unknown as { WebSocket: unknown }).WebSocket = Split;
+      }, HEAT);
+      await load(page);
+      await expect(page.locator('[data-missions="open"]')).toContainText('Open missions · live');
+      await expect.poll(() => brightness(page), { timeout: 5_000 }).toBeGreaterThan(dark);
+    });
+
     test('a mission that has ended lights nothing, by this device’s clock', async ({ page }) => {
       await page.clock.setFixedTime(new Date((HEAT_ENDS + 60) * 1000));
       await seedDevice(page, { relayEvents: [HEAT], __noStorage: true } as Parameters<typeof seedDevice>[1]);
@@ -253,7 +295,7 @@ test.describe('the landing map draws, and tells nobody', () => {
       await expect(page.locator('[data-missions="none"]')).toBeVisible();
     });
 
-    test('with no signal and nothing remembered, it says The Record cannot be reached', async ({ page }) => {
+    test('with no signal and nothing remembered, it says no relay can be reached', async ({ page }) => {
       await blankDevice(page);
       await noSignal(page);
       await load(page);

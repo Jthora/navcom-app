@@ -95,7 +95,8 @@ which was tested on the Jetson; NavCom's companion page adds what was decided he
   token with tunnel or DNS permissions cannot be narrowed below the account and the zone, so a
   separate key would also reach The Record's own tunnel and name
 
-NavCom reads missions from the mirror once its reader takes more than one relay, and the Pi becomes
+NavCom reads missions from the mirror and The Record at once (built 2026-10-06; the newest signed
+copy of each package wins), and the Pi becomes
 one of the places a watch can list once relay lists ship.
 
 ---

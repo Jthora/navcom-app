@@ -449,7 +449,7 @@
         {:else if feed.status === 'connecting'}
           <strong data-missions="connecting">Reaching The Record…</strong>
         {:else if feed.status === 'unavailable'}
-          <strong data-missions="unavailable">Missions unavailable — The Record cannot be reached</strong>
+          <strong data-missions="unavailable">Missions unavailable — neither The Record nor its mirror can be reached</strong>
         {:else if active.length === 0}
           <strong data-missions="none" data-feed={feed.status}>No open missions · {missionAge}</strong>
         {:else}
