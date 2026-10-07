@@ -8,7 +8,8 @@
   import { onMount } from 'svelte';
   import { Slot, Readout, Why } from '$lib/components/panel';
   import { ageInDays, secretToHex } from '@navcom/core';
-  import { RestoreError, lastMade, makeBackup, restore, restoreCode } from '$lib/terminal/backup';
+  import { RestoreError, lastMade, makeBackup, restore, restoreCode, type NamedWatch } from '$lib/terminal/backup';
+  import { ConfigError, saveConfig } from '$lib/terminal/config';
   import { loadIdentity } from '$lib/terminal/identity';
 
   let identity = $state<ReturnType<typeof loadIdentity>>(null);
@@ -23,6 +24,10 @@
   let restoreBlob = $state('');
   let error = $state<string | null>(null);
   let done = $state<string | null>(null);
+  /** A watch the backup named, waiting for the operator to say yes: nothing routes there until then. */
+  let named = $state<NamedWatch | null>(null);
+  let watchError = $state<string | null>(null);
+  let watchAdded = $state(false);
 
   onMount(() => {
     made = lastMade(); identity = loadIdentity(); });
@@ -57,12 +62,26 @@
         restoreCode(text);
         done = 'Your key is back — not your callsign or anything you held. That needs a full backup.';
       } else {
-        const { keys } = restore(restorePass, text);
+        const { keys, watch } = restore(restorePass, text);
+        named = watch;
+        watchAdded = false;
         done = `Restored ${keys} thing${keys === 1 ? '' : 's'}. Reopen the terminal.`;
       }
       identity = loadIdentity();
     } catch (e) {
       error = e instanceof RestoreError || e instanceof Error ? e.message : 'Could not restore that.';
+    }
+  }
+
+  /** Adds the named watch through the same checks the setup screen uses, or says what is wrong. */
+  function addWatch() {
+    if (!named) return;
+    watchError = null;
+    try {
+      saveConfig(named.pubkey, named.relays.join('\n'), named.holders.join('\n'));
+      watchAdded = true;
+    } catch (e) {
+      watchError = e instanceof ConfigError ? e.message : 'That watch could not be added.';
     }
   }
 </script>
@@ -200,6 +219,21 @@
   <p class="cost">Leave the passphrase blank if you are pasting a recovery code.</p>
   {#if error}<p class="error">{error}</p>{/if}
   {#if done}<p class="ok" data-restored>{done}</p>{/if}
+  {#if named && !watchAdded}
+    <!-- Where a Distress will go, and who can read it, said before anything routes there. -->
+    <Slot k="Watch">
+      <Readout value="Named in this backup" tone="warn" sub={`${named.relays.length} relay${named.relays.length === 1 ? '' : 's'} · ${named.holders.length || 'no'} holder${named.holders.length === 1 ? '' : 's'}`} />
+    </Slot>
+    <p data-named-watch>
+      Not added yet. Add it only if this is your watch: every Distress you send goes to it, and
+      whoever holds it can read everything you send.
+    </p>
+    <p class="blocks">{#each named.relays as r, i (i)}<span>{r}</span>{/each}</p>
+    {#if watchError}<p class="error" role="alert">{watchError}</p>{/if}
+    <button onclick={addWatch} data-add-watch>Add this watch</button>
+  {:else if named && watchAdded}
+    <p class="ok" data-watch-added>Watch added.</p>
+  {/if}
   <button onclick={take} disabled={!restoreBlob.trim()}>Restore</button>
 </section>
 

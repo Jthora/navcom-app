@@ -12,6 +12,20 @@ import { get, set } from './storage';
 
 /** Keys that are this device's business rather than this operator's. */
 const DEVICE_ONLY = ['relays_own'];
+/**
+ * A watch named by a backup: where every Distress goes, and who can read it. Shown, and added
+ * only when the operator says so [audit: relay paths, F02] — `relays_own` was refused on restore
+ * because a crafted kit could choose this phone's relays, while these, which outrank it and
+ * decide who reads a Distress, were written straight in.
+ */
+const WATCH_FIELDS = ['watchtower', 'relays', 'watch_holders'];
+
+/** What a backup says about a watch, before anything is done with it. */
+export interface NamedWatch {
+  pubkey: string;
+  relays: string[];
+  holders: string[];
+}
 
 /**
  * The most keys a real backup carries, with room to spare.
@@ -101,7 +115,7 @@ export class RestoreError extends Error {}
  * would destroy standing silently, and the operator doing it is usually somebody who
  * mistyped which phone they were holding. Burn first if that is genuinely the intent.
  */
-export function restore(passphrase: string, blob: string): { keys: number } {
+export function restore(passphrase: string, blob: string): { keys: number; watch: NamedWatch | null } {
   if (get<string>('accruing', 'secret')) {
     throw new RestoreError(
       'This phone already has an identity. Restoring would replace it and lose whatever it holds — burn it first if that is what you mean.'
@@ -144,7 +158,13 @@ export function restore(passphrase: string, blob: string): { keys: number } {
    * crafted backup could set it, which routes everything this operator sends through relays
    * somebody else chose. Excluded from a backup we write, accepted from one we read.
    */
-  const restored = entries.filter(([k]) => !DEVICE_ONLY.includes(k));
+  const restored = entries.filter(([k]) => !DEVICE_ONLY.includes(k) && !WATCH_FIELDS.includes(k));
+  const named = Object.fromEntries(entries.filter(([k]) => WATCH_FIELDS.includes(k))) as Record<string, unknown>;
+  const strings = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
+  const watch: NamedWatch | null =
+    typeof named['watchtower'] === 'string'
+      ? { pubkey: named['watchtower'], relays: strings(named['relays']), holders: strings(named['watch_holders']) }
+      : null;
   for (const [key, value] of restored) set('accruing', key, value);
 
   /*
@@ -155,7 +175,7 @@ export function restore(passphrase: string, blob: string): { keys: number } {
    * records when it was made, and that is the more useful truth: **how old the safety net
    * they are now standing on actually is.**
    */
-  if (restored.length === 0) {
+  if (restored.length === 0 && !watch) {
     // "Restored 0 things" read as a success. It is not one, and an operator told it worked
     // stops looking for the backup that would have.
     throw new RestoreError('That backup holds nothing. Whatever it was made from, it did not have anything on it.');
@@ -164,7 +184,7 @@ export function restore(passphrase: string, blob: string): { keys: number } {
   if (typeof kit.at === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(kit.at)) {
     set('accruing', MADE, kit.at);
   }
-  return { keys: restored.length };
+  return { keys: restored.length, watch };
 }
 
 /** Restores from a bare recovery code — who you are, without what you held. */

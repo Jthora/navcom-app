@@ -10,6 +10,8 @@ import { openBackup, sealBackup } from '@navcom/core';
 import { RestoreError, lastMade, makeBackup, restore, restoreCode } from './backup';
 import { get, set } from './storage';
 import { loadIdentity } from './identity';
+import { loadConfig } from './config';
+import { relays } from './relays';
 
 const PASS = 'correct horse battery staple';
 
@@ -217,5 +219,21 @@ describe('a bare recovery code (found in robustness audit)', () => {
 
   it('refuses the wrong length', () => {
     expect(() => restoreCode('ab')).toThrow(RestoreError);
+  });
+});
+
+describe('a watch named in a backup [audit: relay paths, F02]', () => {
+  const W = 'a'.repeat(64);
+  const H = 'b'.repeat(64);
+
+  it('chooses nothing until the operator adds it: no relays, no holders, no Distress routed', () => {
+    const { watch } = restore(PASS, handed({ callsign: 'Wren', watchtower: W, relays: ['wss://attacker.example'], watch_holders: [H] }));
+    expect(loadConfig(), 'a kit installed a watch nobody chose').toBeNull();
+    expect(relays()).not.toContain('wss://attacker.example');
+    expect(watch).toEqual({ pubkey: W, relays: ['wss://attacker.example'], holders: [H] });
+  });
+
+  it('is still a backup worth restoring when it names only a watch', () => {
+    expect(restore(PASS, handed({ watchtower: W, relays: ['wss://watch.example'] })).watch?.pubkey).toBe(W);
   });
 });
