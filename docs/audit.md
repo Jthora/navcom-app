@@ -680,6 +680,12 @@ the ciphertext. And the Lightning address validator refuses empty, malformed, `l
 bare IP, an oversized string, a script tag and a newline injection while accepting the ordinary
 forms.
 
+**Corrected 2026-10-07: excluding `relays_own` did not stop a backup choosing relays.** The watch
+itself — `watchtower`, `relays`, `watch_holders` — came in with every other key, and its relays
+outrank the operator's own and carry every `Distress`. A restore now names the watch a kit carries
+and writes none of it; the operator adds it, or doesn't, through the same check the setup screen
+uses (*Relay paths*, below, F02).
+
 ## 7.X — Milestone 7, edge cases
 
 **A credential dated 2099 read as the freshest possible thing, and never aged.** The screen
@@ -1186,6 +1192,97 @@ One more, from outside the grid: the first accessibility check run on the landin
 on* found the `Distress` label under WCAG AA in both signatures — 3.68:1 in low signature, the
 mode every operator gets by default. Every earlier check had run signed out, where there is no
 `Distress` bar. Fixed with the alarm palette, and tested in both modes.
+
+## Relay paths — a cross-cutting pass, before relay lists
+
+Run 2026-10-06 and 07, before G3, because a relay list multiplies every path that touches a
+relay: one defect per path becomes one per relay per path. Every relay path in the web terminal,
+core and the box was mapped, twenty-seven candidates came out of it, and each was verified
+adversarially twice. **Twenty-one were real, two were refuted, four folded into others.** The fixes
+were then reviewed the same way before merge, and that review found the most serious defect of
+the pass — in a fix.
+
+**The sharpest: a `Distress` could leave the phone and go unheard, with nothing said.**
+
+- **The phone's listener between attempts died with its socket** [F03]. A network handoff, or the
+  app set aside to dial somebody, closed it for the rest of the `Distress`; an acknowledgement in
+  a gap was lost, and the watch paged its whole roster again on the next attempt
+- **One event stamped in the future made the box deaf** [F04]. nostr-tools' reconnect asks only for
+  events newer than the newest it has seen, and anybody can publish to a watch's address
+- **The daemon and the pager never subscribed again** to a relay that was down at boot or dropped
+  later, while printing that they were listening [F05, F06]. The executor re-subscribed only when
+  a relay disconnected, so one that closed the subscription and kept the socket was never asked
+  again [F08]. On Node 20 none of them had a WebSocket at all [F07]
+- **One typo in a watch config** made every `Distress` read *never left the phone*, and froze the
+  start screen without its `Distress` control [F01]
+- **A dark watch could read On station** [F11]. Each relay serves its own last watch state, and
+  whichever answered last won — so a stand-down that reached one relay and not the other was lost
+  to arrival order
+
+**Silence read as an answer**, the pattern Milestone 11 named, four more times: Find, a profile and
+the watch state said *nothing there* when nobody had answered [F20]; `navcom-promote` said
+*nothing waiting* with every relay down [F23]; a heartbeat every relay refused was not logged
+[F13]; the card screen said *published* when no relay took it [F18].
+
+**Lists that split people.** A Watched operator's presence, invites, card and corrections went only
+to the watch's relays, so peers on the defaults never met them [F15]; they are added now, never
+substituted. A `ws://` address was accepted where a browser cannot open it [F21].
+
+**A phone holding the watch.** It went on announcing On station after its board stopped listening
+[F09], and a panic wipe or a burn left the announcement running [F10]. It listens for as long as it
+announces now, and a wipe goes quiet: the watch reads Dark within five minutes (decided 2026-10-07).
+
+**The rest.** The invite inbox named both keys in one filter [F16], and the docs promised more
+than a shared connection hides — corrected, in `what-leaves.md`, to say what it does not. A backup
+could install a watch [F02], which is the correction to 9.R above. The daemon could act on a
+`Distress` a relay served again [F12]. The test relay kept ephemeral events all run, so a test could
+pass on an answer published before anybody was listening [F25] — and one real-relay test had been
+failing since mid-September because a correction it published had gone stale.
+
+**The review of the fixes found the worst one.** Holding a human's acknowledgement (D2, decided
+2026-10-07) answers a repeat `Distress` with that acknowledgement instead of paging again. The
+phone, though, recorded an attempt only once its publish had settled on every relay — up to seven
+seconds with one slow relay — and the watch answers the moment an attempt lands. **On a phone
+with one slow relay the answer was discarded on every attempt for the whole half hour, and nobody
+was paged.** Fixed at both ends: the phone records an attempt before sending it, and the watch names
+both ids and sends twice, for phones still running the old client. The first draft of the spec
+also said the person who acknowledged would hear about a new `Distress` inside the window. Nobody
+does, the spec says so, and whether they should is a decision for a person.
+
+**Then the whole branch was reviewed, by seven lenses and two skeptics a finding, and it found
+forty more.** Most were the branch's own new code; the worst were on `main` all along, on paths no
+earlier pass had followed to the end:
+
+- **On a standard box, nobody's ladder report reached the phone.** The daemon acknowledges every
+  `Distress` as an agent at once, and each attempt stopped listening at the first answer — so the
+  ladder's *nobody has been woken* a moment later was dropped, and the operator read *an agent
+  answered* for five minutes. The phone now learns every answer from one listener per relay, open
+  for the whole `Distress`, and an attempt's window ends only on a person or on time
+- **A watch was announced where nothing could hear it.** The box's daemon, and a phone holding the
+  watch, renewed On station on every relay whether or not it was listening there. Both now renew
+  only where they are heard, so a relay that cannot carry a `Distress` to them reads Dark
+- **A holder who changed relays on station** was announced on the new ones and listened on the old
+- **"Wren has it" for a `Distress` nobody had heard of**: the held acknowledgement, reaching a
+  `Distress` sent again after the app was reopened. A person's answer to an earlier one is now said
+  as exactly that, and the phone keeps sending until somebody answers this one
+- **A burn no longer silenced the phone**, a reconnect loop retried every second and left sockets
+  open, a backup's named watch could be lost on the way out of its screen, and a watch whose relays
+  this page refuses read as *no watch* on every screen that sends
+
+Each was fixed with a test that fails on the code before it, and each fix was reviewed again
+before it was kept. Both age windows now have a floor of five minutes, the age at which a phone
+reads a watch as stale: below it, a phone could read On station while its `Distress` was ignored.
+
+**Deferred, with reasons.** The box's daemon renews the watch only where it hears, but cannot yet
+tell where the escalation executor, a separate process, hears. A socket left half-open by a router
+reboot is noticed only by nostr-tools' ping, and nothing tests that path. A relay dropped from a
+held watch keeps its last On station for up to five minutes. A box's processes and the phone read
+nostr-tools' private end-of-stored-events timer to clear it; if it is renamed, the clear does
+nothing and the rule still holds.
+
+**Honest negatives.** Measured rather than assumed: no screen holds more than four subscriptions
+on one relay connection, far under any relay's limit; a hung relay counts as listening nowhere,
+on the box or the phone; every new test was run against the code it replaces, and fails there.
 
 ## Milestone 2, after three passes
 
