@@ -18,6 +18,7 @@
   import { CHALLENGE_WINDOW_SECONDS, settlementOf, type Mission } from '@navcom/core';
   import { Panel, Readout, Slot } from '$lib/components/panel';
   import { contactPubkey } from '$lib/terminal/card';
+  import { get } from '$lib/terminal/storage';
   import { signedOn, tookPart } from '$lib/missions/claims';
   import { labelReport, reportsOn, type MissionReports, type OnMission } from '$lib/missions/reports';
   import { placeName, standingOf } from './format';
@@ -30,7 +31,8 @@
     missions.find((x) => x.address === address) ?? tookPart(t).find((x) => x.mission.address === address)?.mission ?? null
   );
   const there = $derived(tookPart(t).some((x) => x.mission.address === address));
-  const me = contactPubkey();
+  /** Null until this device first signs something with its card's key; the first label makes one. */
+  let me = $state(contactPubkey());
   const operator = signedOn();
 
   let read = $state<MissionReports | null>(null);
@@ -56,7 +58,14 @@
     const done = await labelReport(kind, r, m, Math.floor(Date.now() / 1000));
     sending = false;
     confirming = null;
-    if (done.ok) read = { ...read, labels: [...read.labels, done.label] };
+    if (done.ok) {
+      // The first thing this device signed may have made its key, so who "me" is is read again.
+      me = done.label.pubkey;
+      const names = new Map(read.names);
+      const callsign = get<string>('accruing', 'callsign');
+      if (callsign) names.set(me, callsign);
+      read = { ...read, labels: [...read.labels, done.label], names };
+    }
     else error = { id: r.id, text: done.because === 'not-sent' ? done.detail : 'Not sent.' };
   }
 </script>

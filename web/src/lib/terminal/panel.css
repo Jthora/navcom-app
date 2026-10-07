@@ -241,7 +241,7 @@
   overflow: hidden;
 }
 .terminal .nc-act[data-tone='alarm'] {
-  background: rgba(210, 80, 58, 0.09);
+  background: rgba(214, 96, 76, 0.09);
   background: color-mix(in srgb, var(--t-alarm) 9%, transparent);
   color: var(--t-alarm);
 }

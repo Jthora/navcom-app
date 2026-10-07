@@ -56,8 +56,12 @@
    * Separate from `--t-dark` on purpose. That one is a *state* colour meaning "no watch", and
    * it was doing double duty as the warning colour through `--stop`, which is how a sealed
    * channel stops being sealed.
+   *
+   * Lifted from #D2503A on 2026-10-06: on its own 9% tint — the `Distress` button — it measured
+   * 4.26:1, under WCAG AA for the 12.5px label, found by axe the first time a test opened the
+   * landing page signed on. Now 4.79:1 there and 4.73:1 on `--t-raised`.
    */
-  --t-alarm: #D2503A;
+  --t-alarm: #D6604C;
 
   color-scheme: dark;
   background: var(--t-ground);
@@ -185,8 +189,11 @@ body {
   --t-auto: #8A5F1E;
   --t-dark: #7A5518;
 
-  /* The one exception, and the reason it is the exception. */
-  --t-alarm: #C0392B;
+  /* The one exception, and the reason it is the exception. Lifted from #C0392B on 2026-10-06:
+     3.68:1 on its own tint, the `Distress` label every operator sees by default in this mode,
+     failed WCAG AA. Now 4.69:1 there and 4.96:1 on black — the brightest thing on a low screen,
+     which is right for the one control that must be found in the dark. */
+  --t-alarm: #DF4232;
 }
 
 /*

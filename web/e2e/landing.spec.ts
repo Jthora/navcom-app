@@ -730,6 +730,22 @@ test.describe('the landing page: missions you can open', () => {
     await expect(item.locator('button')).toHaveCount(0);
   });
 
+  test('an operator’s Distress bar is legible, and a landmark, in both signatures', async ({ page }) => {
+    /*
+     * Every axe check on this page ran signed out, where there is no Distress bar — so its label
+     * shipped at 3.68:1 in low signature, the mode every operator gets by default, and 4.26:1 in
+     * the other. Found the first time a test opened the page signed on.
+     */
+    await withHeat(page, { __noStorage: false, callsign: 'kestrel' });
+    await expect(page.locator('#distress-early')).toBeVisible();
+    for (const mode of ['low', 'document']) {
+      await expect(page.locator('html')).toHaveAttribute('data-signature', mode);
+      const results = await new AxeBuilder({ page }).analyze();
+      expect(results.violations.map((v) => v.id), mode).toEqual([]);
+      await page.locator('[data-signature-toggle]').click();
+    }
+  });
+
   test('signed out, Com’s root is the search, with no missions of your own above it', async ({ page }) => {
     await withHeat(page);
     await expect(page.locator('[data-yours]')).toHaveCount(0);

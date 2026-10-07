@@ -480,11 +480,12 @@
     ever cover it [com.md §4]. Prerendered hidden and shown only on a device with an operator:
     by the bootstrap before the bundle arrives, and by onMount after.
   -->
-  <div id="distress-early" class="distress-layer" hidden>
+  <!-- A landmark of its own, so a screen reader's landmark list finds it like the map and Com. -->
+  <section id="distress-early" class="distress-layer" aria-label="Distress" hidden>
     <a class="nc-act" data-act data-tone="alarm" href="/terminal/distress/" data-sveltekit-reload>
       <span class="nc-act-label">Distress</span>
     </a>
-  </div>
+  </section>
 
   <!--
     Nav and Com [docs/positioning.md: "On a ship's bridge, Navigation and Communications are
