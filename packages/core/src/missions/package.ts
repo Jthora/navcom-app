@@ -131,7 +131,27 @@ export interface Mission {
 
 export type MissionReading =
   | { ok: true; mission: Mission }
-  | { ok: false; kind: 'not-a-package' | 'desk' | 'refused'; because: string };
+  | {
+      ok: false;
+      kind: 'not-a-package' | 'desk' | 'refused';
+      because: string;
+      /**
+       * Present when the event is genuinely a known publisher's, signature checked: such a version
+       * still supersedes an older one of the same package, so a newer version NavCom cannot read
+       * hides the old one rather than leaving it on the map. A forged one carries nothing, so it
+       * can hide nothing.
+       */
+      from?: { address: string; at: number; id: string };
+    };
+
+/**
+ * How long one of the poster's `effect` lines may be, and so how long a counted line in a report
+ * may be [events/report.ts]. Here, where packages are read, so the reader refuses what a report
+ * could never answer instead of letting an operator do the work first and fail at the end.
+ */
+export const EFFECT_LINE_MAX = 200;
+/** What an objective id may be, for the same reason: a report names objectives by these. */
+export const OBJECTIVE_ID = /^\S{1,200}$/;
 
 const tag = (e: Event, name: string) => e.tags.find((t) => t[0] === name)?.[1];
 const tags = (e: Event, name: string) => e.tags.filter((t) => t[0] === name).map((t) => t[1] ?? '');
@@ -144,6 +164,9 @@ const DISTRESS_KINDS = /^2091[0-4]$/;
 const JURISDICTION = /^[a-z]{2}(-[a-z0-9]{1,3})?$/;
 /** Words that make a line of `effect` a count of people. Deliberately plain. */
 const PEOPLE = /\b(people|persons?|individuals?|residents|clients|guests)\b/i;
+const D_TAG = /^\S{1,256}$/;
+/** 2100-01-01, in unix seconds: no field mission is planned further out than this. */
+const LAST_END = 4_102_444_800;
 
 function takingPartOf(e: Event): Mission['takingPart'] {
   const t = e.tags.find((x) => x[0] === 'taking_part');
@@ -215,6 +238,14 @@ export function readMissionPackage(
     return { ok: false, kind: 'not-a-package', because: 'Not a kind-30079 event.' };
   }
   /*
+   * Every tag a list of strings, checked before any tag is read [11.R]. One `null` among the tags
+   * threw in the flag scan below — before the signature check, so from anybody — and the live feed
+   * had already stored the event, so the map stopped updating and stayed stopped across reloads.
+   */
+  if (!raw.tags.every((t) => Array.isArray(t) && t.every((x) => typeof x === 'string'))) {
+    return { ok: false, kind: 'not-a-package', because: 'Its tags are not lists of strings.' };
+  }
+  /*
    * Rebuilt from its seven NIP-01 fields before anything is checked, and only this copy is read.
    *
    * nostr-tools marks an event object it has verified with a symbol and trusts the mark from then
@@ -228,51 +259,59 @@ export function readMissionPackage(
     id: raw.id, pubkey: raw.pubkey, created_at: raw.created_at, kind: raw.kind,
     tags: raw.tags, content: raw.content, sig: raw.sig
   };
-  if (!flag(e, 'starcom_mission_package') || !flag(e, 'navcom_handoff')) {
-    return { ok: false, kind: 'not-a-package', because: 'Not handed off to NavCom.' };
-  }
-  if (!verifyEvent(e)) return { ok: false, kind: 'refused', because: 'The signature does not verify.' };
-
+  const signed = verifyEvent(e);
   const known = publishers[e.pubkey];
-  if (!known) return { ok: false, kind: 'refused', because: 'Not a publisher NavCom reads.' };
+  const from = signed && known ? { address: `${MISSION_PACKAGE_KIND}:${e.pubkey}:${tag(e, 'd') ?? ''}`, at: e.created_at, id: e.id } : null;
+  const no = (kind: 'not-a-package' | 'desk' | 'refused', because: string): MissionReading =>
+    from ? { ok: false, kind, because, from } : { ok: false, kind, because };
 
-  if (!flag(e, 'navcom_mission')) return { ok: false, kind: 'desk', because: 'Not field work.' };
+  if (!flag(e, 'starcom_mission_package') || !flag(e, 'navcom_handoff')) return no('not-a-package', 'Not handed off to NavCom.');
+  if (!signed) return no('refused', 'The signature does not verify.');
+  if (!known) return no('refused', 'Not a publisher NavCom reads.');
 
-  if (e.tags.some((t) => t[0] === 'p')) {
-    return { ok: false, kind: 'refused', because: 'Addressed to a person — a mission is an offer, never an assignment.' };
-  }
+  if (!flag(e, 'navcom_mission')) return no('desk', 'Not field work.');
+
+  if (e.tags.some((t) => t[0] === 'p')) return no('refused', 'Addressed to a person — a mission is an offer, never an assignment.');
   if (tags(e, 'k').some((k) => DISTRESS_KINDS.test(k))) {
-    return { ok: false, kind: 'refused', because: 'References Distress, which nothing in the mission system may borrow.' };
+    return no('refused', 'References Distress, which nothing in the mission system may borrow.');
   }
 
   const until = Number(tag(e, 'valid_until'));
-  if (!Number.isInteger(until) || until <= 0) {
-    return { ok: false, kind: 'refused', because: 'A field mission has to say when it ends.' };
-  }
+  if (!Number.isInteger(until) || until <= 0) return no('refused', 'A field mission has to say when it ends.');
+  // An end past 2100 never comes, and draws as no date at all [11.R]: a mission that cannot end is not one.
+  if (until > LAST_END) return no('refused', 'Its end is not a date a mission could have.');
 
   const state = tag(e, 'mission_state') as MissionState | undefined;
-  if (!state || !STATES.includes(state)) {
-    return { ok: false, kind: 'refused', because: 'Its state is not open, claimed or closed.' };
-  }
+  if (!state || !STATES.includes(state)) return no('refused', 'Its state is not open, claimed or closed.');
   const claims = tag(e, 'claims') === 'one' ? 'one' : 'many';
-  if (state === 'claimed' && claims !== 'one') {
-    return { ok: false, kind: 'refused', because: 'A campaign cannot be claimed; only a task can.' };
-  }
+  if (state === 'claimed' && claims !== 'one') return no('refused', 'A campaign cannot be claimed; only a task can.');
+
+  const d = tag(e, 'd') ?? '';
+  if (!D_TAG.test(d)) return no('refused', 'Its d tag is not one a claim or a report could name.');
 
   let manifest: Record<string, unknown>;
   try {
     manifest = JSON.parse(e.content) as Record<string, unknown>;
   } catch {
-    return { ok: false, kind: 'refused', because: 'Its content is not a package manifest.' };
+    return no('refused', 'Its content is not a package manifest.');
   }
-  if (!manifest || typeof manifest !== 'object') {
-    return { ok: false, kind: 'refused', because: 'Its content is not a package manifest.' };
-  }
+  if (!manifest || typeof manifest !== 'object') return no('refused', 'Its content is not a package manifest.');
 
-  const d = tag(e, 'd') ?? '';
+  /*
+   * What a report will be held to, checked now rather than after the work [11.X]. A package an
+   * operator could take part in but never report — no objectives, or ids a report cannot name, or
+   * a line too long to count — was accepted, and the operator found out at the end.
+   */
+  const objectives = objectivesOf(manifest);
+  if (objectives.length === 0) return no('refused', 'A field mission needs at least one objective.');
+  if (!objectives.every((o) => OBJECTIVE_ID.test(o.id))) return no('refused', 'An objective id is not one a report could name.');
+  if (new Set(objectives.map((o) => o.id)).size !== objectives.length) return no('refused', 'Two of its objectives share an id.');
+
   const mechaJono = ((manifest['metadata'] as Record<string, unknown> | undefined)?.['mechaJono'] ?? {}) as Record<string, unknown>;
   const format = (mechaJono['format'] ?? {}) as Record<string, unknown>;
-  const effectAll = strings(format['effect']);
+  // The same line twice is one line, and a blank one says nothing to count.
+  const effectAll = [...new Set(strings(format['effect']).map((l) => l.trim()).filter(Boolean))];
+  if (effectAll.some((l) => l.length > EFFECT_LINE_MAX)) return no('refused', 'An effect line is longer than a count could answer.');
   const effect = effectAll.filter((line) => !PEOPLE.test(line));
   const priority = Number(tag(e, 'priority'));
   const agent = known.agent || tag(e, 'agent') !== undefined;
@@ -295,7 +334,7 @@ export function readMissionPackage(
       checks: tags(e, 'check'),
       citizenSafe: flag(e, 'citizen_safe'),
       priority: Number.isFinite(priority) ? priority : null,
-      objectives: objectivesOf(manifest),
+      objectives,
       clock: strings(format['clock']),
       effect,
       omittedPeopleCounts: effectAll.length - effect.length,

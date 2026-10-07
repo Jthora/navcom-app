@@ -9,6 +9,7 @@
    * mission is volatile and shows its age [invariant 7].
    */
   import type { Mission } from '@navcom/core';
+  import type { Refusal } from '$lib/missions/collect';
   import { Panel, Readout, Slot } from '$lib/components/panel';
   import { endsIn, endsSoon, placeName } from './format';
 
@@ -17,6 +18,7 @@
     province,
     status,
     now,
+    refused = [],
     onopen
   }: {
     /** Active missions, newest version of each, already in order. */
@@ -26,6 +28,8 @@
     /** Where the missions are coming from, so an empty list says why it is empty. */
     status: 'live' | 'cached' | 'connecting' | 'unavailable' | 'unloaded';
     now: number;
+    /** Packages NavCom would not show, and why: said here so a quiet map is never a mystery [11.E]. */
+    refused?: readonly Refusal[];
     onopen: (address: string) => void;
   } = $props();
 
@@ -61,10 +65,24 @@
         {/if}
       </Slot>
     {/if}
+    {#if refused.length > 0 && !province}
+      <Slot k="Not read">
+        <Readout value={`${refused.length} not shown`} tone="warn" sub="a package NavCom could not read; its poster can be told why" />
+      </Slot>
+      <ul class="nc-refused" data-refused>
+        {#each refused as r, i (i)}<li><span class="nc-missions-meta">{r.d || 'no name'}</span> {r.because}</li>{/each}
+      </ul>
+    {/if}
   </Panel>
 </div>
 
 <style>
+  .nc-refused {
+    margin: 0;
+    padding-inline-start: 1.1rem;
+    color: var(--t-ink);
+    overflow-wrap: anywhere;
+  }
   .nc-missions {
     display: flex;
     flex-direction: column;

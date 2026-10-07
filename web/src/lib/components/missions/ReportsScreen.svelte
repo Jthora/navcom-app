@@ -35,14 +35,15 @@
   let me = $state(contactPubkey());
   const operator = signedOn();
 
-  let read = $state<MissionReports | null>(null);
+  /** Raw, not proxied: signed events are read, never changed, and a deep proxy only costs time [11.R]. */
+  let read = $state.raw<MissionReports | null>(null);
   let confirming = $state<{ id: string; kind: 'witnessed' | 'challenged' } | null>(null);
   let sending = $state(false);
   let error = $state<{ id: string; text: string } | null>(null);
 
   onMount(() => {
     if (!m) return;
-    void reportsOn(m).then((r) => (read = r));
+    void reportsOn(m, Math.floor(Date.now() / 1000)).then((r) => (read = r));
   });
 
   const said = (r: OnMission, kind: string) =>
@@ -50,6 +51,13 @@
       (l) => l.pubkey === me && l.tags.some((x) => x[0] === 'e' && x[1] === r.id) && l.tags.some((x) => x[0] === 'l' && x[1] === kind)
     );
   const askText = (id: string) => m?.objectives.find((o) => o.id === id)?.ask ?? id;
+  /** Why a statement was not sent, in words [11.E]. */
+  const WHY = {
+    'signed-out': 'sign on first',
+    own: 'not about your own report',
+    'not-there': 'only somebody who took part can say they were there',
+    late: 'its seven days are over, and a late challenge counts for nothing'
+  } as const;
 
   async function say(r: OnMission, kind: 'witnessed' | 'challenged') {
     if (!m || !read) return;
@@ -66,7 +74,7 @@
       if (callsign) names.set(me, callsign);
       read = { ...read, labels: [...read.labels, done.label], names };
     }
-    else error = { id: r.id, text: done.because === 'not-sent' ? done.detail : 'Not sent.' };
+    else error = { id: r.id, text: done.because === 'not-sent' ? done.detail : WHY[done.because] };
   }
 </script>
 
@@ -80,20 +88,28 @@
     <h3 class="nc-reports-title">{m.title}</h3>
     {#if !read}
       <Slot k="Reports"><Readout value="Reading" tone="cold" /></Slot>
+    {:else if read.reports.length === 0 && !read.answered.operators && !read.answered.poster}
+      <!-- Nobody answering is not nothing there [11.E]. -->
+      <Slot k="Reports"><Readout value="Unknown" tone="cold" sub="no relay answered; try again with signal" /></Slot>
     {:else if read.reports.length === 0}
       <Slot k="Reports"><Readout value="None found" tone="cold" sub="on the relays that answered; reports open the day after the work" /></Slot>
     {:else}
+      {#if read.partial}
+        <Slot k="Shown"><Readout value="Not all" tone="warn" sub="a relay sent as many as it was asked for; some may not be shown" /></Slot>
+      {/if}
       <ul class="nc-reports">
         {#each read.reports as r (r.id)}
+          {@const known = read.answered.poster && read.answered.operators}
           {@const s = settlementOf(r, m.publisher.pubkey, read.labels, t)}
-          {@const shown = standingOf(s, read.names)}
+          {@const shown = known ? standingOf(s, read.names) : { value: 'Unknown', tone: 'cold' as const, sub: 'the relays that hold its labels did not answer' }}
           {@const mine = r.author === me}
           <li data-report={r.id}>
             <span class="nc-reports-who">{r.report.callsign}</span>
             <span class="nc-reports-meta">{r.report.date}{mine ? ' · yours' : ''}</span>
             <ul class="nc-reports-did">
-              {#each r.report.mission?.asks ?? [] as a (a)}<li>{askText(a)}</li>{/each}
-              {#each r.report.mission?.counts ?? [] as c (c.line)}<li>{c.line}: {c.n}</li>{/each}
+              <!-- By position, not by content: anything a stranger signed must not be able to break the list [11.X]. -->
+              {#each r.report.mission?.asks ?? [] as a, i (i)}<li>{askText(a)}</li>{/each}
+              {#each r.report.mission?.counts ?? [] as c, i (i)}<li>{c.line}: {c.n}</li>{/each}
             </ul>
             <Readout value={shown.value} tone={shown.tone} sub={shown.sub} />
             {#if operator && !mine}
@@ -113,10 +129,10 @@
                 </div>
               {:else}
                 <div class="nc-reports-row">
-                  {#if there && s.state === 'pending' && !said(r, 'witnessed')}
+                  {#if known && there && s.state === 'pending' && !said(r, 'witnessed')}
                     <button type="button" data-witness={r.id} onclick={() => (confirming = { id: r.id, kind: 'witnessed' })}>I was there</button>
                   {/if}
-                  {#if t <= r.at + CHALLENGE_WINDOW_SECONDS && !said(r, 'challenged')}
+                  {#if t < r.at + CHALLENGE_WINDOW_SECONDS && !said(r, 'challenged')}
                     <button type="button" data-challenge={r.id} onclick={() => (confirming = { id: r.id, kind: 'challenged' })}>Challenge</button>
                   {/if}
                 </div>

@@ -164,7 +164,9 @@ reported separately from first paint. The Vite manifest already records `dynamic
 the graph is available without parsing JavaScript. Reported first, then enforced once there was
 something to enforce — which is how every other budget here was set, derived from a measurement rather
 than chosen to fit. **Set 2026-10-06** when the mission screens split off: 27.7 kB measured, a 33 kB
-ceiling and a 30 kB warning line.
+ceiling and a 30 kB warning line. **Re-derived the same day** when 11.4 and its audit fixes landed:
+37.4 kB measured, a 45 kB ceiling and a 40 kB warning line — five screens more, at no cost to first
+paint, which is the trade this section made.
 
 **An opened sheet on a dead connection must say so.** A chunk that fails to arrive is a blank sheet,
 and offline is a normal state here [C10]. The service worker's whole-origin cache covers this after

@@ -597,7 +597,7 @@ test.describe('the landing page: missions you can open', () => {
     await page.getByRole('button', { name: 'Take part' }).click();
     await page.locator('[data-visibility="sealed"]').click();
     await expect(page.locator('[data-takepart]')).toContainText('Not sent');
-    await expect(page.locator('[data-takepart]')).toContainText('inbox could not be found');
+    await expect(page.locator('[data-takepart]')).toContainText('has not said where they take sealed messages');
     await expect(page.locator('[data-slot="you"]')).toHaveCount(0);
   });
 
@@ -611,9 +611,16 @@ test.describe('the landing page: missions you can open', () => {
     await page.locator('[data-visibility="open"]').click();
     await expect(page.locator('[data-slot="you"]')).toContainText('Taking part');
 
-    // Back to the root, and into your own missions.
+    // The same evening it waits: a report tells of a day that has ended.
     await page.locator('[data-back]').click();
     await page.locator('[data-back]').click();
+    await page.locator('[data-yours]').click();
+    await expect(page.locator(`[data-report-mission="${HEAT_D}"]`)).toContainText('reports open tomorrow');
+
+    // The next day, back on the same phone, into your own missions.
+    await page.clock.setFixedTime(new Date(DURING.getTime() + 86_400_000));
+    await open(page, '/');
+    await expect(page.locator('[data-missions="open"]')).toContainText('Open missions · live', { timeout: 15_000 });
     await page.locator('[data-yours]').click();
     await expect(page.locator('[data-screen="yours"]')).toContainText('Heat relief');
     await page.locator(`[data-report-mission="${HEAT_D}"]`).click();

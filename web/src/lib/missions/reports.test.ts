@@ -7,6 +7,7 @@ import { clearField, set } from '$lib/terminal/storage';
 import { ensureContactKey } from '$lib/terminal/card';
 import { takePart, tookPart, type Wire } from './claims';
 import { fileReport, labelReport, localDay, reportableDays, reportsOn, sent, settlements, withdraw } from './reports';
+import { standingOf } from '$lib/components/missions/format';
 
 /**
  * Reporting from this device: never today, a warning before a series, sealed or open, withdrawn
@@ -48,7 +49,7 @@ function fakeWire(answers: Event[] = []) {
       sentEvents.push({ urls, event });
       return true;
     },
-    query: async () => answers
+    query: async (urls) => ({ events: answers, answered: urls })
   };
   return { w, sentEvents };
 }
@@ -100,7 +101,7 @@ describe('a report in the open', () => {
     const { w, sentEvents } = fakeWire();
     const r = await fileReport(mission('a'), draft(localDay(NOW - 86_400)), 'open', NOW, {}, w);
     if (!r.ok) throw new Error('not sent');
-    expect(await withdraw(r.sent.id, NOW + 60, w)).toBe(true);
+    expect(await withdraw(r.sent.id, NOW + 60, w)).toBe('asked');
     const deletion = sentEvents.at(-1)!.event;
     expect(deletion.kind).toBe(5);
     expect(deletion.tags).toEqual([
@@ -114,8 +115,8 @@ describe('a report in the open', () => {
     const { w } = fakeWire();
     const r = await fileReport(mission('a'), draft(localDay(NOW - 86_400)), 'open', NOW, {}, w);
     if (!r.ok) throw new Error('not sent');
-    const refused: Wire = { publish: async () => false, query: async () => [] };
-    expect(await withdraw(r.sent.id, NOW + 60, refused)).toBe(false);
+    const refused: Wire = { publish: async () => false, query: async () => ({ events: [], answered: [] }) };
+    expect(await withdraw(r.sent.id, NOW + 60, refused)).toBe('unheard');
     expect(sent()[0]!.withdrawn).toBeUndefined();
   });
 });
@@ -149,7 +150,7 @@ describe('a report for the poster alone', () => {
     expect(listed.visibility).toBe('sealed');
     expect(listed.id).not.toBe(sentEvents[0]!.event.id);
     // Already with its poster: nothing to withdraw, and nothing is pretended.
-    expect(await withdraw(listed.id, NOW + 60, w)).toBe(false);
+    expect(await withdraw(listed.id, NOW + 60, w)).toBe('not-open');
   });
 });
 
@@ -195,7 +196,7 @@ function relayOf(events: Event[]) {
       published.push(event);
       return true;
     },
-    query: async (_urls, f) => [...events, ...published].filter((e) => matches(e, f))
+    query: async (urls, f) => ({ events: [...events, ...published].filter((e) => matches(e, f)), answered: urls })
   };
   return { w, published };
 }
@@ -213,7 +214,7 @@ describe('other operators’ reports on a mission', () => {
     const card = finalizeEvent({ kind: 10911, created_at: NOW - 86_400, content: JSON.stringify({ callsign: 'Heron', region: 'us-ca' }), tags: [] }, challenger);
     const challenge = buildReportLabel(challenger, 'challenged', { id: kept.id, mission: m.address }, NOW - 60);
     const { w } = relayOf([kept, nothingAsked, challenge, card]);
-    const read = await reportsOn(m, w);
+    const read = await reportsOn(m, NOW, w);
     expect(read.reports.map((r) => r.id)).toEqual([kept.id]);
     expect(read.reports[0]!.report.mission!.counts).toEqual([{ line: 'Water handed out: a count', n: 9 }]);
     expect(read.names.get(getPublicKey(other))).toBe('Wren');
@@ -223,15 +224,15 @@ describe('other operators’ reports on a mission', () => {
   it('does not show one its author withdrew, whatever a relay still serves, and ignores anybody else asking', async () => {
     const r = said();
     const theirs = buildDeletion(other, r.id, 1912, NOW);
-    expect((await reportsOn(m, relayOf([r, theirs]).w)).reports).toEqual([]);
+    expect((await reportsOn(m, NOW, relayOf([r, theirs]).w)).reports).toEqual([]);
     const somebodyElses = buildDeletion(generateSecretKey(), r.id, 1912, NOW);
-    expect((await reportsOn(m, relayOf([r, somebodyElses]).w)).reports).toHaveLength(1);
+    expect((await reportsOn(m, NOW, relayOf([r, somebodyElses]).w)).reports).toHaveLength(1);
   });
 
   it('asks relays by mission, never by report, so no relay learns which reports a device cares about', async () => {
     const asked: Filter[] = [];
-    const w: Wire = { publish: async () => true, query: async (_u, f) => (asked.push(f), []) };
-    await reportsOn(m, w);
+    const w: Wire = { publish: async () => true, query: async (_u, f) => (asked.push(f), { events: [], answered: [] }) };
+    await reportsOn(m, NOW, w);
     await fileReport(m, draft(localDay(NOW - 86_400)), 'open', NOW, {}, { ...w, publish: async () => true });
     await settlements(NOW + 60, w);
     const labelQueries = asked.filter((f) => f.kinds?.includes(1985));
@@ -282,7 +283,72 @@ describe('witnessing and challenging somebody’s report', () => {
   });
 
   it('says so when no relay took it', async () => {
-    const refused: Wire = { publish: async () => false, query: async () => [] };
+    const refused: Wire = { publish: async () => false, query: async () => ({ events: [], answered: [] }) };
     expect(await labelReport('challenged', theirs(), m, NOW, refused)).toMatchObject({ ok: false, because: 'not-sent' });
+  });
+});
+
+describe('what the audit of Milestone 11 found', () => {
+  it('offers seven distinct days on the nights the clocks change, and never today as yesterday [11.X]', () => {
+    const tz = process.env.TZ;
+    process.env.TZ = 'America/New_York';
+    try {
+      // The night after the clocks went back, the night they went back, and the night after they went forward.
+      for (const at of ['2026-11-02T23:30:00-05:00', '2026-11-01T23:30:00-05:00', '2026-03-09T00:30:00-04:00']) {
+        const now = Math.floor(new Date(at).getTime() / 1000);
+        const days = reportableDays(now);
+        expect(new Set(days).size, at).toBe(7);
+        expect(days, at).not.toContain(localDay(now));
+        const d = new Date(now * 1000);
+        expect(days[0], at).toBe(localDay(Math.floor(new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1, 12).getTime() / 1000)));
+      }
+    } finally {
+      process.env.TZ = tz;
+    }
+  });
+
+  it('offers only the days the work could have been: after taking part, before the mission ended [11.X]', () => {
+    const m = { ...mission('a'), validUntil: NOW - 3 * 86_400 };
+    const days = reportableDays(NOW, { mission: m, since: NOW - 5 * 86_400 });
+    expect(days).toEqual([localDay(NOW - 3 * 86_400), localDay(NOW - 4 * 86_400), localDay(NOW - 5 * 86_400)]);
+  });
+
+  it('warns of a series for a mission with no jurisdiction, by the mission itself [11.X]', async () => {
+    const { w } = fakeWire();
+    const nowhere = mission('n', 'not a code');
+    expect(nowhere.placement.jurisdiction).toBeNull();
+    await fileReport(nowhere, draft(localDay(NOW - 86_400)), 'open', NOW, {}, w);
+    expect(await fileReport(nowhere, draft(localDay(NOW - 2 * 86_400)), 'open', NOW + 60, {}, w)).toMatchObject({ ok: false, because: 'series' });
+  });
+
+  it('calls where a report stands unknown when the relays that hold its labels did not answer [11.E]', async () => {
+    const { w } = fakeWire();
+    await fileReport(mission('a'), draft(localDay(NOW - 86_400)), 'open', NOW, {}, w);
+    const silent: Wire = { publish: async () => true, query: async () => ({ events: [], answered: [] }) };
+    // Eight days on, silence would have settled it — but nobody answered, so nothing is claimed.
+    const after = await settlements(NOW + 8 * 86_400, silent);
+    expect(after.standing.size).toBe(0);
+    expect(after.answered).toEqual({ poster: false, operators: false });
+  });
+
+  it('says when a report was sent but this device could not record it [11.E]', async () => {
+    const { w } = fakeWire();
+    const write = localStorage.setItem;
+    localStorage.setItem = (k: string, v: string) => {
+      if (k === 'navcom.wipeable') throw new DOMException('full', 'QuotaExceededError');
+      write(k, v);
+    };
+    const r = await fileReport(mission('a'), draft(localDay(NOW - 86_400)), 'open', NOW, {}, w);
+    localStorage.setItem = write;
+    expect(r).toMatchObject({ ok: true, kept: false });
+  });
+
+  it('never says a challenge would stop a settlement, because it stops nothing [11.E]', () => {
+    const named = new Map([['k'.repeat(64), 'Heron']]);
+    const waiting = standingOf({ state: 'pending', until: NOW, challengedBy: ['k'.repeat(64)] }, named);
+    expect(waiting.sub).not.toMatch(/unless/);
+    expect(waiting.sub).toContain('challenged by Heron (kkkkkkkk)');
+    const silent = standingOf({ state: 'settled', how: 'silence', at: NOW, challengedBy: ['k'.repeat(64)] }, named);
+    expect(silent.sub).not.toMatch(/unchallenged/);
   });
 });

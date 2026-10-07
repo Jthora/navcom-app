@@ -34,6 +34,7 @@ Each cell is a pass. `—` not started, `✓` done, and a note when it found som
 | **6** Knowledge gets in | Corrections, merge, needs-checking, notes, promotion | **✓** | **✓** | **✓** |
 | **7** Standing | Credentials, claims, revocation, the watch gate | **✓** | **✓** | **✓** |
 | **9** No single point of failure | Backup and restore, capability sentence, funding | **✓** | **✓** | **✓** |
+| **11** Missions and the grid | The map, Com's stack, mission packages, the live feed, claims, reports, settlement | **✓** | **✓** | **✓** |
 
 ## Rules for a pass
 
@@ -1064,6 +1065,127 @@ Two more gaps closed, both of which had made a whole milestone unreachable from 
 device that does not hold one — so nothing about Milestone 4's main screen was testable end to
 end. Between this and `relayEvents`, the board findings are proven where an operator would see
 them rather than asserted through a mock.
+
+## 11.R — Milestone 11, robustness
+
+**One frame from either mission relay stopped the map, and kept it stopped.** The package reader
+scanned tags for its flags before the signature check, so a tag that was `null` threw — from
+anybody, unsigned — and the live feed had already stored the event in the Wipeable tier before
+reading it. The map stopped updating, and on the next visit the stored copy threw before any
+socket opened: the page said *"Missions not loaded — they need one visit with a connection"*,
+which was false, and only a panic wipe cleared it, taking sign-on and the patrol record with it.
+The mirror is run by a second person [`grid.md`](design/grid.md) §4. A mirror cannot forge a
+package; it did not need to. Tags are now checked as lists of strings before any is read, nothing
+is kept until it is checked — shape, publisher, signature — and the collector cannot throw.
+
+Four more, all fixed in the pass:
+
+- **The intake had no bound.** Nothing capped what a relay could send or what was kept: a few
+  hundred real-sized packages filled a browser's quota, every event re-read every signature
+  (about a second on a laptop, on the thread that draws `Distress`), and the full tier stayed
+  full. Now the newest version of each package, at most a hundred and a million characters, saved
+  at most every two seconds, each signature checked once
+- **A lagging mirror rolled back what this device had already seen.** The picture was rebuilt
+  from whichever relays answered this session, so the mirror's week-old `open` replaced the
+  `closed` The Record had served the day before. The device's own newer copy now outranks an
+  older one a relay still serves; a package no relay serves any more is not brought back
+- **The reports screen checked every label's signature for every report, every minute** — 8.4 s
+  for twenty reports on a busy mission. The cheap questions come first now, and labels are asked
+  for by the three words a label on a report can say, so a mission's claims cannot crowd them out
+  of a relay's limit
+- **A relay that refused the subscription, or never finished answering, left *Reaching The
+  Record…* up for good.** `CLOSED` was ignored and the only timer stopped at `open`. A refusal is
+  a failure now, an answer has thirty seconds, and a quiet relay is asked every four minutes
+  whether it is still there
+
+**Deferred, with its reason: the seven days run on the reporter's clock.** A report dated eight
+days back settles by silence the first time anybody sees it, and an honest client then calls a
+challenge late. No reader can know when a report really arrived — a relay's timestamp is the
+author's — so the fix is a witness to time, which is what 5.2's anchor is for. Meanwhile the
+readout already names *settled unchallenged* as the weakest evidence, a label dated more than a
+day ahead of the reader is ignored, and the poster's settlement now outranks a witness's whatever
+either claims about when.
+
+**Honest negatives.** A forged signature reaches no screen; only a report's own author can
+withdraw it; no coordinate is drawn, so an absurd one draws nothing — and an end past 2100 is
+refused now rather than drawn as *NaN undefined*.
+
+## 11.E — Milestone 11, error handling and reporting
+
+**One shape, four times: nobody answering, read as nothing there.** nostr-tools' `querySync`
+resolves an empty list when no relay connects, so every read in the missions layer turned
+*"nobody answered"* into *"there is nothing"*. Offline, an eight-day-old report read *Settled ·
+unchallenged for seven days* in green whether or not it had been challenged; the reports screen
+said *None found*; a sealed claim said the poster had no inbox. Reads now ask each relay on its
+own and count only those that finished before the wait ran out, and where a report stands is
+computed only when the relays that hold its labels answered. Otherwise it reads *Unknown*.
+
+And:
+
+- **Refused packages vanished.** `collect` named every refusal and nothing read the list, so a
+  feed where every package was refused read *No open missions · live* — a quiet night, to anybody
+  looking. Refusals are counted in the map's key and listed with their reasons, and a newer
+  version the publisher signed but NavCom cannot read now hides the older one instead of leaving
+  it on the map
+- **A Watched operator's claims went only to the watch's relays**, where no poster reads, and
+  would have settled by silence unseen. Mission traffic now always reaches the relays posters
+  read [interchange spec §5.0], and each claim and report remembers where it went and which key
+  signed it
+- **Sent, but not recorded.** With storage full a claim or report left the device and was never
+  listed, so it could not be let go or withdrawn, and a second tap sent it again. The landing page
+  has no storage banner; the screens now say *Sent*, and why it cannot be withdrawn from here
+- **A withdrawn card still "withdrew" reports**, with a freshly minted key no relay would honour.
+  It says it cannot now
+- **A malformed relay address hung every mission screen**: nostr-tools throws inside a promise
+  that never settles. Addresses are checked where the relay list is read, for every subsystem,
+  and every network wait in the missions layer has its own bound
+- **Two sentences that were not true**: *"settles by itself … unless challenged"*, when a
+  challenge stops nothing, and *"somebody else holds this one"* about the operator's own claim a
+  minute after letting it go
+
+## 11.X — Milestone 11, edge cases
+
+**The report screen could not open for an hour on six nights a year.** The day picker stepped
+back 24 hours at a time, so after the clocks went back one day appeared twice — and a list keyed
+by day throws on a repeat. On the night of the change, today was offered as *Yesterday*; for a
+week after the clocks went forward, yesterday was missing. Sydney was inside one of those
+windows while this pass ran. Days are stepped by calendar day at noon now, and a test sets the
+zone to New York and checks all three nights.
+
+And:
+
+- **Anybody could break any mission's reports screen.** A report naming the same objective twice
+  reached a list keyed by objective, and Svelte throws on a duplicate key in production. Repeats
+  are refused on read, lists holding a stranger's words are keyed by position, and Com's screens
+  sit inside an error boundary, so a screen that fails says so and nothing else stops. A package
+  repeating an objective id did the same to the mission page, and is refused
+- **"Send anyway" could be tapped twice**, sending one day's work twice
+- **A mission closed early held a place in the three-claim cap** for up to a day, with nothing to
+  let go
+- **A field mission with no objectives could be taken and never reported** — the real recall
+  checks carry their asks in metadata. Refused now, with the reason on the map; Mecha Jono is asked
+  (interchange Q15)
+- **The series warning was silent where placement is finest**: a mission with no jurisdiction
+  skipped it. It compares the mission itself now
+- **"To report" listed a mission for thirty days while the picker reached back seven**, so the
+  only way to report was a false date. Both now offer the days the work could have been
+
+**Honest negatives.** The core's *"not a day that has not happened"* refuses no honest report
+anywhere from UTC+14 to UTC−12, swept across a year; month and year turns hold; the antimeridian
+never reaches the province hit-test; the cap and the lease agree at their boundaries.
+
+## Milestone 11, after three passes
+
+**Every serious finding was a stranger's input reaching code that trusted it, or silence read as
+an answer.** One malformed frame stopped the map, one repeated tag broke a screen, and nobody
+answering read as a settled report. This is the first milestone that reads what other people
+publish at scale — packages, reports, labels, cards — and the lens that found most was the one
+that asked what a relay not on our side can do.
+
+One more, from outside the grid: the first accessibility check run on the landing page *signed
+on* found the `Distress` label under WCAG AA in both signatures — 3.68:1 in low signature, the
+mode every operator gets by default. Every earlier check had run signed out, where there is no
+`Distress` bar. Fixed with the alarm palette, and tested in both modes.
 
 ## Milestone 2, after three passes
 

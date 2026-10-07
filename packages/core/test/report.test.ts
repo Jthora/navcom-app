@@ -206,6 +206,23 @@ describe('where a report stands', () => {
     expect(settlementOf(report, poster, [label(posterSecret, 'settled')], NOW + 7_200)).toMatchObject({ how: 'poster', by: poster });
   });
 
+  it('lets the poster’s settlement outrank a witness’s, whichever claims to be first', () => {
+    const early = label(generateSecretKey(), 'witnessed', NOW + 60);
+    const late = label(posterSecret, 'settled', NOW + 7_200);
+    expect(settlementOf(report, poster, [early, late], NOW + 7_300)).toMatchObject({ how: 'poster' });
+  });
+
+  it('stops counting challenges the moment it settles by itself, not a second after', () => {
+    const at = NOW + CHALLENGE_WINDOW_SECONDS;
+    const onTheDeadline = label(generateSecretKey(), 'challenged', at);
+    expect(settlementOf(report, poster, [onTheDeadline], at)).toMatchObject({ state: 'settled', how: 'silence', challengedBy: [] });
+  });
+
+  it('does not read a label from a clock more than a day ahead', () => {
+    const fromTheFuture = label(generateSecretKey(), 'witnessed', NOW + 3 * 86_400);
+    expect(settlementOf(report, poster, [fromTheFuture], NOW + 60).state).toBe('pending');
+  });
+
   it('ignores a label whose signature does not verify', () => {
     const forged = { ...label(posterSecret, 'settled'), created_at: NOW + 1 };
     expect(settlementOf(report, poster, [forged], NOW + 7_200).state).toBe('pending');
@@ -254,5 +271,21 @@ describe('a report its author withdrew', () => {
   it('stays when the request does not verify', () => {
     const forged = { ...buildDeletion(contact, r.id, KIND_REPORT, NOW + 60), created_at: NOW + 61 };
     expect(withdrawnReports(mine, [forged]).size).toBe(0);
+  });
+});
+
+describe('repeats in a report', () => {
+  it('are refused, never merged: a repeat is a mistake or a way to make a list misbehave', () => {
+    const twice = forge({ callsign: 'Kestrel', date: '2026-10-07' }, [['a', ADDRESS], ['ask', 'handout:water'], ['ask', 'handout:water']]);
+    expect(readReport(twice)).toBeNull();
+    const lines = forge(
+      { callsign: 'Kestrel', date: '2026-10-07', counts: [{ line: 'Water and cards handed out: a count', n: 1 }, { line: 'Water and cards handed out: a count', n: 2 }] },
+      [['a', ADDRESS], ['ask', 'handout:water']]
+    );
+    expect(readReport(lines)).toBeNull();
+  });
+
+  it('says a count over the limit is over the limit, not that it is not a whole number', () => {
+    expect(() => buildReport(contact, missionReport({ mission: { address: ADDRESS, asks: ['a'], counts: [{ line: 'x', n: 100_001 }] } }), NOW)).toThrow(/at most 100,000/);
   });
 });

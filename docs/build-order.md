@@ -1106,8 +1106,10 @@ says so about itself.
 **The pivot of 2026-10-05.** Invariant 8 was changed rather than deleted, four anti-patterns were
 withdrawn with dates, and missions became the point of the application. Design is complete and
 normative in [`design/missions.md`](design/missions.md), [`design/economy.md`](design/economy.md),
-[`design/map.md`](design/map.md) and [`design/com.md`](design/com.md). **11.0 to 11.2 are built, and
-11.3's shell.**
+[`design/map.md`](design/map.md) and [`design/com.md`](design/com.md). **11.0 to 11.2 and 11.4 are
+built, and 11.3's shell. Audited the same day** — robustness, errors and edge cases, all three in
+[`audit.md`](audit.md) with every finding fixed in its pass but one deferred with its reason; the
+test-audit lenses have not run on it yet.
 
 Ordered so that each step is useful alone, per the rule that a layer below must stand without the
 layer above.

@@ -98,6 +98,8 @@
       ? feed.missions.filter((m) => m.state !== 'closed' && m.validUntil > now / 1000)
       : []
   );
+  /** What is still open, by address: a claim on a mission closed early holds no place in the cap. */
+  const openSet = $derived(new Set(active.map((m) => m.address)));
   /** Provinces to light. A national mission (`us`) lights nothing — it would light everything. */
   const lit = $derived(
     new Set(active.map((m) => m.placement.jurisdiction).filter((j): j is string => !!j && j.includes('-')))
@@ -108,6 +110,9 @@
   const missionAge = $derived(
     feed.status === 'live' ? 'live' : feed.status === 'cached' ? `as of ${stamp(feed.at)}, offline` : ''
   );
+  /** Packages NavCom would not show: counted in the key, so a dark map is never mistaken for a quiet night. */
+  const refused = $derived(feed.status === 'live' || feed.status === 'cached' ? feed.refused : []);
+  const clockBehind = $derived((feed.status === 'live' || feed.status === 'cached') && feed.clockBehind);
 
   /*
    * Com, on a phone, is a sheet over the map with three heights [com.md §3]: peek shows the
@@ -523,7 +528,7 @@
           <strong data-missions="connecting">Reaching The Record…</strong>
         {:else if feed.status === 'unavailable'}
           <strong data-missions="unavailable">Missions unavailable — neither The Record nor its mirror can be reached</strong>
-        {:else if active.length === 0}
+        {:else if active.length === 0 && refused.length === 0}
           <strong data-missions="none" data-feed={feed.status}>No open missions · {missionAge}</strong>
         {:else}
           <!-- The way into the missions that needs no map: a keyboard and a screen reader get here too. -->
@@ -533,8 +538,9 @@
             data-missions="open"
             data-feed={feed.status}
             onclick={() => open({ kind: 'missions', province: null }, true)}
-          ><b class="lit" aria-hidden="true"></b>Open missions · {missionAge}</button>
+          ><b class="lit" aria-hidden="true"></b>{active.length > 0 ? 'Open missions' : 'No open missions'} · {missionAge}{#if refused.length > 0}<span data-refused-count> · {refused.length} not read</span>{/if}</button>
         {/if}
+        {#if clockBehind}<strong data-clock-behind>This phone's clock is behind — check it before taking part</strong>{/if}
         <button type="button" class="layer" aria-pressed={coverage} onclick={() => (coverage = !coverage)}>
           Coverage
         </button>
@@ -589,18 +595,29 @@
         {#if top}
           <!-- The screen on top of Com's stack. Focus lands here when it opens. -->
           <div class="com-screen" bind:this={screenEl} tabindex="-1">
+            <!--
+              A screen that throws is said to have failed, here, and nothing else stops: without a
+              boundary one bad render reset the whole page's updates [audit 11.X].
+            -->
+            <svelte:boundary>
+              {#snippet failed(_error, reset)}
+                <strong class="screen-unloaded" data-screen-failed>This screen could not be shown</strong>
+                <button type="button" class="back" onclick={reset}>Try again</button>
+              {/snippet}
             {#if screens}
               {#if top.kind === 'missions'}
                 <screens.MissionList
                   missions={active}
                   province={top.province}
                   status={missionsUnloaded ? 'unloaded' : feed.status}
+                  {refused}
                   {now}
                   onopen={(address) => open({ kind: 'mission', address })}
                 />
               {:else if top.kind === 'yours'}
                 <screens.YoursScreen
                   {now}
+                  open={openSet}
                   onopen={(address) => open({ kind: 'mission', address })}
                   onreport={(address) => open({ kind: 'report', address })}
                 />
@@ -612,13 +629,15 @@
                 {@const address = top.address}
                 {@const m = active.find((x) => x.address === address)}
                 {#if m}
-                  <screens.MissionPage mission={m} {now} onreports={() => open({ kind: 'reports', address })} />
+                  <screens.MissionPage mission={m} {now} open={openSet} asOf={feed.status === 'cached' ? feed.at : null} onreports={() => open({ kind: 'reports', address })} />
                 {:else if feed.status === 'connecting'}
                   <Readout value="Loading" tone="cold" />
                 {:else}
                   <!-- It ended, or was closed, while open here: said, not left blank. -->
+                  {@const why = refused.find((r) => r.address === address)?.because}
                   <Panel label="Mission" post="Gone">
-                    <Slot k="Open"><Readout value="No longer open" tone="cold" sub="it ended or was closed" /></Slot>
+                    <!-- A package NavCom could not read is not one that ended: said as what it is [11.E]. -->
+                    <Slot k="Open"><Readout value={why ? 'Could not be read' : 'No longer open'} tone="cold" sub={why ?? 'it ended or was closed'} /></Slot>
                   </Panel>
                 {/if}
               {/if}
@@ -628,6 +647,7 @@
             {:else}
               <Readout value="Loading" tone="cold" />
             {/if}
+            </svelte:boundary>
           </div>
         {:else}
   <div class="nc-bridge">

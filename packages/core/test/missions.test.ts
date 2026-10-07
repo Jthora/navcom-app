@@ -35,7 +35,7 @@ function pkg(extra: string[][], over: { content?: string; drop?: string[] } = {}
       kind: MISSION_PACKAGE_KIND,
       created_at: 1791300000,
       tags: [...base, ...extra],
-      content: over.content ?? JSON.stringify({ name: 'A test mission', objectives: [] })
+      content: over.content ?? JSON.stringify({ name: 'A test mission', objectives: [{ id: 'do:it', ask: 'Do it.' }] })
     },
     secret
   );
@@ -76,7 +76,7 @@ describe('a real field campaign', () => {
 
 describe('time and state', () => {
   it('reads a closed mission as closed, and an ended one as ended', () => {
-    const m = ok(RECALL);
+    const m = ok(pkg([['mission_state', 'closed'], ['valid_until', '1791200000']], { drop: ['mission_state', 'valid_until'] }), TEST);
     expect(m.state).toBe('closed');
     expect(missionExpired(m, new Date('2026-10-06T12:00:00Z'))).toBe(true);
     expect(missionActive(m, new Date('2026-10-06T12:00:00Z'))).toBe(false);
@@ -157,7 +157,7 @@ describe('what it repairs instead, and records', () => {
   });
 
   it('counts things and drops lines that count people', () => {
-    const content = JSON.stringify({ name: 'x', metadata: { mechaJono: { format: { effect: ['Water and cards handed out: a count', 'Individuals helped: a count'] } } } });
+    const content = JSON.stringify({ name: 'x', objectives: [{ id: 'do:it', ask: 'Do it.' }], metadata: { mechaJono: { format: { effect: ['Water and cards handed out: a count', 'Individuals helped: a count'] } } } });
     const m = ok(pkg([], { content }), TEST);
     expect(m.effect).toEqual(['Water and cards handed out: a count']);
     expect(m.omittedPeopleCounts).toBe(1);
@@ -180,5 +180,54 @@ describe('who is taking part, as the poster counts them', () => {
     expect(ok(pkg([['taking_part', 'many']]), TEST).takingPart).toBeNull();
     expect(ok(pkg([['taking_part', '-1', '0']]), TEST).takingPart).toBeNull();
     expect(ok(pkg([['taking_part', '1.5', '0']]), TEST).takingPart).toBeNull();
+  });
+});
+
+describe('what a report will be held to, checked when the package is read', () => {
+  const content = (objectives: unknown[], effect: string[] = []) =>
+    JSON.stringify({ name: 'x', objectives, metadata: { mechaJono: { format: { effect } } } });
+  const refused = (input: unknown) => {
+    const r = readMissionPackage(input, TEST);
+    return r.ok ? null : r.because;
+  };
+
+  it('refuses a field mission with nothing to do, like the real recall check whose asks sit in its metadata', () => {
+    const real = readMissionPackage(RECALL);
+    expect(!real.ok && real.because).toMatch(/at least one objective/);
+    expect(refused(pkg([], { content: content([]) }))).toMatch(/at least one objective/);
+  });
+
+  it('refuses objectives a report could not name, or could not tell apart', () => {
+    expect(refused(pkg([], { content: content([{ id: 'a b', ask: 'x' }]) }))).toMatch(/report could name/);
+    expect(refused(pkg([], { content: content([{ id: 'a', ask: 'x' }, { id: 'a', ask: 'y' }]) }))).toMatch(/share an id/);
+  });
+
+  it('refuses a line too long to count, and reads a repeated or blank line once or not at all', () => {
+    expect(refused(pkg([], { content: content([{ id: 'a', ask: 'x' }], ['x'.repeat(201)]) }))).toMatch(/longer than a count/);
+    const m = ok(pkg([], { content: content([{ id: 'a', ask: 'x' }], ['Water: a count', 'Water: a count', '  ']) }), TEST);
+    expect(m.effect).toEqual(['Water: a count']);
+  });
+
+  it('refuses an end no calendar can draw', () => {
+    expect(refused(pkg([['valid_until', '1000000000000000']], { drop: ['valid_until'] }))).toMatch(/not a date/);
+  });
+
+  it('refuses a d tag a claim could not name', () => {
+    expect(refused(pkg([['d', 'has a space']], { drop: ['d'] }))).toMatch(/d tag/);
+  });
+
+  it('a version genuinely the publisher’s says whose it is even when refused; a forged one does not', () => {
+    const r = readMissionPackage(pkg([], { content: content([]) }), TEST);
+    expect(r.ok).toBe(false);
+    expect(!r.ok && r.from?.address).toBe(`${MISSION_PACKAGE_KIND}:${getPublicKey(secret)}:starcom_mission_package_test`);
+    const forged = { ...pkg([], { content: content([]) }), sig: '0'.repeat(128) };
+    const f = readMissionPackage(JSON.parse(JSON.stringify(forged)), TEST);
+    expect(!f.ok && f.from).toBeUndefined();
+  });
+
+  it('survives tags that are not lists, refusing rather than throwing', () => {
+    const poison = { kind: MISSION_PACKAGE_KIND, pubkey: '', id: 'x', created_at: 0, tags: [null, 'x', 7, ['t']], content: '', sig: '' };
+    expect(() => readMissionPackage(poison, TEST)).not.toThrow();
+    expect(readMissionPackage(poison, TEST).ok).toBe(false);
   });
 });

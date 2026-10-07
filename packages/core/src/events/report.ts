@@ -26,8 +26,9 @@ import { KIND_REPORT } from './kinds.js';
 import { DOES, DOES_MAX } from './profile.js';
 import { CALLSIGN_MAX, withinLimit } from '../limits.js';
 import { isValidIsoDate } from '../directory/iso-date.js';
+import { FUTURE_TOLERANCE_DAYS } from '../attestation.js';
 import { KIND_DELETION, KIND_LABEL, MISSION_NAMESPACE } from '../missions/claim.js';
-import { MISSION_PACKAGE_KIND, type Mission } from '../missions/package.js';
+import { EFFECT_LINE_MAX, MISSION_PACKAGE_KIND, OBJECTIVE_ID, type Mission } from '../missions/package.js';
 import { sealToPoster, type Sealed } from '../missions/seal.js';
 
 /** The content's fields. Anything else is refused, never ignored. */
@@ -38,13 +39,13 @@ export const ASKS_MAX = 16;
 export const COUNTS_MAX = 8;
 /** The most one count may say. A guard against a typo, not a judgement of anybody's night. */
 export const COUNT_MAX = 100_000;
-/** How long a poster's `effect` line may be, and so how long a counted line may be. */
-export const LINE_MAX = 200;
+/** How long a poster's `effect` line may be, and so how long a counted line may be: one number, kept where packages are read. */
+export const LINE_MAX = EFFECT_LINE_MAX;
 
 const EVENT_ID = /^[0-9a-f]{64}$/;
 const REGION = /^[a-z0-9-]{1,64}$/;
 const MISSION_ADDRESS = new RegExp(`^${MISSION_PACKAGE_KIND}:([0-9a-f]{64}):\\S{1,256}$`);
-const ASK_ID = /^\S{1,200}$/;
+const ASK_ID = OBJECTIVE_ID;
 const DOES_IDS = new Set(DOES.map((d) => d.id));
 
 export interface ReportCount {
@@ -111,14 +112,18 @@ function checkReport(r: Report, createdAt: number): { content: string; tags: str
     if (asks.length > ASKS_MAX || !asks.every((a) => ASK_ID.test(a))) {
       throw new ReportError('Those are not the mission’s objectives.');
     }
+    // Refused rather than merged: a repeat is either a mistake or a way to make a list misbehave [11.X].
+    if (new Set(asks).size !== asks.length) throw new ReportError('Each objective is named once.');
     const counts = r.mission.counts;
     if (counts.length > COUNTS_MAX) throw new ReportError(`Count at most ${COUNTS_MAX} things.`);
+    if (new Set(counts.map((c) => c.line)).size !== counts.length) throw new ReportError('Each line is counted once.');
     for (const c of counts) {
       if (!withinLimit(c.line, LINE_MAX)) throw new ReportError('A count answers one of the poster’s lines.');
-      if (!Number.isInteger(c.n) || c.n < 0 || c.n > COUNT_MAX) throw new ReportError('A count is a whole number.');
+      if (!Number.isInteger(c.n) || c.n < 0) throw new ReportError('A count is a whole number.');
+      if (c.n > COUNT_MAX) throw new ReportError(`A count is at most ${COUNT_MAX.toLocaleString('en-US')}.`);
     }
     if (counts.length > 0) content['counts'] = counts.map((c) => ({ line: c.line, n: c.n }));
-    tags.push(['a', r.mission.address], ...[...new Set(asks)].map((a) => ['ask', a]));
+    tags.push(['a', r.mission.address], ...asks.map((a) => ['ask', a]));
   } else {
     if (does.length === 0) throw new ReportError('Say what kind of work it was.');
     if (r.region !== undefined) {
@@ -241,9 +246,12 @@ export type Settlement =
  * challenge reverses nothing, and both it and the settlement are shown for the reader to weigh.
  *
  * - `settled` counts only from the mission's poster; `witnessed` from anybody but the reporter.
- *   The first of either settles it, and says how
+ *   **The poster's outranks a witness's whenever both exist** — they are different evidence, and
+ *   a timestamp is the signer's own to choose, so the order they claim decides nothing [11.R]
  * - With neither, it settles by silence once seven days have passed
- * - `challenged` counts from anybody but the reporter, inside the seven days, by their own key
+ * - `challenged` counts from anybody but the reporter, before the seven days are up, by their own
+ *   key. The window is half-open, so the moment it settles is the moment challenges stop counting
+ * - A label dated more than a day past `now` is not read: it is from a clock nobody shares
  */
 export function settlementOf(
   report: { id: string; author: string; at: number },
@@ -252,25 +260,33 @@ export function settlementOf(
   now: number
 ): Settlement {
   const until = report.at + CHALLENGE_WINDOW_SECONDS;
-  let settled: { how: 'poster' | 'witness'; by: string; at: number } | null = null;
+  const latest = now + FUTURE_TOLERANCE_DAYS * 86_400;
+  let byPoster: { by: string; at: number } | null = null;
+  let byWitness: { by: string; at: number } | null = null;
   const challengedBy: string[] = [];
   for (const raw of labels) {
     const l = raw as Partial<Event> | null;
     if (!l || l.kind !== KIND_LABEL || !Array.isArray(l.tags) || typeof l.pubkey !== 'string') continue;
-    if (!verified(l)) continue;
+    if (typeof l.created_at !== 'number' || l.created_at > latest) continue;
+    if (!l.tags.every((t) => Array.isArray(t))) continue;
+    // The cheap questions first: a signature is checked only on a label that is about this report.
+    // Claims carry the mission's tag too, so on a busy mission most labels are not [11.R].
     if (!l.tags.some((t) => t[0] === 'L' && t[1] === MISSION_NAMESPACE)) continue;
     if (!l.tags.some((t) => t[0] === 'e' && t[1] === report.id)) continue;
     const kind = l.tags.find((t) => t[0] === 'l' && t[2] === MISSION_NAMESPACE)?.[1];
-    const at = l.created_at!;
+    if (kind !== 'settled' && kind !== 'witnessed' && kind !== 'challenged') continue;
+    if (!verified(l)) continue;
+    const at = l.created_at;
     if (kind === 'settled' && l.pubkey === poster) {
-      if (!settled || at < settled.at) settled = { how: 'poster', by: l.pubkey, at };
+      if (!byPoster || at < byPoster.at) byPoster = { by: l.pubkey, at };
     } else if (kind === 'witnessed' && l.pubkey !== report.author) {
-      if (!settled || at < settled.at) settled = { how: 'witness', by: l.pubkey, at };
-    } else if (kind === 'challenged' && l.pubkey !== report.author && at <= until) {
+      if (!byWitness || at < byWitness.at) byWitness = { by: l.pubkey, at };
+    } else if (kind === 'challenged' && l.pubkey !== report.author && at < until) {
       if (!challengedBy.includes(l.pubkey)) challengedBy.push(l.pubkey);
     }
   }
-  if (settled) return { state: 'settled', how: settled.how, by: settled.by, at: settled.at, challengedBy };
+  if (byPoster) return { state: 'settled', how: 'poster', by: byPoster.by, at: byPoster.at, challengedBy };
+  if (byWitness) return { state: 'settled', how: 'witness', by: byWitness.by, at: byWitness.at, challengedBy };
   if (now >= until) return { state: 'settled', how: 'silence', at: until, challengedBy };
   return { state: 'pending', until, challengedBy };
 }

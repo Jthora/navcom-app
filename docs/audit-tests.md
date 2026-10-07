@@ -40,6 +40,10 @@ Each cell is a pass. `—` not started, `✓` done, and a note when it found som
 | **6** Knowledge gets in | Corrections, merge, needs-checking, notes, promotion | **✓** | **✓** | **✓** |
 | **7** Standing | Credentials, claims, revocation, the watch gate | **✓** | **✓** | **✓** |
 | **9** No single point of failure | Backup and restore, capability sentence, funding | **✓** | **✓** | **✓** |
+| **11** Missions and the grid | The map, Com's stack, mission packages, the live feed, claims, reports, settlement | — | — | — |
+
+Milestone 11's three passes in `audit.md` added their tests under rule 6 — each shown to fail
+against the unfixed code — but none of this grid's three has run on it yet.
 
 Milestone 8 has no row for the same reason as last time — it is unbuilt apart from 8.1, which
 was audited as a twenty-eighth pass at the end of `audit.md`.

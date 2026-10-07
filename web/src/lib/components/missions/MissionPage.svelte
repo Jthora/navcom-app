@@ -14,7 +14,21 @@
   import { effort, endsIn, endsSoon, placeName, stampUtc } from './format';
   import TakePart from './TakePart.svelte';
 
-  let { mission: m, now, onreports }: { mission: Mission; now: number; onreports?: () => void } = $props();
+  let {
+    mission: m,
+    now,
+    asOf = null,
+    open,
+    onreports
+  }: {
+    mission: Mission;
+    now: number;
+    /** The missions still open, so a claim on one closed early does not hold a place in the cap. */
+    open?: ReadonlySet<string>;
+    /** When the picture is this device's copy rather than live: its age, beside the ask to take part [invariants 7, 9]. */
+    asOf?: Date | null;
+    onreports?: () => void;
+  } = $props();
 
   const state = $derived(m.state === 'closed' ? 'Closed' : m.state === 'claimed' ? 'Taken' : 'Open');
   const paragraphs = $derived((m.summary ?? '').split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean));
@@ -22,8 +36,13 @@
 
 <div data-screen="mission" data-mission={m.d}>
   <Panel label="Mission" post={state}>
-    {#snippet action()}<TakePart mission={m} {now} />{/snippet}
+    {#snippet action()}<TakePart mission={m} {now} {open} />{/snippet}
     <h3 class="nc-mission-title">{m.title}</h3>
+    {#if asOf}
+      <Slot k="Seen">
+        <Readout value="This device's copy" tone="warn" sub={`as of ${stampUtc(Math.floor(asOf.getTime() / 1000))}; it may have closed since`} />
+      </Slot>
+    {/if}
 
     <Slot k="Posted by">
       <!-- Invariant 4: an agent is always shown as one, whatever its packages say. -->

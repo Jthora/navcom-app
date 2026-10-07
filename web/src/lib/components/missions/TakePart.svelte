@@ -15,7 +15,15 @@
   import { held, letGo, refusal, takePart, type Visibility } from '$lib/missions/claims';
   import { endsIn } from './format';
 
-  let { mission: m, now }: { mission: Mission; now: number } = $props();
+  let { mission: m, now, open }: { mission: Mission; now: number; open?: ReadonlySet<string> } = $props();
+
+  /** A refusal in words: never a code on a screen [11.E]. */
+  const WORDS: Record<string, string> = {
+    'signed-out': 'Sign on first.',
+    ended: 'This mission has ended.',
+    taken: 'The poster lists this one as taken.',
+    cap: 'You hold three already; let one go to take this one.'
+  };
 
   /** Bumped after every act, so what this device holds is read again. */
   let version = $state(0);
@@ -30,26 +38,40 @@
   });
   const why = $derived.by(() => {
     void version;
-    return refusal(m, t);
+    return refusal(m, t, open);
   });
 
+  /** Whatever happens, the buttons come back: a throw left every one disabled with nothing said [11.E]. */
   async function take(visibility: Visibility) {
     sending = true;
     error = null;
-    const r = await takePart(m, visibility, Math.floor(Date.now() / 1000));
-    sending = false;
-    choosing = false;
-    if (!r.ok) error = r.because;
-    version += 1;
+    try {
+      const r = await takePart(m, visibility, Math.floor(Date.now() / 1000), undefined, open);
+      if (!r.ok) error = WORDS[r.because] ?? r.because;
+      // Sent, but not recorded: said, because a claim nobody can see cannot be let go [11.E].
+      else if (!r.kept) error = 'It was sent, but this device could not record it: its storage is full. It ends by itself within a day.';
+    } catch (err) {
+      error = err instanceof Error ? err.message : 'It could not be sent.';
+    } finally {
+      sending = false;
+      choosing = false;
+      version += 1;
+    }
   }
   async function release() {
     sending = true;
     error = null;
-    const r = await letGo(m, Math.floor(Date.now() / 1000));
-    sending = false;
-    // Gone from this device either way; walking away is never refused [invariant 8].
-    if (!r.sent) error = 'The release did not reach a relay. It ends by itself within a day.';
-    version += 1;
+    try {
+      const r = await letGo(m, Math.floor(Date.now() / 1000));
+      // Gone from this device either way; walking away is never refused [invariant 8].
+      if (r.card) error = 'It was taken with a card this device no longer holds, so it cannot be let go from here. It ends by itself within a day.';
+      else if (!r.sent) error = 'The release did not reach a relay. It ends by itself within a day.';
+    } catch {
+      error = 'The release did not reach a relay. It ends by itself within a day.';
+    } finally {
+      sending = false;
+      version += 1;
+    }
   }
   /** So the mission reopens after sign-on, on the landing page, once there is somebody to take part. */
   function remember() {
@@ -81,7 +103,8 @@
   {:else if why === 'ended'}
     <Readout value="Ended" tone="cold" />
   {:else if why === 'taken'}
-    <Readout value="Taken" tone="cold" sub="somebody else holds this one" />
+    <!-- What is known: the poster's list says taken. It may be this device's own claim, just let go [11.E]. -->
+    <Readout value="Taken" tone="cold" sub="the poster lists this one as taken" />
   {:else if why === 'cap'}
     <Readout value="3 held" tone="warn" sub="let one go to take this one" />
   {:else if choosing}
@@ -99,7 +122,7 @@
     <Action label="Take part" onfire={() => (choosing = true)} />
   {/if}
   {#if error}
-    <Readout value="Not sent" tone="warn" sub={error} />
+    <Readout value={error.startsWith('It was sent') ? 'Sent' : 'Not sent'} tone="warn" sub={error} />
   {/if}
 </div>
 

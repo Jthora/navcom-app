@@ -36,11 +36,29 @@ const FIELD = 'relays_own';
  * own list, otherwise the defaults.
  */
 export function relays(): string[] {
-  const watch = loadConfig()?.relays;
-  if (watch?.length) return watch;
-  const own = get<string[]>('accruing', FIELD);
-  if (own?.length) return own;
+  const watch = usable(loadConfig()?.relays ?? []);
+  if (watch.length) return watch;
+  const own = usable(get<string[]>('accruing', FIELD) ?? []);
+  if (own.length) return own;
   return [...DEFAULT_RELAYS];
+}
+
+/**
+ * Only addresses a socket could open, each once. A prefix check let `wss://` alone through, and
+ * nostr-tools throws on that inside a promise that never settles — so a screen waiting on it said
+ * "Checking" for as long as it was open [audit 11.E].
+ */
+export function usable(urls: readonly string[]): string[] {
+  const out = new Set<string>();
+  for (const u of urls) {
+    try {
+      const url = new URL(u.trim());
+      if ((url.protocol === 'wss:' || url.protocol === 'ws:') && url.hostname) out.add(url.href.replace(/\/$/, ''));
+    } catch {
+      /* not an address */
+    }
+  }
+  return [...out];
 }
 
 /** Whether the list in use is the shipped default rather than anything chosen. */
@@ -49,5 +67,5 @@ export function usingDefaults(): boolean {
 }
 
 export function setRelays(list: string[]): void {
-  set('accruing', FIELD, list.filter((r) => /^wss?:\/\//.test(r.trim())).map((r) => r.trim()));
+  set('accruing', FIELD, usable(list));
 }

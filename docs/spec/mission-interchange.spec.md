@@ -1,6 +1,6 @@
 # Mission interchange — NavCom ⇄ Starcom / Mecha Jono
 
-**NavCom's side of the boundary, rev 4 — 2026-10-06.** Starcom's side is
+**NavCom's side of the boundary, rev 5 — 2026-10-06.** Starcom's side is
 [`starcom.app/spec/starcom-navcom-interchange.spec.md`](https://starcom.app/spec/starcom-navcom-interchange.spec.md)
 (rev 10 at the time of writing; rev 11 will carry the answers below). Each spec owns its own
 side; neither restates the other's.
@@ -18,6 +18,13 @@ each node declares, and the grid's relays, The Record included, keep no record o
 **Rev 4**: NavCom's devices now send claims, and three rules for them need your answer — a claim
 that ends within a day unless renewed, a `released` label for letting go, and a count of who is
 taking part that only the poster can make (§5.1, §10).
+
+**Rev 5**: reports, witnessing and challenging are live (§5.2, §5.3), and an audit of all of it
+changed four things you will see. NavCom now refuses a field package no report could answer — no
+`objectives`, or ids a report cannot name — and says why on its map (§4.3, Q15). It asks relays for
+labels by the mission and the three words a label on a report says. The poster's `settled`
+outranks a `witnessed`, whatever either claims about when. And operators' claims and reports always
+reach the relays you read, even from a device whose own relays are a watch's (§5.0).
 
 Written for Mecha Jono's development agent first, and for any human on either team second. It
 says what NavCom now is, exactly how to serve it missions, how raw intel moves in both directions,
@@ -207,6 +214,15 @@ Australia). That is exactly the right resolution for a state-wide campaign.
 | `done` | Your view of the ask, as rev 10 says. NavCom never sets it |
 | `check` tags | *"Check before you go: local laws on recording consent"* — a topic, never an answer. NavCom does not write legal guidance and neither should a package |
 
+**What a field package needs so that the work can be reported** — rev 5. NavCom refuses, rather
+than shows, a field package an operator could take part in but never report: one with no
+`objectives`; two objectives sharing an `id`; an `id` that is empty or contains whitespace; a `d`
+tag that is empty or contains whitespace; an `effect` line longer than 200 characters; or a
+`valid_until` past 2100. A repeated or blank `effect` line is read once or not at all. Each refusal
+is shown on NavCom's map with its reason, so a package that crosses one of these lines is seen, not
+silently missing. A newer version you sign that NavCom refuses still replaces the older one: the
+map never keeps showing a version you have superseded.
+
 ### 4.4 `mission_state` — keep it true
 
 | Value | Means | Status |
@@ -270,7 +286,7 @@ honestly described, and a relay built for permanence is the wrong home for one.
 
 | Signed by | Published to | Read by |
 |---|---|---|
-| **An operator** — public claims, reports, witness and challenge labels | **NavCom's relays**: today `wss://relay.damus.io` and `wss://nos.lol`, both already among rev 10's mirrors. **Moving to relay lists** (§11.2): read each operator's NIP-65 list as well as these | Starcom and Mecha Jono, filtering `#a` for their packages — LIVE for Mecha Jono (Q9) |
+| **An operator** — public claims, reports, witness and challenge labels | **NavCom's relays**: today `wss://relay.damus.io` and `wss://nos.lol`, both already among rev 10's mirrors. Every device writes here *as well as* to its own relays — a Watched operator's watch relays are added, never substituted (rev 5). **Moving to relay lists** (§11.2): read each operator's NIP-65 list as well as these | Starcom and Mecha Jono, filtering `#a` for their packages — LIVE for Mecha Jono (Q9) |
 | **An operator** — a private claim (gift wrap) | The inbox relays in Mecha Jono's NIP-17 kind `10050` list: `wss://nos.lol` and `wss://relay.primal.net` | Mecha Jono only — LIVE (Q4, Q10) |
 | **Mecha Jono** — packages, `settled` and `challenged` labels | **The Record** | NavCom, which already reads it |
 
@@ -367,6 +383,18 @@ mission, which is the nearest NavCom can come to *anyone who was there*; a hand-
 witness anything, and every reader names who did. **Challenging** is offered to any signed-on
 operator inside the seven days, since a late one counts for nothing. Neither carries text, because
 nothing is adjudicated, and neither is offered on the operator's own report.
+
+**How NavCom reads them** — rev 5, so your reader and NavCom's agree:
+
+- **By mission and by word.** NavCom asks for labels with `#a` for the mission and `#l` for
+  `settled`, `witnessed` and `challenged`, so a mission's many claims cannot push its reports' labels
+  past a relay's limit
+- **The poster outranks a witness.** When both a poster's `settled` and a `witnessed` exist, the
+  report reads *settled by poster*, whatever either label claims about when — a timestamp is the
+  signer's own to choose
+- **The seven days are half-open.** A challenge counts if it is dated before the seventh day ends;
+  at that moment the report settles by silence, and a challenge dated then counts for nothing
+- **A label dated more than a day after the reader's own clock is not read**
 
 **Mecha Jono settles and challenges; it does not score people.** There is no input anywhere for an
 agent to rate an operator. Standing is derived by NavCom from these events alone.
@@ -544,6 +572,12 @@ Answered by Starcom on 2026-10-06; all eight accepted. Three are Mecha Jono's to
 **Settling waits for reports** — agreed. §5.3's seven days start when kind `1912` is emitted; until
 then Mecha Jono records each claim against its package, and no claim on a campaign moves its
 `mission_state`.
+
+### New in rev 5 — for Mecha Jono
+
+| | Question | NavCom's default if unanswered |
+|---|---|---|
+| Q15 | Will you put a field package's asks in `objectives`, as the heat campaign does? The recall checks carry theirs only in `metadata.mechaJono.variant.field_objectives` | NavCom refuses such a package and shows why on its map (§4.3) |
 
 ### New in rev 4 — for Mecha Jono
 

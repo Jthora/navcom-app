@@ -3,7 +3,8 @@ import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure
 import type { Event } from 'nostr-tools/core';
 import { DEFAULT_RELAYS, readMissionPackage, type Mission } from '@navcom/core';
 import { set } from '$lib/terminal/storage';
-import { held, letGo, refusal, takePart, type Wire } from './claims';
+import { withdrawCard } from '$lib/terminal/card';
+import { held, letGo, refusal, takePart, usable, type Wire } from './claims';
 
 /**
  * Taking part, from this device: the cap, the lease, withdrawal, and where each kind of claim goes.
@@ -21,7 +22,7 @@ function mission(d: string, over: { ends?: number; claims?: 'one' | 'many'; stat
     {
       kind: 30079,
       created_at: NOW - 3_600,
-      content: JSON.stringify({ name: `Mission ${d}`, objectives: [] }),
+      content: JSON.stringify({ name: `Mission ${d}`, objectives: [{ id: 'do:it', ask: 'Do it.' }] }),
       tags: [
         ['d', d], ['t', 'starcom_mission_package'], ['t', 'navcom_handoff'], ['t', 'navcom_mission'],
         ['mission_state', over.state ?? 'open'], ['valid_until', String(over.ends ?? NOW + 10 * 86_400)],
@@ -43,7 +44,7 @@ function fakeWire(answers: Event[] = [], accept = true) {
       sent.push({ urls, event });
       return accept;
     },
-    query: async () => answers
+    query: async (urls) => ({ events: answers, answered: urls })
   };
   return { w, sent };
 }
@@ -160,8 +161,61 @@ describe('a claim for the poster only', () => {
     signOn();
     const { w, sent } = fakeWire([]);
     const r = await takePart(mission('sealed-b'), 'sealed', NOW, w);
-    expect(r).toEqual({ ok: false, because: expect.stringMatching(/inbox could not be found/) });
+    expect(r).toEqual({ ok: false, because: expect.stringMatching(/has not said where they take sealed messages/) });
     expect(sent).toEqual([]);
     expect(held(NOW)).toEqual([]);
+  });
+
+  it('says no relay answered, rather than that the poster has no inbox, when nobody did [11.E]', async () => {
+    signOn();
+    const silent: Wire = { publish: async () => true, query: async () => ({ events: [], answered: [] }) };
+    const r = await takePart(mission('sealed-c'), 'sealed', NOW, silent);
+    expect(r).toEqual({ ok: false, because: expect.stringMatching(/No relay answered/) });
+  });
+});
+
+describe('what the audit of Milestone 11 found', () => {
+  it('sends a claim where posters read it, even when a watch holds this device’s relays [11.E]', async () => {
+    signOn();
+    set('accruing', 'watchtower', 'f'.repeat(64));
+    set('accruing', 'relays', ['wss://watch.example']);
+    const { w, sent } = fakeWire();
+    await takePart(mission('w'), 'open', NOW, w);
+    expect(sent[0]!.urls).toEqual(expect.arrayContaining(['wss://watch.example', ...DEFAULT_RELAYS]));
+  });
+
+  it('holds no place in the cap for a mission that closed early [11.X]', async () => {
+    signOn();
+    const { w } = fakeWire();
+    for (const d of ['c1', 'c2', 'c3']) await takePart(mission(d), 'open', NOW, w);
+    expect(refusal(mission('c4'), NOW)).toBe('cap');
+    expect(refusal(mission('c4'), NOW, new Set([mission('c4').address]))).toBeNull();
+  });
+
+  it('says when a claim was sent but this device could not record it [11.E]', async () => {
+    signOn();
+    const { w } = fakeWire();
+    const write = localStorage.setItem;
+    localStorage.setItem = (k: string, v: string) => {
+      if (k === 'navcom.wipeable') throw new DOMException('full', 'QuotaExceededError');
+      write(k, v);
+    };
+    const r = await takePart(mission('full'), 'open', NOW, w);
+    localStorage.setItem = write;
+    expect(r).toMatchObject({ ok: true, kept: false });
+  });
+
+  it('cannot let a claim go once the card that made it is withdrawn, and says so rather than pretending [11.E]', async () => {
+    signOn();
+    const { w } = fakeWire();
+    await takePart(mission('card'), 'open', NOW, w);
+    withdrawCard();
+    expect(await letGo(mission('card'), NOW + 60, w)).toEqual({ sent: false, card: true });
+  });
+
+  it('keeps only addresses a socket could open [11.E]', () => {
+    expect(usable(['wss://', 'wss://ok.example', 'https://no.example', 'wss://ok.example/', ' wss://x.example:99999 ', 'nonsense'])).toEqual([
+      'wss://ok.example'
+    ]);
   });
 });

@@ -9,22 +9,35 @@
   import { onMount } from 'svelte';
   import { Panel, Readout, Slot } from '$lib/components/panel';
   import { held, tookPart } from '$lib/missions/claims';
-  import { sent, settlements, withdraw, type Sent } from '$lib/missions/reports';
+  import { sent, settlements, stillToReport, withdraw, type Sent, type Withdrawal } from '$lib/missions/reports';
   import { endsIn, placeName, standingOf } from './format';
 
   let {
     now,
+    open,
     onopen,
     onreport
-  }: { now: number; onopen: (address: string) => void; onreport: (address: string) => void } = $props();
+  }: {
+    now: number;
+    /** The missions still open: a claim on one that closed early holds no place in the cap. */
+    open?: ReadonlySet<string>;
+    onopen: (address: string) => void;
+    onreport: (address: string) => void;
+  } = $props();
 
   /** Bumped after a withdrawal, so the list is read again. */
   let version = $state(0);
-  /** A withdrawal no relay took: said where it was asked for, so it can be tried again. */
-  let unheard = $state<string | null>(null);
+  /** A withdrawal that did not happen, and why: said where it was asked for. */
+  let refused = $state<{ id: string; why: Withdrawal } | null>(null);
   const t = $derived(Math.floor(now / 1000));
   const holding = $derived(held(t));
-  const history = $derived(tookPart(t));
+  const counted = $derived(holding.filter((h) => !open || open.has(h.address)).length);
+  /** Only missions with a day a report could tell of, now or from tomorrow [11.X]. */
+  const history = $derived(
+    tookPart(t)
+      .map((h) => ({ ...h, when: stillToReport(t, h) }))
+      .filter((h) => h.when !== null)
+  );
   const reports = $derived.by(() => {
     void version;
     return sent().slice().reverse();
@@ -34,25 +47,37 @@
   onMount(() => {
     void settlements(Math.floor(Date.now() / 1000))
       .then((m) => (standing = m))
-      .catch(() => (standing = { standing: new Map(), names: new Map() }));
+      .catch(() => (standing = { standing: new Map(), names: new Map(), answered: { poster: false, operators: false } }));
   });
 
   function shown(r: Sent): { value: string; tone: 'neutral' | 'good' | 'cold' | 'warn'; sub: string } {
     if (r.withdrawn) return { value: 'Withdrawn', tone: 'cold', sub: 'relays were asked to drop it; copies already taken stay' };
     const s = standing?.standing.get(r.id);
-    if (!s) return { value: standing ? 'Unknown' : 'Checking', tone: 'cold', sub: 'where it stands could not be read' };
+    if (!s) {
+      // Nobody answered is not nothing there: no "waiting", no "settled", until somebody does [11.E].
+      return standing
+        ? { value: 'Unknown', tone: 'cold', sub: 'the relays that hold its labels did not answer; try again with signal' }
+        : { value: 'Checking', tone: 'cold', sub: 'reading the relays that hold its labels' };
+    }
     return standingOf(s, standing!.names);
   }
 
+  const WHY: Record<Withdrawal, string> = {
+    asked: '',
+    unheard: 'no relay took the request; try again with signal',
+    card: 'it was signed by a card this device no longer holds, so only that card could ask',
+    'not-open': 'only a report sent to everyone can be withdrawn'
+  };
+
   async function takeBack(r: Sent) {
-    const ok = await withdraw(r.id, Math.floor(Date.now() / 1000));
-    unheard = ok ? null : r.id;
+    const why = await withdraw(r.id, Math.floor(Date.now() / 1000));
+    refused = why === 'asked' ? null : { id: r.id, why };
     version += 1;
   }
 </script>
 
 <div class="nc-yours" data-screen="yours">
-  <Panel label="Taking part" post={holding.length > 0 ? `${holding.length} of 3` : null}>
+  <Panel label="Taking part" post={counted > 0 ? `${counted} of 3` : null}>
     {#if holding.length === 0}
       <Slot k="Claims"><Readout value="Nothing claimed" tone="cold" /></Slot>
     {:else}
@@ -61,7 +86,9 @@
           <li>
             <button type="button" data-held={h.address} onclick={() => onopen(h.address)}>
               <span class="nc-yours-title">{h.title}</span>
-              <span class="nc-yours-meta">ends in {endsIn(h.ends, now)} · {h.visibility === 'open' ? 'everyone can see' : 'sealed to the poster'}</span>
+              <span class="nc-yours-meta">
+                {#if open && !open.has(h.address)}the mission is over · this lapses by itself{:else}ends in {endsIn(h.ends, now)} · {h.visibility === 'open' ? 'everyone can see' : 'sealed to the poster'}{/if}
+              </span>
             </button>
           </li>
         {/each}
@@ -78,7 +105,7 @@
           <li>
             <button type="button" data-report-mission={h.mission.d} onclick={() => onreport(h.mission.address)}>
               <span class="nc-yours-title">{h.mission.title}</span>
-              <span class="nc-yours-meta">{placeName(h.mission.placement.jurisdiction)} · report the work</span>
+              <span class="nc-yours-meta">{placeName(h.mission.placement.jurisdiction)} · {h.when === 'now' ? 'report the work' : 'reports open tomorrow'}</span>
             </button>
           </li>
         {/each}
@@ -97,8 +124,8 @@
             <span class="nc-yours-title">{r.title}</span>
             <span class="nc-yours-meta">{r.date} · {r.visibility === 'open' ? 'everyone can see' : 'sealed to the poster'}</span>
             <Readout value={s.value} tone={s.tone} sub={s.sub} />
-            {#if unheard === r.id}
-              <Readout value="Not withdrawn" tone="warn" sub="no relay took the request; try again with signal" />
+            {#if refused?.id === r.id}
+              <Readout value="Not withdrawn" tone="warn" sub={WHY[refused.why]} />
             {/if}
             {#if r.visibility === 'open' && !r.withdrawn}
               <button type="button" class="nc-yours-withdraw" data-withdraw={r.id} onclick={() => takeBack(r)}>

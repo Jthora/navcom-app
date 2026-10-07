@@ -353,8 +353,14 @@ if (deferred?.stale) {
  * gzipped on 2026-10-06, once the mission list and a mission's page split off to load on first open,
  * with the ~20% headroom every surface here gets. Reachable, not delivered: it caps what the app can
  * pull in later across every page, not what any one visit downloads.
+ *
+ * **Re-derived the same day, at 37.4 kB measured.** 11.4 finished — claims, reports, settlement,
+ * witness and challenge, five screens — and the 11.R/E/X fixes to all of it went in behind them.
+ * Com's stack growing here is what the split was for [com.md §6]: it costs a first paint nothing.
+ * The ceiling exists so that growth is a decision with a reason written beside it, as this is, and
+ * never an accident — so the same ~20% headroom, and the same warning line about 8% above it.
  */
-const DEFERRED = { limit: 33 * 1024, warn: 30 * 1024 };
+const DEFERRED = { limit: 45 * 1024, warn: 40 * 1024 };
 if (deferred && !deferred.stale) {
   report.deferred = { bytes: deferred.bytes, limit: DEFERRED.limit };
   const ok = deferred.bytes <= DEFERRED.limit;

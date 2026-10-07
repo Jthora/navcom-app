@@ -35,6 +35,8 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 /** `10 Oct, 05:00 UTC` — the form Mecha Jono's own clock lines use. */
 export function stampUtc(unixSeconds: number): string {
   const t = new Date(unixSeconds * 1000);
+  // A date no calendar can draw reads as unknown, never as "NaN undefined" [11.R].
+  if (!Number.isFinite(t.getTime())) return '—';
   const hh = String(t.getUTCHours()).padStart(2, '0');
   const mm = String(t.getUTCMinutes()).padStart(2, '0');
   return `${t.getUTCDate()} ${MONTHS[t.getUTCMonth()]}, ${hh}:${mm} UTC`;
@@ -61,14 +63,19 @@ export function endsSoon(unixSeconds: number, nowMs: number): boolean {
 /** `about 20 minutes`, `about 1.5 hours`: effort is a publisher's estimate, and reads as one. */
 export function effort(minutes: number | null): string | null {
   if (minutes === null || !(minutes > 0)) return null;
-  if (minutes < 60) return `about ${minutes} minutes`;
+  if (minutes < 60) return `about ${minutes} minute${minutes === 1 ? '' : 's'}`;
   const hours = Math.round((minutes / 60) * 2) / 2;
   return `about ${hours} hour${hours === 1 ? '' : 's'}`;
 }
 
-/** A contact key by the name it gave, or by its first eight characters when it gave none. */
+/**
+ * A contact key by the name it gave, with the key's own first eight characters beside it — a name
+ * is self-chosen, so anybody may call themselves anything, the poster's name included [11.R] — or
+ * by those characters alone when it gave none.
+ */
 export function nameOf(key: string, names: ReadonlyMap<string, string>): string {
-  return names.get(key) ?? key.slice(0, 8);
+  const name = names.get(key);
+  return name ? `${name} (${key.slice(0, 8)})` : key.slice(0, 8);
 }
 
 /**
@@ -82,7 +89,10 @@ export function standingOf(
   names: ReadonlyMap<string, string>
 ): { value: string; tone: 'neutral' | 'good'; sub: string } {
   const challenged = s.challengedBy.length > 0 ? ` · challenged by ${s.challengedBy.map((k) => nameOf(k, names)).join(', ')}` : '';
-  if (s.state === 'pending') return { value: 'Waiting', tone: 'neutral', sub: `settles by itself ${stampUtc(s.until)} unless challenged${challenged}` };
-  if (s.how === 'silence') return { value: 'Settled', tone: 'good', sub: `unchallenged for seven days${challenged}` };
+  // A challenge stops nothing, so neither line may say it would: it stands beside the settlement [economy.md §8].
+  if (s.state === 'pending') return { value: 'Waiting', tone: 'neutral', sub: `settles by itself ${stampUtc(s.until)}${challenged}` };
+  if (s.how === 'silence') {
+    return { value: 'Settled', tone: 'good', sub: challenged ? `seven days passed${challenged}` : 'unchallenged for seven days' };
+  }
   return { value: 'Settled', tone: 'good', sub: `${s.how === 'poster' ? 'by the poster' : 'by a witness'}, ${nameOf(s.by, names)}${challenged}` };
 }
