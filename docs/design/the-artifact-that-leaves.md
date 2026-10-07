@@ -73,6 +73,12 @@ it — Instagram shows alt only to screen readers, and Mastodon cannot edit alt 
 
 ### P3 — The signed report.
 
+**Built 2026-10-06, as the mission report** (interchange spec §5.2), sharing the object with the recap:
+a mission is optional, so a recap built to the earlier contract stays valid. The screen, the same-day
+default and the throttle below were decided by Jono that day, worked out as a game
+([`missions.md`](missions.md) §3): no report of today, a warning before a second report in one place
+inside a week, and who sees it asked each time. What follows is the plan as it was written.
+
 **Kind `1912` is reserved** (maintainer, 2026-10-05): it is in `kinds.ts` and in the published
 declaration, which derives `emitted: false` from the absence of a builder — so a consumer has a
 number to cite and is told plainly that nothing sends one yet. **The object itself waits on an

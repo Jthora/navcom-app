@@ -58,9 +58,9 @@ from whether a builder exists, and this document follows the same discipline.
 | Reading kind `30079` packages | LIVE — every device subscribes to The Record and its mirror at `wss://blackpi.cosmiccodex.app` at once, verifies each package itself, shows the newest signed copy of each, and keeps both subscriptions open, so a new or closed mission shows without a reload |
 | The grid (the map missions appear on) | LIVE as the landing page at [`navcom.app`](https://navcom.app/), lighting each mission's province |
 | Kind `1911` observation (raw intel) | BUILT — builder and contract exist; published at `/.well-known/navcom-intel.json` |
-| Kind `1912` report | Reserved, **not emitted** — the contract says `emitted: false` |
+| Kind `1912` report | BUILT — NavCom's devices send them, open or sealed (§5.2); the contract now says `emitted: true` |
 | Claims (§5.1) | BUILT — NavCom's devices send them, open and sealed; three rules PROPOSED (§10, Q11–Q13) |
-| Settlement, challenge (§5.3) | AGREED — waits on reports (kind `1912`), which are not emitted yet |
+| Settlement, challenge (§5.3) | BUILT on NavCom's side as a reading: each operator sees how their reports settled. Witnessing and challenging another's report from NavCom is not built |
 | Standing, Writs, bounties (§8) | DESIGNED |
 | The grid's rules — no reader records, relay lists, declared policies (§11) | DESIGNED, decided 2026-10-06. The reader rule is The Record's to apply |
 
@@ -316,12 +316,23 @@ else.
 
 ### 5.2 Doing it — a report
 
-Kind `1912`, **reserved and not emitted yet**. When it ships it carries:
+Kind `1912` — **BUILT, 2026-10-06**. It carries:
 
 - `["a", "30079:…"]` — the package — and `["ask", "<objective id>"]` for each objective covered
 - **no `g` tag**, deliberately: a region-indexed history of who worked where is the queryable
   record NavCom refuses to build
 - counts of **materiel**, never people (§7)
+
+Exactly, in the content: the operator's callsign, the day as `YYYY-MM-DD` and never a time, and
+`counts` as `[{ "line": "<one of your effect lines, verbatim>", "n": <whole number> }]`. **The
+operator types numbers and nothing else**: the objectives are yours to tick, the lines are yours to
+answer, so there is nowhere in a report to describe a person. Please drop any count whose `line` your
+package does not carry, as NavCom does. The same kind, with no mission, is the recap the earlier
+contract described; it stays valid.
+
+**Sealed to you, if the operator chooses** (PROPOSED, Q14). Like a claim, a report may be sealed to
+the poster and sent to your kind-`10050` relays. It still settles: your `settled` label names the id
+inside the seal, which tells nobody else who wrote it. Privacy must not cost an operator recognition.
 
 **Reports will arrive late, on purpose** (DESIGNED). The client is to refuse same-day publication
 by default and warn before a second report in one region inside a short window. That is a privacy control: a report
@@ -524,6 +535,7 @@ then Mecha Jono records each claim against its package, and no claim on a campai
 
 | | Question | NavCom's default if unanswered |
 |---|---|---|
+| Q14 | Will you read sealed reports from your inbox, and settle them by the id inside the seal? | A sealed report reaches you and settles by silence after seven days, which still counts as settled |
 | Q11 | Will you read a claim as ended at its `expiration`, a day at most, with taking part again as a fresh claim? | Claims still lapse on NavCom's side; you would go on counting one until it ends |
 | Q12 | Will you read a `released` label, open or sealed, as the claimant letting go? | An open claim is still withdrawn by its NIP-09 request; a sealed one counts until it lapses, a day at most |
 | Q13 | Will you publish `["taking_part", "<operators>", "<agents>"]` on your packages, counting private claims and naming nobody? | NavCom shows who is taking part as unknown |

@@ -10,7 +10,9 @@ phone, which is why both arrived in the same sentence.
 Status: **design, decided 2026-10-06. The shell is built** — the two containers, the three detents,
 the search-first root and the `Distress` layer, as the landing page — **and the stack's first
 screens**: the mission list, opened from the map's missions line or a tapped province, and a
-mission's page, both loaded on first open. The signed-in root, profile, groups and chat are not. Companions: [`panel.md`](panel.md) for the readout rules,
+mission's page, both loaded on first open. **The signed-in root has begun**: someone signed on finds
+their own missions first — what they hold, what waits to be reported, what they sent and how it
+settled. Profile, groups and chat are not built. Companions: [`panel.md`](panel.md) for the readout rules,
 [`map.md`](map.md) for Nav, [`delivery.md`](../delivery.md) for the budgets this is measured against.
 
 ---

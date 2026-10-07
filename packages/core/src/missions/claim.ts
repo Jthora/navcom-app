@@ -20,15 +20,12 @@
  * claim can be let go as easily as a public one. Choosing privacy must not cost the option of
  * changing your mind.
  */
-import { finalizeEvent, generateSecretKey, verifyEvent } from 'nostr-tools/pure';
+import { finalizeEvent, verifyEvent } from 'nostr-tools/pure';
 import type { Event } from 'nostr-tools/core';
-import * as nip44 from 'nostr-tools/nip44';
-import { createRumor, createSeal } from 'nostr-tools/nip59';
+import { sealToPoster } from './seal.js';
 
 /** NIP-32. */
 export const KIND_LABEL = 1985;
-/** NIP-59. */
-export const KIND_GIFT_WRAP = 1059;
 /** NIP-09. */
 export const KIND_DELETION = 5;
 /** NIP-17: where somebody accepts sealed messages. */
@@ -91,37 +88,31 @@ export function buildSealedMissionClaim(
   ends: number,
   createdAt: number
 ): Event {
-  const rumor = createRumor(missionLabel(label, mission, ends, createdAt), contactSecret);
-  const seal = createSeal(rumor, contactSecret, poster);
-  const once = generateSecretKey();
-  return finalizeEvent(
-    {
-      kind: KIND_GIFT_WRAP,
-      created_at: createdAt - Math.floor(Math.random() * 2 * 86_400),
-      content: nip44.encrypt(JSON.stringify(seal), nip44.getConversationKey(once, poster)),
-      tags: [
-        ['p', poster],
-        ['expiration', String(ends)]
-      ]
-    },
-    once
-  );
+  return sealToPoster(contactSecret, poster, missionLabel(label, mission, ends, createdAt), ends).wrap;
 }
 
-/** A NIP-09 request to drop an open claim, sent beside its `released` label. */
-export function buildClaimDeletion(contactSecret: Uint8Array, claimId: string, createdAt: number): Event {
+/**
+ * A NIP-09 request to drop something the contact key published. Relays may honour it or not, and
+ * nothing recalls a copy somebody already has; a screen offering it must say so.
+ */
+export function buildDeletion(contactSecret: Uint8Array, id: string, kind: number, createdAt: number): Event {
   return finalizeEvent(
     {
       kind: KIND_DELETION,
       created_at: createdAt,
       content: '',
       tags: [
-        ['e', claimId],
-        ['k', String(KIND_LABEL)]
+        ['e', id],
+        ['k', String(kind)]
       ]
     },
     contactSecret
   );
+}
+
+/** A NIP-09 request to drop an open claim, sent beside its `released` label. */
+export function buildClaimDeletion(contactSecret: Uint8Array, claimId: string, createdAt: number): Event {
+  return buildDeletion(contactSecret, claimId, KIND_LABEL, createdAt);
 }
 
 /**

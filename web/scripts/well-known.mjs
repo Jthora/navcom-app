@@ -453,8 +453,15 @@ export function intelDocument(root = ROOT) {
          * a world that does not exist. This flips the day a builder appears in core.
          */
         emitted: reportEmitted,
+        /* Undefined while reserved, so JSON leaves them out: the fields are stated once something sends them. */
+        required: reportEmitted ? ['callsign', 'date'] : undefined,
+        optional: reportEmitted ? ['does', 'region', 'counts', 'supersedes'] : undefined,
+        mission_tags: reportEmitted ? ['a', 'ask'] : undefined,
+        sealed: reportEmitted
+          ? 'A mission report may instead be sealed to the mission\'s poster (NIP-44, NIP-59, to the relays its kind-10050 list names). The poster\'s labels then name the id inside the seal'
+          : undefined,
         note: reportEmitted
-          ? 'A client can build one.'
+          ? 'An operator\'s own account of their own work, signed by the contact key. On its own: a callsign, a day (YYYY-MM-DD, never a time) and one to three activity terms, with an optional region in the content and never as a tag. Naming a mission instead: an `a` tag for the package, an `ask` tag per objective done, and counts that each answer one of the poster\'s own `effect` lines verbatim, of things and never of people — a reader drops a count whose line the package does not carry. No g tag, no t tags, no partners, no coordinates, no free text; a report carrying any field or tag outside this is refused, not trimmed. NavCom\'s client sends none the same day as the work.'
           : 'RESERVED. Nothing in NavCom builds one yet, so none exists. The number is allocated so that nobody else takes it and an implementer has something citable. Fields are settled in docs/design/the-artifact-that-leaves.md and in the exchange with Archangel Agency: callsign, date, one to three activity terms, an optional region in the content and never a tag, and an optional supersedes. No g tag, no t tags, no mission, no partners, no counts, no coordinates, no time of day.'
       }
     ],

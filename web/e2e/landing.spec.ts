@@ -599,4 +599,64 @@ test.describe('the landing page: missions you can open', () => {
     await expect(page.locator('[data-takepart]')).toContainText('inbox could not be found');
     await expect(page.locator('[data-slot="you"]')).toHaveCount(0);
   });
+
+  test('an operator reports the work the day after, and sees it wait to settle', async ({ page }) => {
+    await withHeat(page, { __noStorage: false, callsign: 'kestrel' });
+    // Signed on, Com's root starts with your own situation [com.md §2].
+    await expect(page.locator('[data-yours]')).toBeVisible();
+    await page.locator('[data-missions="open"]').click();
+    await page.locator(`[data-mission="${HEAT_D}"]`).click();
+    await page.getByRole('button', { name: 'Take part' }).click();
+    await page.locator('[data-visibility="open"]').click();
+    await expect(page.locator('[data-slot="you"]')).toContainText('Taking part');
+
+    // Back to the root, and into your own missions.
+    await page.locator('[data-back]').click();
+    await page.locator('[data-back]').click();
+    await page.locator('[data-yours]').click();
+    await expect(page.locator('[data-screen="yours"]')).toContainText('Heat relief');
+    await page.locator(`[data-report-mission="${HEAT_D}"]`).click();
+
+    const report = page.locator('[data-screen="report"]');
+    await expect(report).toBeVisible();
+    // Today is not a day a report can tell of.
+    const today = await page.evaluate(() => {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    });
+    const offered = await report.locator('[data-day] option').evaluateAll((os) => os.map((o) => (o as HTMLOptionElement).value));
+    expect(offered).not.toContain(today);
+    // Nothing is ticked for them, and nothing sends until they say what they did.
+    await expect(report.locator('input[type="checkbox"]:checked')).toHaveCount(0);
+    await expect(report.getByRole('button', { name: 'Send report' })).toBeDisabled();
+
+    await report.locator('[data-day]').selectOption({ index: 1 });
+    await report.locator('[data-ask]').first().check();
+    await report.getByRole('button', { name: 'Send report' }).click();
+    await report.locator('[data-visibility="open"]').click();
+
+    // Back on your missions: sent, and waiting for its seven days.
+    const listed = page.locator('[data-screen="yours"] [data-sent]');
+    await expect(listed).toHaveCount(1);
+    await expect(listed).toContainText('Waiting');
+    // What left: one report, naming the mission and what was done, and no words.
+    const reports = await page.evaluate(() => {
+      const sent = (globalThis as unknown as { __navcomPublished?: { id: string; kind: number; tags: string[][]; content: string }[] })
+        .__navcomPublished ?? [];
+      return [...new Map(sent.filter((e) => e.kind === 1912).map((e) => [e.id, e])).values()];
+    });
+    expect(reports).toHaveLength(1);
+    expect(reports[0]!.tags.map((t) => t[0])).toEqual(['a', 'ask']);
+    expect(Object.keys(JSON.parse(reports[0]!.content)).sort()).toEqual(['callsign', 'date']);
+
+    // Withdrawn honestly: the screen says relays were asked, not that it is gone.
+    await listed.locator('[data-withdraw]').click();
+    await expect(listed).toContainText('Withdrawn');
+    await expect(listed).toContainText('copies already taken stay');
+  });
+
+  test('signed out, Com’s root is the search, with no missions of your own above it', async ({ page }) => {
+    await withHeat(page);
+    await expect(page.locator('[data-yours]')).toHaveCount(0);
+  });
 });

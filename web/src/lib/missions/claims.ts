@@ -54,6 +54,32 @@ export const wire: Wire = {
 };
 
 const STORE = 'mission_claims';
+/**
+ * Missions this device took part in, kept so the work can be reported after the claim lapses and
+ * after the mission leaves the map — reports arrive late on purpose. Wipeable, like the claims.
+ */
+const HISTORY = 'mission_history';
+/** How long a mission is remembered after it ends, for a report to be filed. */
+const HISTORY_DAYS = 30;
+
+export interface TookPart {
+  mission: Mission;
+  /** Unix seconds: when this device first took part. */
+  since: number;
+}
+
+/** Missions this device took part in, for reporting. */
+export function tookPart(now: number): TookPart[] {
+  const all = get<TookPart[]>('wipeable', HISTORY) ?? [];
+  return all.filter((t) => t.mission.validUntil + HISTORY_DAYS * 86_400 > now);
+}
+
+function remember(m: Mission, now: number): void {
+  const all = tookPart(now);
+  const before = all.find((t) => t.mission.address === m.address);
+  const kept = all.filter((t) => t.mission.address !== m.address);
+  set('wipeable', HISTORY, [...kept, { mission: m, since: before?.since ?? now }]);
+}
 
 /** Claims this device holds that have not ended. */
 export function held(now: number): Held[] {
@@ -87,7 +113,7 @@ export function refusal(m: Mission, now: number): Refusal | null {
  * wire, so what one set of relays said is never taken as what another would.
  */
 const inboxesByWire = new WeakMap<Wire, Map<string, Promise<string[]>>>();
-function inboxOf(poster: string, w: Wire): Promise<string[]> {
+export function inboxOf(poster: string, w: Wire): Promise<string[]> {
   let inboxes = inboxesByWire.get(w);
   if (!inboxes) inboxesByWire.set(w, (inboxes = new Map()));
   let found = inboxes.get(poster);
@@ -148,6 +174,7 @@ export async function takePart(m: Mission, visibility: Visibility, now: number, 
   if (before?.claimId) void w.publish(relays(), buildClaimDeletion(ensureContactKey(), before.claimId, now));
   const h: Held = { address: m.address, title: m.title, visibility, ends, claimId: sent.id };
   keep([...held(now).filter((x) => x.address !== m.address), h]);
+  remember(m, now);
   return { ok: true, held: h };
 }
 

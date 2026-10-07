@@ -119,6 +119,19 @@ least.
   mission here is field work, and nobody should set out without `Distress` in their pocket; signing on
   asks for a callsign and nothing else, and the mission reopens when they come back.
 
+**And four for a report**, worked out the same way the same day:
+
+- **Not today.** A report of tonight is worth most to somebody tracking an operator and little to the
+  operator, so the screen offers no way to report today, and nothing is queued to send later — a store
+  of unsent reports is a store of where somebody has been.
+- **A second report in one place inside a week is warned about, never refused.** A series is what the
+  doxxer reads; the operator decides.
+- **The operator types numbers and nothing else.** Objectives are the poster's to tick, counts answer
+  the poster's own lines; nothing is ticked for them, because a form that starts with everything done
+  invites saying more than happened.
+- **Who sees it is asked each time, as for a claim.** A public report is a permanent record of who
+  worked where; a sealed one still settles, so privacy never costs recognition.
+
 **`settled` is where the points come from, so it is where the gaming comes from.** Who settles:
 
 | Model | Works when | Fails when |

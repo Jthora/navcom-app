@@ -139,7 +139,11 @@
    * Com is a navigation stack whose root is the search [com.md §1, §2]. Missions are its first
    * screens: the list, narrowed to a province when one is tapped, and one mission.
    */
-  type Screen = { kind: 'missions'; province: string | null } | { kind: 'mission'; address: string };
+  type Screen =
+    | { kind: 'missions'; province: string | null }
+    | { kind: 'mission'; address: string }
+    | { kind: 'yours' }
+    | { kind: 'report'; address: string };
   let stack = $state<Screen[]>([]);
   const top = $derived(stack.at(-1) ?? null);
   /** Loaded the first time a screen opens: code first paint never needs [com.md §6]. */
@@ -171,6 +175,18 @@
   function back() {
     stack = stack.slice(0, -1);
   }
+
+  /**
+   * Signed on, Com's root opens on your own situation first [com.md §2]. Read straight from this
+   * device's storage, so first paint carries no claims code: the screens load when opened.
+   */
+  let operator = $state(false);
+  const holding = $derived.by(() => {
+    void stack;
+    if (!operator) return 0;
+    const t = Math.floor(now / 1000);
+    return (get<{ ends: number }[]>('wipeable', 'mission_claims') ?? []).filter((h) => h.ends > t).length;
+  });
 
   /**
    * Fetch one region's records so the search can see them.
@@ -364,6 +380,7 @@
      * [hooks.server.ts]; this repeats it for a device that signed on after that ran.
      */
     if (get('accruing', 'secret')) document.getElementById('distress-early')?.removeAttribute('hidden');
+    operator = !!get('accruing', 'secret');
 
     /*
      * Somebody left a mission to sign on so they could take part [TakePart.svelte]: now that there
@@ -579,6 +596,14 @@
                   {now}
                   onopen={(address) => open({ kind: 'mission', address })}
                 />
+              {:else if top.kind === 'yours'}
+                <screens.YoursScreen
+                  {now}
+                  onopen={(address) => open({ kind: 'mission', address })}
+                  onreport={(address) => open({ kind: 'report', address })}
+                />
+              {:else if top.kind === 'report'}
+                <screens.ReportScreen address={top.address} {now} ondone={back} />
               {:else if top.kind === 'mission'}
                 {@const address = top.address}
                 {@const m = active.find((x) => x.address === address)}
@@ -602,6 +627,13 @@
           </div>
         {:else}
   <div class="nc-bridge">
+    {#if operator}
+      <Panel label="Yours" post={holding > 0 ? `${holding} held` : null}>
+        <button type="button" class="yours-open" data-yours onclick={() => open({ kind: 'yours' })}>
+          Your missions
+        </button>
+      </Panel>
+    {/if}
     <Panel label="Find" post={nearRegion ? `Near ${nearRegion.name}` : null}>
       <label for="lookup" class="nc-lookup-label">Where are you, or what do you need</label>
       <input
@@ -1056,6 +1088,18 @@
   .screen-unloaded {
     color: var(--t-ink);
     font-size: 0.9rem;
+  }
+  .yours-open {
+    width: 100%;
+    min-height: 3rem;
+    padding: 0 0.8rem;
+    border: 1px solid var(--t-line-strong);
+    background: var(--t-sunk);
+    color: var(--t-ink);
+    font: inherit;
+    font-weight: 600;
+    text-align: start;
+    cursor: pointer;
   }
   /* The missions line in the map's key, as the button it is. */
   .missions-open {

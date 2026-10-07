@@ -3,7 +3,6 @@ import { finalizeEvent, generateSecretKey, getPublicKey, verifyEvent } from 'nos
 import * as nip44 from 'nostr-tools/nip44';
 import {
   CLAIM_LEASE_SECONDS,
-  KIND_GIFT_WRAP,
   KIND_INBOX_RELAYS,
   KIND_LABEL,
   MISSION_NAMESPACE,
@@ -13,6 +12,7 @@ import {
   claimEnds,
   inboxRelays
 } from '../src/missions/claim';
+import { KIND_GIFT_WRAP } from '../src/missions/seal';
 
 /**
  * Taking part in a mission [interchange spec §5.1]. The sealed path is opened here the way the

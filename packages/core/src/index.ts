@@ -12,6 +12,7 @@ export * from './events/public.js';
 export * from './events/links.js';
 export * from './events/proofs.js';
 export * from './events/profile.js';
+export * from './events/report.js';
 export * from './events/announce.js';
 export * from './events/key-bundle.js';
 export * from './events/endorsement.js';
