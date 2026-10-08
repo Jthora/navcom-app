@@ -280,7 +280,11 @@ describe('what the second audit of Milestone 11 found', () => {
   });
 
   it('drops a count of people under every word the reader names for them', () => {
-    const words = ['People', 'Person', 'Persons', 'Individual', 'Individuals', 'Residents', 'Clients', 'Guests'];
+    const words = [
+      'People', 'Person', 'Persons', 'Individual', 'Individuals', 'Residents', 'Clients', 'Guests',
+      // Added 2026-10-07: the phrasings a count of people actually arrived in [audit 11.S, #56].
+      'Households', 'Families', 'Children', 'Kids', 'Men', 'Women', 'Youth', 'Seniors', 'Neighbours', 'Neighbors', 'Folks', 'Unhoused'
+    ];
     const effect = [...words.map((w) => `${w} reached: a count`), 'Water handed out: a count'];
     const content = JSON.stringify({ name: 'x', objectives: [{ id: 'do:it', ask: 'Do it.' }], metadata: { mechaJono: { format: { effect } } } });
     const m = ok(pkg([], { content }), TEST);

@@ -164,8 +164,14 @@ const prefixed = (e: Event, prefix: string) =>
 const STATES: readonly MissionState[] = ['open', 'claimed', 'closed'];
 const DISTRESS_KINDS = /^2091[0-4]$/;
 const JURISDICTION = /^[a-z]{2}(-[a-z0-9]{1,3})?$/;
-/** Words that make a line of `effect` a count of people. Deliberately plain. */
-const PEOPLE = /\b(people|persons?|individuals?|residents|clients|guests)\b/i;
+/**
+ * Words that make a line of `effect` a count of people. Deliberately plain, and wide on purpose
+ * (decided 2026-10-07, after the audit found counts of people phrased in words the list lacked):
+ * a materiel line that happens to use one of them is dropped too, which is the cheaper mistake
+ * [invariant 1].
+ */
+const PEOPLE =
+  /\b(people|persons?|individuals?|residents|clients|guests|households|families|children|kids|men|women|youths?|seniors|neighbou?rs|folks|unhoused)\b/i;
 const D_TAG = new RegExp(`^\\S{1,${D_TAG_MAX}}$`);
 /** 2100-01-01, in unix seconds: no field mission is planned further out than this. */
 const LAST_END = 4_102_444_800;
