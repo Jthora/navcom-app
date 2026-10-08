@@ -93,6 +93,13 @@ const isTerminalScope = (pathname: string) =>
 const SHELL = [
   ...build,
   ...files.filter((f) => !f.endsWith('.csv')),
+  /*
+   * The landing page, where a signed-on operator in a browser works missions with Distress on
+   * the screen [com.md §4]. It lived only in the site cache, which evicts its oldest entry first
+   * and never re-inserts a hit, so after an evening of reading places, or after any deploy, `/`
+   * was gone offline -- and Distress with it [audit 11.S].
+   */
+  `${base}/`,
   ...TERMINAL_ROUTES.map(
     (page) => `${base}/terminal/${page}`
   )
@@ -122,8 +129,24 @@ const areaParts = (path: string) => [path, path.replace(/\/?$/, '/') + '__data.j
 
 const sw = self as unknown as ServiceWorkerGlobalScope;
 
-/** No network and nothing cached. Fail visibly — degrade visibly, never fail silently. */
-function offline(): Response {
+/**
+ * No network and nothing cached. Fail visibly — degrade visibly, never fail silently.
+ *
+ * A page gets a page, with the way to Distress on it: the Distress screen is precached and works
+ * with no signal, and a plain-text dead end was what an operator found at 2am on any page this
+ * phone had not saved [audit 11.S].
+ */
+function offline(request?: Request): Response {
+  if (request?.mode === 'navigate') {
+    return new Response(
+      '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+        '<title>Offline · NavCom</title>' +
+        '<p>Offline, and this page was not saved on this phone.</p>' +
+        `<p><a href="${base}/terminal/distress/">Distress</a> works with no signal. ` +
+        `<a href="${base}/terminal/">The Field Terminal</a> does too.</p>`,
+      { status: 503, headers: { 'content-type': 'text/html; charset=utf-8' } }
+    );
+  }
   return new Response('Offline, and this was not cached.', {
     status: 503,
     headers: { 'content-type': 'text/plain' }
@@ -442,7 +465,7 @@ sw.addEventListener('fetch', (event) => {
               void keepSitePage(request, response.clone());
               return response;
             })
-            .catch(() => offline())
+            .catch(() => offline(request))
       )
     );
     return;
@@ -463,7 +486,7 @@ sw.addEventListener('fetch', (event) => {
           caches.open(CACHE).then((c) => c.put(request, copy));
           return response;
         })
-        .catch(() => caches.match(request).then((hit) => hit ?? offline()))
+        .catch(() => caches.match(request).then((hit) => hit ?? offline(request)))
     );
     return;
   }
@@ -473,7 +496,7 @@ sw.addEventListener('fetch', (event) => {
       (hit) =>
         hit ??
         fetch(request).catch(() => {
-          return offline();
+          return offline(request);
         })
     )
   );

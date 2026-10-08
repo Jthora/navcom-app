@@ -71,7 +71,31 @@ test('an uncached page offline says so rather than looking empty', async ({ page
 
   const response = await page.goto('/terminal/directory/anchorage/');
   expect(response?.status()).toBeGreaterThanOrEqual(400);
-  await expect(page.getByText(/not cached/i)).toBeVisible();
+  await expect(page.getByText(/not saved on this phone/i)).toBeVisible();
+  // Not a dead end: the way to Distress is on it, and Distress loads with no signal [audit 11.S].
+  await page.getByRole('link', { name: 'Distress' }).click();
+  await expect(page).toHaveURL(/\/terminal\/distress\/$/);
+  await expect(page.locator('button.raise')).toBeVisible();
+});
+
+test('the landing page opens offline once the worker is installed, Distress and all [audit 11.S]', async ({ page, context }) => {
+  test.skip(test.info().project.name === 'iphone', 'WebKit driver crashes on navigation while offline');
+  // It lived only in an evictable site cache, never re-inserted on a hit and dropped by every
+  // deploy, so an evening of reading places left navcom.app blank offline. It is precached now.
+  await seedDevice(page, WREN);
+  await open(page, '/terminal/');
+  await serviceWorkerReady(page);
+  const precached = await page.evaluate(async () => {
+    for (const name of await caches.keys()) {
+      if (await (await caches.open(name)).match('/')) return name;
+    }
+    return null;
+  });
+  expect(precached, 'the landing page is in no cache after install').not.toBeNull();
+  await context.setOffline(true);
+  const response = await page.goto('/');
+  expect(response?.status()).toBe(200);
+  await expect(page.locator('[data-distress-bar], a[href="/terminal/distress/"]').first()).toBeAttached();
 });
 
 test('the directory says which areas are actually on this phone', async ({ page }) => {
