@@ -19,7 +19,7 @@
   import { Panel, Readout, Slot } from '$lib/components/panel';
   import { cardSent, contactPubkey, myCard } from '$lib/terminal/card';
   import { get } from '$lib/terminal/storage';
-  import { signedOn, tookPart } from '$lib/missions/claims';
+  import { MAY_HAVE_ARRIVED, signedOn, tookPart } from '$lib/missions/claims';
   import { isMine, labelReport, reportsOn, type MissionReports, type OnMission } from '$lib/missions/reports';
   import { placeName, standingOf } from './format';
 
@@ -79,7 +79,7 @@
     return `Signed for anyone to see, under ${key} with no name: no card of yours is published.`;
   });
   let sending = $state(false);
-  let error = $state<{ id: string; text: string } | null>(null);
+  let error = $state<{ id: string; text: string; unconfirmed?: boolean } | null>(null);
 
   onMount(() => {
     if (!m) return;
@@ -96,7 +96,9 @@
     'signed-out': 'sign on first',
     own: 'not about your own report',
     'not-there': 'only somebody who took part can say they were there',
-    late: 'its seven days are over, and a late challenge counts for nothing'
+    late: 'its seven days are over, and a late challenge counts for nothing',
+    // A second statement from one card counts once, so sending it again is safe [core: settlementOf].
+    unconfirmed: `${MAY_HAVE_ARRIVED} Sent again, it still counts once.`
   } as const;
 
   async function say(r: OnMission, kind: 'witnessed' | 'challenged') {
@@ -111,7 +113,7 @@
       me = done.label.pubkey;
       read = { ...read, labels: [...read.labels, done.label] };
     }
-    else error = { id: r.id, text: done.because === 'not-sent' ? done.detail : WHY[done.because] };
+    else error = { id: r.id, text: done.because === 'not-sent' ? done.detail : WHY[done.because], unconfirmed: done.because === 'unconfirmed' };
   }
 </script>
 
@@ -174,7 +176,7 @@
                   {/if}
                 </div>
               {/if}
-              {#if error?.id === r.id}<Readout value="Not sent" tone="warn" sub={error.text} />{/if}
+              {#if error?.id === r.id}<Readout value={error.unconfirmed ? 'Unconfirmed' : 'Not sent'} tone="warn" sub={error.text} />{/if}
             {/if}
           </li>
         {/each}

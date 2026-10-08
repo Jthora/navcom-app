@@ -60,6 +60,30 @@ export function endsSoon(unixSeconds: number, nowMs: number): boolean {
   return s > 0 && s < 86_400;
 }
 
+/**
+ * A claim let go whose release no relay has confirmed [audit 11.S, finding 66]. "Unconfirmed" — it
+ * may have arrived — only when the release left the phone and no relay refused it; otherwise no
+ * relay has it, and the claim certainly stands. Said as unconfirmed with no signal at all, it
+ * invited her to read the claim as maybe released and not send it [review].
+ */
+export function releaseReadout(u: { ends: number; mayHaveArrived?: true }, nowMs: number): { value: string; sub: string } {
+  const left = endsIn(u.ends, nowMs);
+  return u.mayHaveArrived
+    ? { value: 'Release unconfirmed', sub: `no relay confirmed it; it may have arrived · the claim ends by itself in ${left}` }
+    : { value: 'Release not sent', sub: `no relay has it · the claim stands until it ends by itself in ${left}` };
+}
+
+/**
+ * Why a day cannot be reported again [audit 11.S, finding 52]. Withdrawing is offered only for a
+ * report that can be withdrawn: a sealed one has already reached its poster, and told to withdraw
+ * it, she had no way to [review].
+ */
+export function alreadyReported(visibility: 'open' | 'sealed', posterName: string): string {
+  return visibility === 'open'
+    ? 'This day is already reported, to everyone. Withdraw that one to report it again.'
+    : `This day is already reported, sealed to ${posterName}. A sealed report cannot be withdrawn, so the day stays reported.`;
+}
+
 /** `about 20 minutes`, `about 1.5 hours`: effort is a publisher's estimate, and reads as one. */
 export function effort(minutes: number | null): string | null {
   if (minutes === null || !(minutes > 0)) return null;

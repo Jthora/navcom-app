@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import type { Event } from 'nostr-tools/core';
 import type { Filter } from 'nostr-tools/filter';
-import { DEFAULT_RELAYS, MISSION_RELAYS, buildDeletion, buildMissionClaim, buildReport, buildReportLabel, readMissionPackage, type Mission } from '@navcom/core';
+import { DEFAULT_RELAYS, KIND_LABEL, MISSION_RELAYS, THE_RECORD, buildDeletion, buildMissionClaim, buildReport, buildReportLabel, readMissionPackage, type Mission } from '@navcom/core';
 import { clearField, set } from '$lib/terminal/storage';
 import { ensureContactKey, withdrawCard } from '$lib/terminal/card';
 import { takePart, tookPart, type Wire } from './claims';
@@ -14,12 +14,14 @@ import {
   isMine,
   labelReport,
   localDay,
+  reportAgain,
   reportableDays,
   reportsOn,
   sent,
   settlements,
   stillToReport,
-  withdraw
+  withdraw,
+  type Sent
 } from './reports';
 import { standingOf } from '$lib/components/missions/format';
 
@@ -61,7 +63,7 @@ function fakeWire(answers: Event[] = []) {
   const w: Wire = {
     publish: async (urls, event) => {
       sentEvents.push({ urls, event });
-      return true;
+      return 'took' as const;
     },
     query: async (urls) => ({ events: answers, answered: urls })
   };
@@ -129,7 +131,7 @@ describe('a report in the open', () => {
     const { w } = fakeWire();
     const r = await fileReport(mission('a'), draft(localDay(NOW - 86_400)), 'open', NOW, {}, w);
     if (!r.ok) throw new Error('not sent');
-    const refused: Wire = { publish: async () => false, query: async () => ({ events: [], answered: [] }) };
+    const refused: Wire = { publish: async () => 'refused', query: async () => ({ events: [], answered: [] }) };
     expect(await withdraw(r.sent.id, NOW + 60, refused)).toBe('unheard');
     expect(sent()[0]!.withdrawn).toBeUndefined();
   });
@@ -217,7 +219,7 @@ function relayOf(events: Event[], answered?: (urls: string[]) => string[], cap =
   const w: Wire = {
     publish: async (_urls, event) => {
       published.push(event);
-      return true;
+      return 'took' as const;
     },
     query: async (urls, f) => {
       queries.push({ urls, filter: f });
@@ -272,9 +274,9 @@ describe('other operators’ reports on a mission', () => {
 
   it('asks relays by mission, never by report, so no relay learns which reports a device cares about', async () => {
     const asked: Filter[] = [];
-    const w: Wire = { publish: async () => true, query: async (_u, f) => (asked.push(f), { events: [], answered: [] }) };
+    const w: Wire = { publish: async () => 'took', query: async (_u, f) => (asked.push(f), { events: [], answered: [] }) };
     await reportsOn(m, NOW, w);
-    await fileReport(m, draft(localDay(NOW - 86_400)), 'open', NOW, {}, { ...w, publish: async () => true });
+    await fileReport(m, draft(localDay(NOW - 86_400)), 'open', NOW, {}, { ...w, publish: async () => 'took' });
     await settlements(NOW + 60, w);
     const labelQueries = asked.filter((f) => f.kinds?.includes(1985));
     expect(labelQueries.length).toBeGreaterThan(0);
@@ -324,7 +326,7 @@ describe('witnessing and challenging somebody’s report', () => {
   });
 
   it('says so when no relay took it', async () => {
-    const refused: Wire = { publish: async () => false, query: async () => ({ events: [], answered: [] }) };
+    const refused: Wire = { publish: async () => 'refused', query: async () => ({ events: [], answered: [] }) };
     expect(await labelReport('challenged', theirs(), m, NOW, refused)).toMatchObject({ ok: false, because: 'not-sent' });
   });
 });
@@ -365,7 +367,7 @@ describe('what the audit of Milestone 11 found', () => {
   it('calls where a report stands unknown when the relays that hold its labels did not answer [11.E]', async () => {
     const { w } = fakeWire();
     await fileReport(mission('a'), draft(localDay(NOW - 86_400)), 'open', NOW, {}, w);
-    const silent: Wire = { publish: async () => true, query: async () => ({ events: [], answered: [] }) };
+    const silent: Wire = { publish: async () => 'took', query: async () => ({ events: [], answered: [] }) };
     // Eight days on, silence would have settled it — but nobody answered, so nothing is claimed.
     const after = await settlements(NOW + 8 * 86_400, silent);
     expect(after.standing.size).toBe(0);
@@ -441,8 +443,8 @@ describe('what the second audit of Milestone 11 found', () => {
   describe('where reports stand, read mission by mission [review]', () => {
     const quiet = mission('quiet', 'us-ca');
     const busy = mission('busy', 'us-tx');
-    const file = async (on: Mission, w: Wire, visibility: 'open' | 'sealed' = 'open') => {
-      const r = await fileReport(on, draft(localDay(NOW - 86_400)), visibility, NOW, { series: true }, w);
+    const file = async (on: Mission, w: Wire, visibility: 'open' | 'sealed' = 'open', day = localDay(NOW - 86_400)) => {
+      const r = await fileReport(on, draft(day), visibility, NOW, { series: true }, w);
       if (!r.ok) throw new Error('not sent');
       return r.sent.id;
     };
@@ -502,7 +504,7 @@ describe('what the second audit of Milestone 11 found', () => {
       busyRelay.push(buildReportLabel(posterSecret, 'settled', { id, mission: quiet.address }, NOW + 10_050));
       for (let i = 0; i < 300; i++) oldRelay.push(buildReportLabel(stranger, 'witnessed', { id: 'f'.repeat(64), mission: quiet.address }, NOW + 1_000 + i));
       const w: Wire = {
-        publish: async () => true,
+        publish: async () => 'took',
         query: async (urls, f) => {
           const byId = new Map<string, Event>();
           for (const e of served(busyRelay, f, 500)) byId.set(e.id, e);
@@ -567,7 +569,8 @@ describe('what the second audit of Milestone 11 found', () => {
       const inbox = finalizeEvent({ kind: 10050, created_at: NOW, content: '', tags: [['relay', 'wss://nos.lol']] }, posterSecret);
       const relay = relayOf([inbox]);
       await file(quiet, relay.w, 'sealed');
-      const open = await file(quiet, relay.w);
+      // Another day's work: a day already reported is not reported again [audit 11.S, finding 52].
+      const open = await file(quiet, relay.w, 'open', localDay(NOW - 2 * 86_400));
       const heron = generateSecretKey();
       relay.published.push(buildReportLabel(heron, 'challenged', { id: open, mission: quiet.address }, NOW + 3_600));
       const read = await settlements(NOW + 7_200, relay.w);
@@ -736,5 +739,345 @@ describe('what the second audit of Milestone 11 found', () => {
     expect(standingOf({ state: 'settled', how: 'poster', by: k, at: NOW, challengedBy: [] }, names).sub).toBe('by the poster, Heron (kkkkkkkk)');
     expect(standingOf({ state: 'settled', how: 'witness', by: k, at: NOW, challengedBy: [] }, names).sub).toBe('by a witness, Heron (kkkkkkkk)');
     expect(standingOf({ state: 'settled', how: 'silence', at: NOW, challengedBy: [] }, names).sub).toBe('unchallenged for seven days');
+  });
+});
+
+
+describe('what the second audit left open', () => {
+  const m = mission('left-open');
+  const inbox = finalizeEvent({ kind: 10050, created_at: NOW, content: '', tags: [['relay', 'wss://inbox.example']] }, posterSecret);
+  const day = (n: number) => localDay(NOW - n * 86_400);
+
+  describe('a day already reported [audit 11.S, finding 52]', () => {
+    /*
+     * The Quartermaster reported socks for Tuesday, and "To report" still said "report the work";
+     * opened again, it offered Tuesday with no mark, and "Send anyway" put a second report of the
+     * same day's work on the relays, counted twice wherever settled reports are counted.
+     */
+    it('is not offered again, and a mission whose every day is reported is not one to report', async () => {
+      const t = { mission: m, since: NOW - 3 * 86_400 };
+      expect(reportableDays(NOW, t)).toEqual([day(1), day(2), day(3)]);
+      const { w } = fakeWire();
+      for (const n of [1, 2, 3]) expect((await fileReport(m, draft(day(n)), 'open', NOW, { series: true }, w)).ok).toBe(true);
+      expect(reportableDays(NOW, t)).toEqual([]);
+      // Still running: today is the next day to report, from tomorrow — never "report the work" now.
+      expect(stillToReport(NOW, t)).toBe('tomorrow');
+      // Over, and every day of it reported: nothing is left.
+      expect(stillToReport(NOW, { ...t, mission: { ...m, validUntil: NOW - 86_400 } })).toBeNull();
+    });
+
+    it('is refused if sent again from a screen opened before, and nothing leaves', async () => {
+      const { w, sentEvents } = fakeWire([inbox]);
+      expect((await fileReport(m, draft(day(1)), 'open', NOW, {}, w)).ok).toBe(true);
+      const before = sentEvents.length;
+      for (const visibility of ['open', 'sealed'] as const) {
+        expect(await fileReport(m, draft(day(1)), visibility, NOW + 60, { series: true }, w)).toMatchObject({ ok: false, because: 'reported' });
+      }
+      expect(sentEvents.length).toBe(before);
+      expect(sent()).toHaveLength(1);
+    });
+
+    it('is offered again once its report is withdrawn', async () => {
+      const t = { mission: m, since: NOW - 2 * 86_400 };
+      const { w } = fakeWire();
+      const r = await fileReport(m, draft(day(2)), 'open', NOW, {}, w);
+      if (!r.ok) throw new Error('not sent');
+      expect(reportableDays(NOW, t)).toEqual([day(1)]);
+      expect(await withdraw(r.sent.id, NOW + 60, w)).toBe('asked');
+      expect(reportableDays(NOW, t)).toEqual([day(1), day(2)]);
+    });
+
+    /*
+     * She took part in a week-long drive yesterday evening and reported yesterday this morning. For
+     * the rest of the day the mission was on no screen, and the report screen said every day was
+     * reported — though today's work is one to report tomorrow [review].
+     */
+    it('leaves a mission she is still working one to report from tomorrow, once yesterday is reported', async () => {
+      const today = new Date(NOW * 1000);
+      const at = (days: number, h: number) =>
+        Math.floor(new Date(today.getFullYear(), today.getMonth(), today.getDate() + days, h).getTime() / 1000);
+      const since = at(-1, 20);
+      expect((await fileReport(m, draft(localDay(since)), 'open', at(0, 9), {}, fakeWire().w)).ok).toBe(true);
+      const running = { mission: { ...m, validUntil: at(3, 12) }, since };
+      const endedTonight = { mission: { ...m, validUntil: at(0, 21) }, since };
+      const endedYesterday = { mission: { ...m, validUntil: at(-1, 23) }, since };
+      const late = at(0, 22);
+      expect(reportableDays(late, running)).toEqual([]);
+      expect(stillToReport(late, running)).toBe('tomorrow');
+      expect(stillToReport(late, endedTonight)).toBe('tomorrow');
+      // Its last day reported and over: nothing is left, and it says so.
+      expect(stillToReport(late, endedYesterday)).toBeNull();
+      // From midnight, today's work is the day to report.
+      expect(stillToReport(at(1, 9), running)).toBe('now');
+      expect(reportableDays(at(1, 9), endedTonight)).toEqual([localDay(late)]);
+    });
+  });
+
+  describe('the series warning [audit 11.S and 11.I, findings 50, 57 and 73]', () => {
+    /*
+     * Only the poster reads a sealed report, so it makes no pattern anybody else can. Warned after
+     * she had already chosen the sealed one, she learned to tap "Send anyway".
+     */
+    it('is asked only of an open report, and only against open ones', async () => {
+      const { w } = fakeWire([inbox]);
+      expect((await fileReport(mission('o1'), draft(day(1)), 'open', NOW, {}, w)).ok).toBe(true);
+      expect((await fileReport(mission('s1'), draft(day(1)), 'sealed', NOW + 60, {}, w)).ok).toBe(true);
+      clearField('wipeable', 'mission_reports');
+      expect((await fileReport(mission('s2'), draft(day(1)), 'sealed', NOW, {}, w)).ok).toBe(true);
+      expect((await fileReport(mission('o2'), draft(day(1)), 'open', NOW + 60, {}, w)).ok).toBe(true);
+      // And still of an open one after an open one, withdrawn or not: copies already taken stay.
+      expect(await fileReport(mission('o3'), draft(day(1)), 'open', NOW + 120, {}, w)).toMatchObject({ ok: false, because: 'series' });
+      expect(await withdraw(sent().find((s) => s.visibility === 'open')!.id, NOW + 180, w)).toBe('asked');
+      expect(await fileReport(mission('o3'), draft(day(1)), 'open', NOW + 240, {}, w)).toMatchObject({ ok: false, because: 'series' });
+    });
+
+    /*
+     * Monday's report withdrawn, Tuesday's sent anyway and left up: on Wednesday the warning said
+     * "you withdrew the last one" of Monday's, while Tuesday's was live on every relay [review].
+     */
+    it('names one still up when there is one, so a live report is never called withdrawn', async () => {
+      const { w } = fakeWire();
+      const file = async (d: string, at: number, series = false) => {
+        const r = await fileReport(mission(d), draft(day(1)), 'open', at, { series }, w);
+        if (!r.ok) throw new Error(`not sent: ${r.because}`);
+        return r.sent.id;
+      };
+      const warned = (r: Awaited<ReturnType<typeof fileReport>>) => (!r.ok && r.because === 'series' ? r.series : null);
+      const monday = await file('mon', NOW);
+      expect(await withdraw(monday, NOW + 60, w)).toBe('asked');
+      const tuesday = await file('tue', NOW + 120, true);
+      const wednesday = warned(await fileReport(mission('wed'), draft(day(1)), 'open', NOW + 240, {}, w));
+      expect(wednesday).toMatchObject({ id: tuesday });
+      expect(wednesday!.withdrawn).toBeUndefined();
+      // The older one up and the newer withdrawn: still the one up.
+      clearField('wipeable', 'mission_reports');
+      const up = await file('up', NOW);
+      expect(await withdraw(await file('down', NOW + 60, true), NOW + 120, w)).toBe('asked');
+      expect(warned(await fileReport(mission('next'), draft(day(1)), 'open', NOW + 180, {}, w))).toMatchObject({ id: up });
+      // Every one withdrawn: the newest, and then it is said.
+      expect(await withdraw(up, NOW + 240, w)).toBe('asked');
+      expect(warned(await fileReport(mission('next'), draft(day(1)), 'open', NOW + 300, {}, w))).toMatchObject({ withdrawn: true });
+    });
+  });
+
+  describe('a report no relay confirmed [audit 11.S, finding 61]', () => {
+    /** Relays that answer as told, one answer per publish, and record every event they were sent. */
+    function answering(...answers: ('took' | 'refused' | 'unconfirmed')[]) {
+      const sentEvents: Event[] = [];
+      const w: Wire = {
+        publish: async (_urls, event) => {
+          sentEvents.push(event);
+          return answers.shift() ?? 'took';
+        },
+        query: async (urls) => ({ events: [inbox], answered: urls })
+      };
+      return { w, sentEvents };
+    }
+
+    /*
+     * On a congested cell the relay took it and its answer came after the wait was over. The screen
+     * said "Nothing was sent", the retry signed a second report of the same work under a new id, and
+     * the first was a permanent public record this phone could never withdraw.
+     */
+    it('is said to have maybe arrived, kept, and sent again as the same event — never a second report', async () => {
+      const { w, sentEvents } = answering('unconfirmed', 'took');
+      const r = await fileReport(m, draft(day(1)), 'open', NOW, {}, w);
+      expect(r).toMatchObject({ ok: false, because: 'unconfirmed', kept: true });
+      const listed = sent();
+      expect(listed).toHaveLength(1);
+      expect(listed[0]!.unconfirmed?.id).toBe(sentEvents[0]!.id);
+      // Not offered again, and not sent again under a new id.
+      expect(reportableDays(NOW, { mission: m, since: NOW - 86_400 })).toEqual([]);
+      expect(await fileReport(m, draft(day(1)), 'open', NOW + 60, { series: true }, w)).toMatchObject({ because: 'reported' });
+      expect(await reportAgain(listed[0]!, w)).toBe('took');
+      expect(sentEvents.map((e) => e.id)).toEqual([listed[0]!.id, listed[0]!.id]);
+      expect(sent()[0]!.unconfirmed).toBeUndefined();
+    });
+
+    it('is sent again as the same sealed wrap, though this device could not record it', async () => {
+      const { w, sentEvents } = answering('unconfirmed', 'took');
+      const write = localStorage.setItem;
+      localStorage.setItem = (k: string, v: string) => {
+        if (k === 'navcom.wipeable') throw new DOMException('full', 'QuotaExceededError');
+        write(k, v);
+      };
+      const r = await fileReport(m, draft(day(1)), 'sealed', NOW, {}, w);
+      localStorage.setItem = write;
+      if (r.ok || r.because !== 'unconfirmed') throw new Error(`expected unconfirmed, got ${JSON.stringify(r)}`);
+      expect(r.kept).toBe(false);
+      expect(await reportAgain(r.sent, w)).toBe('took');
+      expect(sentEvents.map((e) => e.id)).toEqual([sentEvents[0]!.id, sentEvents[0]!.id]);
+    });
+
+    it('stays listed when sending it again is refused: a refusal now says nothing about the first time', async () => {
+      const { w } = answering('unconfirmed', 'refused');
+      await fileReport(m, draft(day(1)), 'open', NOW, {}, w);
+      expect(await reportAgain(sent()[0]!, w)).toBe('refused');
+      expect(sent()[0]!.unconfirmed).toBeDefined();
+    });
+
+    it('can be withdrawn, and then is not sent again', async () => {
+      const { w } = answering('unconfirmed', 'took');
+      await fileReport(m, draft(day(1)), 'open', NOW, {}, w);
+      const s = sent()[0]!;
+      expect(await withdraw(s.id, NOW + 60, w)).toBe('asked');
+      expect(sent()[0]).toMatchObject({ withdrawn: true });
+      expect(sent()[0]!.unconfirmed).toBeUndefined();
+      expect(await reportAgain(s, w)).toBe('gone');
+    });
+
+    it('is never settled by silence: if it never arrived, nobody could have challenged it', async () => {
+      const { w } = answering('unconfirmed');
+      await fileReport(m, draft(day(1)), 'open', NOW, {}, w);
+      const after = await settlements(NOW + 8 * 86_400, relayOf([]).w);
+      expect(after.standing.size).toBe(0);
+      expect(sent()[0]!.final).toBeUndefined();
+    });
+
+    it('says nothing was sent only when every relay refused it, and keeps nothing then', async () => {
+      const { w } = answering('refused');
+      expect(await fileReport(m, draft(day(1)), 'open', NOW, {}, w)).toEqual({
+        ok: false,
+        because: 'not-sent',
+        detail: expect.stringMatching(/Nothing was sent/)
+      });
+      expect(sent()).toEqual([]);
+      expect(reportableDays(NOW, { mission: m, since: NOW - 86_400 })).toEqual([day(1)]);
+    });
+
+    it('a withdrawal no relay confirmed is not called asked, nor refused', async () => {
+      const { w } = answering('took', 'unconfirmed');
+      const r = await fileReport(m, draft(day(1)), 'open', NOW, {}, w);
+      if (!r.ok) throw new Error('not sent');
+      expect(await withdraw(r.sent.id, NOW + 60, w)).toBe('unconfirmed');
+      expect(sent()[0]!.withdrawn).toBeUndefined();
+    });
+
+    it('a witness or a challenge no relay confirmed is said to have maybe arrived', async () => {
+      const { w } = answering('unconfirmed');
+      const theirs = buildReport(generateSecretKey(), { callsign: 'Wren', date: day(1), mission: { address: m.address, asks: ['handout:water'], counts: [] } }, NOW - 3_600);
+      const on = { id: theirs.id, author: theirs.pubkey, at: theirs.created_at, report: { callsign: 'Wren', date: day(1) } };
+      expect(await labelReport('challenged', on, m, NOW, w)).toEqual({ ok: false, because: 'unconfirmed' });
+    });
+  });
+
+  describe('a verdict is kept only from a whole read [audit 11.S, finding 62; audit 11, findings 45 and 58]', () => {
+    const own = 'wss://own.example';
+    const nos = DEFAULT_RELAYS[1]!;
+    const fileOne = async () => {
+      const r = await fileReport(m, draft(day(1)), 'open', NOW, {}, fakeWire().w);
+      if (!r.ok) throw new Error('not sent');
+      return r.sent.id;
+    };
+    /** Relays where everybody's labels are on `holding` only, answering when `answering` says so. */
+    const relays = (labels: Event[], answering: (u: string) => boolean, holding: (u: string) => boolean = () => true): Wire => ({
+      publish: async () => 'took',
+      query: async (urls, f) => {
+        const heard = urls.filter(answering);
+        return { events: heard.some(holding) ? served(labels, f) : [], answered: heard };
+      }
+    });
+
+    /*
+     * Her own relay answered, the shipped relays where everybody writes did not, and her report read
+     * "Settled · unchallenged" — and was kept so — though her own relay carries nobody's labels.
+     */
+    it('counts no operator’s labels as heard from an operator’s own relay', async () => {
+      set('accruing', 'relays_own', [own]);
+      const id = await fileOne();
+      const heron = generateSecretKey();
+      const challenge = buildReportLabel(heron, 'challenged', { id, mission: m.address }, NOW + 3_600);
+      const shipped = (u: string) => (DEFAULT_RELAYS as readonly string[]).includes(u);
+      // The challenge is where everybody writes, and those relays are slow; hers and the poster's answer.
+      const read = await settlements(NOW + 8 * 86_400, relays([challenge], (u) => !shipped(u), shipped));
+      expect(read.answered.operators).toBe(false);
+      expect(read.standing.has(id)).toBe(false);
+      expect(sent()[0]!.final).toBeUndefined();
+    });
+
+    /*
+     * One shipped relay answered while the one holding the challenge was slow: the report reads as
+     * far as was heard, but nothing is kept — and the next read, with every relay answering, finds it.
+     */
+    it('shows a read one slow relay was missing from, keeps nothing from it, and finds the challenge the next day', async () => {
+      const id = await fileOne();
+      const heron = generateSecretKey();
+      const challenge = buildReportLabel(heron, 'challenged', { id, mission: m.address }, NOW + 3_600);
+      const slow = await settlements(NOW + 8 * 86_400, relays([challenge], (u) => u !== nos, (u) => u === nos));
+      expect(slow.standing.get(id)).toMatchObject({ state: 'settled', how: 'silence', challengedBy: [] });
+      expect(sent()[0]!.final).toBeUndefined();
+      const whole = await settlements(NOW + 9 * 86_400, relays([challenge], () => true, (u) => u === nos));
+      expect(whole.standing.get(id)).toMatchObject({ state: 'settled', how: 'silence', challengedBy: [getPublicKey(heron)] });
+      expect(sent()[0]!.final).toMatchObject({ challengedBy: [getPublicKey(heron)] });
+      expect(sent()[0]!.finalWhole).toBe(true);
+    });
+
+    /*
+     * An earlier version read no signal as silence and kept "Settled · unchallenged" for good, with
+     * the challenge on every relay. What it kept is cleared and read again.
+     */
+    it('clears a verdict an earlier version kept, and reads the report again', async () => {
+      const id = await fileOne();
+      const keptBefore: Sent = { ...sent()[0]!, final: { state: 'settled', how: 'silence', at: NOW + 7 * 86_400, challengedBy: [] } };
+      set('wipeable', 'mission_reports', [keptBefore]);
+      const heron = generateSecretKey();
+      const challenge = buildReportLabel(heron, 'challenged', { id, mission: m.address }, NOW + 3_600);
+      const offline = await settlements(NOW + 9 * 86_400, relays([challenge], () => false));
+      expect(offline.standing.has(id)).toBe(false);
+      expect(sent()[0]!.final).toBeUndefined();
+      const read = await settlements(NOW + 9 * 86_400, relays([challenge], () => true));
+      expect(read.standing.get(id)).toMatchObject({ challengedBy: [getPublicKey(heron)] });
+      expect(sent()[0]).toMatchObject({ final: { challengedBy: [getPublicKey(heron)] }, finalWhole: true });
+    });
+
+    /*
+     * The mirror copies The Record and can fall behind: its answer shows where a report stands, but
+     * only The Record's makes the poster's word whole [spec §5.0]. Requiring both made one person's
+     * Pi, down for a few weeks, stop every verdict and re-read every report on every open [review].
+     */
+    it('keeps a sealed report’s verdict once The Record answered, and not from its mirror alone', async () => {
+      await fileReport(m, draft(day(1)), 'sealed', NOW, {}, fakeWire([inbox]).w);
+      const id = sent()[0]!.id;
+      const settled = buildReportLabel(posterSecret, 'settled', { id, mission: m.address }, NOW + 3_600);
+      const mirror = await settlements(NOW + 8 * 86_400, relays([settled], (u) => u === MISSION_RELAYS[1]));
+      expect(mirror.standing.get(id)).toMatchObject({ how: 'poster' });
+      expect(sent()[0]!.final).toBeUndefined();
+      await settlements(NOW + 8 * 86_400, relays([settled], (u) => u === THE_RECORD));
+      expect(sent()[0]).toMatchObject({ final: { how: 'poster' }, finalWhole: true });
+    });
+
+    it('keeps an open report’s verdict once The Record and the shipped relays answered: never without The Record, never waiting on the mirror', async () => {
+      const id = await fileOne();
+      const noRecord = await settlements(NOW + 8 * 86_400, relays([], (u) => u !== THE_RECORD));
+      expect(noRecord.standing.get(id)).toMatchObject({ state: 'settled', how: 'silence' });
+      expect(sent()[0]!.final).toBeUndefined();
+      const noMirror = await settlements(NOW + 8 * 86_400, relays([], (u) => u !== MISSION_RELAYS[1]));
+      expect(noMirror.standing.get(id)).toMatchObject({ state: 'settled', how: 'silence' });
+      expect(sent()[0]).toMatchObject({ final: { how: 'silence' }, finalWhole: true });
+    });
+
+    /*
+     * The other half of clearing what an earlier version kept: a verdict this version kept from a
+     * whole read stands, offline, and is not asked for again. Cleared on every load, every settled
+     * report would read Unknown with no signal and be read again on every open [review].
+     */
+    it('keeps a verdict from a whole read, and shows it offline without asking for it again', async () => {
+      const id = await fileOne();
+      await settlements(NOW + 8 * 86_400, relays([], () => true));
+      const kept = sent()[0]!.final;
+      expect(kept).toMatchObject({ state: 'settled', how: 'silence' });
+      let asked = 0;
+      const offline: Wire = {
+        publish: async () => 'took',
+        query: async (_urls, f) => {
+          if (f.kinds?.includes(KIND_LABEL)) asked += 1;
+          return { events: [], answered: [] };
+        }
+      };
+      const later = await settlements(NOW + 9 * 86_400, offline);
+      expect(later.standing.get(id)).toEqual(kept);
+      expect(sent()[0]).toMatchObject({ final: kept, finalWhole: true });
+      expect(asked).toBe(0);
+    });
   });
 });

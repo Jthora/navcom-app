@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Settlement } from '@navcom/core';
-import { effort, endsIn, endsSoon, placeName, stampUtc, standingOf } from './format';
+import { alreadyReported, effort, endsIn, endsSoon, placeName, releaseReadout, stampUtc, standingOf } from './format';
 
 const NOW = Date.UTC(2026, 9, 6, 20, 0, 0);
 const at = (hoursFromNow: number) => Math.floor(NOW / 1000) + hoursFromNow * 3600;
@@ -72,5 +72,26 @@ describe('who settled or challenged a report', () => {
     expect(standingOf(s, new Map([[desk, 'Supply Desk']]), new Set([desk])).sub).toBe('by the poster, Supply Desk (d0abf85c, an agent)');
     expect(standingOf(s, new Map([[desk, 'Supply Desk']])).sub).toBe('by the poster, Supply Desk (d0abf85c)');
     expect(standingOf({ ...s, how: 'witness', by: wren }, new Map(), new Set([desk])).sub).toBe('by a witness, 7bf2d588');
+  });
+});
+
+describe('what a screen says of a mission’s own loose ends [audit 11.S, findings 52 and 66 — review]', () => {
+  it('calls a release unconfirmed only when it may have arrived, and says the claim stands when no relay has it', () => {
+    const ends = at(23);
+    const maybe = releaseReadout({ ends, mayHaveArrived: true }, NOW);
+    expect(maybe.value).toBe('Release unconfirmed');
+    expect(maybe.sub).toBe('no relay confirmed it; it may have arrived · the claim ends by itself in 23 hours');
+    // No signal at all: nothing left the phone, so nothing may have arrived.
+    const not = releaseReadout({ ends }, NOW);
+    expect(not.value).toBe('Release not sent');
+    expect(not.sub).not.toMatch(/may have arrived|unconfirmed/);
+    expect(not.sub).toMatch(/claim stands/);
+  });
+
+  it('offers to withdraw a day’s report only when it can be withdrawn: never a sealed one', () => {
+    expect(alreadyReported('open', 'Test Poster')).toMatch(/Withdraw that one/);
+    const sealed = alreadyReported('sealed', 'Test Poster');
+    expect(sealed).toMatch(/sealed to Test Poster/);
+    expect(sealed).not.toMatch(/Withdraw that one/);
   });
 });

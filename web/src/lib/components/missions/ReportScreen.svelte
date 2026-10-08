@@ -8,13 +8,17 @@
    *
    * Nothing is ticked for you: what you did is yours to say, and a form that started with every
    * objective done would invite saying more than happened. Today is not offered as a day — reports
-   * open the day after the work. Who sees it is asked, as for a claim, with nothing preselected.
+   * open the day after the work — and nor is a day already reported [audit 11.S, finding 52]. Who
+   * sees it is asked, as for a claim, with nothing preselected.
+   *
+   * A report no relay confirmed is said to have maybe arrived, never "not sent", and is sent again
+   * as the same event: a second report of the same work would count twice [finding 61].
    */
   import { COUNT_MAX } from '@navcom/core';
   import { Action, Panel, Readout, Slot } from '$lib/components/panel';
-  import { fileReport, localDay, reportableDays, type Filed } from '$lib/missions/reports';
-  import { tookPart, type Visibility } from '$lib/missions/claims';
-  import { placeName } from './format';
+  import { fileReport, reportAgain, reportableDays, sent, stillToReport, type Filed, type Sent } from '$lib/missions/reports';
+  import { MAY_HAVE_ARRIVED, tookPart, type Visibility } from '$lib/missions/claims';
+  import { alreadyReported, placeName } from './format';
 
   let { address, now, ondone }: { address: string; now: number; ondone: () => void } = $props();
 
@@ -34,6 +38,10 @@
   let chosen = $state<Visibility | null>(null);
   /** Sent, but this device could not record it: said before leaving, since it cannot be withdrawn from here [11.E]. */
   let unrecorded = $state(false);
+  /** Sent, and no relay confirmed it: it may have arrived [finding 61]. Held here to send again, the same event. */
+  let pending = $state<{ sent: Sent; kept: boolean; again?: 'refused' | 'unconfirmed' } | null>(null);
+  /** Whether a day of this mission is already reported, so an empty list of days says why. */
+  const reportedHere = $derived(sent().some((s) => s.address === address && !s.withdrawn));
 
   /** A count typed that a report cannot carry: said where it was typed, never dropped on the way out [11.X]. */
   const badCount = $derived(
@@ -68,10 +76,27 @@
       return;
     }
     phase = 'choosing';
+    if (r.because === 'unconfirmed') {
+      warned = null;
+      pending = { sent: r.sent, kept: r.kept };
+      return;
+    }
     if (r.because === 'series') warned = r;
     else if (r.because === 'today') error = 'Reports open the day after the work. Pick a day that has ended.';
+    else if (r.because === 'reported') error = alreadyReported(r.sent.visibility, m.publisher.name);
     else if (r.because === 'signed-out') error = 'Sign on to report.';
     else error = r.detail;
+  }
+
+  /** The same report again, as it was signed [finding 61]. */
+  async function again() {
+    if (!pending || phase === 'sending') return;
+    const was = pending;
+    phase = 'sending';
+    const r = await reportAgain(was.sent);
+    phase = 'choosing';
+    if (r === 'took' || r === 'gone') return ondone();
+    pending = { ...was, again: r };
   }
 </script>
 
@@ -119,17 +144,40 @@
         {#if unrecorded}
           <Readout value="Sent" tone="warn" sub="but this device could not record it: its storage is full, so it cannot be withdrawn from here" />
           <button type="button" data-done onclick={ondone}>Done</button>
+        {:else if pending}
+          <Readout
+            value="Unconfirmed"
+            tone="warn"
+            sub={`${MAY_HAVE_ARRIVED}${pending.again === 'refused' ? ' No relay took it this time.' : ''} Sending it again sends the same report, never a second.${pending.kept ? '' : ' This device could not record it.'}`}
+          />
+          <div class="nc-report-row">
+            <button type="button" data-sendagain disabled={phase === 'sending'} onclick={again}>Send again</button>
+            <button type="button" data-done disabled={phase === 'sending'} onclick={ondone}>Done</button>
+          </div>
         {:else if warned && warned.ok === false && warned.because === 'series'}
-          <Readout value="Another report here" tone="warn" sub="two reports close together in one place make a pattern somebody can read" />
+          <!-- A withdrawn one counts, and says so: copies already taken stay [findings 50, 73]. -->
+          <Readout
+            value="Another report here"
+            tone="warn"
+            sub={warned.series.withdrawn
+              ? 'you withdrew the last one, but copies already taken stay; two close together in one place make a pattern somebody can read'
+              : 'two reports close together in one place make a pattern somebody can read'}
+          />
           <div class="nc-report-row">
             <button type="button" data-anyway disabled={phase === 'sending'} onclick={() => send(chosen ?? 'open', true)}>Send anyway</button>
             <button type="button" data-notnow disabled={phase === 'sending'} onclick={ondone}>Not now</button>
           </div>
-        {:else if days.length === 0 && entry && localDay(entry.since) >= localDay(Math.floor(now / 1000))}
-          <!-- Taken part in today: a report tells of a day that has ended [reports.ts]. -->
+        {:else if days.length === 0 && entry && stillToReport(Math.floor(now / 1000), entry) === 'tomorrow'}
+          <!-- Today is a day the work could be: a report tells of a day that has ended. The rule is reports.ts's, not a copy [review]. -->
           <Readout value="Opens tomorrow" tone="cold" sub="a report tells of a day that has ended" />
         {:else if days.length === 0}
-          <Readout value="No day left to report" tone="cold" sub="a report tells of the week before today, while the mission ran" />
+          <Readout
+            value="No day left to report"
+            tone="cold"
+            sub={reportedHere
+              ? 'each day a report could tell of is already reported'
+              : 'a report tells of the week before today, while the mission ran'}
+          />
         {:else if phase === 'editing'}
           <Action label="Send report" disabled={!ready} onfire={() => ((phase = 'choosing'), (shownAt = performance.now()))} />
         {:else}

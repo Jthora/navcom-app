@@ -123,7 +123,9 @@ least.
 
 - **Not today.** A report of tonight is worth most to somebody tracking an operator and little to the
   operator, so the screen offers no way to report today, and nothing is queued to send later — a store
-  of unsent reports is a store of where somebody has been.
+  of unsent reports is a store of where somebody has been. A report, claim or release that left the
+  phone and no relay confirmed is kept, Wipeable, beside the record of what was sent, and goes again
+  only when the operator taps *Send again*: the same signed event, so it counts once.
 - **A second report in one place inside a week is warned about, never refused.** A series is what the
   doxxer reads; the operator decides.
 - **The operator types numbers and nothing else.** Objectives are the poster's to tick, counts answer

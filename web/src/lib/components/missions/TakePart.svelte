@@ -9,11 +9,15 @@
    * **Signed out, it asks for sign-on first.** Every mission here is field work, and a person
    * should not set out without `Distress` in their pocket; signing on asks for a callsign and
    * nothing else, and the mission reopens when they come back.
+   *
+   * **What no relay confirmed is said, never called unsent** [audit 11.S, finding 61], and sent
+   * again as the same event. **A release that did not go stays here to send** [finding 66]: letting
+   * go is instant and free, and the claim it releases is still on relays until it ends.
    */
   import type { Mission } from '@navcom/core';
   import { Action, Readout, Slot } from '$lib/components/panel';
-  import { held, letGo, refusal, takePart, type Visibility } from '$lib/missions/claims';
-  import { endsIn } from './format';
+  import { MAY_HAVE_ARRIVED, claimAgain, held, letGo, refusal, takePart, unreleased, type Visibility } from '$lib/missions/claims';
+  import { endsIn, releaseReadout } from './format';
 
   let { mission: m, now, open }: { mission: Mission; now: number; open?: ReadonlySet<string> } = $props();
 
@@ -46,6 +50,11 @@
     void version;
     return refusal(m, t, open);
   });
+  /** A claim let go here whose release has not reached a relay: still to send [finding 66]. */
+  const loose = $derived.by(() => {
+    void version;
+    return unreleased(t).find((u) => u.address === m.address) ?? null;
+  });
 
   /**
    * When the two choices appeared. A tap this soon after is the rest of the gesture that opened
@@ -66,6 +75,7 @@
       const r = await takePart(m, visibility, Math.floor(Date.now() / 1000), undefined, open);
       if (!r.ok) error = WORDS[r.because] ?? r.because;
       // Sent, but not recorded: said, because a claim nobody can see cannot be let go [11.E].
+      else if (!r.kept && r.held.unconfirmed) error = `${MAY_HAVE_ARRIVED} This device could not record it: its storage is full. It ends by itself within a day.`;
       else if (!r.kept) error = 'It was sent, but this device could not record it: its storage is full. It ends by itself within a day.';
     } catch (err) {
       error = err instanceof Error ? err.message : 'It could not be sent.';
@@ -75,19 +85,35 @@
       version += 1;
     }
   }
+  /** The same claim again, as it was signed: never a second one [finding 61]. */
+  async function again() {
+    sending = true;
+    error = null;
+    try {
+      const r = await claimAgain(m.address, Math.floor(Date.now() / 1000));
+      if (r === 'refused') error = `${MAY_HAVE_ARRIVED} No relay took it this time.`;
+      else if (r === 'unconfirmed') error = MAY_HAVE_ARRIVED;
+    } catch {
+      error = MAY_HAVE_ARRIVED;
+    } finally {
+      sending = false;
+      version += 1;
+    }
+  }
+  /** Let go, or send a release that did not go before: the same call, the same signed release. */
   async function release() {
-    const was = mine?.visibility ?? null;
+    const was = mine?.visibility ?? loose?.visibility ?? null;
     sending = true;
     error = null;
     released = null;
     try {
       const r = await letGo(m, Math.floor(Date.now() / 1000));
-      // Gone from this device either way; walking away is never refused [invariant 8].
-      if (r.card) error = 'It was taken with a card this device no longer holds, so it cannot be let go from here. It ends by itself within a day.';
-      else if (!r.sent) error = 'The release did not reach a relay. It ends by itself within a day.';
+      // Off this device's claims either way; walking away is never refused [invariant 8].
+      if ('card' in r) error = 'It was taken with a card this device no longer holds, so it cannot be let go from here. It ends by itself within a day.';
+      else if (!r.sent) error = r.because;
       else released = was;
     } catch {
-      error = 'The release did not reach a relay. It ends by itself within a day.';
+      error = 'No relay took the release.';
     } finally {
       sending = false;
       version += 1;
@@ -107,13 +133,18 @@
   {#if mine}
     <Slot k="You">
       <Readout
-        value="Taking part"
-        tone="good"
-        sub="ends in {endsIn(mine.ends, now)} · {mine.visibility === 'open' ? 'everyone can see' : `only ${m.publisher.name} can see`}"
+        value={mine.unconfirmed ? 'Unconfirmed' : 'Taking part'}
+        tone={mine.unconfirmed ? 'warn' : 'good'}
+        sub="{mine.unconfirmed ? 'no relay confirmed it; it may have arrived · ' : ''}ends in {endsIn(mine.ends, now)} · {mine.visibility === 'open' ? 'everyone can see' : `only ${m.publisher.name} can see`}"
       />
     </Slot>
     <div class="nc-takepart-row">
-      <button type="button" data-renew disabled={sending} onclick={() => take(mine!.visibility)}>Still on it</button>
+      {#if mine.unconfirmed}
+        <!-- The same claim, as it was signed: a second would be one nobody could withdraw [finding 61]. -->
+        <button type="button" data-sendagain disabled={sending} onclick={again}>Send again</button>
+      {:else}
+        <button type="button" data-renew disabled={sending} onclick={() => take(mine!.visibility)}>Still on it</button>
+      {/if}
       <button type="button" data-letgo disabled={sending} onclick={release}>Let it go</button>
     </div>
   {:else if why === 'signed-out'}
@@ -141,6 +172,17 @@
   {:else}
     <Action label="Take part" onfire={() => ((choosing = true), (shownAt = performance.now()))} />
   {/if}
+  {#if loose && !mine}
+    <!--
+      Let go, and no relay has confirmed the release: the claim may stand until it ends
+      [finding 66]. "Unconfirmed" only if the release may be there; with no signal it is not [review].
+    -->
+    {@const r = releaseReadout(loose, now)}
+    <Slot k="Let go">
+      <Readout value={r.value} tone="warn" sub={r.sub} />
+    </Slot>
+    <button type="button" data-sendrelease disabled={sending} onclick={release}>Send the release</button>
+  {/if}
   {#if released && !mine}
     <Readout
       value="Let go"
@@ -151,7 +193,7 @@
     />
   {/if}
   {#if error}
-    <Readout value={error.startsWith('It was sent') ? 'Sent' : 'Not sent'} tone="warn" sub={error} />
+    <Readout value={error.startsWith('It was sent') ? 'Sent' : error.startsWith(MAY_HAVE_ARRIVED) ? 'Unconfirmed' : 'Not sent'} tone="warn" sub={error} />
   {/if}
 </div>
 

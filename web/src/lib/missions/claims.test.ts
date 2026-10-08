@@ -4,7 +4,7 @@ import type { Event } from 'nostr-tools/core';
 import { DEFAULT_RELAYS, readMissionPackage, type Mission } from '@navcom/core';
 import { set } from '$lib/terminal/storage';
 import { withdrawCard } from '$lib/terminal/card';
-import { held, letGo, refusal, takePart, tookPart, usable, type Wire } from './claims';
+import { claimAgain, held, letGo, refusal, sendRelease, takePart, tookPart, unreleased, usable, type Published, type Wire } from './claims';
 import { reportableDays } from './reports';
 
 /**
@@ -43,7 +43,7 @@ function fakeWire(answers: Event[] = [], accept = true) {
   const w: Wire = {
     publish: async (urls, event) => {
       sent.push({ urls, event });
-      return accept;
+      return accept ? 'took' : 'refused';
     },
     query: async (urls) => ({ events: answers, answered: urls })
   };
@@ -169,7 +169,7 @@ describe('a claim for the poster only', () => {
 
   it('says no relay answered, rather than that the poster has no inbox, when nobody did [11.E]', async () => {
     signOn();
-    const silent: Wire = { publish: async () => true, query: async () => ({ events: [], answered: [] }) };
+    const silent: Wire = { publish: async () => 'took', query: async () => ({ events: [], answered: [] }) };
     const r = await takePart(mission('sealed-c'), 'sealed', NOW, silent);
     expect(r).toEqual({ ok: false, because: expect.stringMatching(/No relay answered/) });
   });
@@ -339,12 +339,255 @@ describe('what the second audit of Milestone 11 found', () => {
     const answers: Event[] = [];
     const sent: string[][] = [];
     const w: Wire = {
-      publish: async (urls) => (sent.push(urls), true),
+      publish: async (urls) => (sent.push(urls), 'took'),
       query: async (urls) => ({ events: answers, answered: urls })
     };
     expect((await takePart(mission('retry'), 'sealed', NOW, w)).ok).toBe(false);
     answers.push(inbox(['wss://inbox.example']));
     expect((await takePart(mission('retry'), 'sealed', NOW + 60, w)).ok).toBe(true);
     expect(sent).toEqual([['wss://inbox.example']]);
+  });
+});
+
+
+describe('what the second audit left open', () => {
+  /** Relays that answer as told, one answer per publish, and record every event they were sent. */
+  function answering(...answers: Published[]) {
+    const sent: Event[] = [];
+    const w: Wire = {
+      publish: async (_urls, event) => {
+        sent.push(event);
+        return answers.shift() ?? 'took';
+      },
+      query: async (urls) => ({ events: [inbox(['wss://inbox.example'])], answered: urls })
+    };
+    return { w, sent };
+  }
+  const labels = (sent: Event[], word: string) => sent.filter((e) => e.kind === 1985 && e.tags.some((t) => t[0] === 'l' && t[1] === word));
+  const deletionsOf = (sent: Event[], id: string) => sent.filter((e) => e.kind === 5 && e.tags.some((t) => t[0] === 'e' && t[1] === id));
+
+  describe('a claim no relay confirmed [audit 11.S, finding 61]', () => {
+    /*
+     * The relay took her claim and its answer came after the pool stopped waiting. The screen said
+     * "Nothing was sent", the phone held nothing, and the retry put a second public claim beside the
+     * first, which she could never withdraw.
+     */
+    it('is held, said to have maybe arrived, and sent again as the same event — never a second claim', async () => {
+      signOn();
+      const { w, sent } = answering('unconfirmed', 'took');
+      const m = mission('slow');
+      const r = await takePart(m, 'open', NOW, w);
+      if (!r.ok) throw new Error(r.because);
+      expect(r.held.unconfirmed?.id).toBe(sent[0]!.id);
+      expect(held(NOW)).toEqual([expect.objectContaining({ claimId: sent[0]!.id, unconfirmed: expect.anything() })]);
+      expect(await claimAgain(m.address, NOW + 60, w)).toBe('took');
+      expect(labels(sent, 'claimed').map((e) => e.id)).toEqual([sent[0]!.id, sent[0]!.id]);
+      expect(held(NOW + 60)[0]!.unconfirmed).toBeUndefined();
+      expect(await claimAgain(m.address, NOW + 60, w)).toBe('gone');
+    });
+
+    it('counts in the three and can be let go, like any claim, since it may be on the relays', async () => {
+      signOn();
+      const { w, sent } = answering('unconfirmed');
+      for (const d of ['u1', 'u2']) await takePart(mission(d), 'open', NOW, fakeWire().w);
+      await takePart(mission('u3'), 'open', NOW, w);
+      expect(held(NOW).find((h) => h.address === mission('u3').address)?.unconfirmed).toBeDefined();
+      expect(refusal(mission('u4'), NOW)).toBe('cap');
+      expect(await letGo(mission('u3'), NOW + 60, w)).toEqual({ sent: true });
+      expect(deletionsOf(sent, sent[0]!.id)).toHaveLength(1);
+    });
+
+    it('stays held when sending it again is refused: a refusal now says nothing about the first time', async () => {
+      signOn();
+      const { w } = answering('unconfirmed', 'refused');
+      const m = mission('slow-refused');
+      await takePart(m, 'open', NOW, w);
+      expect(await claimAgain(m.address, NOW + 60, w)).toBe('refused');
+      expect(held(NOW + 60)[0]!.unconfirmed).toBeDefined();
+    });
+
+    it('withdraws the claim it renewed only once it is known to be there', async () => {
+      signOn();
+      const { w, sent } = answering('took', 'unconfirmed', 'took');
+      const m = mission('renew-slow');
+      await takePart(m, 'open', NOW, w);
+      const first = sent[0]!.id;
+      await takePart(m, 'open', NOW + 3_600, w);
+      // Until the renewal is there, the first may be all a relay holds.
+      expect(deletionsOf(sent, first)).toEqual([]);
+      expect(await claimAgain(m.address, NOW + 3_660, w)).toBe('took');
+      expect(deletionsOf(sent, first)).toHaveLength(1);
+    });
+
+    it('puts everything back as it was when every relay refused the renewal', async () => {
+      signOn();
+      const { w } = answering('took', 'refused');
+      const m = mission('renew-refused');
+      await takePart(m, 'open', NOW, w);
+      const was = held(NOW)[0]!;
+      const history = tookPart(NOW);
+      expect(history).toEqual([expect.objectContaining({ since: NOW })]);
+      expect(await takePart(m, 'open', NOW + 3_600, w)).toEqual({ ok: false, because: expect.stringMatching(/Nothing was sent/) });
+      expect(held(NOW + 3_600)).toEqual([was]);
+      // Its past days stay hers to report: the mission is remembered from when she first took part [review].
+      expect(tookPart(NOW + 3_600)).toEqual(history);
+    });
+
+    /*
+     * She renewed with no relay confirming it, then let it go. The claim the renewal replaced was
+     * to be withdrawn once the renewal was there; letting go is the last chance to withdraw it.
+     */
+    it('withdraws the claim a renewal replaced when the renewal is let go before any relay confirmed it', async () => {
+      signOn();
+      const { w, sent } = answering('took', 'unconfirmed');
+      const m = mission('renew-then-go');
+      await takePart(m, 'open', NOW, w);
+      const first = sent[0]!.id;
+      await takePart(m, 'open', NOW + 3_600, w);
+      const renewal = sent[1]!.id;
+      expect(deletionsOf(sent, first)).toEqual([]);
+      expect(await letGo(m, NOW + 3_660, w)).toEqual({ sent: true });
+      expect(deletionsOf(sent, renewal)).toHaveLength(1);
+      expect(deletionsOf(sent, first)).toHaveLength(1);
+      expect(deletionsOf(sent, first)[0]!.pubkey).toBe(sent[0]!.pubkey);
+    });
+
+    it('is not remembered as taken part in when every relay refused it', async () => {
+      signOn();
+      const { w } = answering('refused');
+      await takePart(mission('never'), 'open', NOW, w);
+      expect(tookPart(NOW)).toEqual([]);
+      expect(held(NOW)).toEqual([]);
+    });
+  });
+
+  describe('letting go with no signal [audit 11.S, finding 66]', () => {
+    /*
+     * In the crowd her signal dropped and she let go. The claim was forgotten before the release was
+     * sent, so an hour later, with signal, the mission offered only "Take part", and her public claim
+     * stayed on the relays until it lapsed.
+     */
+    it('keeps the release to send once there is signal, and sends the same one', async () => {
+      signOn();
+      const { w, sent } = answering('took', 'unconfirmed', 'took');
+      const m = mission('crowd');
+      await takePart(m, 'open', NOW, w);
+      const claim = sent[0]!.id;
+      expect(await letGo(m, NOW + 60, w)).toEqual({ sent: false, unconfirmed: true, because: expect.stringMatching(/may have arrived/) });
+      // Off her claims at once: walking away is never refused.
+      expect(held(NOW + 60)).toEqual([]);
+      expect(unreleased(NOW + 60)).toEqual([expect.objectContaining({ address: m.address, claimId: claim })]);
+      const firstRelease = labels(sent, 'released')[0]!;
+      // An hour later, with signal, from the mission's own screen.
+      expect(await letGo(m, NOW + 3_600, w)).toEqual({ sent: true });
+      expect(labels(sent, 'released').map((e) => e.id)).toEqual([firstRelease.id, firstRelease.id]);
+      expect(deletionsOf(sent, claim).length).toBeGreaterThan(0);
+      expect(unreleased(NOW + 3_600)).toEqual([]);
+    });
+
+    it('can send it from what this device kept, with no mission to hand, sealed the way the claim was', async () => {
+      signOn();
+      const { w, sent } = answering('took', 'refused', 'took');
+      const m = mission('crowd-sealed');
+      await takePart(m, 'sealed', NOW, w);
+      expect(await letGo(m, NOW + 60, w)).toMatchObject({ sent: false, unconfirmed: false });
+      expect(await sendRelease(m.address, NOW + 3_600, w)).toEqual({ sent: true });
+      expect(sent).toHaveLength(3);
+      for (const e of sent) expect(e.kind).toBe(1059);
+      // The same sealed release both times: one release, under one id.
+      expect(sent[2]!.id).toBe(sent[1]!.id);
+    });
+
+    it('costs nothing: it holds no place in the three, and the mission can be taken again', async () => {
+      signOn();
+      const offline = answering('took', 'took', 'took', 'refused');
+      for (const d of ['n1', 'n2', 'n3']) await takePart(mission(d), 'open', NOW, offline.w);
+      await letGo(mission('n3'), NOW + 60, offline.w);
+      expect(unreleased(NOW + 60)).toHaveLength(1);
+      expect(refusal(mission('n4'), NOW + 60)).toBeNull();
+      expect(refusal(mission('n3'), NOW + 60)).toBeNull();
+    });
+
+    /*
+     * A released label names the mission, not the claim: sent after she took part again, it would
+     * let go of the new claim. So taking part again drops it, and withdraws the old claim instead.
+     */
+    it('is dropped when she takes part again, so it can never let go of the new claim', async () => {
+      signOn();
+      const { w, sent } = answering('took', 'refused', 'took');
+      const m = mission('back-again');
+      await takePart(m, 'open', NOW, w);
+      const old = sent[0]!.id;
+      await letGo(m, NOW + 60, w);
+      // The deletion request sent beside the release may never have arrived either.
+      const before = deletionsOf(sent, old).length;
+      expect((await takePart(m, 'open', NOW + 3_600, w)).ok).toBe(true);
+      expect(unreleased(NOW + 3_600)).toEqual([]);
+      // So taking part again asks for the old claim's withdrawal itself, under the key that signed it [review].
+      const after = deletionsOf(sent, old);
+      expect(after).toHaveLength(before + 1);
+      expect(after.at(-1)!.pubkey).toBe(sent[0]!.pubkey);
+      expect(await letGo(m, NOW + 3_600, answering('refused').w)).toMatchObject({ sent: false });
+      expect(unreleased(NOW + 3_600)[0]!.claimId).not.toBe(old);
+    });
+
+    it('lapses by itself with the claim', async () => {
+      signOn();
+      const m = mission('lapse');
+      await takePart(m, 'open', NOW, fakeWire().w);
+      await letGo(m, NOW + 60, fakeWire([], false).w);
+      expect(unreleased(NOW + 60)).toHaveLength(1);
+      expect(unreleased(NOW + 86_400)).toEqual([]);
+    });
+
+    /*
+     * With no signal at all every connection fails and nothing leaves the phone; the screen said
+     * "Release unconfirmed", which everywhere else means it may have arrived, and she could read her
+     * claim as maybe released and not send it [review].
+     */
+    it('says a release may have arrived only once it left the phone and no relay refused it', async () => {
+      signOn();
+      const m = mission('which');
+      const offline = answering('took', 'refused', 'refused');
+      await takePart(m, 'open', NOW, offline.w);
+      expect(await letGo(m, NOW + 60, offline.w)).toEqual({ sent: false, unconfirmed: false, because: 'No relay took the release.' });
+      expect(unreleased(NOW + 60)[0]!.mayHaveArrived).toBeUndefined();
+      // A slow cell: it may have arrived — and a refusal after that says nothing about that time.
+      const slow = answering('unconfirmed', 'took', 'refused');
+      expect(await sendRelease(m.address, NOW + 120, slow.w)).toEqual({ sent: false, unconfirmed: true, because: expect.stringMatching(/may have arrived/) });
+      expect(unreleased(NOW + 120)[0]!.mayHaveArrived).toBe(true);
+      expect(await sendRelease(m.address, NOW + 180, slow.w)).toEqual({
+        sent: false,
+        unconfirmed: false,
+        because: expect.stringMatching(/may have arrived\. No relay took it this time/)
+      });
+      expect(unreleased(NOW + 180)[0]!.mayHaveArrived).toBe(true);
+    });
+
+    it('is kept as maybe arrived while it is on its way, and as not sent when none could be built', async () => {
+      signOn();
+      const m = mission('on-its-way');
+      await takePart(m, 'open', NOW, fakeWire().w);
+      // A phone that dies mid-send keeps what it kept before sending: that the release may have left.
+      let during: true | undefined;
+      const dies: Wire = {
+        publish: async (_urls, e) => {
+          if (e.kind === 1985) during = unreleased(NOW + 60)[0]?.mayHaveArrived;
+          return 'refused';
+        },
+        query: async (urls) => ({ events: [], answered: urls })
+      };
+      await letGo(m, NOW + 60, dies);
+      expect(during).toBe(true);
+      expect(unreleased(NOW + 60)[0]!.mayHaveArrived).toBeUndefined();
+      // Sealed, and nobody said where the poster takes sealed messages: no release was signed.
+      const s = mission('sealed-none');
+      await takePart(s, 'sealed', NOW, answering().w);
+      const nowhere: Wire = { publish: async () => 'took', query: async () => ({ events: [], answered: [] }) };
+      expect(await letGo(s, NOW + 60, nowhere)).toMatchObject({ sent: false, unconfirmed: false, because: expect.stringMatching(/No relay answered/) });
+      const kept = unreleased(NOW + 60).find((u) => u.address === s.address)!;
+      expect(kept.release).toBeUndefined();
+      expect(kept.mayHaveArrived).toBeUndefined();
+    });
   });
 });

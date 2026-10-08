@@ -998,6 +998,49 @@ test.describe('the landing page: missions you can open', () => {
     await expect(yoursPost(page)).toHaveText('nothing claimed');
   });
 
+  test('a release no relay confirmed stays on the mission, with a control that sends it once there is signal [audit 11.S, finding 66]', async ({ page }) => {
+    // In the crowd her signal dropped and she let go: the claim was forgotten before the release
+    // went, and an hour later the mission offered only "Take part" while her claim stayed public.
+    test.setTimeout(60_000);
+    await withHeat(page, { __noStorage: false, callsign: 'kestrel' });
+    await page.locator('[data-missions="open"]').click();
+    await page.locator(`[data-mission="${HEAT_D}"]`).click();
+    await page.getByRole('button', { name: 'Take part' }).click();
+    await settle(page);
+    await page.locator('[data-visibility="open"]').click();
+    await expect(page.locator('[data-slot="you"]')).toContainText('Taking part');
+
+    // The relays stop answering: what is published is swallowed, as on a congested cell.
+    await page.evaluate(() => {
+      const g = globalThis as unknown as { WebSocket: { prototype: { send(raw: string): void } }; __swallow?: boolean };
+      const send = g.WebSocket.prototype.send;
+      g.__swallow = true;
+      g.WebSocket.prototype.send = function (this: unknown, raw: string) {
+        if (g.__swallow && String(raw).startsWith('["EVENT"')) return;
+        return send.call(this, raw);
+      };
+    });
+    await page.locator('[data-letgo]').click();
+    const takepart = page.locator('[data-takepart]');
+    // Walking away is never refused: once the relays have had their wait, the mission is hers to take again.
+    await expect(page.getByRole('button', { name: 'Take part' })).toBeVisible({ timeout: 15_000 });
+    await expect(takepart).toContainText('Release unconfirmed', { timeout: 15_000 });
+    await expect(takepart).toContainText('it may have arrived');
+
+    // Signal again, and the release goes from the mission's own screen.
+    await page.evaluate(() => void ((globalThis as unknown as { __swallow?: boolean }).__swallow = false));
+    await takepart.locator('[data-sendrelease]').click();
+    await expect(takepart).toContainText('anyone who saw the claim keeps it', { timeout: 15_000 });
+    await expect(takepart.locator('[data-sendrelease]')).toHaveCount(0);
+    const released = await page.evaluate(
+      () =>
+        ((globalThis as unknown as { __navcomPublished?: { kind: number; tags: string[][] }[] }).__navcomPublished ?? []).filter(
+          (e) => e.kind === 1985 && e.tags.some((t) => t[0] === 'l' && t[1] === 'released')
+        ).length
+    );
+    expect(released, 'the release reached a relay once there was signal').toBeGreaterThan(0);
+  });
+
   test('the phone’s back gesture steps back through Com, and never off the page [audit 11.I]', async ({ page }) => {
     // The system back is history.back(). With the stack kept only in component state it left the
     // page with a mission open — to the page before, or to a blank tab — and the mission, the list
