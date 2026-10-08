@@ -530,6 +530,37 @@ than break.
 **Instead:** the measurement above, kept current enough to decide from. Reversing this means
 picking a library and translating tier one first, not retrofitting the whole page.
 
+## Mission reports
+
+### Holding a night's report until the night has ended
+
+A report may describe a day once the date has changed (`web/src/lib/missions/reports.ts`). Night
+work crosses midnight, so at 02:00 somebody still out can be offered "Yesterday" — tonight — and the
+public report is stamped with the moment it was sent. The rule exists so that a report never says
+where somebody is tonight ([`spec/mission-interchange.spec.md`](spec/mission-interchange.spec.md)
+§5.2), and across midnight it does not hold. The Milestone 11 audit found it on the Medic's ordinary
+shift.
+
+**Declined, decided 2026-10-08.** A day is reportable by the calendar, as now. Every alternative
+draws a line the phone would have to guess — a fixed hour the next morning, a gap after taking part —
+and each turns an honest report away from somebody whose night ended at 23:00.
+
+**Cost:** at 02:00 a report can describe a place somebody may still be. The operator decides when to
+send it; nothing here decides it for them.
+
+### Asking again about a verdict after its seven days
+
+Once a report has gone seven days unchallenged the phone keeps that as its final verdict and does not
+ask the relays again. The core reader would still let a dated label from the poster, or a witness,
+outrank that silence if one arrived later, so the phone and the reader can disagree.
+
+**Declined, decided 2026-10-08.** Silence after seven days is final, whatever comes later. A verdict
+that can still change is one nobody can rely on, and asking every relay about every old report on
+every open is a cost the device floor pays.
+
+**Cost:** an honest poster who settles a day late is never shown, and a backdated label can still
+slip in before the seven days end.
+
 ## What is **not** declined, so nobody mistakes this page for a licence
 
 Everything in [`build-order.md`](build-order.md) is deferred, not declined — endorsements,
