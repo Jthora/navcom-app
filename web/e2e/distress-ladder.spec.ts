@@ -342,7 +342,7 @@ test.describe('a Distress every relay refuses', () => {
    * none of them here. So the ladder's own rendering of a refused publish had never once been
    * driven, on the screen where being wrong costs the most.
    */
-  test('says it never left the phone, and keeps trying rather than stopping', async ({ page }) => {
+  test('says no relay took it, and keeps trying rather than stopping', async ({ page }) => {
     const { generateSecretKey, getPublicKey } = await import('nostr-tools/pure');
     const watchSecret = generateSecretKey();
     await seedDevice(page, {
@@ -359,7 +359,7 @@ test.describe('a Distress every relay refuses', () => {
     await page.locator('button.raise').dispatchEvent('pointerdown');
 
     // Told, in words, that nothing was sent — not left reading a progress list.
-    await expect(page.getByText(/never left the phone/i).first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText(/no relay took it/i).first()).toBeVisible({ timeout: 20_000 });
 
     // And it is still going. Only the operator ends a Distress; a client that gave up on
     // its own would have failed silently one line after saying so out loud.

@@ -183,18 +183,44 @@
     // and the send outlives this screen.
   });
 
+  /** A relay by its host, which is what a person can recognise. */
+  const host = (url: string): string => {
+    try {
+      return new URL(url).host;
+    } catch {
+      return url;
+    }
+  };
+
   function describe(p: (typeof phases)[number]): string {
     switch (p.phase) {
       case 'sending': return `Attempt ${p.attempt} — sending`;
+      case 'also-sending': return `Attempt ${p.attempt} — also sending to ${p.relays.map(host).join(', ')}`;
       case 'sent': return `Attempt ${p.attempt} — left the phone`;
-      case 'unreachable': return `Attempt ${p.attempt} — never left the phone: ${p.error}`;
+      // "Never left the phone" was untrue of a relay that refused it, or took it and confirmed too
+      // late; the attempt's account says which [G3 phase 1].
+      case 'unreachable': return `Attempt ${p.attempt} — no relay took it: ${p.error}`;
+      case 'accounted': {
+        const of = p.took.length + p.refused.length + p.unconfirmed.length + p.unreached.length;
+        const heard = p.heard ? `, the watch heard on ${p.heard.length}` : '';
+        const unsure = p.unconfirmed.length > 0 ? `; ${p.unconfirmed.length} did not confirm and may have it` : '';
+        return `Attempt ${p.attempt} — taken by ${p.took.length} of ${of} relays${heard}${unsure}`;
+      }
       case 'no-answer': return `Attempt ${p.attempt} — sent, no answer`;
+      // Not "no answer": nothing was listening, so an answer may have come and gone [G3 phase 1].
+      case 'could-not-hear': return `Attempt ${p.attempt} — could not hear: no relay was listening for an answer`;
+      case 'listening-nowhere':
+        return `Listening on no relay: ${p.relays.map((r) => `${host(r.url)} (${clip(r.reason) ?? 'no reason'})`).join(', ')}`;
+      case 'listening-again': return `Listening again on ${p.relays.map(host).join(', ')}`;
       case 'agent-holding': return `Attempt ${p.attempt} — an agent answered. Still looking for a human`;
       case 'watch-status':
       case 'watch-exhausted':
         return `Attempt ${p.attempt} — the watch: ${clip(p.response.text) ?? 'no detail'}`;
       case 'nobody-answering':
-        return `${Math.round(p.elapsedMs / 60000)} minutes, no human. Still sending`;
+        return (
+          `${Math.round(p.elapsedMs / 60000)} minutes, no human. Still sending` +
+          (p.couldNotHear ? `; this phone could not hear for ${p.couldNotHear.attempts} of ${p.couldNotHear.of} attempts` : '')
+        );
       case 'acknowledged-earlier':
         return `Attempt ${p.attempt} — ${p.response.responder?.callsign ?? 'A person'} answered an earlier Distress, not this one`;
       case 'acknowledged': return `${p.response.responder?.callsign ?? 'A human'} has it`;

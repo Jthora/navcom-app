@@ -218,9 +218,25 @@ program
               switch (p.phase) {
                 case "sending": console.log(`   attempt ${p.attempt} sending`); break;
                 case "sent": console.log(`   attempt ${p.attempt} left the client`); break;
-                // The distinction that matters: this one never got off the machine.
-                case "unreachable": console.log(`   attempt ${p.attempt} NEVER LEFT: ${p.error}`); break;
+                // No relay took it: refused, never reached, or not confirmed in time. The account says which.
+                case "unreachable": console.log(`   attempt ${p.attempt} NO RELAY TOOK IT: ${p.error}`); break;
+                case "also-sending": console.log(`   attempt ${p.attempt} also sending to ${p.relays.join(", ")}`); break;
+                case "accounted":
+                  console.log(
+                    `   attempt ${p.attempt} taken by ${p.took.length} of ` +
+                      `${p.took.length + p.refused.length + p.unconfirmed.length + p.unreached.length} relays` +
+                      (p.heard ? `, the watch heard on ${p.heard.length}` : "") +
+                      (p.unconfirmed.length ? `; ${p.unconfirmed.length} did not confirm and may have it` : "") +
+                      (p.withheld.length ? `; not sent to ${p.withheld.map((r) => r.url).join(", ")}` : ""),
+                  );
+                  break;
                 case "no-answer": console.log(`   attempt ${p.attempt} sent, no answer`); break;
+                // Nothing was listening, so an answer may have come and gone [G3 phase 1].
+                case "could-not-hear": console.log(`   attempt ${p.attempt} COULD NOT HEAR: no relay was listening for an answer`); break;
+                case "listening-nowhere":
+                  console.log(`   LISTENING ON NO RELAY: ${p.relays.map((r) => `${r.url} (${r.reason})`).join("; ")}`);
+                  break;
+                case "listening-again": console.log(`   listening again on ${p.relays.join(", ")}`); break;
                 // An agent is never the sole responder to Distress [invariant 5].
                 case "agent-holding":
                   console.log(`   attempt ${p.attempt} answered by an AGENT (${p.response.responder?.callsign ?? "?"}) -- still looking for a human`);
@@ -234,7 +250,10 @@ program
                   console.log(`   attempt ${p.attempt} NOBODY IS COMING, says the watch: ${p.response.text ?? "(no detail)"} -- still sending; Ctrl-C to stand down`);
                   break;
                 case "nobody-answering":
-                  console.log(`   ${Math.round(p.elapsedMs / 60000)} min with no human -- assume nobody is coming; still sending`);
+                  console.log(
+                    `   ${Math.round(p.elapsedMs / 60000)} min with no human -- assume nobody is coming; still sending` +
+                      (p.couldNotHear ? ` (this client could not hear for ${p.couldNotHear.attempts} of ${p.couldNotHear.of} attempts)` : ""),
+                  );
                   break;
                 // A person answered an earlier Distress, not this one [#0]. Not closure.
                 case "acknowledged-earlier":
@@ -244,6 +263,9 @@ program
                   );
                   break;
                 case "acknowledged": break;
+                // A phase added later is printed rather than dropped: a missing case in this switch
+                // once hid "Couldn't reach anyone" entirely.
+                default: console.log(`   ${JSON.stringify(p)}`);
               }
             }
           },
