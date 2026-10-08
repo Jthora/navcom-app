@@ -77,8 +77,9 @@ export function buildMissionClaim(
  * then wrapped by a one-time key. The poster checks the wrap, the seal, and that the label inside
  * is the seal-signer's own [Mecha Jono, Q4].
  *
- * The wrap carries the claim's end too, so a relay may drop it once it has lapsed, and its own
- * time is blurred up to two days back, as NIP-59 asks, so it says nothing of when it was sent.
+ * The wrap carries a time after which a relay may drop it, never before the claim inside has ended
+ * and worked out from the wrap's own blurred time alone, so it says nothing of when the claim was
+ * sent. The label inside carries the exact end, and that is the one the poster reads [seal.ts].
  */
 export function buildSealedMissionClaim(
   contactSecret: Uint8Array,
@@ -88,7 +89,7 @@ export function buildSealedMissionClaim(
   ends: number,
   createdAt: number
 ): Event {
-  return sealToPoster(contactSecret, poster, missionLabel(label, mission, ends, createdAt), ends).wrap;
+  return sealToPoster(contactSecret, poster, missionLabel(label, mission, ends, createdAt), { ends, within: CLAIM_LEASE_SECONDS }).wrap;
 }
 
 /**

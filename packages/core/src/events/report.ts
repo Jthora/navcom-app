@@ -20,7 +20,7 @@
  * recognition: a sealed report still settles, and the poster's label names the sealed report's own
  * id, which tells nobody else who wrote it.
  */
-import { finalizeEvent, verifyEvent } from 'nostr-tools/pure';
+import { finalizeEvent, getEventHash, verifyEvent } from 'nostr-tools/pure';
 import { bytesToHex, randomBytes } from '@noble/hashes/utils';
 import type { Event } from 'nostr-tools/core';
 import { KIND_REPORT } from './kinds.js';
@@ -29,7 +29,7 @@ import { CALLSIGN_MAX, withinLimit } from '../limits.js';
 import { isValidIsoDate } from '../directory/iso-date.js';
 import { FUTURE_TOLERANCE_DAYS } from '../attestation.js';
 import { KIND_DELETION, KIND_LABEL, MISSION_NAMESPACE } from '../missions/claim.js';
-import { EFFECT_LINE_MAX, MISSION_PACKAGE_KIND, OBJECTIVE_ID, type Mission } from '../missions/package.js';
+import { D_TAG_MAX, EFFECT_LINE_MAX, MISSION_PACKAGE_KIND, OBJECTIVE_ID, type Mission } from '../missions/package.js';
 import { sealToPoster, type Sealed } from '../missions/seal.js';
 
 /** The content's fields. Anything else is refused, never ignored. */
@@ -45,7 +45,8 @@ export const LINE_MAX = EFFECT_LINE_MAX;
 
 const EVENT_ID = /^[0-9a-f]{64}$/;
 const REGION = /^[a-z0-9-]{1,64}$/;
-const MISSION_ADDRESS = new RegExp(`^${MISSION_PACKAGE_KIND}:([0-9a-f]{64}):\\S{1,256}$`);
+/** The `d` is bounded by the same number the package reader holds it to, so a mission it shows can always be named. */
+const MISSION_ADDRESS = new RegExp(`^${MISSION_PACKAGE_KIND}:([0-9a-f]{64}):\\S{1,${D_TAG_MAX}}$`);
 const ASK_ID = OBJECTIVE_ID;
 const DOES_IDS = new Set(DOES.map((d) => d.id));
 
@@ -65,7 +66,12 @@ export interface Report {
   region?: string;
   /** The mission this tells of, and what of it was done. */
   mission?: { address: string; asks: string[]; counts: ReportCount[] };
-  /** The report this one corrects. Never edits it: both stay, and this one reads as the current account. */
+  /**
+   * The report this one corrects, by its event id. Checked and carried, and nothing more: no
+   * NavCom screen writes one, and NavCom's reader shows both reports rather than reading either
+   * as the current account [audit 11, second grid — the sentence that said otherwise described
+   * nothing that was built].
+   */
   supersedes?: string;
 }
 
@@ -174,12 +180,28 @@ export interface PublishedReport {
  * Read a report a relay served, or one opened from a seal (`signed: false`, since a sealed report
  * is a rumor and its proof is the seal around it). Null for anything malformed or carrying a field
  * or tag the contract does not have — refused, never trimmed.
+ *
+ * A rumor has no signature to check, so its id is checked against its own fields instead: that id
+ * is what the poster's settlement names, and a rumor claiming somebody else's would steer the
+ * poster into settling a report it never read [audit 11, second grid].
  */
 export function readReport(event: unknown, opts: { signed?: boolean } = {}): PublishedReport | null {
   const e = event as Partial<Event> | null;
   if (!e || e.kind !== KIND_REPORT || typeof e.content !== 'string' || !Array.isArray(e.tags)) return null;
   if (typeof e.id !== 'string' || typeof e.pubkey !== 'string' || typeof e.created_at !== 'number') return null;
-  if (opts.signed !== false && !verified(e)) return null;
+  if (opts.signed !== false) {
+    if (!verified(e)) return null;
+  } else {
+    // Hashing refuses what is not an event — a tag that is not a list of strings among it — so
+    // this is also what keeps a malformed rumor from throwing below.
+    let own: string;
+    try {
+      own = getEventHash(e as Event);
+    } catch {
+      return null;
+    }
+    if (own !== e.id) return null;
+  }
   let raw: unknown;
   try {
     raw = JSON.parse(e.content);

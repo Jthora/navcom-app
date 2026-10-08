@@ -1,6 +1,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure';
-import { PACKAGES_MAX, subscribeMissions, type Feed } from './live';
+import { finalizeEvent, generateSecretKey, getEventHash, getPublicKey } from 'nostr-tools/pure';
+import { set } from '$lib/terminal/storage';
+import { KEPT_CHARS_MAX, PACKAGES_MAX, UNVERIFIED_MAX, subscribeMissions, type Feed } from './live';
+
+/** Every package read, counted: what a relay can make this phone verify is the cost to bound. */
+const reads = vi.hoisted(() => ({ n: 0 }));
+vi.mock('@navcom/core', async (original) => {
+  const core = await original<typeof import('@navcom/core')>();
+  return {
+    ...core,
+    readMissionPackage: (...args: Parameters<typeof core.readMissionPackage>) => {
+      reads.n++;
+      return core.readMissionPackage(...args);
+    }
+  };
+});
 
 /**
  * The subscription across several relays [docs/design/grid.md]: every relay at once, the newest
@@ -15,19 +29,23 @@ const NOW = new Date('2026-10-06T20:00:00Z');
 
 const secret = generateSecretKey();
 const publishers = { [getPublicKey(secret)]: { name: 'Test', agent: true } };
-const pkg = (d: string, title: string, created_at = 1791300000) =>
+const pkg = (d: string, title: string, created_at = 1791300000, state = 'open', padding = 0) =>
   finalizeEvent(
     {
       kind: 30079,
       created_at,
-      content: JSON.stringify({ name: title, objectives: [{ id: 'do:it', ask: 'Do it.' }] }),
+      content: JSON.stringify({ name: title, objectives: [{ id: 'do:it', ask: 'Do it.' }], ...(padding ? { padding: 'x'.repeat(padding) } : {}) }),
       tags: [['d', d], ['t', 'starcom_mission_package'], ['t', 'navcom_handoff'], ['t', 'navcom_mission'],
-        ['mission_state', 'open'], ['valid_until', '1791608400']]
+        ['mission_state', state], ['valid_until', '1791608400']]
     },
     secret
   );
 
-/** A relay the test drives by hand. */
+/**
+ * A relay the test drives by hand, failing the way a browser's socket does: an error and then a
+ * close for one failed connection, and a close event a moment after `close()` [audit 11, second
+ * grid — a socket that never fired 'close' left the guard against a double retry untested].
+ */
 class FakeSocket extends EventTarget {
   static made: FakeSocket[] = [];
   closed = false;
@@ -40,7 +58,9 @@ class FakeSocket extends EventTarget {
     this.sent.push(JSON.parse(data) as unknown[]);
   }
   close(): void {
+    if (this.closed) return;
     this.closed = true;
+    setTimeout(() => this.dispatchEvent(new Event('close')), 0);
   }
   answer(...events: unknown[]): void {
     this.dispatchEvent(new Event('open'));
@@ -52,6 +72,7 @@ class FakeSocket extends EventTarget {
   }
   fail(): void {
     this.dispatchEvent(new Event('error'));
+    this.dispatchEvent(new Event('close'));
   }
 }
 const socket = (url: string) => FakeSocket.made.filter((s) => s.url === url).at(-1)!;
@@ -256,5 +277,231 @@ describe('a relay that is not on our side, or not all there', () => {
     socket(RECORD).frame(['EOSE', 'still-there']);
     vi.advanceTimersByTime(8_001);
     expect(last().status).toBe('live');
+  });
+});
+
+describe('what the second audit of Milestone 11 found', () => {
+  const made = (url: string) => FakeSocket.made.filter((s) => s.url === url).length;
+  const stored = () => (JSON.parse(localStorage.getItem('navcom.wipeable') ?? '{}').missions?.events ?? []) as { content: string }[];
+  /** What any relay can send: a genuine version's id and key, over content and a signature of its own. */
+  const forgedAs = (e: object, over: Record<string, unknown> = {}) => ({ ...JSON.parse(JSON.stringify(e)), content: '{"name":"x"}', sig: '0'.repeat(128), ...over });
+  /** A frame with an honest id and a signature that does not verify: one full check each, and nothing kept. */
+  const junk = (i: number) => {
+    const e = { kind: 30079, pubkey: getPublicKey(secret), created_at: 1791300000, content: '{}', tags: [['d', `junk-${i}`], ['t', 'navcom_mission']] };
+    return { ...e, id: getEventHash(e), sig: Array.from(crypto.getRandomValues(new Uint8Array(64)), (b) => b.toString(16).padStart(2, '0')).join('') };
+  };
+
+  it('retries once per failure, however many ways the socket says it failed', () => {
+    subscribe();
+    // Each wait in turn — 5, 10, 20, 40 seconds — and each new socket failed as soon as it is made.
+    for (const wait of [5_000, 10_000, 20_000, 40_000]) {
+      socket(RECORD).fail();
+      vi.advanceTimersByTime(wait);
+    }
+    expect(made(RECORD)).toBe(5);
+  });
+
+  it('shows a mission closed, and a new one posted, while the map is open, without a reload', () => {
+    subscribe();
+    socket(RECORD).answer(pkg('a', 'Open'));
+    socket(MIRROR).answer();
+    expect(titles()).toEqual(['Open']);
+    socket(RECORD).frame(['EVENT', 'missions', pkg('a', 'Open', 1791400000, 'closed')]);
+    expect(titles()).toEqual([]);
+    socket(RECORD).frame(['EVENT', 'missions', pkg('b', 'New', 1791400001)]);
+    expect(titles()).toEqual(['New']);
+  });
+
+  it('starts from a kept copy holding frames stored before 11.R, drawing what is real in it [11.R]', () => {
+    const real = pkg('a', 'Real');
+    set('wipeable', 'missions', {
+      at: NOW.toISOString(),
+      events: [
+        { kind: 30079, pubkey: '', id: 'x', created_at: 0, tags: [null], content: '', sig: '' },
+        { ...JSON.parse(JSON.stringify(real)), id: 'f'.repeat(64), tags: [null] },
+        real
+      ]
+    });
+    expect(() => subscribe()).not.toThrow();
+    expect(last().status).toBe('cached');
+    expect(titles()).toEqual(['Real']);
+  });
+
+  describe('two versions signed in the same second, from two relays', () => {
+    const a = pkg('t', 'A', 1791350000);
+    const b = pkg('t', 'B', 1791350000);
+    const lower = a.id < b.id ? 'A' : 'B';
+    it('draws the lower id, when The Record answers first', () => {
+      subscribe();
+      socket(RECORD).answer(a);
+      socket(MIRROR).answer(b);
+      expect(titles()).toEqual([lower]);
+    });
+    it('and when the mirror does', () => {
+      subscribe();
+      socket(MIRROR).answer(b);
+      socket(RECORD).answer(a);
+      expect(titles()).toEqual([lower]);
+    });
+  });
+
+  describe('a forged copy under a genuine id, from one relay', () => {
+    const open = pkg('a', 'Open', 1791200000);
+    const closed = pkg('a', 'Closed', 1791300000, 'closed');
+
+    it('cannot keep open a mission the other relay serves as closed', () => {
+      subscribe();
+      socket(MIRROR).answer(forgedAs(closed));
+      socket(RECORD).answer(open, closed);
+      expect(titles()).toEqual([]);
+    });
+
+    it('cannot take the place of the genuine version in the copy this device keeps', () => {
+      const stop = subscribe();
+      socket(RECORD).answer(open);
+      socket(MIRROR).answer(forgedAs(open, { created_at: 1791400000 }));
+      expect(titles()).toEqual(['Open']);
+      vi.advanceTimersByTime(5_000);
+      stop();
+      feeds = [];
+      subscribe();
+      expect(titles()).toEqual(['Open']);
+    });
+  });
+
+  describe('what one relay can make this phone do', () => {
+    it('checks only so many frames that do not verify before it stops listening to that relay', () => {
+      subscribe();
+      socket(RECORD).answer(pkg('a', 'Real'));
+      socket(MIRROR).answer();
+      const before = reads.n;
+      for (let i = 0; i < 300; i++) socket(RECORD).frame(['EVENT', 'missions', junk(i)]);
+      expect(reads.n - before).toBeLessThanOrEqual(UNVERIFIED_MAX);
+      expect(socket(RECORD).closed).toBe(true);
+      // Its last answer stands, as for any relay that dropped.
+      expect(titles()).toEqual(['Real']);
+    });
+
+    it('checks nothing it would not keep: an older version, or a new one past the cap', () => {
+      subscribe();
+      socket(RECORD).answer(pkg('x', 'Newer', 1791300000), ...Array.from({ length: PACKAGES_MAX - 1 }, (_, i) => pkg(`p${i}`, `P${i}`)));
+      const before = reads.n;
+      socket(RECORD).frame(['EVENT', 'missions', pkg('x', 'Older', 1791200000)]);
+      socket(RECORD).frame(['EVENT', 'missions', pkg('over', 'Over the cap')]);
+      expect(reads.n - before).toBe(0);
+    });
+
+    it('draws at most the cap from one relay', () => {
+      subscribe();
+      socket(RECORD).answer(...Array.from({ length: PACKAGES_MAX + 20 }, (_, i) => pkg(`p${i}`, `P${i}`)));
+      expect(titles()).toHaveLength(PACKAGES_MAX);
+    });
+
+    it('keeps at most the cap on this device, though two relays together send more', () => {
+      subscribe();
+      socket(RECORD).answer(...Array.from({ length: 60 }, (_, i) => pkg(`r${i}`, `R${i}`)));
+      socket(MIRROR).answer(...Array.from({ length: 60 }, (_, i) => pkg(`m${i}`, `M${i}`)));
+      expect(titles()).toHaveLength(120);
+      expect(stored()).toHaveLength(PACKAGES_MAX);
+    });
+
+    it('keeps no more characters than its share of the tier', () => {
+      subscribe();
+      socket(RECORD).answer(...Array.from({ length: 30 }, (_, i) => pkg(`big${i}`, `Big ${i}`, 1791300000 + i, 'open', 40_000)));
+      const kept = stored();
+      expect(kept.length).toBeLessThan(30);
+      expect(kept.reduce((n, e) => n + e.content.length + 512, 0)).toBeLessThanOrEqual(KEPT_CHARS_MAX);
+    });
+  });
+
+  describe('when a relay is tried again', () => {
+    it('waits longer each time a relay opens and then refuses, rather than asking every five seconds', () => {
+      subscribe();
+      const refuse = () => {
+        socket(RECORD).dispatchEvent(new Event('open'));
+        socket(RECORD).frame(['CLOSED', 'missions', 'auth-required: sign in']);
+      };
+      refuse();
+      vi.advanceTimersByTime(5_000);
+      expect(made(RECORD)).toBe(2);
+      refuse();
+      vi.advanceTimersByTime(5_000);
+      expect(made(RECORD)).toBe(2);
+      vi.advanceTimersByTime(5_000);
+      expect(made(RECORD)).toBe(3);
+    });
+
+    it('waits longer each time a relay answers and then sends what does not verify, rather than asking every five seconds', () => {
+      subscribe();
+      const answerThenJunk = () => {
+        socket(RECORD).answer(pkg('a', 'Real'));
+        for (let i = 0; i < UNVERIFIED_MAX; i++) socket(RECORD).frame(['EVENT', 'missions', junk(i)]);
+      };
+      answerThenJunk();
+      vi.advanceTimersByTime(5_000);
+      expect(made(RECORD)).toBe(2);
+      answerThenJunk();
+      vi.advanceTimersByTime(5_000);
+      expect(made(RECORD)).toBe(2);
+      vi.advanceTimersByTime(5_000);
+      expect(made(RECORD)).toBe(3);
+      // And one that answers and then refuses, the same.
+      socket(RECORD).answer(pkg('a', 'Real'));
+      socket(RECORD).frame(['CLOSED', 'missions', 'rate-limited: slow down']);
+      vi.advanceTimersByTime(10_000);
+      expect(made(RECORD)).toBe(3);
+      vi.advanceTimersByTime(10_000);
+      expect(made(RECORD)).toBe(4);
+    });
+
+    it('starts the wait over once a relay has really answered', () => {
+      subscribe();
+      socket(RECORD).fail();
+      vi.advanceTimersByTime(5_000);
+      socket(RECORD).fail();
+      vi.advanceTimersByTime(10_000);
+      socket(RECORD).fail();
+      vi.advanceTimersByTime(20_000);
+      socket(RECORD).answer(pkg('a', 'Back'));
+      socket(RECORD).fail();
+      vi.advanceTimersByTime(5_000);
+      expect(made(RECORD)).toBe(5);
+    });
+  });
+
+  it('keeps calling a relay live when it refuses the are-you-there question, since refusing is answering', () => {
+    subscribe();
+    socket(RECORD).answer(pkg('a', 'Seen'));
+    vi.advanceTimersByTime(240_000);
+    socket(RECORD).frame(['CLOSED', 'still-there', 'rate-limited']);
+    vi.advanceTimersByTime(8_001);
+    expect(last().status).toBe('live');
+  });
+
+  it('never lets a tampered newer copy on this device outrank what a relay serves', () => {
+    const genuine = pkg('x', 'Genuine', 1791200000);
+    const tampered = { ...JSON.parse(JSON.stringify(pkg('x', 'Newer', 1791300000))), content: JSON.stringify({ name: 'Tampered', objectives: [{ id: 'do:it', ask: 'Do it.' }] }) };
+    set('wipeable', 'missions', { at: NOW.toISOString(), events: [tampered] });
+    subscribe();
+    socket(RECORD).answer(genuine);
+    expect(titles()).toEqual(['Genuine']);
+  });
+
+  it('keeps each relay’s full answer at once, and what follows it when the page lets go', () => {
+    const stop = subscribe();
+    socket(RECORD).answer(pkg('a', 'At once'));
+    expect(stored().map((e) => JSON.parse(e.content).name)).toEqual(['At once']);
+    socket(RECORD).frame(['EVENT', 'missions', pkg('b', 'Just after', 1791300001)]);
+    stop();
+    expect(stored().map((e) => JSON.parse(e.content).name).sort()).toEqual(['At once', 'Just after']);
+  });
+
+  it('says nothing once the page has let go, whatever a socket still delivers', () => {
+    const stop = subscribe();
+    socket(RECORD).answer(pkg('a', 'Seen'));
+    stop();
+    const count = feeds.length;
+    socket(RECORD).frame(['EVENT', 'missions', pkg('b', 'Late', 1791300001)]);
+    expect(feeds.length).toBe(count);
   });
 });

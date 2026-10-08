@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { finalizeEvent, generateSecretKey } from 'nostr-tools/pure';
+import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import { blankDevice, open, seedDevice } from './device';
 
 /**
@@ -562,6 +562,28 @@ test.describe('the landing page: missions you can open', () => {
     // The mission they chose is remembered for when they come back signed on.
     const pending = await page.evaluate(() => sessionStorage.getItem('navcom.pending-mission'));
     expect(pending).toContain(HEAT_D);
+    // And it does open again once somebody is signed on. Only the browser's Back leads there today:
+    // no control in the terminal goes back to the map [audit 11.I/11.S, left to the terminal].
+    await page.getByRole('link', { name: /choose a callsign/i }).click();
+    await page.locator('#callsign').fill('kestrel');
+    await page.getByRole('button', { name: /generate keypair/i }).click();
+    await expect(page.locator('#rename')).toBeVisible();
+    for (let i = 0; i < 4 && new URL(page.url()).pathname !== '/'; i++) await page.goBack();
+    expect(new URL(page.url()).pathname).toBe('/');
+    await expect(page.locator(`[data-screen="mission"][data-mission="${HEAT_D}"]`)).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole('button', { name: 'Take part' })).toBeVisible();
+    expect(await page.evaluate(() => sessionStorage.getItem('navcom.pending-mission'))).toBeNull();
+  });
+
+  test('with no relay reachable and nothing remembered, a mission reads unknown, never gone [invariant 7]', async ({ page }) => {
+    // It read "Gone · No longer open · it ended or was closed": a claim nobody could check.
+    await seedDevice(page, { callsign: 'kestrel' } as Parameters<typeof seedDevice>[1]);
+    await page.addInitScript((address) => sessionStorage.setItem('navcom.pending-mission', address), `30079:${HEAT.pubkey}:${HEAT_D}`);
+    await open(page, '/');
+    await expect(page.locator('[data-missions="unavailable"]')).toBeVisible({ timeout: 20_000 });
+    const screen = page.locator('[data-com]');
+    await expect(screen.locator('[data-slot="open"]')).toContainText('Unknown');
+    await expect(screen).not.toContainText(/no longer open|ended or was closed/i);
   });
 
   test('an operator chooses who sees it, with nothing preselected, takes part, and lets it go', async ({ page }) => {
@@ -596,6 +618,8 @@ test.describe('the landing page: missions you can open', () => {
 
     await page.locator('[data-letgo]').click();
     await expect(page.getByRole('button', { name: 'Take part' })).toBeVisible();
+    // Letting go recalls nothing anybody already has, and is public too: said, where it was done [audit 11.S].
+    await expect(page.locator('[data-takepart]')).toContainText('anyone who saw the claim keeps it, and letting go is public too');
   });
 
   test('a tap on Take part opens the choice and publishes nothing, and the sealed choice is reachable by touch [audit 11.S]', async ({ page }) => {
@@ -653,6 +677,7 @@ test.describe('the landing page: missions you can open', () => {
 
     // The same evening it waits: a report tells of a day that has ended.
     await page.locator('[data-back]').click();
+    await expect(page.locator('[data-screen="missions"]')).toBeVisible();
     await page.locator('[data-back]').click();
     await page.locator('[data-yours]').click();
     await expect(page.locator(`[data-report-mission="${HEAT_D}"]`)).toContainText('reports open tomorrow');
@@ -698,10 +723,15 @@ test.describe('the landing page: missions you can open', () => {
     expect(reports[0]!.tags.map((t) => t[0])).toEqual(['a', 'ask']);
     expect(Object.keys(JSON.parse(reports[0]!.content)).sort()).toEqual(['callsign', 'date']);
 
-    // Withdrawn honestly: the screen says relays were asked, not that it is gone.
-    await listed.locator('[data-withdraw]').click();
+    // Withdrawn honestly: the screen says relays were asked, not that it is gone — and that the
+    // asking is itself public, under the same card [audit 11.S].
+    const withdraw = listed.locator('[data-withdraw]');
+    await expect(withdraw).toContainText('a request anyone can see');
+    expect((await withdraw.boundingBox())!.height, 'Withdraw is under the thumb floor').toBeGreaterThanOrEqual(48);
+    await withdraw.click();
     await expect(listed).toContainText('Withdrawn');
     await expect(listed).toContainText('copies already taken stay');
+    await expect(listed).toContainText('the request is public');
   });
 
   /** Another operator's open report on the heat mission, the day before, signed in Node where keys belong. */
@@ -718,7 +748,7 @@ test.describe('the landing page: missions you can open', () => {
     );
   const labelsSent = (page: Page) =>
     page.evaluate(() => {
-      const sent = (globalThis as unknown as { __navcomPublished?: { id: string; kind: number; tags: string[][]; content: string }[] })
+      const sent = (globalThis as unknown as { __navcomPublished?: { id: string; pubkey: string; kind: number; tags: string[][]; content: string }[] })
         .__navcomPublished ?? [];
       return [...new Map(sent.filter((e) => e.kind === 1985 && e.tags.some((t) => t[0] === 'e')).map((e) => [e.id, e])).values()];
     });
@@ -739,12 +769,18 @@ test.describe('the landing page: missions you can open', () => {
     await expect(item).toContainText('Waiting');
     await item.locator('[data-witness]').click();
     await expect(item).toContainText('It settles this report now');
+    // What others will read it under, said before it is signed. Kestrel has published no card, so
+    // readers see a key, not her callsign — and her own screen says the same [audit 11.S].
+    await expect(item.locator('[data-signed-as]')).toContainText('no card of yours is published');
+    expect((await item.locator('[data-confirm="witnessed"]').boundingBox())!.height).toBeGreaterThanOrEqual(48);
     await item.locator('[data-confirm="witnessed"]').click();
-    await expect(item).toContainText('by a witness, kestrel');
+    await expect(item).toContainText('Settled');
 
     // What left: one label, naming the report and the mission, and no words.
     const sent = await labelsSent(page);
     expect(sent).toHaveLength(1);
+    await expect(item).toContainText(`by a witness, ${sent[0]!.pubkey.slice(0, 8)}`);
+    await expect(item).not.toContainText('kestrel');
     expect(sent[0]!.tags).toEqual([['L', 'navcom.mission'], ['l', 'witnessed', 'navcom.mission'], ['e', theirs.id], ['a', ADDRESS]]);
     expect(sent[0]!.content).toBe('');
     const results = await new AxeBuilder({ page }).analyze();
@@ -760,12 +796,140 @@ test.describe('the landing page: missions you can open', () => {
     const item = page.locator(`[data-screen="reports"] [data-report="${theirs.id}"]`);
     await expect(item).toContainText('Wren');
     await expect(item.locator('[data-witness]')).toHaveCount(0);
+    expect((await item.locator('[data-challenge]').boundingBox())!.height, 'Challenge is under the thumb floor').toBeGreaterThanOrEqual(48);
     await item.locator('[data-challenge]').click();
     await expect(item).toContainText('reverses nothing');
+    // Not "by name": no card names the key it is signed with, and nothing before it made one.
+    await expect(item.locator('[data-signed-as]')).toContainText('under a new key with no name');
     await item.locator('[data-confirm="challenged"]').click();
-    await expect(item).toContainText('challenged by kestrel');
     await expect(item).toContainText('Waiting');
-    expect((await labelsSent(page)).map((l) => l.tags[1])).toEqual([['l', 'challenged', 'navcom.mission']]);
+    const sent = await labelsSent(page);
+    expect(sent.map((l) => l.tags[1])).toEqual([['l', 'challenged', 'navcom.mission']]);
+    // As a reader will see it: the key's first characters, not a callsign no reader has.
+    await expect(item).toContainText(`challenged by ${sent[0]!.pubkey.slice(0, 8)}`);
+    await expect(item).not.toContainText('kestrel');
+  });
+
+  /** A report of this device's own on the heat mission, signed by `secret`, the day before. */
+  const ownReport = (secret: Uint8Array) =>
+    finalizeEvent(
+      {
+        kind: 1912,
+        created_at: Math.floor(DURING.getTime() / 1000) - 7_200,
+        content: JSON.stringify({ callsign: 'kestrel', date: '2026-10-05' }),
+        tags: [['a', ADDRESS], ['ask', 'field:heat_relief:CA:2026-10-02#handout:water']]
+      },
+      secret
+    );
+  const hex = (b: Uint8Array) => Buffer.from(b).toString('hex');
+  async function challengeWrens(page: Page, theirs: { id: string }) {
+    await page.locator('[data-missions="open"]').click();
+    await page.locator(`[data-mission="${HEAT_D}"]`).click();
+    await page.locator('[data-reports]').click();
+    const item = page.locator(`[data-screen="reports"] [data-report="${theirs.id}"]`);
+    await expect(item).toContainText('Wren', { timeout: 15_000 });
+    await item.locator('[data-challenge]').click();
+    return item;
+  }
+
+  test('with her own report on the mission and no card, the confirmation says where her name shows and where only her key does [review]', async ({ page }) => {
+    // A reporter reads who challenged her on Your missions, which names a key from a card alone:
+    // "as kestrel" there was a promise only this screen kept [audit 11.S, review].
+    const contact = generateSecretKey();
+    const theirs = wrens();
+    await withHeat(page, { __noStorage: false, callsign: 'kestrel', relayEvents: [HEAT, ownReport(contact), theirs], accruing: { contact_secret: hex(contact) } });
+    const item = await challengeWrens(page, theirs);
+    const said = item.locator('[data-signed-as]');
+    await expect(said).toContainText("as kestrel on this mission's reports");
+    await expect(said).toContainText(`elsewhere under the key ${getPublicKey(contact).slice(0, 8)}`);
+    await expect(said).toContainText('no card of yours is known to be published');
+  });
+
+  test('with a card nobody knows reached a relay, the confirmation says the name is not known to be on it [review]', async ({ page }) => {
+    // A card saved before send outcomes were kept, or restored from a backup, has none: the card
+    // screen calls that "not known if sent", and this screen called it "no card of yours is published".
+    const contact = generateSecretKey();
+    const theirs = wrens();
+    await withHeat(page, { __noStorage: false, callsign: 'kestrel', relayEvents: [HEAT, theirs], accruing: { contact_secret: hex(contact), card: { region: 'us-ca' } } });
+    const item = await challengeWrens(page, theirs);
+    const said = item.locator('[data-signed-as]');
+    await expect(said).toContainText(`under the key ${getPublicKey(contact).slice(0, 8)}`);
+    await expect(said).toContainText('as kestrel if your card reached a relay, which this phone has no record of');
+    await expect(said).not.toContainText('no card of yours is published');
+  });
+
+  test('a report filed here under a card withdrawn since is still hers: marked so, and nothing to say about it [audit 11, second grid]', async ({ page }) => {
+    const old = generateSecretKey();
+    const mine = ownReport(old);
+    await page.clock.setFixedTime(DURING);
+    await seedDevice(page, { relayEvents: [HEAT, mine], callsign: 'kestrel' });
+    // What this device kept when it sent the report, under the card it held then. That card is gone.
+    await page.addInitScript((kept) => {
+      if (localStorage.getItem('zz.kept-report') === '1') return;
+      localStorage.setItem('zz.kept-report', '1');
+      const wipeable = JSON.parse(localStorage.getItem('navcom.wipeable') ?? '{}');
+      wipeable.mission_reports = [kept];
+      localStorage.setItem('navcom.wipeable', JSON.stringify(wipeable));
+    }, {
+      id: mine.id, address: ADDRESS, title: 'Heat relief', jurisdiction: 'us-ca', poster: HEAT.pubkey, date: '2026-10-05',
+      at: mine.created_at, visibility: 'open', relays: ['wss://relay.damus.io'], signer: getPublicKey(old)
+    });
+    await open(page, '/');
+    await expect(page.locator('[data-missions="open"]')).toContainText('Open missions · live', { timeout: 15_000 });
+    await page.locator('[data-missions="open"]').click();
+    await page.locator(`[data-mission="${HEAT_D}"]`).click();
+    await page.locator('[data-reports]').click();
+    const item = page.locator(`[data-screen="reports"] [data-report="${mine.id}"]`);
+    await expect(item).toContainText('kestrel', { timeout: 15_000 });
+    await expect(item).toContainText('yours');
+    await expect(item.locator('[data-challenge]')).toHaveCount(0);
+    await expect(item.locator('[data-witness]')).toHaveCount(0);
+  });
+
+  test('with only The Record answering, a mission’s reports read unknown, not none: reports go only to operators’ relays [audit 11, second grid]', async ({ page }) => {
+    await page.clock.setFixedTime(DURING);
+    // The Record holds the mission and, like every relay a report never goes to, no reports.
+    await seedDevice(page, { relayEvents: [HEAT], __noStorage: true } as Parameters<typeof seedDevice>[1]);
+    // Every other relay is out of reach, failing the way a browser's socket does.
+    await page.addInitScript(() => {
+      const g = globalThis as unknown as { WebSocket: new (u: string, p?: string | string[]) => object };
+      const Inner = g.WebSocket;
+      class Unreachable extends EventTarget {
+        readyState = 0;
+        onopen: ((e: Event) => void) | null = null;
+        onerror: ((e: Event) => void) | null = null;
+        onclose: ((e: Event) => void) | null = null;
+        onmessage: ((e: Event) => void) | null = null;
+        constructor(readonly url: string) {
+          super();
+          setTimeout(() => {
+            this.readyState = 3;
+            const error = new Event('error');
+            this.onerror?.(error);
+            this.dispatchEvent(error);
+            const close = new CloseEvent('close', { code: 1006 });
+            this.onclose?.(close);
+            this.dispatchEvent(close);
+          }, 0);
+        }
+        send(): void {}
+        close(): void {}
+      }
+      const Only = function (url: string | URL, protocols?: string | string[]) {
+        return /cosmiccodex\.app/.test(String(url)) ? new Inner(String(url), protocols) : new Unreachable(String(url));
+      } as unknown as Record<string, number>;
+      Object.assign(Only, { CONNECTING: 0, OPEN: 1, CLOSING: 2, CLOSED: 3 });
+      g.WebSocket = Only as unknown as typeof g.WebSocket;
+    });
+    await open(page, '/');
+    await expect(page.locator('[data-missions="open"]')).toContainText('Open missions · live', { timeout: 15_000 });
+    await page.locator('[data-missions="open"]').click();
+    await page.locator(`[data-mission="${HEAT_D}"]`).click();
+    await page.locator('[data-reports]').click();
+    const reports = page.locator('[data-screen="reports"]');
+    await expect(reports).toContainText('Unknown', { timeout: 15_000 });
+    await expect(reports).toContainText('the relays reports go to did not answer');
+    await expect(reports).not.toContainText('None found');
   });
 
   test('signed out, reports can be read and nothing can be said about them', async ({ page }) => {
@@ -780,6 +944,15 @@ test.describe('the landing page: missions you can open', () => {
   });
 
   test('an operator’s Distress bar is legible, and a landmark, in both signatures', async ({ page }) => {
+    /*
+     * Two full-page axe passes on a signed-in page, each ~3 s of CPU idle — 80% of it the 1,913
+     * options of the region picker — so this is the most CPU-bound test in the file and the first
+     * to slow under load. It timed out once at load 54 and passed alone straight after: the 9.S
+     * shape, a flake on the Distress path, which trains people to re-run rather than look. Given a
+     * budget with its reason rather than a narrower check, because the check is the point
+     * [measured 2026-10-07: 5.7–8.5 s at load 17, 12.3–14.5 s under contention].
+     */
+    test.setTimeout(60_000);
     /*
      * Every axe check on this page ran signed out, where there is no Distress bar — so its label
      * shipped at 3.68:1 in low signature, the mode every operator gets by default, and 4.26:1 in
@@ -798,5 +971,161 @@ test.describe('the landing page: missions you can open', () => {
   test('signed out, Com’s root is the search, with no missions of your own above it', async ({ page }) => {
     await withHeat(page);
     await expect(page.locator('[data-yours]')).toHaveCount(0);
+  });
+
+  /** The Yours panel's header on the signed-in root. */
+  const yoursPost = (page: Page) => page.locator('section.nc-panel', { has: page.locator('[data-yours]') }).locator('[data-post]');
+
+  test('the claim slot reads nothing claimed rather than disappearing [com.md §7; audit 11.I]', async ({ page }) => {
+    await withHeat(page, { __noStorage: false, callsign: 'kestrel' });
+    await expect(yoursPost(page)).toHaveText('nothing claimed');
+    await page.locator('[data-missions="open"]').click();
+    await page.locator(`[data-mission="${HEAT_D}"]`).click();
+    await page.getByRole('button', { name: 'Take part' }).click();
+    await settle(page);
+    await page.locator('[data-visibility="open"]').click();
+    await expect(page.locator('[data-slot="you"]')).toContainText('Taking part');
+    await page.locator('[data-back]').click();
+    await page.locator('[data-back]').click();
+    await expect(yoursPost(page)).toHaveText('1 held');
+    // Letting go puts the same slot back to the same words, in the same place.
+    await page.locator('[data-missions="open"]').click();
+    await page.locator(`[data-mission="${HEAT_D}"]`).click();
+    await page.locator('[data-letgo]').click();
+    await expect(page.getByRole('button', { name: 'Take part' })).toBeVisible();
+    await page.locator('[data-back]').click();
+    await page.locator('[data-back]').click();
+    await expect(yoursPost(page)).toHaveText('nothing claimed');
+  });
+
+  test('the phone’s back gesture steps back through Com, and never off the page [audit 11.I]', async ({ page }) => {
+    // The system back is history.back(). With the stack kept only in component state it left the
+    // page with a mission open — to the page before, or to a blank tab — and the mission, the list
+    // and the Distress bar went with it.
+    await withHeat(page, { __noStorage: false, callsign: 'kestrel' });
+    await page.locator('[data-missions="open"]').click();
+    await page.locator(`[data-mission="${HEAT_D}"]`).click();
+    await expect(page.locator('[data-screen="mission"]')).toBeVisible();
+    await page.goBack();
+    await expect(page.locator('[data-screen="missions"]')).toBeVisible();
+    await expect(page.locator('.distress-layer a')).toBeVisible();
+    await page.goBack();
+    await expect(page.getByLabel(/where are you, or what do you need/i)).toBeVisible();
+    expect(new URL(page.url()).pathname).toBe('/');
+    // Forward walks the same history back in, and the in-sheet Back still steps one screen.
+    await page.goForward();
+    await expect(page.locator('[data-screen="missions"]')).toBeVisible();
+    await page.locator(`[data-mission="${HEAT_D}"]`).click();
+    await page.locator('[data-back]').click();
+    await expect(page.locator('[data-screen="missions"]')).toBeVisible();
+    // A reload keeps the entry's history state while the page opens at its root. The next Back
+    // must go to the root too, not into the screen that was open before the reload.
+    await page.reload();
+    await page.waitForSelector('html[data-hydrated="true"]', { timeout: 15_000 });
+    const root = page.getByLabel(/where are you, or what do you need/i);
+    await expect(root).toBeVisible();
+    await page.locator('[data-missions="open"]').click();
+    await expect(page.locator('[data-screen="missions"]')).toBeVisible();
+    await page.locator('[data-back]').click();
+    await expect(root).toBeVisible();
+  });
+
+  test('Com’s own controls are at the terminal’s thumb floor [tokens.css; audit 11.I]', async ({ page }) => {
+    // 48px is the floor. The handle was 36px and the only way to move the sheet by touch; a tap
+    // that missed it landed on the map, where a lit province opens a different screen.
+    await withHeat(page, { __noStorage: false, callsign: 'kestrel' });
+    await page.locator('[data-yours]').click();
+    for (const [name, sel] of [
+      ['the sheet handle', '.grab'],
+      ['Back', '[data-back]'],
+      ['the display toggle', '[data-signature-toggle]'],
+      ['the missions line', '[data-missions="open"]']
+    ]) {
+      const box = await page.locator(sel).boundingBox();
+      expect(box, name).not.toBeNull();
+      expect(box!.height, name).toBeGreaterThanOrEqual(48);
+    }
+  });
+
+  test.describe('on a slow cell, what was done before the page woke up survives it [audit 11.I]', () => {
+    /** Scripts held back, as a congested cell delivers them: the page is there and not yet live. */
+    async function slowScripts(page: Page) {
+      await page.route('**/_app/immutable/**/*.js', async (route) => {
+        await new Promise((r) => setTimeout(r, 3_000));
+        await route.continue();
+      });
+      await blankDevice(page);
+      await page.goto('/', { waitUntil: 'commit' });
+      await page.locator('#lookup').waitFor({ state: 'attached' });
+    }
+    const awake = (page: Page) => page.locator('html[data-hydrated="true"]').count();
+
+    test('a region picked before hydration stays picked, and loads', async ({ page }) => {
+      // The picker's own label names this case: "No signal, or geolocation said no?"
+      const index = page.waitForRequest('**/console-index/philadelphia.json', { timeout: 15_000 });
+      await slowScripts(page);
+      await page.locator('#region-pick').selectOption('philadelphia');
+      expect(await awake(page), 'the pick has to land before the page hydrates, or this tests nothing').toBe(0);
+      await page.waitForSelector('html[data-hydrated="true"]', { timeout: 15_000 });
+      await expect(page.locator('#region-pick')).toHaveValue('philadelphia');
+      await index;
+    });
+
+    test('words typed before hydration lift the sheet so the results can be seen', async ({ page }) => {
+      await slowScripts(page);
+      await page.locator('#lookup').fill('Philadelphia');
+      expect(await awake(page), 'the typing has to land before the page hydrates, or this tests nothing').toBe(0);
+      await page.waitForSelector('html[data-hydrated="true"]', { timeout: 15_000 });
+      await expect(page.locator('#lookup')).toHaveValue('Philadelphia');
+      await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'half');
+    });
+  });
+
+  test.describe('when the missions’ own code cannot arrive [audit 11.I]', () => {
+    // The worker would serve the code from its cache and the route below would block nothing.
+    test.use({ serviceWorkers: 'block' });
+
+    test('a claim held here reads as held, not as over, and its mission says why it cannot open', async ({ page }) => {
+      await withHeat(page, { __noStorage: false, callsign: 'kestrel' });
+      await page.locator('[data-missions="open"]').click();
+      await page.locator(`[data-mission="${HEAT_D}"]`).click();
+      await page.getByRole('button', { name: 'Take part' }).click();
+      await settle(page);
+      await page.locator('[data-visibility="open"]').click();
+      await expect(page.locator('[data-slot="you"]')).toContainText('Taking part');
+
+      await page.route(chunkOf('src/lib/missions/live.ts'), (r) => r.abort());
+      await open(page, '/');
+      await expect(page.locator('[data-missions="unloaded"]')).toBeVisible({ timeout: 15_000 });
+      await page.locator('[data-yours]').click();
+      const held = page.locator(`[data-held$="${HEAT_D}"]`);
+      // Which missions are open is not known on this phone right now: that is not "over" [invariant 7].
+      await expect(held).toContainText(/ends in/i);
+      await expect(held).not.toContainText(/over/i);
+      await held.click();
+      // And not a "Loading" that never ends: the key's own words for the same failure.
+      await expect(page.locator('[data-mission-unloaded]')).toContainText('Missions not loaded — they need one visit with a connection', { timeout: 5_000 });
+    });
+  });
+
+  test.describe('on a small phone held sideways [audit 11.I]', () => {
+    for (const viewport of [{ width: 667, height: 375 }, { width: 640, height: 360 }]) {
+      test.describe(`${viewport.width}×${viewport.height}`, () => {
+        test.use({ viewport });
+
+        test('Com sits beside the map, and covers none of its controls', async ({ page }) => {
+          // A fixed peek was most of a short screen: half came out shorter than peek, and the sheet
+          // covered "Show the whole map" at every height.
+          await withHeat(page, { __noStorage: false, callsign: 'kestrel' });
+          await expect(page.locator('[data-grid="ready"]')).toBeVisible({ timeout: 15_000 });
+          for (const name of ['Show the whole map', 'Zoom in', 'Zoom out', 'Coverage']) {
+            expect(await uncovered(page.getByRole('button', { name })), name).toBe(true);
+          }
+          // Com itself, and Distress, are both there to be reached.
+          expect(await uncovered(page.locator('[data-yours]'))).toBe(true);
+          expect(await uncovered(page.locator('.distress-layer a'))).toBe(true);
+        });
+      });
+    }
   });
 });

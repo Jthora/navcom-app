@@ -8,7 +8,8 @@
  * where somebody has been [the-artifact-that-leaves.md P5]. Not tonight means come back.
  *
  * **A second report in one place inside a week is warned about, not refused.** One callsign, one
- * state, a date, again and again, is a series somebody can read; the operator decides.
+ * state, a date, again and again, is a series somebody can read; the operator decides. A report
+ * that was withdrawn still counts: relays were asked to drop it, and copies already taken stay.
  *
  * What was sent is listed here, Wipeable, so it can be seen and withdrawn — a list of what left,
  * never a count of it [C20].
@@ -17,6 +18,7 @@
  * when the relays that hold its labels answered; otherwise it is unknown, and said so.
  */
 import type { Event } from 'nostr-tools/core';
+import type { Filter } from 'nostr-tools/filter';
 import {
   CHALLENGE_WINDOW_SECONDS,
   FUTURE_TOLERANCE_DAYS,
@@ -117,20 +119,25 @@ export function reportableDays(now: number, mission?: TookPart): string[] {
 
 /**
  * Whether a mission taken part in is still one to report: its last day is inside the week a report
- * may tell of, or it was taken part in today and its first reportable day is tomorrow [11.X].
+ * may tell of, or it was taken part in today and its first reportable day is tomorrow [11.X] —
+ * whether or not it has ended since. One taken part in at six and ended at ten went from every
+ * screen until midnight, and the panel said there was nothing to report [audit 11.S].
  */
 export function stillToReport(now: number, t: TookPart): 'now' | 'tomorrow' | null {
   if (reportableDays(now, t).length > 0) return 'now';
-  return localDay(t.since) >= localDay(now) && t.mission.validUntil > now ? 'tomorrow' : null;
+  return localDay(t.since) >= localDay(now) ? 'tomorrow' : null;
 }
 
 /**
  * A report sent for the same place inside the window, if there is one. A mission with no
  * jurisdiction is compared by itself, so the warning never goes quiet where placement is finest [11.X].
+ *
+ * Withdrawn ones included: the screen that withdraws one says copies already taken stay, and a
+ * series somebody already copied is still a series [audit 11, second grid].
  */
 export function series(m: Mission, now: number): Sent | null {
   const same = (s: Sent) => (m.placement.jurisdiction ? s.jurisdiction === m.placement.jurisdiction : s.address === m.address);
-  return sent().find((s) => !s.withdrawn && same(s) && s.at > now - SERIES_DAYS * 86_400) ?? null;
+  return sent().find((s) => same(s) && s.at > now - SERIES_DAYS * 86_400) ?? null;
 }
 
 export interface Draft {
@@ -239,31 +246,82 @@ const heardFrom = (answered: string[]): Answered => {
   return { poster: answered.some((u) => mission.has(u)), operators: answered.some((u) => operators.has(u)) };
 };
 
-/** The most labels read for one screen, and the most reports: a relay serving thousands is an attack, not a night. */
-const LABELS_MAX = 1_000;
+/** The most reports read for one screen: a relay serving thousands is an attack, not a night. */
 export const REPORTS_MAX = 200;
+/**
+ * The most labels one read asks a relay for: the cap the default relays put on any one request
+ * (strfry's `maxFilterLimit`), so a relay that cuts a request down still sends a full page, and a
+ * full page reads as one. Asked for a thousand, such a relay sent five hundred and the read looked
+ * whole — a poster's settlement or a challenge could be among those left out, and silence was kept
+ * as how the report settled, for good [audit 11, second grid — review].
+ */
+export const LABELS_PAGE = 500;
+/** Pages read on one mission before the rest is called partial: a relay serving thousands is an attack, not a night. */
+export const LABELS_PAGES = 4;
+/** Missions read at once: a relay lets one connection hold only so many requests open. */
+const READS_AT_ONCE = 4;
 /** The three words a label on a report can say: asked for by name, so a mission's claims do not crowd them out [11.R]. */
 const ON_A_REPORT = ['settled', 'witnessed', 'challenged'];
 
 /**
- * The labels on these missions' reports, asked for **by mission, never by report**. Asking a relay
+ * The labels on one mission's reports, asked for **by mission, never by report**. Asking a relay
  * for the labels on a list of report ids tells it which reports this device cares about, and for
  * an operator's own that is as good as a name [docs/design/grid.md §1]. Every label on a report
  * names its mission too [spec §5.3], so the mission is enough, and the rest is sorted here.
+ *
+ * **A page at a time, newest first.** A page as full as a relay will send may have left some out,
+ * so the next starts where the fullest relay's could have stopped: a relay that cut its answer
+ * short sent a whole page, so nothing it left out is newer than the page's own last place — not
+ * the oldest label any relay sent, which a relay holding only old ones pulls back past all of it.
+ * A page with fewer than that proves every relay sent all it had. After `LABELS_PAGES`, or a page
+ * that brings nothing new, what is left is called partial — never read as nothing.
+ *
+ * `poster`, for a mission this device reported on only sealed, asks only for the poster's
+ * settlements, and only The Record and its mirror. Nobody else knows a sealed report's id, so nobody
+ * else can have labelled it; and the relays operators use carry this device's open traffic and may
+ * hold the inbox the seal went to, so asking them would say which mission it was for, and whose
+ * [audit 11, second grid — review].
  */
-async function labelsOn(addresses: string[], w: Wire): Promise<{ labels: Event[]; answered: Answered; partial: boolean }> {
-  if (addresses.length === 0) return { labels: [], answered: { poster: true, operators: true }, partial: false };
-  try {
-    const { events, answered } = await w.query(everywhere(), {
-      kinds: [KIND_LABEL],
-      '#a': addresses,
-      '#l': ON_A_REPORT,
-      limit: LABELS_MAX
-    });
-    return { labels: events, answered: heardFrom(answered), partial: events.length >= LABELS_MAX };
-  } catch {
-    return { labels: [], answered: { poster: false, operators: false }, partial: false };
+async function labelsOn(address: string, w: Wire, poster?: string): Promise<{ labels: Event[]; answered: Answered; partial: boolean }> {
+  const urls = poster ? usable(MISSION_RELAYS) : everywhere();
+  const filter: Filter = poster
+    ? { kinds: [KIND_LABEL], authors: [poster], '#a': [address], '#l': ['settled'] }
+    : { kinds: [KIND_LABEL], '#a': [address], '#l': ON_A_REPORT };
+  const got = new Map<string, Event>();
+  let heard: Answered = { poster: true, operators: true };
+  let until: number | undefined;
+  for (let page = 0; page < LABELS_PAGES; page++) {
+    let events: Event[];
+    let answered: string[];
+    try {
+      ({ events, answered } = await w.query(urls, { ...filter, limit: LABELS_PAGE, ...(until === undefined ? {} : { until }) }));
+    } catch {
+      return { labels: [...got.values()], answered: { poster: false, operators: false }, partial: false };
+    }
+    // A relay that did not answer one page left a hole in the whole read.
+    const h = heardFrom(answered);
+    heard = { poster: heard.poster && h.poster, operators: heard.operators && h.operators };
+    let fresh = 0;
+    for (const e of events) {
+      if (got.has(e.id)) continue;
+      got.set(e.id, e);
+      fresh += 1;
+    }
+    if (events.length < LABELS_PAGE) return { labels: [...got.values()], answered: heard, partial: false };
+    if (fresh === 0) break;
+    until = events.map((e) => e.created_at).sort((a, b) => b - a)[LABELS_PAGE - 1];
   }
+  return { labels: [...got.values()], answered: heard, partial: true };
+}
+
+/** `f` over every item, `n` at a time. */
+async function inTurn<T>(items: T[], n: number, f: (item: T) => Promise<void>): Promise<void> {
+  const queue = [...items];
+  await Promise.all(
+    Array.from({ length: Math.min(n, queue.length) }, async () => {
+      while (queue.length > 0) await f(queue.shift()!);
+    })
+  );
 }
 
 /**
@@ -298,35 +356,69 @@ const keysIn = (standing: Map<string, Settlement>) =>
   [...standing.values()].flatMap((x) => [...x.challengedBy, ...('by' in x ? [x.by] : [])]);
 
 /**
+ * Whether a report is this device's own: signed by its card, or sent from here under a card
+ * withdrawn since. Matching the current card alone forgot every report filed before a withdrawal —
+ * they lost "yours", and this device was offered, and could send, a witness of its own work
+ * [audit 11, second grid].
+ */
+export function isMine(r: { id: string; author: string }): boolean {
+  if (r.author === contactPubkey()) return true;
+  return sent().some((s) => s.id === r.id || s.signer === r.author);
+}
+
+/**
  * Where each of this device's reports stands, and the names of whoever settled or challenged
  * them. A report whose seven days are over keeps how it settled, so it is not asked for again; one
  * still open is read, and is unknown — never "waiting", never "settled" — when the relays that
- * would hold its labels did not answer.
+ * would hold its labels did not answer, **or when more labels were on its mission than this reads**,
+ * since the one that decides it may be among those left out. Nothing is kept from such a read.
+ *
+ * **One read per mission.** Asked for together, one busy mission — a campaign's thousand
+ * settlements, or a stranger's thousand labels, which cost nothing to sign — filled the answer and
+ * left every report on every other mission unknown, for good [audit 11, second grid — review].
+ *
+ * Each report is read under the key that signed it, so a card withdrawn since changes nothing; only
+ * one sent before signers were recorded needs the card this device holds now [audit 11, second grid].
  */
 export async function settlements(
   now: number,
   w: Wire = defaultWire
-): Promise<{ standing: Map<string, Settlement>; names: Names; answered: Answered }> {
+): Promise<{
+  standing: Map<string, Settlement>;
+  names: Names;
+  answered: Answered;
+  /** Reports on a mission that had more labels than this reads: unknown, and not for want of signal. */
+  partial: ReadonlySet<string>;
+}> {
   const mine = sent().filter((s) => !s.withdrawn);
   const me = contactPubkey();
   const standing = new Map<string, Settlement>();
   for (const s of mine) if (s.final) standing.set(s.id, s.final);
-  const open = mine.filter((s) => !s.final);
-  if (open.length === 0 || !me) {
-    return { standing, names: await namesOf(keysIn(standing), new Map(), w), answered: { poster: true, operators: true } };
-  }
+  const open = mine.filter((s) => !s.final && (s.signer ?? me));
+  const answered: Answered = { poster: true, operators: true };
+  const partial = new Set<string>();
+  const byMission = new Map<string, Sent[]>();
+  for (const s of open) byMission.set(s.address, [...(byMission.get(s.address) ?? []), s]);
 
-  const { labels, answered } = await labelsOn([...new Set(open.map((s) => s.address))], w);
-  if (answered.poster && answered.operators) {
-    const final = new Map<string, Settlement>();
-    for (const s of open) {
-      const st = settlementOf({ id: s.id, author: s.signer ?? me, at: s.at }, s.poster, labels, now);
+  const final = new Map<string, Settlement>();
+  await inTurn([...byMission], READS_AT_ONCE, async ([address, reports]) => {
+    const sealed = reports.every((s) => s.visibility === 'sealed');
+    const read = await labelsOn(address, w, sealed ? reports[0]!.poster : undefined);
+    answered.poster &&= read.answered.poster;
+    if (!sealed) answered.operators &&= read.answered.operators;
+    if (read.partial) {
+      for (const s of reports) partial.add(s.id);
+      return;
+    }
+    if (!read.answered.poster || (!sealed && !read.answered.operators)) return;
+    for (const s of reports) {
+      const st = settlementOf({ id: s.id, author: (s.signer ?? me)!, at: s.at }, s.poster, read.labels, now);
       standing.set(s.id, st);
       if (st.state === 'settled' && now >= s.at + CHALLENGE_WINDOW_SECONDS) final.set(s.id, st);
     }
-    if (final.size > 0) set('wipeable', SENT, sent().map((x) => (final.has(x.id) ? { ...x, final: final.get(x.id) } : x)));
-  }
-  return { standing, names: await namesOf(keysIn(standing), new Map(), w), answered };
+  });
+  if (final.size > 0) set('wipeable', SENT, sent().map((x) => (final.has(x.id) ? { ...x, final: final.get(x.id) } : x)));
+  return { standing, names: await namesOf(keysIn(standing), new Map(), w), answered, partial };
 }
 
 /** Somebody's report on a mission, as read: verified, and held to the mission's own words. */
@@ -388,7 +480,7 @@ export async function reportsOn(m: Mission, now: number, w: Wire = defaultWire):
     reports = reports.filter((r) => !gone.has(r.id));
   }
   reports.sort((a, b) => b.at - a.at || a.id.localeCompare(b.id));
-  const labelled = await labelsOn([m.address], w);
+  const labelled = await labelsOn(m.address, w);
   const known: Names = new Map(reports.map((r) => [r.author, r.report.callsign]));
   known.set(m.publisher.pubkey, m.publisher.name);
   // This device's own label reads under its own callsign, card or no card.
@@ -426,7 +518,7 @@ export async function labelReport(
   w: Wire = defaultWire
 ): Promise<Labelled> {
   if (!signedOn()) return { ok: false, because: 'signed-out' };
-  if (r.author === contactPubkey()) return { ok: false, because: 'own' };
+  if (isMine(r)) return { ok: false, because: 'own' };
   if (kind === 'witnessed' && !tookPart(now).some((t) => t.mission.address === m.address)) {
     return { ok: false, because: 'not-there' };
   }

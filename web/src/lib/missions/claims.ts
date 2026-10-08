@@ -75,9 +75,16 @@ export const wire: Wire = {
     }
   },
   /*
-   * One subscription per relay, so each one's answer is its own. A relay counts as having answered
-   * only if it finished before the wait ran out: the pool ends a slow relay's wait the same way as
-   * a real end of answer, and that is exactly the difference between "nothing" and "nobody said".
+   * One subscription per relay, so each one's answer is its own. **A relay counts as having
+   * answered only on a real end of its answer, before the wait ran out** — the rule
+   * `terminal/subscribe.ts` keeps, here for a one-off read.
+   *
+   * The pool says "end of answer" in two other places, and both used to count [audit 11, second
+   * grid]. At the end of the wait it fires its own stand-in, which the time check below refuses.
+   * And it reports every failure — a connection that never came up, a relay's CLOSED, a socket that
+   * dropped — as an end of answer and a close in the same moment. So the end of answer waits a
+   * microtask to see whether a close came with it: a relay that could not be reached is not one that
+   * said there was nothing, and with no signal every relay had "answered" with nothing.
    */
   async query(urls, filter) {
     const events = new Map<string, Event>();
@@ -88,7 +95,11 @@ export const wire: Wire = {
           new Promise<void>((resolve) => {
             const start = Date.now();
             let sub: { close(reason?: string): void } | undefined;
+            /** Ended — by a real end of answer, the wait, or a close of any kind — and never counted again. */
+            let finished = false;
             const done = () => {
+              if (finished) return;
+              finished = true;
               clearTimeout(guard);
               try {
                 sub?.close();
@@ -102,10 +113,12 @@ export const wire: Wire = {
               sub = pool().subscribe([url], filter, {
                 maxWait: QUERY_MS,
                 onevent: (e: Event) => void events.set(e.id, e),
-                oneose: () => {
-                  if (Date.now() - start < QUERY_MS - 50) answered.push(url);
-                  done();
-                },
+                // A close that came with it has finished this by the time the microtask runs.
+                oneose: () =>
+                  queueMicrotask(() => {
+                    if (!finished && Date.now() - start < QUERY_MS - 50) answered.push(url);
+                    done();
+                  }),
                 onclose: done
               });
             } catch {

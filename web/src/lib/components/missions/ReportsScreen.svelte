@@ -17,10 +17,10 @@
   import { onMount } from 'svelte';
   import { CHALLENGE_WINDOW_SECONDS, settlementOf, type Mission } from '@navcom/core';
   import { Panel, Readout, Slot } from '$lib/components/panel';
-  import { contactPubkey } from '$lib/terminal/card';
+  import { cardSent, contactPubkey, myCard } from '$lib/terminal/card';
   import { get } from '$lib/terminal/storage';
   import { signedOn, tookPart } from '$lib/missions/claims';
-  import { labelReport, reportsOn, type MissionReports, type OnMission } from '$lib/missions/reports';
+  import { isMine, labelReport, reportsOn, type MissionReports, type OnMission } from '$lib/missions/reports';
   import { placeName, standingOf } from './format';
 
   let { address, missions, now }: { address: string; missions: Mission[]; now: number } = $props();
@@ -38,6 +38,46 @@
   /** Raw, not proxied: signed events are read, never changed, and a deep proxy only costs time [11.R]. */
   let read = $state.raw<MissionReports | null>(null);
   let confirming = $state<{ id: string; kind: 'witnessed' | 'challenged' } | null>(null);
+
+  /**
+   * The name others read this device's labels under — and only that, said as it is on every
+   * screen. A reader names a labeller from a published card, everywhere; from a report the same key
+   * filed on this mission, on this mission's reports and nowhere else — Your missions, where a
+   * reporter sees who settled or challenged her, reads cards alone; and from nothing else. A card
+   * with no record of reaching a relay may name it or not, and that is said, not guessed
+   * [invariant 7; audit 11.S, and its review].
+   */
+  type Naming = { name: string; from: 'card' | 'report' | 'unsure' } | null;
+  const naming = (r: MissionReports | null): Naming => {
+    const callsign = get<string>('accruing', 'callsign') ?? null;
+    const sent = cardSent();
+    if (myCard() && callsign && (sent === 'all' || sent === 'some')) return { name: callsign, from: 'card' };
+    const filed = r?.reports.find((x) => x.author === me)?.report.callsign;
+    if (filed) return { name: filed, from: 'report' };
+    if (myCard() && callsign && sent === null) return { name: callsign, from: 'unsure' };
+    return null;
+  };
+  const names = $derived.by(() => {
+    const all = new Map(read?.names ?? []);
+    if (me) {
+      // On this screen a reader names the key from a card or a report here; an unsure card reads as its key.
+      const n = naming(read);
+      if (n && n.from !== 'unsure') all.set(me, n.name);
+      else all.delete(me);
+    }
+    return all;
+  });
+  /** A poster whose package says it is an agent is marked as one beside every settlement [invariant 4]. */
+  const agents = $derived(m?.publisher.agent ? new Set([m.publisher.pubkey]) : undefined);
+  /** What a statement is signed as, said before it is sent: a name only where readers will see one. */
+  const signedAs = $derived.by(() => {
+    const n = naming(read);
+    const key = me ? `the key ${me.slice(0, 8)}` : 'a new key';
+    if (n?.from === 'card') return `Signed for anyone to see, as ${n.name}.`;
+    if (n?.from === 'report') return `Signed for anyone to see: as ${n.name} on this mission's reports, from your report here, and elsewhere under ${key}, since no card of yours is known to be published.`;
+    if (n?.from === 'unsure') return `Signed for anyone to see, under ${key} — and as ${n.name} if your card reached a relay, which this phone has no record of.`;
+    return `Signed for anyone to see, under ${key} with no name: no card of yours is published.`;
+  });
   let sending = $state(false);
   let error = $state<{ id: string; text: string } | null>(null);
 
@@ -69,10 +109,7 @@
     if (done.ok) {
       // The first thing this device signed may have made its key, so who "me" is is read again.
       me = done.label.pubkey;
-      const names = new Map(read.names);
-      const callsign = get<string>('accruing', 'callsign');
-      if (callsign) names.set(me, callsign);
-      read = { ...read, labels: [...read.labels, done.label], names };
+      read = { ...read, labels: [...read.labels, done.label] };
     }
     else error = { id: r.id, text: done.because === 'not-sent' ? done.detail : WHY[done.because] };
   }
@@ -88,9 +125,9 @@
     <h3 class="nc-reports-title">{m.title}</h3>
     {#if !read}
       <Slot k="Reports"><Readout value="Reading" tone="cold" /></Slot>
-    {:else if read.reports.length === 0 && !read.answered.operators && !read.answered.poster}
-      <!-- Nobody answering is not nothing there [11.E]. -->
-      <Slot k="Reports"><Readout value="Unknown" tone="cold" sub="no relay answered; try again with signal" /></Slot>
+    {:else if read.reports.length === 0 && !read.answered.operators}
+      <!-- Nobody answering is not nothing there [11.E]. Reports go only to operators' relays, so The Record answering alone is nobody [audit 11, second grid]. -->
+      <Slot k="Reports"><Readout value="Unknown" tone="cold" sub="the relays reports go to did not answer; try again with signal" /></Slot>
     {:else if read.reports.length === 0}
       <Slot k="Reports"><Readout value="None found" tone="cold" sub="on the relays that answered; reports open the day after the work" /></Slot>
     {:else}
@@ -101,8 +138,9 @@
         {#each read.reports as r (r.id)}
           {@const known = read.answered.poster && read.answered.operators}
           {@const s = settlementOf(r, m.publisher.pubkey, read.labels, t)}
-          {@const shown = known ? standingOf(s, read.names) : { value: 'Unknown', tone: 'cold' as const, sub: 'the relays that hold its labels did not answer' }}
-          {@const mine = r.author === me}
+          {@const shown = known ? standingOf(s, names, agents) : { value: 'Unknown', tone: 'cold' as const, sub: 'the relays that hold its labels did not answer' }}
+          <!-- Filed from here under a card withdrawn since is still hers: never a witness of her own work [audit 11, second grid]. -->
+          {@const mine = isMine(r)}
           <li data-report={r.id}>
             <span class="nc-reports-who">{r.report.callsign}</span>
             <span class="nc-reports-meta">{r.report.date}{mine ? ' · yours' : ''}</span>
@@ -115,10 +153,9 @@
             {#if operator && !mine}
               {#if confirming?.id === r.id}
                 <div class="nc-reports-confirm" role="group" aria-label={confirming.kind === 'witnessed' ? 'Witness this report' : 'Challenge this report'}>
-                  <span class="nc-reports-line">
-                    {confirming.kind === 'witnessed'
-                      ? 'Signed with your card, for anyone to see. It settles this report now.'
-                      : 'Signed with your card, for anyone to see. It reverses nothing; it stands beside the report, by name.'}
+                  <span class="nc-reports-line" data-signed-as>
+                    {signedAs}
+                    {confirming.kind === 'witnessed' ? 'It settles this report now.' : 'It reverses nothing; it stands beside the report.'}
                   </span>
                   <div class="nc-reports-row">
                     <button type="button" data-confirm={confirming.kind} disabled={sending} onclick={() => say(r, confirming!.kind)}>
@@ -197,7 +234,7 @@
     gap: 0.5rem;
   }
   .nc-reports-row button {
-    min-height: 2.75rem;
+    min-height: 3rem;
     padding: 0 0.8rem;
     border: 1px solid var(--t-line-strong);
     background: transparent;

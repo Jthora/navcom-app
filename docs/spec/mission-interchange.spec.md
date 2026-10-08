@@ -315,7 +315,11 @@ between claimant, other operators, poster and adversary — the reasoning is in
 
 - **A lease, not a lock** (Q11). A claim's `expiration` is a day after it is made, or the mission's
   end if that is sooner. Taking part again sends a fresh label; an open one also withdraws the old
-  with a NIP-09 request. Please read a claim as ended at its `expiration`
+  with a NIP-09 request. Please read a claim as ended at its `expiration` — **for a sealed claim,
+  the one on the label inside the seal.** Since 2026-10-07 the gift wrap's own `expiration` is moved
+  later by a random amount, up to two days, and its `created_at` is blurred, so a relay cannot read
+  the second a private claim was sent or pair it with its release. The wrap's expiration is never
+  before the claim's end, so a relay keeps the wrap long enough; read the end from inside
 - **Letting go** (Q12). A `released` label, same namespace, same `a`: in the open beside a NIP-09
   request to delete the claim, or sealed to you exactly as the claim was. Please read it as the
   claimant's withdrawal. Without it, a private claim could not be let go, and privacy would cost the

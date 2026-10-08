@@ -2,11 +2,25 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import type { Event } from 'nostr-tools/core';
 import type { Filter } from 'nostr-tools/filter';
-import { buildDeletion, buildReport, buildReportLabel, readMissionPackage, type Mission } from '@navcom/core';
+import { DEFAULT_RELAYS, MISSION_RELAYS, buildDeletion, buildMissionClaim, buildReport, buildReportLabel, readMissionPackage, type Mission } from '@navcom/core';
 import { clearField, set } from '$lib/terminal/storage';
-import { ensureContactKey } from '$lib/terminal/card';
+import { ensureContactKey, withdrawCard } from '$lib/terminal/card';
 import { takePart, tookPart, type Wire } from './claims';
-import { fileReport, labelReport, localDay, reportableDays, reportsOn, sent, settlements, withdraw } from './reports';
+import {
+  LABELS_PAGE,
+  LABELS_PAGES,
+  REPORTS_MAX,
+  fileReport,
+  isMine,
+  labelReport,
+  localDay,
+  reportableDays,
+  reportsOn,
+  sent,
+  settlements,
+  stillToReport,
+  withdraw
+} from './reports';
 import { standingOf } from '$lib/components/missions/format';
 
 /**
@@ -15,7 +29,7 @@ import { standingOf } from '$lib/components/missions/format';
  * given.
  */
 
-const NOW = 1791403200; // 8 Oct 2026, 08:00 UTC
+const NOW = 1791403200; // 7 Oct 2026, 20:00 UTC
 const posterSecret = generateSecretKey();
 const poster = getPublicKey(posterSecret);
 const publishers = { [poster]: { name: 'Test Poster', agent: true } };
@@ -156,22 +170,25 @@ describe('a report for the poster alone', () => {
 
 describe('where reports stand', () => {
   it('reads the poster’s settlement from the labels on the report', async () => {
-    const { w } = fakeWire();
-    const r = await fileReport(mission('a'), draft(localDay(NOW - 86_400)), 'open', NOW, {}, w);
+    const m = mission('a');
+    const r = await fileReport(m, draft(localDay(NOW - 86_400)), 'open', NOW, {}, fakeWire().w);
     if (!r.ok) throw new Error('not sent');
-    const settled = finalizeEvent(
-      {
-        kind: 1985,
-        created_at: NOW + 3_600,
-        content: '',
-        tags: [['L', 'navcom.mission'], ['l', 'settled', 'navcom.mission'], ['e', r.sent.id]]
-      },
+    // As the poster's own builder makes it: naming the report and the mission [spec §5.3].
+    const settled = buildReportLabel(posterSecret, 'settled', { id: r.sent.id, mission: m.address }, NOW + 3_600);
+    const map = await settlements(NOW + 7_200, relayOf([settled]).w);
+    expect(map.standing.get(r.sent.id)).toMatchObject({ state: 'settled', how: 'poster', by: poster });
+    const silent = await settlements(NOW + 7_200, relayOf([]).w);
+    expect(silent.standing.get(r.sent.id)).toMatchObject({ state: 'pending' });
+  });
+
+  it('never finds a label that names only the report, so the report waits, as the spec says [spec §5.3]', async () => {
+    const r = await fileReport(mission('a'), draft(localDay(NOW - 86_400)), 'open', NOW, {}, fakeWire().w);
+    if (!r.ok) throw new Error('not sent');
+    const reportOnly = finalizeEvent(
+      { kind: 1985, created_at: NOW + 3_600, content: '', tags: [['L', 'navcom.mission'], ['l', 'settled', 'navcom.mission'], ['e', r.sent.id]] },
       posterSecret
     );
-    const map = await settlements(NOW + 7_200, fakeWire([settled]).w);
-    expect(map.standing.get(r.sent.id)).toMatchObject({ state: 'settled', how: 'poster', by: poster });
-    const silent = await settlements(NOW + 7_200, fakeWire([]).w);
-    expect(silent.standing.get(r.sent.id)).toMatchObject({ state: 'pending' });
+    expect((await settlements(NOW + 7_200, relayOf([reportOnly]).w)).standing.get(r.sent.id)).toMatchObject({ state: 'pending' });
   });
 });
 
@@ -183,23 +200,47 @@ describe('missions taken part in', () => {
   });
 });
 
-/** A relay that answers each query with what matches it, the way a relay filters. */
-function relayOf(events: Event[]) {
+/**
+ * A relay that answers each query with what matches it, the way a relay filters [NIP-01]: by kind,
+ * author and id, by every single-letter tag the filter names, by `since` and `until`, and at most
+ * `limit` of them, newest first. A fake that ignored `#l` and `limit` could not tell the
+ * by-mission-and-by-word read from a read of everything, nor show one mission's claims crowding out
+ * its reports' labels [audit 11].
+ *
+ * `cap` is the most it sends for any one request, whatever `limit` asked: strfry's
+ * `maxFilterLimit`, 500 on the relays NavCom ships with. A fake that always honoured `limit` could
+ * not show a relay sending less than it was asked for [audit 11, second grid — review].
+ */
+function relayOf(events: Event[], answered?: (urls: string[]) => string[], cap = Infinity) {
   const published: Event[] = [];
-  const matches = (e: Event, f: Filter) =>
-    (!f.kinds || f.kinds.includes(e.kind)) &&
-    (!f.authors || f.authors.includes(e.pubkey)) &&
-    (!f['#a'] || e.tags.some((t) => t[0] === 'a' && f['#a']!.includes(t[1]!))) &&
-    (!f['#e'] || e.tags.some((t) => t[0] === 'e' && f['#e']!.includes(t[1]!)));
+  const queries: { urls: string[]; filter: Filter }[] = [];
   const w: Wire = {
     publish: async (_urls, event) => {
       published.push(event);
       return true;
     },
-    query: async (urls, f) => ({ events: [...events, ...published].filter((e) => matches(e, f)), answered: urls })
+    query: async (urls, f) => {
+      queries.push({ urls, filter: f });
+      return { events: served([...events, ...published], f, cap), answered: answered ? answered(urls) : urls };
+    }
   };
-  return { w, published };
+  return { w, published, queries };
 }
+
+const matches = (e: Event, f: Filter) =>
+  (!f.kinds || f.kinds.includes(e.kind)) &&
+  (!f.authors || f.authors.includes(e.pubkey)) &&
+  (!f.ids || f.ids.includes(e.id)) &&
+  (f.since === undefined || e.created_at >= f.since) &&
+  (f.until === undefined || e.created_at <= f.until) &&
+  Object.entries(f).every(
+    ([k, v]) => !/^#[a-zA-Z]$/.test(k) || e.tags.some((t) => t[0] === k.slice(1) && (v as string[]).includes(t[1]!))
+  );
+/** What one relay holding `events` sends for `f`: newest first, at most the smaller of `limit` and `cap`. */
+const served = (events: Event[], f: Filter, cap = Infinity) => {
+  const all = events.filter((e) => matches(e, f)).sort((a, b) => b.created_at - a.created_at || a.id.localeCompare(b.id));
+  return all.slice(0, Math.min(f.limit ?? Infinity, cap));
+};
 
 describe('other operators’ reports on a mission', () => {
   const m = mission('a');
@@ -350,5 +391,350 @@ describe('what the audit of Milestone 11 found', () => {
     expect(waiting.sub).toContain('challenged by Heron (kkkkkkkk)');
     const silent = standingOf({ state: 'settled', how: 'silence', at: NOW, challengedBy: ['k'.repeat(64)] }, named);
     expect(silent.sub).not.toMatch(/unchallenged/);
+  });
+});
+
+describe('what the second audit of Milestone 11 found', () => {
+  const m = mission('a');
+  const other = generateSecretKey();
+  const theirs = (at = NOW - 3_600, callsign = 'Wren', key = other) =>
+    buildReport(key, { callsign, date: localDay(NOW - 86_400), mission: { address: m.address, asks: ['handout:water'], counts: [] } }, at);
+  const onMission = (e: Event) => ({ id: e.id, author: e.pubkey, at: e.created_at, report: { callsign: 'Wren', date: localDay(NOW - 86_400) } });
+  /** Labels on a report nobody here wrote, one a second: more than every page this reads holds. */
+  const stranger = generateSecretKey();
+  const floodOf = (address: string, word: 'challenged' | 'witnessed' = 'challenged') =>
+    Array.from({ length: LABELS_PAGES * LABELS_PAGE + 1 }, (_, i) =>
+      buildReportLabel(stranger, word, { id: 'e'.repeat(64), mission: address }, NOW + 60 + i)
+    );
+  const flood = floodOf(m.address);
+  const ownRelays = (urls: string[]) => set('accruing', 'relays_own', urls);
+
+  describe('half an answer', () => {
+    const fileOne = async () => {
+      const r = await fileReport(m, draft(localDay(NOW - 86_400)), 'open', NOW, {}, fakeWire().w);
+      if (!r.ok) throw new Error('not sent');
+      return r.sent.id;
+    };
+    const only = (keep: (u: string) => boolean) => (urls: string[]) => urls.filter(keep);
+    const posters = new Set<string>(MISSION_RELAYS);
+
+    it('is unknown when only the poster’s relays answered, or only operators’', async () => {
+      const id = await fileOne();
+      const posterOnly = await settlements(NOW + 8 * 86_400, relayOf([], only((u) => posters.has(u))).w);
+      expect(posterOnly.answered).toEqual({ poster: true, operators: false });
+      expect(posterOnly.standing.has(id)).toBe(false);
+      const operatorsOnly = await settlements(NOW + 8 * 86_400, relayOf([], only((u) => !posters.has(u))).w);
+      expect(operatorsOnly.answered).toEqual({ poster: false, operators: true });
+      expect(operatorsOnly.standing.has(id)).toBe(false);
+      expect(sent()[0]!.final).toBeUndefined();
+    });
+
+    it('is unknown, and kept as nothing, when its mission has more labels than this reads', async () => {
+      const id = await fileOne();
+      const read = await settlements(NOW + 8 * 86_400, relayOf(flood).w);
+      expect(read.standing.has(id)).toBe(false);
+      expect(read.partial.has(id)).toBe(true);
+      expect(sent()[0]!.final).toBeUndefined();
+    });
+  });
+
+  describe('where reports stand, read mission by mission [review]', () => {
+    const quiet = mission('quiet', 'us-ca');
+    const busy = mission('busy', 'us-tx');
+    const file = async (on: Mission, w: Wire, visibility: 'open' | 'sealed' = 'open') => {
+      const r = await fileReport(on, draft(localDay(NOW - 86_400)), visibility, NOW, { series: true }, w);
+      if (!r.ok) throw new Error('not sent');
+      return r.sent.id;
+    };
+
+    /*
+     * Asked for together, one busy mission filled the answer, and every report on every other mission
+     * read "Unknown · did not answer; try again with signal" for good: true of none of them. A
+     * stranger's labels cost nothing to sign, and a real campaign makes as many with nobody attacking.
+     */
+    it('a busy mission cannot leave a report on a quiet one unknown, though its poster settled it', async () => {
+      const relay = relayOf(floodOf(busy.address, 'witnessed'));
+      const onQuiet = await file(quiet, relay.w);
+      const onBusy = await file(busy, relay.w);
+      relay.published.push(buildReportLabel(posterSecret, 'settled', { id: onQuiet, mission: quiet.address }, NOW + 3_600));
+      const read = await settlements(NOW + 7_200, relay.w);
+      expect(read.standing.get(onQuiet)).toMatchObject({ state: 'settled', how: 'poster', by: poster });
+      expect(read.standing.has(onBusy)).toBe(false);
+      expect([...read.partial]).toEqual([onBusy]);
+    });
+
+    /*
+     * The relays NavCom ships with send at most 500 for one request, whatever it asks for. Asked for
+     * a thousand and sent five hundred, the read looked whole: the poster's settlement, older than
+     * the rest, was left out, and on day 8 silence was kept as final.
+     */
+    it('reads past a relay that sends less than it was asked for, and keeps the poster’s word, not silence', async () => {
+      const relay = relayOf([], undefined, 500);
+      const id = await file(quiet, relay.w);
+      relay.published.push(buildReportLabel(posterSecret, 'settled', { id, mission: quiet.address }, NOW + 3_600));
+      for (let i = 0; i < 600; i++) relay.published.push(buildReportLabel(stranger, 'witnessed', { id: 'f'.repeat(64), mission: quiet.address }, NOW + 7_200 + i));
+      const read = await settlements(NOW + 8 * 86_400, relay.w);
+      expect(read.standing.get(id)).toMatchObject({ state: 'settled', how: 'poster' });
+      expect(sent()[0]!.final).toMatchObject({ how: 'poster' });
+    });
+
+    it('reads a campaign with more labels than one request holds, rather than calling it unknown', async () => {
+      const relay = relayOf([]);
+      const id = await file(quiet, relay.w);
+      relay.published.push(buildReportLabel(posterSecret, 'settled', { id, mission: quiet.address }, NOW + 3_600));
+      for (let i = 0; i < 1_200; i++) relay.published.push(buildReportLabel(posterSecret, 'settled', { id: 'f'.repeat(64), mission: quiet.address }, NOW + 7_200 + i));
+      const read = await settlements(NOW + 8 * 86_400, relay.w);
+      expect(read.standing.get(id)).toMatchObject({ state: 'settled', how: 'poster' });
+      expect(read.partial.size).toBe(0);
+    });
+
+    /*
+     * Each relay cuts its own answer short, so the next page must start where the fullest one could
+     * have stopped, not at the oldest label any relay sent: a relay holding only old labels pulled
+     * that back past everything the busy one left out.
+     */
+    it('starts each page where a relay that cut its answer short could have stopped, not at the oldest label sent', async () => {
+      const busyRelay: Event[] = [];
+      const oldRelay: Event[] = [];
+      const relay = relayOf([]);
+      const id = await file(quiet, relay.w);
+      for (let i = 0; i < 600; i++) busyRelay.push(buildReportLabel(stranger, 'witnessed', { id: 'f'.repeat(64), mission: quiet.address }, NOW + 10_000 + i));
+      busyRelay.push(buildReportLabel(posterSecret, 'settled', { id, mission: quiet.address }, NOW + 10_050));
+      for (let i = 0; i < 300; i++) oldRelay.push(buildReportLabel(stranger, 'witnessed', { id: 'f'.repeat(64), mission: quiet.address }, NOW + 1_000 + i));
+      const w: Wire = {
+        publish: async () => true,
+        query: async (urls, f) => {
+          const byId = new Map<string, Event>();
+          for (const e of served(busyRelay, f, 500)) byId.set(e.id, e);
+          for (const e of served(oldRelay, f, 500)) byId.set(e.id, e);
+          return { events: [...byId.values()], answered: urls };
+        }
+      };
+      const read = await settlements(NOW + 8 * 86_400, w);
+      expect(read.standing.get(id)).toMatchObject({ state: 'settled', how: 'poster' });
+    });
+
+    it('calls a mission unknown when a page cannot move on — as many labels in one second as a relay sends', async () => {
+      const relay = relayOf([], undefined, 500);
+      const id = await file(quiet, relay.w);
+      relay.published.push(buildReportLabel(posterSecret, 'settled', { id, mission: quiet.address }, NOW + 3_600));
+      for (let i = 0; i < 600; i++) relay.published.push(buildReportLabel(generateSecretKey(), 'witnessed', { id: 'f'.repeat(64), mission: quiet.address }, NOW + 7_200));
+      const read = await settlements(NOW + 8 * 86_400, relay.w);
+      expect(read.standing.has(id)).toBe(false);
+      expect(read.partial.has(id)).toBe(true);
+      expect(sent()[0]!.final).toBeUndefined();
+    });
+
+    it('calls a mission unknown when a relay that holds its labels answered one page and not the next', async () => {
+      const relay = relayOf([]);
+      const id = await file(quiet, relay.w);
+      for (let i = 0; i < 600; i++) relay.published.push(buildReportLabel(stranger, 'witnessed', { id: 'f'.repeat(64), mission: quiet.address }, NOW + 7_200 + i));
+      const posters = new Set<string>(MISSION_RELAYS);
+      // The poster's relays answer the second page and not the first.
+      const w: Wire = { ...relay.w, query: async (urls, f) => {
+        const heard = await relay.w.query(urls, f);
+        return { ...heard, answered: f.until === undefined ? urls.filter((u) => !posters.has(u)) : urls };
+      } };
+      const read = await settlements(NOW + 8 * 86_400, w);
+      expect(read.answered.poster).toBe(false);
+      expect(read.standing.has(id)).toBe(false);
+      expect(sent()[0]!.final).toBeUndefined();
+    });
+
+    /*
+     * Nobody but the poster knows a sealed report's id, so nobody else can have labelled it. Asking
+     * operators' relays for labels on its mission — among them the inbox the seal went to, over the
+     * connection this device's open traffic uses — said which mission it was for, and that it was
+     * this device's [what-leaves.md].
+     */
+    it('asks where a sealed report stands only of the poster’s own relays, and only for the poster’s word', async () => {
+      const inbox = finalizeEvent({ kind: 10050, created_at: NOW, content: '', tags: [['relay', 'wss://nos.lol']] }, posterSecret);
+      const relay = relayOf([inbox]);
+      await file(quiet, relay.w, 'sealed');
+      const id = sent()[0]!.id;
+      relay.published.push(buildReportLabel(posterSecret, 'settled', { id, mission: quiet.address }, NOW + 3_600));
+      const read = await settlements(NOW + 7_200, relay.w);
+      expect(read.standing.get(id)).toMatchObject({ state: 'settled', how: 'poster', by: poster });
+      const asked = relay.queries.filter((q) => q.filter.kinds?.includes(1985));
+      expect(asked.length).toBeGreaterThan(0);
+      for (const q of asked) {
+        expect(q.urls.every((u) => (MISSION_RELAYS as readonly string[]).includes(u)), q.urls.join(' ')).toBe(true);
+        expect(q.filter.authors).toEqual([poster]);
+      }
+    });
+
+    it('still asks operators’ relays about a mission this device also reported on in the open', async () => {
+      const inbox = finalizeEvent({ kind: 10050, created_at: NOW, content: '', tags: [['relay', 'wss://nos.lol']] }, posterSecret);
+      const relay = relayOf([inbox]);
+      await file(quiet, relay.w, 'sealed');
+      const open = await file(quiet, relay.w);
+      const heron = generateSecretKey();
+      relay.published.push(buildReportLabel(heron, 'challenged', { id: open, mission: quiet.address }, NOW + 3_600));
+      const read = await settlements(NOW + 7_200, relay.w);
+      expect(read.standing.get(open)).toMatchObject({ state: 'pending', challengedBy: [getPublicKey(heron)] });
+    });
+  });
+
+  describe('a mission that ended tonight', () => {
+    /*
+     * Taken part in at six, ended at ten: until midnight it went from every screen, and the panel
+     * said there was nothing to report — though tomorrow is its first day to report, as it is for
+     * every mission taken part in today [audit 11.S, finding 64].
+     */
+    it('is still one to report, from tomorrow, between its end and midnight', () => {
+      const day = new Date(NOW * 1000);
+      const at = (h: number) => Math.floor(new Date(day.getFullYear(), day.getMonth(), day.getDate(), h).getTime() / 1000);
+      const t = { mission: { ...mission('a'), validUntil: at(22) }, since: at(18) };
+      expect(stillToReport(at(19), t)).toBe('tomorrow');
+      expect(stillToReport(at(23), t)).toBe('tomorrow');
+      expect(reportableDays(at(23) + 13 * 3_600, t)).toEqual([localDay(at(18))]);
+    });
+  });
+
+  describe('a report filed under a card since withdrawn', () => {
+    it('is still read as this device’s own: where it stands is asked for, and it cannot be witnessed from here', async () => {
+      await takePart(m, 'open', NOW - 7_200, fakeWire().w);
+      const relay = relayOf([]);
+      const r = await fileReport(m, draft(localDay(NOW - 86_400)), 'open', NOW, {}, relay.w);
+      if (!r.ok) throw new Error('not sent');
+      const mine = relay.published.find((e) => e.id === r.sent.id)!;
+      withdrawCard();
+      const read = await settlements(NOW + 3_600, relay.w);
+      expect(read.standing.get(r.sent.id)).toMatchObject({ state: 'pending' });
+      expect(isMine(onMission(mine))).toBe(true);
+      expect(await labelReport('witnessed', onMission(mine), m, NOW + 3_600, relay.w)).toEqual({ ok: false, because: 'own' });
+      expect(isMine(onMission(theirs()))).toBe(false);
+    });
+
+    it('cannot be withdrawn from here, and nothing is sent or marked [11.E]', async () => {
+      const { w, sentEvents } = fakeWire();
+      const r = await fileReport(m, draft(localDay(NOW - 86_400)), 'open', NOW, {}, w);
+      if (!r.ok) throw new Error('not sent');
+      withdrawCard();
+      const before = sentEvents.length;
+      expect(await withdraw(r.sent.id, NOW + 60, w)).toBe('card');
+      expect(sentEvents.length).toBe(before);
+      expect(sent()[0]!.withdrawn).toBeUndefined();
+    });
+  });
+
+  describe('the series warning', () => {
+    it('counts a report that was withdrawn, since copies already taken stay', async () => {
+      const { w } = fakeWire();
+      const r = await fileReport(mission('a'), draft(localDay(NOW - 86_400)), 'open', NOW, {}, w);
+      if (!r.ok) throw new Error('not sent');
+      expect(await withdraw(r.sent.id, NOW + 60, w)).toBe('asked');
+      expect(await fileReport(mission('b'), draft(localDay(NOW - 86_400)), 'open', NOW + 120, {}, w)).toMatchObject({ ok: false, because: 'series' });
+    });
+
+    it('looks back seven days: a report six days ago warns, one eight days ago does not', async () => {
+      const { w } = fakeWire();
+      await fileReport(mission('a'), draft(localDay(NOW - 86_400)), 'open', NOW, {}, w);
+      const six = NOW + 6 * 86_400;
+      expect(await fileReport(mission('b'), draft(localDay(six - 86_400)), 'open', six, {}, w)).toMatchObject({ because: 'series' });
+      const eight = NOW + 8 * 86_400;
+      expect((await fileReport(mission('b'), draft(localDay(eight - 86_400)), 'open', eight, {}, w)).ok).toBe(true);
+    });
+
+    it('looks back seven days to the second: one sent 604,799 seconds ago warns, one sent 604,800 ago does not [review]', async () => {
+      const { w } = fakeWire();
+      await fileReport(mission('a'), draft(localDay(NOW - 86_400)), 'open', NOW, {}, w);
+      const inside = NOW + 604_799;
+      expect(await fileReport(mission('b'), draft(localDay(inside - 86_400)), 'open', inside, {}, w)).toMatchObject({ because: 'series' });
+      const over = NOW + 604_800;
+      expect((await fileReport(mission('b'), draft(localDay(over - 86_400)), 'open', over, {}, w)).ok).toBe(true);
+    });
+  });
+
+  it('sends an open report, a witness, a challenge and a withdrawal where posters read, beside a watch and an operator’s own relays [11.E]', async () => {
+    ownRelays(['wss://own.example']);
+    set('accruing', 'watchtower', 'f'.repeat(64));
+    set('accruing', 'relays', ['wss://watch.example']);
+    const { w, sentEvents } = fakeWire();
+    await takePart(m, 'open', NOW - 7_200, w);
+    const r = await fileReport(m, draft(localDay(NOW - 86_400)), 'open', NOW, {}, w);
+    if (!r.ok) throw new Error('not sent');
+    expect((await labelReport('witnessed', onMission(theirs()), m, NOW, w)).ok).toBe(true);
+    expect((await labelReport('challenged', onMission(theirs(NOW - 60, 'Heron', generateSecretKey())), m, NOW, w)).ok).toBe(true);
+    expect(await withdraw(r.sent.id, NOW + 60, w)).toBe('asked');
+    const kinds = sentEvents.map((s) => s.event.kind);
+    expect(kinds.filter((k) => k === 1912)).toHaveLength(1);
+    expect(kinds.filter((k) => k === 1985).length).toBeGreaterThanOrEqual(3);
+    expect(kinds.filter((k) => k === 5)).toHaveLength(1);
+    for (const s of sentEvents) expect(s.urls).toEqual(expect.arrayContaining(['wss://own.example', 'wss://watch.example', ...DEFAULT_RELAYS]));
+  });
+
+  it('sends a report’s withdrawal where the report went, after the relay list has changed [11.E]', async () => {
+    ownRelays(['wss://old.example']);
+    const { w, sentEvents } = fakeWire();
+    const r = await fileReport(m, draft(localDay(NOW - 86_400)), 'open', NOW, {}, w);
+    if (!r.ok) throw new Error('not sent');
+    ownRelays(['wss://new.example']);
+    await withdraw(r.sent.id, NOW + 60, w);
+    expect(sentEvents.at(-1)!.event.kind).toBe(5);
+    expect(sentEvents.at(-1)!.urls).toContain('wss://old.example');
+  });
+
+  describe('reading a busy mission', () => {
+    it('finds a report’s challenge though the mission has more claims than a relay will send [11.R]', async () => {
+      const report = theirs();
+      const heron = generateSecretKey();
+      const challenge = buildReportLabel(heron, 'challenged', { id: report.id, mission: m.address }, NOW - 60);
+      const claimer = generateSecretKey();
+      const claims = Array.from({ length: 1_000 }, (_, i) => buildMissionClaim(claimer, 'claimed', m.address, NOW + 86_400, NOW + i));
+      const read = await reportsOn(m, NOW + 1_000, relayOf([report, challenge, ...claims]).w);
+      expect(read.labels.map((l) => l.id)).toContain(challenge.id);
+    });
+
+    it('says there may be more when a relay sent as many labels, or as many reports, as were asked for', async () => {
+      expect((await reportsOn(m, NOW + 2_000, relayOf([theirs(), ...flood]).w)).partial).toBe(true);
+      const many = Array.from({ length: REPORTS_MAX }, (_, i) => theirs(NOW - 7_200 + i, 'Wren', generateSecretKey()));
+      expect((await reportsOn(m, NOW, relayOf(many).w)).partial).toBe(true);
+      expect((await reportsOn(m, NOW, relayOf([theirs()]).w)).partial).toBe(false);
+    });
+  });
+
+  it('shows newest first, and not a report dated more than a day past this device’s clock', async () => {
+    const older = theirs(NOW - 7_200, 'Older', generateSecretKey());
+    const newer = theirs(NOW - 3_600, 'Newer', generateSecretKey());
+    const ahead = theirs(NOW + 86_401, 'Ahead', generateSecretKey());
+    const justInside = theirs(NOW + 86_400, 'Inside', generateSecretKey());
+    const read = await reportsOn(m, NOW, relayOf([older, ahead, newer, justInside]).w);
+    expect(read.reports.map((r) => r.report.callsign)).toEqual(['Inside', 'Newer', 'Older']);
+  });
+
+  it('names a labeller by their newest card, and the poster by the name it is registered under', async () => {
+    const report = theirs();
+    const heron = generateSecretKey();
+    const card = (callsign: string, at: number) => finalizeEvent({ kind: 10911, created_at: at, content: JSON.stringify({ callsign, region: 'us-ca' }), tags: [] }, heron);
+    const labels = [
+      buildReportLabel(heron, 'challenged', { id: report.id, mission: m.address }, NOW - 60),
+      buildReportLabel(posterSecret, 'settled', { id: report.id, mission: m.address }, NOW - 60)
+    ];
+    const read = await reportsOn(m, NOW, relayOf([report, ...labels, card('Heron', NOW - 86_400), card('Old name', NOW - 2 * 86_400)]).w);
+    expect(read.names.get(getPublicKey(heron))).toBe('Heron');
+    expect(read.names.get(poster)).toBe('Test Poster');
+  });
+
+  it('sends a challenge in the last second of the seven days, and refuses one once they are over', async () => {
+    const r = onMission(theirs());
+    const { w } = relayOf([]);
+    expect(await labelReport('challenged', r, m, r.at + 604_800, w)).toEqual({ ok: false, because: 'late' });
+    expect((await labelReport('challenged', r, m, r.at + 604_799, w)).ok).toBe(true);
+  });
+
+  it('asks for sign-on before sending a report, and sends nothing', async () => {
+    clearField('accruing', 'secret');
+    const { w, sentEvents } = fakeWire();
+    expect(await fileReport(m, draft(localDay(NOW - 86_400)), 'open', NOW, {}, w)).toEqual({ ok: false, because: 'signed-out' });
+    expect(sentEvents).toEqual([]);
+  });
+
+  it('says how a report settled, never merging the poster’s word, a witness’s and silence [economy.md §7]', () => {
+    const k = 'k'.repeat(64);
+    const names = new Map([[k, 'Heron']]);
+    expect(standingOf({ state: 'settled', how: 'poster', by: k, at: NOW, challengedBy: [] }, names).sub).toBe('by the poster, Heron (kkkkkkkk)');
+    expect(standingOf({ state: 'settled', how: 'witness', by: k, at: NOW, challengedBy: [] }, names).sub).toBe('by a witness, Heron (kkkkkkkk)');
+    expect(standingOf({ state: 'settled', how: 'silence', at: NOW, challengedBy: [] }, names).sub).toBe('unchallenged for seven days');
   });
 });

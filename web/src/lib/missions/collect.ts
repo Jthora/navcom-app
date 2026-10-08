@@ -12,6 +12,8 @@
  *
  * **Nothing in here throws** [11.R]. One malformed event used to stop the whole feed.
  */
+import { getEventHash } from 'nostr-tools/pure';
+import type { Event } from 'nostr-tools/core';
 import {
   FUTURE_TOLERANCE_DAYS,
   MISSION_PUBLISHERS,
@@ -44,12 +46,46 @@ export interface Collected {
   clockBehind: boolean;
 }
 
-/** Readings already made, by event id: a package's signature is checked once, not on every update. */
+/**
+ * Readings already made, so a package's signature is checked once, not on every update — keyed by
+ * the event's id **and** its signature, and only for an event whose id is honestly its own.
+ *
+ * Keyed by the id alone, the memo trusted whatever arrived first under an id [audit 11, second
+ * grid]. Any relay could send a genuine version's id over junk content: its failed reading was kept
+ * under that id, and the genuine version, arriving next, read as the forgery — hidden, or a
+ * mission its poster had closed kept open and takeable for the whole session. An id that is the
+ * hash of the event's own fields names that content and nothing else; the signature beside it
+ * tells a genuine copy from one carrying the same content under a signature that does not verify.
+ */
 export type Readings = Map<string, MissionReading>;
+/** The most readings remembered: enough for every version a night has, bounded for a relay sending junk. */
+export const READINGS_MAX = 1_000;
+
+/**
+ * Each event's memo key, worked out once per object: hashing a package costs about a tenth of a
+ * millisecond here, and the feed reads every package again on every update.
+ */
+const keys = new WeakMap<object, string | null>();
+function keyOf(event: unknown): string | null {
+  if (!event || typeof event !== 'object') return null;
+  const cached = keys.get(event);
+  if (cached !== undefined) return cached;
+  const e = event as { id?: unknown; sig?: unknown };
+  let key: string | null = null;
+  if (typeof e.id === 'string' && typeof e.sig === 'string') {
+    try {
+      if (getEventHash(event as Event) === e.id) key = `${e.id}:${e.sig}`;
+    } catch {
+      key = null;
+    }
+  }
+  keys.set(event, key);
+  return key;
+}
 
 export function readingOf(event: unknown, publishers: Parameters<typeof readMissionPackage>[1], memo?: Readings): MissionReading {
-  const id = (event as { id?: unknown } | null)?.id;
-  const known = typeof id === 'string' ? memo?.get(id) : undefined;
+  const key = memo ? keyOf(event) : null;
+  const known = key ? memo!.get(key) : undefined;
   if (known) return known;
   let reading: MissionReading;
   try {
@@ -57,7 +93,10 @@ export function readingOf(event: unknown, publishers: Parameters<typeof readMiss
   } catch {
     reading = { ok: false, kind: 'not-a-package', because: 'It could not be read.' };
   }
-  if (typeof id === 'string') memo?.set(id, reading);
+  if (key) {
+    if (memo!.size >= READINGS_MAX) memo!.delete(memo!.keys().next().value!);
+    memo!.set(key, reading);
+  }
   return reading;
 }
 

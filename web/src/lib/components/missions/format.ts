@@ -6,7 +6,7 @@
  * filed by US state today, so those have names; anything else reads as its code, upper-case,
  * rather than as a guess.
  */
-import type { Settlement } from '@navcom/core';
+import { MISSION_PUBLISHERS, type Settlement } from '@navcom/core';
 
 const US: Record<string, string> = {
   al: 'Alabama', ak: 'Alaska', az: 'Arizona', ar: 'Arkansas', ca: 'California', co: 'Colorado',
@@ -68,14 +68,24 @@ export function effort(minutes: number | null): string | null {
   return `about ${hours} hour${hours === 1 ? '' : 's'}`;
 }
 
+const NO_AGENTS: ReadonlySet<string> = new Set();
+
 /**
  * A contact key by the name it gave, with the key's own first eight characters beside it — a name
  * is self-chosen, so anybody may call themselves anything, the poster's name included [11.R] — or
  * by those characters alone when it gave none.
+ *
+ * **An agent is said to be one, wherever its key appears** [invariant 4]: a registered publisher
+ * by the registry's name and mark, and any key in `agents` — a poster whose package declared
+ * itself one — by its mark. A settlement is where an agent's judgment of a person's work is
+ * shown, and it read as a bare key on one screen and as a person's name on the other [audit 11.I].
  */
-export function nameOf(key: string, names: ReadonlyMap<string, string>): string {
-  const name = names.get(key);
-  return name ? `${name} (${key.slice(0, 8)})` : key.slice(0, 8);
+export function nameOf(key: string, names: ReadonlyMap<string, string>, agents: ReadonlySet<string> = NO_AGENTS): string {
+  const registered = MISSION_PUBLISHERS[key];
+  const name = registered?.name ?? names.get(key);
+  const id = key.slice(0, 8);
+  if (registered?.agent || agents.has(key)) return name ? `${name} (${id}, an agent)` : `${id} (an agent)`;
+  return name ? `${name} (${id})` : id;
 }
 
 /**
@@ -86,13 +96,14 @@ export function nameOf(key: string, names: ReadonlyMap<string, string>): string 
  */
 export function standingOf(
   s: Settlement,
-  names: ReadonlyMap<string, string>
+  names: ReadonlyMap<string, string>,
+  agents: ReadonlySet<string> = NO_AGENTS
 ): { value: string; tone: 'neutral' | 'good'; sub: string } {
-  const challenged = s.challengedBy.length > 0 ? ` · challenged by ${s.challengedBy.map((k) => nameOf(k, names)).join(', ')}` : '';
+  const challenged = s.challengedBy.length > 0 ? ` · challenged by ${s.challengedBy.map((k) => nameOf(k, names, agents)).join(', ')}` : '';
   // A challenge stops nothing, so neither line may say it would: it stands beside the settlement [economy.md §8].
   if (s.state === 'pending') return { value: 'Waiting', tone: 'neutral', sub: `settles by itself ${stampUtc(s.until)}${challenged}` };
   if (s.how === 'silence') {
     return { value: 'Settled', tone: 'good', sub: challenged ? `seven days passed${challenged}` : 'unchallenged for seven days' };
   }
-  return { value: 'Settled', tone: 'good', sub: `${s.how === 'poster' ? 'by the poster' : 'by a witness'}, ${nameOf(s.by, names)}${challenged}` };
+  return { value: 'Settled', tone: 'good', sub: `${s.how === 'poster' ? 'by the poster' : 'by a witness'}, ${nameOf(s.by, names, agents)}${challenged}` };
 }

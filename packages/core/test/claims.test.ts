@@ -80,10 +80,8 @@ describe('a claim for the poster only', () => {
 
   it('shows a relay only that somebody wrote to the poster', () => {
     expect(wrap.kind).toBe(KIND_GIFT_WRAP);
-    expect(wrap.tags).toEqual([
-      ['p', poster],
-      ['expiration', String(NOW + 600)]
-    ]);
+    expect(wrap.tags.map((t) => t[0])).toEqual(['p', 'expiration']);
+    expect(tag(wrap.tags, 'p')).toEqual(['p', poster]);
     // A one-time key: not the operator's, so two claims are unlinkable to anyone but the poster.
     expect(wrap.pubkey).not.toBe(getPublicKey(contact));
     expect(wrap.created_at).toBeLessThanOrEqual(NOW);
@@ -98,6 +96,8 @@ describe('a claim for the poster only', () => {
     expect(label.kind).toBe(KIND_LABEL);
     expect(tag(label.tags, 'l')).toEqual(['l', 'claimed', MISSION_NAMESPACE]);
     expect(tag(label.tags, 'a')).toEqual(['a', MISSION]);
+    // The exact end is here, inside, and only here: the wrap's own is later, and the poster reads this one.
+    expect(tag(label.tags, 'expiration')).toEqual(['expiration', String(NOW + 600)]);
     expect(label.sig).toBeUndefined();
   });
 
@@ -128,5 +128,76 @@ describe('where the poster accepts sealed messages', () => {
     const tampered = { ...list([['relay', 'wss://nos.lol']]), tags: [['relay', 'wss://evil.example']] };
     expect(inboxRelays(tampered, poster)).toEqual([]);
     expect(inboxRelays(null, poster)).toEqual([]);
+  });
+});
+
+describe('what the second audit of Milestone 11 found', () => {
+  const contact = generateSecretKey();
+  const posterSecret = generateSecretKey();
+  const poster = getPublicKey(posterSecret);
+  const LEASE_END = NOW + CLAIM_LEASE_SECONDS;
+  const expiry = (w: { tags: string[][] }) => Number(tag(w.tags, 'expiration')![1]);
+  const many = (n: number, label: 'claimed' | 'released' = 'claimed') =>
+    Array.from({ length: n }, () => buildSealedMissionClaim(contact, poster, label, MISSION, LEASE_END, NOW));
+
+  /*
+   * The lease ends a day after the claim, so a wrap carrying the lease's exact end gave away the
+   * second it was sent — expiration less a day — which the blurred `created_at` beside it exists
+   * to hide. And a claim and its release share an end, so their wraps paired up across the two
+   * one-time keys that are meant to keep them apart.
+   */
+  it('a sealed claim’s wrap does not give away the second it was sent', () => {
+    const wraps = many(40);
+    expect(wraps.filter((w) => expiry(w) - CLAIM_LEASE_SECONDS === NOW).length).toBeLessThanOrEqual(1);
+    expect(new Set(wraps.map(expiry)).size).toBeGreaterThan(30);
+  });
+
+  it('a claim and its release cannot be paired by the ends on their wraps', () => {
+    const claims = many(20);
+    const releases = many(20, 'released');
+    expect(claims.filter((c, i) => expiry(c) === expiry(releases[i]!)).length).toBeLessThanOrEqual(1);
+  });
+
+  it('a wrap never lets a relay drop it before the claim inside has ended', () => {
+    for (const w of many(40)) {
+      expect(expiry(w)).toBeGreaterThanOrEqual(LEASE_END);
+      expect(expiry(w)).toBeLessThanOrEqual(LEASE_END + 2 * 86_400);
+    }
+    // A release made after the clock went back carries an end further off than a lease runs: still kept until then.
+    const late = NOW + 3 * 86_400 + 5;
+    for (let i = 0; i < 20; i++) expect(expiry(buildSealedMissionClaim(contact, poster, 'released', MISSION, late, NOW))).toBeGreaterThanOrEqual(late);
+  });
+
+  /*
+   * An end blurred apart from the blurred time beside it narrowed what the two days hide: a relay
+   * holding both reads the claim as sent inside the overlap of two windows, under twelve hours wide
+   * for one wrap in sixteen [audit 11, second grid — review]. Worked out from the wrap's own time,
+   * the end is the same distance from it on every wrap, and so says nothing the time does not.
+   */
+  it('a wrap’s end says nothing of when the claim was sent that its blurred time does not', () => {
+    const wraps = many(40);
+    expect(new Set(wraps.map((w) => expiry(w) - w.created_at)).size).toBe(1);
+  });
+
+  it('the poster reads the claim’s exact end inside, whatever the wrap says outside', () => {
+    const w = many(1)[0]!;
+    const seal = JSON.parse(nip44.decrypt(w.content, nip44.getConversationKey(posterSecret, w.pubkey)));
+    const label = JSON.parse(nip44.decrypt(seal.content, nip44.getConversationKey(posterSecret, seal.pubkey)));
+    expect(tag(label.tags, 'expiration')).toEqual(['expiration', String(LEASE_END)]);
+    expect(expiry(w)).toBeGreaterThan(LEASE_END);
+  });
+
+  it('a wrap’s own time is blurred across two days, as NIP-59 asks, not merely allowed to be', () => {
+    const at = many(40).map((w) => w.created_at);
+    for (const t of at) {
+      expect(t).toBeLessThanOrEqual(NOW);
+      expect(t).toBeGreaterThan(NOW - 2 * 86_400);
+    }
+    expect(new Set(at).size).toBeGreaterThan(30);
+  });
+
+  it('reads an inbox only from the poster’s kind-10050 list, not from another list of relays it signed', () => {
+    const outbox = finalizeEvent({ kind: 10002, created_at: NOW, content: '', tags: [['relay', 'wss://nos.lol']] }, posterSecret);
+    expect(inboxRelays(outbox, poster)).toEqual([]);
   });
 });

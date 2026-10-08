@@ -64,7 +64,15 @@ const PROBE_MS = 240_000;
 /** The most packages kept from any one relay, and on this device: a night has dozens, not hundreds. */
 export const PACKAGES_MAX = 100;
 /** Characters the stored copy may take: a fifth of a browser's usual quota, which the tier shares. */
-const KEPT_CHARS_MAX = 1_000_000;
+export const KEPT_CHARS_MAX = 1_000_000;
+/**
+ * Frames one connection may send whose signature does not verify before that relay is treated as
+ * failed and tried again later [audit 11, second grid]. An honest relay sends none: the request
+ * names the publishers, and a version a publisher signed verifies whether or not NavCom can read it.
+ * Each one costs a full signature check on the main thread, and the cap below only ever counted
+ * what was kept — so a relay streaming junk made a phone verify for as long as the page was open.
+ */
+export const UNVERIFIED_MAX = 20;
 const SAVE_MS = 2_000;
 
 type Stored = { at: string; events: unknown[] };
@@ -215,10 +223,14 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
 
     const connect = () => {
       if (stopped) return;
+      /** How many times in a row this relay had failed when this connection was made. */
+      const tries = attempt;
       /** What this connection has received, newest per package. Becomes the relay's share at EOSE. */
       const received = new Map<string, Signed>();
       let caughtUp = false;
       let failed = false;
+      /** Frames on this connection whose signature did not verify. */
+      let unverified = 0;
       let ws: WebSocket;
       try {
         ws = new WebSocket(url);
@@ -248,6 +260,16 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
         if (socket === ws) socket = null;
         fall();
       };
+      /*
+       * A relay that answered and then misbehaved — frames that do not verify, or a refusal after the
+       * answer — gets no credit for having answered: the wait goes on growing from where it was. The
+       * reset at its end of answer came first, so a relay doing this every time was asked again every
+       * five seconds, re-sending its whole answer each time [audit 11, second grid — review].
+       */
+      const refuse = () => {
+        attempt = Math.max(attempt, tries);
+        fail();
+      };
       const send = (frame: unknown[]) => {
         try {
           ws.send(JSON.stringify(frame));
@@ -264,10 +286,11 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
       ws.addEventListener('open', () => {
         if (waiting) clearTimeout(waiting);
         waiting = setTimeout(fail, ANSWER_MS);
-        attempt = 0;
         send(['REQ', 'missions', { kinds: [MISSION_PACKAGE_KIND], authors: Object.keys(publishers), '#t': ['navcom_mission'] }]);
       });
       ws.addEventListener('message', (m: MessageEvent) => {
+        // A browser delivers nothing once a socket is closing; a socket that still does is not listened to.
+        if (failed) return;
         let frame: unknown[];
         try {
           frame = JSON.parse(String(m.data)) as unknown[];
@@ -278,11 +301,16 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
         heard.set(url, Date.now());
         if (frame[0] === 'EVENT' && frame[1] === 'missions') {
           const e = frame[2];
-          // Checked before it is kept: shape, publisher and signature [11.R].
-          if (!wellFormed(e, publishers) || !authentic(e)) return;
+          // Checked before it is kept: shape, publisher and signature [11.R] — the cheap questions
+          // first, so nothing this would not keep costs a signature check [audit 11, second grid].
+          if (!wellFormed(e, publishers)) return;
           const address = addressOf(e);
           const held = received.get(address);
           if (held ? !newer(e, held) : received.size >= PACKAGES_MAX) return;
+          if (!authentic(e)) {
+            if (++unverified >= UNVERIFIED_MAX) refuse();
+            return;
+          }
           received.set(address, e);
           // Before EOSE the relay is replaying what it holds; after it, every event is news.
           if (caughtUp) report();
@@ -290,6 +318,14 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
           if (waiting) clearTimeout(waiting);
           waiting = null;
           caughtUp = true;
+          /*
+           * The wait starts over only once the relay has really answered, as `terminal/subscribe.ts`
+           * does — and not for good: one that then refuses or sends what does not verify takes it
+           * back (`refuse`). Reset when the socket merely opened, a relay that opened and then
+           * refused was asked again every five seconds for as long as the page was open [audit 11,
+           * second grid].
+           */
+          attempt = 0;
           firstTry.delete(url);
           live.add(url);
           shares.set(url, received);
@@ -303,7 +339,7 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
           probing = setTimeout(probe, PROBE_MS);
         } else if (frame[0] === 'CLOSED' && frame[1] === 'missions') {
           // Refused — wants sign-in, is rate-limiting, or is shutting down: a failure, said as one.
-          fail();
+          refuse();
         }
       });
       /*

@@ -176,7 +176,7 @@
   }
   .nc-report-field select,
   .nc-report-count input {
-    min-height: 2.75rem;
+    min-height: 3rem;
     padding: 0 0.6rem;
     border: 1px solid var(--t-line-strong);
     background: var(--t-sunk);
@@ -188,7 +188,7 @@
     display: flex;
     align-items: center;
     gap: 0.6rem;
-    min-height: 2.75rem;
+    min-height: 3rem;
     color: var(--t-ink);
   }
   .nc-report-check input {

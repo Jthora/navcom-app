@@ -231,3 +231,132 @@ describe('what a report will be held to, checked when the package is read', () =
     expect(readMissionPackage(poison, TEST).ok).toBe(false);
   });
 });
+
+describe('what the second audit of Milestone 11 found', () => {
+  const refusal = (input: unknown, publishers = TEST) => {
+    const r = readMissionPackage(input, publishers);
+    return r.ok ? null : r;
+  };
+  const objective = (extra: Record<string, unknown> = {}) => JSON.stringify({ name: 'x', objectives: [{ id: 'do:it', ask: 'Do it.', ...extra }] });
+
+  describe('time and state [invariants 7 and 9]', () => {
+    it('reads a mission its poster closed early as over, though its end is still to come', () => {
+      const closed = ok(pkg([['mission_state', 'closed']], { drop: ['mission_state'] }), TEST);
+      const open = ok(pkg([]), TEST);
+      const before = new Date('2026-10-06T12:00:00Z');
+      expect(missionExpired(closed, before)).toBe(false);
+      expect(missionActive(closed, before)).toBe(false);
+      expect(missionActive(open, before)).toBe(true);
+    });
+
+    it('is current through the last second of its end, and expired the second after', () => {
+      const m = ok(pkg([]), TEST);
+      expect(missionExpired(m, new Date(m.validUntil * 1000))).toBe(false);
+      expect(missionActive(m, new Date(m.validUntil * 1000))).toBe(true);
+      expect(missionExpired(m, new Date((m.validUntil + 1) * 1000))).toBe(true);
+    });
+
+    it('refuses an end of zero, an end that is not a whole second, and an end past 2100 — and takes 2100 itself', () => {
+      for (const end of ['0', '1791608400.5']) {
+        expect(refusal(pkg([['valid_until', end]], { drop: ['valid_until'] }))?.because, end).toMatch(/when it ends/);
+      }
+      expect(refusal(pkg([['valid_until', '4102444801']], { drop: ['valid_until'] }))?.because).toMatch(/not a date/);
+      expect(ok(pkg([['valid_until', '4102444800']], { drop: ['valid_until'] }), TEST).validUntil).toBe(4_102_444_800);
+    });
+  });
+
+  it('names a registered agent as an agent though its package does not say so [invariant 4]', () => {
+    const AGENT = { [getPublicKey(secret)]: { name: 'Registered agent', agent: true } };
+    const m = ok(pkg([]), AGENT);
+    expect(pkg([]).tags.some((t) => t[0] === 'agent')).toBe(false);
+    expect(m.publisher).toEqual({ pubkey: getPublicKey(secret), name: 'Registered agent', agent: true });
+  });
+
+  it('refuses a reference to any of the five Distress kinds, and to none beside them [invariant 2]', () => {
+    for (const k of ['20910', '20911', '20912', '20913', '20914']) {
+      expect(refusal(pkg([['k', k]]))?.because, k).toMatch(/Distress/);
+    }
+    for (const k of ['20909', '20915', '1985']) expect(ok(pkg([['k', k]]), TEST).address, k).toBeTruthy();
+  });
+
+  it('drops a count of people under every word the reader names for them', () => {
+    const words = ['People', 'Person', 'Persons', 'Individual', 'Individuals', 'Residents', 'Clients', 'Guests'];
+    const effect = [...words.map((w) => `${w} reached: a count`), 'Water handed out: a count'];
+    const content = JSON.stringify({ name: 'x', objectives: [{ id: 'do:it', ask: 'Do it.' }], metadata: { mechaJono: { format: { effect } } } });
+    const m = ok(pkg([], { content }), TEST);
+    expect(m.effect).toEqual(['Water handed out: a count']);
+    expect(m.omittedPeopleCounts).toBe(words.length);
+  });
+
+  it('keeps what an operator reads before going: the topics to check, and limits written as one line', () => {
+    const m = ok(pkg([['check', 'local laws on recording consent'], ['check', 'heat advisories']], { content: objective({ limits: 'Never enter private property.' }) }), TEST);
+    expect(m.checks).toEqual(['local laws on recording consent', 'heat advisories']);
+    expect(m.objectives[0]!.limits).toEqual(['Never enter private property.']);
+  });
+
+  describe('every other rule the package reader keeps', () => {
+    it('says whose a refused version is only when it is a publisher NavCom reads', () => {
+      const stranger = generateSecretKey();
+      const e = finalizeEvent({ ...pkg([]), tags: pkg([]).tags, content: pkg([]).content, kind: MISSION_PACKAGE_KIND, created_at: 1791300000 }, stranger);
+      const r = refusal(e);
+      expect(r?.because).toMatch(/publisher/);
+      expect(r?.from).toBeUndefined();
+    });
+
+    it('is not a package without the starcom_mission_package flag', () => {
+      expect(refusal(pkg([], { drop: ['starcom_mission_package'] }))?.kind).toBe('not-a-package');
+    });
+
+    it('refuses, rather than throws on, content that parses to nothing', () => {
+      expect(() => readMissionPackage(pkg([], { content: 'null' }), TEST)).not.toThrow();
+      expect(refusal(pkg([], { content: 'null' }))?.because).toMatch(/manifest/);
+    });
+
+    it('drops an objective with no id, so a package whose only objective has none is refused', () => {
+      const one = JSON.stringify({ name: 'x', objectives: [{ ask: 'No id.' }] });
+      expect(refusal(pkg([], { content: one }))?.because).toMatch(/at least one objective/);
+      const two = JSON.stringify({ name: 'x', objectives: [{ ask: 'No id.' }, { id: 'do:it', ask: 'Do it.' }] });
+      expect(ok(pkg([], { content: two }), TEST).objectives.map((o) => o.id)).toEqual(['do:it']);
+    });
+
+    it('says a coordinate was coarsened only when it was', () => {
+      const exact = ok(pkg([['geo', 'lat:39.37,lon:-104.86'], ['geo_precision', '1km'], ['geo_kind', 'subject_location']]), TEST);
+      expect(exact.placement.point).toEqual({ lat: 39.37, lon: -104.86, precision: '1km', coarsened: false });
+    });
+
+    it('reads a jurisdiction in capitals as the same place', () => {
+      expect(ok(pkg([['jurisdiction', 'US-CA']], { drop: ['jurisdiction'] }), TEST).placement.jurisdiction).toBe('us-ca');
+    });
+
+    it('refuses a package whose tags carry anything but strings, saying so, before anything else is asked', () => {
+      const raw = JSON.parse(JSON.stringify(pkg([])));
+      raw.tags.push(['priority', 7]);
+      expect(() => readMissionPackage(raw, TEST)).not.toThrow();
+      expect(refusal(raw)).toMatchObject({ kind: 'not-a-package', because: expect.stringMatching(/lists of strings/) });
+    });
+  });
+
+  /*
+   * Mecha Jono's desk packages carry the country and then the state. A field package written the
+   * same way was filed by the first tag alone — the whole country, not the state it is about.
+   */
+  describe('a package that names more than one jurisdiction', () => {
+    const two = (...codes: string[]) => ok(pkg(codes.map((c) => ['jurisdiction', c]), { drop: ['jurisdiction'] }), TEST).placement.jurisdiction;
+
+    it('is filed by the most specific, whichever order they come in', () => {
+      expect(two('us', 'us-co')).toBe('us-co');
+      expect(two('us-co', 'us')).toBe('us-co');
+      expect(two('us', 'us')).toBe('us');
+    });
+
+    it('is filed nowhere rather than guessed when they disagree, and is still a mission', () => {
+      expect(two('us-co', 'us-ca')).toBeNull();
+      expect(two('us', 'gb')).toBeNull();
+      expect(two('gb', 'us-co')).toBeNull();
+    });
+
+    it('skips a code it cannot read rather than letting it hide one it can', () => {
+      expect(two('not a code', 'us-co')).toBe('us-co');
+    });
+  });
+});

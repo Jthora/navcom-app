@@ -30,6 +30,12 @@
   let choosing = $state(false);
   let sending = $state(false);
   let error = $state<string | null>(null);
+  /**
+   * How the last claim let go from here was seen. Letting go of an open claim recalls nothing
+   * anybody already has, and is itself public, under the same card [core: claim.ts — "a screen
+   * offering it must say so"]; the panel went back to Take part and said nothing [audit 11.S].
+   */
+  let released = $state<Visibility | null>(null);
 
   const t = $derived(Math.floor(now / 1000));
   const mine = $derived.by(() => {
@@ -55,6 +61,7 @@
     if (performance.now() - shownAt < SETTLE_MS) return;
     sending = true;
     error = null;
+    released = null;
     try {
       const r = await takePart(m, visibility, Math.floor(Date.now() / 1000), undefined, open);
       if (!r.ok) error = WORDS[r.because] ?? r.because;
@@ -69,13 +76,16 @@
     }
   }
   async function release() {
+    const was = mine?.visibility ?? null;
     sending = true;
     error = null;
+    released = null;
     try {
       const r = await letGo(m, Math.floor(Date.now() / 1000));
       // Gone from this device either way; walking away is never refused [invariant 8].
       if (r.card) error = 'It was taken with a card this device no longer holds, so it cannot be let go from here. It ends by itself within a day.';
       else if (!r.sent) error = 'The release did not reach a relay. It ends by itself within a day.';
+      else released = was;
     } catch {
       error = 'The release did not reach a relay. It ends by itself within a day.';
     } finally {
@@ -130,6 +140,15 @@
     </div>
   {:else}
     <Action label="Take part" onfire={() => ((choosing = true), (shownAt = performance.now()))} />
+  {/if}
+  {#if released && !mine}
+    <Readout
+      value="Let go"
+      tone="cold"
+      sub={released === 'open'
+        ? 'anyone who saw the claim keeps it, and letting go is public too, under the same card'
+        : `sealed to ${m.publisher.name}, as the claim was`}
+    />
   {/if}
   {#if error}
     <Readout value={error.startsWith('It was sent') ? 'Sent' : 'Not sent'} tone="warn" sub={error} />

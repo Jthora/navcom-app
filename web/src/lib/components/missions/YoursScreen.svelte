@@ -5,6 +5,12 @@
    *
    * Silence is a readout [panel.md rule 6]: an empty section says so, and never nags. What was
    * sent is a list, never a count of it [C20].
+   *
+   * **Every mission this device took part in stays reachable while the device keeps it**, so what
+   * others reported on it can be witnessed or challenged after it leaves the map. Reports arrive
+   * the day after the work, so every report on a mission's last day arrives after it ended — and
+   * with no way back to them, each settled "unchallenged" though nobody here could have spoken
+   * [audit 11.S].
    */
   import { onMount } from 'svelte';
   import { Panel, Readout, Slot } from '$lib/components/panel';
@@ -15,14 +21,24 @@
   let {
     now,
     open,
+    unread,
     onopen,
-    onreport
+    onreport,
+    onreports
   }: {
     now: number;
-    /** The missions still open: a claim on one that closed early holds no place in the cap. */
+    /**
+     * The missions still open: a claim on one that closed early holds no place in the cap.
+     * Absent while nobody knows which are open — reaching, no relay, no missions code — and then a
+     * claim's mission is unknown, never "over" [invariant 7].
+     */
     open?: ReadonlySet<string>;
+    /** Packages NavCom could not read: a claim on one says so rather than that it is over [11.E]. */
+    unread?: ReadonlySet<string>;
     onopen: (address: string) => void;
     onreport: (address: string) => void;
+    /** Other operators' reports on a mission this device took part in. */
+    onreports: (address: string) => void;
   } = $props();
 
   /** Bumped after a withdrawal, so the list is read again. */
@@ -32,12 +48,15 @@
   const t = $derived(Math.floor(now / 1000));
   const holding = $derived(held(t));
   const counted = $derived(holding.filter((h) => !open || open.has(h.address)).length);
+  /** Every mission this device keeps a record of taking part in. */
+  const went = $derived(tookPart(t));
   /** Only missions with a day a report could tell of, now or from tomorrow [11.X]. */
-  const history = $derived(
-    tookPart(t)
-      .map((h) => ({ ...h, when: stillToReport(t, h) }))
-      .filter((h) => h.when !== null)
-  );
+  const history = $derived(went.map((h) => ({ ...h, when: stillToReport(t, h) })).filter((h) => h.when !== null));
+  /**
+   * Posters this device knows to be agents, from the missions it took part in: a settlement or a
+   * challenge by one says so wherever it is shown [invariant 4]. The registry is read in `nameOf`.
+   */
+  const agents = $derived(new Set(went.filter((h) => h.mission.publisher.agent).map((h) => h.mission.publisher.pubkey)));
   const reports = $derived.by(() => {
     void version;
     return sent().slice().reverse();
@@ -47,19 +66,29 @@
   onMount(() => {
     void settlements(Math.floor(Date.now() / 1000))
       .then((m) => (standing = m))
-      .catch(() => (standing = { standing: new Map(), names: new Map(), answered: { poster: false, operators: false } }));
+      .catch(() => (standing = { standing: new Map(), names: new Map(), answered: { poster: false, operators: false }, partial: new Set() }));
   });
 
   function shown(r: Sent): { value: string; tone: 'neutral' | 'good' | 'cold' | 'warn'; sub: string } {
-    if (r.withdrawn) return { value: 'Withdrawn', tone: 'cold', sub: 'relays were asked to drop it; copies already taken stay' };
+    if (r.withdrawn) {
+      return {
+        value: 'Withdrawn',
+        tone: 'cold',
+        sub: 'relays were asked to drop it; the request is public, and copies already taken stay, as does anything said about it'
+      };
+    }
     const s = standing?.standing.get(r.id);
     if (!s) {
+      // More labels on its mission than this reads: every relay answered, and signal changes nothing [review].
+      if (standing?.partial.has(r.id)) {
+        return { value: 'Unknown', tone: 'cold', sub: 'its mission has more labels than this phone reads, and the one that decides it may be among those left out' };
+      }
       // Nobody answered is not nothing there: no "waiting", no "settled", until somebody does [11.E].
       return standing
         ? { value: 'Unknown', tone: 'cold', sub: 'the relays that hold its labels did not answer; try again with signal' }
         : { value: 'Checking', tone: 'cold', sub: 'reading the relays that hold its labels' };
     }
-    return standingOf(s, standing!.names);
+    return standingOf(s, standing!.names, agents);
   }
 
   const WHY: Record<Withdrawal, string> = {
@@ -87,7 +116,7 @@
             <button type="button" data-held={h.address} onclick={() => onopen(h.address)}>
               <span class="nc-yours-title">{h.title}</span>
               <span class="nc-yours-meta">
-                {#if open && !open.has(h.address)}the mission is over · this lapses by itself{:else}ends in {endsIn(h.ends, now)} · {h.visibility === 'open' ? 'everyone can see' : 'sealed to the poster'}{/if}
+                {#if open && !open.has(h.address)}{unread?.has(h.address) ? 'the mission could not be read' : 'the mission is over'} · this lapses by itself{:else}ends in {endsIn(h.ends, now)} · {h.visibility === 'open' ? 'everyone can see' : 'sealed to the poster'}{/if}
               </span>
             </button>
           </li>
@@ -97,8 +126,11 @@
   </Panel>
 
   <Panel label="To report">
-    {#if history.length === 0}
-      <Slot k="Missions"><Readout value="None yet" tone="cold" sub="a mission you take part in waits here" /></Slot>
+    {#if history.length === 0 && went.length > 0}
+      <!-- Taken part in, and nothing left to tell: said, not "none yet" [audit 11.S]. -->
+      <Slot k="Missions"><Readout value="Nothing to report" tone="cold" sub="a report tells of the week before today, while the mission ran" /></Slot>
+    {:else if history.length === 0}
+      <Slot k="Missions"><Readout value="None yet" tone="cold" sub="a mission you take part in waits here, for a week after the work" /></Slot>
     {:else}
       <ul>
         {#each history as h (h.mission.address)}
@@ -129,9 +161,28 @@
             {/if}
             {#if r.visibility === 'open' && !r.withdrawn}
               <button type="button" class="nc-yours-withdraw" data-withdraw={r.id} onclick={() => takeBack(r)}>
-                Withdraw · asks relays to drop it; copies already taken stay
+                Withdraw · a request anyone can see; copies already taken stay
               </button>
             {/if}
+          </li>
+        {/each}
+      </ul>
+    {/if}
+  </Panel>
+
+  <Panel label="Others' reports">
+    {#if went.length === 0}
+      <Slot k="Missions"><Readout value="None yet" tone="cold" sub="a mission you take part in is listed here until 30 days after it ends" /></Slot>
+    {:else}
+      <ul>
+        {#each went as h (h.mission.address)}
+          <li>
+            <!-- A tap, not a read on open: asking relays for a mission's reports is a choice [ReportsScreen]. -->
+            <button type="button" data-their-reports={h.mission.d} onclick={() => onreports(h.mission.address)}>
+              <span class="nc-yours-title">{h.mission.title}</span>
+              <!-- What it holds, not what can be done: nothing NavCom files can be witnessed or challenged two weeks after the end [review]. -->
+              <span class="nc-yours-meta">{placeName(h.mission.placement.jurisdiction)} · reports on it</span>
+            </button>
           </li>
         {/each}
       </ul>
@@ -184,7 +235,7 @@
     color: var(--t-faint);
   }
   .nc-yours-withdraw {
-    min-height: 2.75rem;
+    min-height: 3rem;
     padding: 0 0.6rem;
     margin-block-start: 0.25rem;
     border: 1px solid var(--t-line);

@@ -4,7 +4,8 @@ import type { Event } from 'nostr-tools/core';
 import { DEFAULT_RELAYS, readMissionPackage, type Mission } from '@navcom/core';
 import { set } from '$lib/terminal/storage';
 import { withdrawCard } from '$lib/terminal/card';
-import { held, letGo, refusal, takePart, usable, type Wire } from './claims';
+import { held, letGo, refusal, takePart, tookPart, usable, type Wire } from './claims';
+import { reportableDays } from './reports';
 
 /**
  * Taking part, from this device: the cap, the lease, withdrawal, and where each kind of claim goes.
@@ -217,5 +218,133 @@ describe('what the audit of Milestone 11 found', () => {
     expect(usable(['wss://', 'wss://ok.example', 'https://no.example', 'wss://ok.example/', ' wss://x.example:99999 ', 'nonsense'])).toEqual([
       'wss://ok.example'
     ]);
+  });
+});
+
+describe('what the second audit of Milestone 11 found', () => {
+  const ownRelays = (urls: string[]) => set('accruing', 'relays_own', urls);
+  const watch = (urls: string[]) => {
+    set('accruing', 'watchtower', 'f'.repeat(64));
+    set('accruing', 'relays', urls);
+  };
+  const deletions = (sent: { urls: string[]; event: Event }[]) => sent.filter((s) => s.event.kind === 5);
+
+  it('lets a sealed claim go, and renews one, sealed the same way: nothing in the open says who took it', async () => {
+    signOn();
+    const { w, sent } = fakeWire([inbox(['wss://inbox.example'])]);
+    const m = mission('sealed-go');
+    await takePart(m, 'sealed', NOW, w);
+    expect((await takePart(m, 'sealed', NOW + 3_600, w)).ok).toBe(true);
+    expect(await letGo(m, NOW + 7_200, w)).toEqual({ sent: true });
+    expect(sent).toHaveLength(3);
+    for (const s of sent) {
+      expect(s.event.kind).toBe(1059);
+      expect(s.urls).toEqual(['wss://inbox.example']);
+    }
+  });
+
+  it('sends a claim, its renewal’s withdrawal and its release where posters read, beside a watch and an operator’s own relays [11.E]', async () => {
+    signOn();
+    ownRelays(['wss://own.example']);
+    watch(['wss://watch.example']);
+    const { w, sent } = fakeWire();
+    const m = mission('everywhere');
+    await takePart(m, 'open', NOW, w);
+    await takePart(m, 'open', NOW + 3_600, w);
+    await letGo(m, NOW + 7_200, w);
+    expect(sent.length).toBeGreaterThanOrEqual(5);
+    for (const s of sent) expect(s.urls).toEqual(expect.arrayContaining(['wss://own.example', 'wss://watch.example', ...DEFAULT_RELAYS]));
+  });
+
+  it('sends each withdrawal where the claim it withdraws went, after the relay list has changed [11.E]', async () => {
+    signOn();
+    ownRelays(['wss://old.example']);
+    const { w, sent } = fakeWire();
+    const m = mission('moved');
+    await takePart(m, 'open', NOW, w);
+    ownRelays(['wss://new.example']);
+    await takePart(m, 'open', NOW + 3_600, w);
+    expect(deletions(sent)).toHaveLength(1);
+    expect(deletions(sent)[0]!.urls).toContain('wss://old.example');
+    ownRelays(['wss://newest.example']);
+    await letGo(m, NOW + 7_200, w);
+    expect(deletions(sent)).toHaveLength(2);
+    expect(deletions(sent)[1]!.urls).toContain('wss://new.example');
+  });
+
+  it('renews a claim after the card that made it was withdrawn without asking a new key to withdraw the old one [11.E]', async () => {
+    signOn();
+    const { w, sent } = fakeWire();
+    const m = mission('recard');
+    await takePart(m, 'open', NOW, w);
+    withdrawCard();
+    expect((await takePart(m, 'open', NOW + 3_600, w)).ok).toBe(true);
+    expect(deletions(sent)).toEqual([]);
+  });
+
+  describe('from taking part to reporting', () => {
+    it('remembers a mission that ended yesterday, so its last day can still be reported', async () => {
+      signOn();
+      const ended = mission('ended', { ends: NOW + 3_600 });
+      await takePart(ended, 'open', NOW, fakeWire().w);
+      const later = NOW + 2 * 86_400;
+      const t = tookPart(later).find((x) => x.mission.address === ended.address);
+      expect(t).toBeDefined();
+      expect(reportableDays(later, t)).not.toEqual([]);
+    });
+
+    it('keeps the day it first took part when a claim is renewed, so the first day stays reportable', async () => {
+      signOn();
+      const m = mission('days');
+      await takePart(m, 'open', NOW, fakeWire().w);
+      await takePart(m, 'open', NOW + 2 * 86_400, fakeWire().w);
+      expect(tookPart(NOW + 3 * 86_400).find((x) => x.mission.address === m.address)!.since).toBe(NOW);
+    });
+
+    it('renews a claim while holding three, and on a one-person task now listed as claimed because of it', async () => {
+      signOn();
+      const { w } = fakeWire();
+      for (const d of ['r1', 'r2', 'r3']) await takePart(mission(d), 'open', NOW, w);
+      expect((await takePart(mission('r1'), 'open', NOW + 3_600, w)).ok).toBe(true);
+      await letGo(mission('r2'), NOW + 3_600, w);
+      await takePart(mission('task', { claims: 'one' }), 'open', NOW + 3_600, w);
+      const nowClaimed = mission('task', { claims: 'one', state: 'claimed' });
+      expect(refusal(nowClaimed, NOW + 7_200)).toBeNull();
+      expect((await takePart(nowClaimed, 'open', NOW + 7_200, w)).ok).toBe(true);
+    });
+  });
+
+  it('refuses taking part in a mission that has ended or that its poster closed', async () => {
+    signOn();
+    const { w, sent } = fakeWire();
+    expect(await takePart(mission('over', { ends: NOW - 60 }), 'open', NOW, w)).toEqual({ ok: false, because: 'ended' });
+    expect(await takePart(mission('shut', { state: 'closed' }), 'open', NOW, w)).toEqual({ ok: false, because: 'ended' });
+    expect(sent).toEqual([]);
+  });
+
+  it('sends a sealed claim to the inbox the poster named last, in whatever order the relays served the lists', async () => {
+    signOn();
+    const older = finalizeEvent({ kind: 10050, created_at: NOW - 86_400, content: '', tags: [['relay', 'wss://old-inbox.example']] }, posterSecret);
+    const newer = finalizeEvent({ kind: 10050, created_at: NOW, content: '', tags: [['relay', 'wss://new-inbox.example']] }, posterSecret);
+    // A relay answers newest first, so the last one served is the oldest: by time, never by place [review].
+    for (const [d, served] of [['oldest-first', [older, newer]], ['newest-first', [newer, older]]] as const) {
+      const { w, sent } = fakeWire([...served]);
+      await takePart(mission(d), 'sealed', NOW, w);
+      expect(sent[0]!.urls, d).toEqual(['wss://new-inbox.example']);
+    }
+  });
+
+  it('asks again where the poster takes sealed messages after a lookup that found nothing', async () => {
+    signOn();
+    const answers: Event[] = [];
+    const sent: string[][] = [];
+    const w: Wire = {
+      publish: async (urls) => (sent.push(urls), true),
+      query: async (urls) => ({ events: answers, answered: urls })
+    };
+    expect((await takePart(mission('retry'), 'sealed', NOW, w)).ok).toBe(false);
+    answers.push(inbox(['wss://inbox.example']));
+    expect((await takePart(mission('retry'), 'sealed', NOW + 60, w)).ok).toBe(true);
+    expect(sent).toEqual([['wss://inbox.example']]);
   });
 });

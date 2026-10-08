@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure';
-import { collect } from './collect';
+import { finalizeEvent, generateSecretKey, getEventHash, getPublicKey } from 'nostr-tools/pure';
+import { READINGS_MAX, collect } from './collect';
 
 /** Real packages signed by Mecha Jono, captured from The Record — see core's missions test. */
 const FIXTURES = fileURLToPath(new URL('../../../../packages/core/test/fixtures/mission-packages.json', import.meta.url));
@@ -96,5 +96,92 @@ describe('versions, and what a newer one may do to an older one', () => {
   it('never throws, whatever a relay sent', () => {
     const poison = [null, 7, 'x', { kind: 30079, tags: [null] }, { kind: 30079, id: 'x', tags: 'no' }];
     expect(() => collect(poison, NOW, publishers)).not.toThrow();
+  });
+});
+
+describe('what the second audit of Milestone 11 found', () => {
+  const secret = generateSecretKey();
+  const publishers = { [getPublicKey(secret)]: { name: 'Test', agent: true } };
+  const version = (created_at: number, name: string, over: { state?: string; d?: string; priority?: string; ends?: string } = {}) =>
+    finalizeEvent(
+      {
+        kind: 30079, created_at, content: JSON.stringify({ name, objectives: [{ id: 'do:it', ask: 'Do it.' }] }),
+        tags: [['d', over.d ?? 'starcom_mission_package_x'], ['t', 'starcom_mission_package'], ['t', 'navcom_handoff'],
+          ['t', 'navcom_mission'], ['mission_state', over.state ?? 'open'], ['valid_until', over.ends ?? '1791608400'],
+          ...(over.priority ? [['priority', over.priority]] : [])]
+      },
+      secret
+    );
+  const titles = (c: { missions: { title: string }[] }) => c.missions.map((m) => m.title);
+  /** What any relay can send: a genuine version's id and key, over content and a signature of its own. */
+  const forgedAs = (e: object, over: Record<string, unknown> = {}) => ({ ...JSON.parse(JSON.stringify(e)), content: '{"name":"x"}', sig: '0'.repeat(128), ...over });
+
+  describe('a forged copy that reuses a genuine version’s id', () => {
+    const open = version(1791200000, 'Open');
+    const closed = version(1791300000, 'Closed', { state: 'closed' });
+
+    it('cannot keep a mission open that its poster closed, by arriving first', () => {
+      const memo = new Map();
+      expect(titles(collect([open, forgedAs(closed)], NOW, publishers, memo))).toEqual(['Open']);
+      expect(titles(collect([open, forgedAs(closed), closed], NOW, publishers, memo))).toEqual([]);
+    });
+
+    it('cannot hide a package, by arriving first', () => {
+      const memo = new Map();
+      collect([forgedAs(open)], NOW, publishers, memo);
+      expect(titles(collect([open], NOW, publishers, memo))).toEqual(['Open']);
+    });
+
+    it('cannot hide one by carrying its very content under a signature that does not verify', () => {
+      const memo = new Map();
+      collect([forgedAs(closed, { content: closed.content })], NOW, publishers, memo);
+      expect(titles(collect([open, closed], NOW, publishers, memo))).toEqual([]);
+    });
+  });
+
+  it('remembers a bounded number of readings, however many a relay sends', () => {
+    const memo = new Map();
+    const junk = Array.from({ length: READINGS_MAX + 10 }, (_, i) => {
+      const e = { kind: 30079, pubkey: getPublicKey(secret), created_at: 1791300000, content: '{}', tags: [['d', `junk-${i}`]] };
+      return { ...e, id: getEventHash(e), sig: '0'.repeat(128) };
+    });
+    collect(junk, NOW, publishers, memo);
+    expect(memo.size).toBeLessThanOrEqual(READINGS_MAX);
+  });
+
+  it('breaks a tie of the same second by the lower id, in either order', () => {
+    const a = version(1791300000, 'A');
+    const b = version(1791300000, 'B');
+    const lower = a.id < b.id ? 'A' : 'B';
+    expect(titles(collect([a, b], NOW, publishers))).toEqual([lower]);
+    expect(titles(collect([b, a], NOW, publishers))).toEqual([lower]);
+  });
+
+  it('notices a clock behind the publisher’s only past a day, not a minute', () => {
+    const now = Math.floor(NOW.getTime() / 1000);
+    expect(collect([version(now + 60, 'x')], NOW, publishers).clockBehind).toBe(false);
+    expect(collect([version(now + 86_400, 'x')], NOW, publishers).clockBehind).toBe(false);
+    expect(collect([version(now + 86_401, 'x')], NOW, publishers).clockBehind).toBe(true);
+  });
+
+  it('orders missions of equal weight and end by address, so every device lists them alike', () => {
+    // Titles that sort the other way, and two the same: neither may decide the order [review].
+    const c = collect([version(1791300000, 'Alpha', { d: 'b' }), version(1791300000, 'Zulu', { d: 'a' })], NOW, publishers);
+    expect(titles(c)).toEqual(['Zulu', 'Alpha']);
+    const same = [version(1791300000, 'Water', { d: 'b' }), version(1791300000, 'Water', { d: 'a' })];
+    expect(collect(same, NOW, publishers).missions.map((m) => m.d)).toEqual(['a', 'b']);
+    expect(collect(same.slice().reverse(), NOW, publishers).missions.map((m) => m.d)).toEqual(['a', 'b']);
+  });
+
+  it('does not report a refusal of a version already past its end', () => {
+    const now = Math.floor(NOW.getTime() / 1000);
+    const refusedVersion = (ends: number) =>
+      finalizeEvent(
+        { kind: 30079, created_at: 1791300000, content: JSON.stringify({ name: 'x', objectives: [] }),
+          tags: [['d', 'r'], ['t', 'starcom_mission_package'], ['t', 'navcom_handoff'], ['t', 'navcom_mission'], ['mission_state', 'open'], ['valid_until', String(ends)]] },
+        secret
+      );
+    expect(collect([refusedVersion(now - 60)], NOW, publishers).refused).toEqual([]);
+    expect(collect([refusedVersion(now + 60)], NOW, publishers).refused).toHaveLength(1);
   });
 });

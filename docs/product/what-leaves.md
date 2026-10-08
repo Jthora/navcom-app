@@ -24,7 +24,7 @@ kept apart on purpose.
 |---|---|---|
 | **Operational** | Signals, `Distress`, the *inner* peer-presence message, your post-quantum key bundle, endorsement withdrawals | Your identity as an operator. Anything signed with it is linkable to everything else it signs |
 | **Contact** | Your card, public presence, corrections, places you add, missions you take part in | So that **publishing costs no operational exposure**. Somebody watching the directory learns nothing about when you are out |
-| **Throwaway** | The *outer* wrapper of peer presence, invites and a mission claim sealed to its poster — one per message, never stored | So the outside of each names who it is for and never who sent it. It does not stop them being grouped: the relay carrying them sees which connection sent each one, and the wraps of one heartbeat all carry the same timestamp |
+| **Throwaway** | The *outer* wrapper of peer presence, invites, and a mission claim or report sealed to its poster — one per message, never stored | So the outside of each names who it is for and never who sent it. It does not stop them being grouped: the relay carrying them sees which connection sent each one, and the wraps of one heartbeat all carry the same timestamp |
 
 The separation is the point. A correction you file at a door and a `Distress` you raise an
 hour later are signed by different keys, and nothing in either event ties them together.
@@ -54,12 +54,12 @@ clear** — that is how a relay routes anything at all.
 | Its refinement | `1911` | The same, with **exact coordinates**, published 48 hours later | Nothing | Contact |
 | Correction | `30911` | The record id | Nothing — a correction is meant to be read | Contact |
 | A place you add | `30915` | Place id, region | Nothing | Contact |
-| Taking part in a mission, for everyone | `1985` | The mission's address, `claimed` or `released`, and when the claim ends — at most a day away | Nothing — it says only that this card took this mission | Contact |
-| Taking part, for the poster only | `1059` | **The poster's pubkey**, and when it ends | Everything else: that it is a claim, which mission, and that it is yours | Throwaway outside, Contact inside |
+| Taking part in a mission, for everyone | `1985` | The mission's address, `claimed` or `released`, and when the claim ends — at most a day away. **Its time is the second you took part**, and *Still on it* sends a fresh claim beside a withdrawal of the old one, so a renewal shows as a renewal | Nothing — it says that this card took this mission, and when | Contact |
+| Taking part, for the poster only | `1059` | **The poster's pubkey**, and a time after which a relay may drop it: three days after the wrap's own time, which is itself moved up to two days back at random — so never before the claim inside has ended, and saying nothing of when it was sent that the blurred time does not. A sealed report carries no such time, so its presence says *claim or release* rather than *report* | Everything else: which mission, the claim's exact end, that it is a claim rather than a release, and that it is yours | Throwaway outside, Contact inside |
 | A report of your work, for everyone | `1912` | The mission's address and which of its objectives you did | Nothing — your callsign, the day (never a time) and counts of what you handed out are in the content, for anybody to read. No free text anywhere | Contact |
 | A report, for the poster only | `1059` | **The poster's pubkey** | Everything else | Throwaway outside, Contact inside |
-| Saying you were there, or challenging a report | `1985` | The report's id, the mission's address, and `witnessed` or `challenged` | Nothing — and there is no text to it. Your card's key is the name it is under | Contact |
-| Withdrawing an open claim or report | `5` | The claim's or report's id | Nothing | Contact |
+| Saying you were there, or challenging a report | `1985` | The report's id, the mission's address, and `witnessed` or `challenged` | Nothing — and there is no text to it. It is signed by the key your claims and reports use, and a reader puts a name to it only from a card you published, or from an open report that key filed on the same mission. With neither, it reads as eight characters of the key, and the screen says so before you sign | Contact |
+| Withdrawing an open claim or report | `5` | The claim's or report's id, **under the key that signed it** — so the request is public too: it confirms the original was yours, and dates when you changed your mind. Copies already taken stay, and so does any settlement, witness or challenge naming it | Nothing | Contact |
 | Post-quantum key bundle | `10912` | Your public KEM key. **No tags at all** | Nothing to seal — it is a public key | **Operational** |
 | Endorsement withdrawal | `30914` | The credential id | Nothing | **Operational** |
 | Watch state | `10910` | All of it | Nothing | Watch key, if you hold the watch |
@@ -113,11 +113,33 @@ Stated as capability rather than intent, because you do not get to choose who ru
   that makes it easier, and it exists only because an operator asked for it about themselves
 - **Which pubkeys endorsed you**, if they watch your subscription filters. Named here rather
   than buried: it is the one place standing is not private, and it is priced in `standing.ts`
+- **Every mission you take part in openly, as a history.** An open claim, a report, a witness, a
+  challenge and a withdrawal are each a dated statement under your card's key naming a mission —
+  and so a place — and a report names a day as well. From public relays alone that reads as: this
+  key took the heat-relief mission in California on Tuesday at 13:00:00, let it go at 13:01:10,
+  took it again, worked Tuesday and Wednesday, filed a report and withdrew it eight minutes later.
+  Each renewal (*Still on it*) is a fresh claim beside a withdrawal of the old one, so even the
+  renewals show. Choosing *only the poster* hides which mission, and that it is yours, one claim
+  or report at a time; it does not hide that you wrote to that poster
+- **Which missions you reported on in the open, when you open Your missions.** To show where your
+  reports stand, the phone asks the relays operators use, and The Record and its mirror, for the
+  labels on each mission it reported on whose reports have not yet settled for good — one request
+  per mission, so a busy one cannot hide the rest. It asks by mission and never by report, but a
+  few missions asked about in a row over one connection are close to a list of where you worked
+  this week
+- **That you are waiting on the poster's word about a mission you reported on sealed** — The
+  Record and its mirror only. For a report sealed to its poster, Your missions asks only them, and
+  only for the poster's own settlements on its mission: nobody else knows a sealed report's id, so
+  nobody else can have said anything about it. The relays operators use, and the inbox the seal
+  went to, are never asked about its mission — unless you also reported on it in the open. If the
+  poster also takes sealed messages on The Record, it can pair the request with the wrap
 
 **They cannot see:**
 
 - Anything sealed, which is every operational payload
 - Who holds a Watchtower with you, unless they are one of its relays
+- Which mission a claim or report sealed to its poster is for, or that it is yours — except The
+  Record and its mirror, as the line above says, for a sealed report you are waiting to see settled
 
 ## What never leaves at all
 
@@ -141,6 +163,14 @@ Stated as capability rather than intent, because you do not get to choose who ru
   and a `20912` arriving with no signal of yours just before it can be guessed at. Weaker
   than the aggregate it replaced, which announced it in the clear, and still real
 - **Your endorser set is exposed to the relay you ask.** Above, and in `standing.ts`
+- **Missions are the single biggest change to what this network leaks** —
+  [`missions.md`](../design/missions.md) §8 says so in those words. A claim is a public statement
+  that a person intends to do something, and reports in one place over a week are a series
+  somebody can read. The defences are the ones its §3 lists: a claim names a mission rather than a
+  place and a time, lapses within a day, and asks who sees it every time; a report waits until its
+  day has ended and warns before a second in the same place. None of them stops a pattern forming
+  over weeks of open claims and reports; only choosing the poster, mission by mission, does.
+  Withdrawing changes what relays serve from then on, not what anybody already read
 - **Posting your card's key print links you to that key.** The card screen shows sixteen
   characters of your contact key so people can tell your card from a copy. Posting them where
   you are known ties that identity to everything the same key signs — your card, *out tonight*,

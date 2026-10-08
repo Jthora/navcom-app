@@ -11,6 +11,8 @@
    * trust at all, with a keyboard in front of them. The two are allowed to differ on purpose.
    */
   import { onMount, tick } from 'svelte';
+  import { pushState, replaceState } from '$app/navigation';
+  import { page } from '$app/state';
   import '$lib/terminal/tokens.css';
   import '$lib/terminal/screen.css';
   import '$lib/terminal/panel.css';
@@ -100,6 +102,11 @@
   );
   /** What is still open, by address: a claim on a mission closed early holds no place in the cap. */
   const openSet = $derived(new Set(active.map((m) => m.address)));
+  /**
+   * Whether this device knows which missions are open at all. Until it does — reaching, no relay,
+   * or no missions code — a claim's mission is unknown, not over [invariant 7; audit 11.I].
+   */
+  const missionsKnown = $derived(!missionsUnloaded && (feed.status === 'live' || feed.status === 'cached'));
   /** Provinces to light. A national mission (`us`) lights nothing — it would light everything. */
   const lit = $derived(
     new Set(active.map((m) => m.placement.jurisdiction).filter((j): j is string => !!j && j.includes('-')))
@@ -112,6 +119,8 @@
   );
   /** Packages NavCom would not show: counted in the key, so a dark map is never mistaken for a quiet night. */
   const refused = $derived(feed.status === 'live' || feed.status === 'cached' ? feed.refused : []);
+  /** The addresses of those packages: a claim on one reads "could not be read", never "over" [11.E]. */
+  const unreadSet = $derived(new Set(refused.map((r) => r.address)));
   const clockBehind = $derived((feed.status === 'live' || feed.status === 'cached') && feed.clockBehind);
 
   /*
@@ -135,7 +144,11 @@
     else if (dy > 40) detent = detent === 'full' ? 'half' : 'peek';
     else detent = NEXT[detent];
   }
-  /** Typing should show what it finds: the search lifts the sheet to half. */
+  /**
+   * Typing should show what it finds: the search lifts the sheet to half. On focus and on every
+   * keystroke, because a field focused before the page hydrated never fires its focus handler,
+   * and the results sat under the peek's edge however much was typed [audit 11.I].
+   */
   const lift = () => {
     if (detent === 'peek') detent = 'half';
   };
@@ -150,7 +163,13 @@
     | { kind: 'yours' }
     | { kind: 'report'; address: string }
     | { kind: 'reports'; address: string };
-  let stack = $state<Screen[]>([]);
+  /**
+   * The stack lives in the browser's history, one shallow entry per screen, so the phone's back
+   * gesture steps back through Com exactly as Back and Escape do. Kept in component state, the
+   * system back left the page with a mission open, and the list and the mission with it
+   * [audit 11.I]. A reload starts at the root: SvelteKit restores no state until the next step.
+   */
+  const stack = $derived((page.state as { com?: Screen[] }).com ?? []);
   const top = $derived(stack.at(-1) ?? null);
   /** Loaded the first time a screen opens: code first paint never needs [com.md §6]. */
   let screens = $state<typeof import('$lib/components/missions') | null>(null);
@@ -164,7 +183,8 @@
 
   /** Open a screen. A mission opens with the map still in view: half, never full [com.md §7]. */
   async function open(s: Screen, fresh = false) {
-    stack = fresh ? [s] : [...stack, s];
+    const com: Screen[] = fresh ? [s] : [...stack, s];
+    pushState('', { com });
     if (detent === 'peek') detent = 'half';
     if (!screens) {
       screensUnloaded = false;
@@ -178,8 +198,9 @@
     await tick();
     screenEl?.focus();
   }
+  /** One step back through the same history the system back gesture walks. */
   function back() {
-    stack = stack.slice(0, -1);
+    if (stack.length > 0) history.back();
   }
 
   /**
@@ -275,8 +296,15 @@
   );
   const results = $derived(query.trim() ? typed : defaultResults);
 
-  /** For when geolocation is denied or absent and nothing has been typed yet. */
-  let manualRegion = $state('');
+  /**
+   * For when geolocation is denied or absent and nothing has been typed yet.
+   *
+   * Starts undefined, not '': the picker is in the prerendered page and can be used before the
+   * scripts arrive, and Svelte's select binding adopts the page's own choice at mount only when
+   * the bound value is undefined. Starting at '' put a region picked on a slow cell back to
+   * "Not now" the moment the page hydrated, and nothing loaded [audit 11.I].
+   */
+  let manualRegion = $state<string | undefined>(undefined);
   /*
    * From the embedded list, not from `figures`.
    *
@@ -412,7 +440,23 @@
     } catch {
       pending = null;
     }
-    if (pending) void open({ kind: 'mission', address: pending }, true);
+    /*
+     * On the next task, once the router has started and takes entries. A reload keeps the entry's
+     * history state while SvelteKit shows the root, so it is cleared first: otherwise the next Back
+     * stepped "back" into the screen that was open before the reload. Then the mission somebody
+     * left to sign on goes into history like any screen opened here.
+     */
+    setTimeout(() => {
+      try {
+        if (stack.length === 0) replaceState('', {});
+      } catch {
+        /* a router that has not started keeps the old entry; the mission still opens */
+      }
+      if (pending) void open({ kind: 'mission', address: pending }, true);
+    }, 0);
+    // Focus that arrived before the page hydrated fired no handler: lift for it now [audit 11.I].
+    const early = document.activeElement?.id;
+    if (early === 'lookup' || early === 'region-pick') lift();
 
     void import('$lib/components/grid/GridMap.svelte')
       .then((m) => (GridMap = m.default))
@@ -629,9 +673,11 @@
               {:else if top.kind === 'yours'}
                 <screens.YoursScreen
                   {now}
-                  open={openSet}
+                  open={missionsKnown ? openSet : undefined}
+                  unread={unreadSet}
                   onopen={(address) => open({ kind: 'mission', address })}
                   onreport={(address) => open({ kind: 'report', address })}
+                  onreports={(address) => open({ kind: 'reports', address })}
                 />
               {:else if top.kind === 'report'}
                 <screens.ReportScreen address={top.address} {now} ondone={back} />
@@ -642,8 +688,16 @@
                 {@const m = active.find((x) => x.address === address)}
                 {#if m}
                   <screens.MissionPage mission={m} {now} open={openSet} asOf={feed.status === 'cached' ? feed.at : null} onreports={() => open({ kind: 'reports', address })} />
+                {:else if missionsUnloaded}
+                  <!-- The key's own words for the same failure: "Loading" here never ended [audit 11.I]. -->
+                  <strong class="screen-unloaded" data-mission-unloaded>Missions not loaded — they need one visit with a connection</strong>
                 {:else if feed.status === 'connecting'}
                   <Readout value="Loading" tone="cold" />
+                {:else if feed.status === 'unavailable'}
+                  <!-- No relay answered and nothing is remembered: whether it is open is not known, and is not "gone". -->
+                  <Panel label="Mission" post="Unknown">
+                    <Slot k="Open"><Readout value="Unknown" tone="cold" sub="neither The Record nor its mirror can be reached" /></Slot>
+                  </Panel>
                 {:else}
                   <!-- It ended, or was closed, while open here: said, not left blank. -->
                   {@const why = refused.find((r) => r.address === address)?.because}
@@ -664,7 +718,8 @@
         {:else}
   <div class="nc-bridge">
     {#if operator}
-      <Panel label="Yours" post={holding > 0 ? `${holding} held` : null}>
+      <!-- A fixed slot: it reads "nothing claimed" rather than coming and going [com.md §7]. -->
+      <Panel label="Yours" post={holding > 0 ? `${holding} held` : 'nothing claimed'}>
         <button type="button" class="yours-open" data-yours onclick={() => open({ kind: 'yours' })}>
           Your missions
         </button>
@@ -679,6 +734,7 @@
         placeholder="a shelter, a clinic, a city…"
         autocomplete="off"
         onfocus={lift}
+        oninput={lift}
       />
       {#if results.length > 0}
         <ul class="nc-results">
@@ -1014,7 +1070,8 @@
     align-items: center;
     justify-content: center;
     width: 100%;
-    min-height: 2.25rem;
+    /* The terminal's thumb floor, like everything else Com is moved with [tokens.css; audit 11.I]. */
+    min-height: 3rem;
     padding: 0;
     background: transparent;
     border: 0;
@@ -1052,8 +1109,11 @@
   }
 
   /* Com on a wide screen: a sidebar beside the map, all of it showing, no heights. At the inline
-     end, so a right-to-left page gets its mirror image rather than a sidebar on the wrong side. */
-  @media (min-width: 48rem) {
+     end, so a right-to-left page gets its mirror image rather than a sidebar on the wrong side.
+     And on a phone held sideways: a fixed peek is most of a short screen, so the heights inverted —
+     half came out shorter than peek — and the sheet covered the map's own controls at every height
+     [audit 11.I]. A short, wide screen has room beside the map, not beneath it. */
+  @media (min-width: 48rem), (orientation: landscape) and (max-height: 30rem) {
     .com {
       inset-block: 0;
       inset-inline: auto 0;
@@ -1098,10 +1158,11 @@
   }
   .com-head .signature {
     position: static;
+    min-height: 3rem;
   }
   .com-head .back {
     flex: none;
-    min-height: 2.75rem;
+    min-height: 3rem;
     padding: 0 0.9rem;
     margin-inline-start: 0.75rem;
     border: 1px solid var(--t-line);
@@ -1142,7 +1203,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    min-height: 2.75rem;
+    min-height: 3rem;
     padding: 0 0.6rem;
     margin-inline-start: -0.6rem;
     border: 1px solid transparent;

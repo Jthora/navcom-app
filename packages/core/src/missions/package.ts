@@ -152,6 +152,8 @@ export type MissionReading =
 export const EFFECT_LINE_MAX = 200;
 /** What an objective id may be, for the same reason: a report names objectives by these. */
 export const OBJECTIVE_ID = /^\S{1,200}$/;
+/** How long a package's `d` may be, for the same reason: a claim and a report name the package by it. */
+export const D_TAG_MAX = 256;
 
 const tag = (e: Event, name: string) => e.tags.find((t) => t[0] === name)?.[1];
 const tags = (e: Event, name: string) => e.tags.filter((t) => t[0] === name).map((t) => t[1] ?? '');
@@ -164,7 +166,7 @@ const DISTRESS_KINDS = /^2091[0-4]$/;
 const JURISDICTION = /^[a-z]{2}(-[a-z0-9]{1,3})?$/;
 /** Words that make a line of `effect` a count of people. Deliberately plain. */
 const PEOPLE = /\b(people|persons?|individuals?|residents|clients|guests)\b/i;
-const D_TAG = /^\S{1,256}$/;
+const D_TAG = new RegExp(`^\\S{1,${D_TAG_MAX}}$`);
 /** 2100-01-01, in unix seconds: no field mission is planned further out than this. */
 const LAST_END = 4_102_444_800;
 
@@ -177,9 +179,22 @@ function takingPartOf(e: Event): Mission['takingPart'] {
   return count(operators) && count(agents) ? { operators, agents } : null;
 }
 
+/**
+ * Where a package is filed, from every `jurisdiction` tag it carries [audit 11, second grid]. The
+ * most specific wins — Mecha Jono writes the country and then the state, and the first tag alone
+ * filed a state's mission under the whole country. Two that disagree (two states, or a state and
+ * another country) file it nowhere rather than guess: a mission with no place is still a mission.
+ */
+function jurisdictionOf(e: Event): string | null {
+  const codes = [...new Set(tags(e, 'jurisdiction').map((v) => v.toLowerCase()).filter((v) => JURISDICTION.test(v)))];
+  if (new Set(codes.map((c) => c.split('-')[0])).size !== 1) return null;
+  const subdivisions = codes.filter((c) => c.includes('-'));
+  if (subdivisions.length > 1) return null;
+  return subdivisions[0] ?? codes[0]!;
+}
+
 function placementOf(e: Event): MissionPlacement {
-  const raw = tag(e, 'jurisdiction')?.toLowerCase() ?? null;
-  const jurisdiction = raw && JURISDICTION.test(raw) ? raw : null;
+  const jurisdiction = jurisdictionOf(e);
 
   const geo = tag(e, 'geo');
   const kind = tag(e, 'geo_kind');
