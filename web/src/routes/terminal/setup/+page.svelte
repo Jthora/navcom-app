@@ -7,6 +7,7 @@
   import { ContactError, clearContact, loadContact, saveContact } from '$lib/terminal/contact';
   import { createIdentity, loadIdentity, setCallsign } from '$lib/terminal/identity';
   import { askToKeep } from '$lib/terminal/persist';
+  import { backTo, pendingMission, type PendingMission } from '$lib/missions/pending';
   import { Slot, Readout, Why } from '$lib/components/panel';
   import { onMount } from 'svelte';
 
@@ -26,6 +27,8 @@
   let contactNumber = $state('');
   let contact = $state<ReturnType<typeof loadContact>>(null);
   let identity = $state<ReturnType<typeof loadIdentity>>(null);
+  /** The mission somebody came here from to take part, so this screen can take them back [finding 47]. */
+  let leftMission = $state<PendingMission | null>(null);
   let configured = $state(false);
   /** Lines of the watch as saved that this page will not dial, each with why. */
   let refused = $state<Refused[]>([]);
@@ -99,6 +102,7 @@
 
   onMount(() => {
     identity = loadIdentity();
+    leftMission = pendingMission();
     renamed = identity?.callsign ?? '';
     contact = loadContact();
     if (contact) {
@@ -304,6 +308,12 @@
     <Slot k="Callsign">
       <Readout value={identity.callsign ?? '—'} verbatim tone="good" sub="{identity.pubkey.slice(0, 16)}…" />
     </Slot>
+    {#if leftMission}
+      <!-- The callsign was the only thing the mission asked for, so the way back is the next thing here. -->
+      <a class="nc-act" data-act data-back-to-mission href="/" data-sveltekit-reload>
+        <span class="nc-act-label">{backTo(leftMission)}</span>
+      </a>
+    {/if}
     <p class="note">
       <strong>There is no recovery.</strong> Lose this device and you lose this identity.
     </p>

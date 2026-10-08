@@ -23,6 +23,7 @@
   } from '$lib/console/types';
   import { locateOnce, nearest, type Fix } from '$lib/console/position-once';
   import { get, set } from '$lib/terminal/storage';
+  import { forgetMission, pendingMission } from '$lib/missions/pending';
   import type { Feed } from '$lib/missions/live';
   import type GridMapType from '$lib/components/grid/GridMap.svelte';
 
@@ -432,14 +433,8 @@
      * Somebody left a mission to sign on so they could take part [TakePart.svelte]: now that there
      * is somebody on this device, the mission they chose opens again, once.
      */
-    let pending: string | null = null;
-    try {
-      pending = sessionStorage.getItem('navcom.pending-mission');
-      if (pending && get('accruing', 'secret')) sessionStorage.removeItem('navcom.pending-mission');
-      else pending = null;
-    } catch {
-      pending = null;
-    }
+    let pending = get('accruing', 'secret') ? (pendingMission()?.address ?? null) : null;
+    if (pending) forgetMission();
     /*
      * On the next task, once the router has started and takes entries. A reload keeps the entry's
      * history state while SvelteKit shows the root, so it is cleared first: otherwise the next Back

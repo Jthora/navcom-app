@@ -16,6 +16,7 @@
   import { notes } from '$lib/terminal/notes';
   import * as standing from '$lib/terminal/standing';
   import { loadIdentity } from '$lib/terminal/identity';
+  import { backTo, pendingMission, type PendingMission } from '$lib/missions/pending';
   import { corruptTiers } from '$lib/terminal/storage';
   import { offline } from '$lib/terminal/offline.svelte';
   import { readClock, type ClockRead } from '$lib/terminal/clock';
@@ -58,6 +59,8 @@
   /** A backup named a watch and the operator has not yet added or forgotten it. */
   let offered = $state(false);
   let identity = $state<ReturnType<typeof loadIdentity>>(null);
+  /** A mission somebody left to take a callsign: once they have one, the way back is the lit action. */
+  let leftMission = $state<PendingMission | null>(null);
   let damaged = $state(false);
   /** The `20911` this device was paged about, if it arrived through a notification. */
   let ackId = $state<string | null>(null);
@@ -142,6 +145,7 @@
     stranded = configured ? null : storedWatch();
     offered = !configured && !stranded && offeredWatch() !== null;
     identity = loadIdentity();
+    leftMission = pendingMission();
     damaged = corruptTiers().length > 0;
     const all = notes();
     waiting = Object.keys(all).length;
@@ -461,6 +465,11 @@
       </span>
     {:else if !identity}
       <Action label="Choose a callsign" tone="warn" href="/terminal/setup/" />
+    {:else if leftMission && !session}
+      <!-- They came here to take part in a mission, not to go out: that is the thing this post does now. -->
+      <span data-back-to-mission data-sveltekit-reload>
+        <Action label={backTo(leftMission)} tone="warn" href="/" />
+      </span>
     {:else if session}
       <Action
         label={operator.busy ? '…' : 'Check in'}
@@ -1075,10 +1084,13 @@
   </section>
 {/if}
 
-{#if identity}
-  <!-- Everything that is not the lit action. Two taps from anywhere, and not a button large
-       enough to hit while putting the phone in a pocket. -->
-  <nav class="nc-rail" data-rail="all">
+<!-- Everything that is not the lit action. Two taps from anywhere, and not a button large
+     enough to hit while putting the phone in a pocket. The map comes first and is prerendered,
+     callsign or none: missions are what the app is for, and an installed app has no address bar
+     to find it with [finding 35]. -->
+<nav class="nc-rail" data-rail="all">
+  <a href="/" data-sveltekit-reload data-map-link>Missions and the map</a>
+  {#if identity}
     <a href="/terminal/watch/">Watch</a>
     <a href="/terminal/resupply/">Resupply</a>
     <a href="/terminal/peers/">Peers</a>
@@ -1092,8 +1104,8 @@
     <a href="/terminal/funding/">Support</a>
     <a href="/terminal/on-call/">On call</a>
     <a href="/terminal/setup/">Setup</a>
-  </nav>
-{/if}
+  {/if}
+</nav>
 
 <section class="nc-panel" data-home-screen>
   <header class="nc-panel-head">

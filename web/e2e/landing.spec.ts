@@ -551,28 +551,45 @@ test.describe('the landing page: missions you can open', () => {
     expect(results.violations.map((v) => v.id)).toEqual([]);
   });
 
-  test('signed out, taking part asks for sign-on first, and the mission waits for them', async ({ page }) => {
+  test('signed out, taking part asks for a callsign first, and a control takes them back to the mission', async ({ page }) => {
     await withHeat(page);
     await page.locator('[data-missions="open"]').click();
     await page.locator(`[data-mission="${HEAT_D}"]`).click();
     const signon = page.locator('[data-signon]');
-    await expect(signon).toContainText('Sign on to take part');
+    // By the word the terminal uses for it: "Sign on" there starts a patrol [finding 51].
+    await expect(signon).toContainText('Choose a callsign to take part');
     await signon.click();
-    await page.waitForURL('**/terminal/**');
-    // The mission they chose is remembered for when they come back signed on.
-    const pending = await page.evaluate(() => sessionStorage.getItem('navcom.pending-mission'));
-    expect(pending).toContain(HEAT_D);
-    // And it does open again once somebody is signed on. Only the browser's Back leads there today:
-    // no control in the terminal goes back to the map [audit 11.I/11.S, left to the terminal].
-    await page.getByRole('link', { name: /choose a callsign/i }).click();
+    await page.waitForURL('**/terminal/setup/');
     await page.locator('#callsign').fill('kestrel');
     await page.getByRole('button', { name: /generate keypair/i }).click();
     await expect(page.locator('#rename')).toBeVisible();
-    for (let i = 0; i < 4 && new URL(page.url()).pathname !== '/'; i++) await page.goBack();
-    expect(new URL(page.url()).pathname).toBe('/');
+    // Controls only, never the browser's Back: an installed app on iOS has none [findings 35, 47].
+    const back = page.locator('[data-back-to-mission]');
+    await expect(back).toContainText('Back to Heat relief');
+    await back.click();
+    await page.waitForURL((u) => u.pathname === '/');
     await expect(page.locator(`[data-screen="mission"][data-mission="${HEAT_D}"]`)).toBeVisible({ timeout: 15_000 });
     await expect(page.getByRole('button', { name: 'Take part' })).toBeVisible();
     expect(await page.evaluate(() => sessionStorage.getItem('navcom.pending-mission'))).toBeNull();
+  });
+
+  test('Status takes somebody who left a mission back to it, and always leads to the map', async ({ page }) => {
+    await withHeat(page);
+    await page.locator('[data-missions="open"]').click();
+    await page.locator(`[data-mission="${HEAT_D}"]`).click();
+    await page.locator('[data-signon]').click();
+    await page.waitForURL('**/terminal/setup/');
+    await page.locator('#callsign').fill('kestrel');
+    await page.getByRole('button', { name: /generate keypair/i }).click();
+    await expect(page.locator('#rename')).toBeVisible();
+    await page.getByRole('link', { name: /status/i }).first().click();
+    await page.waitForURL((u) => u.pathname === '/terminal/');
+    // The one lit action is the way back, ahead of Sign on, which would start a patrol.
+    await expect(page.locator('[data-back-to-mission]')).toContainText('Back to Heat relief');
+    await expect(page.getByRole('link', { name: 'Sign on', exact: true })).toHaveCount(0);
+    await expect(page.locator('[data-map-link]')).toHaveAttribute('href', '/');
+    await page.locator('[data-back-to-mission] a').click();
+    await expect(page.locator(`[data-screen="mission"][data-mission="${HEAT_D}"]`)).toBeVisible({ timeout: 15_000 });
   });
 
   test('with no relay reachable and nothing remembered, a mission reads unknown, never gone [invariant 7]', async ({ page }) => {

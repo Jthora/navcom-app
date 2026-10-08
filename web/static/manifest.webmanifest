@@ -1,8 +1,9 @@
 {
   "name": "NavCom Field Terminal",
   "short_name": "NavCom",
+  "id": "/terminal/",
   "start_url": "/terminal/",
-  "scope": "/terminal/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0B0E12",

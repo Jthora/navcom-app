@@ -17,6 +17,7 @@
   import type { Mission } from '@navcom/core';
   import { Action, Readout, Slot } from '$lib/components/panel';
   import { MAY_HAVE_ARRIVED, claimAgain, held, letGo, refusal, takePart, unreleased, type Visibility } from '$lib/missions/claims';
+  import { rememberMission } from '$lib/missions/pending';
   import { endsIn, releaseReadout } from './format';
 
   let { mission: m, now, open }: { mission: Mission; now: number; open?: ReadonlySet<string> } = $props();
@@ -119,13 +120,9 @@
       version += 1;
     }
   }
-  /** So the mission reopens after sign-on, on the landing page, once there is somebody to take part. */
+  /** So the terminal can take them back, and the mission reopens once there is somebody to take part. */
   function remember() {
-    try {
-      sessionStorage.setItem('navcom.pending-mission', m.address);
-    } catch {
-      /* private window: they find it again on the map */
-    }
+    rememberMission(m.address, m.title);
   }
 </script>
 
@@ -148,8 +145,9 @@
       <button type="button" data-letgo disabled={sending} onclick={release}>Let it go</button>
     </div>
   {:else if why === 'signed-out'}
-    <a class="nc-act" data-act data-signon href="/terminal/" data-sveltekit-reload onclick={remember}>
-      <span class="nc-act-label">Sign on to take part</span>
+    <!-- What it asks for, by the word the terminal uses: "Sign on" there starts a patrol [finding 51]. -->
+    <a class="nc-act" data-act data-signon href="/terminal/setup/" data-sveltekit-reload onclick={remember}>
+      <span class="nc-act-label">Choose a callsign to take part</span>
     </a>
   {:else if why === 'ended'}
     <Readout value="Ended" tone="cold" />
