@@ -348,7 +348,14 @@ contract described; it stays valid.
 
 **Sealed to you, if the operator chooses** (PROPOSED, Q14). Like a claim, a report may be sealed to
 the poster and sent to your kind-`10050` relays. It still settles: your `settled` label names the id
-inside the seal, which tells nobody else who wrote it. Privacy must not cost an operator recognition.
+inside the seal. Privacy must not cost an operator recognition.
+
+**A sealed report carries a `salt`** (since 2026-10-07): 32 lowercase hex characters in its content,
+beside `callsign` and `date`, and never in an open report — please refuse an open report that has
+one, and a sealed one whose salt is not that shape. Without it the id inside the seal was a hash of
+things anyone can guess (a card's key and callsign, a day, the objectives, a second near your
+`settled` label), and a reader holding the public cards found the author of a sealed report in a
+tenth of a second. With it, your label names the report to you and to nobody else.
 
 **Reports will arrive late, on purpose** (DESIGNED). The client is to refuse same-day publication
 by default and warn before a second report in one region inside a short window. That is a privacy control: a report

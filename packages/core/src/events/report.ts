@@ -21,6 +21,7 @@
  * id, which tells nobody else who wrote it.
  */
 import { finalizeEvent, verifyEvent } from 'nostr-tools/pure';
+import { bytesToHex, randomBytes } from '@noble/hashes/utils';
 import type { Event } from 'nostr-tools/core';
 import { KIND_REPORT } from './kinds.js';
 import { DOES, DOES_MAX } from './profile.js';
@@ -148,8 +149,19 @@ export function buildSealedReport(contactSecret: Uint8Array, r: Report, createdA
   const poster = r.mission ? posterOf(r.mission.address) : null;
   if (!poster) throw new ReportError('Only a mission report can be sealed, to the mission’s poster.');
   const { content, tags } = checkReport(r, createdAt);
-  return sealToPoster(contactSecret, poster, { kind: KIND_REPORT, created_at: createdAt, content, tags });
+  /*
+   * A salt, because the poster settles a sealed report in public by the id inside the seal, and
+   * without one that id is a hash of things a reader can guess: a card's key and callsign, a day,
+   * the mission's objectives and a second near the settlement. One guess per card and objective
+   * set found the author in a tenth of a second [audit 11.S]. With 128 random bits the id names the
+   * report to the poster and to nobody else.
+   */
+  const salted = JSON.stringify({ ...JSON.parse(content), salt: bytesToHex(randomBytes(16)) });
+  return sealToPoster(contactSecret, poster, { kind: KIND_REPORT, created_at: createdAt, content: salted, tags });
 }
+
+/** The salt a sealed report carries, and only a sealed one. */
+const SALT = /^[0-9a-f]{32}$/;
 
 export interface PublishedReport {
   id: string;
@@ -176,7 +188,10 @@ export function readReport(event: unknown, opts: { signed?: boolean } = {}): Pub
   }
   if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const c = raw as Record<string, unknown>;
-  for (const key of Object.keys(c)) if (!(REPORT_FIELDS as readonly string[]).includes(key)) return null;
+  // A salt belongs inside a seal and nowhere else: an open report carrying one is refused.
+  const sealed = opts.signed === false;
+  if ('salt' in c && (!sealed || typeof c.salt !== 'string' || !SALT.test(c.salt))) return null;
+  for (const key of Object.keys(c)) if (key !== 'salt' && !(REPORT_FIELDS as readonly string[]).includes(key)) return null;
   for (const t of e.tags) if (t[0] !== 'a' && t[0] !== 'ask') return null;
 
   const a = e.tags.filter((t) => t[0] === 'a').map((t) => t[1] ?? '');

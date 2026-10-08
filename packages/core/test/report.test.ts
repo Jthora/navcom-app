@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { finalizeEvent, generateSecretKey, getPublicKey, verifyEvent } from 'nostr-tools/pure';
+import { finalizeEvent, generateSecretKey, getEventHash, getPublicKey, verifyEvent } from 'nostr-tools/pure';
 import * as nip44 from 'nostr-tools/nip44';
 import {
   CHALLENGE_WINDOW_SECONDS,
@@ -156,6 +156,38 @@ describe('a report for the poster alone', () => {
 
   it('cannot be sealed without a mission, which is where its poster comes from', () => {
     expect(() => buildSealedReport(contact, { callsign: 'Kestrel', date: '2026-10-07', does: ['supplies'] }, NOW)).toThrow(/mission/);
+  });
+
+  /*
+   * The poster settles a sealed report in public by the id inside the seal. Unsalted, that id is a
+   * hash of a card's key and callsign, a day, the objectives and a second, and a reader holding
+   * every card found the author in a tenth of a second [audit 11.S].
+   */
+  it('names its report by an id nobody can rebuild from the report: the same report sealed twice gets two ids', () => {
+    const again = buildSealedReport(contact, missionReport(), NOW);
+    expect(again.inner).not.toBe(inner);
+    const open = (w: typeof wrap) => {
+      const seal = JSON.parse(nip44.decrypt(w.content, nip44.getConversationKey(posterSecret, w.pubkey)));
+      return JSON.parse(nip44.decrypt(seal.content, nip44.getConversationKey(posterSecret, seal.pubkey)));
+    };
+    const rumor = open(wrap);
+    expect(JSON.parse(rumor.content).salt).toMatch(/^[0-9a-f]{32}$/);
+    // Rebuilt from what a reader can guess, with every field the same but the salt, it is not the id.
+    const { salt: _salt, ...guessable } = JSON.parse(rumor.content);
+    const guessed = getEventHash({ ...rumor, content: JSON.stringify(guessable) });
+    expect(guessed).not.toBe(inner);
+  });
+
+  it('carries its salt only inside a seal: an open report with one, or a seal with a bad one, is refused', () => {
+    const openOne = buildReport(contact, missionReport(), NOW);
+    const salted = finalizeEvent(
+      { kind: openOne.kind, created_at: openOne.created_at, tags: openOne.tags, content: JSON.stringify({ ...JSON.parse(openOne.content), salt: 'a'.repeat(32) }) },
+      contact
+    );
+    expect(readReport(salted)).toBeNull();
+    const seal = JSON.parse(nip44.decrypt(wrap.content, nip44.getConversationKey(posterSecret, wrap.pubkey)));
+    const rumor = JSON.parse(nip44.decrypt(seal.content, nip44.getConversationKey(posterSecret, seal.pubkey)));
+    expect(readReport({ ...rumor, content: JSON.stringify({ ...JSON.parse(rumor.content), salt: 'not hex' }) }, { signed: false })).toBeNull();
   });
 });
 
