@@ -16,7 +16,7 @@
 
 import { DEFAULT_RELAYS } from '@navcom/core';
 import { get, set } from './storage';
-import { loadConfig } from './config';
+import { watchRelayList } from './watch-relays';
 import { refusedOf, usable, type Refused } from './relay-url';
 
 /**
@@ -40,7 +40,7 @@ const FIELD = 'relays_own';
  * the public roster and from the maintainer's intake. Missions had already been fixed the same way.
  */
 export function relays(): string[] {
-  const watch = loadConfig()?.relays ?? [];
+  const watch = watchRelayList() ?? [];
   const own = usable(savedOwnRelays());
   return usable([...watch, ...(own.length ? own : DEFAULT_RELAYS)]);
 }
@@ -59,7 +59,7 @@ export function missionRelays(): string[] {
  * answers stay here — widening them would put a privately relayed watch's state on public relays.
  */
 export function watchRelays(): string[] {
-  return loadConfig()?.relays ?? relays();
+  return watchRelayList() ?? relays();
 }
 
 /**

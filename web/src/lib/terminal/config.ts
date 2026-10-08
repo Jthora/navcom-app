@@ -16,6 +16,7 @@ import { isPubkey } from '@navcom/core';
 import { clearField, get, set } from './storage';
 import { refusedOf, usable, whyNotReachable, type Refused } from './relay-url';
 import { WatchCodeError, escalationOf, parseWatchCode } from './watch-code';
+import { savedWatch, strings } from './watch-relays';
 
 export interface WatchtowerConfig {
   pubkey: string;
@@ -63,8 +64,6 @@ export interface StoredWatch extends WatchtowerConfig {
  */
 const ESCALATION = 'watch_escalation';
 
-const strings = (v: unknown): string[] =>
-  Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
 
 /**
  * The watch this phone was given, whether or not this page can reach any of its relays.
@@ -76,9 +75,9 @@ const strings = (v: unknown): string[] =>
  * [audit: relay paths, review]. Kept, and the refused lines named, so it can be fixed in one edit.
  */
 export function storedWatch(): StoredWatch | null {
-  const pubkey = get<unknown>('accruing', 'watchtower');
-  if (typeof pubkey !== 'string' || !pubkey) return null;
-  const lines = strings(get<unknown>('accruing', 'relays'));
+  const saved = savedWatch();
+  if (!saved) return null;
+  const { pubkey, lines } = saved;
   const escalation = escalationOf(get<unknown>('accruing', ESCALATION), pubkey);
   return {
     pubkey,

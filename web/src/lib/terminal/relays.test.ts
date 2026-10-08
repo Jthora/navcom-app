@@ -19,6 +19,8 @@ import {
   watchRelays
 } from './relays';
 import { set } from './storage';
+import { loadConfig } from './config';
+import { watchRelayList } from './watch-relays';
 import { operatorRelays } from '$lib/missions/claims';
 
 beforeEach(() => {
@@ -150,6 +152,24 @@ describe('where mission traffic goes [audit: relay paths, review]', () => {
     for (const arrange of arrangements) {
       arrange();
       expect(missionRelays()).toEqual(operatorRelays());
+    }
+  });
+});
+
+describe('the watch’s relays, read without its escalation key [budget: public roster]', () => {
+  it('are exactly what the whole watch reads', () => {
+    const cases: [unknown, unknown][] = [
+      [undefined, undefined],
+      ['f'.repeat(64), ['wss://watch.example', 'wss://two.example']],
+      ['f'.repeat(64), []],
+      ['f'.repeat(64), ['not a relay', 42, 'wss://watch.example']],
+      ['f'.repeat(64), ['http://nope.example']],
+      ['', ['wss://watch.example']]
+    ];
+    for (const [watchtower, list] of cases) {
+      set('accruing', 'watchtower', watchtower);
+      set('accruing', 'relays', list);
+      expect(watchRelayList(), JSON.stringify([watchtower, list])).toEqual(loadConfig()?.relays ?? null);
     }
   });
 });
