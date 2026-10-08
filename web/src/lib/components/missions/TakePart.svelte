@@ -41,8 +41,18 @@
     return refusal(m, t, open);
   });
 
+  /**
+   * When the two choices appeared. A tap this soon after is the rest of the gesture that opened
+   * them -- a double tap, or a tap that lands as the screen changes -- not a choice of who sees it,
+   * and what it would publish cannot be recalled [audit 11.S]. Measured on the monotonic clock: a
+   * wall clock can be stepped back by a time correction, which would hold the choices shut.
+   */
+  let shownAt = 0;
+  const SETTLE_MS = 400;
+
   /** Whatever happens, the buttons come back: a throw left every one disabled with nothing said [11.E]. */
   async function take(visibility: Visibility) {
+    if (performance.now() - shownAt < SETTLE_MS) return;
     sending = true;
     error = null;
     try {
@@ -119,7 +129,7 @@
       </button>
     </div>
   {:else}
-    <Action label="Take part" onfire={() => (choosing = true)} />
+    <Action label="Take part" onfire={() => ((choosing = true), (shownAt = performance.now()))} />
   {/if}
   {#if error}
     <Readout value={error.startsWith('It was sent') ? 'Sent' : 'Not sent'} tone="warn" sub={error} />

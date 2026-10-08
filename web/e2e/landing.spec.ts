@@ -5,6 +5,13 @@ import { finalizeEvent, generateSecretKey } from 'nostr-tools/pure';
 import { blankDevice, open, seedDevice } from './device';
 
 /**
+ * A person's deliberate tap on a visibility choice comes well after the tap that opened it. The
+ * choices ignore a tap in their first 400 ms, which belongs to the gesture that opened them -- a
+ * double tap would otherwise publish to everyone [audit 11.S] -- so a test waits as a person does.
+ */
+const settle = (page: Page) => page.waitForTimeout(450);
+
+/**
  * The landing page's map, on the phone this project is built for [build-order 11.2, 11.3].
  *
  * The unit tests prove the geometry decodes. They cannot prove a canvas draws anything — Path2D
@@ -572,6 +579,7 @@ test.describe('the landing page: missions you can open', () => {
       expect(await b.evaluate((el) => el === document.activeElement)).toBe(false);
     }
 
+    await settle(page);
     await open.click();
     const you = page.locator('[data-slot="you"]');
     await expect(you).toContainText('Taking part');
@@ -590,11 +598,42 @@ test.describe('the landing page: missions you can open', () => {
     await expect(page.getByRole('button', { name: 'Take part' })).toBeVisible();
   });
 
+  test('a tap on Take part opens the choice and publishes nothing, and the sealed choice is reachable by touch [audit 11.S]', async ({ page }) => {
+    // The act fired on the press, so the choices appeared under the finger and the same tap's
+    // click landed on "Everyone": an open claim nobody chose, and no way to reach the sealed one.
+    await withHeat(page, { __noStorage: false, callsign: 'kestrel' });
+    await page.locator('[data-missions="open"]').click();
+    await page.locator(`[data-mission="${HEAT_D}"]`).click();
+    await page.getByRole('button', { name: 'Take part' }).tap();
+    await expect(page.locator('[data-visibility="sealed"]')).toBeVisible();
+    const claims = () =>
+      page.evaluate(
+        () => ((globalThis as unknown as { __navcomPublished?: { kind: number }[] }).__navcomPublished ?? []).filter((e) => e.kind === 1985).length
+      );
+    expect(await claims(), 'the tap that opened the choice published a claim').toBe(0);
+    // A second tap straight after is the same gesture, not a choice.
+    await page.locator('[data-visibility="open"]').tap();
+    expect(await claims(), 'a double tap chose Everyone').toBe(0);
+    await settle(page);
+    await page.locator('[data-visibility="sealed"]').tap();
+    await expect(page.locator('[data-takepart]')).toContainText('has not said where they take sealed messages');
+  });
+
+  test('Take part answers a keyboard, which never sends a press [audit 11.I]', async ({ page }) => {
+    await withHeat(page, { __noStorage: false, callsign: 'kestrel' });
+    await page.locator('[data-missions="open"]').click();
+    await page.locator(`[data-mission="${HEAT_D}"]`).click();
+    await page.getByRole('button', { name: 'Take part' }).focus();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('[data-visibility="open"]')).toBeVisible();
+  });
+
   test('a private claim with no inbox to send it to says nothing was sent', async ({ page }) => {
     await withHeat(page, { __noStorage: false, callsign: 'kestrel' });
     await page.locator('[data-missions="open"]').click();
     await page.locator(`[data-mission="${HEAT_D}"]`).click();
     await page.getByRole('button', { name: 'Take part' }).click();
+    await settle(page);
     await page.locator('[data-visibility="sealed"]').click();
     await expect(page.locator('[data-takepart]')).toContainText('Not sent');
     await expect(page.locator('[data-takepart]')).toContainText('has not said where they take sealed messages');
@@ -608,6 +647,7 @@ test.describe('the landing page: missions you can open', () => {
     await page.locator('[data-missions="open"]').click();
     await page.locator(`[data-mission="${HEAT_D}"]`).click();
     await page.getByRole('button', { name: 'Take part' }).click();
+    await settle(page);
     await page.locator('[data-visibility="open"]').click();
     await expect(page.locator('[data-slot="you"]')).toContainText('Taking part');
 
@@ -641,6 +681,7 @@ test.describe('the landing page: missions you can open', () => {
     await report.locator('[data-day]').selectOption({ index: 1 });
     await report.locator('[data-ask]').first().check();
     await report.getByRole('button', { name: 'Send report' }).click();
+    await settle(page);
     await report.locator('[data-visibility="open"]').click();
 
     // Back on your missions: sent, and waiting for its seven days.
@@ -688,6 +729,7 @@ test.describe('the landing page: missions you can open', () => {
     await page.locator('[data-missions="open"]').click();
     await page.locator(`[data-mission="${HEAT_D}"]`).click();
     await page.getByRole('button', { name: 'Take part' }).click();
+    await settle(page);
     await page.locator('[data-visibility="open"]').click();
     await expect(page.locator('[data-slot="you"]')).toContainText('Taking part');
 

@@ -15,6 +15,15 @@
    * and again on distress. This is the one implementation, so those two can be converted onto
    * it rather than a third being written. A second implementation of a rule is how the two
    * drift apart.
+   *
+   * ## Tap
+   *
+   * An ordinary tap acts on the click, not the press. It acted on the press, so whatever the
+   * press put on the screen was under the finger when the same tap's click arrived: "Take part"
+   * opened the two visibility choices, and the click landed on "Everyone", publishing an open claim
+   * the operator never chose -- and by touch, the sealed choice could not be reached at all. A
+   * click is also what a keyboard, a switch and a screen reader send; a press never was [audit
+   * 11.S]. The haptic pulse stays on the press, where the hand is.
    */
   import { onDestroy } from 'svelte';
   import { pulse } from '$lib/terminal/haptic';
@@ -72,9 +81,8 @@
   function press() {
     if (disabled) return;
     if (!hold) {
-      // Confirmation of the press, in the moment of the press.
+      // Confirmation of the press, in the moment of the press. The act itself waits for the click.
       pulse('tap');
-      onfire?.();
       return;
     }
     pulse('tap');
@@ -121,6 +129,7 @@
     {disabled}
     style="--fill: {fill}"
     onpointerdown={press}
+    onclick={() => !hold && !disabled && onfire?.()}
     onpointerup={() => hold && release()}
     onpointerleave={() => hold && release()}
     onpointercancel={() => hold && release()}

@@ -50,9 +50,14 @@
     return { date, asks, counts: out };
   }
 
+  /** When the choices appeared: a tap this soon after belongs to the gesture that opened them [audit 11.S]. */
+  let shownAt = 0;
+  const SETTLE_MS = 400;
+
   async function send(visibility: Visibility, anyway = false) {
     // One report per tap: a second tap while the first is on its way sent the work twice [11.X].
     if (!m || phase === 'sending') return;
+    if (!anyway && performance.now() - shownAt < SETTLE_MS) return;
     chosen = visibility;
     phase = 'sending';
     error = null;
@@ -126,7 +131,7 @@
         {:else if days.length === 0}
           <Readout value="No day left to report" tone="cold" sub="a report tells of the week before today, while the mission ran" />
         {:else if phase === 'editing'}
-          <Action label="Send report" disabled={!ready} onfire={() => (phase = 'choosing')} />
+          <Action label="Send report" disabled={!ready} onfire={() => ((phase = 'choosing'), (shownAt = performance.now()))} />
         {:else}
           <div class="nc-report-choices" role="group" aria-label="Who sees this report">
             <button type="button" data-visibility="open" disabled={phase === 'sending'} onclick={() => send('open')}>
