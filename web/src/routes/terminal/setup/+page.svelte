@@ -1,6 +1,8 @@
 <script lang="ts">
-  import { DEFAULT_RELAYS } from '@navcom/core';
+  import { DEFAULT_RELAYS, keyPrint } from '@navcom/core';
   import { ConfigError, forgetOfferedWatch, saveConfig, watchForm } from '$lib/terminal/config';
+  import { WatchCodeError, codeChanges, looksLikeWatchCode, parseWatchCode } from '$lib/terminal/watch-code';
+  import { canScan, scan, ScanError, type Scanner } from '$lib/terminal/scan';
   import type { Refused } from '$lib/terminal/relay-url';
   import { ContactError, clearContact, loadContact, saveContact } from '$lib/terminal/contact';
   import { createIdentity, loadIdentity, setCallsign } from '$lib/terminal/identity';
@@ -35,6 +37,65 @@
   let fromBackup = $state(false);
   /** The callsign field in the identity branch — a rename, not a second identity. */
   let renamed = $state('');
+  /**
+   * The escalation executor's key this phone keeps for its watch, as saved [G3]. Never a field: it
+   * arrives only in a watch code the watch signed, scanned or pasted, because a typed one is wrong
+   * often enough to leave a watch on the old rule without a word (`watch-code.ts`).
+   */
+  let savedExecutor = $state<string | null>(null);
+  /** When the watch signed the code that key came in. */
+  let savedExecutorAt = $state<number | null>(null);
+  /** The address of the watch saved here, so a code for it can be told from a code for another. */
+  let savedPubkey = $state<string | null>(null);
+  /** The relays and holders saved here, so what a code would change can be said before it is saved. */
+  let savedRelays = $state<string[]>([]);
+  let savedHolders = $state<string[]>([]);
+  /**
+   * What a watch code, or a backup, named for the watch it named: its escalation key or none, when
+   * the watch signed it, and the signed code itself, which is what a save keeps. A backup that named
+   * no key leaves nothing pending.
+   */
+  let pending = $state<{ pubkey: string; executor: string | null; executorAt: number | null; text: string } | null>(null);
+  /** The operator has said this code came from whoever runs the watch, where it changes the escalation key. */
+  let keyConfirmed = $state(false);
+  let codeText = $state('');
+  let codeError = $state<string | null>(null);
+  let scannable = $state(false);
+  let scanning = $state(false);
+  let camera = $state<HTMLVideoElement | null>(null);
+  let scanner: Scanner | null = null;
+
+  /** The watch the form holds now, as saving would read it. */
+  const formKey = $derived(pubkey.trim().toLowerCase());
+  /** The escalation key a save of this form keeps: one handed over for this watch, else the saved one. */
+  const pendingFor = $derived(pending && pending.pubkey === formKey ? pending : null);
+  /** The form is the watch saved here, edited. */
+  const sameWatch = $derived(configured && savedPubkey === formKey);
+  const shownExecutor = $derived(pendingFor ? pendingFor.executor : sameWatch ? savedExecutor : null);
+  const lines = (raw: string) => raw.split(/[\s,]+/).map((l) => l.trim()).filter(Boolean);
+  /**
+   * What saving this form, filled from a code, would change about the watch saved here: every line,
+   * and how the escalation key would change — added counting as much as replaced (`codeChanges`).
+   */
+  const changed = $derived(
+    pendingFor && sameWatch && savedPubkey
+      ? codeChanges(
+          { pubkey: savedPubkey, relays: savedRelays, holders: savedHolders, executor: savedExecutor, executorAt: savedExecutorAt },
+          { pubkey: formKey, relays: lines(relays), holders: lines(holders) },
+          pendingFor
+        )
+      : { key: null, older: false, lines: [] as string[] }
+  );
+  const keyChange = $derived(changed.key);
+  const olderCode = $derived(changed.older);
+  const changes = $derived(changed.lines);
+  /** The day the watch signed a code, as a date nobody can misread. */
+  const signedOn = (at: number | null) => (at === null ? null : new Date(at * 1000).toISOString().slice(0, 10));
+  /**
+   * A squad's members sign their own answers, so a squad needs no escalation key: only a box with
+   * neither is the watch on which anything holding the watch key can end a Distress.
+   */
+  const listsHolders = $derived(holders.split(/[\s,]+/).some((h) => h.trim() !== ''));
 
   onMount(() => {
     identity = loadIdentity();
@@ -65,8 +126,73 @@
       holders = w.holders.join('\n');
       refused = w.refused;
       reachable = w.reachable;
+      if (w.from === 'saved') {
+        savedExecutor = w.executor ?? null;
+        savedExecutorAt = w.executorAt ?? null;
+        savedPubkey = w.pubkey.toLowerCase();
+        savedRelays = [...w.relays];
+        savedHolders = w.holders.map((h) => h.toLowerCase());
+      }
+      // A backup's escalation key is kept when its watch is saved here, as a code's is: in the signed
+      // code it came in, which the save checks again.
+      else if (w.executor && w.escalation) {
+        pending = { pubkey: w.pubkey.toLowerCase(), executor: w.executor, executorAt: w.executorAt ?? null, text: w.escalation };
+      }
+    }
+    scannable = canScan();
+    // A watch code's link opens straight into the form, filled in: the camera on a phone with no
+    // scanner here opens it, as a pairing link opens the peers screen. Nothing is saved until the
+    // operator saves it.
+    const fromLink = location.hash.replace(/^#/, '');
+    if (looksLikeWatchCode(fromLink)) {
+      codeText = fromLink;
+      useCode();
     }
   });
+
+  /**
+   * Fills the watch form from a code: all of it, or nothing, with what is wrong said beside it. A
+   * code the watch did not sign, or naming an escalation key that is not a key, fills in nothing.
+   */
+  function useCode() {
+    codeError = null;
+    watchError = null;
+    try {
+      const code = parseWatchCode(codeText);
+      pubkey = code.pubkey;
+      relays = code.relays.join('\n');
+      holders = code.holders.join('\n');
+      // The saved watch's refused lines no longer describe what is in the field.
+      refused = [];
+      pending = { pubkey: code.pubkey, executor: code.executor ?? null, executorAt: code.issuedAt, text: code.text };
+      keyConfirmed = false;
+      codeText = '';
+    } catch (e) {
+      codeError = e instanceof WatchCodeError ? e.message : 'That watch code could not be read.';
+    }
+  }
+
+  async function startScan() {
+    if (!camera) return;
+    codeError = null;
+    scanning = true;
+    try {
+      scanner = await scan(camera);
+      codeText = await scanner.found;
+      useCode();
+    } catch (err) {
+      codeError = err instanceof ScanError ? err.message : 'Could not scan.';
+    } finally {
+      scanning = false;
+      scanner = null;
+    }
+  }
+
+  function stopScan() {
+    scanner?.stop();
+    scanner = null;
+    scanning = false;
+  }
 
   function makeIdentity(event: SubmitEvent) {
     event.preventDefault();
@@ -127,12 +253,26 @@
     event.preventDefault();
     error = null;
     watchError = null;
+    // Asked before it is saved, never after: the escalation key decides who can end this phone's Distress.
+    if (keyChange && !keyConfirmed) {
+      watchError = 'This code changes the escalation key. Say where it came from below before saving it.';
+      return;
+    }
     try {
-      const saved = saveConfig(pubkey, relays, holders);
+      // The signed code goes with the watch it named, and decides its escalation key; an edit with no
+      // code keeps the one saved for the same watch (`saveConfig`): never typed, so never dropped by an edit.
+      const saved = saveConfig(pubkey, relays, holders, pendingFor?.text ?? undefined);
       configured = true;
       notUpdated = false;
       refused = [];
       reachable = saved.relays.length;
+      savedExecutor = saved.executor ?? null;
+      savedExecutorAt = saved.executor ? (pendingFor?.executorAt ?? savedExecutorAt) : null;
+      savedPubkey = saved.pubkey;
+      savedRelays = [...saved.relays];
+      savedHolders = [...saved.holders];
+      pending = null;
+      keyConfirmed = false;
       // Saved by the operator's own hand, so the backup's offer has been answered.
       if (fromBackup) forgetOfferedWatch();
       fromBackup = false;
@@ -337,6 +477,21 @@
       would be a list of where operators are. Come back when somebody hands you one.
     </p>
   </Why>
+  <!-- The code first: it fills everything below, and it is the only way the escalation key arrives. -->
+  <div class="code" data-watch-code>
+    <label for="code">Watch code</label>
+    {#if scannable}
+      <button type="button" onclick={scanning ? stopScan : startScan}>
+        {scanning ? 'Stop' : 'Scan a watch code'}
+      </button>
+      <video bind:this={camera} class="camera" class:live={scanning} playsinline muted
+        aria-label="Camera, looking for a watch code"></video>
+    {/if}
+    <textarea id="code" bind:value={codeText} rows="2" autocomplete="off" spellcheck="false"
+      placeholder="paste the code or link you were given"></textarea>
+    {#if codeError}<p class="error" role="alert" data-code-error>{codeError}</p>{/if}
+    <button type="button" onclick={useCode} disabled={!codeText.trim()}>Fill in from the code</button>
+  </div>
   <form onsubmit={connect}>
     {#if fromBackup}
       <Slot k="Watch">
@@ -387,10 +542,67 @@
         here. It comes from the same person who gave you the pubkey; nothing discovers it.
       </p>
     </Why>
+    {#if changes.length > 0}
+      <!-- What this code would change about the watch saved here, said before it is saved. -->
+      <div data-code-changes>
+        <Slot k="This code changes">
+          <Readout value="The watch saved here" tone="warn" sub="check each line with whoever gave you the code" />
+        </Slot>
+        <ul class="refused">{#each changes as c, i (i)}<li>{c}</li>{/each}</ul>
+      </div>
+    {/if}
+    {#if formKey && (shownExecutor || !listsHolders || keyChange)}
+      <!-- Shown, never a field: it arrives only in a code the watch signed. -->
+      <Slot k="Escalation key">
+        {#if shownExecutor}
+          <span data-escalation-key="named">
+            <Readout
+              value={keyPrint(shownExecutor) ?? 'Not a key'}
+              verbatim
+              tone={keyChange ? 'warn' : 'good'}
+              sub={keyChange === 'replaced'
+                ? `not the one saved here${olderCode ? ', and from an older code' : ''}: it decides who can end your Distress`
+                : keyChange === 'added'
+                  ? 'new for this watch: it decides who can end your Distress'
+                  : pendingFor
+                    ? `signed by the watch on ${signedOn(pendingFor.executorAt)}, kept when you save`
+                    : 'only its answer ends your Distress'}
+            />
+          </span>
+        {:else if keyChange === 'dropped'}
+          <span data-escalation-key="dropped">
+            <Readout
+              value="Not named in this code"
+              tone="warn"
+              sub={`saving drops the key saved here${olderCode ? ', from an older code' : ''}`}
+            />
+          </span>
+        {:else}
+          <span data-escalation-key="none">
+            <Readout value="Not named" tone="warn" sub="a person’s answer cannot be told from the agent’s" />
+          </span>
+        {/if}
+      </Slot>
+      {#if keyChange}
+        <label class="confirm" data-key-confirm>
+          <input type="checkbox" bind:checked={keyConfirmed} />
+          This code came from whoever runs this watch, and I checked the change with them.
+        </label>
+      {/if}
+      <Why summary="What the escalation key is">
+        <p class="note">
+          A box names the key only its escalation process holds. Your phone then ends a Distress
+          only on an answer that key signed, and the agent running beside it cannot send one.
+          Without it, anything holding the watch key can tell you a person has it. It comes only in
+          a watch code the watch signed, never typed. A code is still only as good as whoever handed
+          it to you, so this phone asks before one changes the key.
+        </p>
+      </Why>
+    {/if}
     {#if watchError}
       <p class="error" role="alert" data-watch-error>{watchError}</p>
     {/if}
-    <button type="submit" disabled={!pubkey.trim()}>{configured ? 'Update' : 'Connect'}</button>
+    <button type="submit" disabled={!pubkey.trim() || (!!keyChange && !keyConfirmed)}>{configured ? 'Update' : 'Connect'}</button>
   </form>
   {#if configured}
     <Slot k="Watch config">
@@ -446,4 +658,9 @@
   .error {
     color: var(--t-dark); border: 2px solid var(--t-dark); padding: .7rem .9rem; margin: 0;
   }
+  .code { display: flex; flex-direction: column; gap: .5rem; margin-bottom: .8rem; }
+  .confirm { display: flex; gap: .6rem; align-items: flex-start; color: var(--t-ink); line-height: 1.4; }
+  .confirm input { min-height: 1.4rem; min-width: 1.4rem; margin-top: .1rem; }
+  .camera { width: 100%; max-height: 0; border-radius: 2px; background: var(--t-sunk); }
+  .camera.live { max-height: 16rem; object-fit: cover; }
 </style>

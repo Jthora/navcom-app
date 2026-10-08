@@ -7,11 +7,46 @@
 #   navcom-escalation /etc/navcom/escalation.toml
 
 [identity]
-# The same Watchtower key the daemon uses -- the executor must decrypt 20911 itself rather
-# than being handed events by a process that might be hung. Two processes therefore hold the
-# key. That cost is real and accepted: the alternative is an escalation path that depends on
-# the availability of the component most likely to hang.
+# The same Watchtower key the daemon uses -- the executor must hear and answer for the watch itself
+# rather than being handed events by a process that might be hung. Two processes therefore hold the
+# key. That cost is real and accepted: the alternative is an escalation path that depends on the
+# availability of the component most likely to hang.
+#
+# The daemon makes it on its first start; the executor NEVER does. Run as a user of its own, the
+# executor needs a copy it can read (ops/systemd/README.md, 4b). Missing or unreadable, the executor
+# does not start and says why: a key made here would be a watch no phone knows, and an executor that
+# hears no Distress meant for this watch looks healthy. --check prints this key and says whether any
+# relay holds a watch state signed by it.
 privkey_path = "/var/lib/navcom/watchtower.key"
+
+# The executor's OWN key, which nothing else on this box may read.
+#
+# The daemon holds the watch key, and the agent runs beside the daemon. Without a key of its own,
+# every answer that ends a Distress -- "Wren is responding." -- is signed with the watch key, so a
+# phone cannot tell a person's answer from one the agent made up. With one, every response is signed
+# with it (and copied under the watch key for phones handed the watch before), and a phone handed
+# this key ends a Distress only on an answer it signed.
+#
+# An absolute path. The executor makes it on its first start, as the user it runs as, mode 0600 --
+# but only where daemon_user (below) names a user of this machine that is neither root nor the user the
+# executor runs as; otherwise it makes none, says why, and runs without one. --check and --drill never
+# make it. Once the key passes its check, the executor prints a watch code -- a link signed by the watch
+# key that carries this key -- at every start and in --check: hand operators that, scanned or pasted,
+# never the key typed. Run the executor as a user of its own -- NOT the daemon's
+# (ops/systemd/navcom-escalation.service). A backup of this file is the key; keep it as one. If it is
+# ever lost, the new one made in its place is said at every start, and --check fails, until you restore
+# the old key or hand out the new code and remove the record it names.
+#
+# Leave it out and the box runs exactly as it did before the key existed, and says so at every start
+# and in --check.
+# executor_key_path = "/var/lib/navcom-escalation/executor.key"
+
+# The user the daemon runs as, by name or uid -- not root. Startup warns about, and --check refuses, an
+# executor key that user owns or that other users can read, an executor running as that user, and a
+# daemon running as root, which can read every file. Where executor_key_path is set, --check fails while
+# this is unset, and the executor makes no key: without it, nothing can confirm the daemon -- and the
+# agent beside it -- cannot read the executor's key.
+# daemon_user = "navcom"
 
 [relays]
 # Its own subscription. This is what makes the separation structural.
@@ -35,8 +70,8 @@ retention_days = 90
 # coming" sooner, which is sometimes the more useful truth.
 #
 # It is also how often the person who acknowledged a Distress may be paged again about that
-# operator (ack_holds_seconds, below) -- but never more often than once in 300 seconds, so
-# shortening it does not page them more often. A phone resends every 20 to 80 seconds; a window
+# operator, and at all (ack_holds_seconds, below) -- but never more often than once in 300 seconds,
+# so shortening it does not page them more often. A phone resends every 20 to 80 seconds; a window
 # shorter than that paged them on every attempt.
 #
 # It is not how far off a phone's clock may be. A Distress stamped up to this many seconds
@@ -61,11 +96,11 @@ contact_window_seconds = 300
 # hour has a situation this number is not relevant to; a flood passes it in under a second.
 # If you raise it, raise it because your squad is large, not because it looks low.
 #
-# Pages to the person who acknowledged a Distress, about an operator still sending inside
-# ack_holds_seconds, come out of this too: up to six for one operator through a 30-minute hold.
-# Three operators each still sending through a hold -- a Distress started again after a wipe keeps
-# sending for the whole window -- can spend all twenty, and a new Distress is then told nobody
-# could be paged.
+# It counts FIRST pages only: one for each ladder that pages. Pages to the person who acknowledged a
+# Distress, about an operator still sending inside ack_holds_seconds, take nothing from it and are
+# never refused by it -- only a first page is open to a stranger, and charged to one pool a few
+# operators sending through a hold spent what a new Distress needed. Those pages have a limit of
+# their own, per person (ack_holds_seconds, below).
 max_pages_per_window = 20
 page_budget_window_seconds = 3600
 
@@ -80,19 +115,28 @@ ladder_retention_seconds = 3600
 # sending, and each new attempt used to open a fresh ladder and page the roster again for an
 # emergency somebody was already answering. Inside this window a new attempt from that operator
 # gets the same acknowledgement back, from the same human, and the person who acknowledged is
-# paged about it -- only them, on their own entries below, and nobody else. A phone resends every
-# 20 to 80 seconds, so they are paged at most once per paging_window_seconds for that operator,
-# never more often than once in 300 seconds, and the page budget applies (above). Recorded in the
-# log as `acked`, and the page as `contacted`.
+# paged about it -- only them, on their own entries below, and nobody else, with a page that opens
+# "NavCom REPEAT". A phone resends every 20 to 80 seconds, so: the first page about each operator
+# they hold goes at once; after that, at most once per paging_window_seconds (never more often than
+# once in 300 seconds) for that operator, and at most once per that interval for the person, in one
+# page naming every operator they hold who sent since. None of it comes from the page budget. A
+# ceiling of 24 an hour per person is there only to catch a loop. Recorded in the log as `acked`,
+# and the page as `contacted`.
+#
+# The person paged can ask the watch to wake the others about that attempt ({{attempt}}, below), from
+# the screen the repeat page opens: the hold ends and a ladder for it pages everyone else on call --
+# for every operator that page named. Where nobody else can be paged, or the page budget is spent, it
+# changes nothing: the hold stands and they are still the one paged. It never tells the operator a
+# person has them; only acknowledging that ladder does.
 #
 # The cost: a genuinely new emergency from the same operator inside the window is read as the
 # old one until it closes by everybody except the person who acknowledged -- the rest of the
-# roster is not woken -- and each page to that person spends a unit of the page budget. A keyless
-# pager still pages, because it cannot see the acknowledgement.
+# roster is not woken unless they ask. A keyless pager still pages, because it cannot see the
+# acknowledgement.
 #
-# If the person who acknowledged cannot be paged -- no longer on call, console-open only, the
-# budget spent, or every channel of theirs failing -- the hold ends and that attempt opens a ladder
-# for the whole roster, as a new Distress would, and the operator is told why and what that ladder
+# If the person who acknowledged cannot be paged again -- no longer on call, console-open only, at
+# their ceiling, or every channel of theirs failing -- the hold ends and that attempt opens a ladder
+# for the whole roster (at the ceiling, them included), as a new Distress would, and the operator is told why and what that ladder
 # could do. A ladder still running for that operator comes first: a new attempt joins it rather
 # than being answered from the hold. An EXHAUSTED ladder holds nothing -- nobody answered that one,
 # so a new attempt pages as before.
@@ -123,7 +167,14 @@ drill_state_path = "/var/lib/navcom/drill.json"
 # anyone is refused at startup rather than paged into nothing.
 #
 # `command` is argv, never a shell string, so nothing in a distress payload can become a
-# command. {{message}} and {{callsign}} are substituted per argument.
+# command. Substituted per argument:
+#
+#   {{message}}   the words: "NavCom DISTRESS ...", "NavCom REPEAT ...", or "[NAVCOM TEST ..."
+#   {{callsign}}  this entry's callsign
+#   {{kind}}      first (a ladder's page), repeat (paged again about an operator you acknowledged),
+#                 or drill (a drill, or --check's test)
+#   {{distress}}  a first page's Distress id, for a one-tap acknowledgement; empty otherwise
+#   {{attempt}}   a repeat page's attempt id, for "wake the others"; empty otherwise
 #
 # `pubkey` is the key this person ACKNOWLEDGES with, and it is a different thing from the
 # channel they are woken on. An ack is matched by key: without one here, this person cannot
@@ -135,6 +186,10 @@ drill_state_path = "/var/lib/navcom/drill.json"
 # and every drill FAILS, which demotes this watch permanently. The executor says so at
 # startup.
 #
+# Never the watch key, and never the executor's: neither is a person's. The daemon and the agent
+# beside it hold the watch key, so an acknowledgement or a wake signed with it is refused whatever
+# this list says. Startup says so of such an entry, and --check fails on it.
+#
 # [[escalation.oncall]]
 # callsign = "Wren"
 # pubkey   = "npub-as-64-hex-characters"
@@ -145,6 +200,17 @@ drill_state_path = "/var/lib/navcom/drill.json"
 # callsign = "Raven"
 # channel  = "push"
 # command  = ["curl", "-fsS", "-d", "{{message}}", "https://ntfy.sh/your-private-topic"]
+#
+# Web Push to the Field Terminal, with everything a phone needs to tell a first page from a repeat
+# and a drill. A navcom-push entry without --kind still pages, but every page reaches that phone
+# looking like a new Distress; the executor names such entries at startup and in --check.
+#
+# [[escalation.oncall]]
+# callsign = "Kestrel"
+# pubkey   = "npub-as-64-hex-characters"
+# channel  = "push"
+# command  = ["navcom-push", "--to", "/etc/navcom/oncall/kestrel.json",
+#             "--kind", "{{kind}}", "--distress", "{{distress}}", "--attempt", "{{attempt}}"]
 
 # With no entries at all, a Distress pages nobody, reaches EXHAUSTED immediately, and the
 # operator is told so. That is the ladder working correctly. It is not the ladder helping.

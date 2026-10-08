@@ -74,20 +74,32 @@ stopped saying — a claim nobody made. v2 added `log_root`; v3 made it required
   truth. The first watch state, and the first after a relay comes back, go out when that relay
   answers the subscription, not before it is asked. *(The executor's subscription is not yet
   consulted — see [`stationkeeper.md`](../watch/stationkeeper.md).)*
-- **A relay that leaves the list of a watch held on a phone is told Dark, once.** Decided
-  2026-10-07. Withholding is too slow there: that relay's copy of the holder's `station` read On
-  station for up to `stale_after_seconds` after the phone stopped listening on it. When a phone
-  holding the watch follows a change of relays and a relay leaves the list while it is on station,
-  it MUST publish the watch's `dark` state to that relay once, signed by the watch key, with a
-  `created_at` later than any watch state it has signed — and MUST NOT publish it to a relay still
-  on the list. It is not retried: refused, that copy still ages to Dark. A phone that stands down
-  before it has followed such a change MUST send its stand-down `dark` to the relays it was
-  listening on as well as to the list — the same relays its handover check reads — so a relay that
-  left while it was on station is told then. A relay that left before the phone took the watch is
-  told nothing: this holding never announced anybody there, and a Dark could land on whoever does
-  hold the watch on it. An operator who reads both an old relay and a current one may read Dark
-  until the next `station` beat reaches the current one — false in the safe direction, and
-  accepted.
+- **A relay that leaves the list of a watch held on a phone is told Dark, once — where that phone's
+  own claim could still be read there.** Decided 2026-10-07. Withholding is too slow there: that
+  relay's copy of the holder's `station` read On station for up to `stale_after_seconds` after the
+  phone stopped listening on it. When a phone holding the watch follows a change of relays and a
+  relay leaves the list while it is on station, it MUST publish the watch's `dark` state to that
+  relay once, signed by the watch key, with a `created_at` later than any watch state it has signed
+  — **only if it sent its own `station` to that relay during this holding, within
+  `stale_after_seconds` plus the clock tolerance (420 seconds at the defaults)**. Every relay a
+  `station` was sent to counts, not only those that confirmed it, and the record starts empty on
+  taking the watch, standing down, and a wipe. It MUST NOT publish it to a relay still on the list,
+  to one this holding never sent a `station` to, or to one whose last `station` from it is older
+  than that: no claim of this phone's can still be read there, and a Dark — newer than every state
+  — would land on whoever else holds the watch on it. It is not retried: refused, that copy still
+  ages to Dark. **Straight after that Dark, the phone MUST announce its `station` again on the
+  relays it still hears on**, stamped later than the Dark, so an operator reading the old relay and
+  a current one reads On station at once; that announcement stands in for the beat's, which MUST
+  NOT announce a second time. A phone that stands down before it has followed such a change MUST
+  send its stand-down `dark` to the relays it was listening on as well as to the list — the same
+  relays its handover check reads — so a relay that left while it was on station is told then. A
+  relay that left before the phone took the watch is told nothing: this holding never announced
+  anybody there.
+  *What this leaves:* a second phone beating on that same relay with the shared key at the same
+  time reads Dark there until its own next beat, up to two minutes — false in the safe direction,
+  and gone with per-holder keys. And a former holder of the shared watch key, or a relay that copies
+  or syncs another relay's `station`, can still show a `station` nobody here is behind — the first
+  until per-holder keys, the second until a `station` names the relays it covers.
 
 ### On-call is a list of statements, not a count
 

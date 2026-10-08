@@ -80,6 +80,27 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promi
   });
 }
 
+/**
+ * A response as the daemon may send it: from the agent, by the agent's name, and saying nothing only
+ * the escalation executor may say.
+ *
+ * **The daemon can no longer close a `Distress`** (decided 2026-10-07, G3). On a box whose watch names
+ * the executor's own key, a phone ends a `Distress` only on an answer that key signed, and the daemon
+ * never holds it. On a box that names none, a phone still ends on a person's answer the watch key
+ * signed -- and this process holds the watch key, beside the agent. So nothing it publishes says a
+ * person answered, whatever the agent seam (`answerQuery`, and whatever replaces it) hands back:
+ *
+ * - `responder` is the agent, by this daemon's agent name: never `human`, never a person's callsign
+ *   [invariant 4]
+ * - no `ladder`: only the executor speaks for the ladder, and a phone acts on `exhausted` at once
+ * - no `sig`: a holder's own answer signature is a person's, and the daemon is not one
+ * - no `copy_of`: the daemon copies nothing the executor sent
+ */
+export function asAgent(payload: ResponsePayload, agentName: string): ResponsePayload {
+  const { ladder: _ladder, sig: _sig, copy_of: _copy, ...rest } = payload;
+  return { ...rest, responder: { kind: "agent", callsign: agentName } };
+}
+
 export class WatchtowerDaemon {
   readonly board = new Board();
   private readonly pool: SimplePool;
@@ -150,21 +171,37 @@ export class WatchtowerDaemon {
   private lastDrill(): DrillResult | null {
     const path = this.config.log.drillStatePath;
     if (!path || !existsSync(path)) return null;
+    let state: { last?: Drill | null };
     try {
-      const state = JSON.parse(readFileSync(path, "utf8")) as { last?: Drill | null };
-      const drill = state.last;
-      if (!drill) return null;
-      return {
-        at: drill.at,
-        result: drill.result,
-        author: { kind: "node", callsign: this.agentName },
-        // Who actually woke up, each named. Empty on a failed drill, which is the point.
-        acknowledged: drill.acknowledged,
-      };
-    } catch {
+      state = JSON.parse(readFileSync(path, "utf8")) as { last?: Drill | null };
+    } catch (err: unknown) {
+      /*
+       * Said, once until it reads again [review: box safety]. A file that exists and cannot be read is
+       * not the same as no drill: once the executor runs as a user of its own, a drill file that user
+       * made `0600` demoted this watch from automated-oncall to automated with nothing said anywhere.
+       */
+      if (!this.drillUnreadable) {
+        this.drillUnreadable = true;
+        console.error(
+          `[drill] the drill file at ${path} exists and cannot be read: ${String(err)}. The watch publishes no drill, ` +
+            "and reads as automated rather than automated-oncall, until it can -- see ops/systemd/README.md, 4b",
+        );
+      }
       return null;
     }
+    this.drillUnreadable = false;
+    const drill = state?.last;
+    if (!drill) return null;
+    return {
+      at: drill.at,
+      result: drill.result,
+      author: { kind: "node", callsign: this.agentName },
+      // Who actually woke up, each named. Empty on a failed drill, which is the point.
+      acknowledged: drill.acknowledged,
+    };
   }
+  /** Whether the drill file's being unreadable has been said, so it is said once until it reads again. */
+  private drillUnreadable = false;
 
   /**
    * Records a watch action.
@@ -354,8 +391,10 @@ export class WatchtowerDaemon {
   private async publishResponse(
     toPubkey: string,
     inReplyToEventId: string,
-    payload: ResponsePayload,
+    said: ResponsePayload,
   ): Promise<number> {
+    // Whatever the agent seam returned, it goes out as the agent: the one place that holds that rule.
+    const payload = asAgent(said, this.agentName);
     const content = sealResponse(this.secretKey, toPubkey, payload);
     const event = this.sign({
       kind: KIND_RESPONSE,
@@ -375,6 +414,7 @@ export class WatchtowerDaemon {
   }
 
   private ack(): ResponsePayload {
+    // asAgent() is applied on the way out as well; this is what the daemon means to say.
     return { type: "ack", responder: { kind: "agent", callsign: this.agentName }, text: null, provenance: null };
   }
 
@@ -612,6 +652,17 @@ export class WatchtowerDaemon {
           this.board.standDown(event.pubkey);
           response = this.ack();
           break;
+        }
+        case "distress-ack":
+        case "wake-others": {
+          /*
+           * The escalation executor's, and only its. It reads them from the relays itself and answers
+           * them with its own key; an answer from here would be the agent's process speaking for the
+           * ladder, and an acknowledgement is the one thing that may never come from an agent
+           * [invariant 4]. Not "unknown": this daemon knows exactly whose they are.
+           */
+          console.log(`[signal] ${type} from ${shortId(event.pubkey)} is the escalation executor's -- not answered here`);
+          return;
         }
         default: {
           console.log(`[signal] dropped: unknown type "${type}" (${event.id.slice(0, 8)})`);

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { evaluateDrill, nextDrillAt, type Author, type Drill } from "@navcom/core";
 import { TEST_PREFIX, type pageAll } from "./pager.js";
@@ -34,9 +34,21 @@ export function readDrillState(path: string): DrillState | null {
   }
 }
 
+/**
+ * Written `0640`: readable by the file's group, which is how the daemon reads it once the executor runs
+ * as a user of its own (`ops/systemd/README.md`, 4b -- a directory in the daemon user's group). Nothing in
+ * it is private: the daemon publishes the last drill in `10910`. At `0600` the daemon could not read a
+ * file the executor's user made, and the watch stopped advertising its drill without a word [review: box
+ * safety]. Set on every write, since `mode` applies only to a file being created and a umask narrows it.
+ */
 export function writeDrillState(path: string, state: DrillState): void {
   mkdirSync(dirname(path), { recursive: true });
-  writeFileSync(path, JSON.stringify(state, null, 2) + "\n", { mode: 0o600 });
+  writeFileSync(path, JSON.stringify(state, null, 2) + "\n", { mode: 0o640 });
+  try {
+    chmodSync(path, 0o640);
+  } catch {
+    // best-effort on a file system without modes; the daemon says when it cannot read the file
+  }
 }
 
 export interface RunDrillOptions {
@@ -67,6 +79,9 @@ export async function runDrill(id: string, opts: RunDrillOptions): Promise<Drill
   const results = await opts.page(
     wakeable,
     TEST_PREFIX + " drill " + id.slice(0, 8) + " -- reply to acknowledge",
+    undefined,
+    "",
+    "drill",
   );
   const paged = results.filter((r) => r.dispatched).map((r) => r.callsign);
 

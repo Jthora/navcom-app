@@ -1,6 +1,6 @@
 import type { SimplePool } from "nostr-tools/pool";
 import { finalizeEvent, verifyEvent } from "nostr-tools/pure";
-import type { Event, EventTemplate } from "nostr-tools/core";
+import type { Event } from "nostr-tools/core";
 import { randomBytes } from "node:crypto";
 import {
   acknowledge,
@@ -10,6 +10,7 @@ import {
   ladderReport,
   pageableNow,
   STALE_AFTER_SECONDS,
+  watchCopy,
   type Author,
   type DistressAckPayload,
   type Ladder,
@@ -21,9 +22,9 @@ import { nodePool } from "../shared/nostr-node.js";
 import { RelayListener } from "../shared/relay-listener.js";
 import { sealResponse, openSignal } from "../shared/crypto.js";
 import { KIND_SIGNAL, KIND_DISTRESS, KIND_RESPONSE } from "../shared/kinds.js";
-import { pageAll } from "./pager.js";
+import { pageAll, type PageResult } from "./pager.js";
 import { due, readDrillState, runDrill, schedule, writeDrillState, type DrillState } from "./drills.js";
-import type { EscalationConfig } from "./config.js";
+import type { EscalationConfig, OnCallEntry } from "./config.js";
 import { pageBudget, type PageBudget } from "./budget.js";
 // A source import, not a runtime dependency: `AccountabilityLog` is a self-contained class
 // with no reference to the daemon process. The executor still opens and writes its own
@@ -45,6 +46,12 @@ import { AccountabilityLog } from "../shared/accountability.js";
  * Two processes therefore hold the Watchtower key, and that cost is real: it doubles where
  * the key lives. It is accepted because the alternative is an escalation path that depends
  * on the availability of the component most likely to hang.
+ *
+ * **And the executor has a key of its own** (decided 2026-10-07, G3), where `escalation.toml` names
+ * one. Every response it sends is signed with that key and then copied under the watch key, and a
+ * phone handed it ends a `Distress` only on an answer that key signed -- so the daemon, which the
+ * agent runs beside and which holds the watch key, can tell an operator anything but that a person
+ * has it. Without one, every response is signed with the watch key, as before.
  */
 
 function now(): number {
@@ -53,8 +60,16 @@ function now(): number {
 
 export interface ExecutorOptions {
   config: EscalationConfig;
+  /** The watch key: what operators address, and what signs the copies older phones hear. */
   secretKey: Uint8Array;
   pubkey: string;
+  /**
+   * The executor's own key, which only this process holds. Every response is signed and sealed with
+   * it, then sent again as the watch key's copy (`copy_of`); the acknowledgements and wake-others it
+   * acts on are opened with it first. Absent: every response is signed with the watch key alone, as
+   * it was before the key existed, and the operator's phone keeps the old rule.
+   */
+  executorKey?: { secretKey: Uint8Array; pubkey: string };
   /** Injected for tests, so the seven failure modes never need a real relay. */
   pool?: SimplePool;
   /** Injected for tests. Real paging shells out; a test must not. */
@@ -96,7 +111,9 @@ export function ageWindowSeconds(config: EscalationConfig): number {
 
 /**
  * How long after the person who acknowledged is paged about an operator they may be paged about
- * that operator again: the paging window, and **never less than the spec's default of 300**.
+ * that operator again: the paging window, and **never less than the spec's default of 300**. Since
+ * option E (decided 2026-10-07) it is also how long after any page to that person, about anybody they
+ * hold, the next one may go -- except the first page about an operator, which goes at once.
  *
  * A phone resends every 20 to 80 seconds, so a paging window shorter than that -- which the example
  * config's note on shortening it invites -- paged the person who answered on every attempt for the
@@ -107,6 +124,27 @@ export function ageWindowSeconds(config: EscalationConfig): number {
 export function repageWindowSeconds(config: EscalationConfig): number {
   return Math.max(config.escalation.pagingWindowSeconds, DEFAULT_WINDOWS.pagingSeconds);
 }
+
+/**
+ * The most times one person may be paged again in an hour, about operators they acknowledged (decided
+ * 2026-10-07, option E). Far above what the re-page interval allows -- one page per person per five
+ * minutes, plus the first page about each operator they hold -- so it is there only to catch a loop:
+ * this project has paged in a loop twice with no attacker involved. A person at it is not paged again:
+ * the hold ends and the attempt is escalated as new, failing toward paging -- a ladder that pages the
+ * whole roster, that person included, with a first page they can acknowledge.
+ */
+export const REPAGE_CEILING = 24;
+/** The window {@link REPAGE_CEILING} counts over. */
+export const REPAGE_CEILING_SECONDS = 3_600;
+
+/**
+ * How long a push service may hold a repeat page before delivering it: `navcom-push`'s default for a
+ * repeat. An attempt answered from a hold is remembered for this long past the hold's window, or the
+ * ladder retention if longer, so a `wake-others` sent from a page that arrived late -- or was read late
+ * -- is told the hold had ended, rather than that the watch never answered that attempt from a hold
+ * [review: box safety].
+ */
+export const REPEAT_PAGE_TTL_SECONDS = 1_800;
 
 /** What the watch says when the page budget is spent. It states the outcome; "Paging Wren." would not be true. */
 const BUDGET_SPENT = "The watch could not page anyone -- too many alerts at once. Nobody has been woken.";
@@ -119,18 +157,37 @@ function ago(seconds: number): string {
   return minutes === 0 ? "less than a minute" : `${minutes} min`;
 }
 
+/** How long from now, as the operator reads it: rounded up, so it is never sooner than said. */
+function within(seconds: number): string {
+  return seconds < 60 ? "less than a minute" : `${Math.ceil(seconds / 60)} min`;
+}
+
 /**
- * Why the person who acknowledged could not be paged again, in the words the operator is told.
+ * Why the person who acknowledged is not paged again about this attempt, as the executor's log says it.
  * Each one fails toward paging: the hold ends and the attempt is escalated as new.
  */
 const UNPAGED = {
   "off-roster": "no longer on call",
   // The only on-call entry with no command the config accepts: nothing can wake them [C40].
   "console-only": "only reachable at a console",
-  budget: "too many alerts at once",
+  // A loop, not a person: far above anything the re-page interval allows (`REPAGE_CEILING`).
+  ceiling: "at the re-page ceiling",
   failed: "every channel failed",
 } as const;
 type Unpaged = keyof typeof UNPAGED;
+
+/**
+ * Why, in the words the operator is told -- each true at the moment it is said.
+ *
+ * The ceiling is not "could not be paged" [review: box safety]: the ladder it opens pages the whole
+ * roster, that person included, with a first page. What the ceiling stops is the re-pages, so that is
+ * what is said, and the ladder's own sentence says who is being paged.
+ */
+function unpagedSentence(name: string, why: Unpaged): string {
+  return why === "ceiling"
+    ? `${name} has been paged again as often as the watch allows in an hour, so the watch is treating this one as new.`
+    : `${name} could not be paged again -- ${UNPAGED[why]}.`;
+}
 
 /**
  * A ladder's first report, decided before anything is sent: what it says, whether the roster is
@@ -140,6 +197,10 @@ interface Opening {
   said: string | undefined;
   pages: boolean;
   paging: string[];
+  /** Who the page goes to, where it is not everybody on the roster the ladder names. */
+  roster?: OnCallEntry[];
+  /** Refused by the first-page budget: the one reason a paging ladder pages nobody that a flood causes. */
+  budgetSpent?: true;
 }
 
 /** The name a ladder gives an on-call entry -- core's rule (`startLadder`), for entries this process filters itself. */
@@ -149,12 +210,35 @@ function nameOf(entry: OnCall): string {
 
 /**
  * The person who acknowledged, paged again about a later attempt (decided 2026-10-07): when, about
- * which attempt, and whether a channel has taken it yet.
+ * which attempt, and whether a channel has taken it yet -- shared by every operator one page named.
  */
 interface Repage {
   at: number;
   attempt: string;
-  dispatched: boolean;
+  sent: { dispatched: boolean };
+}
+
+/** What this executor knows about the pages to one person who acknowledged (option E). */
+interface PersonPages {
+  /** Their last page, about any operator they hold. The re-page interval runs from here. */
+  last: Repage | undefined;
+  /** When each page to them started, for {@link REPAGE_CEILING}. */
+  started: number[];
+}
+
+/** An attempt answered from a hold: what `wake-others` may name, while that hold stands. */
+interface HeldAttempt {
+  event: Event;
+  held: HeldAck;
+}
+
+/** One hold a `wake-others` named: what the person who asked is told, and what is sent after. */
+interface WakeDecision {
+  text: string;
+  /** The ladder for that attempt, where there is one, for the answer's `ladder` field. */
+  ladder?: Ladder;
+  /** What goes out once the answer has; resolves with anything the person who asked must hear after. */
+  go?: () => Promise<string | undefined>;
 }
 
 /** A human acknowledgement this executor is still holding for an operator. */
@@ -182,6 +266,8 @@ export class EscalationExecutor {
   private readonly config: EscalationConfig;
   private readonly secretKey: Uint8Array;
   private readonly pubkey: string;
+  /** The executor's own key, or null on a box that has not named one. */
+  private readonly own: { secretKey: Uint8Array; pubkey: string } | null;
   private readonly page: typeof pageAll;
   private readonly drillStatePath: string | undefined;
   private drills: DrillState | null = null;
@@ -224,6 +310,33 @@ export class EscalationExecutor {
    */
   private readonly repaged = new Map<string, Repage>();
   /**
+   * The pages to each person who acknowledged, by their key -- option E (decided 2026-10-07). The
+   * re-page interval is theirs as well as each operator's: one page per interval, naming every operator
+   * they hold who has sent since, and never more than {@link REPAGE_CEILING} an hour.
+   */
+  private readonly persons = new Map<string, PersonPages>();
+  /** Operators each person holds who have sent since that person's last page, for the next page to name. */
+  private readonly pending = new Map<string, Map<string, HeldAttempt>>();
+  /**
+   * Attempts answered from a hold, by id: what `wake-others` may name while their hold stands. Kept past
+   * the hold's end, however it ended -- expired included -- for {@link REPEAT_PAGE_TTL_SECONDS} or the
+   * ladder retention, so a late one is told the hold ended rather than that it was never held.
+   */
+  private readonly heldAttempts = new Map<string, HeldAttempt>();
+  /**
+   * Every attempt one repeat page named, by the attempt it carried [review: box safety]. A page names
+   * every operator the person holds who has sent since their last page, but a page command carries one
+   * attempt id, so a `wake-others` from that page widens every hold it named, not only the one it carried.
+   */
+  private readonly pageNamed = new Map<string, string[]>();
+  /**
+   * The watch key and the executor's own. Neither is a person's, so neither acknowledges or asks the
+   * watch to wake anybody, whatever the roster says [review: box safety]: the daemon and the agent beside
+   * it hold the watch key, and an acknowledgement accepted from it would have the executor sign "a person
+   * has it" with the one key a phone handed it trusts.
+   */
+  private readonly boxKeys: ReadonlySet<string>;
+  /**
    * Second sends of held acknowledgements still waiting, so `stop()` can cancel them -- each with
    * the record it still owes, where its first send reached no relay and nothing is written yet.
    */
@@ -247,6 +360,9 @@ export class EscalationExecutor {
     this.config = opts.config;
     this.secretKey = opts.secretKey;
     this.pubkey = opts.pubkey;
+    // The watch key is no executor key: a phone handed it reads it as none (`executorOf` in core).
+    this.own = opts.executorKey && opts.executorKey.pubkey !== opts.pubkey ? opts.executorKey : null;
+    this.boxKeys = new Set([opts.pubkey, ...(opts.executorKey ? [opts.executorKey.pubkey] : [])]);
     this.page = opts.page ?? pageAll;
     this.drillStatePath = opts.drillStatePath;
     // Ping so a dead connection is noticed; no pool-level reconnect, because nostr-tools' rewrote
@@ -277,8 +393,64 @@ export class EscalationExecutor {
     }
   }
 
-  private sign(template: EventTemplate): Event {
-    return finalizeEvent(template, this.secretKey);
+  /** The key this executor speaks with: its own where it has one, which the accountability log names. */
+  private get speaker(): string {
+    return this.own?.pubkey ?? this.pubkey;
+  }
+
+  /**
+   * Signs and sends one response to `to`, and returns how many relays took what every phone can read.
+   *
+   * **With its own key, twice** (`escalation.spec.md`, *Phones handed the watch before it named the
+   * executor*): signed and sealed by its own key, which is the only answer a phone handed that key
+   * ends a `Distress` on, and then the same words signed and sealed by the watch key, carrying
+   * `copy_of`, for phones handed the watch before it named one. Its own goes first on every socket,
+   * so a phone that knows it has usually heard it by the time the copy arrives, and passes over the
+   * copy; one that has not reads the copy as the watch key's, shown and never closure.
+   *
+   * **What it returns counts the copy** [review: box safety]. Every phone handed the watch before it
+   * named this key reads the copy and nothing else, and this box cannot know that no such phone is
+   * left. A relay that took only the executor's own told those phones nothing, so it does not count as
+   * having told the operator: where no relay took a copy, the caller says it could not report, and a
+   * hold that reached nobody twice ends and fails toward paging. Counting either send, a relay with a
+   * rate limit that refused the second event of the pair left every current phone hearing nothing while
+   * the box logged an acknowledgement as delivered.
+   *
+   * Either asymmetry is said at once. A relay that takes the copy and refuses the executor's own leaves
+   * a phone given the executor key unable to end a `Distress` there; one that takes the executor's own
+   * and refuses the copy leaves a phone not given it hearing nothing.
+   */
+  private async respond(to: string, tags: string[][], payload: ResponsePayload, label: string): Promise<number> {
+    const urls = this.config.relays.urls;
+    const sealed = (secretKey: Uint8Array, body: ResponsePayload): Event =>
+      finalizeEvent({ kind: KIND_RESPONSE, created_at: now(), tags, content: sealResponse(secretKey, to, body) }, secretKey);
+    const took = (results: PromiseSettledResult<string>[]) => results.filter((r) => r.status === "fulfilled").length;
+
+    if (!this.own) return took(await Promise.allSettled(this.pool.publish(urls, sealed(this.secretKey, payload))));
+
+    const mine = sealed(this.own.secretKey, payload);
+    const copy = sealed(this.secretKey, watchCopy(payload, mine.id));
+    // Both handed to the pool before either is awaited, in this order, so each socket carries its own first.
+    const sentMine = this.pool.publish(urls, mine);
+    const sentCopy = this.pool.publish(urls, copy);
+    const [ownResults, copyResults] = await Promise.all([Promise.allSettled(sentMine), Promise.allSettled(sentCopy)]);
+    const ownTook = took(ownResults);
+    const copyTook = took(copyResults);
+    if (ownTook === 0 && copyTook > 0) {
+      console.error(
+        `[ladder] ${label}: NO RELAY TOOK THE EXECUTOR'S OWN KEY -- only the watch key's copy went out. A phone ` +
+          `given the executor key shows it and does not end a Distress on it. navcom-escalation --check names ` +
+          `the relays that refuse that key.`,
+      );
+    }
+    if (copyTook === 0 && ownTook > 0) {
+      console.error(
+        `[ladder] ${label}: NO RELAY TOOK THE WATCH KEY'S COPY -- only the executor's own went out. A phone not ` +
+          `given the executor key -- every phone handed this watch before it named one -- heard nothing. ` +
+          `navcom-escalation --check names the relays that refuse the watch key.`,
+      );
+    }
+    return copyTook;
   }
 
   private get windows() {
@@ -319,13 +491,6 @@ export class EscalationExecutor {
     };
     if (said !== undefined) this.notes.set(ladder.distressId, { state: ladder.state, text: said });
 
-    const event = this.sign({
-      kind: KIND_RESPONSE,
-      created_at: now(),
-      tags: [["p", ladder.operator], ["e", distressId]],
-      content: sealResponse(this.secretKey, ladder.operator, payload),
-    });
-
     // The one durable record of what actually happened, written before the publish
     // attempt rather than after: telling the operator and recording the outcome are
     // independent, and a relay that rejects the publish must not also cost the durable
@@ -336,7 +501,7 @@ export class EscalationExecutor {
       this.recordOutcome(ladder);
     }
 
-    return this.send(ladder, distressId, event, payload);
+    return this.send(ladder, distressId, [["p", ladder.operator], ["e", distressId]], payload);
   }
 
   /**
@@ -357,24 +522,19 @@ export class EscalationExecutor {
       provenance: null,
       ladder: ladder.state,
     };
-    const event = this.sign({
-      kind: KIND_RESPONSE,
-      created_at: now(),
-      tags: [["p", ladder.operator], ["e", retryId], ["e", ladder.distressId]],
-      content: sealResponse(this.secretKey, ladder.operator, payload),
-    });
-    return this.send(ladder, retryId, event, payload);
+    return this.send(ladder, retryId, [["p", ladder.operator], ["e", retryId], ["e", ladder.distressId]], payload);
   }
 
-  /** Returns how many relays took it. 0 is invariant 2 failing, and is said so. */
-  private async send(ladder: Ladder, distressId: string, event: Event, payload: ResponsePayload): Promise<number> {
+  /** Returns how many relays took it ({@link respond}). 0 is invariant 2 failing, and is said so. */
+  private async send(ladder: Ladder, distressId: string, tags: string[][], payload: ResponsePayload): Promise<number> {
     console.log(`[ladder] ${distressId.slice(0, 8)} ${ladder.state}: ${payload.text}`);
-    const results = await Promise.allSettled(this.pool.publish(this.config.relays.urls, event));
-    const accepted = results.filter((r) => r.status === "fulfilled").length;
+    const accepted = await this.respond(ladder.operator, tags, payload, distressId.slice(0, 8));
     if (accepted === 0) {
       // The operator cannot be told. Loud, because invariant 2 is failing right here and
       // there is nothing further this process can do about it.
-      console.error(`[ladder] COULD NOT REPORT ${ladder.state} TO OPERATOR -- no relay accepted`);
+      console.error(
+        `[ladder] COULD NOT REPORT ${ladder.state} TO OPERATOR -- no relay accepted ${this.own ? "the watch key's copy" : "it"}`,
+      );
     }
     return accepted;
   }
@@ -473,7 +633,7 @@ export class EscalationExecutor {
     try {
       this.accountability.record({
         at: now(),
-        actor: { kind: "node", callsign: "escalation", pubkey: this.pubkey },
+        actor: { kind: "node", callsign: "escalation", pubkey: this.speaker },
         action: "acked",
         subject: { kind: "human", pubkey: held.ladder.operator },
         outcome: sent ? "acknowledged" : "ack-not-sent",
@@ -495,6 +655,10 @@ export class EscalationExecutor {
    * The page is said while it goes out, as the ladder's "Paging Wren." is: a command may take
    * thirty seconds to fail, and the operator is owed an answer before then. If it does fail, the
    * ladder that opens says so at once.
+   *
+   * **And when they can be paged again** (option E): the later of this operator's interval and the
+   * person's own, since the person's last page may have been about somebody else they hold. Said
+   * about this operator only -- when that person was last paged about them, never who else.
    */
   private heldText(held: HeldAck, distressId: string): string {
     const at = now();
@@ -503,16 +667,17 @@ export class EscalationExecutor {
     const name = held.by.callsign;
     const paged = this.lastRepage(held, at);
     const about = paged?.attempt === distressId ? " about this one" : "";
-    const page = !paged
-      ? ""
-      : paged.dispatched
-        ? ` ${name} was paged again${about} ${ago(at - paged.at)} ago.`
-        : ` The watch is paging ${name} again${about}.`;
-    return (
-      `Acknowledged ${ago(age)} ago.${page} If your phone is still sending in ${
-        left < 60 ? "less than a minute" : `${Math.ceil(left / 60)} min`
-      }, the watch treats it as new.`
-    );
+    let page = "";
+    if (paged && !paged.sent.dispatched) page = ` The watch is paging ${name} again${about}.`;
+    else if (paged) {
+      const window = repageWindowSeconds(this.config);
+      const theirs = this.lastPersonPage(held.by.pubkey, at);
+      const next = Math.max(paged.at, theirs?.at ?? paged.at) + window - at;
+      page =
+        ` ${name} was paged again${about} ${ago(at - paged.at)} ago` +
+        (next > 0 ? `, and is paged again if your phone is still sending in ${within(next)}.` : ".");
+    }
+    return `Acknowledged ${ago(age)} ago.${page} If your phone is still sending in ${within(left)}, the watch treats it as new.`;
   }
 
   /** Where the pages to the person who gave this acknowledgement, about its operator, are kept. */
@@ -530,6 +695,39 @@ export class EscalationExecutor {
     return last && at >= last.at ? last : undefined;
   }
 
+  /** This person's last page about anybody they hold, as it stands at `at`; one stamped after `at` stands for nothing. */
+  private lastPersonPage(person: string, at: number): Repage | undefined {
+    const last = this.persons.get(person)?.last;
+    return last && at >= last.at ? last : undefined;
+  }
+
+  private personPages(person: string): PersonPages {
+    let record = this.persons.get(person);
+    if (!record) this.persons.set(person, (record = { last: undefined, started: [] }));
+    return record;
+  }
+
+  /** Whether this person has had {@link REPAGE_CEILING} pages started in the last hour. */
+  private atCeiling(person: string, at: number): boolean {
+    const record = this.persons.get(person);
+    if (!record) return false;
+    // A page stamped after `at` -- the clock stepped back past it -- counts for nothing, as in the interval.
+    record.started = record.started.filter((t) => t <= at && at - t < REPAGE_CEILING_SECONDS);
+    return record.started.length >= REPAGE_CEILING;
+  }
+
+  /** Whether this attempt's hold is the one that still stands for its operator. */
+  private standing(entry: HeldAttempt, at: number): boolean {
+    return this.heldAcks.get(entry.held.ladder.operator) === entry.held && this.holding(entry.held, at);
+  }
+
+  /** The operators this person holds who have sent since their last page, whose holds still stand; cleared. */
+  private takePending(person: string, at: number): HeldAttempt[] {
+    const waiting = [...(this.pending.get(person)?.values() ?? [])];
+    this.pending.delete(person);
+    return waiting.filter((p) => this.standing(p, at));
+  }
+
   /** One send of a held acknowledgement, freshly signed. Returns how many relays took it. */
   private async sendHeld(held: HeldAck, distressId: string, said?: string): Promise<number> {
     const ladder = held.ladder;
@@ -542,13 +740,7 @@ export class EscalationExecutor {
       provenance: null,
       ladder: "acknowledged",
     };
-    const event = this.sign({
-      kind: KIND_RESPONSE,
-      created_at: now(),
-      tags: [["p", ladder.operator], ["e", distressId], ["e", ladder.distressId]],
-      content: sealResponse(this.secretKey, ladder.operator, payload),
-    });
-    const accepted = await this.send(ladder, distressId, event, payload);
+    const accepted = await this.send(ladder, distressId, [["p", ladder.operator], ["e", distressId], ["e", ladder.distressId]], payload);
     if (accepted > 0) held.taken++;
     return accepted;
   }
@@ -572,7 +764,7 @@ export class EscalationExecutor {
     try {
       this.accountability.record({
         at: now(),
-        actor: { kind: "node", callsign: "escalation", pubkey: this.pubkey },
+        actor: { kind: "node", callsign: "escalation", pubkey: this.speaker },
         action: "escalated",
         subject: { kind: "human", pubkey: ladder.operator },
         outcome: ladder.state === "acknowledged" ? "escalation-reached-human" : "escalation-reached-nobody",
@@ -677,10 +869,20 @@ export class EscalationExecutor {
    * acknowledged could not be paged again, when that is why this ladder opened. `paging` is who that
    * sentence names as being paged, where it is not everybody the ladder names.
    */
-  private opening(ladder: Ladder, event: Event, preface = "", paging: string[] = ladder.paged): Opening {
+  private opening(
+    ladder: Ladder,
+    event: Event,
+    preface = "",
+    paging: string[] = ladder.paged,
+    roster?: OnCallEntry[],
+    /** The first-page budget was taken before the ladder opened -- by a `wake-others`, which must know first. */
+    charged = false,
+  ): Opening {
     const lead = preface ? `${preface} ` : "";
     const sentence = ladderReport({ ...ladder, paged: paging });
     if (ladder.state !== "paging") return { said: preface ? lead + sentence : undefined, pages: false, paging: [] };
+    // Somebody on the roster is pageable -- the ladder is paging -- but not anybody this page is for.
+    if (paging.length === 0) return { said: lead + "Nobody else on call can be paged.", pages: false, paging: [] };
 
     /*
      * The budget is spent before the roster is touched -- and before anything is said, so a
@@ -691,23 +893,32 @@ export class EscalationExecutor {
      * person three hundred times, which is how escalation dies: not by being wrong, but by being
      * ignored on the night it is right.
      */
-    if (!this.budget.take(now())) {
-      console.error(
-        `[page] BUDGET SPENT -- refusing to page for ${event.id.slice(0, 8)}. ` +
-          `More than ${this.config.escalation.maxPagesPerWindow} pages in ` +
-          `${this.config.escalation.pageBudgetWindowSeconds}s. This watch is being flooded.`,
-      );
-      return { said: lead + BUDGET_SPENT, pages: false, paging: [] };
+    if (!charged && !this.takeFirstPage(event.id)) {
+      return { said: lead + BUDGET_SPENT, pages: false, paging: [], budgetSpent: true };
     }
-    return { said: preface ? lead + sentence : undefined, pages: true, paging };
+    return { said: preface ? lead + sentence : undefined, pages: true, paging, ...(roster ? { roster } : {}) };
   }
 
-  /** A ladder's first report, and -- where it pages -- the page, and what came of it. */
-  private async run(ladder: Ladder, event: Event, opening: Opening): Promise<void> {
+  /** One unit of the first-page budget, or false -- said, with which limit -- when it is spent. */
+  private takeFirstPage(id: string): boolean {
+    if (this.budget.take(now())) return true;
+    console.error(
+      `[page] BUDGET SPENT -- refused by the first-page budget, not paging for ${id.slice(0, 8)}. ` +
+        `More than ${this.config.escalation.maxPagesPerWindow} ladders paged in ` +
+        `${this.config.escalation.pageBudgetWindowSeconds}s. This watch is being flooded.`,
+    );
+    return false;
+  }
+
+  /**
+   * A ladder's first report, and -- where it pages -- the page, and what came of it. Returns what each
+   * page command did, or nothing where it paged nobody.
+   */
+  private async run(ladder: Ladder, event: Event, opening: Opening): Promise<PageResult[] | undefined> {
     // Said before the roster is touched, and not held until the commands finish: a command may
     // take thirty seconds, and the operator is owed the ladder's first word before then.
     await this.report(ladder, event.id, opening.said);
-    if (!opening.pages) return;
+    if (!opening.pages) return undefined;
 
     /*
      * The id goes with the page, because it cannot be fetched afterwards.
@@ -718,10 +929,11 @@ export class EscalationExecutor {
      * placeholder and that operator uses the console.
      */
     const results = await this.page(
-      this.rosterAt(ladder.startedAt),
+      opening.roster ?? this.rosterAt(ladder.startedAt),
       `NavCom DISTRESS from ${event.pubkey.slice(0, 8)} -- ack in the console`,
       undefined,
       event.id,
+      "first",
     );
     for (const r of results) {
       console.log(
@@ -742,7 +954,7 @@ export class EscalationExecutor {
      * moved it on, and its own report has said so.
      */
     const current = this.ladders.get(ladder.distressId);
-    if (current?.state !== "paging") return;
+    if (current?.state !== "paging") return results;
     const failed = results.filter((r) => !r.dispatched);
     if (results.length > 0 && failed.length === results.length) {
       console.error(`[page] EVERY CHANNEL FAILED for ${event.id.slice(0, 8)}`);
@@ -766,6 +978,7 @@ export class EscalationExecutor {
         `Paging ${paged}. ${names} could not be reached -- their channel failed.`,
       );
     }
+    return results;
   }
 
   /**
@@ -774,16 +987,25 @@ export class EscalationExecutor {
    *
    * The hold's cost was that a genuinely new emergency from the same operator inside the window was
    * read as the old one and nobody was told. Now the person who acknowledged is: paged through their
-   * own roster entries, and nobody else is woken. A phone retries every 20 to 80 seconds, so they are
-   * paged at most once per paging window -- never more often than once in five minutes
-   * ({@link repageWindowSeconds}) -- for this operator, whichever hold it was in, and a later attempt
-   * inside it is told when they were. The page budget applies: each one takes a unit, as a ladder's
-   * page does.
+   * own roster entries, and nobody else is woken.
    *
-   * **Somebody who cannot be paged is not holding anything** -- off the roster, reachable only at a
-   * console, the budget spent, or every channel failing. Then the hold ends and this attempt is
-   * escalated as new ({@link unpaged}): failing toward paging, the direction the hold already fails
-   * in for a restart or a clock step.
+   * **How often, option E** (decided 2026-10-07). A phone retries every 20 to 80 seconds, so:
+   *
+   * - The first page about each operator they hold goes at once, so news is never held back
+   * - After that, at most once per {@link repageWindowSeconds} for that operator -- never more often
+   *   than once in five minutes -- and at most once per that interval for the person, whoever it is
+   *   about. Inside it the hold stands and the attempt is told when they were paged and when they can
+   *   be again; the next page names every operator they hold who has sent since their last
+   * - **None of it comes from the page budget**, and a spent budget never refuses one. The budget
+   *   bounds what a stranger with the watch's address can do, and a re-page needs an acknowledgement
+   *   from a roster key: charged to one pool, a few operators sending through a hold spent what a new
+   *   Distress needed. A per-person ceiling, {@link REPAGE_CEILING} an hour, catches a loop instead
+   *
+   * **Somebody who cannot be paged again is not holding anything** -- off the roster, reachable only at
+   * a console, every channel failing, or at their ceiling, where it is a loop rather than a night. Then
+   * the hold ends and this attempt is escalated as new ({@link unpaged}): failing toward paging, the
+   * direction the hold already fails in for a restart or a clock step. At the ceiling, that ladder pages
+   * them too, with a first page: what the ceiling stops is the re-pages.
    *
    * The operator hears the acknowledgement first, as before, and the page goes out after it. Said
    * while it goes out, as the ladder's "Paging Wren." is; a page that fails is corrected by the
@@ -791,37 +1013,61 @@ export class EscalationExecutor {
    */
   private async answerHeld(held: HeldAck, event: Event): Promise<void> {
     const at = now();
-    const last = this.lastRepage(held, at);
-    // Paged about this operator inside the window already, in this hold or an earlier one.
-    if (last && at - last.at < repageWindowSeconds(this.config)) {
+    const person = held.by.pubkey;
+    const operator = held.ladder.operator;
+    const name = held.by.callsign;
+    // What `wake-others` may name, for as long as this hold stands.
+    this.heldAttempts.set(event.id, { event, held });
+
+    const window = repageWindowSeconds(this.config);
+    const aboutThem = this.lastRepage(held, at);
+    const theirs = this.lastPersonPage(person, at);
+    // The first page about an operator goes at once, whoever else this person was paged about.
+    const waitOperator = aboutThem ? aboutThem.at + window - at : 0;
+    const waitPerson = aboutThem && theirs ? theirs.at + window - at : 0;
+    if (waitOperator > 0 || waitPerson > 0) {
+      let waiting = this.pending.get(person);
+      if (!waiting) this.pending.set(person, (waiting = new Map()));
+      waiting.set(operator, { event, held });
       console.log(
-        `[page] ${held.by.callsign} was paged about ${event.pubkey.slice(0, 8)} ${at - last.at}s ago -- ` +
-          `not again until ${repageWindowSeconds(this.config)}s after that`,
+        waitOperator > 0
+          ? `[page] ${name} was paged about ${operator.slice(0, 8)} ${at - aboutThem!.at}s ago -- not again until ` +
+              `${window}s after that (the re-page interval)`
+          : `[page] ${name} was paged ${at - theirs!.at}s ago about somebody else they acknowledged -- their next page ` +
+              `names ${operator.slice(0, 8)} too, ${window}s after that (the re-page interval, per person)`,
       );
       await this.resendAck(held, event.id);
       return;
     }
 
     // Their own entries and nobody else's, by the key they acknowledged with.
-    const theirs = this.config.escalation.oncall.filter(
-      (e) => e.declaration.author.pubkey === held.by.pubkey && e.declaration.expires > at,
+    const entries = this.config.escalation.oncall.filter(
+      (e) => e.declaration.author.pubkey === person && e.declaration.expires > at,
     );
-    const wakeable = theirs.filter((e) => e.declaration.channel !== "console-open");
+    const wakeable = entries.filter((e) => e.declaration.channel !== "console-open");
     const cannot: Unpaged | null =
-      theirs.length === 0
-        ? "off-roster"
-        : wakeable.length === 0
-          ? "console-only"
-          : !this.budget.take(at)
-            ? "budget"
-            : null;
+      entries.length === 0 ? "off-roster" : wakeable.length === 0 ? "console-only" : this.atCeiling(person, at) ? "ceiling" : null;
+    if (cannot === "ceiling") {
+      console.error(
+        `[page] REFUSED by the re-page ceiling: ${name} has been paged again ${REPAGE_CEILING} times in the last ` +
+          `${REPAGE_CEILING_SECONDS}s. That is a loop, not a night -- treating them as unreachable`,
+      );
+    }
     if (cannot) return this.unpaged(held, event, cannot);
 
-    const key = this.repageKey(held);
-    const paged: Repage = { at, attempt: event.id, dispatched: false };
-    this.repaged.set(key, paged);
+    // This operator, and every other one this person holds who has sent since their last page.
+    const named = [{ event, held }, ...this.takePending(person, at).filter((p) => p.held.ladder.operator !== operator)];
+    // The page carries this attempt's id alone; a wake from it widens every hold it names.
+    this.pageNamed.set(event.id, named.map((n) => n.event.id));
+    const sent = { dispatched: false };
+    for (const n of named) this.repaged.set(this.repageKey(n.held), { at, attempt: n.event.id, sent });
+    const page: Repage = { at, attempt: event.id, sent };
+    const record = this.personPages(person);
+    record.last = page;
+    record.started.push(at);
     console.log(
-      `[page] paging ${held.by.callsign} again, and nobody else, about ${event.id.slice(0, 8)} from ${event.pubkey.slice(0, 8)}`,
+      `[page] paging ${name} again, and nobody else, about ${event.id.slice(0, 8)} from ${operator.slice(0, 8)}` +
+        (named.length > 1 ? `, and about ${named.length - 1} more operator(s) they acknowledged who sent since their last page` : ""),
     );
     // An acknowledgement that could not be sent must not cost the page.
     await this.resendAck(held, event.id).catch((err: unknown) => {
@@ -829,30 +1075,45 @@ export class EscalationExecutor {
     });
 
     /*
-     * No Distress id goes with this page, deliberately: an acknowledgement names a ladder, and this
-     * attempt has none. One naming it would be ignored, so a channel offering a one-tap
-     * acknowledgement for it would tell the person tapping that the operator heard them, when
-     * nothing had.
+     * A `repeat` page, never a first one. No Distress id goes with it, deliberately: an acknowledgement
+     * names a ladder, and this attempt has none. One naming it would be ignored, so a channel offering
+     * a one-tap acknowledgement for it would tell the person tapping that the operator heard them, when
+     * nothing had. The attempt goes under its own placeholder, `{{attempt}}`, for the one thing that
+     * page can do: ask the watch to wake the others (`wake-others`).
      */
-    const results = await this.page(
-      wakeable,
-      `NavCom DISTRESS from ${event.pubkey.slice(0, 8)} again, ${ago(at - held.at)} after you acknowledged it`,
-      undefined,
-      "",
-    );
+    const results = await this.page(wakeable, this.repeatText(named, at), undefined, "", "repeat", event.id);
     for (const r of results) {
       console.log(`[page] again: ${r.callsign} via ${r.channel}: ${r.dispatched ? "dispatched" : `FAILED ${r.error}`}`);
     }
     // A command exiting zero, which is all "dispatched" means -- not that anybody woke.
     if (results.some((r) => r.dispatched)) {
-      paged.dispatched = true;
+      sent.dispatched = true;
       this.recordPaged(held, "contact-attempted");
       return;
     }
-    // It woke nobody, so it holds back no page after it.
-    if (this.repaged.get(key) === paged) this.repaged.delete(key);
+    // It woke nobody, so it holds back no page after it -- about any operator it named, or to this person.
+    for (const n of named) {
+      const key = this.repageKey(n.held);
+      if (this.repaged.get(key)?.sent === sent) this.repaged.delete(key);
+    }
+    if (record.last === page) record.last = undefined;
     this.recordPaged(held, "contact-failed");
     if (!this.stopped) await this.unpaged(held, event, "failed", true);
+  }
+
+  /**
+   * The words a re-page carries, for channels that show them. Never opens with "Distress": the first
+   * word is what is read at 3am, and this is not a new one. Says why only this person is being woken,
+   * and never that nobody else was -- a keyless pager beside this box may have paged others.
+   */
+  private repeatText(named: HeldAttempt[], at: number): string {
+    const who = named
+      .map((n) => `${n.event.pubkey.slice(0, 8)} (${ago(at - n.held.at)} after you acknowledged)`)
+      .join(", ");
+    return (
+      `NavCom REPEAT -- ${named.length === 1 ? "an operator" : `${named.length} operators`} you acknowledged sent ` +
+      `Distress again: ${who}. You are paged because you answered; if you are not with them, reach them another way.`
+    );
   }
 
   /**
@@ -868,11 +1129,12 @@ export class EscalationExecutor {
   private async unpaged(held: HeldAck, event: Event, why: Unpaged, tried = false): Promise<void> {
     const name = held.by.callsign;
     console.error(
-      `[page] ${name} could not be paged again about ${event.id.slice(0, 8)} -- ${UNPAGED[why]}. ` +
+      `[page] ${name} is not paged again about ${event.id.slice(0, 8)} -- ${UNPAGED[why]}. ` +
         `Not holding their acknowledgement for ${event.pubkey.slice(0, 8)} any longer; escalating this attempt as new`,
     );
     if (!tried) this.recordPaged(held, "contact-not-attempted");
     if (this.heldAcks.get(held.ladder.operator) === held) this.heldAcks.delete(held.ladder.operator);
+    this.pending.get(held.by.pubkey)?.delete(held.ladder.operator);
 
     const { ladder, started } = this.openLadder(event);
     if (!started) {
@@ -891,8 +1153,7 @@ export class EscalationExecutor {
             .filter((d) => d.author.pubkey !== held.by.pubkey)
             .map(nameOf)
         : ladder.paged;
-    // "Too many alerts at once" said twice in a row says nothing more the second time.
-    const opening = this.opening(ladder, event, why === "budget" ? "" : `${name} could not be paged again -- ${UNPAGED[why]}.`, paging);
+    const opening = this.opening(ladder, event, unpagedSentence(name, why), paging);
     if (tried) {
       await this.run(ladder, event, opening);
       return;
@@ -908,16 +1169,14 @@ export class EscalationExecutor {
   /** The held acknowledgement's text for an attempt escalated as new: who could not be paged, and what the ladder does. */
   private unpagedText(held: HeldAck, why: Unpaged, ladder: Ladder, opening: Opening): string {
     const lead = `Acknowledged ${ago(now() - held.at)} ago.`;
-    const name = held.by.callsign;
-    if (why === "budget" && !opening.pages) {
-      return `${lead} ${name} could not be paged again, and nobody else could be -- too many alerts at once.`;
-    }
     const next = opening.pages
       ? `The watch is paging ${opening.paging.join(", ")} about this one.`
-      : ladder.state === "paging"
+      : opening.budgetSpent
         ? "The watch could not page anyone else -- too many alerts at once."
-        : "Nobody on call can be paged about this one.";
-    return `${lead} ${name} could not be paged again -- ${UNPAGED[why]}. ${next}`;
+        : ladder.state === "paging"
+          ? "Nobody else on call can be paged about this one."
+          : "Nobody on call can be paged about this one.";
+    return `${lead} ${unpagedSentence(held.by.callsign, why)} ${next}`;
   }
 
   /**
@@ -931,7 +1190,7 @@ export class EscalationExecutor {
     try {
       this.accountability.record({
         at: now(),
-        actor: { kind: "node", callsign: "escalation", pubkey: this.pubkey },
+        actor: { kind: "node", callsign: "escalation", pubkey: this.speaker },
         action: "contacted",
         subject: { kind: "human", callsign: held.by.callsign, pubkey: held.by.pubkey },
         outcome,
@@ -942,6 +1201,16 @@ export class EscalationExecutor {
   }
 
   private async handleAck(event: Event, payload: DistressAckPayload): Promise<void> {
+    if (typeof payload?.distress_id !== "string") {
+      console.warn(`[ack] REFUSED ${event.id.slice(0, 8)} from ${event.pubkey.slice(0, 8)} -- it names no Distress`);
+      return;
+    }
+    // Before the drill and the roster: listed on the roster or not, the watch key is the daemon's and the
+    // agent's, and an acknowledgement from it would have this process sign "a person has it".
+    if (this.boxKeys.has(event.pubkey)) {
+      console.warn(`[ack] REFUSED ${event.id.slice(0, 8)} -- ${this.boxKeyRefusal(event.pubkey)}`);
+      return;
+    }
     // A drill uses the same acknowledgement a real Distress does, deliberately: an ack path
     // that only gets exercised by drills is an ack path that has never been tested.
     const forDrill = this.drillAcks.get(payload.distress_id);
@@ -1026,7 +1295,7 @@ export class EscalationExecutor {
     const task =
       event.kind === KIND_DISTRESS
         ? this.handleDistress(event)
-        : this.maybeAck(event);
+        : this.handleSignal(event);
 
     task.catch((err: unknown) => {
       console.error(`[executor] handling ${event.id.slice(0, 8)} failed: ${String(err)}`);
@@ -1065,12 +1334,235 @@ export class EscalationExecutor {
     this.listener.start();
   }
 
-  private async maybeAck(event: Event): Promise<void> {
-    // The executor subscribes to 20910 only for acknowledgements. Everything else on that
-    // kind is the daemon's business, and reaching into it would be a dependency.
-    if (event.tags.find((t) => t[0] === "t")?.[1] !== "distress-ack") return;
-    const payload = openSignal<DistressAckPayload>(this.secretKey, event.pubkey, event.content);
-    await this.handleAck(event, payload);
+  /**
+   * The two signals this process acts on: `distress-ack` and `wake-others`.
+   *
+   * The executor subscribes to `20910` only for these. Everything else on that kind is the daemon's
+   * business, and reaching into it would be a dependency.
+   */
+  private async handleSignal(event: Event): Promise<void> {
+    const type = event.tags.find((t) => t[0] === "t")?.[1];
+    if (type !== "distress-ack" && type !== "wake-others") return;
+    const payload = this.openSignalFrom(event);
+    if (payload === null) {
+      /*
+       * Logged as refused, never dropped without a word (`escalation.spec.md`, failure mode 19). With
+       * its own key, the usual cause is a phone that sealed it to a watch key this box does not hold
+       * -- a watch handed over again -- and the person who sent it is still waiting.
+       */
+      console.warn(
+        `[${type === "distress-ack" ? "ack" : "wake"}] REFUSED ${event.id.slice(0, 8)} from ${event.pubkey.slice(0, 8)} -- ` +
+          `it could not be opened with ${this.own ? "the executor's own key or the watch key" : "the watch key"}`,
+      );
+      if (type === "wake-others") await this.answerWake(event, "Not done -- the watch could not read it.");
+      return;
+    }
+    if (type === "distress-ack") return this.handleAck(event, payload as DistressAckPayload);
+    return this.handleWake(event, payload);
+  }
+
+  /**
+   * A signal's payload, opened with the executor's own key where the phone sealed one to it, and the
+   * watch key otherwise -- a phone handed the watch before it named the executor seals to the watch key
+   * alone. Null when neither opens it.
+   */
+  private openSignalFrom(event: Event): unknown {
+    const keys = this.own ? [this.own.secretKey, this.secretKey] : [this.secretKey];
+    for (const key of keys) {
+      try {
+        return openSignal<unknown>(key, event.pubkey, event.content);
+      } catch {
+        /* the next key */
+      }
+    }
+    return null;
+  }
+
+  /**
+   * *"Page everyone about this one"* -- decided 2026-10-07, option (d).
+   *
+   * The person paged again about an operator they acknowledged has one move on that page: ask the
+   * watch to wake the rest of the roster about the attempt it carried. **It can only widen, and never
+   * closes anything** [invariant 2]: it ends the hold and opens a ladder for that attempt, as when the
+   * person who acknowledged cannot be paged, and nothing in it tells the operator a person has it --
+   * that comes only from somebody acknowledging the ladder it opens, the person who asked included.
+   *
+   * **It widens, or it changes nothing** [review: box safety]. Who would be paged, and the first-page
+   * budget, are settled before the hold is touched. Where nobody else on call can be paged, or the
+   * budget is spent, the hold stands, the person who acknowledged is still the one paged about that
+   * operator, and the operator is told nothing new. Ending the hold first opened a ladder that paged
+   * nobody; the operator's later attempts joined it, the person who had answered them stopped being
+   * paged, and when the ladder ran out the operator was told "Nobody is coming", minutes after a person
+   * had acknowledged them.
+   *
+   * **A page can name several operators** and carries one attempt id, so a wake from it widens every
+   * hold that page named ({@link pageNamed}), and the answer names each operator by key.
+   *
+   * Accepted only from a key on the on-call roster, never the watch's own, and only about an attempt
+   * this executor answered from a hold. Anything else is refused and logged, as an acknowledgement from
+   * outside the roster is. Either way the person who asked is answered: it is the only way they learn
+   * whether anybody else is being woken -- and answered again if the page then fails.
+   */
+  private async handleWake(event: Event, payload: unknown): Promise<void> {
+    const asker = event.pubkey;
+    const raw = (payload as { distress_id?: unknown } | null)?.distress_id;
+    const attempt = typeof raw === "string" && /^[0-9a-f]{64}$/.test(raw) ? raw : null;
+    const at = now();
+    const entry = this.config.escalation.oncall.find(
+      (e) => e.declaration.author.pubkey === asker && e.declaration.expires > at,
+    );
+    const callsign = entry?.declaration.author.callsign;
+    const refuse = async (why: string, text: string): Promise<void> => {
+      console.warn(`[wake] REFUSED from ${asker.slice(0, 8)} about ${attempt?.slice(0, 8) ?? "nothing"} -- ${why}`);
+      await this.answerWake(event, text);
+    };
+
+    if (this.boxKeys.has(asker)) {
+      return refuse(this.boxKeyRefusal(asker), "Not done -- this is the watch's own key. Only a person on call can ask this.");
+    }
+    if (!callsign) return refuse("not on the on-call roster", "Not done -- this key is not on the watch's on-call roster.");
+    if (!attempt) return refuse("it names no attempt", "Not done -- it named no attempt.");
+    if (!this.heldAttempts.has(attempt)) {
+      return refuse(
+        "not an attempt the watch answered from a hold",
+        "Not done -- the watch did not answer that attempt with an earlier acknowledgement.",
+      );
+    }
+
+    // Every hold the page named, each decided -- and, where accepted, ended -- before anything is sent.
+    const ids = this.pageNamed.get(attempt) ?? [attempt];
+    const woken = ids.flatMap((id) => {
+      const held = this.heldAttempts.get(id);
+      return held ? [this.wake(held, callsign, asker, at)] : [];
+    });
+    const ladder = woken.length === 1 ? woken[0]!.ladder : undefined;
+    // Caught at once: this process exits on a rejection nobody is listening for yet.
+    const told = this.answerWake(event, woken.map((w) => w.text).join(" "), ladder).catch((err: unknown) => {
+      console.error(`[wake] answering ${callsign} failed: ${String(err)}`);
+    });
+    const after = await Promise.all(woken.map((w) => (w.go ? w.go() : Promise.resolve(undefined))));
+    await told;
+    // A page that failed is said to the person who asked, who was told it was going out.
+    const failed = after.filter((s): s is string => typeof s === "string");
+    if (failed.length > 0) await this.answerWake(event, failed.join(" "), ladder);
+  }
+
+  /**
+   * One hold a `wake-others` named: what the person who asked is told about it, and what is sent once
+   * they have been. Decided, and an accepted hold ended, without awaiting anything, so two wakes in
+   * one tick cannot both open a ladder for the same attempt.
+   */
+  private wake(entry: HeldAttempt, callsign: string, asker: string, at: number): WakeDecision {
+    const { held, event } = entry;
+    const operator = held.ladder.operator;
+    const who = operator.slice(0, 8);
+    const about = `${event.id.slice(0, 8)} from ${who}`;
+
+    if (!this.standing(entry, at)) {
+      const ladder = this.ladders.get(event.id);
+      console.warn(`[wake] REFUSED from ${asker.slice(0, 8)} about ${about} -- the hold had already ended`);
+      return {
+        text: `Not done -- the hold on ${who} had already ended.${ladder ? ` Where the watch is now: ${this.where(ladder)}` : ""}`,
+        ...(ladder ? { ladder } : {}),
+      };
+    }
+
+    if (this.liveFor(operator)) {
+      // The roster is already being paged for them: the attempt joins that ladder, and the hold stands
+      // behind it, as it does for any attempt while a ladder of theirs runs.
+      const { ladder } = this.openLadder(event);
+      console.log(`[wake] ${callsign} asked about ${about} -- a ladder for them is already running; joining it`);
+      return {
+        text: `A ladder for ${who} was already running. ${this.where(ladder)}`,
+        ladder,
+        go: async () => {
+          await this.reportAgain(ladder, event.id);
+          return undefined;
+        },
+      };
+    }
+
+    // Everybody pageable but the person who asked, who knows: "Wren asked the watch to page everyone about this one. Paging Raven."
+    const others = this.rosterAt(at).filter((e) => e.declaration.author.pubkey !== asker);
+    const paging = pageableNow(others.map((e) => e.declaration), at).map(nameOf);
+    const stands =
+      held.by.pubkey === asker
+        ? "The hold stands, and you are still the one paged about them if they keep sending."
+        : `The hold stands, and ${held.by.callsign} is still the one paged about them if they keep sending.`;
+    if (paging.length === 0) {
+      console.warn(`[wake] ${callsign} asked about ${about} -- nobody else on call can be paged, so the hold stands`);
+      return { text: `Not done -- nobody else on call can be paged about ${who}. ${stands}` };
+    }
+    if (!this.takeFirstPage(event.id)) {
+      console.warn(`[wake] ${callsign} asked about ${about} -- refused by the first-page budget, so the hold stands`);
+      return { text: `Not done -- too many alerts at once, so the watch could not page anyone else about ${who}. ${stands}` };
+    }
+
+    // Accepted, and only now is the hold touched: nothing answers this operator from it again.
+    if (this.heldAcks.get(operator) === held) this.heldAcks.delete(operator);
+    this.pending.get(held.by.pubkey)?.delete(operator);
+    console.log(
+      `[wake] ${callsign} asked the watch to page everyone about ${about} -- no longer holding ` +
+        `${held.by.callsign}'s acknowledgement for them; escalating that attempt as new`,
+    );
+    const { ladder, started } = this.openLadder(event);
+    if (!started) {
+      // Not reachable while no ladder of theirs is live, which was checked above; said as it is if it ever is.
+      return {
+        text: `A ladder for ${who} was already running. ${this.where(ladder)}`,
+        ladder,
+        go: async () => {
+          await this.reportAgain(ladder, event.id);
+          return undefined;
+        },
+      };
+    }
+    const opening = this.opening(ladder, event, `${callsign} asked the watch to page everyone about this one.`, paging, others, true);
+    return {
+      text: `Done. The hold on ${who} has ended and the watch is paging ${opening.paging.join(", ")} about them.`,
+      ladder,
+      go: async () => {
+        const results = (await this.run(ladder, event, opening)) ?? [];
+        const failed = results.filter((r) => !r.dispatched);
+        if (failed.length === 0) return undefined;
+        const names = failed.map((r) => r.callsign).join(", ");
+        return failed.length === results.length
+          ? `Every channel failed paging ${names} about ${who}. Nobody else has been woken.`
+          : `${names} could not be reached about ${who} -- their channel failed.`;
+      },
+    };
+  }
+
+  /** Why the watch key, or the executor's own, is refused as a person. */
+  private boxKeyRefusal(pubkey: string): string {
+    return pubkey === this.pubkey
+      ? "signed by the watch key, which is no person's: the daemon and the agent beside it hold it. A person uses their own key"
+      : "signed by the executor's own key, which is no person's";
+  }
+
+  /** Where a ladder is, as a retry joining it is told -- with whatever this process added to it. */
+  private where(ladder: Ladder): string {
+    const note = this.notes.get(ladder.distressId);
+    return note && note.state === ladder.state ? note.text : ladderReport(ladder);
+  }
+
+  /**
+   * The answer to the person who sent a `wake-others`: accepted with who is being paged, or refused and
+   * why. Signed by the executor's own key, with the watch key's copy, as every response is. Spoken as
+   * the node: it is the ladder's word, never a person's.
+   */
+  private async answerWake(event: Event, text: string, ladder?: Ladder): Promise<number> {
+    const payload: ResponsePayload = {
+      type: "escalation-status",
+      responder: { kind: "node", callsign: "escalation" },
+      text,
+      provenance: null,
+      ...(ladder ? { ladder: ladder.state } : {}),
+    };
+    console.log(`[wake] answering ${event.pubkey.slice(0, 8)}: ${text}`);
+    const accepted = await this.respond(event.pubkey, [["p", event.pubkey], ["e", event.id]], payload, event.id.slice(0, 8));
+    if (accepted === 0) console.error(`[wake] COULD NOT ANSWER ${event.pubkey.slice(0, 8)} -- no relay accepted`);
+    return accepted;
   }
 
   /**
@@ -1175,6 +1667,26 @@ export class EscalationExecutor {
         const age = now() - page.at;
         if (age < 0 || age >= kept) this.repaged.delete(key);
       }
+      for (const [person, record] of this.persons) {
+        const age = record.last ? now() - record.last.at : -1;
+        if (record.last && (age < 0 || age >= kept)) record.last = undefined;
+        this.atCeiling(person, now());
+        if (!record.last && record.started.length === 0) this.persons.delete(person);
+      }
+      for (const [person, waiting] of this.pending) {
+        for (const [operator, entry] of waiting) if (!this.standing(entry, now())) waiting.delete(operator);
+        if (waiting.size === 0) this.pending.delete(person);
+      }
+      // Kept past the hold's end, however it ended, so a late `wake-others` is told the hold ended. One
+      // stamped ahead of the clock -- a step back -- is dropped, as the hold itself is.
+      const keptAttempts =
+        this.config.escalation.ackHoldsSeconds +
+        Math.max(REPEAT_PAGE_TTL_SECONDS, this.config.escalation.ladderRetentionSeconds);
+      for (const [id, entry] of this.heldAttempts) {
+        const age = now() - entry.held.at;
+        if (age < 0 || age >= keptAttempts) this.heldAttempts.delete(id);
+      }
+      for (const id of this.pageNamed.keys()) if (!this.heldAttempts.has(id)) this.pageNamed.delete(id);
 
       for (const ladder of this.ladders.tickAll(now(), this.windows)) {
         this.report(ladder, ladder.distressId).catch((err: unknown) => {

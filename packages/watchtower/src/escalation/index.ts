@@ -1,11 +1,31 @@
 #!/usr/bin/env node
-import { loadEscalationConfig } from "./config.js";
-import { loadOrCreateKeypair } from "../shared/identity.js";
+import { existsSync } from "node:fs";
+import { loadEscalationConfig, type EscalationConfig } from "./config.js";
+import type { Keypair } from "../shared/identity.js";
 import { EscalationExecutor, ageWindowSeconds } from "./executor.js";
-import { testPage } from "./pager.js";
+import { pushTemplateGaps, testPage } from "./pager.js";
 import { readDrillState } from "./drills.js";
 import { buildReview, render } from "./review.js";
 import { AccountabilityLog } from "../shared/accountability.js";
+import { nodePool } from "../shared/nostr-node.js";
+import {
+  boxKeysOnRoster,
+  checkKeyFile,
+  daemonAdminNote,
+  earlierExecutorKeys,
+  loadExecutorKey,
+  loadWatchKey,
+  NO_EXECUTOR_KEY,
+  readersHere,
+  readReplaced,
+  relaysTakeBoth,
+  replacedLines,
+  watchCode,
+  watchStateSeen,
+  whyNotMake,
+  writeReplaced,
+  type ExecutorKey,
+} from "./keys.js";
 
 /**
  * The escalation executor, as its own process.
@@ -45,6 +65,11 @@ async function check(path: string): Promise<never> {
   const config = load(path);
   const roster = config.escalation.oncall.filter((e) => e.declaration.channel !== "console-open");
 
+  // Who can end a Distress comes before who can be woken: a box whose key the agent can read pages
+  // perfectly and can still tell an operator a person has them.
+  const keysOk = await checkExecutorKey(config);
+  for (const line of templateLines(config, "[check]")) console.warn(line);
+
   if (roster.length === 0) {
     console.error("[check] Nobody is on-call, so there is nothing to test.");
     console.error("[check] A Distress today would page nobody and say so. See escalation.example.toml.");
@@ -71,7 +96,251 @@ async function check(path: string): Promise<never> {
   }
   console.log("[check] every command ran. Now confirm each person actually received it --");
   console.log("[check] a command exiting zero is not a person waking up.");
-  process.exit(0);
+  process.exit(keysOk ? 0 : 1);
+}
+
+/**
+ * The keys, for `--check`: the watch key present and the daemon's, the executor's own present, readable by
+ * nobody but this user, and taken by every relay with the watch key's copy, and neither key on the roster.
+ * Returns whether it passed. A box with no executor key configured is said and is not a failure: a box set
+ * up before the key existed keeps working exactly as it did, and `--check` says what that costs.
+ *
+ * Makes neither key. A check that creates what it checks would pass a box that never ran.
+ */
+async function checkExecutorKey(config: EscalationConfig): Promise<boolean> {
+  // The watch key first: one made here would be a new watch, nobody's phone would know it, and every
+  // relay check below would pass for it.
+  let watch: Keypair;
+  try {
+    watch = loadWatchKey(config.identity.privkeyPath);
+  } catch (err: unknown) {
+    console.error(`[check] WATCH KEY: ${err instanceof Error ? err.message : String(err)}`);
+    console.error("");
+    return false;
+  }
+  console.log(`[check] watch key: ${watch.pubkey}`);
+  let ok = true;
+
+  const pool = nodePool();
+  try {
+    // The only way to see from here that it is the daemon's key: the daemon publishes its state with it.
+    const seen = await watchStateSeen(pool, config.relays.urls, watch.pubkey).catch(() => false);
+    if (seen) console.log("[check]   a relay holds a watch state signed by it -- the daemon is publishing with this key");
+    else {
+      console.warn(
+        "[check]   no relay holds a watch state signed by this key. If the daemon is running, privkey_path is not " +
+          "its key, and this executor would hear no Distress meant for this watch. Compare it with the pubkey the daemon prints at start",
+      );
+    }
+
+    const path = config.identity.executorKeyPath;
+    if (!path) {
+      ok = rosterKeysOk(config, [watch.pubkey]) && ok;
+      for (const line of NO_EXECUTOR_KEY) console.warn(`[check] ${line}`);
+      console.warn("");
+      return ok;
+    }
+    let key: ExecutorKey;
+    try {
+      // Not made here, for the same reason as the watch key, and because a key made by whoever ran --check
+      // is born readable by them.
+      if (!existsSync(path)) throw new Error(`there is nothing at ${path}. The executor makes it on its first start, as the user it runs as`);
+      key = loadExecutorKey(path);
+    } catch (err: unknown) {
+      console.error(`[check] EXECUTOR KEY: ${err instanceof Error ? err.message : String(err)}`);
+      console.error("");
+      return false;
+    }
+    ok = rosterKeysOk(config, [watch.pubkey, key.pubkey]) && ok;
+    console.log(`[check] executor key: ${key.pubkey}`);
+    const problems = checkKeyFile(path, config.identity.daemonUser);
+    if (key.pubkey === watch.pubkey) problems.push("it is the watch key -- a phone reads it as no executor key at all");
+    for (const p of problems) {
+      ok = false;
+      console.error(`[check]   REFUSED: ${p}`);
+    }
+    if (problems.length === 0) {
+      // What the file shows, and no more: root, and sudo, can read it regardless.
+      console.log(`[check]   only this user can read it; the daemon's user (${config.identity.daemonUser}) is not root and does not own it`);
+      const note = daemonAdminNote(config.identity.daemonUser);
+      if (note) console.warn(`[check]   ${note}`);
+    }
+    const replaced = readReplaced(path);
+    if (replaced) {
+      ok = false;
+      for (const line of replacedLines(path, key.pubkey, replaced)) console.error(`[check]   REFUSED: ${line}`);
+    }
+
+    console.log("[check] asking each relay to take one test response signed by each key, as the executor sends them");
+    let relaysOk = true;
+    for (const r of await relaysTakeBoth(pool, config.relays.urls, watch, key)) {
+      if (r.watch === null && r.executor === null) console.log(`[check]   ${r.url}: takes both keys`);
+      else if (r.watch === null) {
+        relaysOk = false;
+        console.error(
+          `[check]   ${r.url}: REFUSED -- takes the watch key and refuses the executor's (${r.executor}). A phone given the ` +
+            "executor key hears only the watch key's copies from here, and no Distress ends on them. Drop this relay",
+        );
+      } else if (r.executor === null) {
+        relaysOk = false;
+        console.error(
+          `[check]   ${r.url}: REFUSED -- takes the executor's key and refuses the watch key's copy (${r.watch}). A phone ` +
+            "handed this watch before it named the executor key hears nothing from here. Drop this relay",
+        );
+      } else console.warn(`[check]   ${r.url}: took neither (${r.executor}) -- unreachable from here, or refusing this box`);
+    }
+    ok = ok && relaysOk;
+    // The code a phone is handed, once the key is fit to hand over.
+    if (problems.length === 0 && relaysOk) {
+      console.log(`[check] watch code, carrying the executor's key -- hand it to operators: ${watchCode(watch, config.relays.urls, key.pubkey)}`);
+    }
+  } finally {
+    pool.destroy();
+  }
+  console.log("");
+  return ok;
+}
+
+/** Whether any on-call entry uses the watch's own key or the executor's, said either way it fails. */
+function rosterKeysOk(config: EscalationConfig, boxKeys: string[], prefix = "[check]"): boolean {
+  const named = boxKeysOnRoster(config.escalation.oncall, boxKeys);
+  for (const who of named) {
+    console.error(
+      `${prefix}   REFUSED: ${who} is on call with the watch's own key. The daemon and the agent beside it hold that key, so ` +
+        "the executor refuses an acknowledgement or a wake signed with it. Give them a key of their own",
+    );
+  }
+  return named.length === 0;
+}
+
+/** Each navcom-push entry whose template cannot yet say what kind of page it carries. */
+function templateLines(config: EscalationConfig, prefix: string): string[] {
+  const lines: string[] = [];
+  for (const entry of config.escalation.oncall) {
+    for (const gap of pushTemplateGaps(entry)) {
+      lines.push(`${prefix} ${entry.declaration.author.callsign} (${entry.declaration.channel}): ${gap}`);
+    }
+  }
+  if (lines.length > 0) lines.push(`${prefix} the template that says all three is in escalation.example.toml`);
+  return lines;
+}
+
+/**
+ * The watch key, or a loud stop [review: box safety]. Never made here: the daemon makes it, and a new one
+ * would be a watch no phone knows -- an executor that hears no Distress meant for this watch while it
+ * looks healthy. Stopped instead, which a supervisor restarts and a journal shows.
+ */
+function watchKeyOrExit(config: EscalationConfig): Keypair {
+  try {
+    return loadWatchKey(config.identity.privkeyPath);
+  } catch (err: unknown) {
+    console.error("[executor] ####################################################");
+    console.error(`[executor] NO WATCH KEY: ${err instanceof Error ? err.message : String(err)}`);
+    console.error("[executor] Not starting. With a key no phone knows, this executor would hear no Distress");
+    console.error("[executor] meant for this watch and page for none of them, while it looked healthy.");
+    console.error("[executor] ####################################################");
+    process.exit(1);
+  }
+}
+
+/**
+ * The executor's own key at startup: loaded, or made, and said -- or, where the config names none, what
+ * running without it costs. Said at every start, not once: it is the box's standing state.
+ *
+ * **Made only by the long-running start, and only as a user of its own** (`mayMake`; {@link whyNotMake}):
+ * never by `--drill`, and never where `daemon_user` is unset, unknown, root, or this process's own user.
+ * A key born readable by the daemon's user looks clean after a `chown`, and nothing would record it had
+ * been exposed. Where it is not made, the box runs without one and says why.
+ *
+ * **A key made where the log names an earlier one is a replacement**, and every phone handed the old one
+ * can no longer end a `Distress`. It is still made -- the box must keep answering -- and said loudly at
+ * every start, and `--check` fails, until a person removes the record beside it.
+ *
+ * A key that fails the file check still signs. Paging nobody is the worse failure, and a phone given this
+ * key ends a Distress on nothing else, so dropping it would leave every phone that has it unable to close.
+ * It is not offered for handing out until it passes.
+ */
+function executorKeyAtStart(config: EscalationConfig, watch: Keypair, mayMake: boolean): ExecutorKey | undefined {
+  const path = config.identity.executorKeyPath;
+  if (!path) {
+    console.warn("[executor] ####################################################");
+    for (const line of NO_EXECUTOR_KEY) console.warn(`[executor] ${line}`);
+    console.warn("[executor] ####################################################");
+    return undefined;
+  }
+  if (!existsSync(path)) {
+    const why = mayMake
+      ? whyNotMake(readersHere(config.identity.daemonUser))
+      : "--drill never makes it; the executor's own start does, as the user it runs as";
+    if (why) {
+      console.error("[executor] ####################################################");
+      console.error(`[executor] NO EXECUTOR KEY at ${path}, and not making one: ${why}.`);
+      console.error("[executor] Running without it: every answer is signed with the watch key alone, as on a box");
+      console.error("[executor] that names no executor key. The ladder runs, and pages, regardless.");
+      console.error("[executor] ####################################################");
+      return undefined;
+    }
+  }
+  let key: ExecutorKey;
+  try {
+    key = loadExecutorKey(path);
+  } catch (err: unknown) {
+    /*
+     * A key that cannot be read -- corrupt, truncated, a directory this user cannot enter -- must not
+     * stop the ladder: paging nobody is the worse failure. Without it every response is signed with
+     * the watch key alone, which a phone handed this key shows and never ends a Distress on.
+     */
+    console.error("[executor] ####################################################");
+    console.error(`[executor] COULD NOT LOAD THE EXECUTOR'S KEY: ${err instanceof Error ? err.message : String(err)}`);
+    console.error("[executor] Running without it. A phone handed that key shows every answer");
+    console.error("[executor] from this box and ends no Distress on any of them until this is fixed.");
+    console.error("[executor] The ladder runs, and pages, regardless.");
+    console.error("[executor] ####################################################");
+    return undefined;
+  }
+  if (key.pubkey === watch.pubkey) {
+    console.error(`[executor] executor_key_path holds the watch key -- no executor key. ${NO_EXECUTOR_KEY[0]}`);
+    return undefined;
+  }
+  if (key.created) {
+    console.log(`[executor] made the executor's own key at ${path}, readable only by this user`);
+    const earlier = earlierExecutorKeys(config.log.path, [watch.pubkey, key.pubkey]);
+    if (earlier.length > 0) {
+      try {
+        writeReplaced(path, { at: Math.floor(Date.now() / 1000), replaces: earlier });
+      } catch (err: unknown) {
+        console.error(`[executor] could not record that this key replaces another: ${String(err)}`);
+      }
+    }
+  }
+  console.log(`[executor] executor key: ${key.pubkey}`);
+  console.log("[executor] every response is signed with it, and copied under the watch key for phones not handed it");
+  const replaced = readReplaced(path);
+  if (replaced) {
+    console.error("[executor] ####################################################");
+    for (const line of replacedLines(path, key.pubkey, replaced)) console.error(`[executor] ${line}`);
+    console.error("[executor] ####################################################");
+  }
+  const problems = checkKeyFile(path, config.identity.daemonUser);
+  if (problems.length > 0) {
+    console.error("[executor] ####################################################");
+    console.error("[executor] THE EXECUTOR'S KEY IS NOT ITS OWN:");
+    for (const p of problems) console.error(`[executor]   ${p}`);
+    console.error("[executor] Whoever can read it can sign 'a person has it', and a phone handed");
+    console.error("[executor] this key believes that over anything else. The ladder runs regardless.");
+    console.error("[executor] Do not hand it to operators until this is fixed.");
+    console.error("[executor] navcom-escalation --check keeps failing until it is.");
+    console.error("[executor] ####################################################");
+    return key;
+  }
+  const note = daemonAdminNote(config.identity.daemonUser);
+  if (note) console.warn(`[executor] ${note}`);
+  console.log(
+    "[executor] a phone given this key ends a Distress only on an answer it signed. Hand operators this watch code, " +
+      "which carries it -- the key is never typed into a phone:",
+  );
+  console.log(`[executor] watch code: ${watchCode(watch, config.relays.urls, key.pubkey)}`);
+  return key;
 }
 
 /**
@@ -102,9 +371,12 @@ function load(path: string) {
  */
 async function drillNow(path: string): Promise<never> {
   const config = load(path);
-  const { secretKey, pubkey } = loadOrCreateKeypair(config.identity.privkeyPath);
+  const watch = watchKeyOrExit(config);
+  const { secretKey, pubkey } = watch;
+  const executorKey = executorKeyAtStart(config, watch, false);
   const executor = new EscalationExecutor({
     config, secretKey, pubkey,
+    ...(executorKey ? { executorKey } : {}),
     drillStatePath: config.escalation.drillStatePath,
   });
 
@@ -169,7 +441,8 @@ function main(): void {
     return;
   }
   const config = load(path);
-  const { secretKey, pubkey } = loadOrCreateKeypair(config.identity.privkeyPath);
+  const watch = watchKeyOrExit(config);
+  const { secretKey, pubkey } = watch;
 
   const roster = config.escalation.oncall;
   const wakeable = roster.filter((e) => e.declaration.channel !== "console-open");
@@ -225,8 +498,22 @@ function main(): void {
     console.log(`[executor] can acknowledge: ${canAck.map((e) => e.declaration.author.callsign).join(", ")}`);
   }
 
+  // Each navcom-push entry whose template cannot yet say what kind of page it carries, said each start.
+  for (const line of templateLines(config, "[executor]")) console.warn(line);
+  const executorKey = executorKeyAtStart(config, watch, true);
+  // Neither of the box's own keys is a person's: an acknowledgement or a wake from either is refused.
+  const boxOnRoster = boxKeysOnRoster(roster, [pubkey, ...(executorKey ? [executorKey.pubkey] : [])]);
+  if (boxOnRoster.length > 0) {
+    console.error("[executor] ####################################################");
+    console.error(`[executor] ON CALL WITH THE WATCH'S OWN KEY: ${boxOnRoster.join(", ")}. The daemon and the`);
+    console.error("[executor] agent beside it hold that key, so an acknowledgement or a wake signed with it");
+    console.error("[executor] is refused. Give them a key of their own.");
+    console.error("[executor] ####################################################");
+  }
+
   const executor = new EscalationExecutor({
     config, secretKey, pubkey,
+    ...(executorKey ? { executorKey } : {}),
     drillStatePath: config.escalation.drillStatePath,
   });
   executor.start();

@@ -21,7 +21,7 @@ const DEVICE_ONLY = ['relays_own'];
  * because a crafted kit could choose this phone's relays, while these, which outrank it and
  * decide who reads a Distress, were written straight in.
  */
-const WATCH_FIELDS = ['watchtower', 'relays', 'watch_holders'];
+const WATCH_FIELDS = ['watchtower', 'relays', 'watch_holders', 'watch_escalation', 'watch_executor'];
 
 /**
  * The most keys a real backup carries, with room to spare.
@@ -157,9 +157,22 @@ export function restore(passphrase: string, blob: string): { keys: number; watch
   const restored = entries.filter(([k]) => !DEVICE_ONLY.includes(k) && !WATCH_FIELDS.includes(k));
   const named = Object.fromEntries(entries.filter(([k]) => WATCH_FIELDS.includes(k))) as Record<string, unknown>;
   const strings = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
+  /*
+   * The escalation key travels with the watch it belongs to, inside the signed code it came in, and
+   * is held with it until the operator adds the watch: written straight in, it would decide whose
+   * answer ends this phone's Distress. Only a code that watch signed gives it a key (`offeredWatch`).
+   * A bare `watch_executor`, from the build that kept the key on its own, is held back and never read:
+   * nothing says which watch it was for, or that the watch named it.
+   */
+  const escalation = named['watch_escalation'];
   const watch: NamedWatch | null =
     typeof named['watchtower'] === 'string'
-      ? { pubkey: named['watchtower'], relays: strings(named['relays']), holders: strings(named['watch_holders']) }
+      ? {
+          pubkey: named['watchtower'],
+          relays: strings(named['relays']),
+          holders: strings(named['watch_holders']),
+          ...(typeof escalation === 'string' && escalation ? { escalation } : {})
+        }
       : null;
   for (const [key, value] of restored) set('accruing', key, value);
 

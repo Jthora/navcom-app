@@ -1,8 +1,9 @@
 import { nip44 } from 'nostr-tools';
 import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
+import type { SignalType } from '../events/kinds.js';
 import { HOLDERS_MAX } from '../limits.js';
-import type { SecretKey } from './keys.js';
+import { isCurveKey, type SecretKey } from './keys.js';
 import { hybridOpen, hybridSeal, kemPublicFromHex, type Cover } from './pq.js';
 
 /**
@@ -74,20 +75,129 @@ export interface WatchtowerAddress {
    * [`crypto/pq.ts`]. Optional so that nothing breaks for a caller that has fetched none.
    */
   kem?: Readonly<Record<string, string>>;
+  /**
+   * The escalation executor's own key, where the watch named one when it was handed over.
+   *
+   * **The only key whose answer ends a `Distress` on a box** [`escalation.spec.md`, *Who may close a
+   * Distress*]. Only the executor holds it: not the daemon, which the agent runs beside, and not
+   * anybody who once held the watch key. Its responses are heard beside the watch key's, and the
+   * signals it acts on — `distress-ack` and `wake-others` — are sealed to it as well as to the
+   * holders ({@link readersOf}), so it can read them without the watch key.
+   *
+   * Absent on every watch handed over before it existed. Such a watch keeps the rule it had — a
+   * person's answer from the watch key ends a `Distress` — and a screen says it does not yet name its
+   * escalation key ({@link executorOf}; `distressClosure` in `transport.ts`).
+   */
+  executor?: string;
 }
 
 /**
  * A Watchtower address.
  *
  * With no holders given, the address is its own holder — the box case, where the node holds
- * the Watchtower key itself. A squad passes the member list.
+ * the Watchtower key itself. A squad passes the member list. `executor` is the escalation
+ * executor's own key, where the watch named one.
  */
 export function watchtowerAt(
   pubkey: string,
   holders?: readonly string[],
-  kem?: Readonly<Record<string, string>>
+  kem?: Readonly<Record<string, string>>,
+  executor?: string | null
 ): WatchtowerAddress {
-  return { pubkey, holders: holders?.length ? holders : [pubkey], ...(kem ? { kem } : {}) };
+  return {
+    pubkey,
+    holders: holders?.length ? holders : [pubkey],
+    ...(kem ? { kem } : {}),
+    ...(executor ? { executor } : {})
+  };
+}
+
+/**
+ * The executor's key this address names, as 64 lower-case hex characters, or null.
+ *
+ * Null for an address that names none, and for one that names something that is not a key — not 64
+ * hex characters, or 64 that are not a point on the curve ({@link isCurveKey}), as one mistyped
+ * character makes about half the time. That watch is read as naming none, and keeps the rule a
+ * watch without one has. Read as present, it would be a key nobody can sign as, so no person's
+ * answer could ever end a `Distress`.
+ *
+ * A key that *is* on the curve and that nobody holds — a typo that happens to land on it — cannot be
+ * told from a real one here, and does exactly that. Setup is where it is refused: an executor key
+ * arrives in a scanned watch code, never typed (`escalation.spec.md`, *The executor has a key of
+ * its own*).
+ */
+export function executorOf(address: Pick<WatchtowerAddress, 'executor' | 'pubkey'>): string | null {
+  const key = typeof address.executor === 'string' ? address.executor.trim().toLowerCase() : '';
+  if (!isCurveKey(key) || key === address.pubkey.toLowerCase()) return null;
+  return key;
+}
+
+/**
+ * What the executor reads: the signals it acts on, and nothing else.
+ *
+ * Not a `Distress`. A ladder needs only who sent it and its id, and both are outside the seal, so
+ * the executor has never opened one — and a key that reads no position is a key whose theft costs
+ * no operator's position. Not a query, a sign-on or a resupply, which are the daemon's business. A
+ * relay already reads which of these a `20910` is from its `t` tag, so sealing these to one more
+ * key tells it nothing it could not see.
+ */
+export const EXECUTOR_READS: readonly (SignalType | 'distress')[] = ['distress-ack', 'wake-others'];
+
+/**
+ * Whose keys a message of this kind is sealed to: the holders, and the executor for what it acts on.
+ *
+ * `what` is a signal type, or `distress`. Deduped: a holder listed twice is one wrap. Exactly what
+ * {@link sealToWatch} seals to, so {@link coverFor} reports what was sent: the holders alone where
+ * the executor's wrap would take the envelope past {@link HOLDERS_MAX}.
+ */
+export function readersOf(address: WatchtowerAddress, what: SignalType | 'distress'): string[] {
+  const holders = [...new Set(address.holders)];
+  const executor = executorOf(address);
+  if (!executor || !EXECUTOR_READS.includes(what)) return holders;
+  const readers = [...new Set([...holders, executor])];
+  return readers.length > HOLDERS_MAX ? holders : readers;
+}
+
+/**
+ * What cover a message of this kind to this watch actually gets: {@link coverOf} over
+ * {@link readersOf}, so the executor's wrap counts where it is one of the readers.
+ *
+ * **Where cover is claimed for a `distress-ack` or a `wake-others`, this is the number, not the
+ * holders' cover.** The executor's wrap is classical until its post-quantum key is in
+ * `address.kem`, so an acknowledgement's content key can sit in a classical wrap while every holder
+ * is covered, and a screen computing cover from the holders alone would say covered.
+ */
+export function coverFor(address: WatchtowerAddress, what: SignalType | 'distress'): Cover {
+  return coverOf(readersOf(address, what), address.kem ?? {});
+}
+
+/**
+ * Seals a message to the watch: to {@link readersOf}, or — should adding the executor still refuse
+ * it — to the holders alone.
+ *
+ * **The executor's key is never a reason a message does not go.** A key off the curve is already
+ * read as none ({@link executorOf}), and one wrap past {@link HOLDERS_MAX} already leaves it out
+ * ({@link readersOf}); anything else about its wrap that refuses the envelope — a post-quantum key
+ * for it that does not parse — falls back here, because the message refused could be an
+ * acknowledgement somebody is waiting on. Sealed to the holders alone, an executor that still holds
+ * the watch key reads it as it always has.
+ */
+export function sealToWatch(
+  secret: SecretKey,
+  address: WatchtowerAddress,
+  payload: unknown,
+  what: SignalType | 'distress'
+): string {
+  const readers = readersOf(address, what);
+  const holders = [...new Set(address.holders)];
+  if (readers.length !== holders.length) {
+    try {
+      return sealToGroup(secret, readers, payload, address.kem);
+    } catch {
+      /* the holders alone, below */
+    }
+  }
+  return sealToGroup(secret, address.holders, payload, address.kem);
 }
 
 /** Version tag, so a future format change is a refusal rather than a misparse. */

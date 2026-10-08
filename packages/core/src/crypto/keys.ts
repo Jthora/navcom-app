@@ -33,6 +33,42 @@ export function isPubkey(value: string): boolean {
   return /^[0-9a-f]{64}$/.test(value);
 }
 
+/** secp256k1's field prime. */
+const FIELD_P = 0xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2fn;
+
+function powModP(base: bigint, exponent: bigint): bigint {
+  let result = 1n;
+  let b = base % FIELD_P;
+  let e = exponent;
+  while (e > 0n) {
+    if (e & 1n) result = (result * b) % FIELD_P;
+    b = (b * b) % FIELD_P;
+    e >>= 1n;
+  }
+  return result;
+}
+
+/**
+ * Whether this is a public key somebody could actually hold: {@link isPubkey}, and an x-coordinate
+ * on secp256k1, as BIP-340's `lift_x` requires.
+ *
+ * **About half of all 64-hex strings are not.** One character mistyped in a key handed over by hand
+ * lands off the curve as often as not, and a key off the curve is a key nobody can sign as, seal to,
+ * or be sealed to. `isPubkey` checks only the spelling.
+ *
+ * Done here with the curve's own arithmetic, rather than by importing a curve library: the web
+ * bundle already carries one copy of secp256k1 through nostr-tools, and a second for one check
+ * would be paid by every phone on its first load.
+ */
+export function isCurveKey(value: unknown): boolean {
+  if (typeof value !== 'string' || !isPubkey(value)) return false;
+  const x = BigInt('0x' + value);
+  if (x >= FIELD_P) return false;
+  const c = (((x * x) % FIELD_P) * x + 7n) % FIELD_P;
+  const y = powModP(c, (FIELD_P + 1n) / 4n);
+  return (y * y) % FIELD_P === c;
+}
+
 /**
  * The part of a public key a person compares by eye: sixteen hex characters, in fours.
  *

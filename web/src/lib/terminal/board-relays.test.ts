@@ -187,4 +187,25 @@ describe('a holder who drops a relay from the watch while on station (decided 20
     expect(darksOn(old)).toHaveLength(1);
     expect(board.onStation).toBe(true);
   }, 10_000);
+
+  it('announces the holder again on the kept relay straight after, stamped later than the Dark', async () => {
+    // An operator reading both read the Dark — newer than every Station — until the next beat.
+    const old = await relay();
+    const kept = await relay();
+    list = [old.url, kept.url];
+    board.start();
+    await until(() => old.reqs.length >= 1 && kept.reqs.length >= 1, 3_000, 'the board asking both');
+    await sleep(200);
+    await board.takeWatch();
+    await until(() => stationsOn(kept).length === 1, 3_000, 'the claim reaching the kept relay');
+    // Long enough for the kept relay to count as heard, as a renewal requires.
+    await sleep(10_500);
+
+    list = [kept.url];
+    board.start();
+    await until(() => darksOn(old).length === 1 && stationsOn(kept).length === 2, 3_000, 'the Dark and the new claim');
+    expect(stationsOn(kept)[1]!.created_at).toBeGreaterThan(darksOn(old)[0]!.created_at);
+    await sleep(300);
+    expect(stationsOn(old), 'the new claim reached the relay it was retracted from').toHaveLength(1);
+  }, 20_000);
 });

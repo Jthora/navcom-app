@@ -1,0 +1,36 @@
+[Unit]
+Description=NavCom escalation executor -- runs the Distress ladder, as its own user
+Documentation=https://github.com/Jthora/navcom-watchtower
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# A user of its own, never the daemon's. The executor's own key (executor_key_path) is made on first
+# start by this user, mode 0600 -- only where daemon_user names a different user, not root -- and a
+# phone handed that key ends a Distress only on an answer it signed. A key the daemon's user -- and so the agent beside the daemon -- can read is a key that can
+# say "a person has it". Create the user once:
+#
+#   sudo useradd --system --home-dir /var/lib/navcom-escalation --create-home navcom-escalation
+#
+# It also needs a copy of the watch key (privkey_path) it can read -- it never makes one, and does not
+# start without it -- and a drill directory the daemon's user can read. README.md, 4b, has the commands.
+User=navcom-escalation
+Group=navcom-escalation
+WorkingDirectory=/var/lib/navcom-escalation
+
+# A built checkout this user can read, and node on a system path: this user has no nvm of its own.
+ExecStart=/usr/bin/env node /opt/navcom-watchtower/dist/escalation/index.js /etc/navcom/escalation.toml
+
+# Its own unit, so a crash loop in the daemon never restarts this one, or the reverse.
+Restart=always
+RestartSec=10
+
+# No ProtectSystem or ProtectHome: the watch key, the drill file the daemon reads, and the escalation
+# log may live wherever this box keeps them, and a sandbox that hid one would stop drills being
+# recorded without a word. Being a user of its own is the separation that matters here.
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

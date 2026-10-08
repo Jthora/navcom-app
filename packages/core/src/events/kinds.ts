@@ -145,6 +145,26 @@ export const KIND_DISTRESS = 20911;
 export const KIND_RESPONSE = 20912;
 
 /**
+ * **Never published.** The kind of the event a squad member signs to answer a `Distress` for
+ * themselves, and nothing else [`events/response.ts`, `signAnswer`].
+ *
+ * Only its signature travels, inside a `20912`'s sealed payload. It is an event at all so that any
+ * nostr library checks it with the function it checks everything else with, and a kind of its own
+ * so the signature can never be mistaken for, or reused as, one on anything that member publishes.
+ * Ephemeral, so a client that published one by mistake would leave nothing stored.
+ */
+export const KIND_ANSWER_SIGNATURE = 20915;
+
+/**
+ * **Never published.** The kind of the event whose signature is a watch code's `s`: the watch key
+ * vouching for everything a code names [`events/watch-code.ts`].
+ *
+ * Its own kind, so the signature can never be mistaken for, or reused as, one on anything the watch
+ * publishes. Ephemeral, so one published by mistake leaves nothing stored.
+ */
+export const KIND_WATCH_CODE_SIGNATURE = 20916;
+
+/**
  * Ephemeral kinds (20000–29999) are not expected to be stored by relays. That is
  * load-bearing rather than incidental: the board must never become a queryable history
  * [C27].
@@ -175,6 +195,17 @@ export const SIGNAL_TYPES = [
    * MUST NOT be routed into it — someone whose phone buzzed is not someone who woke up.
    */
   'distress-ack',
+  /**
+   * *"Page everyone about this one."* An on-call person, paged again about an operator they already
+   * answered, asking the watch to wake the rest of the roster about that operator's later attempt.
+   *
+   * **It can only widen, and never closes anything.** The executor accepts it only from a roster
+   * key, only about an attempt it answered from a hold, and answers it by ending the hold and opening
+   * a ladder for that attempt, as it does when the person who acknowledged cannot be paged. Nothing
+   * it does tells the operator a person has it: that comes only from somebody acknowledging the
+   * ladder it opens [`escalation.spec.md`, *Wake the others*].
+   */
+  'wake-others',
   /**
    * *"I ran out of socks."*
    *

@@ -250,6 +250,20 @@ export const CAPABILITIES: Capability[] = [
     requires: ['identity']
   },
   {
+    /*
+     * The screen a repeat page opens: the person who acknowledged an operator, paged again because
+     * that operator's phone is still sending. Its one action widens -- it asks the watch to page the
+     * roster -- and never closes anything [escalation.spec.md, "Wake the others"]. The claim is the
+     * sentence that is there whatever the page carries; the action needs the attempt a page names.
+     */
+    name: 'Waking the others',
+    screen: 'terminal/wake/',
+    claims: ['Distress again from'],
+    readOnly:
+      'Its one action needs the attempt a repeat page carries; opened without one it says there is nothing to send. e2e/wake-others.spec.ts operates it from a page address.',
+    requires: ['identity', 'watch']
+  },
+  {
     name: 'Your person, before the app loads',
     screen: 'terminal/distress/',
     claims: [

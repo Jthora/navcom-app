@@ -328,11 +328,18 @@ describe("a Distress a human already acknowledged, sent again [decision 2026-10-
     await vi.waitFor(() => expect(page).toHaveBeenCalledTimes(2));
     await new Promise((r) => setTimeout(r, 100));
     expect(page, "paged once for the attempt, and only once").toHaveBeenCalledTimes(2);
-    const [roster, message, , id] = page.mock.calls[1]!;
+    const [roster, message, , id, kind, attempt] = page.mock.calls[1]!;
     expect(roster.map((e) => e.declaration.author.callsign), "the roster was woken again for a Distress somebody is answering").toEqual(["Wren"]);
-    expect(message).toMatch(/DISTRESS from [0-9a-f]{8} again, less than a minute after you acknowledged it/);
+    // Not opening with "Distress": the first word is what is read at 3am, and this is not a new one.
+    expect(message).toMatch(
+      /^NavCom REPEAT -- an operator you acknowledged sent Distress again: [0-9a-f]{8} \(less than a minute after you acknowledged\)\. /,
+    );
+    expect(message).not.toMatch(/nobody else/i);
     // An acknowledgement naming this attempt finds no ladder, so a page offering one would be a lie.
     expect(id, "a one-tap acknowledgement that answers nothing").toBe("");
+    // A repeat, carrying the attempt under its own placeholder: what "wake the others" names.
+    expect(kind).toBe("repeat");
+    expect(attempt).toBe(again.id);
     expect(executor.ladders.all(), "a new ladder opened").toHaveLength(1);
 
     const [reply] = answering(published, again.id);
@@ -373,9 +380,10 @@ describe("a Distress a human already acknowledged, sent again [decision 2026-10-
       for (const e of [one!, two!]) {
         expect(e.tags.filter((t) => t[0] === "e").map((t) => t[1])).toEqual([again.id, first.id]);
       }
-      // Each send says what is true as it goes: the page was going out, and then it had.
+      // Each send says what is true as it goes: the page was going out, and then it had -- and when
+      // Wren can be paged again.
       expect(openResponse<ResponsePayload>(operator, pubkey, two!.content).text).toMatch(
-        /^Acknowledged less than a minute ago\. Wren was paged again about this one less than a minute ago\. /,
+        /^Acknowledged less than a minute ago\. Wren was paged again about this one less than a minute ago, and is paged again if your phone is still sending in 5 min\. /,
       );
       // One record per attempt: the second send is the same answer to the same attempt.
       expect(logged(logPath).filter((e) => e.action === "acked")).toHaveLength(1);
@@ -658,7 +666,8 @@ describe("a Distress a human already acknowledged, sent again [decision 2026-10-
       deliver(later);
       await vi.waitFor(() => expect(said(published, operator, pubkey, later.id)).toHaveLength(1));
       expect(said(published, operator, pubkey, later.id)[0]!.text).toBe(
-        "Acknowledged 2 min ago. Wren was paged again 2 min ago. If your phone is still sending in 28 min, the watch treats it as new.",
+        "Acknowledged 2 min ago. Wren was paged again 2 min ago, and is paged again if your phone is still sending in 3 min. " +
+          "If your phone is still sending in 28 min, the watch treats it as new.",
       );
       await new Promise((r) => setTimeout(r, 50));
       expect(page, "paged again inside the paging window").toHaveBeenCalledTimes(2);
@@ -906,8 +915,8 @@ describe("a Distress a human already acknowledged, sent again [decision 2026-10-
         const [held] = said(published, operator, pubkey, c.id);
         expect(held!.responder.kind).toBe("human");
         expect(held!.text).toBe(
-          "Acknowledged less than a minute ago. Wren was paged again less than a minute ago. " +
-            "If your phone is still sending in 30 min, the watch treats it as new.",
+          "Acknowledged less than a minute ago. Wren was paged again less than a minute ago, and is paged again if your " +
+            "phone is still sending in 5 min. If your phone is still sending in 30 min, the watch treats it as new.",
         );
       } finally {
         vi.useRealTimers();
@@ -998,23 +1007,23 @@ describe("a Distress a human already acknowledged, sent again [decision 2026-10-
       expect(page, "the roster paged twice for one emergency").toHaveBeenCalledTimes(3);
     });
 
-    it("escalates the attempt as new when the page budget is spent, and says nobody could be paged", async () => {
+    it("pages them with the page budget spent: a re-page takes nothing from it, and a spent one ends no hold", async () => {
+      // Option E, decided 2026-10-07, replacing "escalates the attempt as new when the page budget is
+      // spent". The budget bounds strangers, and a re-page needs a roster key's acknowledgement.
       const { executor, pubkey, published, deliver, page, operator, logPath } = await acknowledged({ over: { maxPagesPerWindow: 1 } });
       const again = distressFrom(operator, pubkey);
       deliver(again);
-      await vi.waitFor(() => expect(said(published, operator, pubkey, again.id)).toHaveLength(2));
-      const [held, opened] = said(published, operator, pubkey, again.id);
-      expect(held!.text).toBe(
-        "Acknowledged less than a minute ago. Wren could not be paged again, and nobody else could be -- too many alerts at once.",
+      await vi.waitFor(() => expect(page, "refused by the first-page budget").toHaveBeenCalledTimes(2));
+      await vi.waitFor(() => expect(said(published, operator, pubkey, again.id)).toHaveLength(1));
+      const [held] = said(published, operator, pubkey, again.id);
+      expect(held!.responder.kind).toBe("human");
+      expect(held!.text).toMatch(/^Acknowledged less than a minute ago\. The watch is paging Wren again about this one\. /);
+      expect(executor.ladders.get(again.id), "the hold ended over the budget").toBeUndefined();
+      await vi.waitFor(() =>
+        expect(logged(logPath).filter((e) => e.action === "contacted")).toEqual([
+          expect.objectContaining({ outcome: "contact-attempted" }),
+        ]),
       );
-      expect(opened!.text).toBe("The watch could not page anyone -- too many alerts at once. Nobody has been woken.");
-      expect(opened!.ladder).toBe("paging");
-      expect(executor.ladders.get(again.id)?.distressId).toBe(again.id);
-      await new Promise((r) => setTimeout(r, 50));
-      expect(page, "paged past the budget").toHaveBeenCalledTimes(1);
-      expect(logged(logPath).filter((e) => e.action === "contacted")).toEqual([
-        expect.objectContaining({ outcome: "contact-not-attempted" }),
-      ]);
     });
 
     it("opens nothing for a page that fails after the executor has stopped", async () => {

@@ -29,10 +29,13 @@
  * answering, so a relay it cannot hear on reads Dark within five minutes. **A relay that leaves the
  * watch's list while this phone is on station is told Dark at once**, a single time, signed by the
  * watch key and stamped later than any state this phone has signed — never a relay still on the
- * list (decided 2026-10-07; `watch-state.spec.md`). An operator reading an old relay and a current
- * one may read Dark until the next beat lands on the current one: false in the safe direction, and
- * accepted. A holder who stands down before the board has followed such a change tells it with the
- * stand-down's own Dark, which goes to the relays the board was listening on as well as the list.
+ * list, and only where this phone's own claim could still be read: a relay it sent its Station to
+ * during this holding within the last 420 seconds, `STALE_AFTER_SECONDS` and the clock tolerance
+ * (decided 2026-10-07; `watch-state.spec.md`). Straight after that Dark the holder is announced again
+ * on the relays still heard, so an operator reading an old relay and a current one reads On station
+ * at once rather than Dark until the next beat. A holder who stands down before the board has
+ * followed such a change tells it with the stand-down's own Dark, which goes to the relays the board
+ * was listening on as well as the list.
  *
  * ## Who can read what
  *
@@ -44,6 +47,7 @@
 import { finalizeEvent, getPublicKey } from 'nostr-tools/pure';
 import type { Event } from 'nostr-tools/core';
 import {
+  CLOCK_TOLERANCE_SECONDS,
   KIND_DISTRESS,
   KIND_SIGNAL,
   KIND_WATCH_STATE,
@@ -55,7 +59,9 @@ import {
   isOverdue,
   openFromGroup,
   readTag,
+  signAnswer,
   type BoardEntry,
+  type ResponsePayload,
   type SignalType
 } from '@navcom/core';
 import { loadIdentity } from './identity';
@@ -86,6 +92,16 @@ const HANDOVER_READ_MS = 3_000;
  * fraction of a second at a time. Taking the watch is not held to this; renewing it is.
  */
 export const HEARD_FOR_MS = 10_000;
+
+/**
+ * How long a Station this phone sent can still be read as one: `STALE_AFTER_SECONDS`, and the clock
+ * tolerance an operator's phone allows a state stamped ahead of it. 420 seconds.
+ *
+ * A relay that leaves the list is told Dark only if this phone sent its Station there within this
+ * long [`watch-state.spec.md`]. Past it, the claim there already reads Dark to everyone, and a Dark
+ * sent now could land on whoever else holds the watch on that relay.
+ */
+export const CLAIM_READABLE_SECONDS = STALE_AFTER_SECONDS + CLOCK_TOLERANCE_SECONDS;
 
 export interface Waiting {
   id: string;
@@ -201,6 +217,14 @@ let wasDeaf = false;
 let advertisedAt = 0;
 let advertisedId = '';
 let beat: ReturnType<typeof setInterval> | null = null;
+/**
+ * Where this holding has sent its Station, and when it last did, in this phone's seconds: every
+ * relay it was sent to, not only the ones that took it — one that timed out may still have it.
+ *
+ * Emptied on taking the watch, standing down and forgetting it all, so a relay claimed in an earlier
+ * holding is never told Dark by this one: whoever holds the watch there now may be somebody else.
+ */
+let claimed = new Map<string, number>();
 
 /** Anything sealed to us that we could not open is dropped, never guessed at. */
 function readSignal(event: Event): { from: string; payload: Record<string, unknown> } | null {
@@ -328,114 +352,7 @@ export const board = {
    * anything being transferred.
    */
   start(): void {
-    const identity = loadIdentity();
-    const address = watchPubkey() ?? loadConfig()?.pubkey;
-    const urls = usable(watchRelays());
-    if (!identity || !address || urls.length === 0) return;
-    if (closer && listeningTo === address) {
-      // Already listening for this watch: reopening would leave a gap a Distress could fall into.
-      // A change of relays is followed instead, in place — relays on both lists keep their
-      // subscription untouched; a new one is asked once its connection is up, and a dropped one
-      // is let go at once.
-      if (!sameRelays(urls, listeningOn)) {
-        const dropped = listeningOn.filter((url) => !urls.includes(url));
-        listeningOn = urls;
-        closer.follow(urls);
-        /*
-         * A relay that left the list while this phone holds the watch is told Dark, once
-         * (decided 2026-10-07). Nothing here hears a Distress sent there any more, and its copy of
-         * this holder's Station otherwise read On station for up to five minutes. Only to the
-         * relays that left: one still on the list is renewed by the beat, and Dark there would be
-         * false. Stamped later than anything this phone has signed, so it replaces the Station.
-         * An operator reading both an old relay and a current one may read Dark until the next
-         * Station beat lands on the current one — accepted, and the safe direction.
-         */
-        if (onStation && dropped.length > 0) void tellDark(dropped);
-      }
-      return;
-    }
-
-    // The previous listener, which was for another watch, is let go once this one is opened.
-    const previous = closer;
-    const token = {};
-    listenToken = token;
-    listeningTo = address;
-    listeningOn = urls;
-    advertised = null;
-    advertisedAt = 0;
-    advertisedId = '';
-    hearing = [];
-    heardBack = false;
-    wasDeaf = false;
-    /*
-     * Two filters per relay, not `subscribeMany` with an array.
-     *
-     * `subscribeMany(relays, filter, params)` takes **one** filter. This passed two in an
-     * array with an `as never` cast, and the cast is the whole story: the array was wrapped
-     * again and the REQ went out as `["REQ", id, [f1, f2]]` -- a filter that is itself an
-     * array, so it has no `kinds`, no `authors` and no `#`-prefixed keys, and every check a
-     * relay makes is skipped. It matched everything.
-     *
-     * That is why the board's filter could be broken with no effect, and why the first test
-     * written for it passed against a deliberately corrupted `#p` and had to be withdrawn.
-     * The subscription was not narrow-and-wrong, it was absent: this device was asking a
-     * volunteer relay for its entire firehose, on the phone `pool.ts` opens exactly one
-     * socket to save.
-     *
-     * Nothing downstream was fooled -- `readSignal` only keeps what decrypts to this
-     * operator -- so the cost was bandwidth, battery and a stranger's relay rather than a
-     * wrong board.
-     */
-    // Live: a watch held for hours outlasts any one socket [audit: relay paths, F19].
-    closer = subscribeLive(
-      urls,
-      [
-        { kinds: [KIND_SIGNAL, KIND_DISTRESS], '#p': [address] },
-        // This watch's own published state, so a holder can tell whether they are still the
-        // one the world is being told about.
-        { kinds: [KIND_WATCH_STATE], authors: [address] }
-      ],
-      {
-        onevent: (event: Event, url: string) => {
-          if (listenToken !== token) return;
-          if (event.kind === KIND_WATCH_STATE) {
-            // Newest wins, whichever relay answers last [audit: relay paths, F11]: the stand-down
-            // guard below trusts this, and a lagging relay's old Station made it refuse to say Dark.
-            if (!newer(event, advertisedAt, advertisedId)) return;
-            try {
-              advertised = JSON.parse(event.content) as Advertised;
-              advertisedAt = event.created_at;
-              advertisedId = event.id;
-            } catch {
-              advertised = null;
-            }
-            return;
-          }
-          const read = readSignal(event);
-          if (!read) return;
-          const type = (event.kind === KIND_DISTRESS
-            ? 'distress'
-            : readTag(event.tags, 't')) as Waiting['type'] | undefined;
-          if (!type) return;
-          apply(type, read.from, read.payload, event, url);
-        },
-        // The same signal from another relay: one more place an answer can reach them.
-        onrepeat: (event: Event, url: string) => {
-          if (listenToken === token) heardAlsoOn(event.id, url);
-        },
-        oneose: () => {
-          if (listenToken !== token) return;
-          heardBack = true;
-          listened();
-        },
-        onlisten: (now: string[]) => {
-          if (listenToken !== token) return;
-          hearing = now;
-          listened();
-        }
-      }
-    );
-    previous?.close();
+    follow();
   },
 
   /**
@@ -452,10 +369,12 @@ export const board = {
     if (!secret || !identity?.callsign || urls.length === 0) return;
 
     const mine = ++generation;
+    // A new holding: nothing claimed by an earlier one is this one's to retract.
+    claimed = new Map();
     // Holding a watch is hearing it: the listener is opened here if no screen opened it. Before this
     // take counts as on station, so a relay that left the list while nobody here held the watch is
     // let go without a Dark this phone never owed it — it was never told this holder was there.
-    board.start();
+    follow();
     since = Math.floor(Date.now() / 1000);
     onStation = true;
     // A stand-down still retrying its Dark would land it on top of this claim.
@@ -467,8 +386,9 @@ export const board = {
     if (beat) clearInterval(beat);
     beat = setInterval(() => {
       if (!onStation) return;
-      // A change of relays made on another screen is followed before anything is claimed.
-      board.start();
+      // A change of relays made on another screen is followed before anything is claimed — and
+      // where following it told a relay Dark, it has already announced this holder again, once.
+      if (follow()) return;
       // The beat is also the retry: a watch that could not announce itself heals here as
       // soon as there is signal, and the warning clears with it.
       //
@@ -513,6 +433,8 @@ export const board = {
     const urls = usable(watchRelays());
     const mine = ++generation;
     onStation = false;
+    // The holding is over; its Dark below goes where it always went, and a later one claims afresh.
+    claimed = new Map();
     unannounced = false;
     setAnnounced(false);
     if (beat) clearInterval(beat);
@@ -629,24 +551,32 @@ export const board = {
     if (declining && !declineIsValid(item.type)) return false;
 
     const identity = loadIdentity();
+    const payload: ResponsePayload = {
+      type: declining ? 'declined' : item.type === 'distress' ? 'ack' : 'answer',
+      // A person, saying so. An operator must never be uncertain whether they are
+      // talking to one [invariant 5], and this is the field that decides it.
+      responder: { kind: 'human', callsign: identity?.callsign ?? 'watch' },
+      text: text.trim() || null,
+      // No directory lookup happened here -- a person typed this. Claiming provenance
+      // for a hand-written answer would dress it as verified, and a confident wrong
+      // answer at 10pm is the worst failure available to this system.
+      provenance: null
+    };
+    /*
+     * Signed by this holder's own key as well as the watch's [G3; `signals.spec.md`, *The answer
+     * signature*].
+     *
+     * Every member holds the watch key, and so does everybody who ever did, so an answer the watch
+     * key alone signs says only that somebody who once held the watch sent it — and an operator's
+     * phone that knows its holders no longer ends a `Distress` on that. This member's own signature,
+     * bound to the operator, the watch, the one id this answer names and every word of it, is what
+     * it ends on. An older operator's phone ignores it and ends on the watch key, as before.
+     */
+    const signed = identity
+      ? signAnswer(identity.secretKey, { watch: getPublicKey(secret), operator: item.operator, ids: [item.id] }, payload)
+      : payload;
     const event = finalizeEvent(
-      buildResponse(
-        secret,
-        item.operator,
-        item.id,
-        {
-          type: declining ? 'declined' : item.type === 'distress' ? 'ack' : 'answer',
-          // A person, saying so. An operator must never be uncertain whether they are
-          // talking to one [invariant 5], and this is the field that decides it.
-          responder: { kind: 'human', callsign: identity?.callsign ?? 'watch' },
-          text: text.trim() || null,
-          // No directory lookup happened here -- a person typed this. Claiming provenance
-          // for a hand-written answer would dress it as verified, and a confident wrong
-          // answer at 10pm is the worst failure available to this system.
-          provenance: null
-        },
-        Math.floor(Date.now() / 1000)
-      ),
+      buildResponse(secret, item.operator, item.id, signed, Math.floor(Date.now() / 1000)),
       secret
     );
     /*
@@ -707,6 +637,7 @@ export const board = {
     recheck = null;
     onStation = false;
     since = 0;
+    claimed = new Map();
     unannounced = false;
     setAnnounced(false);
     stillAdvertised = false;
@@ -731,6 +662,134 @@ function unlisten(): void {
   hearing = [];
   heardBack = false;
   wasDeaf = false;
+}
+
+/**
+ * Opens the listener for the watch's relays as they are now, or moves it there. Returns whether
+ * moving it announced this holder again — after telling a relay that left the list Dark — so the
+ * beat, which follows the list before it announces, does not announce a second time.
+ */
+function follow(): boolean {
+  const identity = loadIdentity();
+  const address = watchPubkey() ?? loadConfig()?.pubkey;
+  const urls = usable(watchRelays());
+  if (!identity || !address || urls.length === 0) return false;
+  if (closer && listeningTo === address) {
+    // Already listening for this watch: reopening would leave a gap a Distress could fall into.
+    // A change of relays is followed instead, in place — relays on both lists keep their
+    // subscription untouched; a new one is asked once its connection is up, and a dropped one
+    // is let go at once.
+    if (sameRelays(urls, listeningOn)) return false;
+    const dropped = listeningOn.filter((url) => !urls.includes(url));
+    listeningOn = urls;
+    closer.follow(urls);
+    if (!onStation) return false;
+    /*
+     * A relay that left the list while this phone holds the watch is told Dark, once
+     * (decided 2026-10-07), **where this phone's own claim could still be read there**: it sent its
+     * Station there during this holding, within the last 420 seconds (`CLAIM_READABLE_SECONDS`).
+     * Nothing here hears a Distress sent there any more, and that copy otherwise read On station
+     * for up to five minutes. Never to a relay still on the list, which the beat renews; never to
+     * one this holding never claimed, or claimed too long ago to be read — another holder may be
+     * announced there, and a Dark stamped now would replace them [review: hold decisions, D4].
+     * Stamped later than anything this phone has signed, so it replaces the Station.
+     */
+    const dark = dropped.filter(stillReadable);
+    if (dark.length === 0) return false;
+    for (const url of dark) claimed.delete(url);
+    void tellDark(dark);
+    /*
+     * And announced again straight after, on the relays still heard. An operator reading the old
+     * relay and a kept one otherwise read the Dark — newer than every Station — until the next
+     * beat, up to two minutes of a watch that was staffed reading as nobody. Stamped after the Dark,
+     * and it never reaches the dropped relay: the listener has already let it go.
+     */
+    void announce();
+    return true;
+  }
+
+  // The previous listener, which was for another watch, is let go once this one is opened.
+  const previous = closer;
+  const token = {};
+  listenToken = token;
+  listeningTo = address;
+  listeningOn = urls;
+  advertised = null;
+  advertisedAt = 0;
+  advertisedId = '';
+  hearing = [];
+  heardBack = false;
+  wasDeaf = false;
+  /*
+   * Two filters per relay, not `subscribeMany` with an array.
+   *
+   * `subscribeMany(relays, filter, params)` takes **one** filter. This passed two in an
+   * array with an `as never` cast, and the cast is the whole story: the array was wrapped
+   * again and the REQ went out as `["REQ", id, [f1, f2]]` -- a filter that is itself an
+   * array, so it has no `kinds`, no `authors` and no `#`-prefixed keys, and every check a
+   * relay makes is skipped. It matched everything.
+   *
+   * That is why the board's filter could be broken with no effect, and why the first test
+   * written for it passed against a deliberately corrupted `#p` and had to be withdrawn.
+   * The subscription was not narrow-and-wrong, it was absent: this device was asking a
+   * volunteer relay for its entire firehose, on the phone `pool.ts` opens exactly one
+   * socket to save.
+   *
+   * Nothing downstream was fooled -- `readSignal` only keeps what decrypts to this
+   * operator -- so the cost was bandwidth, battery and a stranger's relay rather than a
+   * wrong board.
+   */
+  // Live: a watch held for hours outlasts any one socket [audit: relay paths, F19].
+  closer = subscribeLive(
+    urls,
+    [
+      { kinds: [KIND_SIGNAL, KIND_DISTRESS], '#p': [address] },
+      // This watch's own published state, so a holder can tell whether they are still the
+      // one the world is being told about.
+      { kinds: [KIND_WATCH_STATE], authors: [address] }
+    ],
+    {
+      onevent: (event: Event, url: string) => {
+        if (listenToken !== token) return;
+        if (event.kind === KIND_WATCH_STATE) {
+          // Newest wins, whichever relay answers last [audit: relay paths, F11]: the stand-down
+          // guard below trusts this, and a lagging relay's old Station made it refuse to say Dark.
+          if (!newer(event, advertisedAt, advertisedId)) return;
+          try {
+            advertised = JSON.parse(event.content) as Advertised;
+            advertisedAt = event.created_at;
+            advertisedId = event.id;
+          } catch {
+            advertised = null;
+          }
+          return;
+        }
+        const read = readSignal(event);
+        if (!read) return;
+        const type = (event.kind === KIND_DISTRESS
+          ? 'distress'
+          : readTag(event.tags, 't')) as Waiting['type'] | undefined;
+        if (!type) return;
+        apply(type, read.from, read.payload, event, url);
+      },
+      // The same signal from another relay: one more place an answer can reach them.
+      onrepeat: (event: Event, url: string) => {
+        if (listenToken === token) heardAlsoOn(event.id, url);
+      },
+      oneose: () => {
+        if (listenToken !== token) return;
+        heardBack = true;
+        listened();
+      },
+      onlisten: (now: string[]) => {
+        if (listenToken !== token) return;
+        hearing = now;
+        listened();
+      }
+    }
+  );
+  previous?.close();
+  return false;
 }
 
 /** The same relays, in any order. Both lists come out of `usable`, so spelling is settled. */
@@ -897,7 +956,16 @@ function darkInput() {
   };
 }
 
-/** Publishes Station to these relays, reporting whether any took it. */
+/** Whether this holding's Station on that relay could still be read as one (`CLAIM_READABLE_SECONDS`). */
+function stillReadable(url: string): boolean {
+  const at = claimed.get(url);
+  return at !== undefined && Math.floor(Date.now() / 1000) - at <= CLAIM_READABLE_SECONDS;
+}
+
+/**
+ * Publishes Station to these relays, reporting whether any took it, and records every relay it was
+ * sent to — taken, refused or unanswered — as claimed by this holding now.
+ */
 async function publishState(secret: Uint8Array, callsign: string, at: number, urls: string[]): Promise<boolean> {
   const event = finalizeEvent(
     buildWatchStateEvent(
@@ -918,6 +986,8 @@ async function publishState(secret: Uint8Array, callsign: string, at: number, ur
     ),
     secret
   );
+  const sentAt = Math.floor(Date.now() / 1000);
+  for (const url of urls) claimed.set(url, sentAt);
   return (await publishEach(urls, event)).length > 0;
 }
 

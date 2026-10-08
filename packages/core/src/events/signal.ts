@@ -8,7 +8,7 @@
  * Normative source: docs/spec/signals.spec.md
  */
 
-import { sealToGroup, type WatchtowerAddress } from '../crypto/group.js';
+import { sealToWatch, type WatchtowerAddress } from '../crypto/group.js';
 import { AREA_MAX, TEXT_MAX, withinLimit } from '../limits.js';
 import type { SecretKey } from '../crypto/keys.js';
 import { KIND_DISTRESS, KIND_SIGNAL, tagRecipient, tagSignalType, type SignalType } from './kinds.js';
@@ -112,6 +112,21 @@ export interface DistressAckPayload {
   distress_id: string;
 }
 
+/**
+ * *"Page everyone about this one."* An on-call person asking the watch to wake the rest of the roster
+ * about an operator's attempt it answered from a hold, because that person was paged about it again.
+ *
+ * `distress_id` is that attempt: the `20911` the page about it carried, under its own flag and never
+ * as the id a page offers to acknowledge. It names no ladder, because a held attempt has none.
+ *
+ * **It never closes anything** [invariant 2]. Accepted only from a roster key and only about an
+ * attempt answered from a current hold, it ends the hold and opens a ladder for that attempt
+ * [`escalation.spec.md`, *Wake the others*]. A screen offering it says that is all it does.
+ */
+export interface WakeOthersPayload {
+  distress_id: string;
+}
+
 export type SignalPayload =
   | OnStationPayload
   | QueryPayload
@@ -119,6 +134,7 @@ export type SignalPayload =
   | LogReviewPayload
   | ResupplyPayload
   | DistressAckPayload
+  | WakeOthersPayload
   | Record<string, never>;
 
 /** Response windows, in seconds. Surfaced to the operator rather than hidden. */
@@ -133,6 +149,8 @@ export const RESPONSE_WINDOW: Record<SignalType | 'distress', number | null> = {
   // Acknowledging is the fastest thing in the system: it is one tap, and somebody is
   // waiting on it in a way they are not waiting on anything else.
   'distress-ack': 10,
+  // As fast as an acknowledgement, and for the same reason: one tap, by somebody woken for it.
+  'wake-others': 10,
   /**
    * The longest window in the table, on purpose.
    *
@@ -179,9 +197,10 @@ export function buildSignal(
     // The type is an unencrypted tag so a client can filter without decrypting; the payload
     // is sealed to whoever holds the watch, which is one key for a box and one per phone
     // for a squad. Always the group envelope, even for one holder -- two shapes would let
-    // anyone watching a relay sort Watchtowers into "box" and "squad" without decrypting.
+    // anyone watching a relay sort Watchtowers into "box" and "squad" without decrypting. The
+    // signals the escalation executor acts on are sealed to its own key as well (`readersOf`).
     tags: [tagRecipient(to.pubkey), tagSignalType(type)],
-    content: sealToGroup(secret, to.holders, payload, to.kem)
+    content: sealToWatch(secret, to, payload, type)
   };
 }
 
@@ -205,6 +224,6 @@ export function buildDistress(
     // No `t` tag: distress is identified by its kind, not by a filterable label, so it
     // cannot be missed by a subscriber filtering on signal types.
     tags: [tagRecipient(to.pubkey)],
-    content: sealToGroup(secret, to.holders, payload, to.kem)
+    content: sealToWatch(secret, to, payload, 'distress')
   };
 }

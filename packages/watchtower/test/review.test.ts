@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Drill, LogEntry } from "@navcom/core";
-import { buildReview, render, type ReviewInput } from "../src/escalation/review.js";
+import { buildReview, NIGHT_SECONDS, render, REPAGED_A_NIGHT, type ReviewInput } from "../src/escalation/review.js";
 
 /**
  * The reviewer's week.
@@ -92,7 +92,7 @@ const repaged = (at: number, outcome: "contact-attempted" | "contact-failed" | "
 describe("the person who acknowledged, paged again about a repeat Distress (decided 2026-10-07)", () => {
   it("is listed by date and name, and is not a reason to look when a channel took it", () => {
     const review = buildReview({ ...base, entries: [escalation(NOW - 2 * day, true), repaged(NOW - 2 * day + 600, "contact-attempted")] });
-    expect(review.repaged).toEqual([{ at: NOW - 2 * day + 600, who: "Wren", outcome: "paged" }]);
+    expect(review.repaged).toEqual([{ at: NOW - 2 * day + 600, who: "Wren", pubkey: "a".repeat(64), outcome: "paged" }]);
     expect(review.attention).toEqual([]);
     expect(render(review).join("\n")).toMatch(/PAGED AGAIN[^\n]*\n {2}\d{4}-\d{2}-\d{2} {2}Wren {2}paged/);
   });
@@ -112,9 +112,12 @@ describe("the person who acknowledged, paged again about a repeat Distress (deci
     const review = buildReview({ ...base, entries: [repaged(NOW - day, "contact-not-attempted")] });
     const page = render(review).join("\n");
     expect(page).toMatch(/PAGED AGAIN[^\n]*\n {2}\d{4}-\d{2}-\d{2} {2}Wren {2}COULD NOT BE PAGED\n/);
+    // The page budget counts first pages only now, so it is never why a re-page did not go (option E,
+    // decided 2026-10-07); the per-person ceiling is.
     expect(review.attention.join(" ")).toMatch(
-      /Wren could not be paged again .*off the roster, only at a console, or the page budget spent; the executor.s output from then says which/,
+      /Wren could not be paged again .*off the roster, only at a console, or at their re-page ceiling; the executor.s output from then says which/,
     );
+    expect(review.attention.join(" ")).not.toMatch(/budget/);
     expect(page).not.toMatch(/escalated/i);
   });
 
@@ -122,6 +125,51 @@ describe("the person who acknowledged, paged again about a repeat Distress (deci
     const review = buildReview({ ...base, entries: [repaged(NOW - 30 * day, "contact-failed")] });
     expect(review.repaged).toEqual([]);
     expect(review.attention).toEqual([]);
+  });
+});
+
+describe("somebody paged again more than a night should hold (option E, decided 2026-10-07)", () => {
+  /*
+   * The repeated game shows up nowhere else: a phone that keeps starting its Distress again, or a
+   * relay withholding the watch's answers, pages the person who acknowledged again and again, each
+   * page within the rules. One operator through a whole hold is six at the most.
+   */
+  const pagedAt = (at: number, who = "Wren", key = "a") => ({
+    ...repaged(at, "contact-attempted"),
+    subject: { kind: "human" as const, callsign: who, pubkey: key.repeat(64) },
+  });
+
+  it("names them, by name and date, past REPAGED_A_NIGHT pages in twelve hours", () => {
+    const start = NOW - 2 * day;
+    const entries = Array.from({ length: REPAGED_A_NIGHT + 1 }, (_, i) => pagedAt(start + i * 600));
+    const review = buildReview({ ...base, entries });
+    expect(review.attention.join(" ")).toMatch(
+      new RegExp(`Wren was paged again ${REPAGED_A_NIGHT + 1} times in one night \\(\\d{4}-\\d{2}-\\d{2}\\) -- more than one hold's worth`),
+    );
+    // The commonest cause is within the rules -- the first page about each operator goes at once, so a
+    // person holding two who both keep sending is paged seven times in half an hour -- and it comes first.
+    expect(review.attention.join(" ")).toMatch(
+      /more than one hold's worth: several operators they acknowledged all still sending, a phone that keeps starting its Distress again, or a relay/,
+    );
+    expect(render(review).join("\n")).toContain("NEEDS A LOOK");
+  });
+
+  it("does not name one hold's worth, or the same count spread over days", () => {
+    const start = NOW - 3 * day;
+    const oneHold = Array.from({ length: REPAGED_A_NIGHT }, (_, i) => pagedAt(start + i * 300));
+    expect(buildReview({ ...base, entries: oneHold }).attention).toEqual([]);
+    // Seven pages, but never more than six inside any twelve hours.
+    const spread = Array.from({ length: REPAGED_A_NIGHT + 1 }, (_, i) => pagedAt(start + i * (NIGHT_SECONDS / 4)));
+    expect(buildReview({ ...base, entries: spread }).attention).toEqual([]);
+  });
+
+  it("counts each person by key, never two people sharing a callsign as one, and never a total", () => {
+    const start = NOW - day;
+    const entries = [
+      ...Array.from({ length: 4 }, (_, i) => pagedAt(start + i * 600, "Wren", "a")),
+      ...Array.from({ length: 4 }, (_, i) => pagedAt(start + i * 600 + 60, "Wren", "b")),
+    ];
+    expect(buildReview({ ...base, entries }).attention, "two people's pages summed into one").toEqual([]);
   });
 });
 

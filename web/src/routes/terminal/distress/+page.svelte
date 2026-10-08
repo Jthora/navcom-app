@@ -93,6 +93,24 @@
   });
 
   /**
+   * **An answer that says a person has it, which this phone cannot attribute** [G3].
+   *
+   * The watch names who may end a `Distress`: its executor's own key, or its holders' own
+   * signatures. This answer came from neither — the watch key alone, which the daemon beside the
+   * agent holds, and so does everybody who ever held the watch. It may be true: a squad member's
+   * phone that has not taken the update answers this way. So it is said as it was said, by name and
+   * in their words, and **never as "has it"**: the sending goes on, and if the operator can reach
+   * that person another way, they should. The latest, as the watch's reports are.
+   */
+  const unconfirmed = $derived.by(() => {
+    for (let i = phases.length - 1; i >= 0; i--) {
+      const p = phases[i];
+      if (p.phase === 'human-unconfirmed') return p;
+    }
+    return undefined;
+  });
+
+  /**
    * The watch said nobody can be reached — and once it has, that stays said.
    *
    * The ladder's own word, shown when it arrives. Until this existed it was filed under "an
@@ -215,7 +233,13 @@
       case 'agent-holding': return `Attempt ${p.attempt} — an agent answered. Still looking for a human`;
       case 'watch-status':
       case 'watch-exhausted':
-        return `Attempt ${p.attempt} — the watch: ${clip(p.response.text) ?? 'no detail'}`;
+        // Marked when it was not signed by whoever runs the ladder: said as said, never relied on.
+        return `Attempt ${p.attempt} — the watch${p.unconfirmed ? ' (unconfirmed)' : ''}: ${clip(p.response.text) ?? 'no detail'}`;
+      case 'human-unconfirmed':
+        return (
+          `Attempt ${p.attempt} — ${p.response.responder?.callsign ?? 'Someone'} says they have ` +
+          `${p.earlier ? 'an earlier Distress' : 'it'}; this phone cannot confirm that. Still sending`
+        );
       case 'nobody-answering':
         return (
           `${Math.round(p.elapsedMs / 60000)} minutes, no human. Still sending` +
@@ -459,10 +483,33 @@
     </section>
   {/if}
 
+  <!--
+    Said, and never as "has it": nothing this phone can name stands behind it, so the sending goes
+    on. Not the station colour, and not "Answered".
+  -->
+  {#if unconfirmed && !acknowledged}
+    <section class="earlier" data-human-unconfirmed>
+      <p>
+        <strong>{unconfirmed.response.responder?.callsign ?? 'Someone'}</strong> says they have
+        {unconfirmed.earlier ? 'an earlier Distress from you' : 'it'}. This phone cannot confirm who
+        sent that, so it is still sending.
+      </p>
+      {#if clip(unconfirmed.response.text)}<p class="cost">{clip(unconfirmed.response.text)}</p>{/if}
+      <p class="cost">If you can reach them another way, do.</p>
+    </section>
+  {/if}
+
   {#if acknowledged}
     <section class="answered">
       <p><strong>{acknowledged.response.responder?.callsign ?? 'A human'}</strong> has it.</p>
       {#if acknowledged.response.text}<p>{acknowledged.response.text}</p>{/if}
+      {#if acknowledged.by === 'watch-key'}
+        <!-- The old rule, kept for a box handed over before it named its escalation key, and said. -->
+        <p class="cost" data-unattributed>
+          This watch does not yet name its escalation key, so this phone cannot tell a person’s
+          answer from the agent’s.
+        </p>
+      {/if}
     </section>
   {:else if operator.distressRunning}
     <section>
@@ -539,6 +586,7 @@
   li.nobody-answering { color: var(--t-dark); font-weight: 650; }
   /* Somebody, about something else: the colour of "getting through", never of "has it". */
   li.acknowledged-earlier { color: var(--t-oncall); }
+  li.human-unconfirmed { color: var(--t-oncall); }
   .earlier { border: 2px solid var(--t-oncall); background: var(--t-raised); padding: 1rem 1.1rem; }
   .earlier p { color: var(--t-ink); }
 

@@ -28,5 +28,8 @@ export const TERMINAL_ROUTES = [
   'backup/',
   'funding/',
   'log/',
-  'wipe/'
+  'wipe/',
+  // Opened by a repeat page, which can arrive with no signal to fetch it. The page's address carries
+  // a query, and the worker finds this saved copy by its path (`offline-page.ts`).
+  'wake/'
 ] as const;

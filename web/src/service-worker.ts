@@ -36,6 +36,8 @@
 
 import { base, build, files, version } from '$service-worker';
 import { TERMINAL_ROUTES } from '$lib/terminal/routes';
+import { noticeFor, showPage } from '$lib/terminal/page-notice';
+import { savedPage } from '$lib/terminal/offline-page';
 
 const CACHE = `navcom-terminal-${version}`;
 
@@ -338,67 +340,30 @@ sw.addEventListener('message', (event) => {
  * No payload from the wire is rendered. The sender is a machine that cannot read the
  * `Distress` either, so there is nothing to render — and a notification that quoted
  * attacker-controlled text on a locked screen would be a way to put words in front of
- * somebody at their least critical moment. The text is fixed and lives here.
+ * somebody at their least critical moment. The text is fixed, in `page-notice.ts`.
  */
 sw.addEventListener('push', (event) => {
-  // A push with no data, or data this version does not understand, still wakes somebody.
-  // Failing closed here would mean a silent page, which is the failure this exists to
-  // prevent -- so anything unparseable is treated as a real Distress.
-  let drill = false;
   /*
-   * The `20911` this page is about, when the sender could carry one.
+   * A push with no data, or data this version does not understand, still wakes somebody. Failing
+   * closed here would mean a silent page, which is the failure this exists to prevent -- so
+   * anything unparseable is a page about a new Distress (`noticeFor`).
    *
-   * **Not rendered, and it is not text.** Everything above still holds: no payload from the
-   * wire reaches the screen. This is an opaque id, read only to build the URL the tap opens,
-   * so a `distress-ack` can name the event it acknowledges.
-   *
-   * It has to arrive this way. `20911` is ephemeral, so a relay forwards it to whoever is
-   * subscribed at that instant and stores nothing -- a phone that was asleep and woke on this
-   * notification finds the event gone and has nothing to acknowledge [2.5].
-   *
-   * Validated as hex before it is used: it is going into a URL, and a payload is still a
-   * payload even when the channel that carried it is encrypted.
+   * What it says is one of three kinds -- a first page, a repeat to the person who acknowledged,
+   * or a drill -- read from an allow-list, and each looks different in the words read first
+   * [`escalation.spec.md`, *A page says what kind it is*]. The ids it carries are not rendered and
+   * are not text: each is checked as hex and used only to build the address a tap opens -- a
+   * first page's `?ack=` so a `distress-ack` can name the event it acknowledges, because `20911`
+   * is ephemeral and a phone that slept through it finds it gone [2.5]; a repeat's attempt, for
+   * the screen that wakes the others, and never `?ack=`. The rules, and why a page that must alert
+   * again closes the card it replaces first, are in `page-notice.ts`.
    */
-  let distress: string | null = null;
+  let data: unknown = null;
   try {
-    const data = event.data?.json() as { drill?: boolean; distress?: string } | null;
-    drill = data?.drill === true;
-    if (typeof data?.distress === 'string' && /^[0-9a-f]{64}$/.test(data.distress)) {
-      distress = data.distress;
-    }
+    data = event.data?.json() ?? null;
   } catch {
-    drill = false;
+    data = null;
   }
-
-  event.waitUntil(
-    sw.registration.showNotification(
-      drill ? 'NavCom drill — not an emergency' : 'NavCom — Distress',
-      {
-        /*
-         * Named paths, because the previous text named one that does not exist.
-         *
-         * It said *"Open the terminal and acknowledge"* and **there is no acknowledge control
-         * in the terminal.** A squad member holding the watch answers from the board — the
-         * button is literally *"Tell them you are awake"* — and a node's on-call operator
-         * acknowledges in the console, which is what the SMS page already tells them. Somebody
-         * woken at 3am has seconds, and the one thing the text must not do is send them
-         * looking for a button that is not there.
-         */
-        body: drill
-          ? distress
-            ? 'A drill, not an emergency. Tap to acknowledge it, so the roster can be proven.'
-            : 'A drill, not an emergency. Acknowledge it in the console so the roster can be proven.'
-          : distress
-            ? 'An operator is waiting for a human. Tap to say you have it.'
-            : 'An operator is waiting for a human. Open the board and tell them you are awake.',
-        // Distinguishable by the recipient, in the text they actually read [C29]. Somebody
-        // woken at 3am has seconds and no context.
-        tag: drill ? 'navcom-drill' : 'navcom-distress',
-        requireInteraction: !drill,
-        data: { url: distress ? `${base}/terminal/?ack=${distress}` : `${base}/terminal/` }
-      }
-    )
-  );
+  event.waitUntil(showPage(sw.registration, noticeFor(data, base, Math.floor(Date.now() / 1000))));
 });
 
 /**
@@ -491,8 +456,10 @@ sw.addEventListener('fetch', (event) => {
     return;
   }
 
+  // A screen opened from a page carries a query (`?attempt=`, `?ack=`) and is saved without one:
+  // found by its path, so a tap with no signal opens it (`offline-page.ts`).
   event.respondWith(
-    caches.match(request).then(
+    savedPage((r, o) => caches.match(r, o), request).then(
       (hit) =>
         hit ??
         fetch(request).catch(() => {

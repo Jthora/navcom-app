@@ -74,10 +74,13 @@ export interface Repaged {
   at: number;
   /** Who, by callsign, as the roster named them when they acknowledged. */
   who: string | null;
+  /** Their key, which is what tells two people with one callsign apart. */
+  pubkey: string | null;
   /**
    * `paged`: a channel took it, which is not anybody waking. `failed`: every channel failed.
-   * `unpaged`: there was nothing to try -- off the roster, reachable only at a console, or the page
-   * budget spent; the entry does not say which, and the executor's output from that moment does.
+   * `unpaged`: there was nothing to try -- off the roster, reachable only at a console, or at their
+   * re-page ceiling; the entry does not say which, and the executor's output from that moment does.
+   * The page budget is no longer one of them: it counts first pages only (decided 2026-10-07).
    *
    * Not what came after. The watch escalates such an attempt as new, unless it was stopping as the
    * page failed -- and nothing here records which [review: hold decisions].
@@ -102,6 +105,28 @@ export interface Review {
 
 const day = 86_400;
 const iso = (seconds: number) => new Date(seconds * 1000).toISOString().slice(0, 10);
+
+/**
+ * How many times one person may be paged again in a night before `--review` names them (option E,
+ * decided 2026-10-07). One operator sending through a whole hold pages the person who acknowledged
+ * them at most six times; past that is more than one hold's worth -- several operators they
+ * acknowledged all still sending, which is within the rules, or a phone that keeps starting its
+ * Distress again, or a relay withholding the watch's answers -- and only the repeated game shows it.
+ */
+export const REPAGED_A_NIGHT = 6;
+/** A night, for {@link REPAGED_A_NIGHT}: any twelve hours. */
+export const NIGHT_SECONDS = 12 * 3_600;
+
+/** The most pages any `NIGHT_SECONDS` span holds, and when that span began. */
+function busiestNight(times: readonly number[]): { count: number; from: number } {
+  const sorted = [...times].sort((a, b) => a - b);
+  let best = { count: 0, from: sorted[0] ?? 0 };
+  for (let i = 0, j = 0; j < sorted.length; j++) {
+    while (sorted[j]! - sorted[i]! >= NIGHT_SECONDS) i++;
+    if (j - i + 1 > best.count) best = { count: j - i + 1, from: sorted[i]! };
+  }
+  return best;
+}
 
 /**
  * Everything is derived here and nothing is fetched, so the hard part is testable without a
@@ -130,6 +155,7 @@ export function buildReview(input: ReviewInput): Review {
     .map((e) => ({
       at: e.at,
       who: e.subject?.callsign ?? null,
+      pubkey: e.subject?.pubkey ?? null,
       outcome:
         e.outcome === "contact-attempted" ? ("paged" as const) : e.outcome === "contact-failed" ? ("failed" as const) : ("unpaged" as const),
     }))
@@ -187,7 +213,29 @@ export function buildReview(input: ReviewInput): Review {
     attention.push(
       r.outcome === "failed"
         ? `${who} could not be paged again about a repeat Distress (${iso(r.at)}) -- every channel failed; check their channel`
-        : `${who} could not be paged again about a repeat Distress (${iso(r.at)}) -- off the roster, only at a console, or the page budget spent; the executor's output from then says which`,
+        : `${who} could not be paged again about a repeat Distress (${iso(r.at)}) -- off the roster, only at a console, or at their re-page ceiling; the executor's output from then says which`,
+    );
+  }
+
+  /*
+   * By person, never as a total: the number is how many times one person was woken, which is the
+   * thing to ask them about. Pages that were tried count, whether or not a channel took them.
+   */
+  const byPerson = new Map<string, { who: string; times: number[] }>();
+  for (const r of repaged) {
+    if (r.outcome === "unpaged") continue;
+    const key = r.pubkey ?? r.who ?? "?";
+    const person = byPerson.get(key) ?? { who: r.who ?? "the person who acknowledged", times: [] };
+    person.times.push(r.at);
+    byPerson.set(key, person);
+  }
+  for (const { who, times } of byPerson.values()) {
+    const night = busiestNight(times);
+    if (night.count <= REPAGED_A_NIGHT) continue;
+    attention.push(
+      `${who} was paged again ${night.count} times in one night (${iso(night.from)}) -- more than one hold's worth: ` +
+        "several operators they acknowledged all still sending, a phone that keeps starting its Distress again, " +
+        "or a relay withholding the watch's answers. Ask them, and check the relays",
     );
   }
 

@@ -136,7 +136,9 @@ describe('the manifest itself stays honest', () => {
     //    a watch that is actually there. The *screen* still works without one and gives an
     //    operator alone a true answer — nobody has written anything about you — which is why
     //    this is the control's requirement rather than the page's
+    //  - Waking the others: only a watch's repeat page opens it, and its one action asks that
+    //    watch to page its roster. With no watch there is nobody to widen to
     const needWatch = CAPABILITIES.filter((c) => c.requires.includes('watch')).map((c) => c.name);
-    expect(needWatch.sort()).toEqual(['Assist', 'Query', 'Resupply', 'What the watch wrote']);
+    expect(needWatch.sort()).toEqual(['Assist', 'Query', 'Resupply', 'Waking the others', 'What the watch wrote']);
   });
 });

@@ -30,8 +30,9 @@ the same as you would for anything else here.
 **Not a dedicated machine.** The reference deployment is a Jetson running four services, but
 you don't need one. Only two things need to run on hardware you personally control — a box
 at home, or a rented VPS, either is fine: the watch state machine and the escalation
-executor, because both hold the Watchtower's own key. A relay can stay the public default;
-somebody else can host it for you.
+executor, because both hold the Watchtower's own key. The executor also holds a key of its own,
+which nothing else on the box may read, so it runs as a user of its own (*The executor's own key*,
+below). A relay can stay the public default; somebody else can host it for you.
 
 **Not patrol experience, and not permission from anyone.** Standing up your own Watchtower is
 the founder case — nobody has to endorse you into existing.
@@ -88,6 +89,19 @@ ladder on the same code path a real `Distress` takes — a test mode that exerci
 else would be testing something nobody depends on. Expect the first drill to fail; that is
 what it is for.
 
+Before it pages anybody, `--check` looks at who can end a `Distress`. It prints the watch key and
+says whether any relay holds a watch state signed by it — the one way to see from the executor that
+it holds the daemon's key, not a copy of some other file; that is a warning, since a daemon not yet
+running looks the same. It fails on any on-call entry that uses the watch key or the executor's. With
+the executor's own key configured it fails until only the executor's user can read that key, the
+daemon's user is set, is not root and does not own it, and every relay takes a test response signed by
+each key, sent as the executor sends them; a relay that took neither is warned about, as unreachable.
+Once all that passes it prints the watch code to hand to operators. Without the key it says what that
+costs and goes on (*The executor's own key*, below). It also names any `navcom-push` entry whose
+command cannot yet say what kind of page it is carrying: that entry still pages, but every page,
+a repeat and a drill included, reaches the phone looking like a new `Distress`. The template that says
+all three is in `escalation.example.toml`.
+
 **`--review` is the fourth, and it is not for you.** It prints one week: the last drill and who
 answered it, every escalation with its date, every repeat `Distress` answered with an
 acknowledgement somebody had already given, every time the person who gave it was paged again
@@ -95,9 +109,14 @@ about one — and whether a channel took it — whether the accountability log s
 who is on call — then a closing **NEEDS A LOOK** section, which on a good week reads *nothing
 needs a look*. A person who could not be paged again is in it, because why the watch could not
 reach them is the thing to fix. A dead channel it names; off the roster, a console-only entry and
-a spent budget it cannot tell apart, because the log records only that there was nothing to try —
-the executor's output from that moment says which. It exits non-zero only when that section has
-something in it, so it can be a weekly cron that stays silent until it shouldn't.
+somebody at their re-page ceiling it cannot tell apart, because the log records only that there was
+nothing to try — the executor's output from that moment says which. So is anybody paged again more
+than six times in one night, by name: one operator sending through a whole hold pages the person who
+acknowledged them six times at most, so more is several operators they acknowledged all still sending
+— which is within the rules — or a phone that keeps starting its `Distress` again, or a relay
+withholding the watch's answers: worth asking them, and checking the relays. It exits non-zero
+only when that section has something in it, so it can be a weekly cron that stays silent until it
+shouldn't.
 
 It exists because `CLAUDE.md` asks for a **log reviewer** — *"minutes per week, and it cannot be
 the agent or verification is theatre"* — and nobody has taken the job. That is not surprising
@@ -129,6 +148,21 @@ What to look for in their output:
 | `[heartbeat] LISTENING ON NO RELAY` | The daemon is subscribed nowhere, so it publishes the watch state nowhere and every operator reads Dark. Said on every heartbeat until a relay answers |
 | `[pager] watching on k/N relay(s)` | Printed only once a relay has answered. `NOT WATCHING` means no relay is listening — since one stopped, or since the pager started fifteen seconds ago |
 | `[signal] dropped: … stamped Ns away` / `[executor] … outside the age window (Ns), ignored` | A signal or `Distress` stamped further from this machine's clock than the age window: replayed by a relay, or sent from a phone whose clock is wrong. Not acted on and not answered. The window is never under five minutes — the daemon refuses a smaller `max_event_age_seconds` at startup, and the executor uses five minutes whenever `paging_window_seconds` is shorter — so if one operator's signals keep dropping, it is their clock, and that phone already reads the watch as Dark. If every operator's do, check this machine's clock |
+| `[executor] NO EXECUTOR KEY. ...` | This box has no executor key of its own: every answer that ends a `Distress` is signed with the watch key, which the daemon and the agent beside it hold too. Said at every start until you set one up (below) |
+| `[executor] NO WATCH KEY: there is nothing at ...` | The executor did not start: `privkey_path` names no file this user can read. It never makes one — a new key would be a watch no phone knows. Copy the daemon's key there (`ops/systemd/README.md`, 4b) |
+| `[executor] made the executor's own key at ...` / `executor key: <64 hex>` | First start with `executor_key_path` set, as a user of its own. Followed by `watch code: https://navcom.app/terminal/setup/#watch=1&...` once the key passes its check: that link, signed by the watch key, is what operators are handed |
+| `[executor] NO EXECUTOR KEY at ..., and not making one: ...` | `executor_key_path` is set, there is no key there, and the executor will not make one where the daemon's user could read it — `daemon_user` unset, not a user here, root, or the executor's own user. It runs as a box with no executor key until that is fixed |
+| `[executor] THE EXECUTOR'S KEY IS NOT ITS OWN` | Somebody other than the executor's user can read it, the daemon runs as root, or nothing confirms the daemon's user cannot. The ladder still runs, signing with it, and no watch code is printed. Fix what it lists, then run `--check` |
+| `[executor] THIS IS A NEW EXECUTOR KEY (...)` | The key file was gone and a new key was made, while the executor's log names an older one. Every phone handed the old key ends no `Distress` on this box until handed the new code. Restore the old key from a backup, or hand out the new code and then remove the `.replaced` file it names; `--check` fails until then |
+| `[executor] ON CALL WITH THE WATCH'S OWN KEY: ...` | A roster entry names the watch key. The daemon and the agent hold it, so the executor refuses an acknowledgement or a wake signed with it. Give that person a key of their own |
+| `[ladder] ... NO RELAY TOOK THE EXECUTOR'S OWN KEY` | A response went out only as the watch key's copy. A phone given the executor key shows it and does not end a `Distress` on it. `--check` names the relay that refuses the key |
+| `[ladder] ... NO RELAY TOOK THE WATCH KEY'S COPY` | A response went out only under the executor's own key. Every phone handed the watch before it named that key heard nothing, so the executor counts it as not reported (`COULD NOT REPORT`). `--check` names the relay that refuses the watch key |
+| `[drill] the drill file at ... exists and cannot be read` | The daemon's line: it cannot read what the executor wrote, so it publishes no drill and the watch reads as automated rather than automated-oncall. Usually the file's group, after the executor moved to its own user (`ops/systemd/README.md`, 4b) |
+| `[page] BUDGET SPENT -- refused by the first-page budget` | More ladders paged this hour than `max_pages_per_window`: a flood. Pages to the person who acknowledged are not counted and still go |
+| `[page] REFUSED by the re-page ceiling` | One person was paged again 24 times in an hour. That is a loop, not a night: the hold ended and a ladder paged the roster, them included. Tell whoever maintains this |
+| `[wake] Wren asked the watch to page everyone about ...` | The person paged again asked the watch to wake the others. The hold ended and a ladder paged everyone else on call |
+| `[wake] Wren asked about ... -- nobody else on call can be paged, so the hold stands` (or `refused by the first-page budget`) | The request could not widen anything, so it changed nothing: Wren is still the one paged about that operator, and was told so |
+| `[executor] Kestrel (push): no "--kind", "{{kind}}" -- ...` | That entry's `navcom-push` command cannot say what kind of page it carries. It still pages |
 
 The daemon's first lines no longer announce that it was listening whatever had happened: each
 relay says when it is listening, and the heartbeat says when each relay first takes the watch
@@ -141,6 +175,42 @@ watch while a `Distress` sent only there pages nobody — the operator's phone s
 coming" from its own timer. Reading the executor's state, one way, the way the daemon reads its
 drill results, is not built. Until it is, run `watchtower-daemon --check`, which asks each relay
 for the subscription both processes make, and read the executor's own `[executor]` lines.
+
+## The executor's own key
+
+The daemon holds the watch key, and the agent runs beside the daemon. If every answer that ends a
+`Distress` — *"Wren is responding."* — is signed with that key, a phone cannot tell a person's answer
+from one the agent made up, and stops sending on either. So the executor holds a key nothing else on
+the box can read, signs every response with it, and copies each one under the watch key for phones
+handed the watch before. A phone handed the executor's key ends a `Distress` only on an answer that
+key signed.
+
+Setting it up:
+
+1. Run the executor as a user of its own, never the daemon's. `ops/systemd/navcom-escalation.service`
+   does, and its README (4b) says how to create the user, give it a copy of the watch key, and let
+   the daemon read the drill file it writes.
+2. In `escalation.toml`, under `[identity]`, set `executor_key_path` to an absolute path in that
+   user's directory, and `daemon_user` to the user the daemon runs as — not root.
+3. Start it. The first start makes the key, readable only by that user, and prints
+   `executor key: <64 hex>` and then `watch code: https://navcom.app/terminal/setup/#watch=1&...`.
+   It makes no key where `daemon_user` is unset, unknown, root or its own user, and says so; nor does
+   `--check` or `--drill`, ever.
+4. Run `navcom-escalation --check` as that user. It fails until only that user can read the key and
+   every relay takes both keys, and says what to change; once it passes it prints the watch code too.
+5. Hand operators that watch code — scanned or pasted, never typed: the key inside it is checked
+   against the watch key's signature, and a mistyped key could never end a `Distress`. A phone handed
+   it ends a `Distress` only on an answer the executor signed. Phones not handed it keep the old rule
+   and say this watch does not yet name its escalation key.
+
+**Without it, the box runs exactly as it did**, and says at every start and in `--check` what that
+costs. Nothing breaks the day you add it: phones handed the watch earlier hear the copies, and end on
+them, as they always did.
+
+**A backup of the key is the key.** Keep it the way you keep the watch key — and never somewhere the
+daemon's user can read it. If the file is ever lost, the executor makes a new one at its next start and
+says so at every start after, naming the old one, until you restore the old key or hand every operator
+the new code and remove the record it names.
 
 ## What it actually costs
 
@@ -155,9 +225,12 @@ If you stand up a station with nobody on-call yet, expect a red drill every week
 system working correctly, not something wrong with your setup.
 
 **Backups, and an honest limit on what they cover.** The daemon's key is a file on disk
-(`watchtower.key`), and nothing here backs it up for you. Lose it and the watch it identified
-is gone — everyone who relied on it starts over with a new one. Copy it somewhere only you
-can reach, the same way you'd protect anything whose loss is not recoverable.
+(`watchtower.key`), and so is the executor's own (`executor.key`); nothing here backs either up for
+you. Lose the watch key and the watch it identified is gone — everyone who relied on it starts over
+with a new one. Lose the executor's and every phone handed it can no longer end a `Distress` on this
+box's answers until it is handed the new one. Copy each somewhere only you can reach, the same way
+you'd protect anything whose loss is not recoverable — the executor's never where the daemon's user
+can read it.
 
 **Being the highest-privilege position in the system.** Whoever holds a station sees who's
 out, where roughly, and when they last made contact. That access is [logged and reviewable
@@ -166,7 +239,13 @@ nobody here is trusted just by holding a title, agent or human.
 
 **Being paged, if you're also on-call.** Keeping the station running and being the person who
 answers `Distress` are different roles that often land on the same person early on. Know
-which one you're actually signing up for.
+which one you're actually signing up for. Answering one has a tail: if the operator's phone keeps
+sending afterwards — usually it missed your answer — you are paged again, with a page that opens
+`NavCom REPEAT`: at once the first time for each operator you answered, then at most once every five
+minutes, one page naming everybody you answered who is still sending, for up to half an hour. That
+page opens a screen with one button, to wake the others, which pages everyone else on call about every
+operator the page named. Where nobody else can be paged, or too many alerts have gone out this hour, it
+changes nothing and says so: you are still the one paged about them.
 
 ## What it does not require
 

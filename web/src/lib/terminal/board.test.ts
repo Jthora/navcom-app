@@ -644,6 +644,170 @@ describe('a relay that leaves the list of a watch this phone holds (decided 2026
   });
 });
 
+describe('which dropped relay is told Dark: only where this phone’s own claim could still be read [review: hold decisions, D4]', () => {
+  /*
+   * Every relay that left the list while this phone was on station was told Dark, whether or not this
+   * phone had ever announced anybody there. A Dark is stamped later than every state, so on a relay
+   * this holding never claimed — or claimed long enough ago that the claim already reads Dark — it
+   * landed on whoever else held the watch there, and operators there read nobody while somebody was.
+   * And an operator reading the dropped relay and a kept one read that Dark, newer than every
+   * Station, until the next beat: a watch that was staffed, reading as nobody, for up to two minutes.
+   */
+  const darksTo = (url: string) =>
+    published.filter(
+      (p) => p.url === url && p.event.kind === KIND_WATCH_STATE && JSON.parse(p.event.content).state === 'dark'
+    );
+  const stationsTo = (url: string) =>
+    published.filter(
+      (p) => p.url === url && p.event.kind === KIND_WATCH_STATE && JSON.parse(p.event.content).state === 'station'
+    );
+  /** What an operator reading these relays reads: the newest watch state on any of them. */
+  const readAcross = (urls: string[]) => {
+    const all = published.filter((p) => urls.includes(p.url) && p.event.kind === KIND_WATCH_STATE).map((p) => p.event);
+    all.sort((a, b) => b.created_at - a.created_at || (a.id < b.id ? -1 : 1));
+    return all[0] ? (JSON.parse(all[0].content) as { state: string }).state : null;
+  };
+
+  it('tells nothing to a relay this phone never sent its Station to, so another holder there stays announced', async () => {
+    // Raven holds the watch on wss://c; this phone never heard there, so never claimed it.
+    treatment.set('wss://c', 'refuse');
+    watchList = ['wss://r', 'wss://c'];
+    board.start();
+    await settle();
+    await board.takeWatch();
+    expect(stationsTo('wss://r'), 'the take reached the relay it hears on: nothing was tested').toHaveLength(1);
+    expect(stationsTo('wss://c')).toEqual([]);
+
+    watchList = ['wss://r'];
+    board.start();
+    await settle();
+    expect(darksTo('wss://c'), 'a Dark over whoever holds the watch on a relay this phone never claimed').toEqual([]);
+  });
+
+  it('tells nothing to a relay its Station last reached more than 420 seconds ago', async () => {
+    vi.useFakeTimers();
+    watchList = ['wss://r', 'wss://b'];
+    board.start();
+    await settle();
+    await board.takeWatch();
+    expect(stationsTo('wss://r')).toHaveLength(1);
+    // wss://r stops answering, so the beat never renews the claim there and it ages to Dark by itself.
+    treatment.set('wss://r', 'refuse');
+    dropAll('wss://r');
+    await vi.advanceTimersByTimeAsync(430_000);
+    expect(stationsTo('wss://r'), 'renewed on a relay this phone could not hear on').toHaveLength(1);
+    expect(stationsTo('wss://b').length, 'the beat stopped: nothing was tested').toBeGreaterThan(1);
+
+    watchList = ['wss://b'];
+    board.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(darksTo('wss://r'), 'a Dark on a relay where this phone’s claim already reads Dark').toEqual([]);
+  });
+
+  it('still tells a relay its Station reached within 420 seconds, though it has stopped answering since', async () => {
+    vi.useFakeTimers();
+    watchList = ['wss://r', 'wss://b'];
+    board.start();
+    await settle();
+    await board.takeWatch();
+    treatment.set('wss://r', 'refuse');
+    dropAll('wss://r');
+    await vi.advanceTimersByTimeAsync(300_000);
+    watchList = ['wss://b'];
+    board.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(darksTo('wss://r')).toHaveLength(1);
+  });
+
+  it('announces the holder again straight after, so a reader of the old relay and a kept one reads On station at once', async () => {
+    vi.useFakeTimers();
+    watchList = ['wss://r', 'wss://b'];
+    board.start();
+    await settle();
+    await board.takeWatch();
+    await vi.advanceTimersByTimeAsync(HEARD_FOR);
+
+    watchList = ['wss://b'];
+    board.start();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(darksTo('wss://r'), 'the dropped relay was never told: nothing was tested').toHaveLength(1);
+    expect(readAcross(['wss://r', 'wss://b']), 'a staffed watch read as Dark until the next beat').toBe('station');
+    expect(readAcross(['wss://r']), 'the dropped relay still reads the holder as here').toBe('dark');
+    expect(stationsTo('wss://r'), 'the new claim reached the relay it was retracted from').toHaveLength(1);
+  });
+
+  it('announces once on the beat that follows a change made on another screen, not twice', async () => {
+    vi.useFakeTimers();
+    watchList = ['wss://r', 'wss://b'];
+    board.start();
+    await settle();
+    await board.takeWatch();
+    watchList = ['wss://b'];
+    const before = stationsTo('wss://b').length;
+    await vi.advanceTimersByTimeAsync(120_000);
+    expect(darksTo('wss://r')).toHaveLength(1);
+    expect(stationsTo('wss://b').length - before, 'the beat announced the holder twice').toBe(1);
+    expect(readAcross(['wss://r', 'wss://b'])).toBe('station');
+  });
+
+  /*
+   * What these two pin is the take's reset: every holding starts with a take, so the record a
+   * stand-down or a wipe leaves is never read before a take empties it again. Those two resets keep
+   * nothing in memory a wipe should have dropped, and no test can see them past the take's.
+   */
+  it('tells nothing to a relay claimed in an earlier holding, after standing down and taking the watch again', async () => {
+    watchList = ['wss://r', 'wss://b'];
+    board.start();
+    await settle();
+    await board.takeWatch();
+    await board.standDown();
+    expect(darksTo('wss://r'), 'the stand-down told it: nothing was tested').toHaveLength(1);
+    // Somebody else takes the watch on wss://r; this phone no longer hears there.
+    treatment.set('wss://r', 'refuse');
+    dropAll('wss://r');
+    await board.takeWatch();
+    expect(stationsTo('wss://r'), 'the new holding claimed a relay it cannot hear on').toHaveLength(1);
+
+    watchList = ['wss://b'];
+    board.start();
+    await settle();
+    expect(darksTo('wss://r'), 'a holding retracted a claim only an earlier one made').toHaveLength(1);
+  });
+});
+
+describe('a holding after a wipe [review: live hole, phone]', () => {
+  const darksTo = (url: string) =>
+    published.filter(
+      (p) => p.url === url && p.event.kind === KIND_WATCH_STATE && JSON.parse(p.event.content).state === 'dark'
+    );
+  const stationsTo = (url: string) =>
+    published.filter(
+      (p) => p.url === url && p.event.kind === KIND_WATCH_STATE && JSON.parse(p.event.content).state === 'station'
+    );
+
+  it('tells nothing to a relay only the wiped holding claimed', async () => {
+    watchList = ['wss://r', 'wss://b'];
+    board.start();
+    await settle();
+    await board.takeWatch();
+    expect(stationsTo('wss://r'), 'the first holding never claimed the relay: nothing was tested').toHaveLength(1);
+    board.forget();
+    expect(darksTo('wss://r'), 'a wipe sent something').toEqual([]);
+
+    // Somebody else holds the watch on wss://r now; after the wipe this phone hears only on wss://b.
+    treatment.set('wss://r', 'refuse');
+    board.start();
+    await settle();
+    await board.takeWatch();
+    expect(stationsTo('wss://r'), 'the new holding claimed a relay it cannot hear on').toHaveLength(1);
+
+    watchList = ['wss://b'];
+    board.start();
+    await settle();
+    expect(darksTo('wss://r'), 'a Dark over whoever holds the watch there, for a claim only a wiped holding made').toEqual([]);
+  });
+});
+
 describe('an answer to somebody heard on a relay the watch has since left [review: relay paths]', () => {
   /*
    * The answer went only to the watch's relays as they are now and counted as sent if any took

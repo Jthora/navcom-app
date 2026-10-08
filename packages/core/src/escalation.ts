@@ -314,3 +314,43 @@ export class LadderRegistry {
     return [...this.ladders.values()];
   }
 }
+
+/**
+ * What a page is, as a push carries it to the person woken by it.
+ *
+ * - `first`: a ladder's page. Everybody on call gets one, and it carries the ladder's `Distress` id
+ *   so the person can acknowledge it with one tap
+ * - `repeat`: the person who acknowledged an operator, paged again because that operator is still
+ *   sending inside the hold (`escalation.spec.md`, *The person who acknowledged is paged*). Only they
+ *   get it. It carries the attempt it is about under its own field, never as an id to acknowledge —
+ *   an acknowledgement names a ladder, and that attempt has none — and its one action is to ask the
+ *   watch to wake the others (`wake-others`), which can only widen
+ * - `drill`: a drill, or a test page from `--check`. Not an emergency, and it MUST read as not one
+ *   to the person it wakes [`escalation.spec.md`, *Drills*]: a drill that looks like a real
+ *   `Distress` trains people to treat real ones as noise
+ *
+ * The three must look different to the person who receives them, because the title is the only
+ * thing read at 3am, and one look for two of them teaches a person to answer one as they answer the
+ * other.
+ */
+export type PageKind = 'first' | 'repeat' | 'drill';
+
+export const PAGE_KINDS: readonly PageKind[] = ['first', 'repeat', 'drill'];
+
+/**
+ * The kind a page says it is.
+ *
+ * `kind` is the push's own field, and only its exact spellings count. `drill` is the older boolean a
+ * push also carries for service workers from before `kind` existed, and it is read **only when
+ * `kind` names none of the three**: a sender from before the field (or one whose template left
+ * `{{kind}}` unfilled) that still said `drill`. Where `kind` says `first` or `repeat`, the page is
+ * that, whatever the boolean says.
+ *
+ * **Fails toward alarm.** Anything missing, unknown or garbled, with no `drill: true` beside it, is a
+ * page about a new `Distress`: never a repeat, never a drill, and never nothing. Of the two wrong
+ * readings, a real page shown as a drill is the one somebody sleeps through.
+ */
+export function pageKindOf(kind: unknown, drill?: unknown): PageKind {
+  if (kind === 'first' || kind === 'repeat' || kind === 'drill') return kind;
+  return drill === true ? 'drill' : 'first';
+}

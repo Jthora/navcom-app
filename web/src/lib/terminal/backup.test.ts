@@ -6,12 +6,13 @@
  */
 
 import { describe, expect, it, beforeEach } from 'vitest';
-import { openBackup, sealBackup } from '@navcom/core';
+import { newSecretKey, openBackup, publicKeyOf, sealBackup } from '@navcom/core';
 import { RestoreError, lastMade, makeBackup, restore, restoreCode } from './backup';
 import { get, set } from './storage';
 import { loadIdentity } from './identity';
 import { addOfferedWatch, loadConfig, offeredWatch } from './config';
 import { relays } from './relays';
+import { watchCode } from './watch-code';
 
 const PASS = 'correct horse battery staple';
 
@@ -275,5 +276,60 @@ describe('moving a watch to a new phone [audit: relay paths, review]', () => {
   it('offers nothing when the backup names no watch', () => {
     restore(PASS, handed({ callsign: 'Wren' }));
     expect(offeredWatch()).toBeNull();
+  });
+});
+
+describe('a watch’s escalation key in a backup [G3]', () => {
+  /*
+   * The key whose answer ends a `Distress` on a box. Left out of the watch a backup names, it was
+   * written straight into this phone's storage, where it would decide whose answer ends a `Distress`
+   * on whatever watch the phone held, with nobody having agreed to anything — and it never travelled
+   * with the watch it belonged to. It travels now inside the signed code it came in.
+   */
+  const WATCH = newSecretKey();
+  const W = publicKeyOf(WATCH);
+  const X = publicKeyOf(newSecretKey());
+  const STRANGER = publicKeyOf(newSecretKey());
+  const code = (executor: string) =>
+    watchCode({ pubkey: W, relays: ['wss://watch.example'], holders: [], executor }, WATCH).split('#')[1]!;
+
+  it('travels with the watch from the old phone, and arrives when the watch is added', () => {
+    set('accruing', 'callsign', 'Wren');
+    set('accruing', 'watchtower', W);
+    set('accruing', 'relays', ['wss://watch.example']);
+    set('accruing', 'watch_escalation', code(X));
+    const blob = makeBackup(PASS);
+
+    const store = new Map<string, string>();
+    (globalThis as Record<string, unknown>).localStorage = {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+      removeItem: (k: string) => void store.delete(k)
+    };
+    const { watch } = restore(PASS, blob);
+    expect(get('accruing', 'watch_escalation'), 'written in before anybody added the watch').toBeNull();
+    expect(offeredWatch()?.executor).toBe(X);
+    expect(watch?.escalation).toBeTruthy();
+    addOfferedWatch(offeredWatch()!);
+    expect(loadConfig()?.executor).toBe(X);
+  });
+
+  it('is never written in by a restore, before anybody adds the watch it names', () => {
+    // Somebody else's watch saved here; a handed kit naming an escalation key for it, every way it could.
+    set('accruing', 'watchtower', W);
+    set('accruing', 'relays', ['wss://watch.example']);
+    restore(PASS, handed({ callsign: 'Raven', watch_executor: STRANGER, watch_escalation: code(X) }));
+    expect(get('accruing', 'watch_executor'), 'a kit chose whose answer ends this phone’s Distress').toBeNull();
+    expect(get('accruing', 'watch_escalation'), 'a kit chose whose answer ends this phone’s Distress').toBeNull();
+    expect(loadConfig()?.executor).toBeUndefined();
+  });
+
+  it('names no key from a kit whose code the watch did not sign, though the watch can still be added', () => {
+    const forged = code(X).replace(`x=${X}`, `x=${STRANGER}`);
+    restore(PASS, handed({ callsign: 'Raven', watchtower: W, relays: ['wss://watch.example'], watch_escalation: forged }));
+    expect(offeredWatch()?.executor).toBeUndefined();
+    addOfferedWatch(offeredWatch()!);
+    expect(loadConfig()).toMatchObject({ pubkey: W });
+    expect(loadConfig()?.executor, 'a stranger’s key ends this phone’s Distress').toBeUndefined();
   });
 });

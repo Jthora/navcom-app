@@ -18,6 +18,7 @@ retrievable by a client that just connected.
 | `10911` | replaceable | **Card** | The one artifact an operator may publish about themselves. Signed by a contact key, never the operational one |
 | `10912` | replaceable | **Key bundle** | An operator's ML-KEM-768 public key. Published because it is 1184 bytes and a pairing code is 32 |
 | `1910` | regular | **Invite** | *"Here is my key. I would like to pair."* **Stored**, because an invite has to wait for somebody who is asleep |
+| `20915` | never published | **Answer signature** | The event a squad member signs to answer a `Distress` for themselves. Only its signature travels, inside a `20912` (*The answer signature*, below) |
 
 Ephemeral kinds (20000–29999) are not expected to be stored by relays — required by
 [C27], since the board MUST NOT become a queryable history.
@@ -145,6 +146,23 @@ the same conversation that already hands over the pubkey and the relay list.
 signals. It cannot un-send what they could already read, and no wording anywhere may imply
 otherwise.
 
+**The escalation executor's own key is a reader of what it acts on, and nothing else.** Where the
+watch names the executor's key ([`escalation.spec.md`](escalation.spec.md), *The executor has a key
+of its own*), a `distress-ack` and a `wake-others` are sealed to it as well as to the holders, as one
+more wrap. A `Distress` and every other signal are sealed to the holders alone: a ladder needs only
+who sent a `Distress` and its id, both outside the seal. An executor key that cannot be sealed to —
+one that is not a point on the curve, which is read as no executor at all, or one wrap past the
+limit — is left out of that message, never a reason it is not sent.
+
+**What a relay can tell from it: that the watch names an executor.** On such a watch a `distress-ack`
+and a `wake-others` carry one more wrap than every other signal, so a relay comparing wrap counts by
+`p` tag can tell it from a watch that names none — which today means it can tell a box that names its
+executor. It learns the same thing more directly from the `20912`s the executor's key signs, whose
+`e` tags name the watch's signals, so padding every signal with a dummy wrap would hide nothing.
+The executor's wrap is classical until its post-quantum key is published and fetched, so a client
+claiming cover for these two signals counts it (`coverFor` in `crypto/group.ts`), never the holders'
+cover alone.
+
 ## `20910` — Signal
 
 ```json
@@ -156,7 +174,7 @@ otherwise.
 ```
 
 `signal-type` MUST be one of: `on-station` · `routine` · `query` · `assist` ·
-`stood-down` · `log-review` · `distress-ack`
+`stood-down` · `log-review` · `distress-ack` · `wake-others` · `resupply`
 
 The type is an unencrypted tag so a client can filter without decrypting. This leaks
 *that* a signal of a given type occurred, not its content. `distress` is deliberately not
@@ -214,6 +232,24 @@ record is not something the payload can express.
   log the refusal. A ladder that keeps paging is survivable; one stopped by somebody who is
   not coming is not
 - An agent MUST NOT acknowledge [invariant 5]
+
+**`wake-others`** — *"Page everyone about this one."* An on-call person, paged again about an
+operator they already acknowledged, asking the watch to wake the rest of the roster about that
+operator's later attempt.
+```json
+{ "distress_id": "<the 20911 attempt the repeat page carried>" }
+```
+- **It never closes anything.** It can only widen who is woken: where somebody else on call can be
+  paged and the budget allows, the executor ends the hold and opens a ladder for that attempt; where
+  not, nothing changes ([`escalation.spec.md`](escalation.spec.md), *Wake the others*). Nothing about
+  it tells the operator a person has it
+- The executor MUST answer the person who asked: accepted, with who is being paged, or refused and
+  why. That answer is signed by the executor's own key, so a client waits for it with the watch's
+  whole address, asking for both authors
+- The executor MUST refuse one from a sender who is not on the on-call roster, or about an attempt it
+  did not answer from a hold that still stands, and MUST log the refusal
+- `distress_id` is the attempt, carried by the repeat page under its own field. It is never the id a
+  page offers to acknowledge, because that attempt has no ladder to acknowledge
 
 **`stood-down`** — `{}`.
 
@@ -431,14 +467,23 @@ no tag on the event. Both parts were wrong, and the implementation deliberately 
   by the watch ([`escalation.spec.md`](escalation.spec.md), *An acknowledged Distress, sent again*):
   the client MUST show it as that, with who answered, and MUST keep sending. A person's answer never
   adds to what this `Distress` joined; only a ladder's report does
+- **And it is attributable** ([`escalation.spec.md`](escalation.spec.md), *Who may close a
+  Distress*): signed by the executor's own key, where the watch names one, or carrying a valid
+  answer signature by one of the holders the client was handed. Only a report from the executor's key
+  says what an attempt joined where the watch names it, and none does on a squad's watch. A `human`
+  answer that is neither MUST be shown as said — who it claims, their words, and that the client
+  cannot confirm them — and MUST NOT end the `Distress`. A watch that names neither its executor nor
+  any holder but itself keeps the earlier rule, a `human` answer the watch key signed, and the client
+  MUST say the watch does not yet name its escalation key
 
 ## `20912` — Response
 
 ```json
 {
   "kind": 20912,
+  "pubkey": "<watchtower-pubkey, or the executor's own key>",
   "tags": [["p", "<operator-pubkey>"], ["e", "<signal-event-id>"]],
-  "content": "<nip44( payload )>"
+  "content": "<nip44( payload ), sealed by whichever key signed it>"
 }
 ```
 
@@ -448,9 +493,19 @@ no tag on the event. Both parts were wrong, and the implementation deliberately 
   "responder": { "kind": "human | agent | node", "callsign": "...", "pubkey": "hex | absent" },
   "text": "string|null",
   "provenance": { "record_id": "...", "verified": "2026-08-14", "method": "in_person" },
-  "ladder": "paging | contact | exhausted | acknowledged | absent"
+  "ladder": "paging | contact | exhausted | acknowledged | absent",
+  "sig": "hex, 128 characters | absent — responder's own answer signature",
+  "copy_of": "hex event id | absent — this is the watch key's copy of the executor's response"
 }
 ```
+
+- A `20912` is signed by the watch key, or — on a box whose watch names one — by the escalation
+  executor's own key, and sealed by the same key. A client asks for both authors and opens each with
+  its own author's key. Anything signed by another key is not an answer from this watch
+- `copy_of`: the executor sends every response twice, once signed by its own key and once by the
+  watch key, the second naming the first (not yet built in the executor). A client that knows the
+  executor key passes over a copy of a response it has already heard from the executor's key, and
+  reads one it has not as the watch key's: shown, never closure
 
 - `responder.kind` MUST be present and accurate on every response [C25, invariant 5]. The
   escalation ladder speaks as `node`: it is neither a person nor an agent, and a client MUST
@@ -474,6 +529,9 @@ no tag on the event. Both parts were wrong, and the implementation deliberately 
   something when they did not
 - `provenance` MUST be present on any directory-derived answer [C32, H5]. An answer
   without provenance MUST render as unverified
+- `sig`, on a squad member's answer from the board, is their own signature on it, made with their
+  own key, `responder.pubkey` (*The answer signature*, below). It is what ends a `Distress` on a
+  squad's watch, because everybody who ever held the watch key can sign as the watch
 - Every signal MUST receive at least an `ack`. Silence is never a response — with one exception
   (2026-10-07): a signal stamped further from the watch's clock than the node's age window is
   neither acted on nor answered, because an answer to it would be an answer to anything a relay
@@ -484,6 +542,48 @@ no tag on the event. Both parts were wrong, and the implementation deliberately 
   enough off to be ignored already reads the watch as Dark — stale, or a clock it cannot trust —
   before it sends. A narrower window broke exactly this: at 120 seconds, a phone 200 seconds fast
   read the watch as up while every Distress it sent was ignored
+
+### The answer signature
+
+A squad member's own signature on an answer, so an operator's phone can tell an answer from one of
+the holders it was handed apart from one sent by anybody else who ever held the watch key. It rides inside the sealed
+payload, so a relay learns nothing new: not who answered, nor that anyone signed.
+
+`sig` is the BIP-340 signature of a nostr event that is **never published**, built by both sides from
+what they already have. Its id is computed as NIP-01 computes any event's, and any nostr library
+checks it:
+
+```
+kind        20915
+pubkey      responder.pubkey — the member's own key, lower-case hex
+created_at  0
+tags        []
+content     JSON.stringify([
+              "navcom-answer-v1",
+              <watch pubkey, lower-case hex>,
+              <operator pubkey, lower-case hex>,
+              [<every id in the 20912's e tags, each once, in ascending string order>],
+              type, responder.kind, responder.callsign, text, ladder
+            ])
+```
+
+The last five are the payload's own values, each `null` where absent; the array is serialised as
+`JSON.stringify` writes it, with no whitespace. Normative, because a second implementation that
+orders or spells any of it differently produces signatures that check only against itself.
+
+So the signature is bound to the operator it answers, the watch it was given through, the attempts it
+answers, and every word the operator is shown. Moved to another operator, another attempt or other
+words, it fails. `"navcom-answer-v1"` and the kind of its own pin the construction, so the same key
+signing anything else never produces one. A client MUST end a `Distress` on it only when it checks
+and `responder.pubkey` is one of the holders it was handed, and never the watch key itself.
+
+**It is a signature, so it can be shown to others.** A relay learns nothing from it, but anybody who
+can open the `20912` can rebuild the event above and present it as one the member's key signed: the
+operator's phone, whoever takes that phone, and everybody who holds or ever held the watch key. It
+names the operator's key, the watch's, the `Distress` ids, the member's callsign and their words —
+never a legal name or a position, and nothing the `20912` did not already carry. Before it, the same
+readers could repeat those words but not prove who said them. That is what lets a person stand behind
+an answer, and it is also everything it proves.
 
 ## Acknowledgement windows
 
@@ -496,6 +596,7 @@ no tag on the event. Both parts were wrong, and the implementation deliberately 
 | `assist` | ack within 60s, resolution within 300s |
 | `log-review` | answer within 120s. Not urgent — nobody is in the street waiting on it |
 | `distress-ack` | 10s. One tap, and somebody is waiting on it as they are waiting on nothing else |
+| `wake-others` | 10s. One tap, by somebody woken for it |
 | `distress` | see [`escalation.spec.md`](./escalation.spec.md) |
 
 A missed window is not an error condition. It is displayed to the operator as an

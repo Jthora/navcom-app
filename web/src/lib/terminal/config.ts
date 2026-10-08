@@ -15,6 +15,7 @@
 import { isPubkey } from '@navcom/core';
 import { clearField, get, set } from './storage';
 import { refusedOf, usable, whyNotReachable, type Refused } from './relay-url';
+import { WatchCodeError, escalationOf, parseWatchCode } from './watch-code';
 
 export interface WatchtowerConfig {
   pubkey: string;
@@ -27,6 +28,16 @@ export interface WatchtowerConfig {
    * hands over the address, because nothing here discovers anything.
    */
   holders: string[];
+  /**
+   * The escalation executor's own key, where the watch named one when it was handed over.
+   *
+   * **The only key whose answer ends a `Distress` on a box** [`escalation.spec.md`, *Who may close a
+   * Distress*]. Absent on every watch handed over before it existed, which keeps the old rule — a
+   * person's answer from the watch key ends a `Distress` — and Status says so. It arrives only in a
+   * watch code the watch signed, scanned or pasted, never typed (`watch-code.ts`), and is read back
+   * only from that code, checked again.
+   */
+  executor?: string;
 }
 
 /** The watch as saved on this phone, with the relay lines this page will not dial named. */
@@ -35,7 +46,22 @@ export interface StoredWatch extends WatchtowerConfig {
   lines: string[];
   /** The lines left out of `relays`, each with why. */
   refused: Refused[];
+  /** When the watch signed the code its escalation key came in, where it has one. */
+  executorAt?: number;
 }
+
+/**
+ * Where the escalation key is kept: **the whole signed watch code it came in**, beside the watch, in
+ * the accruing tier, as the watch is.
+ *
+ * Not the bare key. A bare key was trusted by however it got into storage, and one way in was an
+ * older build restoring a backup made on this one — it wrote every field it did not know straight
+ * in, so a crafted kit, or one for a watch the operator then declined, planted a key that applied to
+ * whatever watch was saved [review: live hole, phone]. The code is read back through `escalationOf`,
+ * which checks its signature and that it names the watch saved here, so a key that arrived any other
+ * way is none. A new name, too: nothing written under the old one, `watch_executor`, is ever read.
+ */
+const ESCALATION = 'watch_escalation';
 
 const strings = (v: unknown): string[] =>
   Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : [];
@@ -53,10 +79,12 @@ export function storedWatch(): StoredWatch | null {
   const pubkey = get<unknown>('accruing', 'watchtower');
   if (typeof pubkey !== 'string' || !pubkey) return null;
   const lines = strings(get<unknown>('accruing', 'relays'));
+  const escalation = escalationOf(get<unknown>('accruing', ESCALATION), pubkey);
   return {
     pubkey,
     relays: usable(lines),
     holders: strings(get<unknown>('accruing', 'watch_holders')),
+    ...(escalation ? { executor: escalation.key, executorAt: escalation.issuedAt } : {}),
     lines,
     refused: refusedOf(lines)
   };
@@ -74,15 +102,36 @@ export function storedWatch(): StoredWatch | null {
 export function loadConfig(): WatchtowerConfig | null {
   const watch = storedWatch();
   if (!watch || watch.relays.length === 0) return null;
-  return { pubkey: watch.pubkey, relays: watch.relays, holders: watch.holders };
+  return {
+    pubkey: watch.pubkey,
+    relays: watch.relays,
+    holders: watch.holders,
+    ...(watch.executor ? { executor: watch.executor } : {})
+  };
 }
 
 export class ConfigError extends Error {}
 
+/**
+ * Saves the watch, all of it or none of it.
+ *
+ * `code` is the watch code the form was filled from, as signed (`WatchCode.text`), and decides the
+ * escalation executor's key:
+ *
+ * - a code: checked again — signed by the watch, and naming the watch being saved — or the whole
+ *   save is refused. Its key is kept, and a code naming none drops any saved one: it is the watch's
+ *   own signed word that it names none. Setup asks before either changes a watch already saved here
+ * - `null`: none, and any saved one is dropped
+ * - left out: the one already saved is kept, **only while it is the same watch**. A Setup edit to
+ *   the relays or the holders must not drop it — the executor's key is never typed, so nothing on
+ *   that form could put it back — and a different address is a different watch, whose executor
+ *   nobody here has been given
+ */
 export function saveConfig(
   pubkey: string,
   relaysRaw: string,
-  holdersRaw?: string
+  holdersRaw?: string,
+  code?: string | null
 ): WatchtowerConfig {
   const cleanKey = pubkey.trim().toLowerCase();
   if (!isPubkey(cleanKey)) {
@@ -109,10 +158,41 @@ export function saveConfig(
    * operator believes a squad is behind them and their Distress lands on nobody's board.
    */
   const holderKeys = holders(holdersRaw);
+  const kept = escalationFor(cleanKey, code);
   set('accruing', 'watchtower', cleanKey);
   set('accruing', 'relays', relays);
   set('accruing', 'watch_holders', holderKeys);
-  return { pubkey: cleanKey, relays, holders: holderKeys };
+  if (kept) set('accruing', ESCALATION, kept.text);
+  else clearField('accruing', ESCALATION);
+  // Written by builds before the key was kept inside its signed code; never read, and not left behind.
+  clearField('accruing', 'watch_executor');
+  return { pubkey: cleanKey, relays, holders: holderKeys, ...(kept ? { executor: kept.key } : {}) };
+}
+
+/**
+ * The signed code a save keeps for its escalation key, by `saveConfig`'s rule, or a refusal. Pure:
+ * nothing is written.
+ */
+function escalationFor(watch: string, given: string | null | undefined): { text: string; key: string } | null {
+  if (given === null) return null;
+  if (given === undefined) {
+    const stored = get<unknown>('accruing', ESCALATION);
+    const saved = get<unknown>('accruing', 'watchtower');
+    const escalation = saved === watch ? escalationOf(stored, watch) : null;
+    return escalation && typeof stored === 'string' ? { text: stored, key: escalation.key } : null;
+  }
+  let code;
+  try {
+    code = parseWatchCode(given);
+  } catch (e) {
+    throw new ConfigError(
+      `${e instanceof WatchCodeError ? e.message : 'That watch code could not be read.'} Nothing was saved.`
+    );
+  }
+  if (code.pubkey !== watch) {
+    throw new ConfigError('The watch code is for another watch than the address above, so nothing was saved.');
+  }
+  return code.executor ? { text: code.text, key: code.executor } : null;
 }
 
 /**
@@ -139,6 +219,10 @@ export interface NamedWatch {
   pubkey: string;
   relays: string[];
   holders: string[];
+  /** The signed watch code the old phone kept its escalation key in, as kept. */
+  escalation?: string;
+  /** The escalation key that code gives this watch, checked: for showing, never stored on its own. */
+  executor?: string;
 }
 
 const OFFERED = 'watch_offered';
@@ -153,13 +237,21 @@ const OFFERED = 'watch_offered';
  * tier, so a panic wipe takes the association with it.
  */
 export function offerWatch(watch: NamedWatch): void {
-  set('wipeable', OFFERED, watch);
+  const { executor: _shown, ...kept } = watch;
+  set('wipeable', OFFERED, kept);
 }
 
 export function offeredWatch(): NamedWatch | null {
   const w = get<Partial<NamedWatch>>('wipeable', OFFERED);
   if (!w || typeof w !== 'object' || typeof w.pubkey !== 'string') return null;
-  return { pubkey: w.pubkey, relays: strings(w.relays), holders: strings(w.holders) };
+  // Only a code this watch signed: one for another watch, or not signed, names no key here.
+  const escalation = escalationOf(w.escalation, w.pubkey);
+  return {
+    pubkey: w.pubkey,
+    relays: strings(w.relays),
+    holders: strings(w.holders),
+    ...(escalation && typeof w.escalation === 'string' ? { escalation: w.escalation, executor: escalation.key } : {})
+  };
 }
 
 export function forgetOfferedWatch(): void {
@@ -174,6 +266,12 @@ export interface WatchForm {
   /** The relay field, one line each. */
   relays: string[];
   holders: string[];
+  /** The escalation executor's key, saved here or named by the backup. Shown, never a field. */
+  executor?: string;
+  /** When the watch signed the code that key came in. */
+  executorAt?: number;
+  /** The backup's signed code for that key, kept when its watch is saved. Never for a saved watch. */
+  escalation?: string;
   /** Lines this page will not dial, each with why: left out of the field, or in it to be fixed. */
   refused: Refused[];
   /** How many of the watch's relays this page can reach. */
@@ -194,9 +292,25 @@ export function watchForm(): WatchForm | null {
   const stored = storedWatch();
   const offer = stored ? null : offeredWatch();
   const w = stored
-    ? { from: 'saved' as const, pubkey: stored.pubkey, lines: stored.lines, holders: stored.holders }
+    ? {
+        from: 'saved' as const,
+        pubkey: stored.pubkey,
+        lines: stored.lines,
+        holders: stored.holders,
+        executor: stored.executor,
+        executorAt: stored.executorAt,
+        escalation: undefined
+      }
     : offer
-      ? { from: 'backup' as const, pubkey: offer.pubkey, lines: offer.relays, holders: offer.holders }
+      ? {
+          from: 'backup' as const,
+          pubkey: offer.pubkey,
+          lines: offer.relays,
+          holders: offer.holders,
+          executor: offer.executor,
+          executorAt: escalationOf(offer.escalation, offer.pubkey)?.issuedAt,
+          escalation: offer.escalation
+        }
       : null;
   if (!w) return null;
   const reachable = usable(w.lines);
@@ -205,6 +319,9 @@ export function watchForm(): WatchForm | null {
     pubkey: w.pubkey,
     relays: reachable.length > 0 ? reachable : w.lines.filter((l) => l.trim()),
     holders: w.holders,
+    ...(w.executor ? { executor: w.executor } : {}),
+    ...(w.executor && w.executorAt !== undefined ? { executorAt: w.executorAt } : {}),
+    ...(w.executor && w.escalation ? { escalation: w.escalation } : {}),
     refused: refusedOf(w.lines),
     reachable: reachable.length
   };
@@ -225,7 +342,11 @@ export function addOfferedWatch(watch: NamedWatch): WatchtowerConfig {
       'None of this watch’s relays can be reached from this page. Fix them on the setup screen, where the watch is filled in.'
     );
   }
-  const saved = saveConfig(watch.pubkey, reachable.join('\n'), watch.holders.join('\n'));
+  // The signed code it kept its escalation key in, checked again by `saveConfig`, and only where it
+  // is this watch's: anything else names no key, and none named keeps what is saved for the same
+  // watch, by `saveConfig`'s rule.
+  const code = escalationOf(watch.escalation, watch.pubkey) ? watch.escalation : undefined;
+  const saved = saveConfig(watch.pubkey, reachable.join('\n'), watch.holders.join('\n'), code);
   forgetOfferedWatch();
   return saved;
 }

@@ -6,13 +6,15 @@
  * Normative source: docs/spec/signals.spec.md
  */
 
+import type { UnsignedEvent } from 'nostr-tools/core';
+import { finalizeEvent, getEventHash, verifyEvent } from 'nostr-tools/pure';
 import { seal } from '../crypto/envelope.js';
-import type { SecretKey } from '../crypto/keys.js';
+import { isPubkey, publicKeyOf, type SecretKey } from '../crypto/keys.js';
 import type { Author } from '../attestation.js';
 import type { LadderState } from '../escalation.js';
 import type { LogEntry } from '../log.js';
 import type { InclusionProof, LogRoot } from '../merkle.js';
-import { KIND_RESPONSE, tagInReplyTo, tagRecipient } from './kinds.js';
+import { KIND_ANSWER_SIGNATURE, KIND_RESPONSE, tagInReplyTo, tagRecipient } from './kinds.js';
 
 export type ResponseType =
   | 'ack'
@@ -113,8 +115,28 @@ export interface ResponsePayload {
    * the operator learned it ten minutes later from the phone's own timer.
    */
   ladder?: LadderState;
-  /** Hex signature by `responder`, where they signed for themselves. */
+  /**
+   * `responder`'s own signature on this answer, where they signed for themselves: 128 hex characters,
+   * the BIP-340 signature on the never-published event {@link answerSignatureEvent} builds, with
+   * `responder.pubkey` as its signer.
+   *
+   * **What ends a `Distress` on a squad's watch** [`signals.spec.md`, *The answer signature*]. Every
+   * member holds the watch key, and so does everybody who ever did, so a `20912` that key signs says
+   * only that somebody who once held the watch sent it. A squad member's answer is signed by their own
+   * key as well, bound to the operator, the watch, the ids it answers and its words, and an operator's
+   * phone ends a `Distress` on it only when that key is one of the holders it was handed.
+   */
   sig?: string;
+  /**
+   * The id of the `20912` the escalation executor signed with its own key, where this is the watch
+   * key's copy of it.
+   *
+   * A box whose executor has its own key sends each response twice: signed by that key, and the same
+   * words signed by the watch key, for phones handed the watch before it named the executor. A phone
+   * that knows the executor's key and has heard that event already passes over the copy; one that
+   * has not reads the copy as the watch key's like any other, and it never ends a `Distress` there.
+   */
+  copy_of?: string;
 }
 
 export interface LogReview {
@@ -159,4 +181,101 @@ export function buildResponse(
  */
 export function isUnverified(payload: ResponsePayload): boolean {
   return payload.type === 'answer' && payload.provenance === null;
+}
+
+/** The watch key's copy of a response the executor signed with its own key, as `copy_of` describes. */
+export function watchCopy(payload: ResponsePayload, executorEventId: string): ResponsePayload {
+  return { ...payload, copy_of: executorEventId };
+}
+
+/**
+ * What an answer signature is about: the watch it is given for, the operator it answers, and the
+ * `20911` ids it answers — the `e` tags of the `20912` that carries it.
+ */
+export interface AnswerAbout {
+  watch: string;
+  operator: string;
+  ids: readonly string[];
+}
+
+/** Pins the construction, so these words signed for anything else are not this. */
+const ANSWER_SIGNATURE_V1 = 'navcom-answer-v1';
+
+/**
+ * The never-published event whose signature is an answer's `sig` [`signals.spec.md`, *The answer
+ * signature*]. Normative, because a second implementation has to build the same bytes:
+ *
+ * - `kind` {@link KIND_ANSWER_SIGNATURE}, `created_at` 0, no tags, `pubkey` the signer
+ * - `content` the JSON array, as `JSON.stringify` writes it: `"navcom-answer-v1"`, the watch's
+ *   pubkey and the operator's (lower-case hex), the ids (each once, sorted), then the answer's
+ *   `type`, `responder.kind`, `responder.callsign`, `text` and `ladder`, each `null` where absent
+ *
+ * So the signature is bound to who it answers, through which watch, which `Distress` attempts, and
+ * every word the operator is shown. Nothing in it can be moved to another operator, another attempt
+ * or other words without the signature failing. Its id and signature are nostr's own (NIP-01), so
+ * any nostr library checks it.
+ */
+export function answerSignatureEvent(about: AnswerAbout, payload: ResponsePayload, signer: string): UnsignedEvent {
+  const ids = [...new Set(about.ids)].sort();
+  const or = (v: unknown) => (v === undefined ? null : v);
+  return {
+    kind: KIND_ANSWER_SIGNATURE,
+    pubkey: signer,
+    created_at: 0,
+    tags: [],
+    content: JSON.stringify([
+      ANSWER_SIGNATURE_V1,
+      about.watch.toLowerCase(),
+      about.operator.toLowerCase(),
+      ids,
+      or(payload.type),
+      or(payload.responder?.kind),
+      or(payload.responder?.callsign),
+      or(payload.text),
+      or(payload.ladder)
+    ])
+  };
+}
+
+/**
+ * A squad member's answer, signed for themselves: `responder.pubkey` set to their own key, and `sig`
+ * their signature on it.
+ *
+ * For the phone holding the watch. The `20912` is still signed by the watch key and sealed to the
+ * operator as before, so a relay learns nothing new; this rides inside it. `about.ids` are the ids
+ * that `20912` names in its `e` tags, and nothing else.
+ *
+ * **It is a signature, so it can be shown to others.** Anybody who can open that `20912` — the
+ * operator's phone, whoever seizes it, and everybody who holds or ever held the watch key — can
+ * rebuild {@link answerSignatureEvent} and present it: an event this member's key signed, naming the
+ * operator, the watch, the `Distress` ids, their callsign and their words [`signals.spec.md`, *The
+ * answer signature*]. That is what lets a person stand behind an answer, and it is also all it says.
+ */
+export function signAnswer(holder: SecretKey, about: AnswerAbout, payload: ResponsePayload): ResponsePayload {
+  const pubkey = publicKeyOf(holder);
+  const { sig: _old, ...rest } = payload;
+  const unsigned: ResponsePayload = { ...rest, responder: { ...payload.responder, pubkey } };
+  const signed = finalizeEvent(answerSignatureEvent(about, unsigned, pubkey), holder);
+  return { ...unsigned, sig: signed.sig };
+}
+
+const SIG_HEX = /^[0-9a-f]{128}$/;
+
+/**
+ * Whether `sig` is `responder.pubkey`'s own signature on this answer, about these ids.
+ *
+ * It says whose signature it is, never whether that key may close anything: the caller checks the
+ * key against the holders it was handed. Anything malformed — no key, no signature, a key that is not
+ * one, a signature over other words or other ids — is false, never a throw.
+ */
+export function answerSignedByResponder(about: AnswerAbout, payload: ResponsePayload): boolean {
+  const signer = payload?.responder?.pubkey;
+  const sig = payload?.sig;
+  if (typeof signer !== 'string' || !isPubkey(signer) || typeof sig !== 'string' || !SIG_HEX.test(sig)) return false;
+  try {
+    const event = answerSignatureEvent(about, payload, signer);
+    return verifyEvent({ ...event, id: getEventHash(event), sig });
+  } catch {
+    return false;
+  }
 }

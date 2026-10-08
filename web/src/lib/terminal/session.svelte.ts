@@ -5,12 +5,18 @@
  * not watched, and the terminal must never decide otherwise on their behalf.
  */
 
+import { finalizeEvent } from 'nostr-tools/pure';
 import {
+  RESPONSE_WINDOW,
+  buildSignal,
   capabilitySentence,
   checkReview,
+  distressClosure,
+  listable,
   sendDistressUntilAcknowledged,
   sendSignal,
   waitForResponse,
+  type DistressClosure,
   type DistressPhase,
   type OnStationPayload,
   type ResponsePayload,
@@ -101,12 +107,11 @@ function ctx() {
  */
 async function send(type: SignalType, payload: SignalPayload, timeoutMs = 10_000) {
   const { config, identity } = ctx();
-  const sent = await sendSignal(
-    pool(), config.relays, identity.secretKey, watchAddress(config), type, payload
-  );
-  return waitForResponse(
-    pool(), config.relays, identity.secretKey, identity.pubkey, config.pubkey, sent, timeoutMs
-  );
+  const address = watchAddress(config);
+  const sent = await sendSignal(pool(), config.relays, identity.secretKey, address, type, payload);
+  // The whole address, not its pubkey: where the watch names its executor, that key answers too,
+  // and a wait for the watch key alone hears the executor only through a copy, if at all.
+  return waitForResponse(pool(), config.relays, identity.secretKey, identity.pubkey, address, sent, timeoutMs);
 }
 
 /** Attaches the declared area, which is coarse by construction — it came from a sign-on. */
@@ -186,8 +191,44 @@ function onStationPayload(): OnStationPayload {
   };
 }
 
-function watchAddress(config: { pubkey: string; holders: string[] }): WatchtowerAddress {
-  return watchtowerAt(config.pubkey, config.holders, kemKeys());
+/**
+ * The executor's key goes with it, where the watch named one [G3]: the signals the executor acts on
+ * are sealed to it as well, its answers are heard beside the watch key's, and only its answer — or
+ * a holder's own signature — ends a `Distress` (`distressClosure` in core). Left out, every one of
+ * those fell back to the watch key, which the daemon beside the agent holds.
+ */
+function watchAddress(config: { pubkey: string; holders: string[]; executor?: string }): WatchtowerAddress {
+  return watchtowerAt(config.pubkey, config.holders, kemKeys(), config.executor);
+}
+
+/**
+ * Who may end a `Distress` sent to this phone's watch, or null with no watch.
+ *
+ * `attributed` false is a box handed over before it named its escalation key: a person's answer
+ * from it cannot be told apart from one the agent beside it sent, and Status says so.
+ */
+export function watchClosure(): DistressClosure | null {
+  const config = loadConfig();
+  return config ? distressClosure(watchAddress(config)) : null;
+}
+
+/** What became of asking the watch to wake the others. */
+export interface WakeOutcome {
+  /**
+   * How many relays took it. None means no relay said so — and with no answer either, that it never
+   * left this phone. With an answer, the watch heard it whatever the relays said back.
+   */
+  took: number;
+  /** The watch's answer — accepted, with who is being paged, or refused and why — or null. */
+  answer: ResponsePayload | null;
+  /**
+   * Whose key signed that answer. `executor`: the escalation executor's own, which only it holds.
+   * `watch-key`: the watch key, which the daemon beside the agent also holds — on a watch that names
+   * its executor, only ever shown as unconfirmed, because a compromised agent can send it.
+   */
+  from: 'executor' | 'watch-key' | null;
+  /** Why it did not go, where it did not. */
+  error: string | null;
 }
 
 /**
@@ -340,6 +381,98 @@ export const operator = {
       'distress-ack',
       { distress_id: distressId }
     );
+  },
+
+  /**
+   * *"Page everyone about this one."* Asks the watch to wake the rest of the roster about an
+   * operator's attempt, for a person paged again about an operator they already acknowledged.
+   *
+   * From this phone's own key, the one on the roster, and sealed to the executor's key as well where
+   * the watch names one (`readersOf` in core). **It never closes anything**: the executor answers it
+   * by opening a ladder for that attempt, and nothing about it tells the operator a person has it
+   * [`escalation.spec.md`, *Wake the others*].
+   *
+   * Waits for the watch's answer, because it is the only way the person who tapped learns whether
+   * anybody else is being woken. The wait opens before the signal goes: a response is ephemeral,
+   * and one that came back while a slow relay was still confirming would otherwise be missed.
+   *
+   * **Never called except by a person tapping**, as an acknowledgement is not.
+   */
+  async wakeOthers(attempt: string): Promise<WakeOutcome> {
+    const none = (error: string): WakeOutcome => ({ took: 0, answer: null, from: null, error });
+    if (!/^[0-9a-f]{64}$/.test(attempt)) {
+      return none('The page did not say which Distress it was about, so there is nothing to send.');
+    }
+    let context: ReturnType<typeof ctx>;
+    try {
+      context = ctx();
+    } catch (e) {
+      return none(e instanceof Error ? e.message : String(e));
+    }
+    const { config, identity } = context;
+    const address = watchAddress(config);
+    /*
+     * Core's gate, as every other signal goes through it: never to a mission relay, which keeps what
+     * it is sent for good, whatever a config, a list or a backup says [review: live hole, phone].
+     */
+    const relays = config.relays.filter(listable);
+    if (relays.length === 0) return none('every relay this watch names is one nothing is sent to.');
+    const event = finalizeEvent(
+      buildSignal(identity.secretKey, address, 'wake-others', { distress_id: attempt }, Math.floor(Date.now() / 1000)),
+      identity.secretKey
+    );
+    /*
+     * Two waits, opened before the signal goes, and told apart [review: live hole, phone].
+     *
+     * Where the watch names its executor, only the executor's own key answers for it. The watch key
+     * is also held by the daemon the agent runs beside, and the signal is public — its author, the
+     * watch and the `wake-others` tag — so a compromised agent could answer in milliseconds with
+     * "Done, paging Raven" while nobody was paged, ahead of the executor's real refusal. So the
+     * executor's answer is waited for the whole window, and the watch key's is shown only when the
+     * executor's never came, and only as unconfirmed.
+     */
+    const executor = distressClosure(address).executor;
+    const stop = new AbortController();
+    const windowMs = (RESPONSE_WINDOW['wake-others'] ?? 10) * 1000;
+    // Asserted rather than annotated, so the checks after the awaits are not narrowed to null.
+    let own = null as ResponsePayload | null;
+    let keyed = null as ResponsePayload | null;
+    const hear = (key: string) =>
+      waitForResponse(pool(), relays, identity.secretKey, identity.pubkey, key, event, windowMs, stop.signal).catch(
+        () => null
+      );
+    const executorAnswer = executor ? hear(executor).then((p) => (own = p)) : Promise.resolve(null);
+    const watchAnswer = hear(config.pubkey).then((p) => (keyed = p));
+    const settled = () => Promise.all([executorAnswer, watchAnswer]);
+
+    // Each relay on its own, as core's publish does: one address the pool cannot read refuses one
+    // relay, not the whole list.
+    const results = await Promise.allSettled(relays.map(async (url) => pool().publish([url], event)[0]));
+    const took = results.filter((r) => r.status === 'fulfilled').length;
+    const best = (): WakeOutcome | null =>
+      own ? { took, answer: own, from: 'executor', error: null } : keyed ? { took, answer: keyed, from: 'watch-key', error: null } : null;
+
+    if (took === 0) {
+      /*
+       * No relay said OK — a slow one runs out the pool's wait while it still forwards the signal —
+       * but an answer already here means the watch heard it. Saying it never left would have told
+       * the person nobody was being woken while the roster was being paged, and offered the button
+       * again for a second tap the watch then refuses.
+       */
+      const heard = best();
+      stop.abort();
+      await settled();
+      return heard ?? none('no relay took it.');
+    }
+    await (executor ? executorAnswer : watchAnswer);
+    if (own) {
+      stop.abort();
+      await settled();
+      return best()!;
+    }
+    // The executor's never came in the window; the watch key's, if any, has settled by now.
+    await settled();
+    return best() ?? { took, answer: null, from: null, error: null };
   },
 
   async routine() {

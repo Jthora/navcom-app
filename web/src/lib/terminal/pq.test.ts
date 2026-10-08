@@ -15,7 +15,7 @@ const raven = publicKeyOf(newSecretKey());
 const wren = publicKeyOf(newSecretKey());
 
 let currentPeers: string[] = [];
-let currentConfig: { pubkey: string; relays: string[]; holders: string[] } | null = null;
+let currentConfig: { pubkey: string; relays: string[]; holders: string[]; executor?: string } | null = null;
 let currentRelays: string[] = ['wss://fake.relay'];
 /** Every request and publish, as a relay would see it: one relay, and what was named on it. */
 let asked: { url: string; authors: string[] }[] = [];
@@ -146,5 +146,33 @@ describe('asking for keys, and where [audit: relay paths, review]', () => {
     currentPeers = [raven];
     pq.start();
     expect(published).toEqual([[WATCH, ...PUBLIC]]);
+  });
+});
+
+describe('the escalation executor’s key, where the watch names one [G3]', () => {
+  /*
+   * An acknowledgement and a request to wake the others are sealed to the executor's own key as
+   * well as to the holders. Its wrap is classical until its key bundle is on this phone, and nothing
+   * fetched it: every acknowledgement's content key sat in a classical wrap however long the box had
+   * published one.
+   */
+  const W = publicKeyOf(newSecretKey());
+  const X = publicKeyOf(newSecretKey());
+  const WATCH = 'wss://watch.example';
+
+  it('is asked for, on the watch’s own relays, beside the watch’s key', () => {
+    currentConfig = { pubkey: W, relays: [WATCH], holders: [], executor: X };
+    currentPeers = [];
+    pq.start();
+    const named = asked.filter((a) => a.authors.includes(X));
+    expect(named.map((a) => a.url), 'the executor’s key bundle was never asked for').toEqual([WATCH]);
+    expect(named[0]?.authors).toContain(W);
+  });
+
+  it('is kept once it has been fetched, rather than pruned as somebody this phone does not send to', () => {
+    currentConfig = { pubkey: W, relays: [WATCH], holders: [], executor: X };
+    set('accruing', 'kem_keys', { [X]: 'executor-kem' });
+    pq.start();
+    expect(pq.known[X]).toBe('executor-kem');
   });
 });

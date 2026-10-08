@@ -3,7 +3,8 @@
   import { capabilitySentence, pageableNow } from '@navcom/core';
   import { Panel, Slot, Readout, Why, Action, Board } from '$lib/components/panel';
   import { watch } from '$lib/terminal/watch.svelte';
-  import { operator } from '$lib/terminal/session.svelte';
+  import { operator, watchClosure } from '$lib/terminal/session.svelte';
+  import type { DistressClosure } from '@navcom/core';
   import { presence } from '$lib/terminal/presence.svelte';
   import { position } from '$lib/terminal/position.svelte';
   import { battery } from '$lib/terminal/battery.svelte';
@@ -48,6 +49,12 @@
         : { value: 'Automated', tone: 'warn' as const, sub: 'agent · not a human' }
   );
   let configured = $state(false);
+  /**
+   * Who may end a `Distress` sent to this phone's watch [G3]. `attributed` false is a box handed
+   * over before it named its escalation key: on it, an answer the agent beside it sent cannot be
+   * told from a person's, and this screen says so.
+   */
+  let closure = $state<DistressClosure | null>(null);
   /** A backup named a watch and the operator has not yet added or forgotten it. */
   let offered = $state(false);
   let identity = $state<ReturnType<typeof loadIdentity>>(null);
@@ -131,6 +138,7 @@
     if (q && /^[0-9a-f]{64}$/.test(q)) ackId = q;
     clock = readClock(data?.built, Date.now());
     configured = loadConfig() !== null;
+    closure = watchClosure();
     stranded = configured ? null : storedWatch();
     offered = !configured && !stranded && offeredWatch() !== null;
     identity = loadIdentity();
@@ -517,8 +525,23 @@
       {:else}
         <Slot k="On call" />
       {/if}
+      {#if configured && closure && !closure.attributed}
+        <Slot k="Escalation key">
+          <span data-escalation-key="none">
+            <Readout value="Not named" tone="warn" sub="a person’s answer cannot be told from the agent’s" />
+          </span>
+        </Slot>
+      {/if}
 
       <Why open={!identity || !configured || watch.read.reason !== null}>
+        {#if configured && closure && !closure.attributed}
+          <p data-escalation-key-why>
+            <strong>This watch does not yet name its escalation key.</strong> Until it does, an answer
+            that ends your Distress could come from the agent on its box, or from anybody who ever
+            held the watch key, as easily as from a person. The key comes only in a watch code the watch
+            signs, handed over by whoever runs it; until this phone is given one, it keeps this rule.
+          </p>
+        {/if}
         {#if stranded}
           <!-- The receipt for a watch this page cannot reach. Core's sentence for Dark opens "No
                watch.", and a watch somebody added is not none [audit: relay paths, review]. -->

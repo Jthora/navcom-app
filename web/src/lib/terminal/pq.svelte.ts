@@ -81,7 +81,10 @@ export const pq = {
     const config = loadConfig();
     const once = (k: string, i: number, all: string[]) => all.indexOf(k) === i;
     const peerKeys = peerPubkeys().filter(once);
-    const watchKeys = (config ? [config.pubkey, ...config.holders] : []).filter(once);
+    // The executor's own key where the watch names one [G3]: an acknowledgement and a request to
+    // wake the others are sealed to it too, and its wrap stays classical until its key is here.
+    const watchKeys = (config ? [config.pubkey, ...config.holders, ...(config.executor ? [config.executor] : [])] : [])
+      .filter(once);
     const wanted = [...peerKeys, ...watchKeys].filter(once);
 
     /*

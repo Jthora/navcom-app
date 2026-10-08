@@ -66,6 +66,94 @@ config, which also asks each relay for the box's own subscription, and the
 CLI's `status` command from any machine with the right pubkey in its
 `client.toml` to confirm `LIVE` end to end.
 
+## 4b. The escalation executor, as its own user
+
+The executor runs the Distress ladder, and it is a separate process under a separate unit
+from the daemon -- a crash loop in one must never restart the other. It also holds a key of
+its own, which only it may read: a phone handed that key ends a Distress only on an answer it
+signed, so the daemon, and the agent beside it, can tell an operator anything but that a person
+has them (`docs/spec/escalation.spec.md`, *The executor has a key of its own*). That only holds
+if it runs as a user the daemon does not.
+
+The commands below assume the daemon runs as `jono`, as in section 3; use your daemon's user
+wherever `jono` appears.
+
+```sh
+sudo useradd --system --home-dir /var/lib/navcom-escalation --create-home navcom-escalation
+sudo chmod 700 /var/lib/navcom-escalation
+
+# The watch key: a copy this user owns. The daemon made it; the executor never makes one, and does
+# not start without it.
+sudo install -o navcom-escalation -g navcom-escalation -m 600 \
+  /home/jono/.config/navcom-watchtower/watchtower.key /var/lib/navcom-escalation/watchtower.key
+
+# The drill file: written by this user, read by the daemon's to publish the last drill. A directory
+# of its own in the daemon user's group -- the setgid bit gives each file made in it that group, and
+# the executor writes it 0640.
+sudo install -d -o navcom-escalation -g "$(id -gn jono)" -m 2750 /var/lib/navcom-drill
+
+# Only if the executor ran as the daemon's user before: move what it wrote to this user. Keep the
+# log -- it is how a lost executor key is noticed later.
+if [ -f /var/lib/navcom/drill.json ]; then
+  sudo mv /var/lib/navcom/drill.json /var/lib/navcom-drill/drill.json
+  sudo chown navcom-escalation:"$(id -gn jono)" /var/lib/navcom-drill/drill.json
+  sudo chmod 640 /var/lib/navcom-drill/drill.json
+fi
+for f in /var/lib/navcom/escalation-log.jsonl /var/lib/navcom/escalation-log.jsonl.meta.json; do
+  if [ -f "$f" ]; then
+    sudo mv "$f" /var/lib/navcom-escalation/
+    sudo chown navcom-escalation:navcom-escalation "/var/lib/navcom-escalation/$(basename "$f")"
+  fi
+done
+
+sudo install -d -m 755 /etc/navcom
+sudo cp escalation.example.toml /etc/navcom/escalation.toml
+```
+
+In `/etc/navcom/escalation.toml`:
+
+- `[identity] privkey_path = "/var/lib/navcom-escalation/watchtower.key"` -- the copy above. If the
+  daemon's key ever changes, copy it again.
+- `[identity] executor_key_path = "/var/lib/navcom-escalation/executor.key"` -- an absolute path,
+  made on first start.
+- `[identity] daemon_user = "jono"` -- whoever `navcom-watchtower.service` runs as, never root, so
+  the executor can confirm that user cannot read its key. Without it the executor makes no key.
+- `[escalation] drill_state_path = "/var/lib/navcom-drill/drill.json"`, and the same path as
+  `[log] drill_state_path` in the daemon's `watchtower.toml`; restart the daemon after.
+- `[log] path = "/var/lib/navcom-escalation/escalation-log.jsonl"`. The daemon cannot read it now --
+  it is this user's, `0600` -- so leave the daemon's `escalation_log_path` unset; `log-review` then
+  answers from the daemon's own log, as on most boxes.
+
+The unit runs a build from `/opt/navcom-watchtower`, with `node` on a system path; edit
+`ExecStart` if yours lives elsewhere. Then:
+
+```sh
+sudo cp ops/systemd/navcom-escalation.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now navcom-escalation
+sudo journalctl -u navcom-escalation -n 40
+```
+
+The first start prints `made the executor's own key`, `executor key: <64 hex>`, and then
+`watch code: https://navcom.app/terminal/setup/#watch=1&...` -- a link signed by the watch key that
+carries the executor's key. That link is what operators are handed, scanned or pasted; the key is
+never typed. If the journal says `NO WATCH KEY`, the copy above was missed and the executor has
+stopped; if it says `NO EXECUTOR KEY at ..., and not making one`, fix `daemon_user`. Then, as that
+user:
+
+```sh
+sudo -u navcom-escalation node /opt/navcom-watchtower/dist/escalation/index.js --check /etc/navcom/escalation.toml
+```
+
+It fails until only this user can read the key, `daemon_user` is set and is not root, every relay
+takes a test response signed by each key -- sent as the executor sends them -- and no on-call entry
+uses the watch key; it says which. It warns about a relay that took neither, and when no relay holds
+a watch state signed by the key in `privkey_path`, which with the daemon running means that is not the
+daemon's key. Once it passes it prints the watch code too. Check the daemon's journal once for
+`[drill] the drill file at ... cannot be read`: that line means the drill directory's group is wrong.
+Leave `executor_key_path` out and the executor runs as it always did, and says at every start what
+that costs.
+
 ## 5. The daily rebuild of navcom.app
 
 The public directory decides *stale — call first* when a page is built, with a one-day margin.

@@ -273,6 +273,14 @@
           <Readout value="Its own key" tone="neutral" sub="a box holds the watch itself" />
         {/each}
       </Slot>
+      {#if named.executor}
+        <!-- The key whose answer ends a Distress on that box [G3]: added with the watch, never typed. -->
+        <Slot k="Escalation key">
+          <span data-named-executor>
+            <Readout value={keyPrint(named.executor) ?? 'Not a key'} verbatim tone="neutral" sub="added with the watch" />
+          </span>
+        </Slot>
+      {/if}
       <p>
         Not added yet. Add it only if this is your watch: every Distress you send goes to it, and
         whoever holds it can read everything you send.

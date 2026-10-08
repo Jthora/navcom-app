@@ -33,7 +33,9 @@ const {
   storedWatch,
   watchForm
 } = await import('./config');
-const { get, panicWipe } = await import('./storage');
+const { get, set, panicWipe, burn } = await import('./storage');
+const { watchCode } = await import('./watch-code');
+const { newSecretKey, publicKeyOf } = await import('@navcom/core');
 
 const KEY = 'a'.repeat(64);
 const HOLDER = 'b'.repeat(64);
@@ -242,5 +244,124 @@ describe('the watch as Setup opens it [audit: relay paths, review]', () => {
 
   it('opens empty when there is neither', () => {
     expect(watchForm()).toBeNull();
+  });
+});
+
+describe('the escalation executor’s own key, handed over with the watch [G3]', () => {
+  /*
+   * The only key whose answer ends a `Distress` on a box. A phone kept no such thing: Setup had no
+   * place for it, a backup dropped it, and so every box's operators went on ending a `Distress` on
+   * an answer the daemon beside the agent could sign. It is kept now inside the signed watch code it
+   * came in, and read back only through that code.
+   */
+  const WATCH = newSecretKey();
+  const W = publicKeyOf(WATCH);
+  const X = publicKeyOf(newSecretKey());
+  const OTHER = publicKeyOf(newSecretKey());
+  const STRANGER = publicKeyOf(newSecretKey());
+  /** A code the watch signed, as it would hand over, from `watch=` on. */
+  const code = (fields: { executor?: string; relays?: string[]; holders?: string[] } = {}, at = 1_790_000_000) =>
+    watchCode({ pubkey: W, relays: fields.relays ?? ['wss://relay.example'], holders: fields.holders ?? [], executor: fields.executor }, WATCH, at).split('#')[1]!;
+
+  it('is kept with the watch, in the code it came in, and read back by everything that sends', () => {
+    const handed = code({ executor: X });
+    saveConfig(W, 'wss://relay.example', '', handed);
+    expect(loadConfig()).toEqual({ pubkey: W, relays: ['wss://relay.example'], holders: [], executor: X });
+    expect(storedWatch()?.executor).toBe(X);
+    expect(get('accruing', 'watch_escalation'), 'the key was kept outside the code that vouches for it').toBe(handed);
+  });
+
+  it('is refused, and nothing saved, from a code the watch did not sign or that names another watch', () => {
+    const forged = code({ executor: X }).replace(`x=${X}`, `x=${STRANGER}`);
+    expect(() => saveConfig(W, 'wss://relay.example', '', forged)).toThrow(ConfigError);
+    expect(() => saveConfig(W, 'wss://relay.example', '', forged)).toThrow(/not signed by the watch/);
+    expect(storedWatch(), 'a watch saved around a code its watch never signed').toBeNull();
+    expect(() => saveConfig(KEY, 'wss://relay.example', '', code({ executor: X }))).toThrow(/another watch/);
+    expect(storedWatch()).toBeNull();
+    expect(() => saveConfig(W, 'wss://relay.example', '', X), 'a bare key, as the old form took it').toThrow(ConfigError);
+    expect(storedWatch()).toBeNull();
+  });
+
+  it('survives an edit to the relays or holders, which have no field for it', () => {
+    saveConfig(W, 'wss://relay.example', '', code({ executor: X }));
+    // Setup's Update: the same watch, a holder removed, no code in the form.
+    saveConfig(W, 'wss://relay.other.example', '');
+    expect(loadConfig()?.executor, 'an ordinary edit dropped the escalation key').toBe(X);
+  });
+
+  it('does not follow the form to a different watch', () => {
+    saveConfig(W, 'wss://relay.example', '', code({ executor: X }));
+    saveConfig(KEY, 'wss://relay.example');
+    expect(loadConfig()?.executor, 'another watch inherited this one’s escalation key').toBeUndefined();
+    expect(get('accruing', 'watch_escalation')).toBeNull();
+  });
+
+  it('is replaced by a code naming another, dropped by one the watch signed naming none, or when asked', () => {
+    saveConfig(W, 'wss://relay.example', '', code({ executor: X }));
+    saveConfig(W, 'wss://relay.example', '', code({ executor: OTHER }));
+    expect(loadConfig()?.executor).toBe(OTHER);
+    saveConfig(W, 'wss://relay.example', '', code());
+    expect(loadConfig()?.executor, 'the watch’s own signed code said it names none').toBeUndefined();
+    saveConfig(W, 'wss://relay.example', '', code({ executor: X }));
+    saveConfig(W, 'wss://relay.example', '', null);
+    expect(loadConfig()?.executor).toBeUndefined();
+  });
+
+  it('is read as none wherever it reached storage without a code that watch signed [review: live hole, phone]', () => {
+    // An older build restoring a backup writes every field it does not know straight in.
+    saveConfig(W, 'wss://relay.example');
+    expect(loadConfig()?.executor).toBeUndefined();
+    for (const planted of [
+      code({ executor: X }).replace(`x=${X}`, `x=${STRANGER}`),
+      // The watch's own code, for this watch, moved onto another address: no longer signed.
+      code({ executor: X }).replace(`w=${W}`, `w=${KEY}`),
+      STRANGER
+    ]) {
+      set('accruing', 'watch_escalation', planted);
+      expect(loadConfig()?.executor, String(planted).slice(0, 12)).toBeUndefined();
+    }
+    // And under the name the key was once kept by, on its own: never read at all.
+    set('accruing', 'watch_executor', STRANGER);
+    set('accruing', 'watch_escalation', null);
+    expect(loadConfig()?.executor).toBeUndefined();
+    // A code for another watch, signed by it, gives this one nothing either.
+    const theirs = newSecretKey();
+    set(
+      'accruing',
+      'watch_escalation',
+      watchCode({ pubkey: publicKeyOf(theirs), relays: ['wss://r'], holders: [], executor: STRANGER }, theirs).split('#')[1]
+    );
+    expect(loadConfig()?.executor).toBeUndefined();
+  });
+
+  it('is shown on Setup’s form, from the watch saved here or the one a backup named', () => {
+    const kept = code({ executor: X });
+    offerWatch({ pubkey: W, relays: ['wss://relay.example'], holders: [], escalation: kept });
+    expect(watchForm()).toMatchObject({ executor: X, executorAt: 1_790_000_000, escalation: kept });
+    addOfferedWatch(offeredWatch()!);
+    expect(loadConfig()?.executor, 'adding a backup’s watch dropped its escalation key').toBe(X);
+    expect(watchForm()).toMatchObject({ from: 'saved', executor: X, executorAt: 1_790_000_000 });
+  });
+
+  it('names nothing from a backup whose code is not that watch’s, and the watch is still added', () => {
+    const theirs = newSecretKey();
+    offerWatch({
+      pubkey: W,
+      relays: ['wss://relay.example'],
+      holders: [],
+      escalation: watchCode({ pubkey: publicKeyOf(theirs), relays: ['wss://r'], holders: [], executor: STRANGER }, theirs).split('#')[1]
+    });
+    expect(offeredWatch()?.executor).toBeUndefined();
+    addOfferedWatch(offeredWatch()!);
+    expect(loadConfig()).toMatchObject({ pubkey: W });
+    expect(loadConfig()?.executor).toBeUndefined();
+  });
+
+  it('is survived by a panic wipe, as the watch is, and gone on a burn', () => {
+    saveConfig(W, 'wss://relay.example', '', code({ executor: X }));
+    panicWipe();
+    expect(loadConfig()?.executor).toBe(X);
+    burn();
+    expect(get('accruing', 'watch_escalation')).toBeNull();
   });
 });

@@ -13,11 +13,11 @@ import type { SimplePool } from 'nostr-tools/pool';
 import { normalizeURL } from 'nostr-tools/utils';
 
 import { open } from './crypto/envelope.js';
-import { sealToGroup, type WatchtowerAddress } from './crypto/group.js';
-import type { SecretKey } from './crypto/keys.js';
+import { executorOf, sealToWatch, watchtowerAt, type WatchtowerAddress } from './crypto/group.js';
+import { isPubkey, type SecretKey } from './crypto/keys.js';
 import { KIND_DISTRESS, KIND_RESPONSE, KIND_SIGNAL, type SignalType } from './events/kinds.js';
 import { checkedText, type DistressPayload, type SignalPayload } from './events/signal.js';
-import type { ResponsePayload } from './events/response.js';
+import { answerSignedByResponder, type ResponsePayload } from './events/response.js';
 import { CLOCK_TOLERANCE_SECONDS, STALE_AFTER_SECONDS } from './events/watch-state.js';
 import { whyNotListable } from './relays.js';
 
@@ -364,9 +364,9 @@ export async function sendSignal(
     {
       kind: KIND_SIGNAL,
       // Type unencrypted so a client can filter without decrypting; payload sealed to
-      // whoever holds the watch.
+      // whoever holds the watch, and to the executor's own key for what it acts on.
       tags: [['p', watchtower.pubkey], ['t', type]],
-      content: sealToGroup(secret, watchtower.holders, payload, watchtower.kem),
+      content: sealToWatch(secret, watchtower, payload, type),
       created_at: Math.floor(Date.now() / 1000)
     },
     secret
@@ -383,7 +383,7 @@ function sealDistress(secret: SecretKey, watchtower: WatchtowerAddress, payload:
       kind: KIND_DISTRESS,
       // No `t` tag: identified by kind, so a subscriber filtering signal types cannot miss it.
       tags: [['p', watchtower.pubkey]],
-      content: sealToGroup(secret, watchtower.holders, payload, watchtower.kem),
+      content: sealToWatch(secret, watchtower, payload, 'distress'),
       created_at: Math.floor(Date.now() / 1000)
     },
     secret
@@ -431,13 +431,18 @@ export function waitForResponse(
   secret: SecretKey,
   ourPubkey: string,
   /**
-   * The Watchtower **address**, not a holder.
+   * The Watchtower **address**, not a holder: its pubkey, or the whole address.
    *
    * A response is signed by the watch identity and sealed straight back to the one operator
    * who asked, so the return leg has no group envelope: there is exactly one recipient and
    * wrapping a key for them would be overhead with no membership to express.
+   *
+   * **Pass the address where the watch names its executor.** The executor answers the signals it
+   * acts on — a `wake-others`, an acknowledgement — with its own key, and a wait given only the
+   * pubkey asks for the watch key's answers alone: it hears the executor only through the watch
+   * key's copy, and not at all where there is none.
    */
-  watchtower: string,
+  watchtower: string | WatchtowerAddress,
   /**
    * The signal being answered, or several: a response naming any of them is accepted.
    *
@@ -451,6 +456,8 @@ export function waitForResponse(
   signal?: AbortSignal
 ): Promise<ResponsePayload> {
   const answering = (Array.isArray(sent) ? sent : [sent as Event]) as readonly Event[];
+  const address = typeof watchtower === 'string' ? watchtowerAt(watchtower) : watchtower;
+  const authors = answeringKeys(address);
   return new Promise((resolve, reject) => {
     let done = false;
     let closer: { close(): void } | null = null;
@@ -480,7 +487,7 @@ export function waitForResponse(
         relays.filter((url) => whyNotListable(url) === null),
         {
           kinds: [KIND_RESPONSE],
-          authors: [watchtower],
+          authors,
           '#p': [ourPubkey],
           '#e': answering.map((e) => e.id)
           // No `since`. It would have to be derived from this device's own clock, and a
@@ -496,8 +503,11 @@ export function waitForResponse(
             // already authenticates the sender through NIP-44's shared secret, so this is
             // not load-bearing — it is an inconsistency worth closing rather than a hole.
             if (!verifyEvent(event)) return;
+            // Only the watch, or its executor: a relay that ignores the filter is no way in. And
+            // opened with the key this side knows for that author, never the event's own claim.
+            if (!authors.includes(event.pubkey)) return;
             try {
-              const payload = open<ResponsePayload>(secret, watchtower, event.content);
+              const payload = open<ResponsePayload>(secret, sealedBy(address, event.pubkey), event.content);
               finish(() => resolve(payload));
             } catch {
               // Undecryptable means not for us. Keep waiting rather than failing.
@@ -513,6 +523,73 @@ export function waitForResponse(
     }
     if (done) closer.close();
   });
+}
+
+/**
+ * The keys that answer for this watch: the watch key, and the executor's own where the watch names
+ * one. What a listener asks a relay for, and the only authors it reads.
+ */
+export function answeringKeys(address: WatchtowerAddress): string[] {
+  const executor = executorOf(address);
+  return executor ? [address.pubkey, executor] : [address.pubkey];
+}
+
+/**
+ * The key an answer from `author` was sealed by, as this side knows it: the executor's own where the
+ * executor signed it, and the watch key's for anything else — so an answer signed by anybody else is
+ * opened with the watch key, and fails.
+ */
+function sealedBy(address: WatchtowerAddress, author: string): string {
+  const executor = executorOf(address);
+  return executor && author === executor ? executor : address.pubkey;
+}
+
+/**
+ * Whose answer ended a `Distress`, as this phone could tell [`escalation.spec.md`, *Who may close a
+ * Distress*]:
+ *
+ * - `executor`: signed by the escalation executor's own key, which only it holds
+ * - `holder`: carrying the signature of one of the holders this phone was handed, made with their own
+ *   key, on this answer to these attempts
+ * - `watch-key`: signed by the watch key and nothing more, on a watch that names neither. Today's
+ *   rule, kept for a watch handed over before it named its executor: the daemon beside the agent, and
+ *   anybody who ever held the watch key, can send that
+ */
+export type ClosedBy = 'executor' | 'holder' | 'watch-key';
+
+/** Who may end a `Distress` sent to one watch. */
+export interface DistressClosure {
+  /**
+   * Whether a person's answer has to be attributable before it ends a `Distress`: to the executor's
+   * own key, or to a holder's own signature.
+   *
+   * **False only for a watch that names neither**: a box handed over before it named its executor.
+   * It keeps the rule it had, and a screen says so — *this watch does not yet name its escalation
+   * key* — because on it, the daemon the agent runs beside can end a `Distress`.
+   */
+  attributed: boolean;
+  /** The executor's own key, or null when the watch names none. */
+  executor: string | null;
+  /**
+   * The holders whose own signature on an answer ends a `Distress`: the keys handed over as holding
+   * the watch, less the watch key itself and the executor's. Empty for a box, which is its own holder.
+   */
+  holders: string[];
+}
+
+/**
+ * Who may end a `Distress` sent to this watch.
+ *
+ * A squad's holders are known the moment it is handed over, so its rule applies at once. A box's
+ * executor key arrives with a watch handed over after it existed; until then, `attributed` is false.
+ */
+export function distressClosure(address: WatchtowerAddress): DistressClosure {
+  const executor = executorOf(address);
+  const watch = address.pubkey.toLowerCase();
+  const holders = [
+    ...new Set(address.holders.map((h) => (typeof h === 'string' ? h.trim().toLowerCase() : '')))
+  ].filter((h) => isPubkey(h) && h !== watch && h !== executor);
+  return { attributed: executor !== null || holders.length > 0, executor, holders };
 }
 
 export type DistressPhase =
@@ -632,8 +709,12 @@ export type DistressPhase =
    * closure: the loop keeps going, because only a human ends a Distress. **Every** report is
    * said, as it arrives: "nobody has been woken" follows "Paging Wren." by one round trip, and a
    * loop that kept only the first answer of each attempt threw the second away [#31, #32].
+   *
+   * `unconfirmed` is set when it was not signed by whoever runs the ladder: the watch key, on a box
+   * that names its executor — the executor's own copy lost on the way, or the daemon beside the agent
+   * saying it — or on a squad's watch, where nothing runs one. Said as it was said, and marked so.
    */
-  | { phase: 'watch-status'; attempt: number; response: ResponsePayload }
+  | { phase: 'watch-status'; attempt: number; response: ResponsePayload; unconfirmed?: true }
   /**
    * **Nobody is coming, and the watch said so.**
    *
@@ -644,9 +725,9 @@ export type DistressPhase =
    *
    * Retrying still continues, and sooner: an exhausted ladder holds nothing, so the backoff
    * this lands in is cut short and the next attempt opens a fresh one. Only the operator ends a
-   * Distress, and a human who answers late still counts.
+   * Distress, and a human who answers late still counts. `unconfirmed` as for `watch-status`.
    */
-  | { phase: 'watch-exhausted'; attempt: number; response: ResponsePayload }
+  | { phase: 'watch-exhausted'; attempt: number; response: ResponsePayload; unconfirmed?: true }
   /**
    * **A person answered an earlier `Distress` from this operator — not this one.**
    *
@@ -667,6 +748,21 @@ export type DistressPhase =
    * heading "Answered", before this existed [#0].
    */
   | { phase: 'acknowledged-earlier'; attempt: number; response: ResponsePayload }
+  /**
+   * **An answer that says a person has it, and this phone cannot tell who sent it.**
+   *
+   * The watch names who may end a `Distress` ({@link distressClosure}): its executor's own key, or
+   * the holders' own signatures. This answer came from neither. It is signed by the watch key alone
+   * — which the daemon beside the agent holds, and so does everybody who ever held the watch — and
+   * carries no holder's signature that checks, or one from a key this phone was not handed as a
+   * holder. It may be true: a squad member's phone that has not taken the update yet answers this way.
+   *
+   * Said as it was said, with `response` — who it says answered and their words — and **never
+   * closure** [invariant 2]: the loop keeps sending, and `nobody-answering` still comes once. `earlier`
+   * is set when it also names an id this `Distress` never sent and never joined. Said each time one
+   * arrives, as the watch's reports are.
+   */
+  | { phase: 'human-unconfirmed'; attempt: number; response: ResponsePayload; earlier?: true }
   /**
    * **Nobody is coming, and the device worked that out by itself.**
    *
@@ -690,7 +786,11 @@ export type DistressPhase =
       elapsedMs: number;
       couldNotHear?: { attempts: number; of: number };
     }
-  | { phase: 'acknowledged'; response: ResponsePayload };
+  /**
+   * **A person answered this `Distress`, and it is over.** `by` is how this phone knows who
+   * ({@link ClosedBy}); `watch-key` only on a watch that names neither its executor nor its holders.
+   */
+  | { phase: 'acknowledged'; response: ResponsePayload; by: ClosedBy };
 
 export interface DistressOptions {
   /** How long to wait for an acknowledgement before publishing again. */
@@ -798,6 +898,11 @@ function within(p: Promise<void> | undefined, ms: number): Promise<void> | undef
  * A person answering an *earlier* Distress is `acknowledged-earlier`, and does not end it either.
  * A person answering a ladder the watch said this Distress joined is answering this one.
  *
+ * **And only a person this phone can attribute** ({@link distressClosure}): an answer signed by the
+ * executor's own key, or carrying a holder's own signature. One that says `human` and is neither is
+ * `human-unconfirmed`, said as it was said, and the loop keeps sending. A watch that names neither
+ * its executor nor its holders keeps the old rule, and `acknowledged` says so (`by: 'watch-key'`).
+ *
  * The watch's own escalation ladder is neither, and is reported as `watch-status` — or
  * `watch-exhausted` the moment it says nobody can be reached, which the operator must learn
  * when the watch knows it rather than when this phone's timer runs out.
@@ -880,14 +985,56 @@ export async function sendDistressUntilAcknowledged(
    *
    * Only a report authored by the node feeds it, never a person's answer: that is the difference
    * between this run joining a ladder and the watch repeating an answer to one it never joined.
+   * **And only one from whoever runs the ladder** ({@link speaksForLadder}): a report the watch key
+   * signs, on a watch whose closure is attributed, could otherwise turn a person's answer to an
+   * earlier `Distress` into an answer to this one.
    */
   const laddered = new Set<string>();
   /** An id that is this Distress's: one it sent, or a ladder the watch said it is part of. */
   const ours = (id: string) => sent.has(id) || laddered.has(id);
   /** Verified ids already handled — one relay and the next deliver the same event. */
   const heardIds = new Set<string>();
+  /** Of those, the ones the executor's own key signed: what a watch-key copy can be a copy of. */
+  const fromExecutor = new Set<string>();
   /** A person's answer to this Distress. Ends it. */
   let latched: ResponsePayload | null = null;
+  /** How this phone knows who gave it. */
+  let latchedBy: ClosedBy = 'watch-key';
+
+  /**
+   * **Who may end this `Distress`** [`escalation.spec.md`, *Who may close a Distress*].
+   *
+   * A `20912` saying `human` used to end it whenever the watch key had signed it. Every squad member
+   * holds that key, and so does everybody who ever did, and on a box so does the daemon the agent
+   * runs beside: any of them could tell an operator in trouble that a person had it, and the phone
+   * stopped sending. Now an answer ends it only when this phone can say who gave it — the executor's
+   * own key, or a holder's own signature on it — except on a watch that names neither, which keeps
+   * the rule it had and says so.
+   */
+  const closure = distressClosure(watchtower);
+  /** Who answers here: the watch key, and the executor's own key where the watch names one. */
+  const speakers = answeringKeys(watchtower);
+  const sealerFor = (author: string) => sealedBy(watchtower, author);
+  /**
+   * Whose ladder reports say which ladder these attempts are in: the executor's, where the watch names
+   * it; the watch key's only on a watch that names nobody, as before. Nothing runs a ladder on a
+   * squad's watch, so nothing there does.
+   */
+  const speaksForLadder = (author: string) =>
+    closure.executor ? author === closure.executor : !closure.attributed && author === watchtower.pubkey;
+  /** Who gave a person's answer, as far as this phone can tell, or null when it cannot. */
+  const closedBy = (author: string, response: ResponsePayload, named: string[]): ClosedBy | null => {
+    if (closure.executor && author === closure.executor) return 'executor';
+    const signer = response.responder?.pubkey;
+    if (
+      typeof signer === 'string' &&
+      closure.holders.includes(signer) &&
+      answerSignedByResponder({ watch: watchtower.pubkey, operator: ourPubkey, ids: named }, response)
+    ) {
+      return 'holder';
+    }
+    return closure.attributed ? null : 'watch-key';
+  };
 
   // What this attempt has heard, so "no answer" is said only when nothing answered, and an
   // agent, or an earlier acknowledgement, once per attempt rather than once per relay.
@@ -926,15 +1073,31 @@ export async function sendDistressUntilAcknowledged(
 
   const heard = (event: Event) => {
     if (over() || latched || !verifyEvent(event) || heardIds.has(event.id)) return;
+    // Only the watch, or its executor, answers here: a relay that ignores the filter is no way in.
+    if (!speakers.includes(event.pubkey)) return;
     const named = event.tags.filter((t) => t[0] === 'e').map((t) => t[1] ?? '');
     if (!named.some(ours)) return;
     let response: ResponsePayload;
     try {
-      response = open<ResponsePayload>(secret, watchtower.pubkey, event.content);
+      // Sealed by whoever signed it, and opened with that key as this phone knows it: the
+      // executor's where the executor signed, and the watch key's for anything else. Never with
+      // `event.pubkey`, so the author check above is not the only thing between a stranger's
+      // sealed "a person has it" and a watch that names nobody: it fails to open here too.
+      response = open<ResponsePayload>(secret, sealerFor(event.pubkey), event.content);
     } catch {
       return; // Not for us.
     }
     heardIds.add(event.id);
+    if (closure.executor && event.pubkey === closure.executor) fromExecutor.add(event.id);
+    // The watch key's copy of a response this phone has already heard from the executor: said once.
+    if (
+      closure.executor &&
+      event.pubkey !== closure.executor &&
+      typeof response.copy_of === 'string' &&
+      fromExecutor.has(response.copy_of)
+    ) {
+      return;
+    }
     // An absent responder kind is treated as not-a-human. The spec requires the field on every
     // response, so a missing one is a broken responder, and guessing "human" there is the one
     // wrong guess this loop must never make.
@@ -947,8 +1110,22 @@ export async function sendDistressUntilAcknowledged(
        * held answer to another of this operator's attempts — a second phone, a second tab — that
        * names this run's own ladder beside an id this run never sent.
        */
-      if (named.every(ours) || named.some((id) => laddered.has(id))) {
+      const thisOne = named.every(ours) || named.some((id) => laddered.has(id));
+      /*
+       * **And only an answer this phone can attribute** [G3]: the executor's own key, or a holder's
+       * own signature. Anything else that says a person has it is said as it was said, and the
+       * loop keeps sending. Shown, because it may be true; never closure, because anybody who ever
+       * held the watch key can send it.
+       */
+      const by = closedBy(event.pubkey, response, named);
+      if (by === null) {
+        answeredNow = true;
+        report({ phase: 'human-unconfirmed', attempt, response, ...(thisOne ? {} : { earlier: true as const }) });
+        return;
+      }
+      if (thisOne) {
         latched = response;
+        latchedBy = by;
         waiting?.controller.abort();
         return;
       }
@@ -964,14 +1141,20 @@ export async function sendDistressUntilAcknowledged(
     answeredNow = true;
     if (kind === 'node') {
       // The watch saying which ladder these attempts are in. A ladder's report, not a repeated
-      // answer: one claiming `acknowledged` is a person's to make, and adds nothing here.
-      if (response.ladder !== 'acknowledged') for (const id of named) if (id) laddered.add(id);
+      // answer: one claiming `acknowledged` is a person's to make, and adds nothing here. Only from
+      // whoever runs the ladder.
+      const ladderSaid = speaksForLadder(event.pubkey);
+      if (response.ladder !== 'acknowledged' && ladderSaid) {
+        for (const id of named) if (id) laddered.add(id);
+      }
+      // Said either way, and marked when it is not from whoever runs the ladder.
+      const unsure = closure.attributed && !ladderSaid ? { unconfirmed: true as const } : {};
       if (response.ladder === 'exhausted') {
-        report({ phase: 'watch-exhausted', attempt, response });
+        report({ phase: 'watch-exhausted', attempt, response, ...unsure });
         // Nothing is left of that ladder to wait on, so the backoff is not waited out.
         if (waiting?.exhaustedEnds) waiting.controller.abort();
       } else {
-        report({ phase: 'watch-status', attempt, response });
+        report({ phase: 'watch-status', attempt, response, ...unsure });
       }
       return;
     }
@@ -1064,9 +1247,10 @@ export async function sendDistressUntilAcknowledged(
    *
    * The filter is deliberately wide and the narrowing happens in the handler, against the ids
    * this Distress has sent. A filter cannot be widened after it is opened, and what lives in a
-   * handler can be tested anywhere.
+   * handler can be tested anywhere. Its authors are the watch key and, where the watch names one,
+   * the executor's own key: the one whose answer ends a `Distress` on a box.
    */
-  const RESPONSES = { kinds: [KIND_RESPONSE], authors: [watchtower.pubkey], '#p': [ourPubkey] };
+  const RESPONSES = { kinds: [KIND_RESPONSE], authors: speakers, '#p': [ourPubkey] };
   interface Listening {
     sub: { close(reason?: string): void } | null;
     /** True once its own `onclose` has fired, or once this closed it. Never closed twice. */
@@ -1392,7 +1576,7 @@ export async function sendDistressUntilAcknowledged(
   };
 
   const acknowledged = (response: ResponsePayload): ResponsePayload => {
-    say({ phase: 'acknowledged', response });
+    say({ phase: 'acknowledged', response, by: latchedBy });
     return response;
   };
 

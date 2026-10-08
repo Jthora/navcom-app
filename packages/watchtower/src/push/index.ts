@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs";
 import webpush from "web-push";
+import { pageKindOf, type PageKind } from "@navcom/core";
 
 /**
  * Waking somebody through Web Push.
@@ -12,7 +13,13 @@ import webpush from "web-push";
  * there would put a third party in the escalation path. So this is a **binary the command
  * points at**, and the executor is unchanged:
  *
- *     command = ["navcom-push", "--to", "/etc/navcom/oncall/wren.json", "{{message}}"]
+ *     command = ["navcom-push", "--to", "/etc/navcom/oncall/wren.json",
+ *                "--kind", "{{kind}}", "--distress", "{{distress}}", "--attempt", "{{attempt}}"]
+ *
+ * The executor fills `{{kind}}` with what the page is -- `first`, `repeat` or `drill` -- and only the
+ * placeholder that kind uses: `{{distress}}` on a first page, `{{attempt}}` on a repeat. An older
+ * template without them still works, and every page it sends reads as a new `Distress` on the phone
+ * (`navcom-escalation` says so at startup and in `--check`).
  *
  * ## Why Web Push at all, when a curl to a topic already works
  *
@@ -26,10 +33,24 @@ import webpush from "web-push";
  *
  * ## What is sent
  *
- * Almost nothing: a flag saying whether this is a drill, and the id of the `20911` this is
- * about. The service worker holds the wording. The sender cannot read the `Distress` either,
- * so there is no detail to pass on — and a notification rendering text from the wire would put
- * a stranger's words on a locked screen.
+ * Almost nothing: what kind of page it is, and the id it is about. The service worker holds the
+ * wording. The sender cannot read the `Distress` either, so there is no detail to pass on — and a
+ * notification rendering text from the wire would put a stranger's words on a locked screen.
+ *
+ *     { "kind": "first" | "repeat" | "drill", "drill": boolean, "distress"?: id, "attempt"?: id }
+ *
+ * - `kind` is what the service worker reads first, with `pageKindOf` in core: a first page, a repeat
+ *   to the person who acknowledged, or a drill. The person woken must be able to tell them apart
+ *   (`escalation.spec.md`, *A page says what kind it is*)
+ * - `drill` is kept for service workers from before `kind`, which read only it
+ * - `distress` only on a first page: the ladder's id, which the page offers a one-tap acknowledgement for
+ * - `attempt` only on a repeat: the attempt it is about, under its own field and never as `distress`,
+ *   because that attempt has no ladder to acknowledge. Its one use is asking the watch to wake the others
+ *
+ * **Anything missing or unknown is a first page.** A literal `{{kind}}` an older executor left
+ * unfilled, a typo, nothing at all: each is read as a page about a new `Distress`, never as a repeat
+ * and never as a drill. Of the wrong readings, a real page shown as a drill is the one somebody
+ * sleeps through.
  *
  * **The id is the exception, and it is not text.** A `distress-ack` names a `distress_id`, and
  * the paged device cannot look one up afterwards: `20911` is ephemeral, so a relay forwards it
@@ -54,9 +75,19 @@ const usage = `navcom-push — wake an on-call operator through Web Push.
       Generates a sender keypair. Run once. The public half goes to whoever is
       registering a device; the private half stays here and is a secret.
 
-  navcom-push --to <subscription.json> [--drill] [--distress <id>] [message]
+  navcom-push --to <subscription.json> [--kind first|repeat|drill]
+              [--distress <id>] [--attempt <id>] [--ttl <seconds>] [message]
       Sends a page. The subscription file is what the on-call operator handed over
-      from the terminal's "On call" screen.
+      from the terminal's "On call" screen. In an executor command template:
+
+        "--kind", "{{kind}}", "--distress", "{{distress}}", "--attempt", "{{attempt}}"
+
+      --kind      first (a new Distress), repeat (paged again about an operator you
+                  acknowledged) or drill. Missing or unknown: first. --drill is the
+                  same as --kind drill
+      --distress  a first page's Distress id, offered as a one-tap acknowledgement
+      --attempt   a repeat page's attempt id, for asking the watch to wake the others
+      --ttl       how long the push service may hold it (default 3600; a repeat 1800)
 
 Environment:
   NAVCOM_PUSH_PRIVATE   the private half of the sender key
@@ -102,8 +133,64 @@ export function readSubscription(raw: string): webpush.PushSubscription {
   return { endpoint: s.endpoint, keys: { p256dh: s.keys.p256dh, auth: s.keys.auth } };
 }
 
+/** What one page carries to the service worker. */
+export interface PagePayload {
+  kind: PageKind;
+  /** For service workers from before `kind`, which read only this. */
+  drill: boolean;
+  /** A first page's Distress id. Never on any other kind. */
+  distress?: string;
+  /** A repeat page's attempt id. Never on any other kind. */
+  attempt?: string;
+}
+
+const EVENT_ID = /^[0-9a-f]{64}$/;
+
+/** The value after `flag`, or undefined when it is absent or is the next flag. */
+function valueOf(argv: readonly string[], flag: string): string | undefined {
+  const i = argv.indexOf(flag);
+  const value = i === -1 ? undefined : argv[i + 1];
+  return typeof value === "string" && !value.startsWith("--") ? value : undefined;
+}
+
+/**
+ * The payload and lifetime a page is sent with, from the arguments the executor's command filled.
+ *
+ * Fails toward alarm: an unknown `--kind` -- a literal `{{kind}}` an older executor left unfilled
+ * included -- is a first page. An id goes only where its kind uses it, and only when it is an id, so
+ * a template that filled the wrong placeholder can never turn a repeat into a one-tap acknowledgement.
+ */
+export function pagePayload(argv: readonly string[]): { payload: PagePayload; ttl: number } {
+  // `--drill` is the older spelling of `--kind drill`, and an exact `--kind` wins over it.
+  const kind = pageKindOf(valueOf(argv, "--kind"), argv.includes("--drill"));
+  const id = (flag: string) => {
+    const value = valueOf(argv, flag)?.trim().toLowerCase();
+    return value && EVENT_ID.test(value) ? value : undefined;
+  };
+  /*
+   * Accepted but not required. A ladder paging a channel that predates this simply does not
+   * pass one, and that operator acknowledges from the console -- the ack path degrades, the
+   * page does not.
+   */
+  const distress = kind === "first" ? id("--distress") : undefined;
+  const attempt = kind === "repeat" ? id("--attempt") : undefined;
+  /*
+   * A page nobody reads for four hours is not a page. Long enough to survive a phone that is briefly
+   * off, short enough that it is never a surprise from yesterday. A repeat is about a hold that lasts
+   * half an hour, and arriving after it ended it would be stale. The executor remembers a held attempt
+   * at least this long past its hold (`REPEAT_PAGE_TTL_SECONDS`), so a wake sent from a repeat delivered
+   * late is told the hold ended rather than that it was never held.
+   */
+  const asked = Number(valueOf(argv, "--ttl"));
+  const ttl = Number.isInteger(asked) && asked > 0 ? asked : kind === "repeat" ? 1800 : 3600;
+  return {
+    payload: { kind, drill: kind === "drill", ...(distress ? { distress } : {}), ...(attempt ? { attempt } : {}) },
+    ttl,
+  };
+}
+
 async function send(argv: string[]): Promise<void> {
-  const to = argv[argv.indexOf("--to") + 1];
+  const to = valueOf(argv, "--to");
   if (!to) throw new Error("--to <subscription.json> is required.");
 
   const priv = process.env.NAVCOM_PUSH_PRIVATE;
@@ -112,21 +199,12 @@ async function send(argv: string[]): Promise<void> {
 
   webpush.setVapidDetails(process.env.NAVCOM_PUSH_CONTACT ?? "mailto:navcom@example.org", pub, priv);
 
-  const drill = argv.includes("--drill");
-  /*
-   * Accepted but not required. A ladder paging a channel that predates this simply does not
-   * pass one, and that operator acknowledges from the console -- the ack path degrades, the
-   * page does not.
-   */
-  const distress = argv[argv.indexOf("--distress") + 1];
-  const hasDistress = argv.includes("--distress") && typeof distress === "string" && !distress.startsWith("--");
-  await webpush.sendNotification(readSubscription(readFileSync(to, "utf8")), JSON.stringify(hasDistress ? { drill, distress } : { drill }), {
-    // A page nobody reads for four hours is not a page. Long enough to survive a phone that
-    // is briefly off, short enough that it is never a surprise from yesterday.
-    TTL: 3600,
+  const { payload, ttl } = pagePayload(argv);
+  await webpush.sendNotification(readSubscription(readFileSync(to, "utf8")), JSON.stringify(payload), {
+    TTL: ttl,
     urgency: "high"
   });
-  console.log(`[push] delivered to the push service for ${to}`);
+  console.log(`[push] ${payload.kind} page delivered to the push service for ${to}`);
 }
 
 async function main(): Promise<void> {
