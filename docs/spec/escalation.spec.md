@@ -613,7 +613,10 @@ finished ladder rather than starting a second one.
 
 ## Emergency contact
 
-- Encrypted at rest; decryptable **only** during an active escalation [C39]
+- Encrypted at rest; decryptable **only** during an active escalation [C39]. **Not built:** the
+  phone keeps it in its browser storage as plain text, like everything it stores, so an unlocked
+  phone shows it ([`../declined.md`](../declined.md), *Protection from someone holding your unlocked
+  phone*)
 - Used for escalation and nothing else — never notifications, never verification
 - Revocable, verifiably
 - **Device-initiated preferred**: the terminal sends it from the operator's own phone, so

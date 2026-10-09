@@ -176,9 +176,10 @@ The threat models are different, and the two actions match them:
 | **Panic wipe** | A taken phone being searched | Wipeable tier only. Identity and standing survive |
 | **Burn** | Compulsion, seizure with intent | Everything, including persona and endorsements |
 
-Endorsements are **encrypted at rest and require unlock to view**, so a casually searched
-phone yields nothing readable. Burn is deliberate, harder to reach, clearly warned, and
-irreversible.
+Endorsements are **not encrypted at rest**: they sit in the browser's storage as plain text, so an
+unlocked phone shows them to whoever holds it (corrected 2026-10-09; an earlier version said they
+needed unlocking to view, which the code never did). Burn is deliberate, harder to reach, clearly
+warned, and irreversible.
 
 Say this plainly to operators rather than implying panic wipe is total. An operator who
 believes they're covered when they aren't is worse off than one who knows the boundary.

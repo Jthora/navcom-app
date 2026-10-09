@@ -10,8 +10,8 @@
  * External RLSH research calls a one-action full export non-negotiable, and applied here that
  * would be wrong. This device's accruing tier also holds `peers` and `endorsements`, and
  * [`data-tiers.md`](../../../../docs/product/data-tiers.md) is explicit about why those are
- * different: *"each names its signer, so a collection maps who has worked with whom. They are
- * encrypted at rest and require unlock to view."*
+ * different: *"each names its signer, so a collection maps who has worked with whom."* (They are
+ * not encrypted on the phone, which is one more reason not to copy them into a readable file.)
  *
  * A readable file containing them **is** an association graph — the artifact this whole design
  * exists to prevent, in a wrapper the operator was encouraged to publish. So the encrypted

@@ -23,8 +23,10 @@ Your persona, standing, endorsements, contribution credit, op history.
 - **Panic wipe does not touch this tier.** Losing a seized phone should not erase six
   years of standing. Recovery is via operator-held backup, not an account on a server.
 - **Endorsements are association data** — each names its signer, so a collection maps who
-  has worked with whom. They are encrypted at rest and require unlock to view, and only
-  **burn** destroys them. Panic wipe protects against a phone being searched; burn is
+  has worked with whom. They are **not** encrypted at rest today: like everything on the phone
+  they sit in the browser's storage as plain text, so an unlocked phone shows them to whoever holds
+  it (corrected 2026-10-09; [`../declined.md`](../declined.md), *Protection from someone holding
+  your unlocked phone*). Only **burn** destroys them. Panic wipe protects against a phone being searched; burn is
   what exists for compulsion. See [`identity.md`](./identity.md).
 
 Design test: *after a year of use, what does an operator have that they didn't before?*
@@ -58,9 +60,11 @@ Incident logs documenting harassment aimed at *you*, local caches of op detail, 
 anything about tonight.
 
 - Device only. Never synced, never backed up automatically
-- Encrypted at rest
-- **Panic wipe destroys this tier completely and unrecoverably** — real deletion, not a
-  flag
+- Not encrypted at rest: plain text in the browser's storage, like every tier (corrected
+  2026-10-09)
+- **Panic wipe deletes this tier** — the browser's own deletion, not a flag. It unlinks rather than
+  scrubs, so it is not a secure erase against somebody patient and equipped
+  ([`../declined.md`](../declined.md), *Protection from someone holding your unlocked phone*)
 - Exportable deliberately, by the operator, before it's needed
 
 Design test: *if this phone is taken, what does it give up?* Ideally nothing beyond the
