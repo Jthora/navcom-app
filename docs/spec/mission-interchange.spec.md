@@ -605,7 +605,7 @@ then Mecha Jono records each claim against its package, and no claim on a campai
 |---|---|
 | Does rule 6 reach a public figure named by a cited source? | **As context only** — §2.1, rule 6. A public figure in their public role, with the link, as background or source; never the object of an action |
 | Will NavCom show an agent's claim? | **Yes, marked as an agent's and counted as a claim** — §4.7 |
-| A Raspberry Pi is becoming a second RelayNode — what would NavCom need? | **What every node owes its readers, declared rather than demanded** — §11. NavCom reads missions from The Record's mirrors as well as The Record — LIVE, so the Pi's mirror is used the moment it answers. Operator traffic moves to relay lists across grid nodes and public relays, and the Pi is one of the places a watch can list |
+| A Raspberry Pi is becoming a second RelayNode — what would NavCom need? | **What every node owes its readers, declared rather than demanded** — §11. NavCom reads missions from The Record's mirrors as well as The Record — LIVE, so the Pi's mirror is used the moment it answers. Operator traffic stays on large public relays — relay lists inside a commons NavCom keeps — and no grid node carries it, the Pi included (§11.2) |
 
 ### Your open questions from rev 10, answered
 
@@ -645,12 +645,15 @@ provider away from a legal name.
 This cannot make a reader anonymous — Cloudflare and NavCom's own host still see addresses — and no
 page should imply it does. It removes the one long-lived copy the grid itself would hold.
 
-### 11.2 Relay lists, grid and public together
+### 11.2 Relay lists, inside a commons of public relays
 
-NavCom's two built-in relays become a starting point only. Each Watchtower, operator and publisher
-declares where it can be reached (NIP-65 relay lists, NIP-17 inboxes); clients write there and read
-from all of them. Grid nodes sit beside public relays: `Distress` goes out on every path, and routine
-traffic on a few. DESIGNED; nothing changes on the wire until NavCom's client ships it.
+Operator traffic stays on large public relays (decided 2026-10-07: NavCom keeps its refusal of
+operator traffic on a private or allowlisted relay). NavCom keeps a commons of such relays, each run by
+a different stranger, and its two built-in relays are the meeting set where public work is published
+and partners read. A Watchtower says where it listens with a NIP-65 relay list, which a phone follows
+only into the commons; `Distress` goes out on every commons relay the phone has for that watch. No grid
+node — The Record, its mirrors, a member's relay — carries operator traffic; grid nodes are read.
+DESIGNED, decided 2026-10-08; nothing changes on the wire until NavCom's client ships it.
 
 ### 11.3 Declared, then chosen
 

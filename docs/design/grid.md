@@ -6,7 +6,8 @@ Pi beside it, the public relays, and whatever Stationkeepers add. This is how Na
 Status: **decided 2026-10-06** by Jono, for the Earth Intelligence Network as a whole rather than
 for NavCom alone. The parts partners act on are normative in
 [`../spec/mission-interchange.spec.md`](../spec/mission-interchange.spec.md) §11; this page keeps
-the reasoning.
+the reasoning. §2 was corrected on 2026-10-08, after the refusal it had argued against was kept and
+the commons was decided.
 
 ---
 
@@ -48,27 +49,40 @@ search or pick a region, like any page somebody chooses to read.
 
 ---
 
-## 2. Relay lists, not a relay list
+## 2. Relay lists, inside a commons
 
-**An earlier rule here kept operator traffic on big public relays**, because a crowd of strangers'
-events was supposed to hide NavCom's. Checked from first principles it mostly does not hold:
+**Operator traffic stays on large public relays.** The refusal
+`no-operator-traffic-on-a-private-relay` in `packages/core/src/refusals.ts` stands as written
+(decided 2026-10-07): presence, `Distress`, signals, corrections, places, cards and invites never
+cross a private or allowlisted relay. A squad among thousands of strangers reveals nothing; the same
+traffic in a small room tells its operator who is active tonight.
 
-- Loading navcom.app already tells a network observer that somebody uses NavCom. Hiding the relay
-  connection adds nothing that observer cannot see
-- NavCom's kinds are public, so anyone can subscribe to exactly NavCom's events on any public relay
-- What remains is who sees addresses and timing. A known member under a published no-records
-  policy is a better custodian than strangers whose policies nobody here has read, and who have
-  already banned a NavCom test machine for rate limits and answered with errors
+An earlier version of this section withdrew that argument, on three grounds: loading navcom.app
+already tells a network observer that somebody uses NavCom; NavCom's kinds are public, so anyone can
+subscribe to them on any public relay; and a known member under a no-records policy looked a better
+custodian of addresses than strangers who have banned a NavCom test machine and answered with
+errors. The first two still hold, and neither changes what a small relay's operator learns. The
+third meets §1: a grid relay records every write with its address, so operator traffic there would
+put each operator's address, a `Distress` included, in a log on a grid relay.
 
-**So operator traffic follows relay lists.** Each Watchtower, operator and publisher declares where
-it can be reached (NIP-65 relay lists, NIP-17 inboxes). Clients write there and read from all of
-them. Grid nodes and public relays stand side by side: `Distress` goes out on every path, routine
-traffic on a few, so no single node sees everything. The two relays built into
-`packages/core/src/relays.ts` remain, as the starting point for a device that has no list yet.
+**So operator traffic follows relay lists inside a commons** (decided 2026-10-08). NavCom keeps a
+list of large public relays, each run by a different stranger: no upper cap, a floor of three
+independent relays, admission on evidence that is costly to fake, retirement in steps, and changes
+that reach phones only by release. The two relays built into `packages/core/src/relays.ts` are its
+meeting set, where public work is published and partners read. A watch says where it listens with a
+NIP-65 relay list, and a phone follows it only when a key it was handed in person signed it, and
+only into the commons. `Distress` goes out on every path: every commons relay this phone has for the
+watch. A card publishes no relay list.
 
-The honest weakness: a relay sees whatever is written to it, so a bad node sees its share. Writing
-routine traffic to a few relays and auditing the nodes narrows that; it still rests on trusting
-members, which the network does anyway.
+**No grid node carries operator traffic while the refusal stands**: not The Record, not the Pi's
+mirror, and not a relay a member runs. They are read, and an operator's phone sends them nothing.
+
+The honest weakness: each commons relay sees the addresses and timing of the phones whose watches
+use it. Each watch lists two of them, chosen by rendezvous hashing, so no single relay sees every
+watch. It still rests on strangers whose policies nobody here can hold them to, which is the cost
+of keeping the refusal.
+
+The design, its order and its costs are in [`relay-lists.md`](relay-lists.md).
 
 ---
 
@@ -81,6 +95,9 @@ checks, and NavCom's client chooses relays whose stated policy fits the traffic.
 
 The attestation's shape is not settled. Mecha Jono's side is asked to draft it, since Security Beu
 already audits every public address hourly.
+
+**That choice covers reads.** While the refusal stands no grid node carries operator traffic (§2),
+and the commons admits a relay on what it is seen to do, not on what it declares.
 
 ---
 
@@ -99,15 +116,19 @@ which was tested on the Jetson; NavCom's companion page adds what was decided he
   separate key would also reach The Record's own tunnel and name
 
 NavCom reads missions from the mirror and The Record at once (built 2026-10-06; the newest signed
-copy of each package wins), and the Pi becomes
-one of the places a watch can list once relay lists ship.
+copy of each package wins), and nothing else. A watch cannot list the Pi: the mirror takes no writes,
+and the refusal keeps operator traffic off it (§2). A watch the Pi's operator runs must listen on
+commons relays for a phone to reach it.
 
 ---
 
 ## 5. What this replaced
 
 - The note in `packages/core/src/events/kinds.ts` that called kind `30078` the only one that could
-  cross a small relay
+  cross a small relay. With the refusal kept it is true again, and the docblock that calls it
+  withdrawn is due a correction ([`relay-lists.md`](relay-lists.md) §11)
 - The build order's deferral of the RelayNode. Both conditions it waited for were met the same day:
-  a public relay failing NavCom, and a second person to run one
+  a public relay failing NavCom, and a second person to run one. It is now declined while the refusal
+  stands, since it would be a relay a member runs for operator traffic
+  ([`../declined.md`](../declined.md))
 - [`map.md`](map.md) §2's account of what The Record learns, which left out the address log

@@ -111,7 +111,7 @@ zero-JavaScript.
 | Native mobile | Deprioritised 2026-08-19. Adds three things: locked-screen `Distress` (both platforms — iOS 18 Controls make this possible, contrary to an earlier note), a phone holding the watch overnight (Android only), and silent SMS (Android only). None blocking | Decided, deferred |
 | UI framework | Svelte | Decided |
 | Watch | A mode of the same app, not a separate Console. A box may hold it all night; a squad without one holds it on a phone | Decided 2026-08-19, reversing "served from the box" |
-| Relay topology | Relay lists (NIP-65, NIP-17) across grid nodes and public relays; nodes declare their policies and clients choose; no grid relay keeps a record of who reads it. See [`grid.md`](docs/design/grid.md) | Decided 2026-10-06, replacing "public relays for MVP, RelayNode at Mk1" |
+| Relay topology | Operator traffic follows relay lists (NIP-65, NIP-17) inside a commons of large public relays NavCom keeps; no grid node carries it while the private-relay refusal stands; grid nodes are read, and no grid relay keeps a record of who reads it. See [`relay-lists.md`](docs/design/relay-lists.md) | Decided 2026-10-08, correcting 2026-10-06's "across grid nodes and public relays" |
 | Node services | TypeScript unless there's a reason — shared payload types with the clients | Decided |
 
 **Escalation executor is a separate process from the agent.** Non-negotiable — see

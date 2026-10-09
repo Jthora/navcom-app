@@ -187,8 +187,10 @@ Accept the tradeoff knowingly: relay operators see that a pubkey published an ep
 event of a given kind, when, and how large. They do not see contents. This is the
 metadata exposure noted in [`../principles.md`](../principles.md).
 
-**Mk1: self-hosted RelayNode**, which removes third-party metadata exposure and brings
-retention policy under Watchtower control.
+**A self-hosted RelayNode is declined while the refusal *no-operator-traffic-on-a-private-relay*
+stands** (2026-10-08): a relay a member runs would carry operator traffic in a small room. Operator
+traffic stays on large public relays, inside the commons NavCom keeps
+([`../design/relay-lists.md`](../design/relay-lists.md), [`../declined.md`](../declined.md)).
 
 ## What the node MUST NOT do
 

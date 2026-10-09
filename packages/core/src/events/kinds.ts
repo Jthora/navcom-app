@@ -129,9 +129,10 @@ export const KIND_REVOCATION = 30914;
  * application-specific replaceable data, so nothing has to be allocated or defended, and any
  * node can read one with an off-the-shelf library.
  *
- * Names no operator and says nothing that is not already public on the site. An earlier note here
- * called this the only kind that could cross a small relay, on the theory that a big public relay's
- * crowd protected the rest; that was withdrawn on 2026-10-06 [docs/design/grid.md §2].
+ * Names no operator and says nothing that is not already public on the site, which is why it is the
+ * only kind that may cross a small or allowlisted relay: a big public relay's crowd protects the
+ * rest. That argument was questioned on 2026-10-06 and kept on 2026-10-07, with the refusal
+ * *no-operator-traffic-on-a-private-relay* [docs/design/grid.md §2].
  */
 export const KIND_ANNOUNCE = 30078;
 

@@ -561,12 +561,53 @@ every open is a cost the device floor pays.
 **Cost:** an honest poster who settles a day late is never shown, and a backdated label can still
 slip in before the seven days end.
 
+## Relays
+
+### A relay list on the card
+
+The interchange spec told partners they would read each operator's NIP-65 list to find their public
+work. An operator who writes somewhere besides NavCom's relays cannot be found by a partner without
+one, and NIP-65 is the standard pointer every Nostr tool reads.
+
+**Declined, decided 2026-10-08, and not deferred.** The contact key publishes no kind `10002` and no
+kind `10050`. Public work reaches the meeting relays, today's built-in pair, by default, and partners
+read there. While everyone meets on the same relays a card's list tells no reader anything, and
+indexers collect and keep it for good. The first card that writes somewhere unusual would be singled
+out by it, and a Stationkeeper's own relay could hint at their watch. If the meeting relays must
+change, they move as a whole, by release and a notice in the interchange spec; if an operator cannot
+reach them, partners read NavCom's commons of public relays
+([`design/relay-lists.md`](design/relay-lists.md) §12).
+
+**Cost:** the meeting relays stay in every operator's path, and the promise to partners is withdrawn
+rather than kept. An operator who leaves the meeting relays out goes unread by partners, by their
+own choice.
+
+### A relay a member runs for operator traffic
+
+Operator traffic goes only to large public relays run by strangers whose policies nobody here can
+hold them to, and one of them has banned a NavCom test machine. A relay run by a known member — the
+Pi's operator, a Stationkeeper beside their box, or NavCom itself — under a published no-records
+policy would be one somebody here can answer for, and ready if open relays thin out.
+
+**Declined, decided 2026-10-08, while the refusal `no-operator-traffic-on-a-private-relay`
+stands.** A member's relay is the small room that refusal describes: its operator would see who is
+active tonight. While the refusal stands such a relay carries no operator traffic, so it would add a
+service to keep, abuse handling and legal exposure for writes from anyone, and the online-safety
+review if NavCom ran it, for nothing an operator could use. The RelayNode is this. The hedge against
+open relays tightening is a fresh reply key for each `Distress`, built before the refusal's reopen
+trigger can fire: NavCom's commons below its floor of three relays, or its relays requiring sign-in
+or payment ([`design/relay-lists.md`](design/relay-lists.md) §10).
+
+**Cost:** no relay whose policy somebody here can answer for carries operator traffic. All of it
+rests on strangers' relays that NavCom can hold to nothing.
+
 ## What is **not** declined, so nobody mistakes this page for a licence
 
 Everything in [`build-order.md`](build-order.md) is deferred, not declined — endorsements,
-recovery, propagation, the RelayNode, counter-signing, redundant escalation executors. They
+recovery, propagation, counter-signing, redundant escalation executors. They
 are designed and sequenced. Moving something here requires a decision, and that decision
-should be recorded in the commit that moves it.
+should be recorded in the commit that moves it. The RelayNode was on that list until
+2026-10-08, when it was declined above while the refusal stands.
 
 **Allied interop used to be on that list, and it was a contradiction with the entry above.**
 This page declined it; this paragraph called it deferred; `constraints.md` C37 states its

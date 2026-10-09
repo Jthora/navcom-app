@@ -884,8 +884,8 @@ allowlist stays local to the people its own Stationkeeper personally knows.
 - **Must stay under the Stationkeeper's own control:** the watch state machine and the
   escalation executor — both keyed to the Watchtower's own privkey. Control, not ownership: a
   rented VPS satisfies this exactly as well as a box at home, provided the key never leaves it
-- **Need not run themselves:** a relay (public, the MVP default — or a Nodekeeper's shared
-  RelayNode) and a directory host (the terminal already caches the public directory
+- **Need not run themselves:** a relay (large public ones, from the commons NavCom keeps — a relay a
+  member runs is declined while the refusal stands) and a directory host (the terminal already caches the public directory
   independent of whichever Watchtower it is paired with)
 
 **Worth reconsidering, not decided:** whether 9.6's restore drill should target this minimal
@@ -908,7 +908,9 @@ track the first axis, not the second. Named so the gap isn't invisible; not reso
 for a public relay to fail NavCom or for a second person to run one, and both happened the same
 day: `relay.damus.io` refuses every NIP-42 sign-in and answered with errors, and a Raspberry Pi beside
 the Jetson has a second person behind it. The reasoning about small relays was then revisited from
-first principles rather than revived.
+first principles rather than revived. **Then declined, 2026-10-08, while the refusal
+`no-operator-traffic-on-a-private-relay` stands:** the refusal was kept, and a RelayNode would be a
+relay a member runs for operator traffic. See [`declined.md`](declined.md) and G3 below.
 
 ---
 
@@ -1147,8 +1149,15 @@ Decided for the Earth Intelligence Network as a whole; reasoning in
 | G1 | **No reader records on The Record.** Address lines dropped, writes recorded, old journals cleared | Mecha Jono's session | Every NavCom visitor's address stays in a log on a box an agent reads from |
 | G2 | **Missions from more than one relay — done 2026-10-06.** Every device reads The Record and `blackpi.cosmiccodex.app` at once; each relay's last answer stands until it answers again, the newest signed copy of each package wins, and one relay failing while another is still connecting never reads as "unavailable" | agent | — |
 | G3a | **Every relay path made safe to multiply — done 2026-10-07.** Twenty-one defects fixed in the terminal, core and the box before a list multiplies each one by its length: subscriptions that reopen themselves, *nobody answered* said as such, the newest watch state wins, a phone holding the watch listens while it announces, and a human's acknowledgement held rather than paged again. [`audit.md`](audit.md), *Relay paths* | agent | — |
-| G3 | **Relay lists in the client.** NIP-65 and NIP-17, the built-in relays as a starting point only, `Distress` on every path | agent | Operator traffic stays on two relays NavCom can hold to nothing |
-| G4 | **The node policy attestation.** Drafted by Mecha Jono's side, read by the client when it chooses relays | Mecha Jono's session, then agent | Relays are chosen on trust nobody can show |
+| G3 | **Relay lists, inside a commons — decided 2026-10-08.** A watch publishes where it listens as NIP-65 kind `10002` (D2). A phone follows it at once only when a key it was handed in person signed it, and only into a commons of large public relays NavCom keeps, with today's pair inside it as the meeting set (D1, D5). The refusal `no-operator-traffic-on-a-private-relay` stays as written (D3), and no card publishes a relay list (D4). Design, decisions and costs: [`design/relay-lists.md`](design/relay-lists.md). Built in the order below. Beside it: the per-`Distress` reply key, designed now and built before the refusal's reopen trigger can fire (the commons below its floor, or its relays requiring sign-in or payment); and the three timing fixes in that page's §9, which wait on nothing | agent | Every watch stays on the same two strangers' relays, and moving a box means finding every operator in person |
+| G3.0 | **Words.** `design/relay-lists.md`, `design/grid.md` §2, this entry and `declined.md` — **done 2026-10-08**. The specs change with the code that keeps them. **Pending:** the interchange spec's rev 6 and NavCom's Pi page, which partners read; the `KIND_ANNOUNCE` docblock in core; and CLAUDE.md's relay-topology row, which is the owner's | agent | Partners act on grid relays carrying operator traffic, which the refusal forbids |
+| G3.1 | **The honest `Distress` path — built 2026-10-07** on the phone and in the box's client: one listener per relay, counted only after a real end-of-stored-events; each attempt accounted for relay by relay; *could not hear* and *listening nowhere* said as such; the mission relays never sent an operator event. **Still to build, before any box follows a list:** the executor's hearing file, the daemon publishing only where both processes hear, `watchTargets()`, and the *heard on k of N* receipt line | agent | — |
+| G3.2 | **The executor's own key — built 2026-10-08.** Only an answer it signs ends a box's `Distress`, so a compromised agent cannot tell an operator a person has them | agent | — |
+| G3.3 | **The commons.** No upper cap, a floor of three independent relays, admission on evidence costly to fake, stepped retirement and never below the floor, monitored by boxes' `--check`, a second person able to ship a removal, a public route to propose or contest, reaching phones only by release; `--check` prints each watch's two relays by rendezvous hashing, drawn first from outside the meeting set | agent; **human** to keep it, and a second person | Lists have nowhere safe to lead |
+| G3.4 | **Boxes follow lists.** A box's list, signed by its key, naming only commons relays; the box listening on every commons relay it has ever been configured on or listed | agent | A box leaving a failing relay has to find every operator |
+| G3.5 | **Per-member keys, with vouching**, and the box's recovery key. A holder's key counts while two other holders vouch for it. Every squad re-forms once, in person; none is in the field yet | agent | Anyone who ever held a squad's key can still claim a holder is on station, and read its answers, for good |
+| G3.6 | **Squads follow lists.** Each holder's list, under their own key | agent | Squads stay weaker than boxes |
+| G4 | **The node policy attestation.** Drafted by Mecha Jono's side, read by the client when it chooses where to read. Operator traffic stays inside the commons whatever a node declares ([`design/relay-lists.md`](design/relay-lists.md)) | Mecha Jono's session, then agent | Relays are chosen on trust nobody can show |
 | G5 | **The Pi.** Mirror, swarm peer and Tor onion, per Mecha Jono's brief and NavCom's companion page | the Pi's operator, Jono | No second copy of The Record |
 
 ## The seeding rule
