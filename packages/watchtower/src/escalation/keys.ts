@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import type { SimplePool } from "nostr-tools/pool";
 import { finalizeEvent } from "nostr-tools/pure";
-import { watchCodeSignatureEvent, watchCopy, type OnCall, type ResponsePayload } from "@navcom/core";
+import { watchCode as signedWatchCode, watchCopy, type OnCall, type ResponsePayload } from "@navcom/core";
 import { loadOrCreateKeypair, type Keypair } from "../shared/identity.js";
 import { sealResponse } from "../shared/crypto.js";
 import { KIND_RESPONSE, KIND_WATCH_STATE } from "../shared/kinds.js";
@@ -168,10 +168,9 @@ export function boxKeysOnRoster(oncall: readonly { declaration: OnCall }[], boxK
  * The watch code a phone is handed: the watch's address, its relays, and the executor's own key, **signed
  * by the watch key** and dated.
  *
- * The format the Field Terminal reads (`web/src/lib/terminal/watch-code.ts`, *The format* and *The
- * signature*, which say the box must build the same bytes): a link, so a phone's camera opens it, with
- * `watch=1`, `w`, each `r`, `x`, `t` and `s`. `s` is the watch key's signature on the never-published event
- * `watchCodeSignatureEvent` in `@navcom/core` builds, the same bytes the phone checks. A box has no holders.
+ * Made by `@navcom/core`'s `watchCode`, the one maker and reader of the format, so what the box prints is
+ * what the Field Terminal reads: a link, so a phone's camera opens it, with `watch=1`, `w`, each `r`, `x`,
+ * `t` and `s`, the watch key's signature over all of it. A box has no holders.
  * A phone fills in nothing from a code its watch did not sign, so a stranger cannot hand an operator a key
  * of their own as this watch's escalation key.
  *
@@ -184,21 +183,9 @@ export function watchCode(
   executorPubkey?: string,
   issuedAt: number = Math.floor(Date.now() / 1000),
 ): string {
-  const pubkey = watch.pubkey.toLowerCase();
   const listed = [...new Set(relays.map((r) => r.trim()).filter(Boolean))];
   const executor = executorPubkey?.toLowerCase();
-  const signed = finalizeEvent(
-    watchCodeSignatureEvent({ pubkey, relays: listed, holders: [], ...(executor ? { executor } : {}) }, issuedAt),
-    watch.secretKey,
-  );
-  const params = new URLSearchParams();
-  params.set("watch", "1");
-  params.set("w", pubkey);
-  for (const r of listed) params.append("r", r);
-  if (executor) params.set("x", executor);
-  params.set("t", String(issuedAt));
-  params.set("s", signed.sig);
-  return `https://navcom.app/terminal/setup/#${params.toString()}`;
+  return signedWatchCode({ pubkey: watch.pubkey, relays: listed, holders: [], ...(executor ? { executor } : {}) }, watch.secretKey, issuedAt);
 }
 
 /**

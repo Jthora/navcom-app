@@ -12,9 +12,9 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir, userInfo } from "node:os";
 import { join } from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import { finalizeEvent, generateSecretKey, getEventHash, getPublicKey, verifyEvent } from "nostr-tools/pure";
-import { KIND_WATCH_CODE_SIGNATURE, type ResponsePayload } from "@navcom/core";
+import { KIND_WATCH_CODE_SIGNATURE, parseWatchCode, type ResponsePayload } from "@navcom/core";
 import { loadEscalationConfig } from "../src/escalation/config.js";
 import {
   boxKeysOnRoster,
@@ -247,13 +247,12 @@ describe("when the executor may make its key", () => {
   });
 });
 
-/** The Field Terminal's own parser, where this checkout has it (`web/`, the phone's half). */
-const WEB_PARSER = join(PACKAGE, "../../web/src/lib/terminal/watch-code.ts");
 type ReadCode = { pubkey: string; relays: string[]; holders: string[]; executor?: string; issuedAt: number };
 
 /**
- * A watch code read back: by the Field Terminal's own parser where the checkout has it, and always by the
- * signature rule it documents -- a code the phone cannot read leaves the executor's key no way onto a phone.
+ * A watch code read back: by the parser the Field Terminal uses (`@navcom/core`'s `parseWatchCode`), and
+ * by the signature rule rebuilt here by hand from the spec's words -- a code the phone cannot read leaves
+ * the executor's key no way onto a phone.
  */
 async function readCode(code: string): Promise<ReadCode> {
   const params = new URLSearchParams(code.slice(code.indexOf("#") + 1));
@@ -268,11 +267,8 @@ async function readCode(code: string): Promise<ReadCode> {
     content: JSON.stringify(["navcom-watch-code-v1", fields.pubkey, [...relays].sort(), [], fields.executor ?? null]),
   };
   expect(verifyEvent({ ...event, id: getEventHash(event), sig: params.get("s")! }), "the code is not signed by the watch it names").toBe(true);
-  if (existsSync(WEB_PARSER)) {
-    const web = (await import(pathToFileURL(WEB_PARSER).href)) as { parseWatchCode: (t: string) => ReadCode };
-    const read = web.parseWatchCode(code);
-    expect([read.pubkey, read.relays, read.executor, read.issuedAt]).toEqual([fields.pubkey, relays, fields.executor, issuedAt]);
-  }
+  const read = parseWatchCode(code);
+  expect([read.pubkey, read.relays, read.executor, read.issuedAt]).toEqual([fields.pubkey, relays, fields.executor, issuedAt]);
   return { ...fields, issuedAt };
 }
 
