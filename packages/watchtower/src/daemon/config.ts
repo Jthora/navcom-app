@@ -1,4 +1,5 @@
 import { readFileSync, existsSync } from "node:fs";
+import { resolve } from "node:path";
 import { parse } from "smol-toml";
 import { STALE_AFTER_SECONDS } from "@navcom/core";
 import { relayList } from "../shared/relay-urls.js";
@@ -84,6 +85,20 @@ export interface DaemonConfig {
      * same as before this field existed.
      */
     escalationLogPath: string | null;
+    /**
+     * Where the escalation executor writes where it hears: its `[escalation] hearing_state_path`
+     * (`shared/hearing.ts`).
+     *
+     * Read, never written, by the daemon, as the drill file is. Set, the watch state is published
+     * only on relays where this daemon and the executor both hear, and a file that is missing,
+     * unreadable, about another watch or more than 90 seconds old means the executor hears nowhere:
+     * the watch reads Dark, and the log says why.
+     *
+     * **No default**, deliberately. A default would turn every box upgraded to this version Dark
+     * until its executor had written the file. Unset, the daemon publishes wherever it hears, as
+     * before, and says at every start what that costs.
+     */
+    hearingStatePath?: string;
   };
 }
 
@@ -133,6 +148,7 @@ interface RawToml {
     retention_days?: number;
     drill_state_path?: string;
     escalation_log_path?: string;
+    hearing_state_path?: unknown;
   };
 }
 
@@ -207,6 +223,15 @@ function parseAllowedPubkeys(raw: unknown, configPath: string): string[] {
   return raw as string[];
 }
 
+/** A path, or nothing; an empty string or a number is a typo worth stopping for, not "none". */
+function optionalPath(raw: unknown, section: string, field: string, configPath: string): string | undefined {
+  if (raw === undefined) return undefined;
+  if (typeof raw !== "string" || raw.trim() === "") {
+    throw new Error(`Config [${section}] ${field} must be a non-empty string, got ${JSON.stringify(raw)} (${configPath})`);
+  }
+  return raw.trim();
+}
+
 export function loadDaemonConfig(path: string): DaemonConfig {
   if (!existsSync(path)) {
     throw new Error(
@@ -221,6 +246,24 @@ export function loadDaemonConfig(path: string): DaemonConfig {
   }
 
   const urls = relayList(raw.relays?.urls, path);
+  const hearingStatePath = optionalPath(raw.log?.hearing_state_path, "log", "hearing_state_path", path);
+  const drillStatePath = raw.log?.drill_state_path ?? DEFAULTS.drillStatePath;
+  const logPath = raw.log?.path ?? DEFAULTS.logPath;
+  /*
+   * Read as where the executor hears, the drill file or this daemon's own log is a file in no shape
+   * this version reads, and the watch reads Dark for a reason nobody would look for. The executor's
+   * config refuses the same slip on its side, where it would overwrite the file.
+   */
+  if (hearingStatePath !== undefined) {
+    for (const [name, other] of [["[log] drill_state_path", drillStatePath], ["[log] path", logPath]] as const) {
+      if (resolve(other) === resolve(hearingStatePath)) {
+        throw new Error(
+          `Config [log] hearing_state_path is the same file as ${name} (${path}). It names the file the escalation ` +
+            "executor writes where it hears: its own [escalation] hearing_state_path, beside the drill file.",
+        );
+      }
+    }
+  }
 
   return {
     identity: { privkeyPath },
@@ -238,12 +281,13 @@ export function loadDaemonConfig(path: string): DaemonConfig {
       allowedPubkeys: parseAllowedPubkeys(raw.authorization?.allowed_pubkeys, path),
     },
     log: {
-      path: raw.log?.path ?? DEFAULTS.logPath,
+      path: logPath,
       // Same fail-loud rule as every other timing value: a quoted number in TOML is a
       // string, and a string retention would make every age comparison nonsense.
       retentionDays: positiveNumber(raw.log?.retention_days, "retention_days", DEFAULTS.logRetentionDays, path),
-      drillStatePath: raw.log?.drill_state_path ?? DEFAULTS.drillStatePath,
+      drillStatePath,
       escalationLogPath: raw.log?.escalation_log_path ?? null,
+      ...(hearingStatePath !== undefined ? { hearingStatePath } : {}),
     },
   };
 }

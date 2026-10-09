@@ -1,13 +1,13 @@
 import type { SimplePool } from "nostr-tools/pool";
 import type { Event } from "nostr-tools/pure";
-import type { Filter } from "nostr-tools/filter";
 import { nodePool } from "../shared/nostr-node.js";
 import { KIND_DISTRESS, KIND_SIGNAL } from "../shared/kinds.js";
+import { probeRelays, type RelayReach } from "../shared/subscription-check.js";
+import { readHearing, relayKey, type HearingRead } from "../shared/hearing.js";
 import {
   KIND_WATCH_STATE,
   STALE_AFTER_SECONDS,
   readWatchStateAt,
-  sanitizeForLog,
   type WatchStateRead,
 } from "@navcom/core";
 
@@ -40,24 +40,8 @@ import {
  * a state this command created for itself.
  */
 
-/** Per-relay reachability, because "up on one of three" is real and otherwise invisible. */
-export interface RelayReach {
-  url: string;
-  reached: boolean;
-  error?: string;
-  /**
-   * Whether the relay answered **the box's own subscription** -- the `#p` REQ the daemon and the
-   * executor hear every signal and Distress through [#38]. Absent where it was not reached.
-   *
-   * A relay can take writes and serve the watch state to anybody while refusing that one REQ (an
-   * inbox that wants AUTH) or holding it unanswered. This command used to read only the watch
-   * state, so it reported such a box as seen and exited zero while no Distress sent there could
-   * reach it.
-   */
-  hears?: boolean;
-  /** Why it does not: the relay's refusal, or that it never answered. */
-  deaf?: string;
-}
+/** Per-relay reachability, and whether each answers the box's own subscription: `shared/subscription-check.ts`. */
+export type { RelayReach } from "../shared/subscription-check.js";
 
 export interface WatchCheck {
   pubkey: string;
@@ -70,6 +54,16 @@ export interface WatchCheck {
   visible: boolean;
   /** True when at least one reachable relay answered the box's own subscription. */
   hearing: boolean;
+  /** `[log] hearing_state_path`, where this config names one. */
+  hearingPath?: string;
+  /** What the escalation executor's hearing file says, read as the running daemon reads it. Absent with no path. */
+  executor?: HearingRead;
+  /**
+   * Whether some relay is heard on by both: it answers the box's subscription here, and the hearing
+   * file says the executor hears there. Only those carry the watch state from a running daemon given
+   * that file. Absent with no path.
+   */
+  bothHear?: boolean;
 }
 
 /**
@@ -79,68 +73,8 @@ export interface WatchCheck {
  */
 const CONNECT_MS = 5_000;
 
-/** nostr-tools' longest timer, so its own stand-in for an EOSE never answers for a relay. */
-const NEVER_MS = 2_147_483_647;
-
-/** A relay as `ensureRelay` hands it over, as far as this needs it. */
-interface Subscribing {
-  subscribe(
-    filters: Filter[],
-    params: { oneose?: () => void; onclose?: (reason: string) => void; eoseTimeout?: number },
-  ): { close(reason?: string): void };
-}
-
-/**
- * Asks the relay for exactly what the daemon and the executor ask it for, and says whether it
- * answered. A refusal is the relay's own words; silence past `timeoutMs` is said as silence.
- * Nothing is published, and `limit: 0` asks for nothing stored.
- */
-function hears(relay: Subscribing, pubkey: string, timeoutMs: number): Promise<Pick<RelayReach, "hears" | "deaf">> {
-  return new Promise((resolve) => {
-    let settled = false;
-    let closed = false;
-    let sub: { close(reason?: string): void } | null = null;
-    const finish = (result: Pick<RelayReach, "hears" | "deaf">) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timer);
-      // Never closed twice: nostr-tools counts a second close as a second operation ending.
-      if (sub && !closed) {
-        closed = true;
-        sub.close("checked");
-      }
-      resolve(result);
-    };
-    const timer = setTimeout(
-      () =>
-        finish({
-          hears: false,
-          deaf: `took the box's subscription and did not answer in ${
-            timeoutMs >= 1_000 ? `${Math.round(timeoutMs / 1_000)}s` : `${timeoutMs}ms`
-          }`,
-        }),
-      timeoutMs,
-    );
-    try {
-      sub = relay.subscribe([{ kinds: [KIND_SIGNAL, KIND_DISTRESS], "#p": [pubkey], limit: 0 }], {
-        oneose: () => finish({ hears: true }),
-        onclose: (reason: unknown) => {
-          closed = true;
-          const said = typeof reason === "string" && reason !== "" ? sanitizeForLog(reason, 160) : "no reason given";
-          finish({ hears: false, deaf: `refused the box's subscription: ${said}` });
-        },
-        eoseTimeout: NEVER_MS,
-      });
-      clearTimeout((sub as unknown as { eoseTimeoutHandle?: ReturnType<typeof setTimeout> }).eoseTimeoutHandle);
-      if (settled && !closed) {
-        closed = true;
-        sub.close("checked");
-      }
-    } catch (err: unknown) {
-      finish({ hears: false, deaf: err instanceof Error ? err.message : String(err) });
-    }
-  });
-}
+/** Why a relay of this config is withheld when the executor's file does not name it. */
+export const NOT_THE_EXECUTORS = "it is not among the escalation executor's relays -- add it to escalation.toml";
 
 /**
  * The fix, per reason, in the terms the person running the box can act on.
@@ -153,15 +87,23 @@ function hears(relay: Subscribing, pubkey: string, timeoutMs: number): Promise<P
  * daemon withholds the watch state from every relay [#38], so "absent" and "stale" have a third
  * cause, and it is the one to fix first: told only the other two, a Stationkeeper went to restart
  * a daemon that was running and doing what it should [review: relay paths].
+ *
+ * `both` is whether any relay is heard on by both the daemon and the escalation executor, as its
+ * hearing file says. A daemon given that file publishes only there, so where there is none it is the
+ * same third cause, one process along: a running daemon withholding the state, as it should.
  */
-export function remedy(read: WatchStateRead, staleAfterSeconds = STALE_AFTER_SECONDS, hearing = true): string {
+export function remedy(read: WatchStateRead, staleAfterSeconds = STALE_AFTER_SECONDS, hearing = true, both = true): string {
   if (!read.dark) return "An operator signing on now would see this watch.";
-  const withheld =
-    "No relay answers the box's subscription, and the daemon publishes the watch state only on relays " +
-    "that do, so a running daemon is withholding it from all of them. Fix that first (above).";
+  const withheld = !hearing
+    ? "No relay answers the box's subscription, and the daemon publishes the watch state only on relays " +
+      "that do, so a running daemon is withholding it from all of them. Fix that first (above)."
+    : !both
+      ? "No relay is heard on by both this daemon and the escalation executor, and the daemon publishes the " +
+        "watch state only where both hear, so a running daemon is withholding it from all of them. Fix that first (above)."
+      : null;
   switch (read.reason) {
     case "absent":
-      if (!hearing) {
+      if (withheld) {
         return (
           `No relay served anything for this key. ${withheld} If the watch is still absent after that, ` +
           "the daemon is not running, or it is publishing to relays this config does not list."
@@ -184,7 +126,7 @@ export function remedy(read: WatchStateRead, staleAfterSeconds = STALE_AFTER_SEC
         "for it. Fix the clock before trusting anything else here."
       );
     case "stale":
-      if (!hearing) {
+      if (withheld) {
         return (
           `The last watch state is ${read.ageSeconds ?? "?"}s old and operators treat anything ` +
           `over ${staleAfterSeconds}s as Dark. ${withheld} If it is still stale after that, the daemon ` +
@@ -214,22 +156,20 @@ export async function checkWatch(opts: {
   now?: () => number;
   timeoutMs?: number;
   staleAfterSeconds?: number;
+  /** `[log] hearing_state_path`: read as the running daemon reads it, where the config names one. */
+  hearingPath?: string;
 }): Promise<WatchCheck> {
   // Through the factory, so it works on Node 20, which has no global WebSocket [F07].
   const pool = opts.pool ?? nodePool();
   const now = opts.now ?? (() => Math.floor(Date.now() / 1000));
   const timeoutMs = opts.timeoutMs ?? 8_000;
 
-  const reach: RelayReach[] = await Promise.all(
-    opts.relays.map(async (url): Promise<RelayReach> => {
-      let relay: Subscribing;
-      try {
-        relay = (await pool.ensureRelay(url, { connectionTimeout: Math.min(timeoutMs, CONNECT_MS) })) as unknown as Subscribing;
-      } catch (err: unknown) {
-        return { url, reached: false, error: err instanceof Error ? err.message : String(err) };
-      }
-      return { url, reached: true, ...(await hears(relay, opts.pubkey, timeoutMs)) };
-    }),
+  // Exactly what the daemon and the executor ask each relay for.
+  const reach: RelayReach[] = await probeRelays(
+    pool,
+    opts.relays,
+    { kinds: [KIND_SIGNAL, KIND_DISTRESS], "#p": [opts.pubkey], limit: 0 },
+    { timeoutMs, connectMs: Math.min(timeoutMs, CONNECT_MS) },
   );
 
   // Newest wins. A relay serving a preserved copy long after the daemon died is the exact
@@ -270,6 +210,13 @@ export async function checkWatch(opts: {
     ...(opts.staleAfterSeconds === undefined ? {} : { staleAfterSeconds: opts.staleAfterSeconds }),
   });
 
+  // The file is read the way the running daemon reads it, so this cannot believe one it would not.
+  const executor = opts.hearingPath ? readHearing(opts.hearingPath, { watch: opts.pubkey, now: now() }) : undefined;
+  const bothHear =
+    executor === undefined
+      ? undefined
+      : executor.ok && reach.some((r) => r.hears === true && executor.hears.has(relayKey(r.url)));
+
   return {
     pubkey: opts.pubkey,
     relays: reach,
@@ -277,7 +224,51 @@ export async function checkWatch(opts: {
     read,
     visible: !read.dark,
     hearing: reach.some((r) => r.hears === true),
+    ...(opts.hearingPath ? { hearingPath: opts.hearingPath } : {}),
+    ...(executor ? { executor } : {}),
+    ...(bothHear === undefined ? {} : { bothHear }),
   };
+}
+
+/**
+ * Whether `watchtower-daemon --check` passes: an operator would see the watch, some relay answers the
+ * box's subscription, and some relay is heard on by both processes, as the hearing file says.
+ *
+ * **No hearing file configured fails it.** A daemon given none publishes wherever it hears, so a relay
+ * that refuses the executor shows a live watch while a `Distress` sent only there pages nobody: the
+ * failure the file exists to close [watch-state.spec.md]. The daemon has no default for it, so that a
+ * box upgraded to this version does not read Dark until its executor writes the file, and says so at
+ * every start -- in a journal nobody may read. This is the line that runs unattended, as a cron line,
+ * so it is the one that has to catch it.
+ */
+export function checkPasses(check: WatchCheck): boolean {
+  return check.visible && check.hearing && check.bothHear === true;
+}
+
+/** What `--check` says with no `[log] hearing_state_path`, and why it fails. */
+export const NO_HEARING_FILE =
+  "[check] NO [log] hearing_state_path: this daemon publishes wherever it hears, without asking where the " +
+  "escalation executor hears, so a relay that refuses the executor shows a live watch while a Distress sent only " +
+  "there pages nobody. This check fails until it is set to the executor's [escalation] hearing_state_path";
+
+/** What the escalation executor's hearing file says about this config's relays, as report lines. */
+function executorLines(check: WatchCheck): string[] {
+  const path = check.hearingPath;
+  if (!path || !check.executor) return [NO_HEARING_FILE];
+  const read = check.executor;
+  if (!read.ok) return [`[check] THE ESCALATION EXECUTOR HEARS NOWHERE, as far as this daemon can tell: ${read.why}`];
+  const mine = [...new Map(check.relays.map((r) => [relayKey(r.url), r.url])).entries()];
+  const heard = mine.filter(([key]) => read.hears.has(key));
+  const lines = [
+    `[check] the escalation executor's hearing file (${path}, ${read.ageSeconds}s old): it hears on ` +
+      `${heard.length}/${mine.length} of this config's relays`,
+  ];
+  for (const [key, url] of mine) {
+    if (read.hears.has(key)) continue;
+    const why = read.deaf.get(key) ?? NOT_THE_EXECUTORS;
+    lines.push(`[check]   ${url}: the escalation executor does not hear there (${why}) -- the daemon withholds the watch state there`);
+  }
+  return lines;
 }
 
 /** Plain lines, in the order somebody debugging at 1am reads them. */
@@ -295,6 +286,8 @@ export function report(check: WatchCheck, staleAfterSeconds = STALE_AFTER_SECOND
       );
     }
   }
+  // About the file on this machine, so said whether or not any relay was reachable.
+  lines.push(...executorLines(check));
 
   /*
    * Nothing reachable is not a finding about the box, and saying both would be worse than
@@ -325,6 +318,14 @@ export function report(check: WatchCheck, staleAfterSeconds = STALE_AFTER_SECOND
         "that serves this box without NIP-42 AUTH, or fix the one that is not answering.",
     );
   }
-  lines.push(`[check] ${remedy(check.read, staleAfterSeconds, check.hearing)}`);
+  // Only where the box hears at all: otherwise the line above is the cause, and the executor's
+  // relays are not the first thing to change.
+  if (check.hearing && check.bothHear === false) {
+    lines.push(
+      "[check] NO RELAY WHERE THE DAEMON AND THE ESCALATION EXECUTOR BOTH HEAR, so the daemon publishes the watch " +
+        "state nowhere and operators read Dark. Fix the executor's relays first: navcom-escalation --check names them",
+    );
+  }
+  lines.push(`[check] ${remedy(check.read, staleAfterSeconds, check.hearing, check.bothHear !== false)}`);
   return lines;
 }

@@ -12,13 +12,15 @@ import {
   capabilitySentence,
   checkReview,
   distressClosure,
-  listable,
+  PublishError,
   sendDistressUntilAcknowledged,
   sendSignal,
   waitForResponse,
   type DistressClosure,
   type DistressPhase,
   type OnStationPayload,
+  type PublishResult,
+  type SecretKey,
   type ResponsePayload,
   type SignalPayload,
   type SignalType,
@@ -39,6 +41,9 @@ import { announceListed, beatListed, stopListed } from './public.svelte';
 import { position } from './position.svelte';
 import { overdue } from './overdue.svelte';
 import { pool } from './pool';
+import { distressRelays, watchTargets } from './watch-targets';
+import { heard } from './heard.svelte';
+import { heardLine } from './heard-copy';
 
 export interface SignOn {
   at: number;
@@ -97,6 +102,39 @@ function ctx() {
   return { config, identity };
 }
 
+/**
+ * Where a signal to the watch goes [relay-lists §5]: `watchTargets()`, the one list the receipt
+ * counts against, so what *heard on* says and where a signal goes cannot drift. None, when every
+ * relay the watch names is one nothing is sent to.
+ */
+function targets(): string[] {
+  const relays = watchTargets();
+  if (relays.length === 0) {
+    throw new Error('Every relay this watch names is one nothing is sent to. Setup says why for each.');
+  }
+  return relays;
+}
+
+/**
+ * Sends a signal to the watch, and keeps each relay's answer [relay-lists §7]: a relay that refused
+ * this phone's last signal is not counted as one the watch is heard on, because a `Distress` from
+ * this phone would be refused there too. Kept when no relay took it as well, before it is thrown.
+ */
+async function signal(
+  relays: string[],
+  secret: SecretKey,
+  address: WatchtowerAddress,
+  type: SignalType,
+  payload: SignalPayload
+) {
+  try {
+    return await sendSignal(pool(), relays, secret, address, type, payload, (result: PublishResult) => heard.answered(result));
+  } catch (e) {
+    if (e instanceof PublishError && e.result) heard.answered(e.result);
+    throw e;
+  }
+}
+
 /*
  * `SignalPayload`, not `object` with a cast.
  *
@@ -107,11 +145,12 @@ function ctx() {
  */
 async function send(type: SignalType, payload: SignalPayload, timeoutMs = 10_000) {
   const { config, identity } = ctx();
+  const relays = targets();
   const address = watchAddress(config);
-  const sent = await sendSignal(pool(), config.relays, identity.secretKey, address, type, payload);
+  const sent = await signal(relays, identity.secretKey, address, type, payload);
   // The whole address, not its pubkey: where the watch names its executor, that key answers too,
   // and a wait for the watch key alone hears the executor only through a copy, if at all.
-  return waitForResponse(pool(), config.relays, identity.secretKey, identity.pubkey, address, sent, timeoutMs);
+  return waitForResponse(pool(), relays, identity.secretKey, identity.pubkey, address, sent, timeoutMs);
 }
 
 /** Attaches the declared area, which is coarse by construction — it came from a sign-on. */
@@ -280,6 +319,8 @@ export const operator = {
   async signOn(area: string, hours: number, routineMinutes: number | null) {
     const now = Math.floor(Date.now() / 1000);
     const state: WatchStatePayload = watch.state;
+    // Where the watch was heard, as the receipt showed it before they committed [relay-lists §7].
+    const where = heard.now();
 
     // Only while signed on, so nobody broadcasts from their kitchen.
     position.start();
@@ -304,7 +345,9 @@ export const operator = {
       at: now,
       area,
       expectedUntil: now + Math.round(hours * 3600),
-      toldAtSignOn: capabilitySentence(state, Math.floor(Date.now() / 1000)),
+      toldAtSignOn:
+        capabilitySentence(state, Math.floor(Date.now() / 1000)) +
+        (where.asked && where.of > 0 ? ` ${heardLine(where.known ? where.on.length : null, where.of)}.` : ''),
       routineInterval: routineMinutes === null ? null : routineMinutes * 60
     };
     // Wipeable: tonight's data. Panic wipe removes it; identity survives.
@@ -373,14 +416,7 @@ export const operator = {
    */
   async acknowledge(distressId: string) {
     const { config, identity } = ctx();
-    await sendSignal(
-      pool(),
-      config.relays,
-      identity.secretKey,
-      watchAddress(config),
-      'distress-ack',
-      { distress_id: distressId }
-    );
+    await signal(targets(), identity.secretKey, watchAddress(config), 'distress-ack', { distress_id: distressId });
   },
 
   /**
@@ -414,8 +450,10 @@ export const operator = {
     /*
      * Core's gate, as every other signal goes through it: never to a mission relay, which keeps what
      * it is sent for good, whatever a config, a list or a backup says [review: live hole, phone].
+     * `watchTargets()`, the one list for everything sent to the watch [relay-lists §5]. What each
+     * relay said is not kept against this phone's last signal: a person on call sends this.
      */
-    const relays = config.relays.filter(listable);
+    const relays = watchTargets();
     if (relays.length === 0) return none('every relay this watch names is one nothing is sent to.');
     const event = finalizeEvent(
       buildSignal(identity.secretKey, address, 'wake-others', { distress_id: attempt }, Math.floor(Date.now() / 1000)),
@@ -621,6 +659,8 @@ export const operator = {
     const controller = new AbortController();
     distressController = controller;
     const current = () => distressController === controller;
+    /** The watch's state, read where this `Distress` goes for as long as it runs [relay-lists §7]. */
+    let reading: { close(): void } | null = null;
     try {
       // ctx() moved inside the try: found in robustness audit. It used to run before this
       // block even started, so its throw (no identity yet, or the ordinary Alone case of
@@ -630,8 +670,20 @@ export const operator = {
       // false. An operator who felt the hold complete got no signal that nothing was sent,
       // which is invariant 2 failing in exactly the way it forbids.
       const { config, identity } = ctx();
+      /*
+       * Where the watch is heard, read only now and only where the `Distress` goes: the read tells
+       * those relays nothing the `Distress` does not, and the screen showed the count this phone
+       * already held until it started [relay-lists §7]. Opened beside the first attempt, which waits
+       * on nothing.
+       */
+      reading = heard.read(watchTargets(), config.pubkey);
+      /*
+       * `distressRelays`, the function: `watchTargets()` and the relays it leaves out, read again
+       * before every attempt, so the relays the receipt counted are the relays this goes to, a relay
+       * the watch adds is added [relay-lists §6], and each one nothing goes to is said with why.
+       */
       await sendDistressUntilAcknowledged(
-        pool(), config.relays, identity.secretKey, identity.pubkey, watchAddress(config),
+        pool(), distressRelays, identity.secretKey, identity.pubkey, watchAddress(config),
         // A Distress carries the last known fix where one exists, and the declared area
         // where it does not. Somewhere to start beats nothing to go on.
         {
@@ -641,12 +693,36 @@ export const operator = {
         },
         {
           signal: controller.signal,
-          onPhase: (p) => { if (current()) distressPhases = [...distressPhases, p]; }
+          // Which relays that took an attempt the watch was heard on in the last five minutes.
+          watchStateAgeMs: (url) => heard.stateAgeMs(url),
+          onPhase: (p) => {
+            if (!current()) return;
+            if (p.phase === 'accounted') {
+              // A relay that refused an attempt is not one the watch is heard on from this phone.
+              heard.accounted(p);
+              /*
+               * "The watch heard on N" only where this phone had a count when the attempt was
+               * accounted. Opened cold, the read starts beside the first attempt, and whether its
+               * answer or the relays' OK came first decided between "heard on 0" and "heard on 1":
+               * a person in distress reading "heard on 0" as nothing hearing them. Unknown is left
+               * unsaid [invariant 7].
+               */
+              if (p.heard && !heard.known) {
+                const said = { ...p };
+                delete said.heard;
+                distressPhases = [...distressPhases, said];
+                return;
+              }
+            }
+            distressPhases = [...distressPhases, p];
+          }
         }
       );
     } catch (e) {
       if (current()) error = e instanceof Error ? e.message : String(e);
     } finally {
+      // Closed whoever owns this state now: a read left open would go on asking for nothing.
+      reading?.close();
       // A newer Distress, or a wipe, owns this state now.
       if (current()) {
         distressRunning = false;
@@ -695,5 +771,7 @@ export const operator = {
     lastResponse = null;
     error = null;
     distressPhases = [];
+    // What this phone saw of where its watch is heard: tonight's, and gone with the rest of it.
+    heard.forget();
   }
 };

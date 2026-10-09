@@ -8,6 +8,7 @@ import { isValidHexPubkey } from "../shared/validate.js";
 import { nodePool } from "../shared/nostr-node.js";
 import { RelayListener } from "../shared/relay-listener.js";
 import { relayList } from "../shared/relay-urls.js";
+import { probeRelays } from "../shared/subscription-check.js";
 import { emptyState, forgetOld, markPaged, shouldPage, REPAGE_AFTER_SECONDS } from "./decide.js";
 
 /** How long a starting pager waits for a first relay before saying it is not watching. */
@@ -95,9 +96,73 @@ function load(path: string): PagerConfig {
 const fill = (argv: string[], vars: Record<string, string>): string[] =>
   argv.map((a) => a.replace(/\{\{(\w+)\}\}/g, (whole, k: string) => vars[k] ?? whole));
 
+/**
+ * The subscription this pager makes on every relay: every `Distress` addressed to the watch. `--check`
+ * asks each relay for exactly this, so it cannot pass a relay that refuses the one the running pager
+ * depends on.
+ */
+function pagerSubscription(watchtower: string): { kinds: number[]; "#p": string[] } {
+  return { kinds: [KIND_DISTRESS], "#p": [watchtower] };
+}
+
+/**
+ * Whether this pager would hear a Distress, and where -- and nothing paged.
+ *
+ *   navcom-pager --check /etc/navcom/pager.toml
+ *
+ * Asks each relay for the subscription this pager makes, exactly as it makes it. A relay can serve
+ * the watch to anybody and refuse this one REQ (an inbox that wants NIP-42 AUTH) or hold it
+ * unanswered, and the pager may run on another machine with other relays, so only its own check can
+ * see them. Exits non-zero when no relay answers: a pager that hears nowhere pages nobody.
+ */
+async function check(config: PagerConfig): Promise<never> {
+  console.log("[pager] --check: asking each relay for the subscription this pager makes. Nothing is paged");
+  const pool = nodePool();
+  let answering = 0;
+  try {
+    const reach = await probeRelays(
+      pool,
+      config.relays,
+      { ...pagerSubscription(config.watchtower), limit: 0 },
+      { timeoutMs: 8_000, connectMs: 5_000, noun: "the subscription" },
+    );
+    for (const r of reach) {
+      if (!r.reached) console.error(`[pager]   ${r.url}: UNREACHABLE -- ${r.error ?? "no reason given"}`);
+      else if (r.hears) {
+        answering++;
+        console.log(`[pager]   ${r.url}: answers it -- a Distress sent there pages from here`);
+      } else {
+        console.error(
+          `[pager]   ${r.url}: DOES NOT HEAR -- ${r.deaf ?? "did not answer the subscription"}. A Distress sent only ` +
+            "there pages nobody from here",
+        );
+      }
+    }
+  } finally {
+    pool.destroy();
+  }
+  console.log(`[pager] hears on ${answering}/${config.relays.length} relay(s)`);
+  if (answering === 0) {
+    console.error(
+      "[pager] THIS PAGER HEARS ON NO RELAY IN THIS CONFIG, so it would page nobody. Pick a relay that serves it " +
+        "without NIP-42 AUTH, or fix the one that is not answering",
+    );
+    process.exit(1);
+  }
+  process.exit(0);
+}
+
 function main(): void {
-  const path = process.argv[2] ?? "/etc/navcom/pager.toml";
+  // Skips flags, or `--check` itself becomes the config path.
+  const path = process.argv.slice(2).find((a) => !a.startsWith("--")) ?? "/etc/navcom/pager.toml";
   const config = load(path);
+  if (process.argv.includes("--check")) {
+    check(config).catch((err: unknown) => {
+      console.error(`[pager] --check failed: ${err instanceof Error ? err.message : String(err)}`);
+      process.exit(1);
+    });
+    return;
+  }
   const state = emptyState();
   // Through the factory: on Node 20 there is no global WebSocket, and a bare SimplePool printed
   // that it was watching while it could not open a single socket [F07]. Ping, so a connection a
@@ -124,7 +189,7 @@ function main(): void {
   const listener = new RelayListener({
     pool,
     urls: config.relays,
-    filter: { kinds: [KIND_DISTRESS], "#p": [config.watchtower] },
+    filter: pagerSubscription(config.watchtower),
     label: "pager",
     missing: "a Distress sent only there pages nobody from here",
     onchange: (listening, total) => {

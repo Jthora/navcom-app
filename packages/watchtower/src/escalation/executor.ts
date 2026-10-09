@@ -20,6 +20,13 @@ import {
 } from "@navcom/core";
 import { nodePool } from "../shared/nostr-node.js";
 import { RelayListener } from "../shared/relay-listener.js";
+import {
+  HEARING_MAX_AGE_SECONDS,
+  HEARING_VERSION,
+  HEARING_WRITE_SECONDS,
+  writeHearing,
+  type HearingRelay,
+} from "../shared/hearing.js";
 import { sealResponse, openSignal } from "../shared/crypto.js";
 import { KIND_SIGNAL, KIND_DISTRESS, KIND_RESPONSE } from "../shared/kinds.js";
 import { pageAll, type PageResult } from "./pager.js";
@@ -76,10 +83,22 @@ export interface ExecutorOptions {
   page?: typeof pageAll;
   /** Where drill results are kept, and where the daemon reads them from. */
   drillStatePath?: string;
+  /**
+   * Where this executor writes where it hears, for the daemon (`shared/hearing.ts`). Only the
+   * long-running start passes it: `--drill` runs beside the live executor and must not overwrite
+   * what the live one hears.
+   */
+  hearingStatePath?: string;
 }
 
 /** The longest wait before a relay whose subscription closed is tried again. */
 export { RELISTEN_SECONDS } from "../shared/relay-listener.js";
+
+/**
+ * How long a starting executor waits for a first relay before saying it hears on none: the keyless
+ * pager's figure, after every relay has had its first try.
+ */
+export const BOOT_GRACE_SECONDS = 15;
 
 /**
  * How long after re-sending a held acknowledgement it is sent once more.
@@ -260,6 +279,16 @@ interface HeldAck {
   taken: number;
 }
 
+/**
+ * The subscription this executor makes on every relay, without the `since` its listener adds: every
+ * `Distress` and every signal addressed to the watch. `navcom-escalation --check` asks each relay for
+ * exactly this, so the question it asks cannot drift from the one the running executor depends on: a
+ * check that asked for less -- no `#p`, or one kind -- passed a relay that refuses this one.
+ */
+export function executorSubscription(watch: string): { kinds: number[]; "#p": string[] } {
+  return { kinds: [KIND_DISTRESS, KIND_SIGNAL], "#p": [watch] };
+}
+
 export class EscalationExecutor {
   readonly ladders = new LadderRegistry();
   private readonly pool: SimplePool;
@@ -270,6 +299,22 @@ export class EscalationExecutor {
   private readonly own: { secretKey: Uint8Array; pubkey: string } | null;
   private readonly page: typeof pageAll;
   private readonly drillStatePath: string | undefined;
+  /** Where it writes where it hears; undefined writes nothing. See {@link writeHearingNow}. */
+  private readonly hearingPath: string | undefined;
+  /** Set by `drillOnce`: a drill beside the live executor never writes where it hears. */
+  private hearingOff = false;
+  /** When the hearing file was last written (or, with none, the last thirty-second beat), unix seconds. */
+  private hearingAt: number | null = null;
+  /** A write asked for on a change and not yet made: changes in one tick are one write. */
+  private hearingQueued = false;
+  /** Whether a failed write has been said, so it is said once until one succeeds. */
+  private hearingFailed = false;
+  /** Whether {@link BOOT_GRACE_SECONDS} have passed since start, after which hearing nowhere is said. */
+  private graceOver = false;
+  private graceHandle: ReturnType<typeof setTimeout> | undefined;
+  /** Whether "HEARS ON NO RELAY" is the last thing said about where it hears. */
+  private saidNowhere = false;
+  private started = false;
   private drills: DrillState | null = null;
   /** Acknowledgements arriving for a drill rather than a real Distress. */
   private drillAcks = new Map<string, { by: Author; atMs: number }[]>();
@@ -365,6 +410,7 @@ export class EscalationExecutor {
     this.boxKeys = new Set([opts.pubkey, ...(opts.executorKey ? [opts.executorKey.pubkey] : [])]);
     this.page = opts.page ?? pageAll;
     this.drillStatePath = opts.drillStatePath;
+    this.hearingPath = opts.hearingStatePath;
     // Ping so a dead connection is noticed; no pool-level reconnect, because nostr-tools' rewrote
     // `since` past anything a relay sent [F04]. The listener reopens what closes.
     this.pool = opts.pool ?? nodePool({ enablePing: true });
@@ -1323,15 +1369,106 @@ export class EscalationExecutor {
     this.listener = new RelayListener({
       pool: this.pool,
       urls: this.config.relays.urls,
-      filter: { kinds: [KIND_DISTRESS, KIND_SIGNAL], "#p": [this.pubkey] },
+      filter: executorSubscription(this.pubkey),
       since: this.since,
       label: "executor",
       missing: "a Distress sent only there is not heard until it answers",
       // Longer than twice the age window, so a duplicate cannot outlive being remembered.
       seenRetentionSeconds: 2 * window + 60,
       onevent: (event) => this.onEvent(event),
+      // Written down at once, for the daemon, and said when it falls to none or comes back.
+      onchange: () => this.hearingChanged(),
     });
     this.listener.start();
+  }
+
+  /**
+   * A relay started or stopped listening: where this executor hears is written again, once per tick
+   * however many changed in it, and hearing nowhere -- or somewhere again -- is said.
+   */
+  private hearingChanged(): void {
+    if (this.hearingQueued) return;
+    this.hearingQueued = true;
+    queueMicrotask(() => {
+      this.hearingQueued = false;
+      if (this.stopped || !this.listener) return;
+      this.writeHearingNow();
+      const listening = this.listener.listening();
+      if (listening === 0 && this.graceOver && !this.saidNowhere) this.sayNowhere();
+      else if (listening > 0 && this.saidNowhere) {
+        this.saidNowhere = false;
+        console.log(`[executor] hears on ${listening}/${this.listener.relays().length} relay(s) again`);
+      }
+    });
+  }
+
+  /**
+   * Every relay unreachable or refusing this executor's subscription. Each relay's own line has said
+   * why, once; this says what it adds up to, after the boot grace, on falling to none, and with every
+   * thirty-second write while it lasts [failure mode 30] -- the executor had no line for it, while the
+   * daemon said `LISTENING ON NO RELAY` and the pager `NOT WATCHING`.
+   *
+   * Never "unreachable", and never names AUTH: those are each relay's own words, and are said once.
+   */
+  private sayNowhere(): void {
+    if (this.hearingOff || !this.listener) return;
+    this.saidNowhere = true;
+    console.error(
+      `[executor] HEARS ON NO RELAY (0/${this.listener.relays().length}) -- a Distress sent now pages nobody from ` +
+        "this executor, and a daemon reading its hearing file publishes the watch state nowhere. Each relay's own " +
+        "line above says why; retrying",
+    );
+  }
+
+  /**
+   * Writes where this executor hears, for the daemon: every relay in its config, whether its
+   * subscription there is answered, and why not (`shared/hearing.ts`). `stopping` writes every relay
+   * as not heard, with that reason.
+   *
+   * **Never throws, and never stops anything.** The ladder runs whether or not this can be written;
+   * a failure is said once until a write succeeds, and the daemon reading an old file reads this
+   * executor as hearing nowhere -- Dark, the safe direction.
+   */
+  private writeHearingNow(stopping?: string): void {
+    const path = this.hearingPath;
+    if (!path || this.hearingOff || !this.listener) return;
+    const at = now();
+    this.hearingAt = at;
+    const relays: HearingRelay[] = this.listener.relays().map((r) =>
+      stopping !== undefined
+        ? { url: r.url, hears: false, why: stopping }
+        : r.listening
+          ? { url: r.url, hears: true }
+          : { url: r.url, hears: false, why: r.why ?? "has not answered yet" },
+    );
+    try {
+      writeHearing(path, { v: HEARING_VERSION, at, watch: this.pubkey, relays });
+      if (this.hearingFailed) {
+        this.hearingFailed = false;
+        console.log(`[executor] writing where it hears to ${path} again`);
+      }
+    } catch (err: unknown) {
+      if (this.hearingFailed) return;
+      this.hearingFailed = true;
+      console.error(
+        `[executor] COULD NOT WRITE WHERE IT HEARS to ${path}: ${err instanceof Error ? err.message : String(err)}. ` +
+          "The ladder runs regardless. A daemon reading this file treats this executor as hearing nowhere once it " +
+          `is ${HEARING_MAX_AGE_SECONDS}s old, and operators then read Dark`,
+      );
+    }
+  }
+
+  /**
+   * The thirty-second beat: the file written again with nothing changed, so its age says this
+   * executor is alive, and hearing nowhere said again while it lasts. A clock that stepped back past
+   * the last write counts as due, rather than leaving the file to age out.
+   */
+  private hearingBeat(): void {
+    const since = this.hearingAt === null ? Infinity : now() - this.hearingAt;
+    if (since < HEARING_WRITE_SECONDS && since >= 0) return;
+    this.hearingAt = now();
+    this.writeHearingNow();
+    if (this.graceOver && this.listener?.listening() === 0) this.sayNowhere();
   }
 
   /**
@@ -1640,6 +1777,18 @@ export class EscalationExecutor {
   start(): void {
     this.stopped = false;
     this.listen();
+    if (!this.started) {
+      this.started = true;
+      // Written at once -- every relay "has not answered yet" -- so a daemon never reads a file an
+      // earlier run left behind as this one's.
+      this.writeHearingNow();
+      // A start into an outage never falls to none, so nothing else would say it.
+      this.graceHandle = setTimeout(() => {
+        this.graceOver = true;
+        if (!this.stopped && this.listener?.listening() === 0) this.sayNowhere();
+      }, BOOT_GRACE_SECONDS * 1000);
+      this.graceHandle.unref?.();
+    }
     // The ladder advances on a clock the executor owns. This is not a trigger -- no timer
     // in this process can START a ladder, only move one that a 20911 already began.
     this.sweepHandle = setInterval(() => {
@@ -1693,6 +1842,8 @@ export class EscalationExecutor {
           console.error(`[ladder] report failed: ${String(err)}`);
         });
       }
+
+      this.hearingBeat();
     }, 1000);
   }
 
@@ -1708,6 +1859,9 @@ export class EscalationExecutor {
    * That pages twice rather than not at all, which is the direction to be wrong in.
    */
   async drillOnce(id?: string): Promise<void> {
+    // Belt and braces with `--drill` passing no path: run beside the live executor, a drill that wrote
+    // where it hears would overwrite what the live one hears, and stop by saying it hears nowhere.
+    this.hearingOff = true;
     this.start();
     try {
       await this.fireDrill(id);
@@ -1726,6 +1880,10 @@ export class EscalationExecutor {
     }
     this.resends.clear();
     if (this.sweepHandle) clearInterval(this.sweepHandle);
+    if (this.graceHandle) clearTimeout(this.graceHandle);
+    // Said before the subscriptions close, so a daemon reading it withholds the watch state at its next
+    // read rather than believing a stopped executor for ninety seconds.
+    this.writeHearingNow("the executor stopped");
     this.listener?.stop();
     this.listener = undefined;
     this.pool.destroy();

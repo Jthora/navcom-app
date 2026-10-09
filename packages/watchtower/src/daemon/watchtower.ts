@@ -5,7 +5,16 @@ import { nodePool } from "../shared/nostr-node.js";
 import { RelayListener } from "../shared/relay-listener.js";
 import { sealResponse, openSignal } from "../shared/crypto.js";
 import { existsSync, readFileSync } from "node:fs";
-import { WATCH_STATE_VERSION, type Drill, type LogAction, type LogOutcome, type LogReviewPayload } from "@navcom/core";
+import {
+  STALE_AFTER_SECONDS,
+  WATCH_STATE_VERSION,
+  type Drill,
+  type LogAction,
+  type LogOutcome,
+  type LogReviewPayload,
+} from "@navcom/core";
+// Shared, never `escalation/`: the file is written by the executor and only read here, one way.
+import { readHearing, relayKey, type HearingRead } from "../shared/hearing.js";
 import { KIND_WATCH_STATE, KIND_SIGNAL, KIND_DISTRESS, KIND_RESPONSE } from "../shared/kinds.js";
 import type {
   DrillResult,
@@ -46,6 +55,17 @@ export interface WatchtowerDaemonOptions {
 }
 
 const AGENT_HEALTH_OK = "ok" as const;
+
+/**
+ * How often the daemon reads the executor's hearing file between heartbeats, so the watch state goes
+ * to a relay within seconds of both processes hearing there -- and stops, at the next beat, within
+ * seconds of the executor not. A poll rather than `fs.watch`, which is unreliable across platforms and
+ * through a directory the daemon's user may only read.
+ */
+export const HEARING_POLL_SECONDS = 5;
+
+/** Why a relay this daemon hears on is withheld when the executor's file does not name it. */
+const NOT_THE_EXECUTORS = "it is not among the escalation executor's relays -- add it to escalation.toml";
 
 function now(): number {
   return Math.floor(Date.now() / 1000);
@@ -132,6 +152,11 @@ export class WatchtowerDaemon {
   private publishing: Promise<number> | null = null;
   private publishAgain = false;
   private stopped = false;
+  private hearingHandle: ReturnType<typeof setInterval> | undefined;
+  /** The hearing file's last verdict said out loud -- its failure kind, or "ok" -- so each change is said once. */
+  private hearingSaid: string | null = null;
+  /** Relays withheld because the executor does not hear there, with the reason last said for each. */
+  private readonly withheld = new Map<string, string>();
 
   constructor(opts: WatchtowerDaemonOptions) {
     this.config = opts.config;
@@ -237,7 +262,8 @@ export class WatchtowerDaemon {
   }
 
   /**
-   * The relays this daemon can hear on right now: the only ones it announces itself on [#38].
+   * The relays this daemon can hear on right now: the only ones it announces itself on [#38] -- and,
+   * with a hearing file, only those of them the escalation executor hears on too ({@link publishTargets}).
    *
    * A relay that takes writes and author-only reads but refuses the box's `#p` subscription -- an
    * inbox that wants AUTH, or one that holds such a REQ and never answers -- carried a fresh
@@ -249,9 +275,74 @@ export class WatchtowerDaemon {
     return this.listener?.relays().filter((r) => r.listening).map((r) => r.url) ?? [];
   }
 
-  /** Announces at once on a relay that has just started listening, rather than at the next beat. */
-  private listeningChanged(): void {
-    const now = new Set(this.hearing());
+  /**
+   * Where the watch state goes: the relays this daemon hears on, and -- with `[log]
+   * hearing_state_path` -- only those the escalation executor says it hears on too (`watch-state.spec.md`,
+   * *On a box, "listening" means the daemon and the escalation executor both*).
+   *
+   * The executor is a separate process with its own subscription. A relay that answered the daemon
+   * and refused the executor -- an inbox that wants AUTH for one REQ and not the other -- carried a
+   * fresh watch while a `Distress` sent only there paged nobody. Withheld instead, it ages to Dark
+   * within `stale_after_seconds`, which is the truth.
+   *
+   * **A file that is not believed means the executor hears nowhere**: missing, unreadable, malformed,
+   * about another watch, or more than ninety seconds from this clock. The state then goes nowhere, and
+   * the reason is said once per change. With no path configured, today's rule: wherever this daemon
+   * hears, said at every start.
+   */
+  private publishTargets(): string[] {
+    const mine = this.hearing();
+    const path = this.config.log.hearingStatePath;
+    if (!path) return mine;
+    const read = readHearing(path, { watch: this.pubkey, now: now() });
+    this.sayHearing(read);
+    if (!read.ok) return [];
+    const targets: string[] = [];
+    for (const url of mine) {
+      const key = relayKey(url);
+      if (read.hears.has(key)) {
+        targets.push(url);
+        if (this.withheld.delete(url)) console.log(`[relays] ${url}: both hear there again -- the watch state goes there`);
+        continue;
+      }
+      const why = read.deaf.get(key) ?? NOT_THE_EXECUTORS;
+      if (this.withheld.get(url) === why) continue;
+      this.withheld.set(url, why);
+      console.error(
+        `[relays] ${url}: withheld -- this daemon hears there and the escalation executor does not (${why}). ` +
+          `Operators reading only that relay see Dark within ${STALE_AFTER_SECONDS}s, which is the truth: a Distress ` +
+          "sent only there would page nobody",
+      );
+    }
+    return targets;
+  }
+
+  /** The hearing file's verdict, said once per change: why it is not believed, and when it is again. */
+  private sayHearing(read: HearingRead): void {
+    const verdict = read.ok ? "ok" : read.kind;
+    if (verdict === this.hearingSaid) return;
+    const before = this.hearingSaid;
+    this.hearingSaid = verdict;
+    if (!read.ok) {
+      console.error(
+        `[relays] THE EXECUTOR HEARS NOWHERE, as far as this daemon can tell: ${read.why}${/[.?!]$/.test(read.why) ? "" : "."} ` +
+          "The watch state goes nowhere, and operators read Dark until it does",
+      );
+    } else if (before !== null) {
+      console.log(
+        `[relays] the escalation executor's hearing file reads again: it hears on ` +
+          `${read.relays.filter((r) => r.hears).length}/${read.relays.length} relay(s)`,
+      );
+    }
+  }
+
+  /**
+   * Announces at once on a relay that has just joined the targets -- this daemon started listening
+   * there, or the executor's file now says it hears there too -- rather than at the next beat.
+   */
+  private targetsChanged(): void {
+    if (this.stopped) return;
+    const now = new Set(this.publishTargets());
     const fresh = [...now].some((url) => !this.announcedOn.has(url));
     this.announcedOn = now;
     if (!fresh) return;
@@ -261,7 +352,7 @@ export class WatchtowerDaemon {
   }
 
   /**
-   * Publishes `10910` on every relay this daemon is listening on, and returns how many took it --
+   * Publishes `10910` on every relay in {@link publishTargets}, and returns how many took it --
    * 0 means operators read Dark. One at a time: asked for while one is going out, it publishes once
    * more after that one has settled, rather than beside it.
    */
@@ -301,13 +392,21 @@ export class WatchtowerDaemon {
    */
   private async publishWatchStateOnce(): Promise<number> {
     if (this.stopped) return 0;
-    const urls = this.hearing();
     const total = new Set(this.relayUrls).size;
-    if (urls.length === 0) {
+    if (this.hearing().length === 0) {
       // Every time, as below: the watch is invisible, and stays so until a relay answers.
       console.error(
         `[heartbeat] LISTENING ON NO RELAY (0/${total}) -- the watch state goes nowhere, and operators read Dark ` +
           "until a relay answers this box's subscription",
+      );
+      return 0;
+    }
+    const urls = this.publishTargets();
+    if (urls.length === 0) {
+      // Every time, for the same reason: this daemon hears, and nowhere it hears does the executor.
+      console.error(
+        `[heartbeat] NO RELAY WHERE THIS DAEMON AND THE ESCALATION EXECUTOR BOTH HEAR (0/${total}) -- the watch ` +
+          "state goes nowhere, and operators read Dark until the executor hears where this daemon does",
       );
       return 0;
     }
@@ -719,12 +818,41 @@ export class WatchtowerDaemon {
     );
   }
 
-  private async handleDistressEvent(event: Event): Promise<void> {
+  /**
+   * A `Distress` that reached this daemon first on a relay the escalation executor does not hear on,
+   * as its hearing file says: said, because nothing else on the box would say it.
+   *
+   * The daemon withholds the watch state there, and the phone's last copy stays fresh for up to
+   * `stale_after_seconds`, so a `Distress` can still arrive there; the agent answers it, and the phone
+   * reads "an agent answered". Whether it also reached the executor on another relay this daemon cannot
+   * tell -- the listener hands over each event once, from the first relay -- so this is said as what
+   * it is: a `Distress` that may have paged nobody. Only with a hearing file; never throws.
+   */
+  private sayIfExecutorDeaf(event: Event, url: string | undefined): void {
+    const path = this.config.log.hearingStatePath;
+    if (!path || !url) return;
+    try {
+      const read = readHearing(path, { watch: this.pubkey, now: now() });
+      const key = relayKey(url);
+      if (read.ok && read.hears.has(key)) return;
+      const why = read.ok ? (read.deaf.get(key) ?? NOT_THE_EXECUTORS) : read.why;
+      console.error(
+        `[distress] from ${shortId(event.pubkey)} arrived on ${url}, where the escalation executor does not hear ` +
+          `(${why}). Unless it reached the executor on another relay, nobody is paged for it, and the agent's ` +
+          "answer is all the operator gets",
+      );
+    } catch {
+      // A line about the ladder must never stop the answer below.
+    }
+  }
+
+  private async handleDistressEvent(event: Event, url?: string): Promise<void> {
     // Distress is always a deliberate act -- never inferred. This
     // handler only ever fires from an explicit kind-20911 event the
     // operator sent, never from a missed check-in (that's overdue,
     // which is a nudge, not distress).
     this.board.distress(event.pubkey, now());
+    this.sayIfExecutorDeaf(event, url);
     const callsign = this.board.get(event.pubkey)?.callsign;
 
     // The real escalation outcome is recorded by the executor -- a separate process that
@@ -761,7 +889,7 @@ export class WatchtowerDaemon {
    * event cannot outlive its own memory and come back inside it. Never under five minutes, the age
    * at which a phone reads this watch as Dark; the config refuses less [#4].
    */
-  private onEvent(event: Event): void {
+  private onEvent(event: Event, url?: string): void {
     if (!verifyEvent(event)) {
       console.log(`[signal] dropped: bad signature (${event.id.slice(0, 8)})`);
       return;
@@ -786,7 +914,7 @@ export class WatchtowerDaemon {
     }
     const task =
       event.kind === KIND_DISTRESS
-        ? this.handleDistressEvent(event)
+        ? this.handleDistressEvent(event, url)
         : this.handleSignalEvent(event);
     task.catch((err: unknown) => {
       console.error(`[signal] handler error: ${String(err)}`);
@@ -801,7 +929,8 @@ export class WatchtowerDaemon {
    * `10910` there -- so operators on that relay saw a watch that could not hear them. Reopening
    * fixed only the reconnect: the heartbeat still published to every configured relay, and a relay
    * that refused the box's subscription for good carried a fresh watch for as long as the box ran.
-   * The watch state now goes only where this listens, and goes there the moment it starts [#38].
+   * The watch state now goes only where this listens, and goes there the moment it starts [#38] --
+   * and, with a hearing file, only where the escalation executor listens too.
    */
   private startListening(): void {
     const window = this.config.watch.maxEventAgeSeconds;
@@ -813,8 +942,8 @@ export class WatchtowerDaemon {
       label: "relay",
       missing: "signals sent only there are not heard, and the watch state is not published there",
       seenRetentionSeconds: 2 * window + 60,
-      onevent: (event) => this.onEvent(event),
-      onchange: () => this.listeningChanged(),
+      onevent: (event, url) => this.onEvent(event, url),
+      onchange: () => this.targetsChanged(),
     });
     this.listener.start();
   }
@@ -833,7 +962,25 @@ export class WatchtowerDaemon {
    */
   async start(): Promise<void> {
     this.note("took-watch", null, "held");
+    const hearingPath = this.config.log.hearingStatePath;
+    if (hearingPath) {
+      console.log(
+        `[relays] the watch state is published only where this daemon and the escalation executor both hear, as ` +
+          `${hearingPath} says`,
+      );
+    } else {
+      // At every start: it is the box's standing state, and what it costs is a Distress paging nobody.
+      console.warn(
+        "[relays] NO HEARING FILE CONFIGURED ([log] hearing_state_path): the watch state is published wherever " +
+          "this daemon hears, without asking where the escalation executor hears. A relay that refuses the executor " +
+          "still shows a live watch, and a Distress sent only there pages nobody. Set it to the executor's " +
+          "[escalation] hearing_state_path",
+      );
+    }
     this.startListening();
+    if (hearingPath) {
+      this.hearingHandle = setInterval(() => this.targetsChanged(), HEARING_POLL_SECONDS * 1000);
+    }
     this.heartbeatHandle = setInterval(() => {
       this.publishWatchState().catch((err: unknown) => {
         console.error(`[heartbeat] publish failed: ${String(err)}`);
@@ -861,6 +1008,7 @@ export class WatchtowerDaemon {
     this.stopped = true;
     if (this.heartbeatHandle) clearInterval(this.heartbeatHandle);
     if (this.sweepHandle) clearInterval(this.sweepHandle);
+    if (this.hearingHandle) clearInterval(this.hearingHandle);
     this.listener?.stop();
     this.pool.destroy();
     this.accountability?.close();

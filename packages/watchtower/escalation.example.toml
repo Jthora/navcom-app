@@ -154,11 +154,37 @@ drill_window_days = 7
 drill_ack_window_seconds = 600
 drill_state_path = "/var/lib/navcom/drill.json"
 
+# Where this executor writes where it hears: each relay in [relays], and whether its own
+# subscription there is answered -- every 30 seconds and on any change, 0640 like the drill file.
+#
+# The daemon reads it, from the same path in watchtower.toml ([log] hearing_state_path), and
+# publishes the watch state only on relays where BOTH processes hear. A relay that refuses this
+# executor's subscription -- one that wants NIP-42 AUTH, say -- then reads Dark to operators, which is
+# the truth, rather than showing a live watch while a Distress sent only there pages nobody. A file
+# that is missing, or more than 90 seconds old, means this executor hears nowhere and the watch reads
+# Dark: a box whose executor is down reads Dark, though its agent would still answer a Query.
+#
+# A write that fails is said once and never stops the ladder. Stopping, the executor writes that it
+# hears nowhere. --drill never writes it. It must not be the drill file, or any other file here.
+#
+# Its directory must belong to the user this executor runs as, and nobody else may write it: in a
+# directory the daemon's user can write, the daemon -- or the agent beside it -- could leave a link
+# where the file goes and have the executor overwrite its own key. So it writes nothing there and
+# says why. The path below suits an executor running as the daemon's user. Running as a user of its
+# own, put this file and drill_state_path in the drill directory, which that user owns and the
+# daemon's user can only read (ops/systemd/README.md, 4b).
+hearing_state_path = "/var/lib/navcom/hearing.json"
+
 # Don't wait a week to find out whether your roster works:
 #
 #     navcom-escalation --drill escalation.toml
 #
 # Same code path a scheduled drill takes. Exits non-zero when nobody answers.
+#
+#     navcom-escalation --check escalation.toml
+#
+# also asks each relay for the subscription this executor makes, names each that refuses it, leaves
+# it unanswered or cannot be reached, and exits non-zero when none answers.
 
 # Everyone here is paged AT ONCE. In an emergency you want everyone, and walking a roster in
 # order spends the only resource that matters.

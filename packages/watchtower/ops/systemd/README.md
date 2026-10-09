@@ -31,6 +31,15 @@ set `[identity] privkey_path` to somewhere in that same directory (e.g.
 example's relative `./watchtower.key`, which would resolve against
 whatever the service's working directory happens to be.
 
+The example also sets `[log] hearing_state_path`: the daemon publishes the
+watch state only where it and the escalation executor both hear, read from
+the file the executor writes (4b). Until the executor runs and has written
+that file, the watch reads Dark and the daemon's log says why
+(`THE EXECUTOR HEARS NOWHERE ... there is no hearing file at ...`). That is
+the safe rule. Comment the line out only to run the daemon alone for now; it
+then publishes wherever it hears, says at every start what that costs, and
+`watchtower-daemon --check` fails until the line is back.
+
 ## 3. Install the unit
 
 ```sh
@@ -61,9 +70,13 @@ subscription` is retried by itself; one that says `auth-required` never will
 deliver, because the daemon does not do NIP-42 AUTH. One that says `has not
 answered` took the subscription and went quiet: treat it as down. A
 `[heartbeat] NO RELAY ACCEPTED` or `LISTENING ON NO RELAY` line means
-operators read Dark. Then run `watchtower-daemon --check` with the same
-config, which also asks each relay for the box's own subscription, and the
-CLI's `status` command from any machine with the right pubkey in its
+operators read Dark. With a hearing file set, `[relays] ... withheld` names a
+relay the escalation executor does not hear on, with its reason, and
+`THE EXECUTOR HEARS NOWHERE` or `NO RELAY WHERE THIS DAEMON AND THE
+ESCALATION EXECUTOR BOTH HEAR` means operators read Dark until the executor
+hears. Then run `watchtower-daemon --check` with the same config, which also
+asks each relay for the box's own subscription and reads the hearing file,
+and the CLI's `status` command from any machine with the right pubkey in its
 `client.toml` to confirm `LIVE` end to end.
 
 ## 4b. The escalation executor, as its own user
@@ -87,9 +100,9 @@ sudo chmod 700 /var/lib/navcom-escalation
 sudo install -o navcom-escalation -g navcom-escalation -m 600 \
   /home/jono/.config/navcom-watchtower/watchtower.key /var/lib/navcom-escalation/watchtower.key
 
-# The drill file: written by this user, read by the daemon's to publish the last drill. A directory
-# of its own in the daemon user's group -- the setgid bit gives each file made in it that group, and
-# the executor writes it 0640.
+# The drill file and the hearing file: written by this user, read by the daemon's -- the last drill,
+# and where the executor hears. A directory of its own in the daemon user's group -- the setgid bit
+# gives each file made in it that group, and the executor writes both 0640.
 sudo install -d -o navcom-escalation -g "$(id -gn jono)" -m 2750 /var/lib/navcom-drill
 
 # Only if the executor ran as the daemon's user before: move what it wrote to this user. Keep the
@@ -120,6 +133,16 @@ In `/etc/navcom/escalation.toml`:
   the executor can confirm that user cannot read its key. Without it the executor makes no key.
 - `[escalation] drill_state_path = "/var/lib/navcom-drill/drill.json"`, and the same path as
   `[log] drill_state_path` in the daemon's `watchtower.toml`; restart the daemon after.
+- `[escalation] hearing_state_path = "/var/lib/navcom-drill/hearing.json"` -- where the executor
+  writes where it hears, every 30 seconds. **Not left at the default**, `/var/lib/navcom`: that is the
+  daemon's directory, and the executor writes neither file in a directory another user owns or others
+  can write -- a link the daemon's user left there would have the executor overwrite its own key. It
+  says so (`COULD NOT WRITE WHERE IT HEARS ... belongs to uid ...`) and the watch reads Dark until the
+  path is moved here. Set the same path as `[log] hearing_state_path` in the
+  daemon's `watchtower.toml` **after** the executor has written the file once (`ls -l` it, owned by
+  this user, group the daemon's, `-rw-r-----`), and restart the daemon; set before, the watch reads
+  Dark until the file appears. The daemon then publishes the watch state only on relays where both
+  processes hear.
 - `[log] path = "/var/lib/navcom-escalation/escalation-log.jsonl"`. The daemon cannot read it now --
   it is this user's, `0600` -- so leave the daemon's `escalation_log_path` unset; `log-review` then
   answers from the daemon's own log, as on most boxes.
@@ -146,11 +169,13 @@ sudo -u navcom-escalation node /opt/navcom-watchtower/dist/escalation/index.js -
 ```
 
 It fails until only this user can read the key, `daemon_user` is set and is not root, every relay
-takes a test response signed by each key -- sent as the executor sends them -- and no on-call entry
-uses the watch key; it says which. It warns about a relay that took neither, and when no relay holds
+takes a test response signed by each key -- sent as the executor sends them -- no on-call entry
+uses the watch key, and some relay answers the subscription the executor makes; it says which, relay
+by relay, and what the running executor's hearing file says. It warns about a relay that took neither, and when no relay holds
 a watch state signed by the key in `privkey_path`, which with the daemon running means that is not the
 daemon's key. Once it passes it prints the watch code too. Check the daemon's journal once for
-`[drill] the drill file at ... cannot be read`: that line means the drill directory's group is wrong.
+`[drill] the drill file at ... cannot be read` or `the hearing file at ... exists and cannot be read`:
+either means the drill directory's group is wrong.
 Leave `executor_key_path` out and the executor runs as it always did, and says at every start what
 that costs.
 

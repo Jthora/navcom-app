@@ -10,10 +10,10 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import type { SimplePool } from "nostr-tools/pool";
 import { generateSecretKey, getPublicKey } from "nostr-tools/pure";
-import { chmodSync, mkdirSync, mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { chmodSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { writeDrillState } from "../src/escalation/drills.js";
+import { readDrillState, writeDrillState } from "../src/escalation/drills.js";
 import { WatchtowerDaemon } from "../src/daemon/watchtower.js";
 import type { DaemonConfig } from "../src/daemon/config.js";
 
@@ -43,6 +43,41 @@ describe("the executor writes it so the daemon's group can read it", () => {
     chmodSync(path, 0o600);
     writeDrillState(path, state);
     expect(statSync(path).mode & 0o777, "a file the daemon's user could not read stayed that way").toBe(0o640);
+  });
+});
+
+describe("whatever is left where it writes", () => {
+  it("replaces a link at the path, and never writes through it to a file of the executor's", () => {
+    // The daemon's user can write the default drill directory; the executor may run as a user of its own.
+    const dir = tempDir();
+    const own = join(dir, "navcom-escalation");
+    mkdirSync(own, { mode: 0o700 });
+    const key = join(own, "watchtower.key");
+    writeFileSync(key, "SECRET-EXECUTOR-KEY-HEX\n", { mode: 0o600 });
+    chmodSync(key, 0o600);
+    const path = join(dir, "drill.json");
+    symlinkSync(key, path);
+    writeDrillState(path, state);
+    expect(readFileSync(key, "utf8"), "the next drill overwrote the executor's key").toBe("SECRET-EXECUTOR-KEY-HEX\n");
+    expect(statSync(key).mode & 0o777).toBe(0o600);
+    expect(lstatSync(path).isSymbolicLink()).toBe(false);
+    expect(readDrillState(path)).toEqual(state);
+  });
+});
+
+describe("reading it back", () => {
+  it("is not a drill file unless it says when the next drill is due", () => {
+    // The hearing file at the same path, by a slip: `due()` compared the clock with undefined, and no
+    // scheduled drill ever fired again. Read as no file, a fresh schedule is made.
+    const path = join(tempDir(), "drill.json");
+    writeFileSync(path, JSON.stringify({ v: 1, at: 1_800_000_000, watch: "a".repeat(64), relays: [] }));
+    expect(readDrillState(path)).toBeNull();
+    writeFileSync(path, JSON.stringify({ last: null, nextAt: "soon" }));
+    expect(readDrillState(path)).toBeNull();
+    writeFileSync(path, JSON.stringify([1, 2]));
+    expect(readDrillState(path)).toBeNull();
+    writeFileSync(path, JSON.stringify(state));
+    expect(readDrillState(path)).toEqual(state);
   });
 });
 

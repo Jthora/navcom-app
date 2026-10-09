@@ -60,6 +60,41 @@ hard_expiry             = 14400
     expect(() => loadDaemonConfig(path)).toThrow(/identity/);
   });
 
+  describe("[log] hearing_state_path: where the escalation executor writes where it hears", () => {
+    const base = `[identity]\nprivkey_path = "./k"\n\n[relays]\nurls = ["wss://relay.example"]\n\n[log]\n`;
+
+    it("is read when set, and left unset -- today's rule, no default -- when absent", () => {
+      dir = mkdtempSync(join(tmpdir(), "watchtower-cfg-"));
+      const path = join(dir, "watchtower.toml");
+      writeFileSync(path, base + `hearing_state_path = "/var/lib/navcom-drill/hearing.json"\n`);
+      expect(loadDaemonConfig(path).log.hearingStatePath).toBe("/var/lib/navcom-drill/hearing.json");
+      // A default would turn every box upgraded to this version Dark until its executor wrote the file.
+      writeFileSync(path, base);
+      expect(loadDaemonConfig(path).log.hearingStatePath).toBeUndefined();
+    });
+
+    it("refuses an empty one or a number rather than reading it as none", () => {
+      dir = mkdtempSync(join(tmpdir(), "watchtower-cfg-"));
+      const path = join(dir, "watchtower.toml");
+      writeFileSync(path, base + `hearing_state_path = ""\n`);
+      expect(() => loadDaemonConfig(path)).toThrow(/\[log\] hearing_state_path must be a non-empty string/);
+      writeFileSync(path, base + `hearing_state_path = 7\n`);
+      expect(() => loadDaemonConfig(path)).toThrow(/\[log\] hearing_state_path must be a non-empty string/);
+    });
+
+    it("refuses the drill file or this daemon's own log as the executor's hearing file", () => {
+      dir = mkdtempSync(join(tmpdir(), "watchtower-cfg-"));
+      const path = join(dir, "watchtower.toml");
+      writeFileSync(path, base + `drill_state_path = "/var/lib/navcom-drill/drill.json"\nhearing_state_path = "/var/lib/navcom-drill/drill.json"\n`);
+      expect(() => loadDaemonConfig(path)).toThrow(/\[log\] hearing_state_path is the same file as \[log\] drill_state_path/);
+      // The defaults count: the drill file's default is where the hearing file's sits beside.
+      writeFileSync(path, base + `hearing_state_path = "/var/lib/navcom/drill.json"\n`);
+      expect(() => loadDaemonConfig(path)).toThrow(/same file as \[log\] drill_state_path/);
+      writeFileSync(path, base + `path = "/var/lib/navcom/a.jsonl"\nhearing_state_path = "/var/lib/navcom/a.jsonl"\n`);
+      expect(() => loadDaemonConfig(path)).toThrow(/same file as \[log\] path/);
+    });
+  });
+
   describe("numeric [watch] field validation (found in review)", () => {
     // A TOML quoting typo (`overdue_grace = "1800"`) used to satisfy
     // `?? default` (a non-undefined value) and flow through as a STRING

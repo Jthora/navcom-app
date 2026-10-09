@@ -1,6 +1,11 @@
 # A keyless pager.
 #
 #   navcom-pager /etc/navcom/pager.toml
+#   navcom-pager --check /etc/navcom/pager.toml
+#
+# --check, run on the machine the pager runs on, asks each relay below for this pager's
+# subscription, names each that refuses it, leaves it unanswered or cannot be reached, and exits
+# non-zero when none answers: a pager that hears nowhere pages nobody. It pages nobody itself.
 #
 # This process wakes somebody up when a Distress arrives. It holds NO KEY, and there is no
 # field here to give it one.

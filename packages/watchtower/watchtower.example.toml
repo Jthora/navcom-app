@@ -67,6 +67,22 @@ path = "/var/lib/navcom/accountability.jsonl"
 # hash so the chain still verifies afterwards rather than looking tampered with.
 retention_days = 90
 
+# Where the escalation executor writes where it hears: the same path as its [escalation]
+# hearing_state_path. Read, never written, by this daemon.
+#
+# With it, the watch state is published only on relays where this daemon AND the executor both
+# hear, so a relay that refuses the executor's subscription reads Dark rather than showing a live
+# watch while a Distress sent only there pages nobody. A file that is missing, unreadable, about
+# another watch key, or more than 90 seconds old means the executor hears nowhere: the watch state
+# goes nowhere, and this daemon's log says why. A box whose executor is down therefore reads Dark,
+# though its agent would still answer a Query.
+#
+# Leave it out and the daemon publishes wherever it hears itself, as it did before, says at every
+# start what that costs, and `watchtower-daemon --check` fails until it is set. On a box already
+# running, set it once the executor has written the file (ls -l it), or the watch reads Dark until it
+# does.
+hearing_state_path = "/var/lib/navcom/hearing.json"
+
 # ---------------------------------------------------------------------------
 # The escalation executor reads its own config file, not this one.
 # See escalation.example.toml. That separation is deliberate: the executor must

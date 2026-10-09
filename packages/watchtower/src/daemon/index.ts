@@ -3,7 +3,7 @@ import { loadDaemonConfig } from "./config.js";
 import { loadOrCreateKeypair } from "../shared/identity.js";
 import { WatchtowerDaemon } from "./watchtower.js";
 import { AccountabilityLog } from "../shared/accountability.js";
-import { checkWatch, report } from "./check.js";
+import { checkPasses, checkWatch, report } from "./check.js";
 
 // Found in review: nothing guarded against a truly unexpected error
 // outside the known try/catch paths inside WatchtowerDaemon. Node's own
@@ -42,15 +42,22 @@ function configPath(): string {
  * operator would be told rather than a state the command created for itself.
  *
  * Exits non-zero when an operator would be shown Dark, or when no relay answers the box's own
- * subscription -- a watch an operator can see and cannot reach [#38] -- so it can be a cron line or
- * the last step of a restore drill rather than something somebody has to remember to read.
+ * subscription -- a watch an operator can see and cannot reach [#38] -- or when no relay is heard on
+ * by both the daemon and the escalation executor, as `[log] hearing_state_path` says: the daemon then
+ * publishes the watch state nowhere. And when that path is not set at all, since the daemon then
+ * publishes where the executor may be deaf. So it can be a cron line or the last step of a restore
+ * drill rather than something somebody has to remember to read.
  */
 async function checkNow(path: string): Promise<never> {
   const config = loadDaemonConfig(path);
   const { pubkey } = loadOrCreateKeypair(config.identity.privkeyPath);
-  const result = await checkWatch({ pubkey, relays: config.relays.urls });
+  const result = await checkWatch({
+    pubkey,
+    relays: config.relays.urls,
+    ...(config.log.hearingStatePath ? { hearingPath: config.log.hearingStatePath } : {}),
+  });
   for (const line of report(result)) console.log(line);
-  process.exit(result.visible && result.hearing ? 0 : 1);
+  process.exit(checkPasses(result) ? 0 : 1);
 }
 
 async function main(): Promise<void> {
@@ -113,7 +120,8 @@ async function main(): Promise<void> {
    */
   console.log(
     `[daemon] subscribing for signals on ${total} relay(s); each says when it is listening, and the ` +
-      "watch state is published on a relay only while it is",
+      "watch state is published on a relay only while it is, and, with a hearing file, while the escalation " +
+      "executor hears there too",
   );
 
   let shuttingDown = false;

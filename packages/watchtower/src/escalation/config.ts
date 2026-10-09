@@ -77,6 +77,15 @@ export interface EscalationConfig {
     /** Where results are written for the daemon to read when it publishes `10910`. */
     drillStatePath: string;
     /**
+     * Where this executor writes where it hears -- each relay, and whether its subscription there is
+     * answered -- every 30 seconds and on any change, for the daemon to read (`shared/hearing.ts`). A
+     * daemon whose `[log] hearing_state_path` names it publishes the watch state only where both hear.
+     *
+     * Optional in the type only, so configs built in code need not name it; the loader always fills
+     * it, with `/var/lib/navcom/hearing.json` beside the drill file. `--drill` never writes it.
+     */
+    hearingStatePath?: string;
+    /**
      * The most ladders this watch will page for inside one window: **first pages only**.
      *
      * Not tuning — a bound on how many times a stranger with the watch's address can wake a
@@ -129,6 +138,7 @@ export interface EscalationConfig {
 const DEFAULTS = {
   pagingWindowSeconds: 300, contactWindowSeconds: 300, drillWindowDays: 7,
   drillAckWindowSeconds: 600, drillStatePath: "/var/lib/navcom/drill.json",
+  hearingStatePath: "/var/lib/navcom/hearing.json",
   /*
    * Twenty pages an hour. A squad having twenty separate emergencies in an hour has a
    * situation no rate limit is relevant to; a flood passes this in under a second.
@@ -170,6 +180,15 @@ function optionalText(raw: unknown, field: string, path: string): string | undef
   if (raw === undefined) return undefined;
   if (typeof raw !== "string" || raw.trim() === "") {
     throw new Error(`Config [identity] ${field} must be a non-empty string, got ${JSON.stringify(raw)} (${path})`);
+  }
+  return raw.trim();
+}
+
+/** A path with a default; anything but a non-empty string is a typo worth stopping for. */
+function pathOr(raw: unknown, field: string, fallback: string, path: string): string {
+  if (raw === undefined) return fallback;
+  if (typeof raw !== "string" || raw.trim() === "") {
+    throw new Error(`Config [escalation] ${field} must be a non-empty string, got ${JSON.stringify(raw)} (${path})`);
   }
   return raw.trim();
 }
@@ -256,6 +275,7 @@ export function loadEscalationConfig(path: string): EscalationConfig {
       drill_window_days?: number;
       drill_ack_window_seconds?: number;
       drill_state_path?: string;
+      hearing_state_path?: unknown;
       max_pages_per_window?: number;
       page_budget_window_seconds?: number;
       ladder_retention_seconds?: number;
@@ -294,6 +314,30 @@ export function loadEscalationConfig(path: string): EscalationConfig {
 
   const urls = relayList(raw.relays?.urls, path);
 
+  const drillStatePath = raw.escalation?.drill_state_path ?? DEFAULTS.drillStatePath;
+  const hearingStatePath = pathOr(raw.escalation?.hearing_state_path, "hearing_state_path", DEFAULTS.hearingStatePath, path);
+  const logPath = raw.log?.path ?? DEFAULTS.logPath;
+  /*
+   * The hearing file is replaced every thirty seconds, whole. Named the same as any other file this
+   * executor keeps, it replaces that file: the drill file, and no scheduled drill fires again after a
+   * restart, without a word; the log, and the ladder's record goes; a key, and the executor does not
+   * start. An easy slip, since the README puts the drill and hearing files in one directory.
+   */
+  const others: [string, string | undefined][] = [
+    ["[escalation] drill_state_path", drillStatePath],
+    ["[log] path", logPath],
+    ["[identity] privkey_path", privkeyPath],
+    ["[identity] executor_key_path", executorKeyPath],
+  ];
+  for (const [name, other] of others) {
+    if (other !== undefined && resolve(other) === resolve(hearingStatePath)) {
+      throw new Error(
+        `Config [escalation] hearing_state_path is the same file as ${name} (${path}). The executor rewrites where it ` +
+          "hears there every thirty seconds, which would replace that file. Give it a file of its own, beside the drill file.",
+      );
+    }
+  }
+
   return {
     identity: {
       privkeyPath,
@@ -306,7 +350,8 @@ export function loadEscalationConfig(path: string): EscalationConfig {
       contactWindowSeconds: positiveNumber(raw.escalation?.contact_window_seconds, "contact_window_seconds", DEFAULTS.contactWindowSeconds, path),
       drillWindowDays: positiveNumber(raw.escalation?.drill_window_days, "drill_window_days", DEFAULTS.drillWindowDays, path),
       drillAckWindowSeconds: positiveNumber(raw.escalation?.drill_ack_window_seconds, "drill_ack_window_seconds", DEFAULTS.drillAckWindowSeconds, path),
-      drillStatePath: raw.escalation?.drill_state_path ?? DEFAULTS.drillStatePath,
+      drillStatePath,
+      hearingStatePath,
       maxPagesPerWindow: positiveNumber(raw.escalation?.max_pages_per_window, "max_pages_per_window", DEFAULTS.maxPagesPerWindow, path),
       pageBudgetWindowSeconds: positiveNumber(raw.escalation?.page_budget_window_seconds, "page_budget_window_seconds", DEFAULTS.pageBudgetWindowSeconds, path),
       ladderRetentionSeconds: positiveNumber(raw.escalation?.ladder_retention_seconds, "ladder_retention_seconds", DEFAULTS.ladderRetentionSeconds, path),
@@ -314,7 +359,7 @@ export function loadEscalationConfig(path: string): EscalationConfig {
       oncall: parseOnCall(raw.escalation?.oncall, path),
     },
     log: {
-      path: raw.log?.path ?? DEFAULTS.logPath,
+      path: logPath,
       retentionDays: positiveNumber(raw.log?.retention_days, "retention_days", DEFAULTS.logRetentionDays, path),
     },
   };

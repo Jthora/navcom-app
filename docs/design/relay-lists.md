@@ -7,8 +7,8 @@ in [`../build-order.md`](../build-order.md), designed after the relay-paths pass
 Status: **decided.** D2 and D3 on 2026-10-07. D1, D4 and D5 on 2026-10-08: the owner asked for the
 most secure, fair and future-proof answer, and a game-theory model of the three as one mechanism was
 adopted as written (§12). **Built:** the honest `Distress` path on the phone and in the box's client
-(§6, 2026-10-07), and the executor's own key (2026-10-08). **Not built:** the executor's hearing
-file, the commons, boxes or squads following lists, per-member keys with vouching, and the
+(§6, 2026-10-07, finished 2026-10-09 with the executor's hearing file and *heard on k of N*), and
+the executor's own key (2026-10-08). **Not built:** the commons, boxes or squads following lists, per-member keys with vouching, and the
 per-`Distress` reply key. Each spec changes in the commit that builds its step, and until then the
 specs describe what runs. The interchange spec's own text is corrected (§11.2); the copy partners
 read, and NavCom's Pi page, are still to be republished.
@@ -191,7 +191,7 @@ split, kept on that relay without a second socket.
 ## 6. `Distress`: out, back, and to the ladder
 
 **Out** and **Back** are built (2026-10-07, in `packages/core/src/transport.ts`, the `Distress`
-screen and the box's client). **To the ladder** is not.
+screen and the box's client). **To the ladder** is built too (2026-10-09).
 
 **Out.**
 
@@ -254,7 +254,10 @@ memory only.
 The capability receipt gains one line before sign-on [invariant 9]: heard on *k* of *N* relays. Its
 `Why` gives each relay, where it came from (handed over, or listed by the watch on a date), when the
 watch was last heard there, and any refusal of this phone's last signal, with its reason. **A count
-of relays is not a count of people**, and a test asserts the wording.
+of relays is not a count of people**, and a test asserts the wording. **No relay answering this phone
+is not a count of none**: offline, or with every relay failing, the phone could not ask, so the count
+reads *Unknown* and never *if the watch moved* [invariant 7], and an attempt's account leaves out
+where the watch was heard until the phone has a count to say it from.
 
 The `Distress` screen shows the count this phone already holds, with its age. It opens no read of
 its own until a `Distress` starts, when the read tells the watch's relays nothing the `Distress`
@@ -396,7 +399,7 @@ the least now.
 | | What | Status |
 |---|---|---|
 | 0 | **Words.** This page, [`grid.md`](grid.md) §2, the build order and `declined.md`. The specs change with the code that keeps them: bootstrap.spec's *Relay selection*, watch-state.spec, signals.spec, escalation.spec's failure modes, stationkeeper.md. Still saying the refusal's argument was withdrawn: the `KIND_ANNOUNCE` docblock in `packages/core/src/events/kinds.ts`, and CLAUDE.md's relay-topology row, which is the owner's. Interchange rev 6 (§5.0 and §5.1, §11.2 as the commons, Q16) and NavCom's Pi page, telling the Pi's operator that a watch cannot list the Pi and that a watch the Pi runs must listen on commons relays | The four pages above done 2026-10-08; the docblock, CLAUDE.md's row and the interchange spec's text corrected 2026-10-09. The copy partners read, and the Pi page, are still to be republished |
-| 1 | **The `Distress` path, honest before it widens.** §6, with the receipt line from §7, `watchTargets()`, mission relays never written to, and the box's start line and `--check` | Built on the phone and in the box's client, 2026-10-07, mission relays included. The executor's hearing file, the receipt line, `watchTargets()` and the box's lines are not, and land before any box follows a list |
+| 1 | **The `Distress` path, honest before it widens.** §6, with the receipt line from §7, `watchTargets()`, mission relays never written to, and the box's start line and `--check` | Built on the phone and in the box's client, 2026-10-07, mission relays included; `watchTargets()` and the receipt line, 2026-10-09: *heard on* before sign-on, its `Why` relay by relay, and the count held on the `Distress` screen; the executor's hearing file, the daemon publishing only where both hear, and the box's start lines and `--check`s (the daemon's, the executor's and the pager's), also 2026-10-09. §7's commons wording on the box waits on phase 3 |
 | 2 | **The executor's own key** | Built, 2026-10-08 |
 | 3 | **The commons.** §1's rules, in `packages/core/src/relays.ts` with the meeting set inside it, the build failing when an entry goes stale; `listable()` refusing what is outside it; `--check` printing each watch's subset | Not built |
 | 4 | **Boxes follow lists.** §3, §4, §5 and §8 for a box's key | Not built. Waits on phases 1 to 3 |

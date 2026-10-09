@@ -20,6 +20,8 @@
   import { corruptTiers } from '$lib/terminal/storage';
   import { offline } from '$lib/terminal/offline.svelte';
   import { readClock, type ClockRead } from '$lib/terminal/clock';
+  import { heard } from '$lib/terminal/heard.svelte';
+  import { HeardSlot, HeardWhy } from '$lib/components/heard';
 
   const s = $derived(watch.state);
   /**
@@ -50,6 +52,13 @@
         : { value: 'Automated', tone: 'warn' as const, sub: 'agent · not a human' }
   );
   let configured = $state(false);
+  /**
+   * Where the watch is heard, in relays, before anybody relies on it [relay-lists §7, invariant 9].
+   * Aged on screen as the reading is: a relay whose last state goes past five minutes stops
+   * counting while the screen is open, not only when something new arrives.
+   */
+  let nowMs = $state(Date.now());
+  const heardNow = $derived(heard.now(nowMs));
   /**
    * Who may end a `Distress` sent to this phone's watch [G3]. `attributed` false is a box handed
    * over before it named its escalation key: on it, an answer the agent beside it sent cannot be
@@ -167,7 +176,9 @@
     // it arrives silently -- started here because Status is the screen an operator opens,
     // and a nudge nothing renders is a nudge nobody can reach.
     overdue.start();
+    const aging = setInterval(() => (nowMs = Date.now()), 15_000);
     return () => {
+      clearInterval(aging);
       pq.stop();
       watch.stop();
       presence.stop();
@@ -541,6 +552,11 @@
           </span>
         </Slot>
       {/if}
+      <!-- Only for a watch this page can send to. Alone shows nothing, and a stranded watch is
+           already explained: neither is a count of relays waiting to be filled in. -->
+      {#if configured}
+        <HeardSlot heard={heardNow} {nowMs} />
+      {/if}
 
       <Why open={!identity || !configured || watch.read.reason !== null}>
         {#if configured && closure && !closure.attributed}
@@ -560,6 +576,9 @@
           </p>
         {:else}
           <p>{capabilitySentence(s, nowS)}</p>
+        {/if}
+        {#if configured}
+          <HeardWhy heard={heardNow} />
         {/if}
 
         {#if !identity}

@@ -28,6 +28,9 @@ nuisance and a missed page is not.
 A keyless pager is a **supplement, never a replacement.** It cannot tell the operator
 anything, and invariant 2 requires that they be told. Reporting stays with a keyed executor.
 
+`navcom-pager --check` asks each relay in its config for the pager's subscription, names each that
+does not answer, and exits non-zero when none does. It pages nobody.
+
 **And the keyed executor MUST get its trigger from the relays, not from the daemon.** A design where the
 daemon receives the `20911` and hands it to the executor satisfies "separate process" on
 paper while leaving a hung daemon able to take escalation down with it — the requirement
@@ -35,6 +38,12 @@ failing in exactly the way it was written to prevent. The executor subscribes on
 
 Run them under **separate supervisor units** — sharing one means a crash loop in either restarts
 the other, and the separation becomes a comment.
+
+**Where the executor hears is written down, one way.** Every 30 seconds and on any change the
+executor writes which of its relays its subscription is answered on, and the daemon publishes the
+watch state only where both processes hear ([`watch-state.spec.md`](watch-state.spec.md)). The daemon
+reads the file and never writes it, as with the drill file. `--drill` never writes it: run beside the
+live executor, it would overwrite what the live one hears.
 
 ### The executor has a key of its own
 
@@ -740,4 +749,26 @@ Not optional — these are the point of the spec:
     record
 26. A drill file the daemon cannot read → the daemon says so once, until it reads again, and publishes
     no drill; the executor writes it group-readable
+27. The executor deaf on a relay the daemon hears on (it refused the executor's subscription, never
+    answered it, or cannot be reached) → the daemon withholds the watch state there and says so once,
+    with the executor's reason, and operators reading only that relay read Dark within
+    `stale_after_seconds`. A relay in the daemon's config and not the executor's is withheld the same
+    way. Deaf everywhere → the watch state goes nowhere and the watch reads Dark. A `Distress` that
+    still reaches the daemon there, inside the last copy's five minutes, is said in the daemon's log
+    with the relay and the executor's reason: it may have paged nobody
+28. The hearing file configured and missing, unreadable, malformed, about another watch key, or
+    dated more than 90 seconds from the daemon's clock → the executor hears nowhere: no watch state
+    anywhere, the reason said once per change and the no-relay line on every heartbeat. A daemon given
+    no file keeps its own rule, says so at every start, and its `--check` fails until it has one. A
+    hearing path that names another file the executor keeps — the drill file, its log, a key — is
+    refused when the config is loaded, by both processes
+29. The executor unable to write its hearing file → said once until a write succeeds, and the ladder
+    runs regardless. `--drill` never writes it. A stopping executor writes that it hears nowhere. In a
+    directory another user owns, or that others can write, it writes nothing and says why: a link left
+    there would turn the write on the executor's own files. The drill file is written the same way,
+    never through a link
+30. An executor whose every relay is unreachable or refused → said 15 seconds after every start and
+    with every 30-second write while it lasts; `navcom-escalation --check` names each relay its
+    subscription does not answer on and exits non-zero when none does, and `navcom-pager --check` does
+    the same for a keyless pager
 

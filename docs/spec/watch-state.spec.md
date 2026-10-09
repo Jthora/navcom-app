@@ -65,15 +65,33 @@ stopped saying — a claim nobody made. v2 added `log_root`; v3 made it required
   gets the watch back.
   `stale_after_seconds` is *configurable*, and should be a small multiple of the daemon's
   publish interval. The daemon MUST republish at that interval even when nothing changed — **on
-  every relay it can hear on, and on no other.**
+  every relay where the watch hears, and on no other.**
 - **A node MUST NOT publish its watch state to a relay on which it is not listening for signals**
   — one that refuses its `#p` subscription, or takes it and never answers. Such a relay carried a
   fresh `automated` watch for as long as the box ran while nothing on the box could hear a
   `Distress` sent there, and a client cannot detect that from a fresh event: only the publisher can
   withhold it. Withheld, that relay's copy ages to Dark within `stale_after_seconds`, which is the
   truth. The first watch state, and the first after a relay comes back, go out when that relay
-  answers the subscription, not before it is asked. *(The executor's subscription is not yet
-  consulted — see [`stationkeeper.md`](../watch/stationkeeper.md).)*
+  answers the subscription, not before it is asked.
+- **On a box, "listening" means the daemon and the escalation executor both.** The executor is a
+  separate process with its own subscription, and a relay that answered the daemon and refused the
+  executor carried a fresh watch while a `Distress` sent only there paged nobody. So the executor
+  writes where it hears (each relay in its config whose subscription has answered, with a real
+  end-of-stored-events or an event, and is still open) to a file named by `[escalation]
+  hearing_state_path`, every 30 seconds and on any change. The daemon reads it, from `[log]
+  hearing_state_path`, and never writes it, so nothing the daemon does can reach the executor. A
+  node MUST publish its watch state only on relays where both hear, and MUST announce it on a relay
+  as soon as both do. **A configured file that is missing, unreadable, not in this version's shape,
+  about another watch key, or dated more than 90 seconds from the daemon's clock either way means the
+  executor hears nowhere**: the state goes nowhere, and the daemon's log says which, once per change.
+  **The one exception is a daemon given no file:** it publishes where it hears itself, as above, so
+  that a box upgraded to this version does not read Dark before its executor has written one. It
+  says so at every start, and `watchtower-daemon --check` fails until it is given one. A write that
+  fails is logged and never stops the executor, and an executor that stops writes that it hears
+  nowhere. The executor writes nothing in a directory another user owns or others can write: whoever
+  else could write there could leave a link where the file goes, and have the write replace one of
+  the executor's own files. The cost: a box whose executor is down reads Dark, though its agent would still
+  answer a `Query`.
 - **A relay that leaves the list of a watch held on a phone is told Dark, once — where that phone's
   own claim could still be read there.** Decided 2026-10-07. Withholding is too slow there: that
   relay's copy of the holder's `station` read On station for up to `stale_after_seconds` after the

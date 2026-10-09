@@ -65,6 +65,45 @@ describe('the escalation executor stands alone', () => {
     }
   });
 
+  it('hears through a file it writes and the daemon only reads, which imports neither process', () => {
+    // Where the executor hears goes one way, as the drill file does: written by the executor, read by
+    // the daemon, and shared code between them that reaches into neither.
+    const hearing = join(SRC, 'shared', 'hearing.ts');
+    expect(statSync(hearing).isFile()).toBe(true);
+    for (const spec of importsOf(hearing)) {
+      expect(spec, `shared/hearing.ts imports ${spec}`).not.toMatch(/daemon|escalation/);
+    }
+    const code = (file: string) => readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+    const writers = filesUnder(SRC).filter((f) => f !== hearing && /\bwriteHearing\b/.test(code(f)));
+    expect(writers.length, 'nothing writes the hearing file, so this proves nothing').toBeGreaterThan(0);
+    for (const file of writers) {
+      expect(file, `${file} writes the hearing file`).toMatch(/[/\\]src[/\\]escalation[/\\]/);
+    }
+    for (const file of filesUnder(join(SRC, 'daemon'))) {
+      expect(code(file), `${file} writes the executor's hearing file`).not.toMatch(/\bwriteHearing\b/);
+    }
+  });
+
+  it('and the daemon writes no file at all where it names that file, by any means', () => {
+    // Not only the writer by name: a daemon that wrote the path itself, with writeFileSync or a rename,
+    // would reach the executor's side of the one-way file as surely, and pass the test above.
+    const code = (file: string) => readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
+    const naming = filesUnder(join(SRC, 'daemon')).filter((f) => /hearingStatePath|readHearing|hearing_state_path/.test(code(f)));
+    expect(naming.length, 'no daemon file names the hearing file, so this proves nothing').toBeGreaterThan(0);
+    const WRITES =
+      /\b(writeFileSync|writeFile|appendFileSync|appendFile|renameSync|rename|copyFileSync|copyFile|openSync|createWriteStream|truncateSync|unlinkSync|rmSync|symlinkSync|linkSync|chmodSync|writeStateFile|writeDrillState)\s*\(/;
+    for (const file of naming) {
+      expect(code(file), `${file} names the hearing file and writes a file`).not.toMatch(WRITES);
+      for (const spec of importsOf(file)) {
+        expect(spec, `${file} imports the executor's file writer`).not.toMatch(/state-file/);
+      }
+    }
+    // The writer both one-way files go through is shared code too, and reaches into neither process.
+    for (const spec of importsOf(join(SRC, 'shared', 'state-file.ts'))) {
+      expect(spec, `shared/state-file.ts imports ${spec}`).not.toMatch(/daemon|escalation/);
+    }
+  });
+
   it('and the daemon may depend on escalation, but not the other way round', () => {
     // The permitted direction, asserted so the rule reads as a direction rather than a ban.
     const daemon = filesUnder(join(SRC, 'daemon'));

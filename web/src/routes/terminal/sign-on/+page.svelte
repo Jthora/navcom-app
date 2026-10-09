@@ -14,6 +14,8 @@
   import { operator } from '$lib/terminal/session.svelte';
   import { precision, setPrecision, type Precision } from '$lib/terminal/position.svelte';
   import { loadConfig, storedWatch } from '$lib/terminal/config';
+  import { heard } from '$lib/terminal/heard.svelte';
+  import { HeardSlot, HeardWhy } from '$lib/components/heard';
 
   /**
    * Whether a Watchtower is configured at all — not whether it is reachable.
@@ -30,13 +32,20 @@
   let hours = $state(2);
   let routine = $state<number | null>(60);
   let share = $state<Precision>('off');
+  /** Where the watch is heard, read as Status reads it and aged on screen the same way [relay-lists §7]. */
+  let nowMs = $state(Date.now());
+  const heardNow = $derived(heard.now(nowMs));
 
   onMount(() => {
     share = precision();
     configured = loadConfig() !== null;
     stranded = !configured && storedWatch() !== null;
     watch.start();
-    return () => watch.stop();
+    const aging = setInterval(() => (nowMs = Date.now()), 15_000);
+    return () => {
+      clearInterval(aging);
+      watch.stop();
+    };
   });
 
   async function submit(e: SubmitEvent) {
@@ -110,8 +119,14 @@
     {:else}
       <Slot k="On call" />
     {/if}
+    {#if configured}
+      <HeardSlot heard={heardNow} {nowMs} />
+    {/if}
     <Why open={watch.state.state === 'dark'}>
       <p>{capabilitySentence(watch.state, nowS)}</p>
+      {#if configured}
+        <HeardWhy heard={heardNow} />
+      {/if}
     </Why>
   </Panel>
 </div>

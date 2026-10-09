@@ -71,3 +71,50 @@ describe('a watch saved on relays this page will not open', () => {
     expect(gate).toMatch(/\{:else\}\s*<p>$/);
   });
 });
+
+/**
+ * Where the watch is heard, in relays, on the three screens that say it [relay-lists §7].
+ *
+ * Source rather than the built page, for the reason above; `heard-on.spec.ts` drives the states in
+ * a browser. Only for a watch this page can send to: Alone shows nothing, and nothing presents
+ * having no watch as a count waiting to be filled in.
+ */
+describe('the heard-on count', () => {
+  const read = (path: string) =>
+    readFileSync(fileURLToPath(new URL(path, import.meta.url)), 'utf8').replace(/<!--[\s\S]*?-->/g, '');
+  const gated = (src: string, tag: string) => {
+    const at = src.indexOf(tag);
+    expect(at, `no ${tag}`).toBeGreaterThan(-1);
+    const above = src.slice(0, at);
+    return above.slice(above.lastIndexOf('{#if ')).replace(/\s+/g, ' ');
+  };
+
+  it('is a slot in the Status receipt and a paragraph in its Why, only for a watch this page reaches', () => {
+    const src = markup();
+    const start = src.indexOf('<div data-capability>');
+    expect(start).toBeGreaterThan(-1);
+    const capability = src.slice(start, src.indexOf('{#if session}', start));
+    expect(capability).toContain('<HeardSlot');
+    expect(capability).toContain('<HeardWhy');
+    expect(gated(capability, '<HeardSlot')).toMatch(/^\{#if configured\} $/);
+    expect(gated(capability, '<HeardWhy')).toMatch(/^\{#if configured\} $/);
+    // The count follows the receipt's own sentence, inside the one Why the receipt has.
+    expect(capability.indexOf('<HeardWhy')).toBeGreaterThan(capability.indexOf('{capabilitySentence(s, nowS)}'));
+  });
+
+  it('is shown at sign-on the same way, by the same components', () => {
+    const src = read('../../routes/terminal/sign-on/+page.svelte');
+    expect(gated(src, '<HeardSlot')).toMatch(/^\{#if configured\} $/);
+    expect(gated(src, '<HeardWhy')).toMatch(/^\{#if configured\} $/);
+  });
+
+  it('is shown on the Distress screen as the count already held, and that screen opens no read', () => {
+    const src = read('../../routes/terminal/distress/+page.svelte');
+    expect(src).toMatch(/<HeardSlot held=\{heard\.last\}/);
+    // `mounted` first: `hasWatch` starts true, so without it the page prerendered for everybody shows a
+    // count to an operator with no watch for the whole hydration window [heard-on.spec.ts, no script].
+    expect(gated(src, '<HeardSlot')).toMatch(/^\{#if mounted && hasWatch && !stranded\}/);
+    expect(src, 'the Distress screen started a read of its own').not.toContain('watch.start(');
+    expect(src).not.toMatch(/heard\.read\(/);
+  });
+});

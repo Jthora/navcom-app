@@ -44,13 +44,15 @@ was the gap: somebody was being asked to take the highest-privilege position in 
 given no way to check their own work. The first thing that would have noticed a box publishing
 nothing readable was an operator at sign-on, being told Dark.
 
-Four commands, and none of them needs anybody else to be awake.
+Five commands, and none of them needs anybody else to be awake. The last runs on the machine a
+keyless pager runs on, if you have one.
 
 ```
 watchtower-daemon --check   /etc/navcom/watchtower.toml
 navcom-escalation --check   /etc/navcom/escalation.toml
 navcom-escalation --drill   /etc/navcom/escalation.toml
 navcom-escalation --review  /etc/navcom/escalation.toml
+navcom-pager --check        /etc/navcom/pager.toml
 ```
 
 **`watchtower-daemon --check` answers the question you cannot answer for yourself:** *what
@@ -70,6 +72,14 @@ command exits non-zero; it is printed before the Dark remedy, because a running 
 nothing where it cannot hear, and that is then the cause of the Dark. A relay that never finishes
 connecting is named unreachable after five seconds rather than leaving the command waiting.
 
+It also reads the executor's hearing file, from `[log] hearing_state_path`, names each relay the
+executor does not hear on, and exits non-zero when no relay is heard on by both, because the daemon
+then publishes the watch state nowhere (*What the daemon reads from the executor*, below). **With no
+`hearing_state_path` at all it exits non-zero too**, saying `NO [log] hearing_state_path`: that daemon
+publishes wherever it hears, so a relay that refuses the executor shows a live watch while a
+`Distress` sent only there pages nobody. A box upgraded to this version is that box until the line is
+set, and this command is what runs unattended, so it is the one that says so.
+
 When it says Dark it says **which** Dark, because the four causes have four different fixes
 and only one of them is "the daemon is not running":
 
@@ -83,7 +93,7 @@ and only one of them is "the daemon is not running":
 If no relay was reachable it says so and declines to blame the daemon, because telling you to
 rebuild a working box while your network is down is worse than telling you nothing.
 
-**The middle two are about waking people.** `--check` pages your roster with a test message, so
+**The next two are about waking people.** `--check` pages your roster with a test message, so
 you learn your channels work from you rather than from somebody's 3am. `--drill` runs the whole
 ladder on the same code path a real `Distress` takes — a test mode that exercised something
 else would be testing something nobody depends on. Expect the first drill to fail; that is
@@ -101,6 +111,13 @@ costs and goes on (*The executor's own key*, below). It also names any `navcom-p
 command cannot yet say what kind of page it is carrying: that entry still pages, but every page,
 a repeat and a drill included, reaches the phone looking like a new `Distress`. The template that says
 all three is in `escalation.example.toml`.
+
+It also asks each relay for the subscription the executor makes, names each that refuses it, leaves it
+unanswered or cannot be reached, and exits non-zero when none answers; where the running executor's
+hearing file is fresh, it names each relay that executor says it does not hear on. A missing or old
+file is only warned about, because `--check` is often run before the executor has started.
+`navcom-pager --check` asks the same of a keyless pager's subscription, on the machine it runs on, and
+pages nobody.
 
 **`--review` is the fourth, and it is not for you.** It prints one week: the last drill and who
 answered it, every escalation with its date, every repeat `Distress` answered with an
@@ -142,10 +159,20 @@ What to look for in their output:
 | `<url> unreachable (...) -- retrying` | The connection went, or never came. Nothing sent only to that relay is heard until it answers. Said once, not on every retry |
 | `<url> closed the subscription (...) while connected` | The relay is up and closed the subscription without saying why in NIP-01's terms — "subscription limit exceeded", or no reason at all. Not your network. Treat it as a refusal |
 | `<url> took the subscription and has not answered in 10s` | Connected, and nothing back: a relay that has hung. Treat it as down. The subscription stays open, and `listening` — or `reachable again`, if it had been listening before — follows if it ever answers |
-| `<url> refused the subscription: ...` | The relay is up and said no — a rate limit, a policy. `auth-required` means it wants NIP-42 AUTH, which none of these processes do: pick another relay. On a `[relay]` line — the daemon's — operators reading only that relay see the watch go Dark within five minutes, because the daemon stops publishing there. On an `[executor]` or `[pager]` line the watch stays visible there while a `Distress` sent only there pages nobody: see *What the daemon cannot see yet*, below |
+| `<url> refused the subscription: ...` | The relay is up and said no — a rate limit, a policy. `auth-required` means it wants NIP-42 AUTH, which none of these processes do: pick another relay. On a `[relay]` line — the daemon's — operators reading only that relay see the watch go Dark within five minutes, because the daemon stops publishing there. On an `[executor]` line, a daemon reading the executor's hearing file stops publishing the watch state there too, so operators reading only that relay see Dark within five minutes; a daemon given no hearing file still shows the watch there while a `Distress` sent only there pages nobody. On a `[pager]` line only that pager misses it |
 | `[heartbeat] watch state (automated) published on <url> -- k/N relay(s) carry it now` | That relay took the watch state for the first time. It goes only to relays the daemon is listening on, and to each one as soon as it starts listening, so one of these follows each `[relay] <url> listening`; on a healthy box the last says N/N |
 | `[heartbeat] <url> refused watch state: ...` / `could not reach <url> to publish ...` | Operators reading that relay see Dark. `NO RELAY ACCEPTED` means everyone does |
 | `[heartbeat] LISTENING ON NO RELAY` | The daemon is subscribed nowhere, so it publishes the watch state nowhere and every operator reads Dark. Said on every heartbeat until a relay answers |
+| `[relays] the watch state is published only where this daemon and the escalation executor both hear, as ... says` | The daemon's start, with `[log] hearing_state_path` set: the safe rule. Nothing to change |
+| `[relays] NO HEARING FILE CONFIGURED ([log] hearing_state_path)` | Said at every start of a daemon given no hearing file: it publishes wherever it hears, so a relay that refuses the executor shows a live watch while a `Distress` sent only there pages nobody. `watchtower-daemon --check` fails until it is set. Set it to the executor's `[escalation] hearing_state_path` once the executor has written the file |
+| `[relays] THE EXECUTOR HEARS NOWHERE, as far as this daemon can tell: ...` | The hearing file is missing, unreadable, malformed, about another watch key, or more than ninety seconds old or ahead, so the daemon publishes the watch state nowhere and every operator reads Dark. Said once per change; the reason says which. Missing or old: is `navcom-escalation` running, with the same path? Unreadable: the file's group (`ops/systemd/README.md`, 4b). Another watch: the executor's `privkey_path` is not the daemon's key. `the escalation executor's hearing file reads again` follows when it is fixed |
+| `[relays] <url>: withheld -- this daemon hears there and the escalation executor does not (...)` | The executor's subscription is not answered there, or its config does not list that relay; the reason in brackets is the executor's own. Operators reading only that relay see Dark within five minutes, which is the truth. Fix the relay, pick another, or add it to `escalation.toml`. Said once per change of reason |
+| `[relays] <url>: both hear there again -- the watch state goes there` | The executor hears there again, and the watch state goes out there at once |
+| `[distress] from <id> arrived on <url>, where the escalation executor does not hear (...)` | A `Distress` reached the daemon on a relay the executor does not hear on: a phone's last copy of the watch state there stays fresh for up to five minutes after the daemon stops renewing it. Unless it reached the executor on another relay, nobody was paged, and the phone was told only that an agent answered. Fix that relay for the executor, or take it out of the daemon's config, and tell your log reviewer |
+| `[heartbeat] NO RELAY WHERE THIS DAEMON AND THE ESCALATION EXECUTOR BOTH HEAR (0/N)` | The daemon hears somewhere, and nowhere it hears does the executor, so the watch state goes nowhere and every operator reads Dark. Said on every heartbeat. `navcom-escalation --check` names the executor's relays that do not answer |
+| `[executor] where it hears -> <path>, every 30s and on any change` | The executor's start: where it writes its hearing file, for the daemon's `[log] hearing_state_path` |
+| `[executor] HEARS ON NO RELAY (0/N)` | Every relay is unreachable or refuses the executor's subscription, so a `Distress` pages nobody from it. Said fifteen seconds after start and every thirty seconds while it lasts; each relay's own line above says why. `hears on k/N relay(s) again` follows when one answers |
+| `[executor] COULD NOT WRITE WHERE IT HEARS to <path>: ...` | The hearing file cannot be written there — a directory that does not exist and cannot be made, one this user cannot write, or one that `belongs to uid N, not to this user` or `can be written by its group or by anybody`. In the last two nothing is written, deliberately: whoever else can write that directory could leave a link where the file goes and have the executor's next write replace one of its own files, its key included. The ladder runs regardless, but a daemon reading that file reads the executor as hearing nowhere once it is ninety seconds old, and the watch reads Dark. Fix the directory, or point the file at the drill directory (`ops/systemd/README.md`, 4b). Said once, and `writing where it hears to <path> again` follows. The drill file keeps the same rule, and says it as `[drill] RESULT NOT RECORDED` |
 | `[pager] watching on k/N relay(s)` | Printed only once a relay has answered. `NOT WATCHING` means no relay is listening — since one stopped, or since the pager started fifteen seconds ago |
 | `[signal] dropped: … stamped Ns away` / `[executor] … outside the age window (Ns), ignored` | A signal or `Distress` stamped further from this machine's clock than the age window: replayed by a relay, or sent from a phone whose clock is wrong. Not acted on and not answered. The window is never under five minutes — the daemon refuses a smaller `max_event_age_seconds` at startup, and the executor uses five minutes whenever `paging_window_seconds` is shorter — so if one operator's signals keep dropping, it is their clock, and that phone already reads the watch as Dark. If every operator's do, check this machine's clock |
 | `[executor] NO EXECUTOR KEY. ...` | This box has no executor key of its own: every answer that ends a `Distress` is signed with the watch key, which the daemon and the agent beside it hold too. Said at every start until you set one up (below) |
@@ -168,13 +195,15 @@ The daemon's first lines no longer announce that it was listening whatever had h
 relay says when it is listening, and the heartbeat says when each relay first takes the watch
 state.
 
-**What the daemon cannot see yet.** It withholds the watch state from a relay *it* cannot hear on.
-It does not know about the executor's subscription, which is a different process and is kept
-that way: a relay that answers the daemon and refuses or ignores the executor still shows a fresh
-watch while a `Distress` sent only there pages nobody — the operator's phone says "nobody is
-coming" from its own timer. Reading the executor's state, one way, the way the daemon reads its
-drill results, is not built. Until it is, run `watchtower-daemon --check`, which asks each relay
-for the subscription both processes make, and read the executor's own `[executor]` lines.
+**What the daemon reads from the executor.** The executor writes where its own subscription hears
+to a file, every thirty seconds and on any change, and the daemon publishes the watch state only on
+relays where both hear, read one way, as the drill file is. Point both configs at one path:
+`[escalation] hearing_state_path` in `escalation.toml` and `[log] hearing_state_path` in
+`watchtower.toml`, in the drill directory on a box whose executor runs as its own user
+(`ops/systemd/README.md`, 4b). A file that is missing or more than ninety seconds old means the
+executor hears nowhere, so the watch reads Dark: a box whose executor is down reads Dark, though its
+agent would still answer a `Query`. A daemon given no path keeps the old rule and says so at every
+start.
 
 ## The executor's own key
 

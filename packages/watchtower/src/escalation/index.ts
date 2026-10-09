@@ -2,12 +2,14 @@
 import { existsSync } from "node:fs";
 import { loadEscalationConfig, type EscalationConfig } from "./config.js";
 import type { Keypair } from "../shared/identity.js";
-import { EscalationExecutor, ageWindowSeconds } from "./executor.js";
+import { EscalationExecutor, ageWindowSeconds, executorSubscription } from "./executor.js";
 import { pushTemplateGaps, testPage } from "./pager.js";
 import { readDrillState } from "./drills.js";
 import { buildReview, render } from "./review.js";
 import { AccountabilityLog } from "../shared/accountability.js";
 import { nodePool } from "../shared/nostr-node.js";
+import { probeRelays } from "../shared/subscription-check.js";
+import { readHearing } from "../shared/hearing.js";
 import {
   boxKeysOnRoster,
   checkKeyFile,
@@ -60,6 +62,9 @@ function configPath(): string {
  * never been executed is a command that works right up until the night it matters, and
  * "dispatched" here still only means the command exited zero -- whether a human actually
  * woke up is a question only that human can answer.
+ *
+ * Before the roster, it asks each relay for the subscription this executor makes, and fails when
+ * none answers: a roster that pages perfectly pages nobody if no `Distress` reaches the executor.
  */
 async function check(path: string): Promise<never> {
   const config = load(path);
@@ -69,6 +74,14 @@ async function check(path: string): Promise<never> {
   // perfectly and can still tell an operator a person has them.
   const keysOk = await checkExecutorKey(config);
   for (const line of templateLines(config, "[check]")) console.warn(line);
+  // Where a Distress reaches this executor at all, before who it would wake. Without the watch key
+  // there is no subscription to ask for, and the key check above has already failed.
+  let hearsOk = false;
+  try {
+    hearsOk = await checkHearing(config, loadWatchKey(config.identity.privkeyPath).pubkey);
+  } catch {
+    hearsOk = false;
+  }
 
   if (roster.length === 0) {
     console.error("[check] Nobody is on-call, so there is nothing to test.");
@@ -96,7 +109,73 @@ async function check(path: string): Promise<never> {
   }
   console.log("[check] every command ran. Now confirm each person actually received it --");
   console.log("[check] a command exiting zero is not a person waking up.");
-  process.exit(keysOk ? 0 : 1);
+  process.exit(keysOk && hearsOk ? 0 : 1);
+}
+
+/**
+ * Asks each relay for the subscription this executor makes, exactly as it makes it, and says which
+ * answer it; then reads where the running executor says it hears. Returns whether some relay answers.
+ *
+ * A relay can take this box's writes and serve its watch state to anybody while refusing the
+ * executor's `#p` REQ -- an inbox that wants NIP-42 AUTH -- or taking it and never answering. A
+ * `Distress` sent only there pages nobody from here, and a daemon reading the hearing file withholds
+ * the watch state there. `--check` asked no relay for it.
+ *
+ * The running executor's own file is reported and never fails the check: `--check` is often run
+ * before the executor has started.
+ */
+async function checkHearing(config: EscalationConfig, watch: string): Promise<boolean> {
+  console.log("[check] asking each relay for the subscription this executor makes, as it makes it");
+  const pool = nodePool();
+  let answering = 0;
+  try {
+    const reach = await probeRelays(
+      pool,
+      config.relays.urls,
+      // The running executor's own filter, asking for nothing stored.
+      { ...executorSubscription(watch), limit: 0 },
+      { timeoutMs: 8_000, connectMs: 5_000, noun: "the subscription" },
+    );
+    for (const r of reach) {
+      if (!r.reached) console.error(`[check]   ${r.url}: UNREACHABLE -- ${r.error ?? "no reason given"}`);
+      else if (r.hears) {
+        answering++;
+        console.log(`[check]   ${r.url}: answers it -- a Distress sent there reaches this executor`);
+      } else {
+        console.error(
+          `[check]   ${r.url}: DOES NOT HEAR -- ${r.deaf ?? "did not answer the subscription"}. A Distress sent only ` +
+            "there pages nobody from this executor, and a daemon reading its hearing file withholds the watch state there",
+        );
+      }
+    }
+  } finally {
+    pool.destroy();
+  }
+  if (answering === 0) {
+    console.error(
+      "[check] THIS EXECUTOR HEARS ON NO RELAY IN THIS CONFIG, so a Distress pages nobody from here. Pick a relay " +
+        "that serves it without NIP-42 AUTH, or fix the one that is not answering",
+    );
+  }
+
+  const path = config.escalation.hearingStatePath;
+  if (path) {
+    const read = readHearing(path, { watch, now: Math.floor(Date.now() / 1000) });
+    if (read.ok) {
+      const heard = read.relays.filter((r) => r.hears).length;
+      console.log(
+        `[check] the running executor's hearing file (${path}, ${read.ageSeconds}s old) says it hears on ` +
+          `${heard}/${read.relays.length} relay(s)`,
+      );
+      for (const r of read.relays) {
+        if (!r.hears) console.warn(`[check]   ${r.url}: the running executor does not hear there -- ${r.why ?? "no reason given"}`);
+      }
+    } else {
+      console.warn(`[check] the running executor's hearing file: ${read.why} -- a daemon reading it treats this executor as hearing nowhere`);
+    }
+  }
+  console.log("");
+  return answering > 0;
 }
 
 /**
@@ -515,12 +594,20 @@ function main(): void {
     config, secretKey, pubkey,
     ...(executorKey ? { executorKey } : {}),
     drillStatePath: config.escalation.drillStatePath,
+    // The long-running start only: `--drill` never writes it.
+    ...(config.escalation.hearingStatePath ? { hearingStatePath: config.escalation.hearingStatePath } : {}),
   });
   executor.start();
   console.log(
     "[executor] drills every " + config.escalation.drillWindowDays + "d (randomised), " +
       "results -> " + config.escalation.drillStatePath,
   );
+  if (config.escalation.hearingStatePath) {
+    console.log(
+      `[executor] where it hears -> ${config.escalation.hearingStatePath}, every 30s and on any change. The daemon ` +
+        "publishes the watch state only where both hear, once its [log] hearing_state_path names this file",
+    );
+  }
   // Not "listening": each relay says so itself once its subscription is answered, and says
   // when it is not [F05, F08]. Announcing it here was true only if every relay was.
   console.log(

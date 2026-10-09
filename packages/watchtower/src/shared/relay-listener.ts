@@ -149,6 +149,8 @@ interface Slot {
   everUp: boolean;
   /** What the last "down" line was about, so a different reason is still said. */
   downAs: string | undefined;
+  /** Why it is not listening, in the words of the last line that said so. Cleared when it answers. */
+  why: string | undefined;
   upSince: number | null;
   failures: number;
   retry: ReturnType<typeof setTimeout> | undefined;
@@ -157,6 +159,13 @@ interface Slot {
 export interface RelayState {
   url: string;
   listening: boolean;
+  /**
+   * Only when not listening: why, as the last line about it said -- `refused the subscription: ...`,
+   * `closed the subscription (...) while connected`, `unreachable (...)`, `took the subscription and
+   * has not answered in 10s` -- or `has not answered yet` before anything has been said. The executor
+   * writes it into its hearing file, so the daemon withholding a relay can say why.
+   */
+  why?: string;
 }
 
 /**
@@ -224,6 +233,7 @@ export class RelayListener {
       up: undefined,
       everUp: false,
       downAs: undefined,
+      why: undefined,
       upSince: null,
       failures: 0,
       retry: undefined,
@@ -257,7 +267,9 @@ export class RelayListener {
   }
 
   relays(): RelayState[] {
-    return this.slots.map((s) => ({ url: s.url, listening: s.up === true }));
+    return this.slots.map((s) =>
+      s.up === true ? { url: s.url, listening: true } : { url: s.url, listening: false, why: s.why ?? "has not answered yet" },
+    );
   }
 
   /**
@@ -423,6 +435,7 @@ export class RelayListener {
     const was = slot.up;
     slot.up = true;
     slot.downAs = undefined;
+    slot.why = undefined;
     if (was === true) return;
     // "listening" the first time, whatever came before it: a relay down at boot that answers later
     // was never "reachable" to be reachable again, and the systemd README looks for "listening".
@@ -437,6 +450,7 @@ export class RelayListener {
     slot.up = false;
     if (was === false && slot.downAs === "silent") return;
     slot.downAs = "silent";
+    slot.why = `took the subscription and has not answered in ${SILENT_SECONDS}s`;
     console.error(
       `[${this.opts.label}] ${slot.url} took the subscription and has not answered in ${SILENT_SECONDS}s -- ` +
         `waiting on it; ${this.opts.missing}`,
@@ -463,6 +477,13 @@ export class RelayListener {
     slot.up = false;
     if (was === false && slot.downAs === as) return;
     slot.downAs = as;
+    // Kept with the line that says it, so what the executor writes down changes when its log does.
+    slot.why =
+      kind === "refused"
+        ? `refused the subscription: ${reason}`
+        : kind === "closed"
+          ? `closed the subscription (${reason}) while connected`
+          : `unreachable (${reason})`;
 
     const { label, missing } = this.opts;
     if (refusal === "auth-required") {

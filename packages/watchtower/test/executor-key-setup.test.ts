@@ -16,6 +16,7 @@ import { fileURLToPath } from "node:url";
 import { finalizeEvent, generateSecretKey, getEventHash, getPublicKey, verifyEvent } from "nostr-tools/pure";
 import { KIND_WATCH_CODE_SIGNATURE, parseWatchCode, type ResponsePayload } from "@navcom/core";
 import { loadEscalationConfig } from "../src/escalation/config.js";
+import { loadDaemonConfig } from "../src/daemon/config.js";
 import {
   boxKeysOnRoster,
   checkKeyFile,
@@ -55,7 +56,15 @@ function tempDir(): string {
 
 function escalationToml(
   dir: string,
-  opts: { relay?: string; identity?: string[]; watchKey?: boolean; escalation?: string[]; oncallPubkey?: string } = {},
+  opts: {
+    relay?: string;
+    identity?: string[];
+    watchKey?: boolean;
+    escalation?: string[];
+    oncallPubkey?: string;
+    /** Leave `hearing_state_path` out, for the default. Otherwise it is in `dir`, so no test executor writes /var/lib/navcom. */
+    noHearingPath?: boolean;
+  } = {},
 ): string {
   const path = join(dir, "escalation.toml");
   // The watch key, as the daemon's first start leaves it. Neither `--check` nor the executor makes one.
@@ -72,6 +81,7 @@ function escalationToml(
       `path = "${join(dir, "escalation-log.jsonl")}"`,
       "[escalation]",
       `drill_state_path = "${join(dir, "drill.json")}"`,
+      ...(opts.noHearingPath ? [] : [`hearing_state_path = "${join(dir, "hearing.json")}"`]),
       ...(opts.escalation ?? []),
       "[[escalation.oncall]]",
       'callsign = "Wren"',
@@ -125,6 +135,45 @@ describe("the config", () => {
     expect(() => loadEscalationConfig(escalationToml(dir, { identity: ['executor_key_path = ""'] }))).toThrow(/executor_key_path/);
     expect(() => loadEscalationConfig(escalationToml(dir, { identity: ["executor_key_path = 7"] }))).toThrow(/executor_key_path/);
   });
+
+  it("names where the executor writes where it hears: beside the drill file unless set, and never an empty path", () => {
+    const dir = tempDir();
+    expect(loadEscalationConfig(escalationToml(dir, { noHearingPath: true })).escalation.hearingStatePath).toBe("/var/lib/navcom/hearing.json");
+    expect(loadEscalationConfig(escalationToml(dir)).escalation.hearingStatePath).toBe(join(dir, "hearing.json"));
+    expect(() =>
+      loadEscalationConfig(escalationToml(dir, { noHearingPath: true, escalation: ['hearing_state_path = ""'] })),
+    ).toThrow(/\[escalation\] hearing_state_path must be a non-empty string/);
+    expect(() =>
+      loadEscalationConfig(escalationToml(dir, { noHearingPath: true, escalation: ["hearing_state_path = 30"] })),
+    ).toThrow(/\[escalation\] hearing_state_path must be a non-empty string/);
+  });
+
+  it("refuses a hearing file that is any other file the executor keeps, which a rewrite every thirty seconds would replace", () => {
+    const dir = tempDir();
+    // The drill file: the slip the README invites, both in one directory. No scheduled drill would fire again.
+    expect(() =>
+      loadEscalationConfig(escalationToml(dir, { noHearingPath: true, escalation: [`hearing_state_path = "${join(dir, "drill.json")}"`] })),
+    ).toThrow(/hearing_state_path is the same file as \[escalation\] drill_state_path/);
+    expect(() =>
+      loadEscalationConfig(escalationToml(dir, { noHearingPath: true, escalation: [`hearing_state_path = "${join(dir, "escalation-log.jsonl")}"`] })),
+    ).toThrow(/same file as \[log\] path/);
+    expect(() =>
+      loadEscalationConfig(escalationToml(dir, { noHearingPath: true, escalation: [`hearing_state_path = "${join(dir, "watchtower.key")}"`] })),
+    ).toThrow(/same file as \[identity\] privkey_path/);
+    expect(() =>
+      loadEscalationConfig(
+        escalationToml(dir, {
+          noHearingPath: true,
+          identity: [`executor_key_path = "${join(dir, "executor.key")}"`],
+          escalation: [`hearing_state_path = "${join(dir, "executor.key")}"`],
+        }),
+      ),
+    ).toThrow(/same file as \[identity\] executor_key_path/);
+    // Spelled differently, still one file.
+    expect(() =>
+      loadEscalationConfig(escalationToml(dir, { noHearingPath: true, escalation: [`hearing_state_path = "${dir}/./drill.json"`] })),
+    ).toThrow(/same file as \[escalation\] drill_state_path/);
+  });
 });
 
 describe("escalation.example.toml, which is where a Stationkeeper starts", () => {
@@ -134,6 +183,14 @@ describe("escalation.example.toml, which is where a Stationkeeper starts", () =>
     const config = loadEscalationConfig(example);
     expect(config.identity.executorKeyPath).toBeUndefined();
     expect(config.escalation.maxPagesPerWindow).toBe(20);
+  });
+
+  it("names the same hearing file the daemon's example reads, so a new box publishes only where both hear", () => {
+    const executor = loadEscalationConfig(example).escalation.hearingStatePath;
+    const daemon = loadDaemonConfig(join(PACKAGE, "watchtower.example.toml")).log.hearingStatePath;
+    expect(executor).toBeTruthy();
+    expect(readFileSync(example, "utf8")).toMatch(/^hearing_state_path = "\/var\/lib\/navcom\/hearing\.json"$/m);
+    expect(daemon, "the two example configs name different hearing files").toBe(executor);
   });
 
   it("documents the executor's own key, the daemon's user, and a navcom-push template that says all three kinds", () => {

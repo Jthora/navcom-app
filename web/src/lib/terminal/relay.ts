@@ -13,6 +13,7 @@
 
 import { KIND_WATCH_STATE, readWatchStateAt, type WatchStateRead } from '@navcom/core';
 import type { WatchtowerConfig } from './config';
+import type { RelaySink } from './heard.svelte';
 import { subscribeLive } from './subscribe';
 
 export interface Connection {
@@ -34,11 +35,16 @@ const REREAD_MS = 30_000;
  * `onRead` fires immediately with an absent reading, so a terminal that never connects
  * still shows the truth rather than an empty screen or a spinner. Silence is an answer
  * here, and the answer is Dark.
+ *
+ * `sink` is told each relay's own copy as well, with the relay it came from, and which relays
+ * have answered [relay-lists §7]: the reading here is the newest across all of them, and says
+ * nothing about where the watch was heard. Every relay the watch names is read, mission relays
+ * included; only the ones a `Distress` goes to are counted, and that is the sink's to decide.
  */
 export function watchWatchtower(
   config: WatchtowerConfig,
   onRead: WatchStateHandler,
-  opts: { staleAfterSeconds?: number } = {}
+  opts: { staleAfterSeconds?: number; sink?: RelaySink } = {}
 ): Connection {
   onRead(readWatchStateAt(null));
 
@@ -57,20 +63,39 @@ export function watchWatchtower(
   const reread = () =>
     newest && onRead(readWatchStateAt(newest.content, { createdAt: newest.at, staleAfterSeconds: opts.staleAfterSeconds }));
 
+  /** Tells the sink, which must never take the reading down with it. */
+  const tell = (fn: (sink: RelaySink) => void) => {
+    if (closed || !opts.sink) return;
+    try {
+      fn(opts.sink);
+    } catch {
+      /* the count is the sink's; the reading goes on */
+    }
+  };
+
   let sub: { close(): void };
   try {
     sub = subscribeLive(
     config.relays,
     { kinds: [KIND_WATCH_STATE], authors: [config.pubkey], limit: 1 },
     {
-      onevent(event) {
+      onevent(event, url) {
         if (closed) return;
+        tell((sink) => sink.arrived(url, event));
         if (newest && (event.created_at < newest.at || (event.created_at === newest.at && event.id >= newest.id))) return;
         newest = { at: event.created_at, id: event.id, content: event.content };
         sawEvent = true;
         reread();
       },
+      // The same copy from a second relay: the reading has it, and the sink learns it was there too.
+      onrepeat(event, url) {
+        tell((sink) => sink.arrived(url, event));
+      },
+      onlisten(urls) {
+        tell((sink) => sink.listening(urls));
+      },
       oneose(answered) {
+        tell((sink) => sink.settled(answered));
         // Every relay has answered or failed. Nothing heard from any that answered is genuinely
         // absent; no relay answering at all is this phone being unable to ask. Called again if a
         // relay answers after none did, which turns the second reading into the first.

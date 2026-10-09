@@ -15,6 +15,8 @@
    */
   import { onDestroy } from 'svelte';
   import { operator } from '$lib/terminal/session.svelte';
+  import { heard } from '$lib/terminal/heard.svelte';
+  import { HeardSlot } from '$lib/components/heard';
   import { pulse } from '$lib/terminal/haptic';
   import { Slot, Elapsed, Why } from '$lib/components/panel';
   import {
@@ -46,10 +48,24 @@
   let stranded = $state(false);
   let contact = $state<EmergencyContact | null>(null);
   let callsign = $state<string | null>(null);
+  /**
+   * Set once this phone's own state has been read. The count below is about a watch, and a page
+   * prerendered for everybody must not show it to an operator who has none [relay-lists §7].
+   */
+  let mounted = $state(false);
+  /**
+   * The count this phone already holds, aged on screen [relay-lists §7]. This screen opens no read
+   * of its own: `raiseDistress` opens one when a `Distress` starts, only where it goes, and the
+   * slot moves with it.
+   */
+  let nowMs = $state(Date.now());
+  let aging: ReturnType<typeof setInterval> | null = null;
 
   onMount(() => {
     hasWatch = operator.hasWatch;
     stranded = operator.watchStranded;
+    mounted = true;
+    aging = setInterval(() => (nowMs = Date.now()), 15_000);
     contact = loadContact();
     // The early block has done its job. Svelte's version carries the written message and
     // the full wording; leaving both would show the same person twice.
@@ -190,6 +206,7 @@
   }
 
   onDestroy(() => {
+    if (aging !== null) clearInterval(aging);
     if (frame !== null) cancelAnimationFrame(frame);
     // Found in robustness audit: this cleared the animation frame but never doneAt, so a
     // hold interrupted by navigation before the threshold completed still fired release(true)
@@ -353,6 +370,13 @@
       {/if}
     </Why>
   </section>
+{/if}
+
+{#if mounted && hasWatch && !stranded}
+  <!-- Where the watch was last heard, with its age, before and while it sends. -->
+  <div data-heard-held>
+    <HeardSlot held={heard.last} {nowMs} />
+  </div>
 {/if}
 
 {#if !operator.distressRunning && phases.length === 0}

@@ -9,6 +9,7 @@
 import { readWatchStateAt, type LogRoot, type RootAlarm, type WatchStateRead } from '@navcom/core';
 import { loadConfig } from './config';
 import { watchWatchtower, type Connection } from './relay';
+import { heard } from './heard.svelte';
 import { recordRoot, rootAlarms, seenRoots } from './roots';
 
 /**
@@ -88,7 +89,13 @@ export const watch = {
     return alarms;
   },
 
-  /** Starts watching, if this terminal has been given a Watchtower. */
+  /**
+   * Starts watching, if this terminal has been given a Watchtower.
+   *
+   * Each relay's own copy goes into `heard` as well, so the receipt can say where the watch was
+   * heard [relay-lists §7]. `stop()` leaves that record alone: the `Distress` screen shows the
+   * count this phone already holds, with its age, and opens no read of its own to get it.
+   */
   start(): void {
     const config = loadConfig();
     if (!config) return;
@@ -115,7 +122,7 @@ export const watch = {
       }
       if (!restated(r.state.log_root)) recordRoot(r.state.log_root);
       alarms = rootAlarms();
-    });
+    }, { sink: heard.sink(config.pubkey) });
     connected = true;
   },
 
