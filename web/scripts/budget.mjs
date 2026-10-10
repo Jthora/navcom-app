@@ -325,6 +325,61 @@ function deferredWeight() {
 }
 
 const deferred = deferredWeight();
+
+/*
+ * What ONE visit to the landing page downloads after first paint, when somebody opens the sheet.
+ *
+ * `deferredWeight` answers a different question on purpose — what the whole app can pull in later,
+ * minus anything any page already loads at first paint — so a chunk the terminal loads up front is
+ * never counted there. A reader who opens the map and a mission, and has never opened the terminal,
+ * still downloads it: measured 2026-10-09 at 68.9 kB against the deferred line's 41.8, most of
+ * it the signature-checking crypto both surfaces share [groups draft §10]. Reported, not enforced,
+ * until a ceiling is derived from it, as every budget here was.
+ *
+ * Walked from the landing page's own chunks: their dynamic imports and everything those pull,
+ * skipping the router's other pages, minus what the landing page already loaded.
+ */
+function rootLater() {
+  let manifest;
+  try {
+    manifest = JSON.parse(readFileSync(MANIFEST, 'utf8'));
+  } catch {
+    return null;
+  }
+  const rootHtml = join(BUILD, 'index.html');
+  if (!existsSync(rootHtml)) return null;
+  const byFile = new Map();
+  for (const [key, entry] of Object.entries(manifest)) byFile.set(join(BUILD, entry.file), key);
+  const firstPaint = new Set(assetsOf(rootHtml));
+  const later = new Set();
+  const walk = (key) => {
+    const entry = manifest[key];
+    if (!entry) return;
+    for (const dep of [...(entry.imports ?? []), ...(entry.dynamicImports ?? [])]) {
+      // Another route's page is the router's to load on navigation, not this page's.
+      if (dep.includes('/nodes/') || !manifest[dep]) continue;
+      const file = join(BUILD, manifest[dep].file);
+      if (firstPaint.has(file) || later.has(file)) continue;
+      later.add(file);
+      walk(dep);
+    }
+  };
+  for (const file of firstPaint) {
+    const key = byFile.get(file);
+    if (key && manifest[key].dynamicImports) {
+      for (const dep of manifest[key].dynamicImports) {
+        if (dep.includes('/nodes/') || !manifest[dep]) continue;
+        const f = join(BUILD, manifest[dep].file);
+        if (firstPaint.has(f) || later.has(f)) continue;
+        later.add(f);
+        walk(dep);
+      }
+    }
+  }
+  const files = [...later].filter((f) => existsSync(f));
+  return { count: files.length, bytes: files.reduce((n, f) => n + gz(f), 0) };
+}
+const rootLaterWeight = rootLater();
 if (deferred?.stale) {
   console.log(
     `\n  note  the Vite manifest does not match this build, so dynamic-import weight` +
@@ -361,6 +416,13 @@ if (deferred?.stale) {
  * never an accident — so the same ~20% headroom, and the same warning line about 8% above it.
  */
 const DEFERRED = { limit: 45 * 1024, warn: 40 * 1024 };
+if (rootLaterWeight && !deferred?.stale) {
+  report.root_later = { bytes: rootLaterWeight.bytes };
+  console.log(
+    `\n  note  Root, later ${kb(rootLaterWeight.bytes).padStart(9)}  what one landing-page visit downloads on opening the sheet,` +
+      `\n        ${rootLaterWeight.count} chunk(s), shared ones included. Reported, not enforced yet.`
+  );
+}
 if (deferred && !deferred.stale) {
   report.deferred = { bytes: deferred.bytes, limit: DEFERRED.limit };
   const ok = deferred.bytes <= DEFERRED.limit;
