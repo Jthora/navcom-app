@@ -78,6 +78,20 @@ export const FIELDS_MAX = 12;
  */
 export const HOLDERS_MAX = 32;
 
+/**
+ * The most members a crew or unit can ever hold: its room, at most.
+ *
+ * Its own constant beside {@link HOLDERS_MAX}, which stays the watch's cap (groups.md §5). Room is
+ * 4, 8, 12 or 15, fixed at founding and never widened, and 15 is the largest. Two reasons agree on
+ * it: group-size research puts the largest group in which everyone can have met everyone at about
+ * this size, and one crew state has to carry every member's wrap in one event under the relays'
+ * 65,536-byte limit, padded to room so its length says nothing about how full the crew is.
+ *
+ * Decided 2026-10-09. Nothing built on it reaches a screen until the crew envelope and the unit
+ * evaluator have had outside review (`units/`).
+ */
+export const CREW_ROOM_MAX = 15;
+
 /** Trimmed, and within its cap. The check every boundary makes. */
 export const withinLimit = (value: unknown, max: number): value is string =>
   typeof value === 'string' && value.trim().length > 0 && value.length <= max;

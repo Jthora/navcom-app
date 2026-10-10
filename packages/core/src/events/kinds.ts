@@ -166,6 +166,29 @@ export const KIND_ANSWER_SIGNATURE = 20915;
 export const KIND_WATCH_CODE_SIGNATURE = 20916;
 
 /**
+ * Regular, and therefore **stored**: the outer layer of every crew event [docs/design/groups.md §7].
+ *
+ * Signed by a throwaway key, with exactly one routing tag and a NIP-40 expiration, so a relay sees a
+ * padded length, a day's tag and an expiry, and no roster. Stored because a member who reads once a
+ * week still has to find the state that moved the crew on.
+ *
+ * **Built by `units/envelope.ts` and published by nothing.** Nothing here sends one until the crews
+ * screens ship, and they ship only after the crew envelope has had outside review.
+ */
+export const KIND_CREW_EVENT = 1913;
+
+/**
+ * **Never published.** The kind of every signed statement inside a crew or unit: a founding, an
+ * admission, a removal, an endorsement, a result [`units/statements.ts`].
+ *
+ * It only ever travels sealed inside a `1913`. An event at all so any nostr library checks its
+ * signature; a kind of its own so that signature can never be mistaken for, or reused as, one on
+ * anything a member publishes. Ephemeral like `20915` and `20916`, so one published by mistake
+ * leaves nothing stored. No unit statement uses the `Distress` kinds, `20910` to `20912`.
+ */
+export const KIND_CREW_STATEMENT = 20917;
+
+/**
  * Ephemeral kinds (20000–29999) are not expected to be stored by relays. That is
  * load-bearing rather than incidental: the board must never become a queryable history
  * [C27].
