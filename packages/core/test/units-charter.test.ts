@@ -193,7 +193,11 @@ describe('F4: pairings the menu does not allow', () => {
   it('markers out of order, or too many', () => {
     expect(readCharter(withField(10, `cp${EA}`))).toEqual({ ok: false, reason: 'off-menu', field: 'higher' });
     expect(readCharter(withField(10, `pp${EA}`))).toEqual({ ok: false, reason: 'off-menu', field: 'higher' });
-    expect(readCharter(withField(10, `pcbxdz${EA}`))).toEqual({ ok: false, reason: 'off-menu', field: 'higher' });
+    // Revised with the units-core-attack repair (BREAK 15): a sixth marker in a letter this release
+    // does not know is a later release's echelon, so it reads as needing an update, not off the menu.
+    expect(readCharter(withField(10, `pcbxdz${EA}`))).toEqual({ ok: false, reason: 'needs-update', field: 'higher' });
+    // Six markers this release knows can only repeat one, and are off the menu.
+    expect(readCharter(withField(10, `pcbxdd${EA}`))).toEqual({ ok: false, reason: 'off-menu', field: 'higher' });
   });
 
   it('markers on a unit that may not serve under anyone', () => {

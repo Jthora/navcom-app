@@ -38,7 +38,7 @@ const snapshot = {
   co: { holder: pk, acting: false, n: 1, start: AT, end: AT + 100 },
   xo: { holder: other, acting: false, n: 1, start: AT, end: AT + 100 },
   cap: { holder: pk, count: 1 }, petitioned: [], runs: [], recalled: [], removed: [], holding: [], invited: [],
-  prevCommand: null
+  prevCommand: null, served: [[pk, 1, 1] as const]
 };
 
 /** One valid statement of every type. */

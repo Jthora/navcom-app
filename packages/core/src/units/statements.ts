@@ -128,6 +128,11 @@ export interface RunSnap {
 }
 /** A recall that passed this term, and who carried it. */
 export interface RecalledSnap { key: string; office: Office; n: number; signers: readonly string[] }
+/**
+ * `[key, last, count]`: the last CO term `key` served in (not acting), and how many consecutive CO
+ * terms end there. Only keys whose `last` is the current term or the one before are kept.
+ */
+export type ServedSnap = readonly [key: string, last: number, count: number];
 
 /**
  * Everything a phone needs to go on from a checkpoint without the history before it.
@@ -136,8 +141,12 @@ export interface RecalledSnap { key: string; office: Office; n: number; signers:
  * and the previous change of command. The rest is what a phone anchored here needs to check the
  * next act: the electorates of open runs (a digest alone could not tell it whether a signer
  * counts), who was removed (who may never be admitted again), who was removed while holding an
- * office (who may be re-admitted by any two while that office's election is open), and the
- * invitations of a re-founded unit.
+ * office (who may be re-admitted by any two while that office's election is open), the
+ * invitations of a re-founded unit, and who served the CO office in the last two terms.
+ *
+ * `cap` is the count governance §2.4 names: the CO holder and the consecutive CO terms they have
+ * served. It is read from `served`, which is what the cap is applied from, because a CO cap that
+ * followed only the current holder could be stepped around by swapping posts through a vacancy.
  */
 export interface Snapshot {
   rule: 'g1';
@@ -152,6 +161,7 @@ export interface Snapshot {
   holding: readonly (readonly [string, readonly Office[]])[];
   invited: readonly (readonly [string, string, boolean])[];
   prevCommand: string | null;
+  served: readonly ServedSnap[];
 }
 export interface Checkpoint { t: 'checkpoint'; unit: string; head: readonly string[]; snapshot: Snapshot }
 
@@ -210,10 +220,12 @@ const HEX64 = /^[0-9a-f]{64}$/;
 const HEX128 = /^[0-9a-f]{128}$/;
 const RULE = /^g[1-9][0-9]{0,3}$/;
 /**
- * C0, DEL and C1 controls, line separators, and the bidirectional overrides that reorder what comes
- * after them. A callsign is somebody's name on somebody else's screen.
+ * C0, DEL and C1 controls, line and paragraph separators, every format character (the bidirectional
+ * marks and overrides, zero-width spaces and joiners, the word joiner, the byte-order mark) and every
+ * other code point Unicode says to draw as nothing. A callsign is somebody's name on somebody else's
+ * screen, and two members compared by string must not both read "Raven".
  */
-const CONTROL = /[\u0000-\u001f\u007f-\u009f\u2028\u2029\u202a-\u202e\u2066-\u2069]/;
+const CONTROL = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}\p{Default_Ignorable_Code_Point}]/u;
 /** The longest content any statement can need: a result with fifteen signatures is about 3.5 kB. */
 const CONTENT_MAX = 32_768;
 /** Seconds. Anything beyond is not a time a person's phone wrote. */
@@ -226,8 +238,9 @@ const isTime = (v: unknown): v is number =>
   typeof v === 'number' && Number.isSafeInteger(v) && v >= 0 && v <= TIME_MAX;
 const isSig = (v: unknown): v is string => typeof v === 'string' && HEX128.test(v);
 const isOffice = (v: unknown): v is Office => v === 'co' || v === 'xo';
+/** One spelling per name: no invisible characters, no padding, and composed (NFC) form only. */
 export const isCallsign = (v: unknown): v is string =>
-  withinLimit(v, CALLSIGN_MAX) && !CONTROL.test(v) && v.trim() === v;
+  withinLimit(v, CALLSIGN_MAX) && !CONTROL.test(v) && v.trim() === v && v.normalize('NFC') === v;
 
 /** Sorted, distinct, and each passing `each`; `min` to `max` long. */
 function sortedSet(v: unknown, min: number, max: number, each: (x: unknown) => boolean): v is string[] {
@@ -254,8 +267,8 @@ const RUN_KINDS = ['end', 'fill', 'first', 'petition'] as const;
 
 /** The snapshot's wire form: a fixed array. Returns null if any part is not its one spelling. */
 function snapshotFrom(v: unknown): Snapshot | null {
-  if (!Array.isArray(v) || v.length !== 12) return null;
-  const [rule, roster, co, xo, cap, petitioned, runs, recalled, removed, holding, invited, prevCommand] = v;
+  if (!Array.isArray(v) || v.length !== 13) return null;
+  const [rule, roster, co, xo, cap, petitioned, runs, recalled, removed, holding, invited, prevCommand, served] = v;
   if (rule !== 'g1' || !isHash(roster) || !isOfficeSnap(co) || !isOfficeSnap(xo)) return null;
   if ((co === null) !== (xo === null) || (co === null) !== (cap === null)) return null;
   if (cap !== null && !(Array.isArray(cap) && cap.length === 2 && (cap[0] === null || isKey(cap[0])) &&
@@ -281,6 +294,12 @@ function snapshotFrom(v: unknown): Snapshot | null {
     Array.isArray(i) && i.length === 3 && isHash(i[0]) && isKey(i[1]) && (i[2] === 0 || i[2] === 1)
   )) return null;
   if (!(prevCommand === null || isHash(prevCommand))) return null;
+  if (!Array.isArray(served) || served.length > 4096 || !served.every((s, i) =>
+    Array.isArray(s) && s.length === 3 && isKey(s[0]) && Number.isSafeInteger(s[1]) && s[1] >= 0 && s[1] < 10_000 &&
+    Number.isSafeInteger(s[2]) && s[2] >= 1 && s[2] < 10_000 &&
+    (i === 0 || (served[i - 1] as string[])[0]! < (s[0] as string))
+  )) return null;
+  if (co === null && served.length > 0) return null;
 
   const office = (o: unknown): OfficeSnap | null => {
     if (o === null) return null;
@@ -303,7 +322,8 @@ function snapshotFrom(v: unknown): Snapshot | null {
     removed: removed as string[],
     holding: (holding as [string, Office[]][]).map((h) => [h[0], h[1]] as const),
     invited: (invited as [string, string, 0 | 1][]).map((i) => [i[0], i[1], i[2] === 1] as const),
-    prevCommand: prevCommand as string | null
+    prevCommand: prevCommand as string | null,
+    served: (served as [string, number, number][]).map((s) => [s[0], s[1], s[2]] as const)
   };
 }
 
@@ -334,7 +354,10 @@ export function snapshotWire(s: Snapshot): unknown[] {
     [...s.removed].sort(),
     byJson(s.holding.map((h) => [h[0], [...h[1]].sort()])),
     byJson(s.invited.map((i) => [i[0], i[1], i[2] ? 1 : 0])),
-    s.prevCommand
+    s.prevCommand,
+    [...s.served]
+      .map((r): [string, number, number] => [r[0], r[1], r[2]])
+      .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0))
   ];
 }
 

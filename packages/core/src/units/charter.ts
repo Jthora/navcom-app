@@ -120,7 +120,10 @@ export class CharterError extends Error {}
  */
 export const ARTICLES_HASH_PLACEHOLDER = '0'.repeat(64);
 
-/** The longest a code can be is 128 characters; anything past this is refused before parsing. */
+/**
+ * The longest a g1 code can be is 128 characters. Anything past this is refused once the format and
+ * rule have been read, so a later release's longer code still reads *needs an update*.
+ */
 const CODE_MAX = 160;
 
 const TEMPLATE_LETTER: Record<Template, string> = { military: 'm', plain: 'p' };
@@ -169,13 +172,21 @@ const refuse = (reason: 'needs-update' | 'off-menu' | 'malformed', field?: strin
  * `charterCode(readCharter(x).charter) === x` for every `x` that reads.
  */
 export function readCharter(code: unknown): CharterRead {
-  if (typeof code !== 'string' || code.length === 0 || code.length > CODE_MAX) return refuse('malformed');
-  const f = code.split('.');
+  if (typeof code !== 'string' || code.length === 0) return refuse('malformed');
 
-  // Format and rule first: a later release may give its code any shape at all.
-  if (f[0] !== CHARTER_FORMAT) return LEX.format.test(f[0]!) ? refuse('needs-update', 'format') : refuse('malformed');
-  if (f[1] === undefined) return refuse('malformed');
-  if (f[1] !== RULE_G1) return LEX.rule.test(f[1]) ? refuse('needs-update', 'rule') : refuse('malformed');
+  // Format and rule first, read from the first two fields alone and before the length cap: a later
+  // release may give its code any shape and any length at all.
+  const d1 = code.indexOf('.');
+  const format = d1 < 0 ? code : code.slice(0, d1);
+  if (format !== CHARTER_FORMAT) return LEX.format.test(format) ? refuse('needs-update', 'format') : refuse('malformed');
+  if (d1 < 0) return refuse('malformed');
+  const d2 = code.indexOf('.', d1 + 1);
+  const rule = d2 < 0 ? code.slice(d1 + 1) : code.slice(d1 + 1, d2);
+  if (rule !== RULE_G1) return LEX.rule.test(rule) ? refuse('needs-update', 'rule') : refuse('malformed');
+
+  // A g1 code this release can read is never longer than this.
+  if (code.length > CODE_MAX) return refuse('malformed');
+  const f = code.split('.');
   if (f.length !== 12) return refuse('malformed');
 
   const [, , tpl, shape, room, thr, term, cap, auth, serve, higher, lineage] = f as [
@@ -194,16 +205,18 @@ export function readCharter(code: unknown): CharterRead {
   const markers = higherLex[1]!;
   const articles = higherLex[2];
 
-  // Pass 2: something a newer release could have written.
+  // Pass 2: something a newer release could have written. A marker letter this release does not
+  // know is looked up before the markers are counted, since a later release that adds an echelon
+  // also allows one more marker.
   const template = TEMPLATE_OF.get(tpl);
   if (!template) return refuse('needs-update', 'template');
-  if (markers.length > MARKERS_MAX) return refuse('off-menu', 'higher');
   const under: Echelon[] = [];
   for (const m of markers) {
     const echelon = ECHELON_OF.get(m);
     if (!echelon) return refuse('needs-update', 'higher');
     under.push(echelon);
   }
+  if (under.length > MARKERS_MAX) return refuse('off-menu', 'higher');
 
   // Pass 3: the menu, and the pairings it allows.
   if (shape !== 'l' && shape !== 'a') return refuse('off-menu', 'shape');

@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Event } from 'nostr-tools/core';
-import { finalizeEvent } from 'nostr-tools/pure';
+import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import { addMonthsUTC, charterCode, threeQuartersOf, thresholdOf } from '../src/units/charter.js';
 import { compactOf, readStatement, signStatement, type Found, type Office } from '../src/units/statements.js';
 import {
@@ -272,6 +272,13 @@ describe('A5: equivocation', () => {
 });
 
 describe('A6: a removal racing a recall', () => {
+  // Revised with the units-core-attack repair. These first three asserted that a vote voids a
+  // concurrent removal. That chain is act for act the one in units-attack BREAK 1, where a removed
+  // member's own petition, signed weeks later on a pre-removal prev, undid their removal and
+  // everything built on it: concurrency is chosen by whoever names the older prev, so no rule can
+  // void the removal here and keep it there without trusting a claimed time. Now neither undoes the
+  // other, and the removal cannot touch the vote: the petition stands, its frozen electorate keeps
+  // the removed key, that key's signature still counts, and any elector may post the recall.
   const setup = () => {
     const u = ledUnit(NINE);
     const h = u.tips();
@@ -279,26 +286,38 @@ describe('A6: a removal racing a recall', () => {
     return { u, h, p };
   };
 
-  it('the CO and an ally remove the opener on the same prev: the removal is void, the petition stands', () => {
+  it('the CO and an ally remove the opener on the same prev: both stand, and the petition still passes', () => {
     const { u, h, p } = setup();
     const r = u.remove(['m1'], ['co', 'm2'], T0 + 31 * DAY + 60, h);
-    expect(u.voidReason(r.id)).toBe('vote-protection');
-    expect(u.view().petitions.map((x) => x.id)).toEqual([p.id]);
-    expect(u.members()).toContain('m1');
+    expect(u.voidReason(r.id)).toBeUndefined();
+    expect(u.voidReason(p.id)).toBeUndefined();
+    expect(u.members()).not.toContain('m1');
+    const pv = u.view().petitions[0]!;
+    expect(pv.id).toBe(p.id);
+    expect(pv.electorate).toContain(u.key('m1'));
+    expect(pv.count).toBe(1); // the removed opener still counts
+    u.support(['m3', 'm4', 'm5', 'm6'], p.id, T0 + 32 * DAY);
+    u.recall('m3', p.id, T0 + 33 * DAY);
+    expect(u.offices().co).toBe('xo');
   });
 
-  it('still void when built on an intermediate act concurrent with the petition', () => {
+  it('the same when built on an intermediate act concurrent with the petition', () => {
     const { u, h, p } = setup();
     const mid = u.admit('n1', ['xo', 'm3'], T0 + 31 * DAY, { prev: h });
     const r = u.remove(['m1'], ['co', 'm2'], T0 + 31 * DAY + 60, [mid.id]);
-    expect(u.voidReason(r.id)).toBe('vote-protection');
+    expect(u.voidReason(r.id)).toBeUndefined();
     expect(u.view().petitions.map((x) => x.id)).toEqual([p.id]);
+    expect(u.view().petitions[0]!.electorate).toContain(u.key('m1'));
   });
 
-  it('a concurrent removal the subject signed is void, whoever it removes', () => {
-    const { u, h } = setup();
+  it('a concurrent removal the subject signed stands, and changes nothing about the vote', () => {
+    const { u, h, p } = setup();
     const r = u.remove(['m5'], ['xo', 'co'], T0 + 31 * DAY + 60, h);
-    expect(u.voidReason(r.id)).toBe('vote-protection');
+    expect(u.voidReason(r.id)).toBeUndefined();
+    u.support(['m2', 'm3', 'm4', 'm5'], p.id, T0 + 32 * DAY); // m5, removed, still signs and counts
+    expect(u.view().petitions[0]!.count).toBe(5);
+    u.recall('m5', p.id, T0 + 33 * DAY); // and, as an elector, may post it
+    expect(u.offices().co).toBe('xo');
   });
 
   it('a removal that descends from the petition stands, and the removed elector still counts', () => {
@@ -609,7 +628,7 @@ describe('A14: the CO cap, two then out', () => {
     const open = u.open('m1', 'co', t3);
     u.vote(open.id, 'co', all.slice(0, 6), t3 + 60);
     const run = u.view().runs[0]!;
-    expect([run.k, run.kCapped, u.nameOf(run.cappedKey)]).toEqual([5, threeQuartersOf(9), 'co']);
+    expect([run.k, run.kCapped, run.cappedKeys.map(u.nameOf)]).toEqual([5, threeQuartersOf(9), ['co']]);
     expect(threeQuartersOf(9)).toBe(7);
     const majority = rawResult(u, {
       poster: 'm1', run: open.id, candidate: 'co', k: 5, at: t3 + 600,
@@ -768,14 +787,25 @@ describe('A16: the door and the room', () => {
 });
 
 describe('A17: re-forming with lineage', () => {
-  it('re-formers act with no term, and the first election may open at once', () => {
+  it('re-formers act with no term, and the first election opens once somebody invited has accepted', () => {
     const u = makeUnit({ reform: true });
     const v = u.view();
     expect(v.status).toBe('ok');
     expect(u.offices()).toEqual({ co: 'co', xo: 'xo', coActing: true, xoActing: true });
     expect(v.offices!.co.term).toEqual({ n: 0, start: T0, end: T0 });
+    // Revised with the units-core-attack repair (BREAK 8): this test opened the first election with
+    // the two re-formers as its whole electorate, which turned acting posts into a full elected term
+    // before any member could vote (decision 2: "re-formers act only until members elect"). The
+    // election still needs no term to end; it waits only for somebody invited to accept.
+    expect(u.voidReason(u.open('xo', 'co', T0 + 30).id)).toBe('not-electable');
+    const invite = u.act('co', { t: 'invite', former: u.key('oldC') }, T0 + 40, { name: 'xo' });
+    u.act('newC', {
+      t: 'accept', invite: invite.id, callsign: 'CRANE',
+      former: compactOf(u.sign('oldC', { t: 'accept-by', unit: u.unit, invite: invite.id, key: u.key('newC') }, T0 + 50))
+    }, T0 + 55);
     const open = u.open('xo', 'co', T0 + 60);
     expect(u.voidReason(open.id)).toBeUndefined();
+    expect(u.view().runs[0]!.electorate).toHaveLength(3);
     u.vote(open.id, 'co', ['co', 'xo'], T0 + 120);
     u.result('xo', open.id, 'co', T0 + 600);
     expect(u.view().offices!.co).toMatchObject({ acting: false, term: { n: 1 } });
@@ -806,8 +836,13 @@ describe('A17: re-forming with lineage', () => {
     expect(u.view().members.find((r) => r.key === u.key('newC'))!.how).toBe('re-formed');
     const roster = new Set([u.key('oldA'), u.key('oldB'), u.key('oldC')]);
     expect(u.view(LATER, { formerRoster: roster }).lineage!.former).toBe('checked');
-    expect(u.view(LATER, { formerRoster: new Set([u.key('oldA'), u.key('oldB')]) }).lineage!.former).toBe('mismatch');
-    expect(u.members()).toContain('newC'); // flagged, never voided
+    const without = u.view(LATER, { formerRoster: new Set([u.key('oldA'), u.key('oldB')]) });
+    expect(without.lineage!.former).toBe('mismatch');
+    // A phone holding the old roster refuses an invitation to a key not on it (units-attack BREAK 10);
+    // a phone that never held the roster cannot check, and admits.
+    expect(without.members.map((r) => u.nameOf(r.key))).not.toContain('newC');
+    expect(without.void.find((x) => x.id === invite.id)!.reason).toBe('not-on-old-roster');
+    expect(u.members()).toContain('newC');
   });
 
   it('accept without an invite, with the wrong former key, or in a unit that was not re-formed, is void', () => {
@@ -988,6 +1023,106 @@ describe('A21: Any two', () => {
     const u = makeUnit({ governance: anyTwo, room: 4 });
     u.remove(['a'], ['b'], T0 + DAY);
     expect(u.members()).toEqual(['b']);
+  });
+});
+
+describe('A22: repairs made alongside the units-core-attack breaks', () => {
+  /** A secret key whose public key sorts below `below`. */
+  const keyBelow = (below: string): Uint8Array => {
+    for (;;) {
+      const sk = generateSecretKey();
+      if (getPublicKey(sk) < below) return sk;
+    }
+  };
+
+  it('a throwaway signature on a checkpoint does not displace the member who co-signed it', () => {
+    // The same flaw as BREAK 2, on checkpoints: the smallest signer was kept without asking whether
+    // it was a member, so one stray signature hid a valid checkpoint.
+    const u = ledUnit(NINE);
+    u.vacate('xo', 'xo', T0 + DAY);
+    const v = u.view();
+    const cp = buildCheckpoint({ unit: u.unit, view: v, head: v.head, at: T0 + 2 * DAY }, u.sk('co'));
+    u.loose.push(cp, u.sign('m1', { t: 'sign', unit: u.unit, act: cp.id }, T0 + 2 * DAY));
+    expect(u.view().checkpointDue).toBe(false);
+    u.loose.push(signStatement(keyBelow(u.key('m1')), { t: 'sign', unit: u.unit, act: cp.id }, T0 + 2 * DAY + 60));
+    expect(u.view().checkpointDue).toBe(false);
+  });
+
+  it('a recalled CO cannot act as CO on a state from before the recall', () => {
+    const u = ledUnit(NINE);
+    const p = u.petition('m1', 'co', 'co', T0 + 31 * DAY);
+    u.support(['m2', 'm3', 'm4', 'm5'], p.id, T0 + 32 * DAY);
+    const before = u.tips();
+    u.recall('m2', p.id, T0 + 33 * DAY);
+    expect(u.offices().co).toBe('xo');
+    // The recalled CO and an ally remove a petition signer, naming the state before the recall.
+    const r = u.remove(['m3'], ['co', 'm7'], T0 + 34 * DAY, before);
+    expect(u.voidReason(r.id)).toBe('office-ended');
+    expect(u.members()).toContain('m3');
+  });
+
+  it('the CO cap holds through the term out, a vacancy filled in it included', () => {
+    const capped = { shape: 'led', threshold: 'majority', term: 12, coCap: 'twoThenOut' } as const;
+    const u = ledUnit(NINE, { governance: capped });
+    const all = ['co', 'xo', ...NINE];
+    u.elect({ office: 'co', opener: 'm1', candidate: 'co', voters: all.slice(0, 5), at: TE }); // a second term
+    const t3 = u.view().offices!.co.term!.end;
+    u.elect({ office: 'co', opener: 'm1', candidate: 'm2', voters: all.slice(2, 7), at: t3 }); // co sits out
+    u.vacate('m2', 'co', t3 + 10 * DAY);
+    const open = u.open('m1', 'co', t3 + 11 * DAY);
+    u.vote(open.id, 'co', all.slice(2, 7), t3 + 11 * DAY + 60);
+    const run = u.view().runs.find((r) => r.id === open.id)!;
+    expect(run.kind).toBe('fill');
+    expect(run.cappedKeys.map(u.nameOf)).toEqual(['co']);
+    expect(run.postable).toBeNull(); // five of nine is a majority, not three-quarters
+  });
+
+  it('a clock that cannot be read refuses the unit, and shows nothing as current', () => {
+    const u = ledUnit(NINE);
+    for (const now of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY]) {
+      const v = evaluate(u.input(now));
+      expect([v.status, v.reason, v.members, v.offices]).toEqual(['refused', 'clock', [], null]);
+    }
+  });
+
+  it('an act with two valid second signers stands while either of them remains', () => {
+    const u = ledUnit(NINE);
+    const h = u.tips();
+    const ad = u.admit('n1', ['co', 'm1'], T0 + 2 * DAY, { prev: h });
+    u.loose.push(u.sign('m2', { t: 'sign', unit: u.unit, act: ad.id }, T0 + 2 * DAY + 60));
+    u.remove(['m1'], ['xo', 'm3'], T0 + 2 * DAY, h);
+    expect(u.voidReason(ad.id)).toBeUndefined();
+    expect(u.members()).toContain('n1');
+    const w = ledUnit(NINE);
+    const g = w.tips();
+    const bd = w.admit('n1', ['co', 'm1'], T0 + 2 * DAY, { prev: g });
+    w.loose.push(w.sign('m2', { t: 'sign', unit: w.unit, act: bd.id }, T0 + 2 * DAY + 60));
+    w.remove(['m1', 'm2'], ['xo', 'm3'], T0 + 2 * DAY, g);
+    expect(w.voidReason(bd.id)).toBe('removal-wins');
+  });
+
+  it('after a split week, what a member admitted in one half did falls with their admission', () => {
+    const u = ledUnit(names(8));
+    const h = u.tips();
+    const a1 = u.admit('a1', ['co', 'm1'], T0 + 10 * DAY, { prev: h });
+    const a2 = u.admit('a2', ['co', 'm2'], T0 + 11 * DAY, { prev: [a1.id] });
+    const b1 = u.admit('b1', ['xo', 'm5'], T0 + 10 * DAY, { prev: h });
+    u.admit('b2', ['xo', 'm6'], T0 + 11 * DAY, { prev: [b1.id] });
+    const later = u.act('a1', { t: 'leave', prev: [a2.id] }, T0 + 12 * DAY);
+    expect(u.voidReason(a1.id)).toBe('crossed-admissions');
+    expect(u.voidReason(later.id)).toBe('built-on-void');
+    expect(u.members()).toHaveLength(10);
+  });
+
+  it('one key building alone on its own unknown act changes nothing', () => {
+    const u = ledUnit(NINE);
+    const template = signStatement(u.sk('m1'), { t: 'leave', unit: u.unit, prev: u.tips() }, T0 + DAY);
+    const content = JSON.parse(template.content);
+    content[1] = 'rename';
+    const newer = finalizeEvent({ kind: template.kind, created_at: template.created_at, tags: [], content: JSON.stringify(content) }, u.sk('m1'));
+    u.chain.push({ act: newer });
+    u.act('m1', { t: 'leave', prev: [newer.id] }, T0 + 2 * DAY);
+    expect(u.view().status).toBe('ok');
   });
 });
 

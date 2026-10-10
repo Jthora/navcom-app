@@ -4,14 +4,19 @@ import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure
 import { addMonthsUTC, readCharter, threeQuartersOf } from '../src/units/charter.js';
 import { compactOf, isCallsign, signStatement, type Office } from '../src/units/statements.js';
 import {
-  buildCheckpoint, electorateDigest, evaluate, resultDigest, snapshotOf
+  GovernanceError, buildCheckpoint, electorateDigest, evaluate, resultDigest, snapshotOf
 } from '../src/units/governance.js';
 import { DAY, LATER, T0, TestUnit, ledUnit, makeUnit, names } from './helpers/units.js';
 
 /**
  * Adversarial review of units/ (branch units-core, bbcd6c48). Every test here is a break: it
  * states what docs/design/units.md, groups.md or the owner's decisions of 2026-10-09 require, and
- * it FAILS against the evaluator as committed. Nothing in src/ was changed.
+ * it FAILED against the evaluator as committed. The `// actual:` notes record what that evaluator did.
+ *
+ * Repaired on units-core-attack: every break now passes. Four tests were corrected where the repair
+ * showed them wrong, each marked "Corrected" with the reason beside it (BREAK 1's second case,
+ * BREAK 4's second case, BREAK 5's last assertion and BREAK 8's result step). BREAK 5 also gained a
+ * case for the reach-back that remains, which is now reported rather than silent.
  *
  * Personas: a hostile member, an infiltrator, a captured CO, a closer choosing what to carry, a
  * phone on an older release, a forged or replayed statement, two halves split for a week, a clock
@@ -79,12 +84,18 @@ describe('BREAK 1 (CRITICAL): a stale-prev vote undoes any removal, and every ac
   it('an ally can do it for them, and can repeat it after every re-removal', () => {
     const u = ledUnit(NINE);
     const before = u.tips();
-    u.remove(['m7'], ['co', 'xo'], T0 + 40 * DAY);
+    const rm = u.remove(['m7'], ['co', 'xo'], T0 + 40 * DAY);
     u.petition('m6', 'co', 'co', T0 + 45 * DAY, before); // the ally's stale-prev petition
-    const again = u.remove(['m7'], ['co', 'xo'], T0 + 46 * DAY); // honest re-removal on the new head
+    // Corrected after the fix: the first removal now stands, so the original's "honest re-removal on
+    // the new head" has nobody left to remove and reads 'not-a-member'. What the break was about is
+    // asserted directly instead: the removal survives every stale-prev vote, and the votes stand too.
+    expect(u.voidReason(rm.id)).toBeUndefined();
+    const again = u.remove(['m7'], ['co', 'xo'], T0 + 46 * DAY);
+    expect(u.voidReason(again.id)).toBe('not-a-member'); // m7 is already out
     u.petition('m6', 'xo', 'xo', T0 + 47 * DAY, before); // another stale-prev vote, against the XO
-    expect(u.voidReason(again.id)).toBeUndefined(); // actual: 'vote-protection'
+    expect(u.voidReason(rm.id)).toBeUndefined();
     expect(u.members()).not.toContain('m7');
+    expect(u.view().petitions).toHaveLength(2);
   });
 });
 
@@ -157,9 +168,15 @@ describe('BREAK 4 (HIGH): a captured CO and one ally kill a recall that already 
     const u = ledUnit(NINE);
     const open = u.open('m1', 'co', TE);
     u.vote(open.id, 'm2', ['xo', 'm1', 'm2', 'm3', 'm4'], TE + 60);
-    u.remove(['m2'], ['co', 'm7'], TE + 120); // after the open: R1 does not look
-    try { u.result('m3', open.id, 'm2', TE + 600); } catch { /* the view already refuses it */ }
-    // units.md: "A removal that crosses an open vote is void if ... it removes one of that vote's electors."
+    const rm = u.remove(['m2'], ['co', 'm7'], TE + 120); // after the open: R1 does not look
+    // Corrected: "crosses" in units.md means concurrent (groups.md, "When two changes cross"), and a
+    // rule voiding every removal of an elector made while a vote is open would make the whole roster
+    // irremovable for as long as a petition or an unanswered election stands, a seized phone
+    // included. The incumbent's removal stands, but it cannot defeat the vote: the result is posted
+    // on the vote's own state, where the removal of its winner is void (R3). The original posted on
+    // the head after the removal, where the winner is not a member in the result's own ancestry.
+    u.result('m3', open.id, 'm2', TE + 600, [open.id]);
+    expect(u.voidReason(rm.id)).toBe('vote-protection');
     expect(u.offices().co).toBe('m2'); // actual: 'co' holds over
   });
 });
@@ -178,13 +195,34 @@ describe('BREAK 5 (HIGH): the old CO and one ally undo a settled election weeks 
     u.loose.push(cp, u.sign('m5', { t: 'sign', unit: u.unit, act: cp.id }, TE + 11 * DAY));
     expect(u.view().checkpointDue).toBe(false); // the change of command is checkpointed
     // Two weeks on, the old CO (still CO at the open) and m7 remove the winner on [open].
-    u.remove(['m2'], ['co', 'm7'], TE + 25 * DAY, [open.id]);
+    const coup = u.remove(['m2'], ['co', 'm7'], TE + 25 * DAY, [open.id]);
     expect(u.voidReason(result.id)).toBeUndefined(); // actual: 'not-a-member'
     expect(u.offices().co).toBe('m2'); // actual: 'co'
     expect(u.voidReason(first.id)).toBeUndefined(); // actual: 'removal-wins'
-    // And it is silent: the co-signed checkpoint now names a void head, so it is skipped rather than
-    // reported. units.md: "A member holding the older chain sees any mismatch."
-    expect(u.view().disagreements.length).toBeGreaterThan(0); // actual: 0, checkpointDue false
+    // Corrected: the original asserted a disagreement because the reversal was silent. With the coup
+    // void, this phone's history and the co-signed checkpoint agree, so there is no mismatch to
+    // report; the coup is shown as void with its reason, and the checkpoint still covers the change.
+    expect(u.voidReason(coup.id)).toBe('vote-protection');
+    expect(u.view().disagreements).toEqual([]);
+    expect(u.view().checkpointDue).toBe(false);
+  });
+
+  it('where a stale removal still reaches back, the checkpoint it contradicts says so', () => {
+    // Removal wins still reaches back (the governance docblock, "What it cannot settle"): the XO, who
+    // kept their office through the election, and m7 remove m4 on [open], which voids the admission
+    // m4 co-signed with the new CO. It is no longer silent: the co-signed checkpoint that certified
+    // that admission is reported as a disagreement, and the change of command reads as uncovered.
+    const u = ledUnit(NINE);
+    const { open } = u.elect({ office: 'co', opener: 'm1', candidate: 'm2', voters: ['xo', 'm1', 'm2', 'm3', 'm4'], at: TE, poster: 'm3' });
+    const first = u.admit('n1', ['m2', 'm4'], TE + 10 * DAY);
+    const v = u.view();
+    const cp = buildCheckpoint({ unit: u.unit, view: v, head: v.head, at: TE + 11 * DAY }, u.sk('m4'));
+    u.loose.push(cp, u.sign('m5', { t: 'sign', unit: u.unit, act: cp.id }, TE + 11 * DAY));
+    expect(u.view().checkpointDue).toBe(false);
+    u.remove(['m4'], ['xo', 'm7'], TE + 25 * DAY, [open.id]);
+    expect(u.voidReason(first.id)).toBe('removal-wins');
+    expect(u.view().disagreements).toEqual([{ id: cp.id, what: 'checkpoint' }]);
+    expect(u.view().checkpointDue).toBe(true);
   });
 });
 
@@ -233,7 +271,10 @@ describe('BREAK 8 (MEDIUM-HIGH): re-formers elect themselves to a full term befo
     const invite = u.act('co', { t: 'invite', former: u.key('oldC') }, T0 + 60, { name: 'xo' });
     const open = u.open('xo', 'co', T0 + 120);
     u.vote(open.id, 'co', ['co', 'xo'], T0 + 180);
-    u.result('xo', open.id, 'co', T0 + 600);
+    // Corrected: the original went on to post the result, which threw once the open was refused,
+    // before its assertions ran. The open is void, so no phone holding this chain can build one.
+    expect(u.voidReason(open.id)).toBe('not-electable');
+    expect(() => u.result('xo', open.id, 'co', T0 + 600)).toThrow(GovernanceError);
     u.act('newC', {
       t: 'accept', invite: invite.id, callsign: 'CRANE',
       former: compactOf(u.sign('oldC', { t: 'accept-by', unit: u.unit, invite: invite.id, key: u.key('newC') }, T0 + 700))

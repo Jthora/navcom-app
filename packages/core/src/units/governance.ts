@@ -14,7 +14,8 @@
  *
  * It is **total and deterministic**: it never throws, and its output depends on the *set* of
  * statements it was given, never on their order. It reads no clock but `now`, and uses `now` only
- * to hold back statements dated in this phone's future, which are never dropped.
+ * to hold back statements dated in this phone's future, which are never dropped. A `now` that is
+ * not a finite number could hold nothing back, so the unit is refused as `clock` rather than read.
  *
  * ## The three things a phone can enforce (governance §2.1)
  *
@@ -38,45 +39,96 @@
  * 2. **Normalise.** Every statement is read on a fresh copy; anything malformed, badly signed, of
  *    another unit, or of a type this release does not know is set aside with its reason. An unknown
  *    act in a `g1` chain is dropped rather than freezing governance, so one member cannot freeze
- *    everyone's.
+ *    everyone's. Once a second key has built on one, the unit reads *needs an update*: the roster
+ *    shown is as far as this release can read, and is never passed off as current.
  * 3. **Hold back.** A statement dated more than {@link GOVERNANCE_CLOCK_TOLERANCE_SECONDS} into this
- *    phone's future is held, and so is everything built on it. An act that needs a second signer
- *    and has none is held as incomplete.
+ *    phone's future is held, and so is everything built on it. An act that needs a second signer is
+ *    held while it has none dated in this phone's present: as future-dated if one is from the
+ *    future, otherwise as incomplete. Of several second signatures, the first by key that makes the
+ *    act valid is used, so a signature from a key that is not a member never displaces one that is.
  * 4. **Root.** Two founding statements by two keys, each naming the other, with the same unit and
  *    code. A founder who signed any other founding statement for the unit refuses it, named.
  * 5. **Ancestry.** Each act is checked against the state its own ancestors produce (the rule table
- *    in {@link checkAct}). An act whose parents are all void is void. A void parent is otherwise
- *    ignored, so a poisoned tip cannot void honest acts that also name a valid one.
+ *    in `checkWith`).
  * 6. **Crossing.** Among acts valid by ancestry, in this fixed order, once each:
  *    - **R0 split.** Two concurrent removals each removing a signer of the other: the unit has
- *      split. `follow` keeps one; without it, neither stands.
- *    - **R1 vote protection.** A removal concurrent with an open election or petition is void if it
- *      removes one of that vote's electors, or if the vote's subject signed it.
- *    - **R2 removal wins.** Any act signed by a key that a concurrent removal or leave removes is
- *      void.
- *    - **R3 crossed results.** Concurrent results for one office naming different winners are both
+ *      split. `follow` keeps one; without it, neither stands, nor anything built only on either.
+ *    - **R1 one vote per opener.** One key's concurrent opens for one office, or concurrent
+ *      petitions against one holder, are all void and the key is named.
+ *    - **R2 crossed results.** Concurrent results for one office naming different winners are both
  *      void: nobody wins, the incumbent holds over, the run closes contested, and the electors in
  *      both are named.
- *    - **R4 crossed admissions.** Concurrent admissions that together pass the room are all void,
- *      as are concurrent admissions of one key under two callsigns.
+ *    - **R3 a removal never defeats a result.** A removal concurrent with a result that removes its
+ *      winner is void.
+ *    - **R4 a change of command ends the authority it took.** An admission, invitation or removal
+ *      that needed a position holder's signature is void if every position holder who signed it
+ *      lost that position by a concurrent result, recall or vacate.
+ *    - **R5 removal wins.** An act signed by a key that a concurrent removal or leave removes is
+ *      void, except a vote (below).
+ *    - **R6 crossed admissions.** Concurrent admissions that together pass the room are all void,
+ *      as are concurrent admissions of one key under two callsigns, and concurrent readmissions of
+ *      one removed leader by members using the open election to let them back in.
+ *
+ *    After ancestry and after each rule, an act that stood on something just voided is judged again
+ *    against what still stands among its ancestors, and is void (`built-on-void`) only if it no
+ *    longer holds there. So a room overflow after a split costs only the admissions, never an
+ *    unrelated removal one half made in the same week.
  * 7. **Effects** of the acts left apply in one linear order: parents first, then by class (removals,
  *    results, recalls, vacates, opens and petitions, admissions), then by id. The id only orders acts
  *    of one class, whose effects commute, so **a ground id never decides who is in**.
  * 8. **This phone's own reading** of the loose statements it holds: tallies, who could post a
- *    result now, and who endorsed two candidates in one run. These never move an office or a member:
- *    phones holding different loose statements show different tallies and the same unit.
+ *    result now, who endorsed two candidates in one run, and any result carrying the signature of
+ *    an elector this phone holds endorsing someone else in that run (a disagreement, never a void,
+ *    since a phone without that endorsement cannot know). None of these moves an office or a
+ *    member: phones holding different loose statements show different tallies and the same unit.
+ *
+ * ## A vote and a removal never undo each other
+ *
+ * units.md §7 makes a removal that crosses an open vote void. Crossing means concurrent, and either
+ * side can make two acts concurrent by naming an old `prev`: a removed member's petition on a
+ * pre-removal state is concurrent with their own removal, and is, act for act, the same chain as an
+ * incumbent racing a petition with a removal. No rule can tell the two apart without trusting a
+ * claimed time, which both sides write. So neither side voids the other, and the vote is made
+ * proof against removal instead:
+ *
+ * - the electorate is frozen at the state the vote names, removed electors still count, and their
+ *   signatures still count;
+ * - a vote (open, petition, result, recall) is never void because a key that signed it was removed
+ *   beside it (R5's exception);
+ * - a result or recall may be posted by any member or by any elector of that vote, so removing
+ *   everyone who holds the signatures cannot stop it;
+ * - a removal concurrent with a result cannot remove its winner (R3), and a result may name the
+ *   vote's own state as its parent, so a winner removed after the vote opened still takes office.
+ *
+ * What is lost is the letter of the rule: a removal by the person a vote is about now stands, and is
+ * shown with its receipt. It cannot change the vote.
  *
  * ## Choices a reviewer should check
  *
  * These go beyond units.md and governance §2.4, and the owner and a reviewer should sign them off:
- * concurrency rather than "siblings of one prev"; the fixed class order; the built-on-void cascade
- * and void-parent tolerance; R0 to R4 applied once with no fixpoint, so a cascade that voids an open
- * does not revive a removal it already protected, and R2 judges against the removals valid when it
- * starts; two concurrent opens for one office both standing until a result supersedes both; a CO who
- * holds the office (not acting) never winning the XO; after a CO recall the XO serves as CO, not
- * acting, and the cap count restarts at zero, as it does for a vacancy filled mid-term; a leaver
- * counting as removed, so their key is never admitted again; and a re-founded unit's first election
- * opening at once with an electorate of the re-formers alone.
+ * the section above, which replaces units.md §7's crossing rule; concurrency rather than "siblings
+ * of one prev"; the fixed class order; the void-parent re-judgement; R0 to R6 applied once with no
+ * fixpoint; two concurrent opens for one office by two keys both standing until a result supersedes
+ * both; a CO who holds the office (not acting) never winning the XO; after a CO recall the XO serves
+ * as CO, not acting; the CO cap counting every CO term a key served any part of (not acting),
+ * including a vacancy filled and the rest of a recalled CO's term, so swapping posts through a
+ * vacancy does not reset it; a leaver counting as removed, so their key is never admitted again; a
+ * re-founded unit's first election opening only once somebody invited has accepted; a phone that
+ * holds the old unit's roster refusing an invitation to a key not on it, while a phone that does
+ * not hold it cannot; and a checkpoint naming a head this phone cannot place never replacing
+ * history this phone already holds.
+ *
+ * ## What it cannot settle
+ *
+ * Order comes only from parent links, so any act may name an old state, and every rule that lets one
+ * act void a concurrent one can be aimed backwards by whoever writes the stale act. The rules above
+ * remove the cases a vote or a minority could exploit, but two remain and need a decision, not a
+ * patch: **removal wins (R5) reaches back** (two members who may remove a key can name a state from
+ * weeks ago and void what that key signed since, and what stood only on it), and **an electorate is
+ * frozen at whatever state the opener names**, so a vote opened on an early, small roster counts
+ * against that roster. A co-signed checkpoint that this phone's history now contradicts is reported
+ * as a disagreement, so the first is at least never silent. Both need an ordering anchor the design
+ * does not yet have.
  *
  * The evaluator costs roughly the cube of the number of acts since the last checkpoint. That is
  * nothing at tens of acts and unmeasured on the device floor.
@@ -134,9 +186,13 @@ export interface RunView {
   m: number;
   /** Signatures a result needs. */
   k: number;
-  /** What {@link cappedKey} needs instead, where the CO cap applies to them. */
+  /** What a key in {@link cappedKeys} needs instead. */
   kCapped: number | null;
-  cappedKey: string | null;
+  /**
+   * Who the CO cap applies to in this run: anyone who served the CO office in each of the two terms
+   * before the one this run fills. Usually one key; never more than the people who held the office.
+   */
+  cappedKeys: string[];
   /** This phone's count, from the loose endorsements it holds. */
   tallies: { candidate: string; count: number; stood: boolean }[];
   /** A candidate this phone could post a result for now, or null. */
@@ -163,10 +219,11 @@ export type VoidReason =
   | 'not-an-anchor'
   // The chain
   | 'built-on-void' | 'split' | 'split-not-followed' | 'vote-protection' | 'removal-wins'
-  | 'crossed-results' | 'crossed-admissions' | 'office-conflict'
+  | 'crossed-results' | 'crossed-admissions' | 'crossed-opens' | 'office-conflict' | 'office-ended'
   // The rule table
   | 'no-offices' | 'not-a-member' | 'not-allowed' | 'already-member' | 'was-removed' | 'room-full'
   | 'recalled-signer' | 'not-invited' | 'already-invited' | 'already-accepted' | 'bad-former-signature'
+  | 'not-on-old-roster'
   | 'not-electable' | 'run-open' | 'run-not-open' | 'petition-not-open' | 'already-petitioned'
   | 'too-early' | 'moot' | 'unknown-rule' | 'digest-mismatch' | 'wrong-count' | 'not-an-elector'
   | 'no-stand' | 'bad-signature-carried';
@@ -176,13 +233,18 @@ export type HeldReason = 'future-dated' | 'waiting-for-earlier' | 'incomplete';
 export type UnitRefusal =
   | 'needs-update' | 'malformed-charter' | 'off-menu' | 'named-higher' | 'founding'
   | 'founding-equivocation' | 'future-dated'
+  /** This phone's clock could not be read: nothing can be held back against it. */
+  | 'clock'
   /** A fault in this evaluator, never a verdict on the unit: shown as *needs an update*. */
   | 'internal';
 
 export interface UnitView {
   status: 'ok' | 'split' | 'needs-update' | 'refused';
   reason?: UnitRefusal;
-  /** The charter field a newer release could read, or that is off the menu. */
+  /**
+   * The charter field a newer release could read, or that is off the menu; `act` where the chain
+   * builds on an act of a type this release does not know.
+   */
   field?: string;
   /** Who a refusal names: the founders who signed two foundings. */
   names?: string[];
@@ -204,6 +266,7 @@ export interface UnitView {
   lineage: null | { from: string; former: 'checked' | 'not-held' | 'mismatch' };
   /** Whether this view rests on a checkpoint rather than the whole history. */
   anchored: boolean;
+  /** Null where this state cannot be written as a checkpoint at all. */
   snapshot: Snapshot | null;
 }
 
@@ -212,7 +275,12 @@ export interface UnitInput {
   /** The unit's id, 32 hex. */
   unit: string;
   found: readonly [Event, Event];
-  /** A co-signed checkpoint to start from, for a phone that holds no history before it. */
+  /**
+   * A co-signed checkpoint to start from, for a phone that holds no history before it. Where `chain`
+   * also carries history the checkpoint's head cannot be placed against, that history wins and the
+   * checkpoint waits: to start from a checkpoint, pass only what came after it. Otherwise any two
+   * members could sign a checkpoint naming a head nobody holds and replace every phone's history.
+   */
   checkpoint?: { event: Event; sign: Event; roster: readonly RosterRow[] };
   chain: readonly { act: Event; sign?: Event }[];
   loose: readonly Event[];
@@ -249,13 +317,16 @@ export function resultDigest(
 
 interface OfficeState { holder: string | null; acting: boolean; n: number; start: number; end: number }
 interface RunState extends RunSnap { electorate: string[] }
+/** The last CO term a key served in (not acting), and how many consecutive CO terms end there. */
+interface Served { last: number; count: number }
 
 interface State {
   members: Map<string, RosterRow>;
   removed: Set<string>;
   co: OfficeState | null;
   xo: OfficeState | null;
-  cap: { holder: string | null; count: number } | null;
+  /** CO service, for the cap: only keys whose last term is this one or the one before. */
+  served: Map<string, Served>;
   /** Open election runs and petitions. */
   runs: Map<string, RunState>;
   petitioned: Set<string>;
@@ -276,7 +347,7 @@ function cloneState(s: State): State {
     removed: new Set(s.removed),
     co: office(s.co),
     xo: office(s.xo),
-    cap: s.cap ? { ...s.cap } : null,
+    served: new Map([...s.served].map(([k, r]) => [k, { ...r }])),
     runs: new Map([...s.runs].map(([k, r]) => [k, { ...r, electorate: [...r.electorate] }])),
     petitioned: new Set(s.petitioned),
     recalled: s.recalled.map((r) => ({ ...r, signers: [...r.signers] })),
@@ -292,8 +363,35 @@ const holds = (s: State, key: string): Office[] =>
   (['co', 'xo'] as const).filter((o) => s[o]?.holder === key);
 const sortedKeys = (xs: Iterable<string>): string[] => [...new Set(xs)].sort();
 
+/** Consecutive CO terms `key` has served, ending with the current term. */
+function termsNow(s: State, key: string): number {
+  const e = s.served.get(key);
+  return e && s.co && e.last === s.co.n ? e.count : 0;
+}
+
+/**
+ * Consecutive CO terms `key` served, ending with the term before the one a run of this kind fills:
+ * the next term for a term-end or first election, this term for a vacancy.
+ */
+function termsBefore(s: State, key: string, kind: RunSnap['kind']): number {
+  const e = s.served.get(key);
+  if (!e || !s.co) return 0;
+  const n = s.co.n;
+  if (kind === 'fill') return e.last === n ? e.count - 1 : e.last === n - 1 ? e.count : 0;
+  return e.last === n ? e.count : 0;
+}
+
 function snapshotOfState(s: State): Snapshot {
   return canonicalSnapshot(rawSnapshot(s));
+}
+
+/** The snapshot of a state, or null where it cannot be written: a view never throws for it. */
+function safeSnapshot(s: State): Snapshot | null {
+  try {
+    return snapshotOfState(s);
+  } catch {
+    return null;
+  }
 }
 
 function rawSnapshot(s: State): Snapshot {
@@ -303,7 +401,7 @@ function rawSnapshot(s: State): Snapshot {
     roster: rosterDigest([...s.members.values()]),
     co: off(s.co),
     xo: off(s.xo),
-    cap: s.cap ? { ...s.cap } : null,
+    cap: s.co ? { holder: s.co.holder, count: s.co.holder === null ? 0 : termsNow(s, s.co.holder) } : null,
     petitioned: [...s.petitioned].sort().map((p) => {
       const [o, key, n] = p.split(' ');
       return [o as Office, key!, Number(n)] as const;
@@ -315,7 +413,8 @@ function rawSnapshot(s: State): Snapshot {
     removed: [...s.removed].sort(),
     holding: [...s.holding].map(([k, h]) => [k, [...h].sort()] as const).sort((a, b) => (a[0] < b[0] ? -1 : 1)),
     invited: [...s.invited].map(([id, i]) => [id, i.former, i.accepted] as const).sort((a, b) => (a[0] < b[0] ? -1 : 1)),
-    prevCommand: s.prevCommand
+    prevCommand: s.prevCommand,
+    served: [...s.served].map(([k, r]) => [k, r.last, r.count] as const).sort((a, b) => (a[0] < b[0] ? -1 : 1))
   };
 }
 
@@ -325,7 +424,7 @@ function stateOfSnapshot(snap: Snapshot, rows: readonly RosterRow[]): State {
     removed: new Set(snap.removed),
     co: snap.co ? { ...snap.co } : null,
     xo: snap.xo ? { ...snap.xo } : null,
-    cap: snap.cap ? { ...snap.cap } : null,
+    served: new Map(snap.served.map(([k, last, count]) => [k, { last, count }])),
     runs: new Map(snap.runs.map((r) => [r.id, { ...r, electorate: [...r.electorate] }])),
     petitioned: new Set(snap.petitioned.map((p) => petitionKey(p[0], p[1], p[2]))),
     recalled: snap.recalled.map((r) => ({ ...r, signers: [...r.signers] })),
@@ -345,9 +444,8 @@ interface ActRec {
   pubkey: string;
   at: number;
   s: Act;
-  /** The second signer, from a valid `sign`. */
-  cosigner: string | null;
-  cosignAt: number | null;
+  /** Every second signature this phone holds for the act, one per key (the earliest), by key. */
+  cosigns: { key: string; at: number }[];
 }
 
 interface Read {
@@ -363,6 +461,8 @@ interface Fold {
   names: Map<string, string[]>;
   splits: [string, string][];
   unresolved: boolean;
+  /** Void because they lie on a side of a split: what is built only on them inherits that. */
+  branch: Set<string>;
 }
 
 const emptyView = (over: Partial<UnitView>): UnitView => ({
@@ -384,6 +484,9 @@ const emptyView = (over: Partial<UnitView>): UnitView => ({
   ...over
 });
 
+/** Acts whose authority is the signatures they carry: removing whoever posted one never voids it. */
+const VOTES: ReadonlySet<Act['t']> = new Set(['open', 'petition', 'result', 'recall']);
+
 /** Never throws: anything unexpected refuses the unit on this phone rather than crashing it. */
 export function evaluate(input: UnitInput): UnitView {
   try {
@@ -395,6 +498,8 @@ export function evaluate(input: UnitInput): UnitView {
 
 function evaluateUnchecked(input: UnitInput): UnitView {
   const now = input.now;
+  // A clock this phone cannot read would hold nothing back, so nothing is read against it.
+  if (typeof now !== 'number' || !Number.isFinite(now)) return emptyView({ status: 'refused', reason: 'clock' });
   const tolerance = GOVERNANCE_CLOCK_TOLERANCE_SECONDS;
   const future = (t: number) => t > now + tolerance;
 
@@ -414,6 +519,7 @@ function evaluateUnchecked(input: UnitInput): UnitView {
   if (charter.higher.under.length > 0) return emptyView({ status: 'refused', reason: 'named-higher', charter });
   const gov = charter.governance;
   const led = gov.shape === 'led';
+  const coCapOn = gov.shape === 'led' && gov.coCap === 'twoThenOut';
   const unit = input.unit;
 
   // (2) Normalise.
@@ -422,10 +528,17 @@ function evaluateUnchecked(input: UnitInput): UnitView {
     const id = typeof (e as { id?: unknown })?.id === 'string' ? (e as { id: string }).id : '?';
     if (!voids.has(id)) voids.set(id, { reason });
   };
-  const readOne = (e: unknown): Read | null => {
+  /** Chain acts of a type this release does not know, and who signed each. */
+  const unknownActs = new Map<string, string>();
+  const readOne = (e: unknown, inChain = false): Read | null => {
     const r = readStatement(e);
     if (!r.ok) {
       setAside(e, r.reason);
+      // Read only once its signature has verified, so the id and key are the signer's own.
+      if (inChain && r.reason === 'unknown-act') {
+        const o = e as { id: string; pubkey: string };
+        unknownActs.set(o.id, o.pubkey);
+      }
       return null;
     }
     if (r.statement.unit !== unit) {
@@ -458,6 +571,8 @@ function evaluateUnchecked(input: UnitInput): UnitView {
   const root = rootId(unit, fa.id, fb.id);
   const foundIds = new Set([fa.id, fb.id]);
   const tf = Math.max(fa.createdAt, fb.createdAt);
+  /** The re-formers' own former keys: already in the unit, so never invited into a second seat. */
+  const founderFormers = charter.lineage === null ? [] : [A.former![0], B.former![0]];
 
   // Everything else, read once.
   const chainReads: { act: Read; sign: Read | null }[] = [];
@@ -466,7 +581,7 @@ function evaluateUnchecked(input: UnitInput): UnitView {
       setAside(entry, 'malformed');
       continue;
     }
-    const act = readOne(entry.act);
+    const act = readOne(entry.act, true);
     if (!act) continue;
     if (foundIds.has(act.id)) continue;
     const sign = entry.sign === undefined ? null : readOne(entry.sign);
@@ -503,7 +618,7 @@ function evaluateUnchecked(input: UnitInput): UnitView {
     removed: new Set(),
     co: null,
     xo: null,
-    cap: null,
+    served: new Map(),
     runs: new Map(),
     petitioned: new Set(),
     recalled: [],
@@ -521,32 +636,38 @@ function evaluateUnchecked(input: UnitInput): UnitView {
       : { n: 1, start: tf, end: addMonthsUTC(tf, gov.term) };
     state0.co = { holder: coKey, acting: reformed, ...term };
     state0.xo = { holder: xoKey, acting: reformed, ...term };
-    state0.cap = reformed ? { holder: null, count: 0 } : { holder: coKey, count: 1 };
+    if (!reformed) state0.served.set(coKey, { last: 1, count: 1 });
   }
 
-  // Chain acts, deduplicated by id. Where one act arrives with different second signatures, the
-  // smallest valid signer is kept, so the choice does not depend on arrival order.
+  // Chain acts, deduplicated by id, with every second signature any copy carried. Which one counts
+  // is decided against the act's own ancestry (`checkAct`), never by arrival order or by key alone.
   const acts = new Map<string, ActRec>();
   const held = new Map<string, HeldReason>();
+  const addCosign = (a: ActRec, key: string, at: number) => {
+    if (key === a.pubkey) return;
+    const prior = a.cosigns.find((c) => c.key === key);
+    if (prior) {
+      prior.at = Math.min(prior.at, at);
+      return;
+    }
+    a.cosigns.push({ key, at });
+    a.cosigns.sort((p, q) => (p.key < q.key ? -1 : p.key > q.key ? 1 : 0));
+  };
   for (const { act, sign } of chainReads) {
     if (!isAct(act.statement)) {
       if (!voids.has(act.id)) voids.set(act.id, { reason: 'not-in-place' });
       continue;
     }
-    let cosigner: string | null = null;
-    let cosignAt: number | null = null;
+    let rec = acts.get(act.id);
+    if (!rec) {
+      rec = { id: act.id, pubkey: act.pubkey, at: act.createdAt, s: act.statement, cosigns: [] };
+      acts.set(act.id, rec);
+    }
     if (sign) {
       const s = sign.statement;
-      if (s.t === 'sign' && s.act === act.id && sign.pubkey !== act.pubkey) {
-        cosigner = sign.pubkey;
-        cosignAt = sign.createdAt;
-      } else if (!voids.has(sign.id)) {
-        voids.set(sign.id, { reason: 'not-in-place' });
-      }
+      if (s.t === 'sign' && s.act === act.id && sign.pubkey !== act.pubkey) addCosign(rec, sign.pubkey, sign.createdAt);
+      else if (!voids.has(sign.id)) voids.set(sign.id, { reason: 'not-in-place' });
     }
-    const rec: ActRec = { id: act.id, pubkey: act.pubkey, at: act.createdAt, s: act.statement, cosigner, cosignAt };
-    const prior = acts.get(act.id);
-    if (!prior || (cosigner !== null && (prior.cosigner === null || cosigner < prior.cosigner))) acts.set(act.id, rec);
   }
   // An id first set aside on one copy and then read whole on another is not void.
   for (const id of acts.keys()) voids.delete(id);
@@ -570,29 +691,36 @@ function evaluateUnchecked(input: UnitInput): UnitView {
     }
   }
 
-  // A second signature may also travel on its own, loose. Of every valid one, the smallest key is
-  // kept, as for copies of one act above, so which arrived first never matters.
+  // A second signature may also travel on its own, loose.
   for (const sg of loose.sign) {
     if (sg.statement.t !== 'sign') continue;
     const a = acts.get(sg.statement.act);
-    if (!a || sg.pubkey === a.pubkey) continue;
-    if (a.cosigner === null || sg.pubkey < a.cosigner) {
-      a.cosigner = sg.pubkey;
-      a.cosignAt = sg.createdAt;
-    }
+    if (a) addCosign(a, sg.pubkey, sg.createdAt);
   }
 
-  // Phone-local findings, collected once however often an act is checked.
+  // Phone-local findings, collected once however often an act is checked. A re-judgement against
+  // what still stands (`recheck`) records nothing: it only asks whether an act still holds.
+  let recording = true;
   const disagreements = new Map<string, 'result' | 'checkpoint'>();
+  const disagree = (id: string, what: 'result' | 'checkpoint') => {
+    if (recording) disagreements.set(id, what);
+  };
   const equivocation = new Map<string, { key: string; run: string; evidence: Set<string> }>();
   const equivocate = (key: string, run: string, evidence: string[]) => {
+    if (!recording) return;
     const k = `${run} ${key}`;
     const e = equivocation.get(k) ?? { key, run, evidence: new Set<string>() };
     for (const id of evidence) e.evidence.add(id);
     equivocation.set(k, e);
   };
 
-  const signersOf = (a: ActRec): string[] => (a.cosigner ? [a.pubkey, a.cosigner] : [a.pubkey]);
+  /** Per run of the fold: the second signer each act counts, and every one that would have done. */
+  let chosen = new Map<string, string>();
+  let validCos = new Map<string, string[]>();
+  const signersOf = (a: ActRec): string[] => {
+    const c = chosen.get(a.id);
+    return c ? [a.pubkey, c] : [a.pubkey];
+  };
   const removedBy = (a: ActRec): string[] =>
     a.s.t === 'remove' ? [...a.s.keys] : a.s.t === 'leave' ? [a.pubkey] : [];
   const newKeyOf = (a: ActRec): string | null =>
@@ -607,7 +735,7 @@ function evaluateUnchecked(input: UnitInput): UnitView {
     a.s.t === 'result' ? Math.max(run.at, a.s.stand[0], ...a.s.sigs.map((c) => c[1])) : a.at;
 
   // ---------------------------------------------------------------------------------------------
-  // The rule table: is act `x` allowed by the state its own ancestors produce?
+  // The rule table: is act `x`, with these signers, allowed by the state its own ancestors produce?
   // ---------------------------------------------------------------------------------------------
 
   const electable = (st: State, o: Office, at: number): boolean => {
@@ -616,18 +744,28 @@ function evaluateUnchecked(input: UnitInput): UnitView {
     return off.holder === null || (o === 'co' && off.acting) || off.n === 0 || at >= off.end;
   };
   const isOfficer = (st: State, key: string) => holds(st, key).length > 0;
+  /** A leader removed while holding an office whose election is open: any two may let them back in. */
+  const readmitOpen = (st: State, key: string): boolean => {
+    const offices = st.holding.get(key);
+    return !!offices && [...st.runs.values()].some((run) => run.kind !== 'petition' && offices.has(run.office));
+  };
+  const cappedFor = (st: State, key: string, kind: RunSnap['kind']) => coCapOn && termsBefore(st, key, kind) >= 2;
 
-  function checkAct(x: ActRec, va: State): VoidReason | null {
+  function checkWith(x: ActRec, signers: readonly string[], va: State): VoidReason | null {
     const s = x.s;
     const member = (k: string) => va.members.has(k);
-    const signers = signersOf(x);
     switch (s.t) {
       case 'admit':
       case 'invite': {
+        if (signers.length < 2) return 'not-allowed';
         if (!signers.every(member)) return 'not-a-member';
         if (s.t === 'invite') {
           if (charter.lineage === null) return 'not-allowed';
+          // A re-former's own former key: inviting it would give one person a second seat.
+          if (founderFormers.includes(s.former)) return 'not-allowed';
           for (const i of va.invited.values()) if (i.former === s.former) return 'already-invited';
+          // Only keys on the old roster may be invited. A phone that held it checks every invitation.
+          if (input.formerRoster && !input.formerRoster.has(s.former)) return 'not-on-old-roster';
         } else {
           if (member(s.key)) return 'already-member';
           if (va.removed.has(s.key)) return 'was-removed';
@@ -636,10 +774,7 @@ function evaluateUnchecked(input: UnitInput): UnitView {
         if (led && !signers.some((k) => isOfficer(va, k))) {
           // Command keeps the door, except for a leader whose key was removed, while that office's
           // election is open: then any two members may let them back in to stand.
-          const r = s.t === 'admit' ? s.readmits : null;
-          const offices = r ? va.holding.get(r) : undefined;
-          const open = offices && [...va.runs.values()].some((run) => run.kind !== 'petition' && offices.has(run.office));
-          if (!open) return 'not-allowed';
+          if (!(s.t === 'admit' && s.readmits !== null && readmitOpen(va, s.readmits))) return 'not-allowed';
         }
         if (s.t === 'admit' && va.members.size >= charter.room) return 'room-full';
         return null;
@@ -663,8 +798,9 @@ function evaluateUnchecked(input: UnitInput): UnitView {
         if (s.keys.length >= va.members.size) return 'not-allowed';
         if (!signers.every(member)) return 'not-a-member';
         if (signers.some((k) => s.keys.includes(k))) return 'not-allowed';
-        const lastOne = va.members.size - s.keys.length === 1;
-        if (signers.length < 2 && !lastOne) return 'not-allowed';
+        // One signer alone only in a unit of two, removing the other: never against a larger unit.
+        const unitOfTwo = va.members.size === 2 && s.keys.length === 1;
+        if (signers.length < 2 && !unitOfTwo) return 'not-allowed';
         if (led && s.keys.some((k) => !isOfficer(va, k)) && !signers.some((k) => isOfficer(va, k))) return 'not-allowed';
         for (const r of va.recalled) {
           if (!signers.includes(r.key)) continue;
@@ -681,6 +817,9 @@ function evaluateUnchecked(input: UnitInput): UnitView {
         if (!led) return 'no-offices';
         if (!member(x.pubkey)) return 'not-a-member';
         if (!electable(va, s.office, x.at)) return 'not-electable';
+        // A re-founded unit's first election waits for somebody the re-formers invited: two
+        // re-formers alone would turn acting posts into a full term before any member could vote.
+        if (va[s.office]!.n === 0 && [...va.members.values()].every((r) => r.how === 'founding')) return 'not-electable';
         for (const r of va.runs.values()) if (r.kind !== 'petition' && r.office === s.office) return 'run-open';
         return null;
       }
@@ -696,12 +835,15 @@ function evaluateUnchecked(input: UnitInput): UnitView {
       case 'result': {
         if (!led || gov.shape !== 'led') return 'no-offices';
         if (s.rule !== 'g1') {
-          disagreements.set(x.id, 'result');
+          disagree(x.id, 'result');
           return 'unknown-rule';
         }
-        if (!member(x.pubkey)) return 'not-a-member';
-        const run = va.runs.get(s.run);
-        if (!run || run.kind === 'petition') {
+        const found = va.runs.get(s.run);
+        const run = found && found.kind !== 'petition' ? found : null;
+        // Any phone holding the signatures posts: a member, or an elector of this run however they
+        // were removed since, so removing whoever holds them cannot stop a result.
+        if (!member(x.pubkey) && !run?.electorate.includes(x.pubkey)) return 'not-a-member';
+        if (!run) {
           const closed = va.closed.get(s.run);
           if (closed && closed.winner !== null && closed.winner !== s.candidate) {
             for (const key of s.sigs.map((c) => c[0])) {
@@ -711,12 +853,10 @@ function evaluateUnchecked(input: UnitInput): UnitView {
           return 'run-not-open';
         }
         const m = run.electorate.length;
-        const capped = run.office === 'co' && gov.coCap === 'twoThenOut' &&
-          va.cap?.holder === s.candidate && va.cap.count >= 2;
-        const k = capped ? threeQuartersOf(m) : thresholdOf(m, gov.threshold);
+        const k = run.office === 'co' && cappedFor(va, s.candidate, run.kind) ? threeQuartersOf(m) : thresholdOf(m, gov.threshold);
         const keys = s.sigs.map((c) => c[0]);
         if (resultDigest('g1', run.id, run.office, s.candidate, m, k, electorateDigest(run.electorate), keys) !== s.digest) {
-          disagreements.set(x.id, 'result');
+          disagree(x.id, 'result');
           return 'digest-mismatch';
         }
         if (keys.length !== k || new Set(keys).size !== keys.length) return 'wrong-count';
@@ -736,17 +876,19 @@ function evaluateUnchecked(input: UnitInput): UnitView {
       case 'recall': {
         if (!led || gov.shape !== 'led') return 'no-offices';
         if (s.rule !== 'g1') {
-          disagreements.set(x.id, 'result');
+          disagree(x.id, 'result');
           return 'unknown-rule';
         }
-        if (!member(x.pubkey)) return 'not-a-member';
-        const pet = va.runs.get(s.petition);
-        if (!pet || pet.kind !== 'petition') return 'petition-not-open';
+        const found = va.runs.get(s.petition);
+        const pet = found && found.kind === 'petition' ? found : null;
+        // As for a result: any member, or any elector of the petition, posts it.
+        if (!member(x.pubkey) && !pet?.electorate.includes(x.pubkey)) return 'not-a-member';
+        if (!pet) return 'petition-not-open';
         const m = pet.electorate.length;
         const k = thresholdOf(m, gov.threshold);
         const keys = [pet.opener, ...s.sigs.map((c) => c[0])];
         if (resultDigest('g1', pet.id, pet.office, pet.subject!, m, k, electorateDigest(pet.electorate), keys) !== s.digest) {
-          disagreements.set(x.id, 'result');
+          disagree(x.id, 'result');
           return 'digest-mismatch';
         }
         if (s.sigs.length !== k - 1 || new Set(keys).size !== keys.length) return 'wrong-count';
@@ -760,6 +902,38 @@ function evaluateUnchecked(input: UnitInput): UnitView {
       }
     }
   }
+
+  /**
+   * The rule table for `x` as it stands: an act that needs a second signer is checked with each
+   * second signature this phone holds dated in its present, smallest key first, and the first that
+   * makes it valid is the one it counts. A key that is not a member therefore never displaces one
+   * that is. `valid` is every second signer that would have done.
+   */
+  function checkAct(x: ActRec, va: State): { reason: VoidReason | null; cosigner: string | null; valid: string[] } {
+    if (!needsCosign(x.s.t)) return { reason: checkWith(x, [x.pubkey], va), cosigner: null, valid: [] };
+    const present = x.cosigns.filter((c) => !future(c.at)).map((c) => c.key);
+    const valid: string[] = [];
+    let first: VoidReason | null = null;
+    for (const c of present) {
+      const r = checkWith(x, [x.pubkey, c], va);
+      if (r === null) valid.push(c);
+      else first ??= r;
+    }
+    if (valid.length > 0) return { reason: null, cosigner: valid[0]!, valid };
+    const alone = checkWith(x, [x.pubkey], va);
+    if (alone === null) return { reason: null, cosigner: null, valid };
+    return { reason: first ?? alone, cosigner: null, valid };
+  }
+
+  /** Whether `y` was valid only because a position holder signed it. */
+  const needsAuthority = (y: ActRec, va: State): boolean => {
+    const s = y.s;
+    if (!led) return false;
+    if (s.t === 'admit') return !(s.readmits !== null && readmitOpen(va, s.readmits));
+    if (s.t === 'invite') return true;
+    if (s.t === 'remove') return s.keys.some((k) => !isOfficer(va, k));
+    return false;
+  };
 
   // ---------------------------------------------------------------------------------------------
   // Effects, applied in linear order to an accumulating state, each re-checked where a concurrent
@@ -797,6 +971,16 @@ function evaluateUnchecked(input: UnitInput): UnitView {
     settle(st);
   };
 
+  /** `key` serves the current CO term, not acting: counted once per term, for the cap. */
+  const serve = (st: State, key: string | null) => {
+    if (key === null || !st.co) return;
+    const n = st.co.n;
+    const e = st.served.get(key);
+    if (e && e.last === n) return;
+    st.served.set(key, { last: n, count: e && e.last === n - 1 ? e.count + 1 : 1 });
+    for (const [k, r] of st.served) if (r.last < n - 1) st.served.delete(k);
+  };
+
   function applyAct(st: State, x: ActRec, va: State, concurrent: (a: string, b: string) => boolean): VoidReason | null {
     const s = x.s;
     switch (s.t) {
@@ -817,7 +1001,7 @@ function evaluateUnchecked(input: UnitInput): UnitView {
         drop(st, x.pubkey, x.id);
         return null;
       case 'result': {
-        if (gov.shape !== 'led' || !st.co || !st.xo || !st.cap) return 'no-offices';
+        if (gov.shape !== 'led' || !st.co || !st.xo) return 'no-offices';
         const keys = s.sigs.map((c) => c[0]).sort();
         const run = st.runs.get(s.run);
         if (!run) {
@@ -852,11 +1036,7 @@ function evaluateUnchecked(input: UnitInput): UnitView {
           off.start = t;
           off.end = addMonthsUTC(t, gov.term);
         }
-        if (run.office === 'co') {
-          st.cap = run.kind === 'fill'
-            ? { holder: s.candidate, count: 0 }
-            : st.cap.holder === s.candidate ? { holder: s.candidate, count: st.cap.count + 1 } : { holder: s.candidate, count: 1 };
-        }
+        if (run.office === 'co') serve(st, s.candidate);
         for (const [id, r] of st.runs) {
           if (r.kind !== 'petition' && r.office === run.office) {
             st.runs.delete(id);
@@ -886,7 +1066,8 @@ function evaluateUnchecked(input: UnitInput): UnitView {
           st.co.acting = false;
           st.xo.holder = null;
           st.xo.acting = false;
-          st.cap = { holder: st.co.holder, count: 0 };
+          // The XO serves out the term as CO, and that term counts towards the cap.
+          serve(st, st.co.holder);
         } else if (st.xo.holder === subject) {
           st.xo.holder = null;
           st.xo.acting = false;
@@ -981,10 +1162,13 @@ function evaluateUnchecked(input: UnitInput): UnitView {
   type Base = { ids: ReadonlySet<string>; state: State };
 
   function runFrom(base: Base, skip: ReadonlySet<string>) {
+    chosen = new Map();
+    validCos = new Map();
     const active = new Set<string>();
     const heldHere = new Map<string, HeldReason>();
     const foldMemo = new Map<string, Fold>();
     const statusMemo = new Map<string, VoidReason | null>();
+    const afterMemo = new Map<string, State>();
     const classOf = (id: string) => actClass(acts.get(id)!.s.t);
     const concurrent = (a: string, b: string) => isConcurrent(a, b, ancOf);
 
@@ -1005,24 +1189,91 @@ function evaluateUnchecked(input: UnitInput): UnitView {
       if (statusMemo.has(id)) return statusMemo.get(id)!;
       const x = acts.get(id)!;
       const f = foldBefore(id);
-      const r = allVoid(x.s.prev, f.void) ? inherit(x.s.prev, f.void) : checkAct(x, f.state);
+      let r: VoidReason | null;
+      if (allVoid(x.s.prev, f.void) && x.s.prev.some((p) => f.branch.has(p))) {
+        r = inherit(x.s.prev, f.void);
+      } else {
+        // Judged against what stands among its ancestors: a void parent is ignored, and an act whose
+        // parents are all void stands if it holds on what is left.
+        const c = checkAct(x, f.state);
+        if (c.cosigner !== null) chosen.set(id, c.cosigner);
+        validCos.set(id, c.valid);
+        r = c.reason !== null && allVoid(x.s.prev, f.void) ? 'built-on-void' : c.reason;
+      }
       statusMemo.set(id, r);
       return r;
     }
+
+    /** What `c` leaves behind, applied to its own ancestry. */
+    const afterOf = (c: ActRec): State => {
+      let s = afterMemo.get(c.id);
+      if (!s) {
+        const before = foldBefore(c.id).state;
+        const next = cloneState(before);
+        s = applyAct(next, c, before, concurrent) ? before : next;
+        afterMemo.set(c.id, s);
+      }
+      return s;
+    };
+    const endsTenure = (c: ActRec, key: string) => isOfficer(foldBefore(c.id).state, key) && !isOfficer(afterOf(c), key);
 
     function foldSet(ids: readonly string[]): Fold {
       const set = new Set(ids);
       const order = linearize(set, parents, classOf);
       const v = new Map<string, VoidReason>();
       const names = new Map<string, string[]>();
-      const cascade = () => {
-        for (const id of order) {
-          if (v.has(id)) continue;
-          const ps = acts.get(id)!.s.prev;
-          if (allVoid(ps, v)) v.set(id, inherit(ps, v));
+      const branch = new Set<string>();
+      const valid = () => order.filter((id) => !v.has(id)).map((id) => acts.get(id)!);
+
+      const standingMemo = new Map<string, State>();
+      /** The state this fold's standing ancestors of `id` produce. */
+      const standing = (id: string): State => {
+        const key = `${id} ${v.size}`;
+        let s = standingMemo.get(key);
+        if (!s) {
+          s = foldSet([...ancOf(id)].filter((a) => set.has(a) && !v.has(a))).state;
+          standingMemo.set(key, s);
+        }
+        return s;
+      };
+      /** Whether `x` still holds on what stands among its ancestors. Records nothing. */
+      const holdsOn = (x: ActRec): boolean => {
+        const s = standing(x.id);
+        recording = false;
+        try {
+          return checkAct(x, s).reason === null;
+        } finally {
+          recording = true;
         }
       };
-      const valid = () => order.filter((id) => !v.has(id)).map((id) => acts.get(id)!);
+      /** An ancestor of `id` that stood in its own ancestry and is void in this fold. */
+      const undermined = (id: string, among: ReadonlyMap<string, unknown> | ReadonlySet<string>): boolean => {
+        const own = foldBefore(id).void;
+        for (const a of ancOf(id)) if (set.has(a) && among.has(a) && !own.has(a)) return true;
+        return false;
+      };
+      const onBranch = (ps: readonly string[]) => allVoid(ps, v) && ps.some((p) => branch.has(p));
+      const markBranch = () => {
+        for (const id of order) {
+          if (v.has(id) && !branch.has(id) && onBranch(acts.get(id)!.s.prev)) branch.add(id);
+        }
+      };
+      // What stood on an act just voided: a side of a split inherits it; anything else is judged
+      // again against what still stands, and is void only if it no longer holds there.
+      const cascade = () => {
+        if (v.size === 0) return;
+        markBranch();
+        for (const id of order) {
+          if (v.has(id)) continue;
+          const x = acts.get(id)!;
+          if (onBranch(x.s.prev)) {
+            v.set(id, inherit(x.s.prev, v));
+            branch.add(id);
+            continue;
+          }
+          if (undermined(id, v) && !holdsOn(x)) v.set(id, 'built-on-void');
+        }
+      };
 
       // 6a. Ancestry.
       for (const id of order) {
@@ -1055,47 +1306,45 @@ function evaluateUnchecked(input: UnitInput): UnitView {
             }
           }
         }
-        for (const [id, r] of out) if (!v.has(id) && !(r === 'split' && input.follow === id)) v.set(id, r);
-        cascade();
-      }
-
-      // R1. Vote protection.
-      {
-        const live = valid();
-        const votes = live.filter((a) => a.s.t === 'open' || a.s.t === 'petition');
-        for (const x of live) {
-          if (x.s.t !== 'remove') continue;
-          for (const o of votes) {
-            if (!concurrent(x.id, o.id)) continue;
-            const va = foldBefore(o.id).state;
-            const subject = o.s.t === 'petition' ? o.s.subject : null;
-            const electorate = [...va.members.keys()].filter((k) => k !== subject);
-            if (x.s.keys.some((k) => electorate.includes(k)) || (subject !== null && signersOf(x).includes(subject))) {
-              v.set(x.id, 'vote-protection');
-              break;
-            }
+        for (const [id, r] of out) {
+          if (!v.has(id) && !(r === 'split' && input.follow === id)) {
+            v.set(id, r);
+            branch.add(id);
           }
         }
         cascade();
       }
 
-      // R2. Removal wins, judged against the removals valid when it starts.
+      // R1. One vote per opener: one key's concurrent opens for one office, or petitions against
+      // one holder, are all void, so one member cannot fill every phone's state with runs.
       {
-        const live = valid();
-        const removals = live.filter((a) => a.s.t === 'remove' || a.s.t === 'leave');
-        for (const y of live) {
-          for (const x of removals) {
-            if (x.id === y.id || !concurrent(x.id, y.id)) continue;
-            if (removedBy(x).some((k) => signersOf(y).includes(k))) {
-              v.set(y.id, 'removal-wins');
-              break;
+        const groups = new Map<string, ActRec[]>();
+        for (const a of valid()) {
+          if (a.s.t !== 'open' && a.s.t !== 'petition') continue;
+          const k = `${a.pubkey} ${a.s.t} ${a.s.office} ${a.s.t === 'petition' ? a.s.subject : ''}`;
+          const g = groups.get(k);
+          if (g) g.push(a);
+          else groups.set(k, [a]);
+        }
+        const out = new Set<string>();
+        for (const g of groups.values()) {
+          for (let i = 0; i < g.length; i++) {
+            for (let j = i + 1; j < g.length; j++) {
+              if (concurrent(g[i]!.id, g[j]!.id)) {
+                out.add(g[i]!.id);
+                out.add(g[j]!.id);
+              }
             }
           }
+        }
+        for (const id of out) {
+          v.set(id, 'crossed-opens');
+          names.set(id, [acts.get(id)!.pubkey]);
         }
         cascade();
       }
 
-      // R3. Crossed results, and a CO elected to the XO at once.
+      // R2. Crossed results, and a CO elected to the XO at once.
       {
         const results = valid().filter((a) => a.s.t === 'result');
         const officeOf = (a: ActRec) => foldBefore(a.id).state.runs.get((a.s as { run: string }).run)!.office;
@@ -1127,11 +1376,69 @@ function evaluateUnchecked(input: UnitInput): UnitView {
         cascade();
       }
 
-      // R4. Crossed admissions.
+      // R3. A removal never defeats a result: one concurrent with a result that removes its winner.
+      {
+        const results = valid().filter((a) => a.s.t === 'result');
+        if (results.length > 0) {
+          for (const x of valid()) {
+            if (x.s.t !== 'remove') continue;
+            const keys = x.s.keys;
+            if (results.some((r) => r.s.t === 'result' && keys.includes(r.s.candidate) && concurrent(x.id, r.id))) {
+              v.set(x.id, 'vote-protection');
+            }
+          }
+          cascade();
+        }
+      }
+
+      // R4. A change of command ends the authority it took: an admission, invitation or removal that
+      // needed a position holder is void if every holder who signed it lost that position by a
+      // concurrent result, recall or vacate. An old CO cannot act as CO on a state from before.
+      if (led) {
+        const changes = valid().filter((a) => a.s.t === 'result' || a.s.t === 'recall' || a.s.t === 'vacate');
+        if (changes.length > 0) {
+          for (const y of valid()) {
+            if (y.s.t !== 'admit' && y.s.t !== 'invite' && y.s.t !== 'remove') continue;
+            const va = foldBefore(y.id).state;
+            if (!needsAuthority(y, va)) continue;
+            const holders = [y.pubkey, ...(validCos.get(y.id) ?? [])].filter((k) => isOfficer(va, k));
+            if (holders.length > 0 && holders.every((k) => changes.some((c) => concurrent(c.id, y.id) && endsTenure(c, k)))) {
+              v.set(y.id, 'office-ended');
+            }
+          }
+          cascade();
+        }
+      }
+
+      // R5. Removal wins, judged against the removals valid when it starts. A vote is the exception:
+      // its electorate is frozen and every signature it counts still counts.
+      {
+        const live = valid();
+        const removals = live.filter((a) => a.s.t === 'remove' || a.s.t === 'leave');
+        if (removals.length > 0) {
+          for (const y of live) {
+            if (VOTES.has(y.s.t)) continue;
+            const out = (k: string) =>
+              removals.some((x) => x.id !== y.id && concurrent(x.id, y.id) && removedBy(x).includes(k));
+            const cos = validCos.get(y.id) ?? [];
+            // Its signer, or every second signer that would have made it valid.
+            if (out(y.pubkey) || (cos.length > 0 && cos.every(out))) v.set(y.id, 'removal-wins');
+          }
+          cascade();
+        }
+      }
+
+      // R6. Crossed admissions.
       {
         const live = valid();
         const joins = live.filter((a) => newKeyOf(a) !== null);
         const invites = live.filter((a) => a.s.t === 'invite');
+        /** Admitted by members using a removed leader's open election, with no position holder. */
+        const privileged = (a: ActRec): string | null => {
+          if (!led || a.s.t !== 'admit' || a.s.readmits === null) return null;
+          const va = foldBefore(a.id).state;
+          return [a.pubkey, ...(validCos.get(a.id) ?? [])].some((k) => isOfficer(va, k)) ? null : a.s.readmits;
+        };
         const out = new Set<string>();
         for (const a of joins) {
           const with_ = joins.filter((b) => b.id === a.id || concurrent(a.id, b.id));
@@ -1141,6 +1448,9 @@ function evaluateUnchecked(input: UnitInput): UnitView {
             const inv = a.s.invite;
             if (with_.some((b) => b.s.t === 'accept' && b.s.invite === inv && b.pubkey !== a.pubkey)) out.add(a.id);
           }
+          // One removed leader comes back once: concurrent readmissions naming them all fall.
+          const leader = privileged(a);
+          if (leader !== null && with_.some((b) => b.id !== a.id && privileged(b) === leader)) out.add(a.id);
           const va = foldBefore(a.id).state;
           const fresh = new Set(with_.map((b) => newKeyOf(b)!).filter((k) => !va.members.has(k)));
           if (va.members.size + fresh.size > charter.room) out.add(a.id);
@@ -1155,6 +1465,7 @@ function evaluateUnchecked(input: UnitInput): UnitView {
 
       // 6c. Effects.
       const st = cloneState(base.state);
+      const voidedHere = new Set<string>();
       for (const id of order) {
         const x = acts.get(id)!;
         if (v.has(id)) {
@@ -1165,14 +1476,23 @@ function evaluateUnchecked(input: UnitInput): UnitView {
           }
           continue;
         }
-        if (allVoid(x.s.prev, v)) {
+        if (onBranch(x.s.prev)) {
           v.set(id, inherit(x.s.prev, v));
+          branch.add(id);
+          continue;
+        }
+        if (voidedHere.size > 0 && undermined(id, voidedHere) && !holdsOn(x)) {
+          v.set(id, 'built-on-void');
+          voidedHere.add(id);
           continue;
         }
         const r = applyAct(st, x, foldBefore(id).state, concurrent);
-        if (r) v.set(id, r);
+        if (r) {
+          v.set(id, r);
+          voidedHere.add(id);
+        }
       }
-      return { state: st, void: v, names, splits, unresolved };
+      return { state: st, void: v, names, splits, unresolved, branch };
     }
 
     // One pass in parent order decides what is held and fills the memos bottom-up.
@@ -1180,7 +1500,7 @@ function evaluateUnchecked(input: UnitInput): UnitView {
     const known = (p: string) => base.ids.has(p) || active.has(p);
     for (const id of all) {
       const x = acts.get(id)!;
-      if (future(x.at) || (x.cosignAt !== null && future(x.cosignAt)) || compactsOf(x.s).some(future)) {
+      if (future(x.at) || compactsOf(x.s).some(future)) {
         heldHere.set(id, 'future-dated');
         continue;
       }
@@ -1188,10 +1508,12 @@ function evaluateUnchecked(input: UnitInput): UnitView {
         heldHere.set(id, 'waiting-for-earlier');
         continue;
       }
-      if (needsCosign(x.s.t) && x.cosigner === null) {
-        const lastOne = x.s.t === 'remove' && foldBefore(id).state.members.size - x.s.keys.length === 1;
-        if (!lastOne) {
-          heldHere.set(id, 'incomplete');
+      if (needsCosign(x.s.t) && !x.cosigns.some((c) => !future(c.at))) {
+        // Alone only in a unit of two, removing the other.
+        const before = foldBefore(id).state;
+        const unitOfTwo = x.s.t === 'remove' && before.members.size === 2 && x.s.keys.length === 1;
+        if (!unitOfTwo) {
+          heldHere.set(id, x.cosigns.length > 0 ? 'future-dated' : 'incomplete');
           continue;
         }
       }
@@ -1206,15 +1528,16 @@ function evaluateUnchecked(input: UnitInput): UnitView {
   // History, or a checkpoint to start from.
   // ---------------------------------------------------------------------------------------------
 
-  type CheckpointRead = { read: Read; signer: string; head: readonly string[]; snapshot: Snapshot };
+  type CheckpointRead = { read: Read; signers: string[]; head: readonly string[]; snapshot: Snapshot };
+  /** A checkpoint and every key other than its author that signed it. */
   const checkpointOf = (event: Read, signs: readonly Read[]): CheckpointRead | null => {
     if (event.statement.t !== 'checkpoint') return null;
     const cp = event.statement;
-    const sign = signs
+    const signers = sortedKeys(signs
       .filter((s) => s.statement.t === 'sign' && s.statement.act === event.id && s.pubkey !== event.pubkey)
-      .sort((a, b) => (a.pubkey < b.pubkey ? -1 : 1))[0];
-    if (!sign) return null;
-    return { read: event, signer: sign.pubkey, head: cp.head, snapshot: cp.snapshot };
+      .map((s) => s.pubkey));
+    if (signers.length === 0) return null;
+    return { read: event, signers, head: cp.head, snapshot: cp.snapshot };
   };
 
   let mode: 'history' | 'anchor' = 'history';
@@ -1227,31 +1550,42 @@ function evaluateUnchecked(input: UnitInput): UnitView {
     const cp = ev && sg ? checkpointOf(ev, [sg]) : null;
     const rows = input.checkpoint.roster;
     const rowKeys = new Set(rows.map((r) => r.key));
-    const anchorOk = cp !== null && ev !== null &&
-      !future(ev.createdAt) && !future(sg!.createdAt) &&
-      rowKeys.size === rows.length && rowKeys.has(ev.pubkey) && rowKeys.has(cp.signer) &&
-      rosterDigest(rows) === cp.snapshot.roster && (cp.snapshot.co !== null) === led;
-    if (!anchorOk) {
+    let anchorState: State | null = null;
+    if (cp !== null && ev !== null && sg !== null && !future(ev.createdAt) && !future(sg.createdAt) &&
+      rowKeys.size === rows.length && rowKeys.has(ev.pubkey) && cp.signers.every((k) => rowKeys.has(k)) &&
+      rosterDigest(rows) === cp.snapshot.roster && (cp.snapshot.co !== null) === led) {
+      // The snapshot must be the one spelling of the state it describes, its cap count included.
+      const s = stateOfSnapshot(cp.snapshot, rows);
+      const again = safeSnapshot(s);
+      if (again && JSON.stringify(snapshotWire(again)) === JSON.stringify(snapshotWire(cp.snapshot))) anchorState = s;
+    }
+    if (anchorState === null || cp === null || ev === null || sg === null) {
       const id = ev?.id ?? (typeof input.checkpoint.event?.id === 'string' ? input.checkpoint.event.id : '?');
       if (!voids.has(id)) voids.set(id, { reason: 'not-an-anchor' });
     } else {
       // Where this phone holds the history up to the checkpoint, history wins and the checkpoint is
-      // compared like any other. Otherwise the view starts from it.
-      loose.checkpoint.push(ev!);
-      loose.sign.push(sg!);
-      const historyHolds = cp!.head.every((h) => h === root || run.active.has(h));
+      // compared like any other. Where it holds none, the view starts from it. Where it holds history
+      // the checkpoint does not account for, it keeps that history: a head it cannot place is a
+      // checkpoint it cannot check, never a reason to drop what it has.
+      loose.checkpoint.push(ev);
+      loose.sign.push(sg);
+      const historyHolds = cp.head.every((h) => h === root || run.active.has(h));
       if (!historyHolds) {
-        mode = 'anchor';
-        anchorHead = [...cp!.head];
         const subsumed = new Set<string>();
-        const stack = cp!.head.filter((h) => acts.has(h));
+        const stack = cp.head.filter((h) => acts.has(h));
         while (stack.length > 0) {
           const id = stack.pop()!;
           if (subsumed.has(id)) continue;
           subsumed.add(id);
           for (const p of acts.get(id)!.s.prev) if (acts.has(p)) stack.push(p);
         }
-        run = runFrom({ ids: new Set(cp!.head), state: stateOfSnapshot(cp!.snapshot, rows) }, subsumed);
+        if ([...run.active].every((id) => subsumed.has(id))) {
+          mode = 'anchor';
+          anchorHead = [...cp.head];
+          run = runFrom({ ids: new Set(cp.head), state: anchorState }, subsumed);
+        } else {
+          held.set(ev.id, 'waiting-for-earlier');
+        }
       }
     }
   }
@@ -1261,9 +1595,31 @@ function evaluateUnchecked(input: UnitInput): UnitView {
   for (const [id, r] of run.held) held.set(id, r);
   for (const [id, r] of fin.void) voids.set(id, { reason: r, ...(fin.names.has(id) ? { names: fin.names.get(id)! } : {}) });
 
+  // An act this release cannot read that a second key has since built on: governance on this phone
+  // stops where it can read, and says so, rather than showing what it has as current.
+  let needsUpdate = false;
+  if (unknownActs.size > 0) {
+    const blocked = new Map<string, Set<string>>([...unknownActs].map(([id, k]) => [id, new Set([k])]));
+    let grew = true;
+    while (grew && !needsUpdate) {
+      grew = false;
+      for (const [id, why] of run.held) {
+        if (why !== 'waiting-for-earlier' || blocked.has(id)) continue;
+        const x = acts.get(id);
+        if (!x) continue;
+        const via = x.s.prev.filter((p) => blocked.has(p));
+        if (via.length === 0) continue;
+        const keys = new Set<string>([x.pubkey, ...x.cosigns.map((c) => c.key)]);
+        for (const p of via) for (const k of blocked.get(p)!) keys.add(k);
+        blocked.set(id, keys);
+        grew = true;
+        if (keys.size >= 2) needsUpdate = true;
+      }
+    }
+  }
+
   // (8) This phone's own reading of the loose statements it holds.
   const memberNow = (k: string) => st.members.has(k);
-  const capKey = gov.shape === 'led' && gov.coCap === 'twoThenOut' && st.cap?.holder && st.cap.count >= 2 ? st.cap.holder : null;
   const runs: RunView[] = [];
   const petitions: PetitionView[] = [];
   for (const r of [...st.runs.values()].sort((a, b) => (a.id < b.id ? -1 : 1))) {
@@ -1305,41 +1661,62 @@ function evaluateUnchecked(input: UnitInput): UnitView {
         .map((s) => s.pubkey)
     );
     const k = thresholdOf(m, gov.shape === 'led' ? gov.threshold : 'majority');
-    const kCapped = r.office === 'co' && capKey ? threeQuartersOf(m) : null;
-    const cappedKey = kCapped === null ? null : capKey;
+    const cappedKeys = r.office === 'co'
+      ? sortedKeys([...st.members.keys(), ...electorate].filter((key) => cappedFor(st, key, r.kind)))
+      : [];
+    const kCapped = cappedKeys.length > 0 ? threeQuartersOf(m) : null;
     const candidates = sortedKeys([...counts.keys(), ...stood]);
     const tallies = candidates.map((c) => ({ candidate: c, count: counts.get(c) ?? 0, stood: stood.has(c) }));
     const postable = tallies.find((t) =>
-      t.stood && memberNow(t.candidate) && t.count >= (t.candidate === cappedKey ? kCapped! : k) &&
+      t.stood && memberNow(t.candidate) && t.count >= (cappedKeys.includes(t.candidate) ? kCapped! : k) &&
       !(r.office === 'xo' && st.co?.holder === t.candidate && !st.co.acting)
     )?.candidate ?? null;
     runs.push({
       id: r.id, office: r.office, kind: r.kind as RunView['kind'], openedAt: r.at, electorate,
-      electorateDigest: electorateDigest(electorate), m, k, kCapped, cappedKey, tallies, postable
+      electorateDigest: electorateDigest(electorate), m, k, kCapped, cappedKeys, tallies, postable
     });
   }
 
-  // Checkpoints: compared against the history where this phone holds it, and whether the last
-  // change of command has one after it.
   const applied = [...run.active].filter((id) => !fin.void.has(id));
-  const appliedSet = new Set(applied);
+
+  // A result that carries the signature of an elector this phone holds endorsing someone else in
+  // the same run: the closer chose which of the two to count. Named, and shown as phones
+  // disagreeing about the result, since a phone without that endorsement cannot see it.
+  for (const id of applied) {
+    const x = acts.get(id)!;
+    if (x.s.t !== 'result') continue;
+    const opened = run.foldBefore(id).state.runs.get(x.s.run);
+    if (!opened) continue;
+    const carried = new Set(x.s.sigs.map((c) => c[0]));
+    for (const e of loose.endorse) {
+      if (e.statement.t !== 'endorse' || e.statement.run !== x.s.run || e.statement.candidate === x.s.candidate) continue;
+      if (!carried.has(e.pubkey) || e.createdAt < opened.at) continue;
+      equivocate(e.pubkey, x.s.run, [e.id, id]);
+      disagreements.set(id, 'result');
+    }
+  }
+
+  // Checkpoints: compared against the history where this phone holds it, and whether the last
+  // change of command has one after it. A checkpoint whose head this phone holds but now reads as
+  // void certified something this phone has since undone: that is a disagreement, never a skip.
   let covered = st.prevCommand === null || (mode === 'anchor' && !run.active.has(st.prevCommand));
   for (const c of loose.checkpoint) {
     const cp = checkpointOf(c, loose.sign);
     if (!cp) continue;
-    const headKnown = cp.head.every((h) => appliedSet.has(h) || (mode === 'history' && h === root) || (mode === 'anchor' && anchorHead.includes(h)));
-    if (!headKnown) continue;
+    const base = (h: string) => (mode === 'history' && h === root) || (mode === 'anchor' && anchorHead.includes(h));
+    if (!cp.head.every((h) => run.active.has(h) || base(h))) continue;
     const closure = new Set<string>();
     for (const h of cp.head) {
-      if (appliedSet.has(h)) {
-        closure.add(h);
-        for (const a of ancOf(h)) if (run.active.has(a)) closure.add(a);
-      }
+      if (!run.active.has(h)) continue;
+      closure.add(h);
+      for (const a of ancOf(h)) if (run.active.has(a)) closure.add(a);
     }
-    const atHead = run.foldSet([...closure]).state;
-    const signersAreMembers = atHead.members.has(c.pubkey) && atHead.members.has(cp.signer);
-    if (!signersAreMembers) continue;
-    if (JSON.stringify(snapshotWire(snapshotOfState(atHead))) !== JSON.stringify(snapshotWire(cp.snapshot))) {
+    const certified = run.foldSet([...closure]);
+    const atHead = certified.state;
+    if (!atHead.members.has(c.pubkey) || !cp.signers.some((k) => atHead.members.has(k))) continue;
+    const snap = safeSnapshot(atHead);
+    const undone = [...closure].some((id) => fin.void.has(id) && !certified.void.has(id));
+    if (undone || snap === null || JSON.stringify(snapshotWire(snap)) !== JSON.stringify(snapshotWire(cp.snapshot))) {
       disagreements.set(c.id, 'checkpoint');
       continue;
     }
@@ -1360,10 +1737,15 @@ function evaluateUnchecked(input: UnitInput): UnitView {
     return { via, head: tipsOf(side, parents) };
   });
 
-  // Lineage: whether the former keys this unit names were on the old roster this phone held.
+  // Lineage: whether the former keys this unit names were on the old roster this phone held,
+  // counting invitations this phone refused for naming a key off it.
   let lineage: UnitView['lineage'] = null;
   if (charter.lineage !== null) {
-    const formers = [A.former![0], B.former![0], ...[...st.invited.values()].map((i) => i.former)];
+    const offRoster = [...fin.void]
+      .filter(([, r]) => r === 'not-on-old-roster')
+      .map(([id]) => acts.get(id)!.s)
+      .flatMap((s) => (s.t === 'invite' ? [s.former] : []));
+    const formers = [...founderFormers, ...[...st.invited.values()].map((i) => i.former), ...offRoster];
     lineage = {
       from: charter.lineage,
       former: !input.formerRoster ? 'not-held' : formers.every((k) => input.formerRoster!.has(k)) ? 'checked' : 'mismatch'
@@ -1374,11 +1756,12 @@ function evaluateUnchecked(input: UnitInput): UnitView {
     holder: o.holder,
     acting: o.holder !== null && o.acting,
     term: { n: o.n, start: o.start, end: o.end },
-    capped: isCo && o.holder !== null && capKey === o.holder
+    capped: isCo && coCapOn && o.holder !== null && !o.acting && termsNow(st, o.holder) >= 2
   });
 
   return {
-    status: fin.unresolved ? 'split' : 'ok',
+    status: needsUpdate ? 'needs-update' : fin.unresolved ? 'split' : 'ok',
+    ...(needsUpdate ? { reason: 'needs-update' as const, field: 'act' } : {}),
     charter,
     root,
     head,
@@ -1396,7 +1779,7 @@ function evaluateUnchecked(input: UnitInput): UnitView {
     checkpointDue: !covered,
     lineage,
     anchored: mode === 'anchor',
-    snapshot: snapshotOfState(st)
+    snapshot: safeSnapshot(st)
   };
 }
 
@@ -1435,7 +1818,7 @@ export function buildResult(
 ): Event {
   const rv = o.view.runs.find((r) => r.id === o.run);
   if (!rv) throw new GovernanceError('That run is not open on this phone.');
-  const k = o.candidate === rv.cappedKey && rv.kCapped !== null ? rv.kCapped : rv.k;
+  const k = rv.cappedKeys.includes(o.candidate) && rv.kCapped !== null ? rv.kCapped : rv.k;
   const stand = readStatement(o.stand);
   if (!stand.ok || stand.statement.t !== 'stand' || stand.statement.run !== o.run || stand.pubkey !== o.candidate ||
     stand.statement.unit !== o.unit || stand.createdAt < rv.openedAt) {
