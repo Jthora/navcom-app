@@ -309,7 +309,11 @@ function nodeIdentity(env = process.env) {
     site: 'https://navcom.app',
     pubkey: getPublicKey(bytes),
     /** Exhaustive. A key that signs one kind is a key whose misuse is obvious. */
-    signs: [{ kind: 30078, d: 'navcom:directory', what: 'the content identifier of the published directory' }],
+    signs: [
+      { kind: 30078, d: 'navcom:directory', what: 'the content identifier of the published directory' },
+      // announce.mjs signs this one with the same key; the list said "exhaustive" without it.
+      { kind: 30078, d: 'navcom:intel-vocabulary', what: 'the content identifier of the raw-intel vocabulary in /.well-known/navcom-intel.json' }
+    ],
     /*
      * Said in the artifact, because it is the sentence most likely to be assumed away by whoever
      * wires this up. The signature proves this pipeline published something. It is not evidence

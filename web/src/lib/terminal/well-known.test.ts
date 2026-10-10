@@ -212,9 +212,17 @@ describe('the node identity a peer verifies instead of trusting a message', () =
     expect(identity.authority).toMatch(/never truth/i);
     expect(identity.not.join(' ')).toMatch(/operator key/i);
     expect(identity.not.join(' ')).toMatch(/watchtower key/i);
-    // And exactly one thing it does sign — a key with an open-ended scope is one nobody can audit.
-    expect(identity.signs).toHaveLength(1);
-    expect(identity.signs[0].kind).toBe(30078);
+    // And exactly what announce.mjs signs with it — a key with an open-ended scope is one nobody
+    // can audit, and a list that says "exhaustive" while leaving one out is worse than none.
+    expect(identity.signs.map((s: { kind: number; d: string }) => `${s.kind}:${s.d}`)).toEqual([
+      '30078:navcom:directory',
+      '30078:navcom:intel-vocabulary'
+    ]);
+    const announce = readFileSync(new URL('../../../scripts/announce.mjs', import.meta.url), 'utf8');
+    const signed = [...announce.matchAll(/artifact: '([^']+)'/g)].map((m) => m[1]).sort();
+    expect(signed, 'every artifact announce.mjs signs is in the list, and nothing else').toEqual(
+      identity.signs.map((s: { d: string }) => s.d).sort()
+    );
   });
 });
 
