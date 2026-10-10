@@ -209,8 +209,11 @@
    * device's storage, so first paint carries no claims code: the screens load when opened.
    */
   let operator = $state(false);
+  /** Counts wipes heard here or in another tab: a re-read that does not depend on the clock moving. */
+  let wipes = $state(0);
   const holding = $derived.by(() => {
     void stack;
+    void wipes;
     if (!operator) return 0;
     const t = Math.floor(now / 1000);
     return (get<{ ends: number }[]>('wipeable', 'mission_claims') ?? []).filter((h) => h.ends > t).length;
@@ -465,7 +468,7 @@
       .catch(() => (missionsUnloaded = true));
     const tick = setInterval(() => (now = Date.now()), 60_000);
     // A wipe in another tab takes the claims `holding` read: counted again now, not at the next tick.
-    const unwiped = onWipe(() => (now = Date.now()));
+    const unwiped = onWipe(() => (wipes += 1));
     return () => {
       gone = true;
       stopMissions?.();

@@ -78,7 +78,11 @@ const INVISIBLE: { measured: string; modules: Record<string, RegExp | null> } = 
   measured: '2026-10-10',
   modules: {
     'packages/core/src/missions/claim.ts': /["'`]navcom\.mission["'`]/,
-    'packages/core/src/missions/seal.ts': /Math\.max\([\w$]+\.ends,[\w$.]+\+[\w$.]+\+[\w$]+\.within\)/
+    'packages/core/src/missions/seal.ts': /Math\.max\([\w$]+\.ends,[\w$.]+\+[\w$.]+\+[\w$]+\.within\)/,
+    // No literal of its own and no stable shape once minified. Held instead at the import graph:
+    // packages/core/test/units-unreached.test.ts proves nothing in web/src or the box imports units/
+    // (merged 2026-10-10), so no built chunk can carry it.
+    'packages/core/src/units/chain.ts': null
   }
 };
 

@@ -145,7 +145,7 @@ test('a burn in another tab leaves nothing of the decade for this one to write b
   const correction = (hours: string, at: number) =>
     buildCorrection(
       generateSecretKey(),
-      { record: 'st-louis-0001', verified_by: 'Raven', method: 'in_person', last_verified: '2026-10-01', fields: { hours } },
+      { record: 'st-louis-st-patrick-center', verified_by: 'Raven', method: 'in_person', last_verified: '2026-10-01', fields: { hours } },
       at
     );
 
