@@ -30,14 +30,33 @@ function restated(root: LogRoot | null): boolean {
 }
 
 /**
- * The last holder this device actually saw, and who to tell when it changes.
+ * The last holding this device actually saw — who held the watch, and since when — and who to tell
+ * when it changes.
  *
  * **Not cleared by a Dark read.** A handover is normally holder A, then a moment of Dark
  * while nobody has taken it up, then holder B — and treating that gap as "no previous
  * holder" would swallow exactly the change worth reacting to.
+ *
+ * **A holding, not only a holder.** It compared the callsign alone, so the same person taking the
+ * watch again was not a change: a holder who reloaded their board — which empties it, because it
+ * lives in that page — took the watch back to a board nobody would refill until each operator
+ * signed on again. Every Station carries the moment its holding began (`since`), so the same holder
+ * with a later `since` is a new holding and the board is refilled the way a handover's is. A box
+ * whose daemon restarted is the same case: it publishes no holder, and its `since` is its start.
+ *
+ * The same holder with an **earlier** `since` is an older copy of a holding already seen, from a
+ * relay that has not caught up — not a change, and not recorded over the newer one.
  */
-let knownHolder: string | null = null;
+let knownHolding: { holder: string | null; since: number } | null = null;
 let onHandover: (() => void) | null = null;
+
+/** Whether this reading begins a holding other than the one last seen, and records it if so. */
+function newHolding(holder: string | null, since: number): boolean {
+  const was = knownHolding;
+  if (was && was.holder === holder && since <= was.since) return false;
+  knownHolding = { holder, since };
+  return was !== null;
+}
 
 /**
  * Registers what to do when the watch changes hands.
@@ -115,11 +134,7 @@ export const watch = {
       if (said === acted) return;
       acted = said;
 
-      const holder = r.state.holder;
-      if (holder) {
-        if (knownHolder !== null && holder !== knownHolder) onHandover?.();
-        knownHolder = holder;
-      }
+      if (newHolding(r.state.holder, r.state.since)) onHandover?.();
       if (!restated(r.state.log_root)) recordRoot(r.state.log_root);
       alarms = rootAlarms();
     }, { sink: heard.sink(config.pubkey) });

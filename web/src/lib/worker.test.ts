@@ -86,3 +86,35 @@ describe('what the worker must never store', () => {
     expect(src).toMatch(/\.delete\(/);
   });
 });
+
+describe('the deploy stamp, and which build a reload would load', () => {
+  /** The commit the stamp beside this worker names. */
+  const stamped = (): string => {
+    const path = join(BUILD, 'version.json');
+    if (!existsSync(path)) throw new Error('version.json was not built');
+    return (JSON.parse(readFileSync(path, 'utf8')) as { commit: string }).commit;
+  };
+
+  it('never stores the stamp, so a page asking what is deployed is told what is', () => {
+    // It was kept cache-first in the site cache like any public document, so within one build of the
+    // worker the Watch screen asking what is deployed was told what was deployed when it first asked,
+    // and could never hear of a newer one.
+    //
+    // In the never-cached predicate itself, beside the directory it already refused: one expression,
+    // with no comma or statement between them. Named anywhere else -- a precache list, a cache-first
+    // route -- the worker would store it, and a bare "the file is named" would still pass.
+    expect(worker()).toMatch(
+      /\/version\.json[`'"][^,;]*\/directory\.json[`'"]|\/directory\.json[`'"][^,;]*\/version\.json[`'"]/
+    );
+  });
+
+  it('says which commit it is when asked, the one the stamp beside it names', () => {
+    // The Watch screen asks the worker controlling it, because the worker's cache is what a reload
+    // loads. A commit the build could not say ("unknown") leaves the screen nothing to compare.
+    const commit = stamped();
+    expect(commit, 'a build that cannot say its commit cannot say a newer one is waiting').toMatch(/^[0-9a-f]{7}$/);
+    const src = worker();
+    expect(src).toMatch(/["'`]build["'`]/);
+    expect(src).toMatch(new RegExp(`["'\`]${commit}["'\`]`));
+  });
+});

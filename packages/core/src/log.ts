@@ -102,6 +102,25 @@ export type LogOutcome =
    * writes this until the ladder ships, and it should read as damning, because it is.
    */
   | 'escalation-not-attempted'
+  /**
+   * The escalation executor started with a key of its own that its file check found readable or
+   * changeable by another user, owned by another user or by the daemon's, or could not confirm the
+   * daemon's user for (`escalation.spec.md`, *The executor has a key of its own*). Recorded with
+   * `took-watch` at every such start; `held` is the same start with nothing found. Whoever can read
+   * that key can sign "a person has it", and a phone given it believes that.
+   */
+  | 'key-not-its-own'
+  /**
+   * A response no relay took under the executor's own key while one took the watch key's copy. A
+   * phone given the executor key heard only the copy, which it shows and never ends a `Distress` on.
+   */
+  | 'executor-key-refused'
+  /**
+   * A response a relay took under the executor's own key while none took the watch key's copy. Every
+   * phone handed the watch before it named the executor key heard nothing; the executor counts it as
+   * not reported.
+   */
+  | 'watch-key-refused'
   | 'pass'
   | 'fail'
   | 'error';

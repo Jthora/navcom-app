@@ -337,15 +337,20 @@ function watchKeyOrExit(config: EscalationConfig): Keypair {
  *
  * A key that fails the file check still signs. Paging nobody is the worse failure, and a phone given this
  * key ends a Distress on nothing else, so dropping it would leave every phone that has it unable to close.
- * It is not offered for handing out until it passes.
+ * It is not offered for handing out until it passes. What the check found is returned beside the key, for
+ * the long-running start to record as `took-watch` (`key-not-its-own`, or `held` with nothing found).
  */
-function executorKeyAtStart(config: EscalationConfig, watch: Keypair, mayMake: boolean): ExecutorKey | undefined {
+function executorKeyAtStart(
+  config: EscalationConfig,
+  watch: Keypair,
+  mayMake: boolean,
+): { key: ExecutorKey | undefined; problems: string[] } {
   const path = config.identity.executorKeyPath;
   if (!path) {
     console.warn("[executor] ####################################################");
     for (const line of NO_EXECUTOR_KEY) console.warn(`[executor] ${line}`);
     console.warn("[executor] ####################################################");
-    return undefined;
+    return { key: undefined, problems: [] };
   }
   if (!existsSync(path)) {
     const why = mayMake
@@ -357,7 +362,7 @@ function executorKeyAtStart(config: EscalationConfig, watch: Keypair, mayMake: b
       console.error("[executor] Running without it: every answer is signed with the watch key alone, as on a box");
       console.error("[executor] that names no executor key. The ladder runs, and pages, regardless.");
       console.error("[executor] ####################################################");
-      return undefined;
+      return { key: undefined, problems: [] };
     }
   }
   let key: ExecutorKey;
@@ -375,11 +380,11 @@ function executorKeyAtStart(config: EscalationConfig, watch: Keypair, mayMake: b
     console.error("[executor] from this box and ends no Distress on any of them until this is fixed.");
     console.error("[executor] The ladder runs, and pages, regardless.");
     console.error("[executor] ####################################################");
-    return undefined;
+    return { key: undefined, problems: [] };
   }
   if (key.pubkey === watch.pubkey) {
     console.error(`[executor] executor_key_path holds the watch key -- no executor key. ${NO_EXECUTOR_KEY[0]}`);
-    return undefined;
+    return { key: undefined, problems: [] };
   }
   if (key.created) {
     console.log(`[executor] made the executor's own key at ${path}, readable only by this user`);
@@ -410,7 +415,7 @@ function executorKeyAtStart(config: EscalationConfig, watch: Keypair, mayMake: b
     console.error("[executor] Do not hand it to operators until this is fixed.");
     console.error("[executor] navcom-escalation --check keeps failing until it is.");
     console.error("[executor] ####################################################");
-    return key;
+    return { key, problems };
   }
   const note = daemonAdminNote(config.identity.daemonUser);
   if (note) console.warn(`[executor] ${note}`);
@@ -419,7 +424,7 @@ function executorKeyAtStart(config: EscalationConfig, watch: Keypair, mayMake: b
       "which carries it -- the key is never typed into a phone:",
   );
   console.log(`[executor] watch code: ${watchCode(watch, config.relays.urls, key.pubkey)}`);
-  return key;
+  return { key, problems };
 }
 
 /**
@@ -452,11 +457,13 @@ async function drillNow(path: string): Promise<never> {
   const config = load(path);
   const watch = watchKeyOrExit(config);
   const { secretKey, pubkey } = watch;
-  const executorKey = executorKeyAtStart(config, watch, false);
+  const { key: executorKey } = executorKeyAtStart(config, watch, false);
   const executor = new EscalationExecutor({
     config, secretKey, pubkey,
     ...(executorKey ? { executorKey } : {}),
     drillStatePath: config.escalation.drillStatePath,
+    // No `tookWatch`: beside the live executor, a start recorded here would be appended to the live one's
+    // chain from a copy of it that is behind.
   });
 
   await executor.drillOnce();
@@ -579,7 +586,7 @@ function main(): void {
 
   // Each navcom-push entry whose template cannot yet say what kind of page it carries, said each start.
   for (const line of templateLines(config, "[executor]")) console.warn(line);
-  const executorKey = executorKeyAtStart(config, watch, true);
+  const { key: executorKey, problems: keyProblems } = executorKeyAtStart(config, watch, true);
   // Neither of the box's own keys is a person's: an acknowledgement or a wake from either is refused.
   const boxOnRoster = boxKeysOnRoster(roster, [pubkey, ...(executorKey ? [executorKey.pubkey] : [])]);
   if (boxOnRoster.length > 0) {
@@ -596,6 +603,8 @@ function main(): void {
     drillStatePath: config.escalation.drillStatePath,
     // The long-running start only: `--drill` never writes it.
     ...(config.escalation.hearingStatePath ? { hearingStatePath: config.escalation.hearingStatePath } : {}),
+    // The long-running start only: recorded once, as `took-watch`, where it signs with a key of its own.
+    tookWatch: { keyProblems },
   });
   executor.start();
   console.log(

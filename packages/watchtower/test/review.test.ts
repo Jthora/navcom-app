@@ -250,3 +250,113 @@ describe("what a reviewer is shown", () => {
     expect(text.match(/reached/g) ?? []).toHaveLength(2);
   });
 });
+
+const KEY = "e".repeat(64);
+const start = (at: number, own: boolean, pubkey = KEY): LogEntry => ({
+  at,
+  actor: { kind: "node", callsign: "escalation", pubkey },
+  action: "took-watch",
+  subject: null,
+  outcome: own ? "held" : "key-not-its-own",
+  hash: "0".repeat(64),
+  prev: null,
+});
+const oneKey = (at: number, refused: "executor" | "watch"): LogEntry => ({
+  at,
+  actor: { kind: "node", callsign: "escalation", pubkey: KEY },
+  action: "answered",
+  subject: { kind: "human", pubkey: "b".repeat(64) },
+  outcome: refused === "executor" ? "executor-key-refused" : "watch-key-refused",
+  hash: "0".repeat(64),
+  prev: null,
+});
+
+describe("the executor's key, as its starts recorded it", () => {
+  it("names a key that was not its own at the last start, however long ago that was", () => {
+    // A quiet box may not have restarted for months: its last start is its standing state, not the week's.
+    const review = buildReview({ ...base, entries: [start(NOW - 60 * day, false)] });
+    expect(review.lastStart).toEqual({ at: NOW - 60 * day, pubkey: KEY, ownKey: false });
+    expect(review.attention.join(" ")).toMatch(
+      /the executor's key was not its own at its last start \(\d{4}-\d{2}-\d{2}\) -- whoever can read it can sign "a person has it", and a phone given it believes that\. navcom-escalation --check says why; hand it to nobody until it passes/,
+    );
+    expect(render(review).join("\n")).toMatch(/THE EXECUTOR'S KEY\n {2}last start \d{4}-\d{2}-\d{2} {2}key eeeeeeee {2}NOT ITS OWN/);
+  });
+
+  it("says a key fixed since may still have been copied while it was not its own", () => {
+    const review = buildReview({ ...base, entries: [start(NOW - 3 * day, false), start(NOW - day, true)] });
+    expect(review.keyNotOwn).toEqual([{ at: NOW - 3 * day, pubkey: KEY, ownKey: false }]);
+    expect(review.attention.join(" ")).toMatch(
+      /the executor's key was not its own at a start on \d{4}-\d{2}-\d{2}, and passed its file check at its last \(\d{4}-\d{2}-\d{2}\) -- whoever could read it then may have kept a copy, which nothing here can show/,
+    );
+    const page = render(review).join("\n");
+    expect(page).toMatch(/last start \d{4}-\d{2}-\d{2} {2}key eeeeeeee {2}passed its file check\n {2}\d{4}-\d{2}-\d{2} {2}key eeeeeeee {2}NOT ITS OWN/);
+  });
+
+  it("does not say a new key may have been copied because the one before it was not its own", () => {
+    // A key replaced is handed to every operator again (*A lost key is said*); what anybody read of the old
+    // one signs nothing a phone given the new one believes.
+    const OTHER = "f".repeat(64);
+    const review = buildReview({ ...base, entries: [start(NOW - 3 * day, false, KEY), start(NOW - day, true, OTHER)] });
+    expect(review.attention.join(" ")).not.toMatch(/may have kept a copy/);
+    expect(review.attention).toEqual([]);
+  });
+
+  it("lists a last start that was not its own once, though it is in the window as well", () => {
+    const page = render(buildReview({ ...base, entries: [start(NOW - day, false)] })).join("\n");
+    expect(page.match(/NOT ITS OWN/g) ?? []).toHaveLength(1);
+  });
+
+  it("says an exposure since fixed in the review whose window holds it, and not every week after", () => {
+    // Decided: an event, like every other one here. The standing state -- the last start -- is read from
+    // the whole log; a failing start a passing one has followed is said in its own week.
+    const review = buildReview({ ...base, entries: [start(NOW - 30 * day, false), start(NOW - day, true)] });
+    expect(review.keyNotOwn).toEqual([]);
+    expect(review.attention).toEqual([]);
+    expect(render(review).join("\n")).not.toMatch(/NOT ITS OWN/);
+    // Read with a window that holds it, it is said.
+    const wide = buildReview({ ...base, days: 31, entries: [start(NOW - 30 * day, false), start(NOW - day, true)] });
+    expect(wide.attention.join(" ")).toMatch(/may have kept a copy/);
+  });
+
+  it("is not a reason to look on a key that has passed at every start", () => {
+    const review = buildReview({ ...base, entries: [start(NOW - 3 * day, true), start(NOW - day, true)] });
+    expect(review.attention).toEqual([]);
+    expect(render(review).join("\n")).toMatch(/THE EXECUTOR'S KEY\n {2}last start \d{4}-\d{2}-\d{2} {2}key eeeeeeee {2}passed its file check\n\n/);
+  });
+});
+
+describe("an answer a relay took under one of the box's keys and refused under the other", () => {
+  it("is listed, and worded by which key no relay took", () => {
+    const review = buildReview({ ...base, entries: [oneKey(NOW - 2 * day, "executor"), oneKey(NOW - day, "watch")] });
+    expect(review.oneKey).toEqual([
+      { at: NOW - 2 * day, refused: "executor" },
+      { at: NOW - day, refused: "watch" },
+    ]);
+    const said = review.attention.join("\n");
+    expect(said).toMatch(
+      /an answer reached relays only under the watch key \(\d{4}-\d{2}-\d{2}\) -- a phone given the executor key cannot end a Distress on it\. navcom-escalation --check names the relays that refuse the executor's key; drop them/,
+    );
+    expect(said).toMatch(
+      /an answer reached relays only under the executor's key \(\d{4}-\d{2}-\d{2}\) -- every phone handed this watch before it named that key heard nothing from it\. navcom-escalation --check names the relays that refuse the watch key's copy; drop them/,
+    );
+    expect(render(review).join("\n")).toMatch(
+      /ONE KEY ONLY[^\n]*\n {2}\d{4}-\d{2}-\d{2} {2}EXECUTOR KEY REFUSED\n {2}\d{4}-\d{2}-\d{2} {2}WATCH KEY REFUSED\n/,
+    );
+    // `answered`, and a start's `took-watch`, are never an escalation, a held answer or a re-page.
+    const withStart = buildReview({ ...base, entries: [start(NOW - day, true), ...review.oneKey.map((o) => oneKey(o.at, o.refused))] });
+    expect([withStart.escalations, withStart.resent, withStart.repaged, withStart.oneKey.length]).toEqual([[], [], [], 2]);
+  });
+
+  it("is counted when there are several, never listed one line each in what needs a look", () => {
+    const review = buildReview({ ...base, entries: [oneKey(NOW - 2 * day, "executor"), oneKey(NOW - day, "executor")] });
+    expect(review.attention.filter((a) => /only under the watch key/.test(a))).toEqual([
+      expect.stringMatching(/^2 answers reached relays only under the watch key -- /),
+    ]);
+  });
+
+  it("ignores those from before the window", () => {
+    const review = buildReview({ ...base, entries: [oneKey(NOW - 30 * day, "executor")] });
+    expect(review.oneKey).toEqual([]);
+    expect(review.attention).toEqual([]);
+  });
+});

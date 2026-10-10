@@ -20,3 +20,15 @@ declare const __BUILT_AT__: string | undefined;
  */
 export const BUILT_AT: string | null =
   typeof __BUILT_AT__ === 'string' && __BUILT_AT__.length > 0 ? __BUILT_AT__ : null;
+
+/**
+ * Which commit this build is, as seven hex characters, baked in beside {@link BUILT_AT}.
+ *
+ * From the same module as `/version.json` (see `vite.config.ts`), so the page and the deploy
+ * stamp cannot disagree. Null where the build could not say — `unknown`, or no literal — and
+ * every reader treats null as "cannot establish" rather than as a match.
+ */
+declare const __BUILT_COMMIT__: string | undefined;
+
+export const BUILT_COMMIT: string | null =
+  typeof __BUILT_COMMIT__ === 'string' && /^[0-9a-f]{7}$/.test(__BUILT_COMMIT__) ? __BUILT_COMMIT__ : null;

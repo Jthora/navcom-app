@@ -351,10 +351,11 @@ describe("a Distress a human already acknowledged, sent again [decision 2026-10-
     expect(payload.ladder).toBe("acknowledged");
     // Only what this process knows, whether the phone missed the answer or this is a new emergency
     // [review: D2, #0, relay paths R2]: when it was acknowledged, that the person who did is being
-    // paged about this attempt, and when the watch treats an attempt as new.
+    // paged about this attempt, and when the watch treats an attempt as new -- with Raven on call, one
+    // re-page interval from this page, when the next attempt widens to the roster (*Silence widens*).
     expect(payload.text).toBe(
       "Acknowledged less than a minute ago. The watch is paging Wren again about this one. " +
-        "If your phone is still sending in 30 min, the watch treats it as new.",
+        "If your phone is still sending in 5 min, the watch treats it as new.",
     );
     // "Nobody else has been paged" is false wherever a keyless pager runs, which pages for a
     // Distress it cannot know was answered; "your phone sent another" called a new emergency a

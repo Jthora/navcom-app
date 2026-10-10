@@ -88,6 +88,29 @@ export interface Repaged {
   outcome: "paged" | "failed" | "unpaged";
 }
 
+/**
+ * A long-running start of the executor with a key of its own, recorded as `took-watch`
+ * (`escalation.spec.md`, *The executor has a key of its own*). `--drill` and `--check` record none.
+ */
+export interface KeyStart {
+  at: number;
+  /** The key it signed with, which is the entry's actor. */
+  pubkey: string | null;
+  /** False when its file check found anything: readable or changeable by another user, or nothing confirming the daemon's user. */
+  ownKey: boolean;
+}
+
+/**
+ * A response a relay took under one of the box's two keys and refused under the other, recorded as
+ * `answered` once per ladder, hold or wake answer (`escalation.spec.md`, *Every relay the box uses must
+ * take both keys*).
+ */
+export interface OneKey {
+  at: number;
+  /** Which no relay took: the executor's own key, or the watch key's copy. */
+  refused: "executor" | "watch";
+}
+
 export interface Review {
   from: number;
   to: number;
@@ -97,6 +120,15 @@ export interface Review {
   escalations: Escalation[];
   resent: Resent[];
   repaged: Repaged[];
+  /**
+   * The latest start with a key of its own, from the whole log rather than the window: it is the box's
+   * standing state, and a quiet box may not have restarted for months. Null where none is recorded.
+   */
+  lastStart: KeyStart | null;
+  /** Starts in the window whose key was not its own. */
+  keyNotOwn: KeyStart[];
+  /** Responses in the window that reached relays under one key only. */
+  oneKey: OneKey[];
   oncall: readonly string[];
   log: ReviewInput["log"];
   /** The whole point: what a person has to do something about. Empty is the good week. */
@@ -108,9 +140,12 @@ const iso = (seconds: number) => new Date(seconds * 1000).toISOString().slice(0,
 
 /**
  * How many times one person may be paged again in a night before `--review` names them (option E,
- * decided 2026-10-07). One operator sending through a whole hold pages the person who acknowledged
- * them at most six times; past that is more than one hold's worth -- several operators they
- * acknowledged all still sending, which is within the rules, or a phone that keeps starting its
+ * decided 2026-10-07). Since *Silence widens*, one operator sending through a hold pages the person who
+ * acknowledged them once, and then the roster with a first page; only where the hold cannot widen --
+ * nobody else on call pageable, the first-page budget spent, or the roster already paged about that
+ * operator inside `ack_holds_seconds` -- are they paged again alone, at most
+ * six times through a whole hold. Past that is more than one hold's worth of that: several operators
+ * they acknowledged all still sending, which is within the rules, or a phone that keeps starting its
  * Distress again, or a relay withholding the watch's answers -- and only the repeated game shows it.
  */
 export const REPAGED_A_NIGHT = 6;
@@ -159,6 +194,26 @@ export function buildReview(input: ReviewInput): Review {
       outcome:
         e.outcome === "contact-attempted" ? ("paged" as const) : e.outcome === "contact-failed" ? ("failed" as const) : ("unpaged" as const),
     }))
+    .sort((a, b) => a.at - b.at);
+
+  const starts: KeyStart[] = input.entries
+    .filter((e) => e.action === "took-watch" && (e.outcome === "held" || e.outcome === "key-not-its-own"))
+    .map((e) => ({ at: e.at, pubkey: e.actor.pubkey ?? null, ownKey: e.outcome === "held" }))
+    .sort((a, b) => a.at - b.at);
+  const lastStart = starts.at(-1) ?? null;
+  /*
+   * The window's, not the whole log's, though a copy once taken stays taken. The last start is the box's
+   * standing state, so it is read from the whole log; an exposure that a passing start has since fixed is
+   * an event, said in the review whose window holds it, as every other event here is. Said again every
+   * week after, for as long as the key is in use, it is a line the reviewer learns to skip -- and the one
+   * remedy, a new key handed to every operator, is theirs to choose the week they first read it.
+   */
+  const keyNotOwn = starts.filter((s) => !s.ownKey && s.at >= from);
+
+  // `answered` is what the executor writes for nothing else, so these never count as escalations, held answers or re-pages.
+  const oneKey: OneKey[] = input.entries
+    .filter((e) => e.action === "answered" && (e.outcome === "executor-key-refused" || e.outcome === "watch-key-refused") && e.at >= from)
+    .map((e) => ({ at: e.at, refused: e.outcome === "executor-key-refused" ? ("executor" as const) : ("watch" as const) }))
     .sort((a, b) => a.at - b.at);
 
   // Overdue means the schedule has passed, or nothing has ever run. Both demote the watch
@@ -239,6 +294,49 @@ export function buildReview(input: ReviewInput): Review {
     );
   }
 
+  /*
+   * The key a phone ends a Distress on. Its last start is the standing state, whenever it was; a failing
+   * start in the window that a passing one followed, with the same key, is still the reviewer's business,
+   * because a fixed file says nothing about who read it while it was not.
+   */
+  if (lastStart && !lastStart.ownKey) {
+    attention.push(
+      `the executor's key was not its own at its last start (${iso(lastStart.at)}) -- whoever can read it can sign ` +
+        `"a person has it", and a phone given it believes that. navcom-escalation --check says why; hand it to nobody until it passes`,
+    );
+  } else if (lastStart) {
+    const exposed = keyNotOwn.filter((s) => s.pubkey === lastStart.pubkey).at(-1);
+    if (exposed) {
+      attention.push(
+        `the executor's key was not its own at a start on ${iso(exposed.at)}, and passed its file check at its last ` +
+          `(${iso(lastStart.at)}) -- whoever could read it then may have kept a copy, which nothing here can show`,
+      );
+    }
+  }
+
+  const ownRefused = oneKey.filter((o) => o.refused === "executor");
+  if (ownRefused.length > 0) {
+    const what =
+      ownRefused.length === 1
+        ? `an answer reached relays only under the watch key (${iso(ownRefused[0]!.at)})`
+        : `${ownRefused.length} answers reached relays only under the watch key`;
+    attention.push(
+      `${what} -- a phone given the executor key cannot end a Distress on it. navcom-escalation --check names the ` +
+        "relays that refuse the executor's key; drop them",
+    );
+  }
+  const copyRefused = oneKey.filter((o) => o.refused === "watch");
+  if (copyRefused.length > 0) {
+    const what =
+      copyRefused.length === 1
+        ? `an answer reached relays only under the executor's key (${iso(copyRefused[0]!.at)})`
+        : `${copyRefused.length} answers reached relays only under the executor's key`;
+    attention.push(
+      `${what} -- every phone handed this watch before it named that key heard nothing from it. navcom-escalation ` +
+        "--check names the relays that refuse the watch key's copy; drop them",
+    );
+  }
+
   if (input.oncall.length === 0) {
     attention.push("nobody is on call, so a Distress would page nobody and say so");
   } else if (input.oncall.length === 1) {
@@ -262,6 +360,9 @@ export function buildReview(input: ReviewInput): Review {
     escalations,
     resent,
     repaged,
+    lastStart,
+    keyNotOwn,
+    oneKey,
     oncall: input.oncall,
     log: input.log,
     attention,
@@ -306,6 +407,23 @@ export function render(review: Review): string[] {
     const what = r.outcome === "paged" ? "paged" : r.outcome === "failed" ? "EVERY CHANNEL FAILED" : "COULD NOT BE PAGED";
     out.push(`  ${iso(r.at)}  ${r.who ?? "?"}  ${what}`);
   }
+
+  out.push("", "THE EXECUTOR'S KEY");
+  if (!review.lastStart) out.push("  no start with a key of its own recorded");
+  else {
+    out.push(
+      `  last start ${iso(review.lastStart.at)}  key ${review.lastStart.pubkey?.slice(0, 8) ?? "?"}  ` +
+        (review.lastStart.ownKey ? "passed its file check" : "NOT ITS OWN"),
+    );
+  }
+  for (const s of review.keyNotOwn) {
+    if (s === review.lastStart) continue;
+    out.push(`  ${iso(s.at)}  key ${s.pubkey?.slice(0, 8) ?? "?"}  NOT ITS OWN`);
+  }
+
+  out.push("", "ONE KEY ONLY -- an answer a relay took under one of the box's keys and refused under the other");
+  if (review.oneKey.length === 0) out.push("  none in this window");
+  for (const o of review.oneKey) out.push(`  ${iso(o.at)}  ${o.refused === "executor" ? "EXECUTOR KEY REFUSED" : "WATCH KEY REFUSED"}`);
 
   out.push("", "THE LOG");
   out.push(

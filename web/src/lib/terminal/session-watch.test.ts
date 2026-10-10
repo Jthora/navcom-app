@@ -17,6 +17,7 @@ import {
   KIND_RESPONSE,
   KIND_SIGNAL,
   THE_RECORD,
+  buildWatchStateEvent,
   newSecretKey,
   openFromGroup,
   publicKeyOf,
@@ -285,5 +286,49 @@ describe('asking the watch to wake the others', () => {
     expect(outcome.took).toBe(0);
     expect(outcome.error).toMatch(/you have not added one/);
     expect(published).toEqual([]);
+  });
+});
+
+describe('a watch taken again by the same holder', () => {
+  /** The watch's Station, holder Raven, holding since `since`, signed now. */
+  const station = (since: number) => {
+    const now = Math.floor(Date.now() / 1000);
+    return finalizeEvent(
+      buildWatchStateEvent(
+        { state: 'station', holder: 'Raven', holder_kind: 'human', oncall: [], since, agent_health: 'down', last_drill: null, log_root: null, now },
+        now
+      ),
+      WATCH
+    );
+  };
+  const onStations = () =>
+    published.filter((e) => e.kind === KIND_SIGNAL && e.tags.some((t) => t[0] === 't' && t[1] === 'on-station'));
+
+  it('is told this operator is out again, with the time remaining rather than the time declared', async () => {
+    // Raven's board reloaded, which empties it, and Raven took the watch back: the same holder, a
+    // new holding. Comparing the callsign alone, nobody out ever told it again.
+    replies = (event) =>
+      event.kind === KIND_SIGNAL ? [answer(WATCH, [event.id], { type: 'answer', responder: { kind: 'human', callsign: 'Raven' }, text: 'Out. Noted.' })] : [];
+    const { watch } = await import('./watch.svelte');
+    watch.start();
+    const now = Math.floor(Date.now() / 1000);
+    deliver(station(now - 600));
+    await session.operator.signOn('Downtown', 2, null);
+    expect(onStations()).toHaveLength(1);
+
+    // The same holding, restated by the beat: nothing to say.
+    deliver(station(now - 600));
+    await new Promise((r) => setTimeout(r, 20));
+    expect(onStations()).toHaveLength(1);
+
+    // Ten minutes later Raven takes the watch again.
+    vi.useFakeTimers({ toFake: ['Date'], shouldAdvanceTime: true });
+    vi.setSystemTime(Date.now() + 600_000);
+    deliver(station(now + 600));
+    await until(() => onStations().length === 2, 3_000, 'the operator saying they are out again');
+    const again = openFromGroup<{ expected_duration: number; area: string }>(WATCH, MY, onStations()[1]!.content);
+    expect(again.area).toBe('Downtown');
+    expect(Math.abs(again.expected_duration - (2 * 3600 - 600))).toBeLessThanOrEqual(5);
+    watch.stop();
   });
 });

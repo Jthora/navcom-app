@@ -96,7 +96,8 @@ contact_window_seconds = 300
 # hour has a situation this number is not relevant to; a flood passes it in under a second.
 # If you raise it, raise it because your squad is large, not because it looks low.
 #
-# It counts FIRST pages only: one for each ladder that pages. Pages to the person who acknowledged a
+# It counts FIRST pages only: one for each ladder that pages, one a hold widens to included (below).
+# Pages to the person who acknowledged a
 # Distress, about an operator still sending inside ack_holds_seconds, take nothing from it and are
 # never refused by it -- only a first page is open to a stranger, and charged to one pool a few
 # operators sending through a hold spent what a new Distress needed. Those pages have a limit of
@@ -117,11 +118,16 @@ ladder_retention_seconds = 3600
 # gets the same acknowledgement back, from the same human, and the person who acknowledged is
 # paged about it -- only them, on their own entries below, and nobody else, with a page that opens
 # "NavCom REPEAT". A phone resends every 20 to 80 seconds, so: the first page about each operator
-# they hold goes at once; after that, at most once per paging_window_seconds (never more often than
-# once in 300 seconds) for that operator, and at most once per that interval for the person, in one
-# page naming every operator they hold who sent since. None of it comes from the page budget. A
-# ceiling of 24 an hour per person is there only to catch a loop. Recorded in the log as `acked`,
-# and the page as `contacted`.
+# they hold goes at once, in one page naming every operator they hold who sent since their last.
+# None of it comes from the page budget. If that operator is still sending past paging_window_seconds
+# (never less than 300) after that page -- and after the person's own last page -- the hold ends and
+# the attempt is treated as new: a ladder pages everyone on call, them included, and takes a unit of
+# the page budget ("silence widens") -- once per operator per ack_holds_seconds. Where nobody else on
+# call can be paged, the budget is spent, or the roster was already paged about that operator inside
+# ack_holds_seconds, it changes nothing: they are paged again alone instead, at most once per that
+# interval. A ceiling
+# of 24 an hour per person is there only to catch a loop. Recorded in the log as `acked`, and the
+# page as `contacted`.
 #
 # The person paged can ask the watch to wake the others about that attempt ({{attempt}}, below), from
 # the screen the repeat page opens: the hold ends and a ladder for it pages everyone else on call --
@@ -131,8 +137,8 @@ ladder_retention_seconds = 3600
 #
 # The cost: a genuinely new emergency from the same operator inside the window is read as the
 # old one until it closes by everybody except the person who acknowledged -- the rest of the
-# roster is not woken unless they ask. A keyless pager still pages, because it cannot see the
-# acknowledgement.
+# roster is not woken unless they ask, or the operator is still sending one interval after their page.
+# A keyless pager still pages, because it cannot see the acknowledgement.
 #
 # If the person who acknowledged cannot be paged again -- no longer on call, console-open only, at
 # their ceiling, or every channel of theirs failing -- the hold ends and that attempt opens a ladder

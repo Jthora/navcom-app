@@ -128,12 +128,13 @@ describe("accepted from a roster key, about an attempt in a hold that still stan
 
   it("widens every hold a page named, not only the one it carried, and names each operator", async () => {
     // A page names every operator the person holds who sent since their last page, and carries one id.
-    // A wake from it ended the carried hold and left the others held by the person who asked alone.
+    // A wake from it ended the carried hold and left the others held by the person who asked alone. Since
+    // Silence widens, such a page is a first page about one operator carrying another as a rider.
     quiet();
     const raven = generateSecretKey();
     const box = await acknowledgedBox({ roster: (wren) => [onCallEntry("Wren", wren), onCallEntry("Raven", getPublicKey(raven))] });
     const a = box.operator;
-    const { operator: b } = await holdAnother(box, box.responder);
+    const { operator: c } = await holdAnother(box, box.responder);
     const clock = vi.spyOn(Date, "now");
     const at = (seconds: number) => clock.mockImplementation(() => real() + seconds * 1000);
     const send = async (operator: Uint8Array) => {
@@ -145,38 +146,37 @@ describe("accepted from a roster key, about an attempt in a hold that still stan
     };
     at(0);
     await send(a);
-    at(10);
-    await send(b);
-    at(305);
-    const a3 = await send(a); // held behind Wren's own interval, for her next page to name
-    at(312);
-    const b2 = await send(b);
-    await vi.waitFor(() => expect(box.page).toHaveBeenCalledTimes(5));
-    expect(box.page.mock.calls[4]![5], "the page carried B's attempt").toBe(b2.id);
+    at(200);
+    const a2 = await send(a); // held inside A's interval, for Wren's next page to name
+    at(250);
+    const c1 = await send(c); // the first page about C goes at once, and names A as well
+    await vi.waitFor(() => expect(box.page).toHaveBeenCalledTimes(4));
+    expect(box.page.mock.calls[3]![5], "the page carried C's attempt").toBe(c1.id);
+    expect(box.page.mock.calls[3]![1]).toMatch(/^NavCom REPEAT -- 2 operators you acknowledged/);
 
-    const wake = signalFrom(box.responder, box.address, "wake-others", { distress_id: b2.id });
+    const wake = signalFrom(box.responder, box.address, "wake-others", { distress_id: c1.id });
     box.deliver(wake);
-    await vi.waitFor(() => expect(box.page).toHaveBeenCalledTimes(7));
-    const firsts = box.page.mock.calls.slice(5).map(([roster, , , distress, kind]) => [roster.map((e) => e.declaration.author.callsign), distress, kind]);
+    await vi.waitFor(() => expect(box.page).toHaveBeenCalledTimes(6));
+    const firsts = box.page.mock.calls.slice(4).map(([roster, , , distress, kind]) => [roster.map((e) => e.declaration.author.callsign), distress, kind]);
     expect(firsts).toHaveLength(2);
     expect(firsts).toEqual(
       expect.arrayContaining([
-        [["Raven"], b2.id, "first"],
-        [["Raven"], a3.id, "first"],
+        [["Raven"], c1.id, "first"],
+        [["Raven"], a2.id, "first"],
       ]),
     );
     await vi.waitFor(() => expect(heard(box.published, box.responder, wake.id)).toHaveLength(1));
     expect(heard(box.published, box.responder, wake.id)[0]!.payload.text).toBe(
-      `Done. The hold on ${pk8(b)} has ended and the watch is paging Raven about them. ` +
+      `Done. The hold on ${pk8(c)} has ended and the watch is paging Raven about them. ` +
         `Done. The hold on ${pk8(a)} has ended and the watch is paging Raven about them.`,
     );
     // A's next attempt joins the ladder the wake opened for it, rather than being answered from Wren's hold.
-    at(320);
-    const a4 = distressFrom(a, box.pubkey);
-    box.deliver(a4);
-    await vi.waitFor(() => expect(heard(box.published, a, a4.id).length).toBeGreaterThan(0));
-    expect(heard(box.published, a, a4.id)[0]!.payload.responder.kind, "A was still held by Wren alone").toBe("node");
-    expect(box.executor.ladders.get(a4.id)?.distressId).toBe(a3.id);
+    at(260);
+    const a3 = distressFrom(a, box.pubkey);
+    box.deliver(a3);
+    await vi.waitFor(() => expect(heard(box.published, a, a3.id).length).toBeGreaterThan(0));
+    expect(heard(box.published, a, a3.id)[0]!.payload.responder.kind, "A was still held by Wren alone").toBe("node");
+    expect(box.executor.ladders.get(a3.id)?.distressId).toBe(a2.id);
   });
 });
 

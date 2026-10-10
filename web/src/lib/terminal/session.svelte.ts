@@ -44,6 +44,7 @@ import { pool } from './pool';
 import { distressRelays, watchTargets } from './watch-targets';
 import { heard } from './heard.svelte';
 import { heardLine } from './heard-copy';
+import { sending, setDistressSending } from './sending.svelte';
 
 export interface SignOn {
   at: number;
@@ -66,7 +67,6 @@ let busy = $state(false);
 let lastResponse = $state<ResponsePayload | null>(null);
 let error = $state<string | null>(null);
 let distressPhases = $state<DistressPhase[]>([]);
-let distressRunning = $state(false);
 /**
  * When this Distress was raised, in wall-clock milliseconds.
  *
@@ -303,7 +303,7 @@ export const operator = {
   get lastResponse(): ResponsePayload | null { return lastResponse; },
   get distress(): DistressPhase[] { return distressPhases; },
   /** True while the retry loop is alive. It ends on a human, or on the operator. */
-  get distressRunning(): boolean { return distressRunning; },
+  get distressRunning(): boolean { return sending.distress; },
   get distressRaisedAt(): number | null { return distressRaisedAt; },
 
   /**
@@ -368,7 +368,8 @@ export const operator = {
 
     // A watch that changes hands inherits nothing: the incoming holder's board is empty
     // until the operators on it say so themselves. This is that -- one signal, sent when
-    // this device notices somebody else is answering now.
+    // this device notices somebody else is answering now, or the same holder has taken the
+    // watch again: a board that reloaded, or a box that restarted, is empty in the same way.
     //
     // It matters most for the operator who is already out. Without it they are invisible
     // to the new watch until their next routine check-in, which by default is an hour of
@@ -646,7 +647,7 @@ export const operator = {
   async raiseDistress(text: string) {
     distressPhases = [];
     error = null;
-    distressRunning = true;
+    setDistressSending(true);
     distressRaisedAt = Date.now();
     /*
      * This Distress's own controller, compared on every callback.
@@ -725,7 +726,7 @@ export const operator = {
       reading?.close();
       // A newer Distress, or a wipe, owns this state now.
       if (current()) {
-        distressRunning = false;
+        setDistressSending(false);
         distressController = null;
       }
     }
@@ -762,7 +763,7 @@ export const operator = {
     // Released here rather than when the aborted run notices, which can be a relay round-trip
     // later: until then the send button stayed unavailable on a phone that had just been wiped.
     distressController = null;
-    distressRunning = false;
+    setDistressSending(false);
     distressRaisedAt = null;
     stopListed();
     presence.stopBeat();

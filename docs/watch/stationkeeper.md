@@ -121,19 +121,25 @@ pages nobody.
 
 **`--review` is the fourth, and it is not for you.** It prints one week: the last drill and who
 answered it, every escalation with its date, every repeat `Distress` answered with an
-acknowledgement somebody had already given, every time the person who gave it was paged again
-about one — and whether a channel took it — whether the accountability log still verifies, and
-who is on call — then a closing **NEEDS A LOOK** section, which on a good week reads *nothing
-needs a look*. A person who could not be paged again is in it, because why the watch could not
-reach them is the thing to fix. A dead channel it names; off the roster, a console-only entry and
-somebody at their re-page ceiling it cannot tell apart, because the log records only that there was
-nothing to try — the executor's output from that moment says which. So is anybody paged again more
-than six times in one night, by name: one operator sending through a whole hold pages the person who
-acknowledged them six times at most, so more is several operators they acknowledged all still sending
-— which is within the rules — or a phone that keeps starting its `Distress` again, or a relay
-withholding the watch's answers: worth asking them, and checking the relays. It exits non-zero
-only when that section has something in it, so it can be a weekly cron that stays silent until it
-shouldn't.
+acknowledgement somebody had already given, every time the person who gave it was paged again about
+one — and whether a channel took it — what the executor's last start found of its own key, every
+answer a relay took under one of the box's two keys and refused under the other, whether the
+accountability log still verifies, and who is on call — then a closing **NEEDS A LOOK** section,
+which on a good week reads *nothing needs a look*. A person who could not be paged again is in it,
+because why the watch could not reach them is the thing to fix. A dead channel it names; off the
+roster, a console-only entry and somebody at their re-page ceiling it cannot tell apart, because the
+log records only that there was nothing to try — the executor's output from that moment says which.
+So is anybody paged again more than six times in one night, by name: one operator sending through a
+hold pages the person who acknowledged them once and then the whole roster, and only where nobody
+else can be paged, the budget is spent, or the roster was already paged about that operator in the last
+half hour, them alone again — six times at most through a hold — so
+more is several operators they acknowledged all still sending — which is within the rules — or a
+phone that keeps starting its `Distress` again, or a relay withholding the watch's answers: worth
+asking them, and checking the relays. So is an executor key that was not its own at the last start,
+however long ago that was, or at a start this week before one that passed — whoever could read it
+then may have kept a copy — and an answer that reached relays under one key only, with which
+`--check` to run. It exits non-zero only when that section has something in it, so it can be a
+weekly cron that stays silent until it shouldn't.
 
 It exists because `CLAUDE.md` asks for a **log reviewer** — *"minutes per week, and it cannot be
 the agent or verification is theatre"* — and nobody has taken the job. That is not surprising
@@ -182,11 +188,14 @@ What to look for in their output:
 | `[executor] THE EXECUTOR'S KEY IS NOT ITS OWN` | Somebody other than the executor's user can read it, the daemon runs as root, or nothing confirms the daemon's user cannot. The ladder still runs, signing with it, and no watch code is printed. Fix what it lists, then run `--check` |
 | `[executor] THIS IS A NEW EXECUTOR KEY (...)` | The key file was gone and a new key was made, while the executor's log names an older one. Every phone handed the old key ends no `Distress` on this box until handed the new code. Restore the old key from a backup, or hand out the new code and then remove the `.replaced` file it names; `--check` fails until then |
 | `[executor] ON CALL WITH THE WATCH'S OWN KEY: ...` | A roster entry names the watch key. The daemon and the agent hold it, so the executor refuses an acknowledgement or a wake signed with it. Give that person a key of their own |
-| `[ladder] ... NO RELAY TOOK THE EXECUTOR'S OWN KEY` | A response went out only as the watch key's copy. A phone given the executor key shows it and does not end a `Distress` on it. `--check` names the relay that refuses the key |
-| `[ladder] ... NO RELAY TOOK THE WATCH KEY'S COPY` | A response went out only under the executor's own key. Every phone handed the watch before it named that key heard nothing, so the executor counts it as not reported (`COULD NOT REPORT`). `--check` names the relay that refuses the watch key |
+| `[ladder] ... NO RELAY TOOK THE EXECUTOR'S OWN KEY` | A response went out only as the watch key's copy. A phone given the executor key shows it and does not end a `Distress` on it. `--check` names the relay that refuses the key. Recorded in the executor's log once per ladder, hold or wake answer, for `--review` |
+| `[ladder] ... NO RELAY TOOK THE WATCH KEY'S COPY` | A response went out only under the executor's own key. Every phone handed the watch before it named that key heard nothing, so the executor counts it as not reported (`COULD NOT REPORT`). `--check` names the relay that refuses the watch key. Recorded in the executor's log as the line above is |
+| `[escalation-log] FAILED TO RECORD ...` | The executor could not write its accountability log — a full disk, usually. The ladder runs and pages regardless; what it did is in this output and nowhere a reviewer reads. Free the space |
 | `[drill] the drill file at ... exists and cannot be read` | The daemon's line: it cannot read what the executor wrote, so it publishes no drill and the watch reads as automated rather than automated-oncall. Usually the file's group, after the executor moved to its own user (`ops/systemd/README.md`, 4b) |
 | `[page] BUDGET SPENT -- refused by the first-page budget` | More ladders paged this hour than `max_pages_per_window`: a flood. Pages to the person who acknowledged are not counted and still go |
 | `[page] REFUSED by the re-page ceiling` | One person was paged again 24 times in an hour. That is a loop, not a night: the hold ended and a ladder paged the roster, them included. Tell whoever maintains this |
+| `[page] Wren is not paged again about ... (silence widens)` | Wren was paged about an operator who is still sending five minutes later, so the hold ended and a ladder paged the roster, Wren included, with a page they can acknowledge. The rule working: nothing to fix |
+| `[page] silence widens refused -- nobody else on call can be paged` (or `the first-page budget is spent`, or `the roster was paged about them ...s ago`) | The same moment, where the hold could not widen: Wren is paged again alone and the hold stands. With nobody else on call, that is a roster one person deep; with the budget spent, see `BUDGET SPENT`. The roster was already paged about that operator inside `ack_holds_seconds`, and Wren answered that too: a hold widens once per operator in that time, so a phone that never hears the box cannot spend the budget. Check the relays (`--check`) |
 | `[wake] Wren asked the watch to page everyone about ...` | The person paged again asked the watch to wake the others. The hold ended and a ladder paged everyone else on call |
 | `[wake] Wren asked about ... -- nobody else on call can be paged, so the hold stands` (or `refused by the first-page budget`) | The request could not widen anything, so it changed nothing: Wren is still the one paged about that operator, and was told so |
 | `[executor] Kestrel (push): no "--kind", "{{kind}}" -- ...` | That entry's `navcom-push` command cannot say what kind of page it carries. It still pages |
@@ -270,11 +279,15 @@ nobody here is trusted just by holding a title, agent or human.
 answers `Distress` are different roles that often land on the same person early on. Know
 which one you're actually signing up for. Answering one has a tail: if the operator's phone keeps
 sending afterwards — usually it missed your answer — you are paged again, with a page that opens
-`NavCom REPEAT`: at once the first time for each operator you answered, then at most once every five
-minutes, one page naming everybody you answered who is still sending, for up to half an hour. That
-page opens a screen with one button, to wake the others, which pages everyone else on call about every
-operator the page named. Where nobody else can be paged, or too many alerts have gone out this hour, it
-changes nothing and says so: you are still the one paged about them.
+`NavCom REPEAT`: at once the first time for each operator you answered, naming everybody you answered
+who has sent since your last page. If that operator is still sending five minutes later, the watch
+stops treating it as the emergency you answered and pages everyone on call about it, you included, with
+an ordinary page you can acknowledge — once in half an hour for each operator. Where nobody else can be
+paged, too many alerts have gone out this hour, or everyone was already paged about them in the last
+half hour and you answered that too, you are paged alone again instead, at most once every five minutes
+for up to half an hour. A repeat page opens a screen with one button, to wake the others, which pages everyone else on
+call about every operator the page named. Where nobody else can be paged, or too many alerts
+have gone out this hour, it changes nothing and says so: you are still the one paged about them.
 
 ## What it does not require
 

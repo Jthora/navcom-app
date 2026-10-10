@@ -121,6 +121,78 @@ describe('a reading aged again on screen', () => {
     expect(changed).toHaveBeenCalledTimes(1);
   });
 
+  it('takes the same holder taking the watch again as a new holding, once, and not an older copy of it', () => {
+    // A board that reloaded is empty, and its holder takes the watch back to it. Comparing the
+    // callsign alone left it empty until every operator out signed on again.
+    const changed = vi.fn();
+    whenWatchChangesHands(changed);
+    watch.start();
+    handler!(live(R1, { holder: 'Wren', since: 1_000 }));
+    handler!(live(R1, { holder: 'Wren', since: 1_000 }));
+    expect(changed).not.toHaveBeenCalled();
+    handler!(live(R1, { holder: 'Wren', since: 1_400 }));
+    handler!(live(R1, { holder: 'Wren', since: 1_400 }));
+    expect(changed).toHaveBeenCalledTimes(1);
+
+    // The screen opens again and a relay that has not caught up answers first, with the holding
+    // before. That is not a third holding, and the current one arriving after it is not a fourth.
+    watch.stop();
+    watch.start();
+    handler!(live(R1, { holder: 'Wren', since: 1_000 }));
+    handler!(live(R1, { holder: 'Wren', since: 1_400 }));
+    expect(changed).toHaveBeenCalledTimes(1);
+  });
+
+  it('takes a box that restarted as a new holding, though it names no holder', () => {
+    // Its board was in the daemon's memory, and its `since` is when it started.
+    const changed = vi.fn();
+    whenWatchChangesHands(changed);
+    watch.start();
+    const box = (since: number) =>
+      live(R1, { state: 'automated', holder: null, holder_kind: 'agent', agent_health: 'ok', since });
+    handler!(box(1_000));
+    handler!(box(1_000));
+    expect(changed).not.toHaveBeenCalled();
+    handler!(box(5_000));
+    expect(changed).toHaveBeenCalledTimes(1);
+  });
+
+  it('takes a box handing the watch to a phone, and a phone handing it to a box, as handovers', () => {
+    // Each is a holding the board of which starts empty -- the phone's lives in its page, the box's in
+    // its daemon -- so operators out re-announce either way. It compared named holders only, so a box
+    // (which names none) handing over to a phone, or back, refilled nobody's board.
+    const changed = vi.fn();
+    whenWatchChangesHands(changed);
+    watch.start();
+    const box = (since: number) =>
+      live(R1, { state: 'automated', holder: null, holder_kind: 'agent', agent_health: 'ok', since });
+    handler!(box(1_000));
+    handler!(live(R1, { holder: 'Wren', since: 1_200 }));
+    expect(changed).toHaveBeenCalledTimes(1);
+    handler!(box(1_000));
+    expect(changed).toHaveBeenCalledTimes(2);
+  });
+
+  it('neither fires on, nor forgets the holding before, a Dark read between two', () => {
+    // A handover is normally a holder, a moment of Dark, then the next: the Dark is not a holding, and
+    // the same holding after it is not a new one.
+    const changed = vi.fn();
+    whenWatchChangesHands(changed);
+    watch.start();
+    const dark = (since: number): WatchStateRead => ({
+      ...live(null, { state: 'dark', holder: null, holder_kind: null, since }),
+      dark: true
+    });
+    handler!(live(R1, { holder: 'Wren', since: 1_000 }));
+    handler!(dark(1_500));
+    expect(changed).not.toHaveBeenCalled();
+    handler!(live(R1, { holder: 'Wren', since: 1_000 }));
+    expect(changed, 'the same holding, after a Dark read, taken for a new one').not.toHaveBeenCalled();
+    handler!(dark(1_600));
+    handler!(live(R1, { holder: 'Raven', since: 2_000 }));
+    expect(changed, 'the Dark read forgot who held it before').toHaveBeenCalledTimes(1);
+  });
+
   it('still shows its age: the reading itself is taken every time', () => {
     watch.start();
     handler!(live(R1));

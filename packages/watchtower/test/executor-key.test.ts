@@ -322,3 +322,86 @@ describe("the signals it acts on, opened with its own key first", () => {
     expect(heard(box.published, operator, distress.id).map((h) => h.payload.responder.kind)).not.toContain("human");
   });
 });
+
+describe("a response one key could place on no relay, in the accountability log", () => {
+  // Said in the executor's output since the key was built, and nowhere a reviewer reads. `answered`, about
+  // whoever it was for, so `--review` counts none of them as an escalation, a held answer or a re-page --
+  // and once per ladder, hold or wake answer, so a whole hold of retries is one entry, not fifty.
+  const oneKey = (box: { logPath: string }) =>
+    logged(box.logPath).filter((e) => e.outcome === "executor-key-refused" || e.outcome === "watch-key-refused");
+
+  it("records the executor's own refused once for a ladder and the retries that join it, about the operator", async () => {
+    quiet();
+    const operator = generateSecretKey();
+    const box = build({ ownKey: true, oncall: [onCallEntry("Wren", getPublicKey(generateSecretKey()))] });
+    box.relay.refuses = (e) => e.pubkey === box.executorPubkey;
+    const distress = distressFrom(operator, box.pubkey);
+    box.deliver(distress);
+    await vi.waitFor(() => expect(oneKey(box)).toHaveLength(1));
+    for (let i = 0; i < 2; i++) {
+      const retry = distressFrom(operator, box.pubkey);
+      box.deliver(retry);
+      await vi.waitFor(() => expect(answering(box.published, retry.id)).toHaveLength(2));
+    }
+    await new Promise((r) => setTimeout(r, 30));
+    expect(oneKey(box), "one entry per retry, or none").toEqual([
+      expect.objectContaining({
+        action: "answered",
+        outcome: "executor-key-refused",
+        actor: expect.objectContaining({ pubkey: box.executorPubkey }),
+        subject: expect.objectContaining({ pubkey: getPublicKey(operator) }),
+      }),
+    ]);
+  });
+
+  it("records the watch key's copy refused once per ladder, each about its own operator", async () => {
+    quiet();
+    const box = build({ ownKey: true, oncall: [onCallEntry("Wren", getPublicKey(generateSecretKey()))] });
+    box.relay.refuses = (e) => e.pubkey === box.pubkey;
+    const operators = [generateSecretKey(), generateSecretKey()];
+    for (const operator of operators) {
+      box.deliver(distressFrom(operator, box.pubkey));
+      box.deliver(distressFrom(operator, box.pubkey));
+    }
+    await vi.waitFor(() => expect(oneKey(box)).toHaveLength(2));
+    await new Promise((r) => setTimeout(r, 30));
+    expect(oneKey(box).map((e) => [e.action, e.outcome, e.subject?.pubkey])).toEqual(
+      expect.arrayContaining(operators.map((o) => ["answered", "watch-key-refused", getPublicKey(o)])),
+    );
+    expect(oneKey(box)).toHaveLength(2);
+  });
+
+  it("records it beside a held acknowledgement's ack-not-sent, never instead of it", async () => {
+    quiet();
+    const box = await acknowledgedBox({ ownKey: true });
+    box.relay.refuses = (e) => e.pubkey === box.pubkey;
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const again = distressFrom(box.operator, box.pubkey);
+    box.deliver(again);
+    await vi.waitFor(() => expect(answering(box.published, again.id)).toHaveLength(2));
+    await vi.advanceTimersByTimeAsync(10_000);
+    await vi.waitFor(() => expect(answering(box.published, again.id)).toHaveLength(4));
+    vi.useRealTimers();
+    await vi.waitFor(() => expect(logged(box.logPath).filter((e) => e.action === "acked").map((e) => e.outcome)).toEqual(["ack-not-sent"]));
+    expect(oneKey(box).map((e) => [e.action, e.outcome, e.subject?.pubkey])).toEqual([
+      ["answered", "watch-key-refused", getPublicKey(box.operator)],
+    ]);
+  });
+
+  it("records an answer to wake-others that lost one key, about the person who asked", async () => {
+    quiet();
+    const box = await acknowledgedBox({ ownKey: true, roster: (wren) => [onCallEntry("Wren", wren), onCallEntry("Raven", getPublicKey(generateSecretKey()))] });
+    const attempt = distressFrom(box.operator, box.pubkey);
+    box.deliver(attempt);
+    await vi.waitFor(() => expect(box.page).toHaveBeenCalledTimes(2));
+    box.relay.refuses = (e) => e.pubkey === box.executorPubkey;
+    const wake = signalFrom(box.responder, box.address, "wake-others", { distress_id: attempt.id });
+    box.deliver(wake);
+    await vi.waitFor(() => expect(heard(box.published, box.responder, wake.id).length).toBeGreaterThan(0));
+    await vi.waitFor(() =>
+      expect(oneKey(box).filter((e) => e.subject?.pubkey === getPublicKey(box.responder)).map((e) => e.outcome)).toEqual([
+        "executor-key-refused",
+      ]),
+    );
+  });
+});

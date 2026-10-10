@@ -54,7 +54,7 @@
   "src/routes/terminal/sign-on/+page.svelte": 191,
   "src/routes/terminal/standing/+page.svelte": 331,
   "src/routes/terminal/wake/+page.svelte": 73,
-  "src/routes/terminal/watch/+page.svelte": 403,
+  "src/routes/terminal/watch/+page.svelte": 443,
   "src/routes/terminal/who/+page.svelte": 12,
   "src/routes/terminal/wipe/+page.svelte": 334
 }

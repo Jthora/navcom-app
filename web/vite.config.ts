@@ -1,5 +1,6 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
+import { VERSION } from './src/lib/server/version';
 
 /**
  * The moment this build was made, baked into the bundle as a literal.
@@ -16,8 +17,20 @@ import { defineConfig } from 'vite';
  */
 const BUILT_AT = new Date().toISOString();
 
+/**
+ * Which commit this build is, baked in the same way, from the module `/version.json` and the
+ * status page already read — one derivation, so the page and the stamp cannot name two commits.
+ *
+ * The page needs it to know whether the build a reload would load is a different one
+ * (`terminal/update.svelte.ts`). The build version SvelteKit gives it changes on every build,
+ * including the box's daily rebuild of the same commit, which would ask a holder to reload for
+ * nothing. SvelteKit hands this `define` to the service worker's build as well, so the worker
+ * can say which commit it would load.
+ */
+const BUILT_COMMIT = VERSION.commit;
+
 export default defineConfig({
-  define: { __BUILT_AT__: JSON.stringify(BUILT_AT) },
+  define: { __BUILT_AT__: JSON.stringify(BUILT_AT), __BUILT_COMMIT__: JSON.stringify(BUILT_COMMIT) },
   plugins: [sveltekit()],
   server: {
     // The directory CSV and the docs live in the repo root, above web/.

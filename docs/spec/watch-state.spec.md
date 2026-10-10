@@ -227,7 +227,10 @@ So the incoming watch starts empty and fills from the operators themselves:
 
 - A field terminal that sees the holder change **MUST re-announce** `on-station` if it is
   signed on. This is what populates the new board, and it comes from the operator rather
-  than from the outgoing watch
+  than from the outgoing watch. **The same holder taking the watch again counts as a
+  change** (a later `since` in the state, decided 2026-10-09): a board reloaded onto a newer
+  build, or a daemon restarted, starts as empty as a new holder's, and only the operators can
+  fill it
 - The re-announce MUST state the duration **remaining**, not the duration originally
   declared. Restating the original moves the operator's due-back time forward by however
   long they have already been out

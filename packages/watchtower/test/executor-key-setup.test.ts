@@ -24,6 +24,7 @@ import {
   keyFileProblems,
   loadExecutorKey,
   loadWatchKey,
+  readReplaced,
   relaysTakeBoth,
   watchCode,
   whyNotMake,
@@ -649,4 +650,81 @@ describe("what the executor says", () => {
     expect(exposed.out()).toMatch(/REFUSED: other users can read or change it/);
     expect(exposed.out()).toMatch(/REFUSED: this executor runs as the daemon's user/);
   }, 30_000);
+});
+
+describe("what its accountability log records of its key, at every long-running start", () => {
+  /** The `took-watch` entries in the executor's own log, as `[outcome, actor key]`. */
+  const starts = (dir: string): [string, string | undefined][] => {
+    const path = join(dir, "escalation-log.jsonl");
+    if (!existsSync(path)) return [];
+    return readFileSync(path, "utf8").trim().split("\n").filter(Boolean)
+      .map((l) => JSON.parse(l) as { action: string; outcome: string; actor: { pubkey?: string } })
+      .filter((e) => e.action === "took-watch")
+      .map((e) => [e.outcome, e.actor.pubkey]);
+  };
+
+  it("records a key that fails its check as not its own, naming the key", async () => {
+    // Said in its output at every start and nowhere a reviewer reads: a key the daemon's user can read is
+    // one the agent can sign "a person has it" with.
+    const relay = await startRelay();
+    relays.push(relay);
+    const dir = tempDir();
+    const keyPath = join(dir, "executor.key");
+    const key = loadExecutorKey(keyPath);
+    const p = run([escalationToml(dir, { relay: relay.url, identity: [`executor_key_path = "${keyPath}"`] })]);
+    await eventually(() => expect(p.out()).toMatch(/subscribing for 20911/), 15_000);
+    expect(p.out()).toMatch(/THE EXECUTOR'S KEY IS NOT ITS OWN/);
+    expect(starts(dir)).toEqual([["key-not-its-own", key.pubkey]]);
+  }, 20_000);
+
+  it("records a clean start as held -- and --drill, run first beside it, records none", async () => {
+    // --drill runs beside the live executor and would append to its chain from a copy that is behind.
+    const relay = await startRelay();
+    relays.push(relay);
+    const dir = tempDir();
+    const keyPath = join(dir, "executor.key");
+    const key = loadExecutorKey(keyPath);
+    const identity = [`executor_key_path = "${keyPath}"`, `daemon_user = "${otherUid()}"`];
+    const drill = run(["--drill", escalationToml(dir, { relay: relay.url, identity, escalation: ["drill_ack_window_seconds = 1"] })]);
+    await drill.exited;
+    expect(starts(dir), "--drill recorded a start").toEqual([]);
+
+    const p = run([escalationToml(dir, { relay: relay.url, identity })]);
+    await eventually(() => expect(p.out()).toMatch(/subscribing for 20911/), 15_000);
+    expect(starts(dir)).toEqual([["held", key.pubkey]]);
+  }, 30_000);
+
+  it("names a key that never ran a ladder, so losing it is said rather than silently replaced", async () => {
+    // A quiet box: it starts, pages for nobody, and its key file is lost. The log named the executor's key
+    // only as the actor of a ladder, so the key made in its place replaced it without a word.
+    const relay = await startRelay();
+    relays.push(relay);
+    const dir = tempDir();
+    const keyPath = join(dir, "executor", "executor.key");
+    const toml = escalationToml(dir, { relay: relay.url, identity: [`executor_key_path = "${keyPath}"`, `daemon_user = "${otherUid()}"`] });
+
+    const first = run([toml]);
+    await eventually(() => expect(first.out()).toMatch(/subscribing for 20911/), 15_000);
+    const lost = loadExecutorKey(keyPath).pubkey;
+    for (const c of children.splice(0)) c.kill("SIGKILL");
+    rmSync(keyPath);
+
+    const second = run([toml]);
+    await eventually(() => expect(second.out()).toMatch(/subscribing for 20911/), 15_000);
+    expect(second.out()).toMatch(new RegExp(`THIS IS A NEW EXECUTOR KEY[\\s\\S]*signed as ${lost.slice(0, 8)} before`));
+    expect(readReplaced(keyPath)?.replaces).toEqual([lost]);
+  }, 45_000);
+
+  it("--review says when the key was not its own at the last start, and exits non-zero", async () => {
+    const dir = tempDir();
+    const toml = escalationToml(dir);
+    const key = getPublicKey(generateSecretKey());
+    const { log } = AccountabilityLog.open(join(dir, "escalation-log.jsonl"), 90);
+    log.record({ at: Math.floor(Date.now() / 1000) - 60, actor: { kind: "node", callsign: "escalation", pubkey: key }, action: "took-watch", subject: null, outcome: "key-not-its-own" });
+    log.close();
+    const p = run(["--review", toml]);
+    expect(await p.exited).toBe(1);
+    expect(p.out()).toMatch(new RegExp(`THE EXECUTOR'S KEY\\n {2}last start \\d{4}-\\d{2}-\\d{2} {2}key ${key.slice(0, 8)} {2}NOT ITS OWN`));
+    expect(p.out()).toMatch(/- the executor's key was not its own at its last start \(\d{4}-\d{2}-\d{2}\) -- whoever can read it can sign "a person has it"/);
+  }, 20_000);
 });

@@ -21,6 +21,8 @@
   import PickACallsign from '$lib/components/PickACallsign.svelte';
   import { loadIdentity } from '$lib/terminal/identity';
   import { loadConfig } from '$lib/terminal/config';
+  import { update } from '$lib/terminal/update.svelte';
+  import { sending } from '$lib/terminal/sending.svelte';
 
   let address = $state<string | null>(null);
   let callsign = $state<string | null>(null);
@@ -50,7 +52,13 @@
     address = watchPubkey();
     callsign = loadIdentity()?.callsign ?? null;
     board.start();
-    return () => board.stop();
+    // Asks whether a newer build is waiting while this screen is open, and only this one: it is the
+    // only screen that answers as the watch, so the only place an older board's answers are made.
+    const stopAsking = update.start();
+    return () => {
+      board.stop();
+      stopAsking();
+    };
   });
 
   /** Re-read after anything that changes what this device holds. */
@@ -122,6 +130,10 @@
       busy = false;
     }
   }
+
+  /** What a reload would clear, said before the hold that does it. */
+  const heardOut = $derived(board.entries.length);
+  const heardWaiting = $derived(board.distress.length + board.waiting.length + board.restock.length);
 
   const blocks = $derived(address ? (address.match(/.{1,8}/g) ?? []) : []);
   const configured = $derived(loadConfig() !== null);
@@ -418,6 +430,34 @@
           </Why>
         {/if}
     {/if}
+
+    <!--
+      The last slot in either post, so it is in the same place whichever one the holder is in.
+      Nothing else says it: no notification, no badge, no sound, no vibration -- a holder is expected
+      to look, and this is where they look.
+
+      **Always here, and always the same height** [review: board reload]. It appeared when a newer
+      build was found, which is a moment nobody chooses -- often just as the screen is shown again,
+      when a holder who has just unlocked the phone is reaching for an answer below -- and everything
+      under the panel moved down by its height. Both readings are laid in the same cell and only one
+      is visible, so the cell is the height of the taller whichever shows: a flip changes words, not
+      layout. Its control is at the foot of the screen, below everything anybody is waiting on.
+    -->
+    <Slot k="Build">
+      <span class="build">
+        <span class="build-reading" data-shown={update.waiting ? undefined : 'true'} aria-hidden={update.waiting ? 'true' : undefined}>
+          <Readout value="Nothing newer" tone="cold" sub="that this phone has heard" />
+        </span>
+        <span
+          class="build-reading"
+          data-update-ready={update.waiting ? '' : undefined}
+          data-shown={update.waiting ? 'true' : undefined}
+          aria-hidden={update.waiting ? undefined : 'true'}
+        >
+          <Readout value="Older build" tone="warn" sub="reload it at the foot" />
+        </span>
+      </span>
+    </Slot>
   </Panel>
 
   <section class="act">
@@ -648,6 +688,90 @@
       <button onclick={() => (confirmLeave = true)}>Give up this watch</button>
     {/if}
   </section>
+
+  {#if update.waiting || update.phase === 'fetching'}
+    <!--
+      Its own section rather than a second control in the panel: the panel's one lit action is the
+      watch itself, and two held amber controls one above the other is how the wrong one gets held.
+
+      **At the foot, below everything** [review: board reload]. It appears at a moment nobody
+      chooses, and anywhere above the Distress section it pushed the answer controls down under the
+      thumb reaching for them -- "Tell them you are awake" landing on the "Nobody can come" above it.
+      Nothing that appears by itself sits above anything somebody is waiting on.
+
+      The cost before the hold, as the wipe screen says its own: everything on this board lives in
+      this page, and a reload is the board being cleared.
+    -->
+    <section class="act" data-reload>
+      <h2>Reload this board</h2>
+      {#if sending.distress}
+        <!-- A reload stops a Distress this phone is sending, so it is not offered until that ends. -->
+        <Slot k="Reload">
+          <span data-reload-held>
+            <Readout value="Not now" tone="warn" sub="this phone is sending a Distress, and a reload would stop it" />
+          </span>
+        </Slot>
+      {:else if update.phase === 'fetching'}
+        <!-- The board is untouched until the newer build has arrived: reloading before would load this one again. -->
+        <Slot k="Reload">
+          <span data-reload-fetching>
+            <Heartbeat label="Fetching the newer build" />
+          </span>
+        </Slot>
+      {:else}
+        {#if update.phase === 'failed'}
+          <Slot k="Reload">
+            <span data-reload-failed>
+              <Readout value="Not loaded" tone="warn" sub="the newer build did not arrive; nothing was cleared" />
+            </span>
+          </Slot>
+        {/if}
+        <div data-reload-cost>
+          <Slot k="Clears">
+            <Readout value="{heardOut} out, {heardWaiting} waiting" tone="warn" sub="what this phone has heard" />
+          </Slot>
+          <p class="cost">
+            Of what is waiting, only a Distress still being sent comes back by itself, on its
+            sender's next try.
+          </p>
+          {#if board.onStation}
+            <p class="cost">
+              Take the watch again after it. Until you do, operators read you as here for up to
+              five minutes, then Dark.
+            </p>
+          {/if}
+        </div>
+        <Action
+          label="Hold to reload"
+          holdingLabel="Keep holding…"
+          hold={1200}
+          tone="warn"
+          onfire={() => void update.reload()}
+        />
+      {/if}
+      <Why summary="Why reload">
+        <p class="cost">
+          An operator's phone ends a Distress only on an answer it can attribute to a person, and
+          what makes an answer attributable has changed between builds before. A board on an older
+          build can answer in a way a newer phone shows but cannot confirm, so the operator keeps
+          sending.
+        </p>
+        <p class="cost">
+          Nothing reloads by itself: this board lives in this page, and only you know when it is
+          quiet enough to lose.
+          {#if update.fetchFirst}
+            The newer build is fetched first, and this board stays as it is until it has arrived.
+          {:else}
+            Leaving this screen may reload it as well.
+          {/if}
+        </p>
+        <p class="cost">
+          Taking the watch again after a reload asks every operator whose app is open to say they
+          are out again, so who is out fills back in. Anybody else reappears when they next sign on.
+        </p>
+      </Why>
+    </section>
+  {/if}
 {/if}
 
 <style>
@@ -676,4 +800,8 @@
   }
   .board li.distress .badge { color: var(--t-alarm); border-color: var(--t-alarm); }
   .danger { border-color: var(--t-alarm); color: var(--t-alarm); }
+  /* Both readings in one cell, one visible: the slot is the same height whichever shows. */
+  .build { display: grid; }
+  .build-reading { grid-area: 1 / 1; visibility: hidden; }
+  .build-reading[data-shown] { visibility: visible; }
 </style>

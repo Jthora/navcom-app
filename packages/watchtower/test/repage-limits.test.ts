@@ -54,34 +54,54 @@ describe("the page budget counts first pages only", () => {
     );
   });
 
-  it("takes nothing from it: with one unit left after the first ladder, re-pages leave it for a new Distress", async () => {
-    // With a budget of one, the first ladder spends it and a stranger is refused whether or not a re-page
-    // took a unit, so that case could not show a re-page draining it. Two: the first ladder takes one,
-    // and the stranger is paged only if none of the re-pages took the other.
+  it("takes nothing from it: with one unit left after the ladders, re-pages leave it for a new Distress", async () => {
+    // One unit left once Wren's three ladders have each taken theirs: the stranger is paged only if none
+    // of the re-pages took it. Three operators' first pages, which go at once and never widen -- a second
+    // page about one operator, with Raven on call, is Silence widens, and that ladder takes a unit.
     quiet();
     const raven = getPublicKey(generateSecretKey());
     const fresh = await acknowledgedBox({
-      over: { maxPagesPerWindow: 2 },
+      over: { maxPagesPerWindow: 4 },
       roster: (wren) => [onCallEntry("Wren", wren), onCallEntry("Raven", raven)],
     });
+    const operators = [fresh.operator];
+    for (let i = 0; i < 2; i++) operators.push((await holdAnother(fresh, fresh.responder)).operator);
+    for (const [i, operator] of operators.entries()) {
+      fresh.deliver(distressFrom(operator, fresh.pubkey));
+      await vi.waitFor(() => expect(fresh.page).toHaveBeenCalledTimes(4 + i));
+      expect(fresh.page.mock.calls[3 + i]![4]).toBe("repeat");
+    }
+    // A stranger's Distress after them is paged: the unit the re-pages did not touch.
+    const stranger = generateSecretKey();
+    const flood = distressFrom(stranger, fresh.pubkey);
+    fresh.deliver(flood);
+    await vi.waitFor(() => expect(fresh.page).toHaveBeenCalledTimes(7));
+    const [roster, , , distress, kind] = fresh.page.mock.calls[6]!;
+    expect([distress, kind], "the re-pages spent what a new Distress needed").toEqual([flood.id, "first"]);
+    expect(roster.map((e) => e.declaration.author.callsign)).toEqual(["Wren", "Raven"]);
+    await vi.waitFor(() => expect(heard(fresh.published, stranger, flood.id).length).toBeGreaterThan(0));
+    expect(heard(fresh.published, stranger, flood.id)[0]!.payload.text).not.toMatch(/too many alerts/);
+  });
+
+  it("takes nothing from it where the hold cannot widen: a person alone on call, paged again and again", async () => {
+    // Nobody else to widen to, so each attempt past the interval pages Wren again, as before Silence
+    // widens -- and none of those takes the unit a stranger's Distress needs.
+    const { warn } = quiet();
+    const fresh = await acknowledgedBox({ over: { maxPagesPerWindow: 2 } });
     const clock = vi.spyOn(Date, "now");
-    // Three re-pages about the operator Wren holds, each past the re-page interval.
     for (const [i, seconds] of [0, 301, 602].entries()) {
       clock.mockImplementation(() => real() + seconds * 1000);
       fresh.deliver(distressFrom(fresh.operator, fresh.pubkey));
       await vi.waitFor(() => expect(fresh.page).toHaveBeenCalledTimes(2 + i));
       expect(fresh.page.mock.calls[1 + i]![4]).toBe("repeat");
     }
-    // A stranger's Distress after them is paged: the unit the re-pages did not touch.
+    expect(fresh.executor.ladders.all(), "a hold widened with nobody else on call").toHaveLength(1);
+    expect(warn.mock.calls.flat().filter((l) => /silence widens refused -- nobody else on call can be paged/.test(String(l)))).toHaveLength(2);
     const stranger = generateSecretKey();
     const flood = distressFrom(stranger, fresh.pubkey);
     fresh.deliver(flood);
     await vi.waitFor(() => expect(fresh.page).toHaveBeenCalledTimes(5));
-    const [roster, , , distress, kind] = fresh.page.mock.calls[4]!;
-    expect([distress, kind], "the re-pages spent what a new Distress needed").toEqual([flood.id, "first"]);
-    expect(roster.map((e) => e.declaration.author.callsign)).toEqual(["Wren", "Raven"]);
-    await vi.waitFor(() => expect(heard(fresh.published, stranger, flood.id).length).toBeGreaterThan(0));
-    expect(heard(fresh.published, stranger, flood.id)[0]!.payload.text).not.toMatch(/too many alerts/);
+    expect(fresh.page.mock.calls[4]!.slice(3, 5)).toEqual([flood.id, "first"]);
   });
 
   it("still bounds first pages: a new Distress past it is told nobody could be paged, and says which limit", async () => {
@@ -104,10 +124,10 @@ describe("the page budget counts first pages only", () => {
 });
 
 describe("one page per interval for each person, whoever it is about", () => {
-  it("pages about each operator they hold at once the first time, then once per interval naming everyone who sent since", async () => {
+  it("pages about each operator they hold at once the first time, then -- where the hold cannot widen -- once per interval naming everyone who sent since", async () => {
+    // Wren alone on call, so nothing widens (Silence widens, in silence-widens.test.ts, is the other case).
     const { log } = quiet();
-    const raven = getPublicKey(generateSecretKey());
-    const box = await acknowledgedBox({ roster: (wren) => [onCallEntry("Wren", wren), onCallEntry("Raven", raven)] });
+    const box = await acknowledgedBox();
     const a = box.operator;
     const { operator: b } = await holdAnother(box, box.responder);
     expect(box.page).toHaveBeenCalledTimes(2);

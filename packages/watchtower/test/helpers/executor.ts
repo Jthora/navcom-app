@@ -106,6 +106,8 @@ export interface BoxOptions {
   ownKey?: boolean;
   /** The watch key, where a test must know it before the roster is written. */
   watchSecret?: Uint8Array;
+  /** What the long-running start's key check found, for its `took-watch` record; none, as `--drill` passes. */
+  tookWatch?: { keyProblems: readonly string[] };
 }
 
 export function build(opts: BoxOptions = {}) {
@@ -123,6 +125,7 @@ export function build(opts: BoxOptions = {}) {
     pool,
     page,
     ...(opts.ownKey ? { executorKey: { secretKey: executorSecret, pubkey: executorPubkey } } : {}),
+    ...(opts.tookWatch ? { tookWatch: opts.tookWatch } : {}),
   });
   executors.push(executor);
   executor.start();

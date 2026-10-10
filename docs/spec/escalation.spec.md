@@ -85,14 +85,18 @@ file shows. A key the agent can read is a key the agent can sign "a person has i
 given that key believes it over anything else. An executor whose key fails that check at startup still
 runs the ladder, signing with that key — paging nobody is the worse failure, and a phone given the key
 ends a `Distress` on nothing else — says so in its log at every start, does not offer the key for
-handing out, and `--check` keeps failing until it is fixed. Recording the failure in the accountability
-log as well is decided and not yet built: the log's outcomes are a closed set in `@navcom/core`, and
-none says it. A backup of the key is the key, and is kept as one.
+handing out, and `--check` keeps failing until it is fixed. Every start where the executor signs with a
+key of its own is recorded in its accountability log as `took-watch`: `held`, or `key-not-its-own`
+while the check finds anything, and `--review` says so — and, once a later start with the same key
+passes, that whoever could read it then may have kept a copy. `--drill` and `--check` record nothing:
+run beside the live executor, a drill would append to the live one's chain from a copy that is behind.
+A backup of the key is the key, and is kept as one.
 
 **A lost key is said, not silently replaced.** A key file that is gone — a reinstall that wiped it, a
 restore that missed it — leaves every phone handed it unable to end a `Distress` on anything the box
 sends. The executor's accountability log outlives the file and names the executor's key as the actor
-of everything it does, so where the start makes a key while the log names another, it still makes it —
+of everything it does — its starts included, so a key that never ran a ladder is named too — so
+where the start makes a key while the log names another, it still makes it —
 the box must keep answering — and records beside it that it replaces the old one. While that record
 stands the executor says so at every start, naming the old key, and `--check` fails: restore the old
 key from a backup, or hand every operator the new code and then remove the record.
@@ -138,8 +142,10 @@ then the watch key's copy naming it, an ephemeral `20912` each, addressed to and
 that signed it — and fails on any relay that takes one key and refuses the other; a relay that took
 neither, unreachable from the box, is warned about. The box's relays are drawn from those that take
 both. At runtime the executor logs each response that one key could place on no relay while the other
-key's was taken. Recording that in the accountability log, and `--review` showing it, are decided and
-not yet built, for the reason above; a setup script that draws the relays does not exist yet.
+key's was taken. It records that as `answered`, about whoever the response was for, `executor-key-refused`
+or `watch-key-refused`, once per ladder, hold or wake answer — not once per attempt, since a review of
+a log hands an operator only the newest page of entries about them — and `--review` lists them and names
+the check to run; a setup script that draws the relays does not exist yet.
 
 The signals the executor acts on — `distress-ack` and `wake-others` — are sealed to its key as well
 as to the holders, so it reads them without the watch key ([`signals.spec.md`](signals.spec.md),
@@ -247,8 +253,10 @@ one and copied under the watch key (the watch key alone where it has none), with
 `acknowledged`, whose `e` tags name **both** the new `20911` and the one the human acknowledged. Its
 text says when the acknowledgement was given, what the executor has done about the person who gave it
 — paging them again about this attempt, or when it paged them — and when the watch will treat an
-attempt as new: *"Acknowledged 12 min ago. The watch is paging Wren again about this one. If your
-phone is still sending in 18 min, the watch treats it as new."* Only what the executor knows: a
+attempt as new: one re-page interval after that page, where somebody else on call could be paged
+(*Silence widens*, below), and otherwise when the window closes — *"Acknowledged 12 min ago. The watch
+is paging Wren again about this one. If your phone is still sending in 5 min, the watch treats it as
+new."* Only what the executor knows: a
 keyless pager beside it may still page for the attempt, so it does not say nobody else was paged. It
 sends that again, freshly signed, about ten seconds later, saying what is true by then. It records a
 re-sent acknowledgement in its accountability log (`acked`) once per attempt, when the outcome is
@@ -274,25 +282,50 @@ operator's and the person's own:
 
 - **The first page about each operator they hold goes at once**, whoever else they were just paged
   about, so news is never held back
-- After that, they are paged about an operator at most once per interval, and at most once per
-  interval at all, whoever it is about. An attempt inside either is told when they were paged about
-  this operator and when they can be paged again — *"Wren was paged again 2 min ago, and is paged
-  again if your phone is still sending in 3 min."* — and pages nobody. It says nothing about anybody
-  else they hold
+- After that, an attempt inside the interval for that operator, or inside the person's own whoever it
+  was about, pages nobody. It is told when they were paged about this operator and when the watch
+  treats it as new — *"Wren was paged again 2 min ago. If your phone is still sending in 3 min, the
+  watch treats it as new."* — or, where the hold could not widen (below), when they are paged again:
+  *"Wren was paged again 2 min ago, and is paged again if your phone is still sending in 3 min."* It
+  says nothing about anybody else they hold
 - **The next page names every operator they hold who has sent since their last**, in one page, so
   somebody holding several operators is not woken once for each
 
-**Silence widens** (decided 2026-10-07, not yet built): the first attempt after the interval does not
-page them again. It is escalated as new — the hold ends and a ladder opens for it, as when they cannot
-be paged — so a hold pages its person once, not up to six times, and the held acknowledgement says
-when that will be. Built, it replaces the second and later re-pages about an operator above; the first
-page about each, and the one page naming everybody who sent since, stand. Nothing starts any of this
-on a timer; only an attempt does. The interval is theirs and that operator's, not the hold's: an
-acknowledgement that replaces the hold — the hold ended, a ladder opened, and the same person answered
-it — does not start it over. A page that every channel failed does not count, because it woke nobody.
-A page stamped after the executor's clock — the clock stepped back past it — does not count either,
-and the next attempt pages: the direction to be wrong in. The acknowledgement says the page is going
-out while it does, as the ladder's `"Paging Wren."` does. The page carries no `Distress` id to
+**Silence widens.** Decided 2026-10-07; built in the executor. Once they have been paged about an
+operator, the first attempt from that operator past both intervals does not page them again. It is
+escalated as new — the hold ends and a ladder opens for it, paging the roster with a first page, that
+person included, who can acknowledge it — so a hold pages its person once, not up to six times, and the
+held acknowledgement says when that will be (above). The first page about each operator, and the one
+page naming everybody who sent since, stand. **It widens, or it changes nothing**, as a `wake-others`
+does (below): who else would be paged, and the first-page budget, are settled before the hold is
+touched, and the ladder takes a unit of the budget as any first page does. Where nobody else on call
+can be paged, or the budget is spent, that person is paged again as before — at most once per interval
+— the hold stands, and an attempt inside the interval is told when they are paged again; the executor's
+log says which refused it. Widened regardless, a flood left a ladder that paged nobody: the operator's
+later attempts joined it, the person who had answered was never paged again, and when it ran out the
+operator was told nobody was coming, minutes after a person had acknowledged them. The operator is told
+why, true as it is said — the acknowledgement, *"Acknowledged 5 min ago. Wren was paged again about you
+and your phone is still sending, so the watch is treating this one as new. The watch is paging Wren,
+Raven about this one."*, and the ladder's first report, *"Wren was paged again about you and your phone
+is still sending, so the watch is treating this one as new. Paging Wren, Raven."* — never that Wren
+could not be paged, since the ladder pages them too. The accountability log records no `contacted` for
+it, since nobody failed to be paged: the ladder's own `escalated` entry records how it ended. Nothing
+starts any of this on a timer; only an attempt does, and two in one tick open one ladder, the second
+joining it. The interval is theirs and that operator's, not the hold's: an acknowledgement that replaces
+the hold — the hold ended, a ladder opened, and the same person answered it — does not start it over,
+so the operator's next attempt past it pages at once. **A hold widens about one operator at most once
+per `ack_holds_seconds`**: inside that, whoever acknowledged is paged again alone, as where nobody else
+can be paged — at most once per interval, under the ceiling — and the held acknowledgement says when
+the window lets it widen. Widened every time, a phone that cannot end its `Distress` on what the box
+sends (a relay refusing one key, or withholding answers) and a person acknowledging each ladder spent
+the whole first-page budget in under twenty minutes, one ladder per interval, and a stranger's new
+`Distress` after it paged nobody; once a window, it costs one unit a hold, as an expired hold always
+did. A page that every channel failed does not
+count, because it woke nobody. A page stamped after the executor's clock — the clock stepped back past
+it — does not count either, and the next attempt pages: the direction to be wrong in.
+
+**The page to that person.** The acknowledgement says the page is going out while it does, as the
+ladder's `"Paging Wren."` does. The page carries no `Distress` id to
 acknowledge: an acknowledgement names a ladder, and this attempt has none, so one naming it would be
 ignored — and a channel offering a one-tap acknowledgement for it would tell the person tapping that
 the operator had heard them. It is a `repeat` page (*Paging channels*, below), and it carries this
@@ -350,11 +383,13 @@ twice with no attacker involved. A person at their ceiling is not paged again: t
 attempt is escalated as new (below), and the ladder that opens pages the whole roster, them included,
 with a first page they can acknowledge — what the ceiling stops is the re-pages.
 The executor's log names which limit held or refused each page — the first-page budget, the re-page
-interval for the operator or for the person, or the ceiling. The accountability log records a re-page
+interval for the operator or for the person, or the ceiling — and each hold that widened instead
+(*Silence widens*, above), or why it could not. The accountability log records a re-page
 that could not go as `contact-not-attempted`, and cannot yet say whether the person was off the
 roster, only at a console or at their ceiling: its outcomes are a closed set in `@navcom/core`.
 `--review` names anybody paged again more than six times in any twelve hours — more than one hold's
-worth: several operators they acknowledged all still sending, which is within the rules, or a phone
+worth where the hold cannot widen: several operators they acknowledged all still sending, which is
+within the rules, or a phone
 that keeps starting its `Distress` again, or a relay withholding the watch's answers — by person, never
 as a total.
 
@@ -430,14 +465,17 @@ phone still in the same `Distress` has held since it sent it; a phone that start
 
 **The cost: a genuinely new emergency from the same operator inside the window is read as the
 old one until it closes — by everybody but the person who acknowledged**, or until that person asks
-the watch to wake the others (above), or cannot be paged again. The executor wakes that person about
-it at most once per re-page interval, for up to `ack_holds_seconds` — six times at the most for one
-operator — and nobody else: the rest of the roster is not paged unless one of those happens, or the
-window closes and the operator is still sending. That the roster is woken once the operator keeps
-sending past one interval after a re-page is *Silence widens*, decided and not yet built (above).
-Somebody woken at 3am for a phone that only
-missed their answer is the price of the one person who knows the operator hearing about a new
-emergency, and none of those pages comes out of the budget a first page needs (above). The
+the watch to wake the others (above), cannot be paged again, or was paged about it one re-page interval
+ago and the operator is still sending. The executor wakes that person about it once, and the roster
+once the operator keeps sending past one interval after that (*Silence widens*, above) — or, where
+nobody else on call can be paged or the budget is spent, or the roster was already paged about them
+inside `ack_holds_seconds`, that person at most once per re-page interval for up to `ack_holds_seconds`,
+six times at the most for one operator — and nobody else: the rest of
+the roster is not paged unless one of those happens, or the window closes and the operator is still
+sending. Somebody woken at 3am for a phone that only missed their answer is the price of the one person
+who knows the operator hearing about a new emergency, and none of the pages to them alone comes out of
+the budget a first page needs (above); the ladder a hold widens to takes a unit, as any first page
+does. The
 operator's phone is told who acknowledged the earlier one and when, and that they are being paged
 about this one; a current phone shows that as an answer to an earlier `Distress` and keeps
 sending, so its first attempt after the window is paged for. Two things outside the executor
@@ -495,7 +533,9 @@ member's own key, so every watch held on a phone lists its members' keys as hold
 every phone-held watch, a squad of one included, not only squads of several. A board that has not
 taken the signature answers unsigned, and every operator's phone with the rule reads that answer as
 one it cannot confirm, so a board left open on an older build asks to be reloaded when a newer one is
-waiting (not yet built). Until it is, the operator's phone says what is true of such an answer: it may be real, the
+waiting: the Watch screen says so in its panel once a build of another commit has taken over the
+phone, with what reloading clears, and never notifies or reloads by itself. Either way the operator's
+phone says what is true of such an answer: it may be real, the
 phone is still sending, and if they can reach that person another way, they should.
 
 Every way this can fail — a key the phone was not given, a signature that does not check, a copy
@@ -611,7 +651,8 @@ fail; it is never allowed to fail silently** [invariant 2]. Refusing to page whi
 The bound is global rather than per-key: a flood already arrives from one fresh key per
 event, so a per-key limit is free to defeat. Defaults are deliberately generous — 20 pages an
 hour — so that a real night never reaches the limit and a flood passes it immediately. **It counts
-first pages only**: one unit for each ladder that pages. Pages to a person who acknowledged, about an
+first pages only**: one unit for each ladder that pages, one a hold widens to included. Pages to a
+person who acknowledged, about an
 operator still sending inside `ack_holds_seconds`, take nothing from it, and a spent budget never
 refuses one (*Re-pages have a limit of their own*, above; decided 2026-10-07, replacing the rule that
 they took from it).
@@ -679,8 +720,16 @@ Not optional — these are the point of the spec:
     they hold, which goes at once; the next page names every operator they hold who sent since. Again
     once the clock steps back past that page. A re-page goes out with the page budget spent and takes
     nothing from it, so a new `Distress` after any number of re-pages still finds what the budget had
-    left; a person at their ceiling is not paged again (11). The first attempt after the interval
-    opening a ladder rather than paging them again is decided and not yet built. A phone whose
+    left; a person at their ceiling is not paged again (11). Once they have been paged about that
+    operator, the first attempt past both intervals is escalated as new — the hold ends and a ladder
+    pages the roster, them included, with a first page and a unit of the budget, the operator told why
+    and no `contacted` recorded — or, where nobody else on call can be paged or the budget is spent,
+    they are paged again, the hold stands, and no ladder runs out on the operator; two such attempts in
+    one tick open one ladder, and a newer acknowledgement by the same person does not start the interval
+    over. A hold widens about one operator once per `ack_holds_seconds`: a person who acknowledges every
+    ladder it widened to, for a phone that never hears the box, is paged again alone inside that, and a
+    new `Distress` from anybody else after any number of such cycles still finds the budget. At the
+    ceiling, the ceiling decides, and nothing says the hold stands. A phone whose
     `Distress` started after the acknowledgement says a person answered an
     earlier `Distress` and keeps sending; one whose attempts joined that ladder while it was paging
     ends on the person's answer to it. A held acknowledgement that no relay takes on either send
@@ -728,14 +777,18 @@ Not optional — these are the point of the spec:
 19. The executor's key readable by the daemon's or the agent's user, readable or writable by any
     other user, a daemon running as root, or `daemon_user` unset → `--check` refuses, and never makes a
     missing key; an executor started with such a key still runs the ladder, signing with it, says so in
-    its log at every start, and does not print the watch code (the accountability log's record not yet
-    built). No key file, and `daemon_user` unset, unknown, root or the executor's own user → no key is
+    its log at every start, does not print the watch code, and records the start in its accountability
+    log as `took-watch` `key-not-its-own`, which `--review` names until a start with that key passes and
+    then says a copy may have been kept; a clean start is recorded as `held`, and `--drill` records
+    none. No key file, and `daemon_user` unset, unknown, root or the executor's own user → no key is
     made, and the executor runs without one and says why; `--drill` never makes one. An acknowledgement
     the executor cannot open with either key → logged as refused
 20. A relay that takes one key's writes and refuses the other's → `--check` refuses it and fails; at
     runtime, every response one key could place on no relay while the other's was taken is logged, and
-    one no relay took the watch key's copy of counts as not reported (its accountability-log record, and
-    `--review` showing it, not yet built)
+    one no relay took the watch key's copy of counts as not reported; each is recorded in the
+    accountability log as `answered`, `executor-key-refused` or `watch-key-refused`, about whoever it was
+    for, once per ladder, hold or wake answer — beside a held acknowledgement's `ack-not-sent`, never
+    instead of it — and `--review` lists them and names the check to run
 21. A box whose config names no executor key → it signs with the watch key alone, as before, and says
     at every start and in `--check` what that costs; `--check` still passes on its roster
 22. An agent seam that hands the daemon a `human` responder, a person's callsign or a ladder state →
@@ -744,9 +797,9 @@ Not optional — these are the point of the spec:
     `--check` fails without making one
 24. A roster entry that names the watch key or the executor's own → an acknowledgement or a
     `wake-others` signed with it is refused; startup says so and `--check` fails
-25. An executor key file gone while the accountability log names an earlier key → the key made in its
-    place is said at every start as replacing that one, and `--check` fails, until a person removes the
-    record
+25. An executor key file gone while the accountability log names an earlier key — one that only ever
+    started, and never ran a ladder, included → the key made in its place is said at every start as
+    replacing that one, and `--check` fails, until a person removes the record
 26. A drill file the daemon cannot read → the daemon says so once, until it reads again, and publishes
     no drill; the executor writes it group-readable
 27. The executor deaf on a relay the daemon hears on (it refused the executor's subscription, never

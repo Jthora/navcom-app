@@ -38,6 +38,7 @@ import { base, build, files, version } from '$service-worker';
 import { TERMINAL_ROUTES } from '$lib/terminal/routes';
 import { noticeFor, showPage } from '$lib/terminal/page-notice';
 import { savedPage } from '$lib/terminal/offline-page';
+import { BUILT_COMMIT } from '$lib/built';
 
 const CACHE = `navcom-terminal-${version}`;
 
@@ -71,8 +72,14 @@ const SITE_LIMIT = 60;
  * in one request nobody asked for. The CSV and CAR artifacts are bulk exports for other
  * machines. `.well-known` is read by external consumers — other people's agents — and serving
  * one of them a stale refusals file from our cache would be a small lie told on our behalf.
+ *
+ * `version.json` is the deploy stamp, and its whole job is being current. It was kept cache-first
+ * in the site cache like any public document, so within one build of this worker a page asking what
+ * is deployed was told what was deployed when it first asked — and the Watch screen, which asks so
+ * it can say a newer build is waiting, would never have heard of one.
  */
 const isNeverCached = (pathname: string) =>
+  pathname === `${base}/version.json` ||
   pathname === `${base}/directory.json` ||
   pathname.endsWith('.csv') ||
   pathname.endsWith('.car') ||
@@ -297,6 +304,13 @@ sw.addEventListener('message', (event) => {
   // rather than assuming the install went perfectly.
   if (data?.ask === 'missing') {
     event.source?.postMessage({ missing });
+    return;
+  }
+
+  // "Which build would a reload load?" -- this one's, since the shell is served from its cache. On
+  // the port the page sent, so the answer reaches only whoever asked (`terminal/update.svelte.ts`).
+  if (data?.ask === 'build') {
+    event.ports[0]?.postMessage({ commit: BUILT_COMMIT, version });
     return;
   }
 

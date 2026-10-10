@@ -7,7 +7,7 @@
  */
 
 import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
@@ -45,6 +45,23 @@ describe('what is deployed', () => {
     // build. Two places deriving the same fact separately is how a stamp starts lying.
     const page = readFileSync(join(BUILD, 'status', 'index.html'), 'utf8');
     expect(page).toContain(`data-version="${stamp().commit}"`);
+  });
+
+  it('is the commit the Watch screen carries, so it can tell an older board from a newer one', () => {
+    // The screen compares its own commit with the one a reload would load. A commit derived twice,
+    // or not baked into the page at all, is a prompt that fires on every build or on none.
+    const { commit } = stamp();
+    expect(commit).toMatch(/^[0-9a-f]{7}$/);
+    const page = join(BUILD, 'terminal', 'watch', 'index.html');
+    const html = readFileSync(page, 'utf8');
+    const scripts = [...html.matchAll(/(?:href|src)="([^"]+\.js)"/g)]
+      .map((m) => (m[1]!.startsWith('/') ? join(BUILD, m[1]!.slice(1)) : join(dirname(page), m[1]!)))
+      .filter((p) => existsSync(p));
+    expect(scripts.length).toBeGreaterThan(0);
+    const literal = new RegExp(`["'\`]${commit}["'\`]`);
+    expect(scripts.some((p) => literal.test(readFileSync(p, 'utf8'))), `no script the Watch screen loads names ${commit}`).toBe(true);
+    // And the control is in what it loads, not only in the source.
+    expect(scripts.some((p) => readFileSync(p, 'utf8').includes('Hold to reload'))).toBe(true);
   });
 
   it('tells a reader what an old build date means, without promising a schedule', () => {
