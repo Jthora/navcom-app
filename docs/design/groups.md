@@ -866,30 +866,44 @@ never as sent.
 
 ## 13. The script budgets
 
-**Measured 2026-10-09** (`web/build/.budget.json`):
+**Measured 2026-10-09** (`web/build/.budget.json`, from the build stamped `eb95b14` with uncommitted
+changes). That build predates the Distress-debt merge (634ab870) and everything after it, so the
+terminal row, and the headroom on every row, may not be HEAD's. **Re-measure at HEAD before any step
+spends the 528 B or the 3,288 B.** Scripts, gzipped:
 
 | Surface | Now | Ceiling | Left |
 |---|---|---|---|
-| Root, first paint | 60,906 B | 61,440 B | **534 B**, past the 52 kB warning |
-| **Root, later**: what one landing-page visit downloads on opening the sheet | **70,520 B (68.9 kB)** | None yet. **Reported, not enforced** | — |
-| Deferred, dynamic imports | 42,781 B | 46,080 B | 3,299 B, past the 40 kB warning |
-| Terminal | 167,141 B | 225,280 B | 58,139 B, past the 160 kB warning; its worst page is `terminal/find` |
-| Roster | 96,176 B | 97,280 B | 1,104 B, past the 86 kB warning |
+| Root, first paint | 60,912 B | 61,440 B | **528 B**, past the 52 kB warning |
+| **Root, later**: what one landing-page visit downloads after first paint if it opens the sheet. The script prints it as *later, all*; `root_later` in `.budget.json` | **70,536 B (68.9 kB)** | None yet. **Reported, not enforced** | — |
+| of which *mount*: the map and the live mission feed, imported as the page mounts, on every visit, sheet opened or not | 40,624 B (39.7 kB) | Reported, not enforced | — |
+| of which entry *missions*: what opening the mission screens adds beyond first paint and mount | 29,256 B (28.6 kB) | Reported, not enforced | — |
+| of which SvelteKit's error page, loaded only when something fails | 656 B | Reported, not enforced | — |
+| Deferred, dynamic imports | 42,792 B | 46,080 B | 3,288 B, past the 40 kB warning |
+| Terminal | 167,392 B | 225,280 B | 57,888 B, past the 160 kB warning. The worst script page is Status (`terminal/index.html`). `terminal/find` is the worst only on page total, 181,004 B of 266,240 B |
+| Roster | 96,198 B | 97,280 B | 1,082 B, past the 86 kB warning |
 | Public | 0 B | 0 B | — |
+
+Stylesheets are reported beside these and counted against no ceiling: 1,511 B after the root's first
+paint, and 1,663 B beside the deferred line, which counts what it was derived on, every file an import
+reaches, and on every build so far that has been scripts alone.
 
 **The per-visit figure is the one a Com screen spends.** The deferred line counts what the whole app
 can pull in later and leaves out any chunk some page loads at first paint, so the signature-checking
 crypto the terminal loads up front was never counted for a reader who only opened a mission from the
-map. *Root, later* counts it: 68.9 kB against the deferred line's 41.8. com.md §6 says it is enforced
-once a ceiling is derived from its measurement, **before profile, groups and chat add to it.** So
-phase 1 derives that ceiling, from the measurement plus the same headroom every surface here gets,
-before its first screen merges.
+map. *Root, later* counts it: 68.9 kB against the deferred line's 41.8. **Most of that is not the
+sheet's:** 39.7 kB is *mount*, which arrives on every visit, because the live mission feed pulls the
+signature-checking chunk as the page mounts. Opening the mission screens adds 28.6 kB. An earlier
+version of this table described the whole 68.9 kB as the cost of opening the sheet. com.md §6 says it
+is enforced once a ceiling is derived from its measurement, **before profile, groups and chat add to
+it.** So phase 1 derives that ceiling, from the measurement plus the same headroom every surface here
+gets, before its first screen merges.
 
 *Root, later* walks every chunk the landing page can reach, so once Com splits into entries it counts
-the crews entry too, and overstates one visit that opens only missions. Phase 0 makes the script
-report a figure per entry beside it: everything reachable from that entry that first paint did not
-load. It has entries to report once phase 1 splits them, and stays reported, not enforced, until
-each has a measurement to derive a ceiling from.
+the crews entry too, and overstates one visit that opens only missions. Phase 0's figure per entry is
+reported beside it since 2026-10-09 (`root_tiers` in `.budget.json`): everything that entry pulls
+that first paint and mount did not load, and nothing it opens only later. Today the only entry is
+*missions*. Phase 1's split adds the others, and each stays reported, not enforced, until it has a
+measurement to derive a ceiling from.
 
 **Root, first paint: not re-derived.** Its ceiling comes from about 3 seconds to interactive at
 0.8 Mbps. Raising it to fit this work would be the silent raise `budget.mjs` exists to stop.
@@ -901,7 +915,7 @@ each has a measurement to derive a ceiling from.
   the five mission branches move into a missions host the same way. Unmeasured, **measured before
   merge.**
 - **Phase 3 adds one fixed row, *Crews*,** reading the crews storage key directly the way `holding`
-  reads `mission_claims`, names only. Estimated at 150 to 300 B gzipped. With 534 B left, **if it does
+  reads `mission_claims`, names only. Estimated at 150 to 300 B gzipped. With 528 B left, **if it does
   not fit, the row lives in the Yours screen instead.**
 
 **Split the entry (phase 1).** `$lib/components/missions/index.ts` becomes three entries: *missions*

@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { gzipSync } from 'node:zlib';
 import { REFUSALS, PERMITTED, BROADCAST, buildObservation } from '@navcom/core';
 import { generateSecretKey } from 'nostr-tools/pure';
 // Plain .mjs, deliberately: this is the file node runs during a build, long after the
 // TypeScript is gone, and testing the thing that actually runs is the point.
 import { refusalsDocument, healthDocument, changedPaths, metroFigures, nodeIdentity, intelDocument, vocabularyCid, canonicalVocabulary } from '../../../scripts/well-known.mjs';
+import { measure } from '../../../scripts/lib/budget.mjs';
 
 /**
  * The descriptor cannot drift.
@@ -102,6 +105,48 @@ describe('the verified-build receipt', () => {
     writeFileSync(join(dir, '.budget.json'), JSON.stringify(measured));
     expect(healthDocument({}, '/nonexistent/.verify-receipt.json', join(dir, '.budget.json')).budget).toEqual(measured);
     expect(healthDocument({}, '/nonexistent/.verify-receipt.json', '/nonexistent/.budget.json').budget).toBeNull();
+  });
+
+  it('publishes the worst script page beside the worst page, adding a field and changing none', () => {
+    /*
+     * Until 2026-10-09 the terminal's script figure was Status's and the page named beside it was
+     * Find's, which tops the table on an index embedded in its HTML. Anybody trimming toward the
+     * script line was sent to the wrong screen, and the health document sent every reader there
+     * too. Measured by the real budget step on a build where the two differ.
+     */
+    const build = mkdtempSync(join(tmpdir(), 'navcom-health-build-'));
+    const noise = (n: number) => randomBytes(n).toString('base64');
+    const put = (path: string, text: string) => {
+      mkdirSync(dirname(join(build, path)), { recursive: true });
+      writeFileSync(join(build, path), text);
+    };
+    put('_app/status.js', noise(4000));
+    put('_app/find.js', noise(300));
+    put('terminal/index.html', '<link href="../_app/status.js" rel="modulepreload">');
+    put('terminal/find/index.html', `<link href="../../_app/find.js" rel="modulepreload"><p>${noise(12000)}</p>`);
+    put('index.html', '<p>root</p>');
+    const gz = (path: string) => gzipSync(readFileSync(join(build, path))).length;
+
+    const { report } = measure({ build, manifestPath: '/nonexistent/manifest.json', log: () => {} });
+    writeFileSync(join(build, '.budget.json'), JSON.stringify(report));
+    const published = healthDocument({}, '/nonexistent/.verify-receipt.json', join(build, '.budget.json')).budget;
+
+    const status = gz('terminal/index.html') + gz('_app/status.js');
+    const find = gz('terminal/find/index.html') + gz('_app/find.js');
+    expect(find).toBeGreaterThan(status);
+    // Every field a reader already keyed on, with the meaning it always had.
+    expect(published.surfaces.terminal).toEqual({
+      pages: 2,
+      js: gz('_app/status.js'),
+      js_budget: 220 * 1024,
+      page: find,
+      page_budget: 260 * 1024,
+      worst_page: 'terminal/find/index.html',
+      worst_js_page: 'terminal/index.html'
+    });
+    expect(published).toMatchObject({ unit: 'bytes, gzipped', deferred: null, passed: true });
+    // A surface with no script names no page beside its zero, rather than whichever page is largest.
+    expect(published.surfaces.root).toMatchObject({ js: 0, worst_page: 'index.html', worst_js_page: null });
   });
 
   it('is handed the budget by the step that measures it, which runs first', () => {

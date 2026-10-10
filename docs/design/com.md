@@ -177,10 +177,14 @@ paint, which is the trade this section made.
 **That number is what the app can pull in later, not what one visit downloads.** It leaves out any
 chunk some page loads at first paint, so the signature-checking crypto the terminal loads up front was
 never counted, though a reader who opens a mission from the map and has never opened the terminal
-downloads it all the same. **Measured 2026-10-09: 68.9 kB for one landing-page visit that opens the
-sheet, against the deferred line's 41.8.** The budget script now reports that figure beside the
-deferred line; it is enforced once a ceiling is derived from it, before profile, groups and chat add
-to it.
+downloads it all the same. **Measured 2026-10-09: 68.9 kB after first paint for one landing-page
+visit that opens the sheet, against the deferred line's 41.8, and 39.7 kB of it is not the sheet's.**
+The page imports the map and the live mission feed as it mounts, on every visit, sheet opened or not,
+and the feed pulls the core chunk with the signature checking. Opening the mission screens adds
+28.6 kB. An earlier version of this paragraph gave the whole 68.9 kB as the cost of opening the sheet.
+The budget script now reports that figure beside the deferred line, split into first paint, mount and
+each Com entry [groups.md §13]; it is enforced once a ceiling is derived from it, before profile,
+groups and chat add to it.
 
 **An opened sheet on a dead connection must say so.** A chunk that fails to arrive is a blank sheet,
 and offline is a normal state here [C10]. The service worker's whole-origin cache covers this after
