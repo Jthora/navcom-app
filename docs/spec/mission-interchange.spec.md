@@ -1,6 +1,6 @@
 # Mission interchange — NavCom ⇄ Starcom / Mecha Jono
 
-**NavCom's side of the boundary, rev 5 — 2026-10-06.** Starcom's side is
+**NavCom's side of the boundary, rev 6 — 2026-10-09.** Starcom's side is
 [`starcom.app/spec/starcom-navcom-interchange.spec.md`](https://starcom.app/spec/starcom-navcom-interchange.spec.md)
 (rev 10 at the time of writing; rev 11 will carry the answers below). Each spec owns its own
 side; neither restates the other's.
@@ -25,6 +25,14 @@ changed four things you will see. NavCom now refuses a field package no report c
 labels by the mission and the three words a label on a report says. The poster's `settled`
 outranks a `witnessed`, whatever either claims about when. And operators' claims and reports always
 reach the relays you read, even from a device whose own relays are a watch's (§5.0).
+
+**Rev 6**: three changes to what is on the wire, and one question. A sealed report now carries a
+`salt`, so your `settled` label on it cannot be traced back to its author (§5.2). A sealed claim's end
+is the one on the label inside the seal, because the wrap's own times are now blurred (§5.1). And
+operator traffic stays on large public relays: NavCom keeps its refusal of operator traffic on a
+private or allowlisted relay, operators publish no relay list, and no grid node — The Record, its
+mirrors, the Pi — carries operator traffic; grid nodes are read (§5.0, §11.2). Q16 asks where your
+inbox list can be read.
 
 Written for Mecha Jono's development agent first, and for any human on either team second. It
 says what NavCom now is, exactly how to serve it missions, how raw intel moves in both directions,
@@ -286,7 +294,7 @@ honestly described, and a relay built for permanence is the wrong home for one.
 
 | Signed by | Published to | Read by |
 |---|---|---|
-| **An operator** — public claims, reports, witness and challenge labels | **NavCom's relays**: today `wss://relay.damus.io` and `wss://nos.lol`, both already among rev 10's mirrors. Every device writes here *as well as* to its own relays — a Watched operator's watch relays are added, never substituted (rev 5). **Moving to relay lists** (§11.2): read each operator's NIP-65 list as well as these | Starcom and Mecha Jono, filtering `#a` for their packages — LIVE for Mecha Jono (Q9) |
+| **An operator** — public claims, reports, witness and challenge labels | **NavCom's relays**: today `wss://relay.damus.io` and `wss://nos.lol`, both already among rev 10's mirrors. Every device writes here *as well as* to its own relays — a Watched operator's watch relays are added, never substituted (rev 5). **Operators publish no relay list** (decided 2026-10-08): these are where operators' public work goes. If they ever change, the set moves as a whole, by a NavCom release and a notice here (§11.2) | Starcom and Mecha Jono, filtering `#a` for their packages — LIVE for Mecha Jono (Q9) |
 | **An operator** — a private claim (gift wrap) | The inbox relays in Mecha Jono's NIP-17 kind `10050` list: `wss://nos.lol` and `wss://relay.primal.net` | Mecha Jono only — LIVE (Q4, Q10) |
 | **Mecha Jono** — packages, `settled` and `challenged` labels | **The Record** | NavCom, which already reads it |
 
@@ -303,7 +311,7 @@ A NIP-32 label, kind `1985`, signed by the operator's contact key:
 
 **The operator chooses who sees it, every time, with nothing preselected.** *Everyone*: published
 as above. *The poster only*: the same event, NIP-44 encrypted to Mecha Jono and NIP-59
-gift-wrapped, so no relay learns who took what. **For a private claim on a `claims: one` task, you
+gift-wrapped, so a relay reading the wrap learns neither who sent it nor which mission. It still sees which connection delivered it, and today that connection may also carry the operator's card. **For a private claim on a `claims: one` task, you
 MUST still publish `mission_state: claimed`** — a private claim withholds *who*, never *that*.
 
 A claim expires by itself (NIP-40). Walking away costs the operator nothing: **abandoning a claim
@@ -583,6 +591,18 @@ Answered by Starcom on 2026-10-06; all eight accepted. Three are Mecha Jono's to
 **Settling waits for reports** — agreed. §5.3's seven days start when kind `1912` is emitted; until
 then Mecha Jono records each claim against its package, and no claim on a campaign moves its
 `mission_state`.
+
+### New in rev 6 — for Mecha Jono
+
+- **Refuse an open report that carries a `salt`**, and a sealed one whose `salt` is not 32 lowercase
+  hex characters (§5.2)
+- **Read a sealed claim's end from the label inside the seal**, never from the wrap (§5.1)
+- **Nothing changes in where you read operators' public work**: `wss://relay.damus.io` and
+  `wss://nos.lol`, now named the meeting set (§5.0, §11.2)
+
+| | Question | NavCom's default if unanswered |
+|---|---|---|
+| Q16 | Could The Record or its mirror carry your kind `10050` inbox list? The Pi's session found The Record does not take it today. Read there, a phone learns your inbox when missions load rather than over the connection that carries its card, a moment before a sealed claim | NavCom keeps reading your list from your inbox relays at the moment of sealing |
 
 ### New in rev 5 — for Mecha Jono
 
