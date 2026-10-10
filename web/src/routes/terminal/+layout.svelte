@@ -13,6 +13,9 @@
   import '$lib/terminal/panel.css';
   import { saving } from '$lib/terminal/saving.svelte';
   import { apply, setSignature, signature } from '$lib/terminal/signature';
+  // Every terminal page hears a wipe or a burn in another tab, or one it slept through in the
+  // back-forward cache, and lets go of tonight as the wiping page did [invariant 5].
+  import '$lib/terminal/wiped-elsewhere';
   let { children } = $props();
   let sig = $state<'low' | 'document'>('document');
 

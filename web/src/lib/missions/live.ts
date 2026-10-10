@@ -25,12 +25,16 @@
  * age when no relay can be reached. It is stored as the signed events, not as the missions read
  * from them, so a copy that was tampered with fails verification on the way back in. It is bounded,
  * and saved at most every two seconds, because the same tier holds sign-on and the patrol record.
+ * **A wipe ends that copy for this subscription**, in this page or another tab: it is no longer
+ * drawn, and nothing this subscription holds is written back. The next page keeps its own.
  *
  * Loaded by dynamic import after first paint: verification brings the signature library, and the
  * map should draw before it arrives.
  */
 import { MISSION_PACKAGE_KIND, MISSION_PUBLISHERS, MISSION_RELAYS } from '@navcom/core';
-import { get, set } from '$lib/terminal/storage';
+import { generation, get, onWipe, set } from '$lib/terminal/storage';
+// So this page hears a wipe in another tab, or one it slept through in the back-forward cache.
+import '$lib/terminal/wiped-elsewhere';
 import { collect, readingOf, type Collected, type Readings } from './collect';
 
 export type Feed =
@@ -127,6 +131,12 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
   let stopped = false;
   let saving: ReturnType<typeof setTimeout> | null = null;
   const closers: (() => void)[] = [];
+  /**
+   * The tier as this subscription found it. Every save hands it to `set`, which refuses one after a
+   * wipe: the copy is kept in memory and saved on a timer and as the page closes, and a wipe was
+   * followed by it coming straight back, from this page or another tab [invariant 5].
+   */
+  const since = generation('wipeable');
 
   const stored = get<Stored>('wipeable', STORE);
   if (stored && Array.isArray(stored.events)) {
@@ -149,7 +159,7 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
   const save = () => {
     if (saving) clearTimeout(saving);
     saving = null;
-    if (keptAt) set('wipeable', STORE, { at: keptAt.toISOString(), events: [...kept.values()] } satisfies Stored);
+    if (keptAt) set('wipeable', STORE, { at: keptAt.toISOString(), events: [...kept.values()] } satisfies Stored, since);
   };
   const saveSoon = () => {
     if (!saving) saving = setTimeout(save, SAVE_MS);
@@ -371,12 +381,24 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
     }
   };
   if (typeof addEventListener === 'function') addEventListener('pagehide', flush);
+  /*
+   * The copy on the device is gone, so it is no longer drawn: only what a relay answers this
+   * session is. Offline, that is nothing, said as connecting or unavailable rather than as the
+   * picture the wipe destroyed.
+   */
+  const unwipe = onWipe(() => {
+    if (saving) clearTimeout(saving);
+    saving = null;
+    kept = new Map();
+    report();
+  });
 
   report();
   for (const url of relays) open(url);
   return () => {
     stopped = true;
     flush();
+    unwipe();
     if (typeof removeEventListener === 'function') removeEventListener('pagehide', flush);
     for (const close of closers) close();
   };

@@ -2,7 +2,7 @@
  * An operator's own notes on a place.
  *
  * Wipeable tier: these are tonight's observations about a doorway, and a panic wipe exists to
- * destroy exactly that [invariant 7].
+ * destroy exactly that [invariant 5].
  */
 
 import { describe, expect, it, beforeEach } from 'vitest';
@@ -14,7 +14,10 @@ beforeEach(() => {
   (globalThis as Record<string, unknown>).localStorage = {
     getItem: (k: string) => store.get(k) ?? null,
     setItem: (k: string, v: string) => void store.set(k, v),
-    removeItem: (k: string) => void store.delete(k)
+    removeItem: (k: string) => void store.delete(k),
+    // A wipe destroys every key under the tier's name, so it has to be able to list them.
+    get length() { return store.size; },
+    key: (i: number) => [...store.keys()][i] ?? null
   };
 });
 
@@ -40,7 +43,7 @@ describe('a note about a place', () => {
     expect(Object.values(all)).not.toContain('do not go alone');
   });
 
-  it('is destroyed by a panic wipe [invariant 7]', () => {
+  it('is destroyed by a panic wipe [invariant 5]', () => {
     // These are observations about a doorway made tonight, which is precisely what a wipe is
     // for. If notes lived in the accruing tier they would survive one.
     keepNote('st-louis-0001', 'the man on the desk asks for ID');

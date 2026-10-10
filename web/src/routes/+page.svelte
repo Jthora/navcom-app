@@ -22,7 +22,7 @@
     ConsoleRecordEntry, ConsoleCentroid, ConsoleRegionFigures
   } from '$lib/console/types';
   import { locateOnce, nearest, type Fix } from '$lib/console/position-once';
-  import { get, set } from '$lib/terminal/storage';
+  import { get, onWipe, set } from '$lib/terminal/storage';
   import { forgetMission, pendingMission } from '$lib/missions/pending';
   import type { Feed } from '$lib/missions/live';
   import type GridMapType from '$lib/components/grid/GridMap.svelte';
@@ -464,10 +464,13 @@
       })
       .catch(() => (missionsUnloaded = true));
     const tick = setInterval(() => (now = Date.now()), 60_000);
+    // A wipe in another tab takes the claims `holding` read: counted again now, not at the next tick.
+    const unwiped = onWipe(() => (now = Date.now()));
     return () => {
       gone = true;
       stopMissions?.();
       clearInterval(tick);
+      unwiped();
     };
   });
 

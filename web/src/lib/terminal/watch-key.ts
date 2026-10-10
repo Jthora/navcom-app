@@ -26,6 +26,13 @@
  *
  * Accruing tier. A panic wipe on a bad night must not take the watch's identity with it —
  * that would strand every operator signed on under it, at the worst possible moment.
+ *
+ * **Never in a backup, and refused from one** (`fields.ts`: `device`), with `watch_founded`
+ * beside it. A copy of this key is the key: a backup carrying it makes whoever holds the file
+ * the watch. And since `createWatch` and `joinWatch` both refuse to replace a key already held,
+ * one planted by a kit kept the phone off its real watch. A holder whose phone is lost gets the
+ * key again the way every holder got it: in person, from another holder. **The cost:** a watch
+ * held on one phone alone ends with that phone.
  */
 
 import { newSecretKey, publicKeyOf, secretFromHex, secretToHex, type SecretKey } from '@navcom/core';

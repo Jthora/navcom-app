@@ -1,42 +1,41 @@
 /**
  * Everything an operator would need on another phone.
  *
- * The accruing tier and nothing else. That is not a shortcut — the tiers already encode
- * exactly this distinction: **accruing is the decade, wipeable is tonight.** A backup that
- * carried tonight would carry the thing a panic wipe exists to destroy, and restoring it
- * would undo a wipe somebody meant.
+ * Accruing fields only, and of those only the ones `fields.ts` says cross. That is not a
+ * shortcut — the tiers already encode exactly this distinction: **accruing is the decade,
+ * wipeable is tonight.** A backup that carried tonight would carry the thing a panic wipe exists
+ * to destroy, and restoring it would undo a wipe somebody meant. And some of the decade is this
+ * phone's own: the relays it talks to, the key bundles it learned, the watch key it holds.
  */
 
 import { openBackup, publicKeyOf, sealBackup, secretFromHex } from '@navcom/core';
 import { get, set } from './storage';
 import { forgetOfferedWatch, offeredWatch, offerWatch, type NamedWatch } from './config';
+import { carryOf } from './fields';
 
 export type { NamedWatch } from './config';
-
-/** Keys that are this device's business rather than this operator's. */
-const DEVICE_ONLY = ['relays_own'];
-/**
- * A watch named by a backup: where every Distress goes, and who can read it. Shown, and added
- * only when the operator says so [audit: relay paths, F02] — `relays_own` was refused on restore
- * because a crafted kit could choose this phone's relays, while these, which outrank it and
- * decide who reads a Distress, were written straight in.
- */
-const WATCH_FIELDS = ['watchtower', 'relays', 'watch_holders', 'watch_escalation', 'watch_executor'];
 
 /**
  * The most keys a real backup carries, with room to spare.
  *
  * A restore writes into the tier holding the identity, the standing and the patrol record,
  * and a full phone stops saving [1.E]. A blob is pasted rather than fetched, so nothing else
- * bounds it.
+ * bounds it. `fields.test.ts` holds what a kit may carry under it, so every kit this build
+ * makes is one restore accepts.
  */
-const MAX_RESTORED_KEYS = 64;
+export const MAX_RESTORED_KEYS = 64;
 
 export interface Kit {
   v: 1;
   at: string;
-  /** Every accruing key except the ones that describe this handset. */
+  /** The accruing fields `fields.ts` says cross: the decade, and the watch to offer. */
   accruing: Record<string, unknown>;
+  /**
+   * The phone it was made on held a watch key, which a kit never carries: so the phone it is
+   * restored on can say the key stayed behind, rather than "Restored" to a holder who would then
+   * believe they still hold the watch. That a key existed, never the key.
+   */
+  watch_key_stayed?: true;
 }
 
 export class BackupError extends Error {}
@@ -82,20 +81,45 @@ const MADE = 'backup_made';
  */
 export const lastMade = (): string | null => get<string>('accruing', MADE);
 
+/**
+ * How a field of these crosses, or null for one that stays where it is: `fields.ts`, and one rule
+ * it cannot say on its own.
+ *
+ * **The patrol record crosses only beside the setting that keeps it in the decade.** Without that
+ * setting it lives in tonight's tier (`patrol.ts`), and a kit that wrote it into the decade put a
+ * record on the phone that no screen shows and no panic wipe reaches: a seized phone with patrols
+ * on it its owner never saw. Every build that wrote the record into the decade wrote the setting
+ * with it, so a real kit loses nothing.
+ */
+function crosses(fields: Record<string, unknown>, field: string): 'kit' | 'watch' | null {
+  const carry = carryOf(field);
+  if (carry === 'device') return null;
+  if (field === 'patrols' && fields['keep_patrol_history'] !== true) return null;
+  return carry;
+}
+
 /** Seals what an operator would need. Throws on an empty passphrase. */
 export function makeBackup(passphrase: string): string {
   const all = accruing();
-  const kept = Object.fromEntries(Object.entries(all).filter(([k]) => !DEVICE_ONLY.includes(k)));
+  // Declared, never excepted: a field nobody listed stays on this phone [fields.ts].
+  const kept = Object.fromEntries(Object.entries(all).filter(([k]) => crosses(all, k) !== null));
   // A blob that looks like a backup and holds nothing is worse than no backup, because the
   // operator stops worrying about it.
   if (Object.keys(kept).length === 0) {
-    throw new BackupError('There is nothing on this phone to back up yet.');
+    throw new BackupError(
+      // A watch key alone would have been a backup once. Said, so a holder does not think the
+      // file they did not get would have carried it.
+      typeof all['watch_secret'] === 'string'
+        ? 'There is nothing on this phone to back up yet. A backup never carries the watch key: it stays on this phone.'
+        : 'There is nothing on this phone to back up yet.'
+    );
   }
 
   const blob = sealBackup(passphrase, {
     v: 1,
     at: new Date().toISOString().slice(0, 10),
-    accruing: kept
+    accruing: kept,
+    ...(typeof all['watch_secret'] === 'string' ? { watch_key_stayed: true as const } : {})
   } satisfies Kit);
   // After sealing, so a backup that threw is not recorded as one that exists.
   set('accruing', MADE, new Date().toISOString().slice(0, 10));
@@ -111,7 +135,17 @@ export class RestoreError extends Error {}
  * would destroy standing silently, and the operator doing it is usually somebody who
  * mistyped which phone they were holding. Burn first if that is genuinely the intent.
  */
-export function restore(passphrase: string, blob: string): { keys: number; watch: NamedWatch | null } {
+export function restore(
+  passphrase: string,
+  blob: string
+): {
+  keys: number;
+  watch: NamedWatch | null;
+  /** What the kit carried that this phone did not take: its own keys, fields nobody declared, and a patrol record nothing kept. */
+  withheld: string[];
+  /** The old phone held a watch key, and it stayed there: a kit an older build made carried it, and is refused it here. */
+  watchKeyStayed: boolean;
+} {
   if (get<string>('accruing', 'secret')) {
     throw new RestoreError(
       'This phone already has an identity. Restoring would replace it and lose whatever it holds — burn it first if that is what you mean.'
@@ -147,15 +181,20 @@ export function restore(passphrase: string, blob: string): { keys: number; watch
   }
 
   /*
-   * `DEVICE_ONLY` was enforced on the way out and not on the way in.
+   * Only what a kit is declared to carry, read from the same list `makeBackup` seals by.
    *
-   * The same list, twelve lines above, describes these as *"this device's business rather
-   * than this operator's"* — and `relays_own` is the list of relays this phone talks to. A
-   * crafted backup could set it, which routes everything this operator sends through relays
-   * somebody else chose. Excluded from a backup we write, accepted from one we read.
+   * The exclusions were enforced on the way out and not on the way in: `relays_own` was left out
+   * of a backup we wrote and accepted from one we read, which let a crafted kit route everything
+   * this operator sends through relays somebody else chose. Then the list was a deny-list, so a kit
+   * could plant any field nobody had thought to deny — `kem_keys`, a crew roster, a watch key. A
+   * field this phone keeps for itself, or one no build declared, is withheld and named.
+   *
+   * A watch is offered, never written: it decides where every Distress goes and who reads it
+   * [audit: relay paths, F02].
    */
-  const restored = entries.filter(([k]) => !DEVICE_ONLY.includes(k) && !WATCH_FIELDS.includes(k));
-  const named = Object.fromEntries(entries.filter(([k]) => WATCH_FIELDS.includes(k))) as Record<string, unknown>;
+  const restored = entries.filter(([k]) => crosses(kit.accruing, k) === 'kit');
+  const named = Object.fromEntries(entries.filter(([k]) => crosses(kit.accruing, k) === 'watch')) as Record<string, unknown>;
+  const withheld = entries.filter(([k]) => crosses(kit.accruing, k) === null).map(([k]) => k);
   const strings = (v: unknown) => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
   /*
    * The escalation key travels with the watch it belongs to, inside the signed code it came in, and
@@ -197,7 +236,7 @@ export function restore(passphrase: string, blob: string): { keys: number; watch
   // [audit: relay paths, review]. Offered, never installed: nothing that sends reads it.
   if (watch) offerWatch(watch);
   else if (offeredWatch()) forgetOfferedWatch();
-  return { keys: restored.length, watch };
+  return { keys: restored.length, watch, withheld, watchKeyStayed: kit.watch_key_stayed === true || withheld.includes('watch_secret') };
 }
 
 /** Restores from a bare recovery code — who you are, without what you held. */

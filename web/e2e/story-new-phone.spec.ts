@@ -72,12 +72,18 @@ test.describe('starting again on a phone somebody just bought', () => {
     await wren.close();
   });
 
-  test('and so does the watch, which is not the same as the phone that held it', async ({ browser }) => {
+  test('but not the watch key, and the screen says so: it comes back the way every holder got it', async ({ browser }) => {
     /*
      * A squad with no box keeps the watch's identity on somebody's phone, and every operator
-     * configured against that address is pointed at it. Losing the phone must not be the watch
-     * ending — that would strand everybody signed on under it, which is the failure
-     * `joinWatch` already refuses to cause by accident.
+     * configured against that address is pointed at it. This test used to carry the key across
+     * in the backup. It no longer crosses [fields.ts, `watch_secret`]: a copy of the key is the
+     * watch, so every kit made whoever held the file the watch, and a key planted by a handed kit
+     * kept a phone off its real watch for good, since joining refuses to replace one.
+     *
+     * So the cost has to be said where it lands. A holder restoring a kit an older build made —
+     * one that does carry the key — was told "Restored", and believed she still held the watch.
+     * And the way back is the way every holder got the key: from another holder, in person, which
+     * here is the old phone's own "show the watch key".
      */
     const wren = await browser.newPage();
     await seedDevice(wren, { callsign: 'Wren', relayEvents: [] });
@@ -88,17 +94,25 @@ test.describe('starting again on a phone somebody just bought', () => {
     const address = (await wren.locator('p.blocks').innerText()).replace(/\s+/g, '');
 
     const blob = await backUp(wren, 'correct horse battery');
+    // Said before the phone is lost, beside the backup itself.
+    await expect(wren.getByText(/a watch held only here ends with this phone/i)).toBeVisible();
+
     const { page, context } = await newPhone(browser, blob, 'correct horse battery');
+    // Restored, and not silently: the watch key is named as what stayed behind.
+    await expect(page.locator('[data-restored]')).toContainText(/watch key stayed on the old phone/i);
+    // A kit this build made never held the key, so this is the same sentence an older kit gets.
 
     await open(page, '/terminal/watch/');
-    // The same watch, so the same address — operators pointed at it are not stranded.
+    // No watch on this phone: the key did not come with her.
+    await expect(page.getByRole('button', { name: /start a watch on this phone/i })).toBeVisible();
+
+    // Handed over in person, as the screen says: the same watch, so the same address, and the
+    // operators pointed at it are not stranded.
+    await page.locator('#key').fill(key);
+    await page.getByRole('button', { name: /^join$/i }).click();
     await expect
       .poll(async () => (await page.locator('p.blocks').innerText()).replace(/\s+/g, ''))
       .toBe(address);
-    await page.getByRole('button', { name: /show the watch key/i }).click();
-    expect((await page.locator('[data-watch-key]').innerText()).trim()).toBe(key);
-    // And founding came with it, so she can still hold her own board.
-    await expect(page.getByRole('button', { name: /take the watch/i })).toBeVisible();
 
     await context.close();
     await wren.close();

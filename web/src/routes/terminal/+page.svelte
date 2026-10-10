@@ -17,7 +17,7 @@
   import * as standing from '$lib/terminal/standing';
   import { loadIdentity } from '$lib/terminal/identity';
   import { backTo, pendingMission, type PendingMission } from '$lib/missions/pending';
-  import { corruptTiers } from '$lib/terminal/storage';
+  import { corruptTiers, onWipe } from '$lib/terminal/storage';
   import { offline } from '$lib/terminal/offline.svelte';
   import { readClock, type ClockRead } from '$lib/terminal/clock';
   import { heard } from '$lib/terminal/heard.svelte';
@@ -122,6 +122,18 @@
    */
   let jotted = $state<{ id: string; region?: string; name?: string }[]>([]);
 
+  /** What this screen reads from tonight's storage: the mission somebody left, and the lines jotted. */
+  function tonight() {
+    leftMission = pendingMission();
+    const all = notes();
+    waiting = Object.keys(all).length;
+    jotted = Object.entries(all).map(([id, n]) => ({
+      id,
+      ...(n.region ? { region: n.region } : {}),
+      ...(n.name ? { name: n.name } : {})
+    }));
+  }
+
   let { data } = $props();
   /*
    * Read once on mount rather than derived, and deliberately not during prerender: at build
@@ -154,15 +166,14 @@
     stranded = configured ? null : storedWatch();
     offered = !configured && !stranded && offeredWatch() !== null;
     identity = loadIdentity();
-    leftMission = pendingMission();
     damaged = corruptTiers().length > 0;
-    const all = notes();
-    waiting = Object.keys(all).length;
-    jotted = Object.entries(all).map(([id, n]) => ({
-      id,
-      ...(n.region ? { region: n.region } : {}),
-      ...(n.name ? { name: n.name } : {})
-    }));
+    tonight();
+    /*
+     * A wipe in another tab took what `tonight` read, and this tab's way back to a mission with it
+     * (`storage.ts`): read again, so this screen does not go on offering "Back to" a mission by name,
+     * or the lines jotted tonight, on a phone just wiped.
+     */
+    const unwiped = onWipe(tonight);
     void offline.checkShell();
     watch.start();
     presence.start();
@@ -178,6 +189,7 @@
     overdue.start();
     const aging = setInterval(() => (nowMs = Date.now()), 15_000);
     return () => {
+      unwiped();
       clearInterval(aging);
       pq.stop();
       watch.stop();

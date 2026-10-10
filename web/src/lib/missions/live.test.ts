@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { finalizeEvent, generateSecretKey, getEventHash, getPublicKey } from 'nostr-tools/pure';
-import { set } from '$lib/terminal/storage';
+import { panicWipe, set } from '$lib/terminal/storage';
 import { KEPT_CHARS_MAX, PACKAGES_MAX, UNVERIFIED_MAX, subscribeMissions, type Feed } from './live';
 
 /** Every package read, counted: what a relay can make this phone verify is the cost to bound. */
@@ -94,7 +94,10 @@ beforeEach(() => {
   vi.stubGlobal('localStorage', {
     getItem: (k: string) => store.get(k) ?? null,
     setItem: (k: string, v: string) => void store.set(k, v),
-    removeItem: (k: string) => void store.delete(k)
+    removeItem: (k: string) => void store.delete(k),
+    // A wipe destroys every key under the tier's name, so it has to be able to list them.
+    get length() { return store.size; },
+    key: (i: number) => [...store.keys()][i] ?? null
   });
 });
 afterEach(() => {
@@ -503,5 +506,60 @@ describe('what the second audit of Milestone 11 found', () => {
     const count = feeds.length;
     socket(RECORD).frame(['EVENT', 'missions', pkg('b', 'Late', 1791300001)]);
     expect(feeds.length).toBe(count);
+  });
+});
+
+/**
+ * A wipe while the map is open, in this page or another tab [invariant 5].
+ *
+ * Mission history is Wipeable, and this subscription held a copy in memory and saved it every
+ * two seconds and as the page closed — so a wipe was followed by the copy coming straight back.
+ */
+describe('a wipe while missions are open', () => {
+  const kept = () =>
+    ((JSON.parse(localStorage.getItem('navcom.wipeable') ?? '{}').missions?.events ?? []) as { content: string }[])
+      .map((e) => JSON.parse(e.content).name as string)
+      .sort();
+
+  it('writes nothing back, however the save was waiting, and the next page keeps its own copy again', () => {
+    const stop = subscribe();
+    socket(RECORD).answer(pkg('a', 'Before'));
+    expect(kept()).toEqual(['Before']);
+    // Arrived after the answer, so its save is waiting on the timer.
+    socket(RECORD).frame(['EVENT', 'missions', pkg('b', 'Just after', 1791300001)]);
+
+    panicWipe();
+    vi.advanceTimersByTime(5_000);
+    expect(localStorage.getItem('navcom.wipeable'), 'the waiting save put tonight back').toBeNull();
+
+    // News after the wipe is drawn, live, and still not kept by a subscription from before it.
+    socket(RECORD).frame(['EVENT', 'missions', pkg('c', 'After', 1791300002)]);
+    expect(last().status).toBe('live');
+    expect(titles()).toContain('After');
+    vi.advanceTimersByTime(5_000);
+    // Nor as the page closes.
+    socket(RECORD).frame(['EVENT', 'missions', pkg('d', 'As it closed', 1791300003)]);
+    stop();
+    expect(localStorage.getItem('navcom.wipeable'), 'the page closing put tonight back').toBeNull();
+
+    // A page opened after the wipe is a new visit, and keeps its copy for offline as before.
+    subscribe();
+    socket(RECORD).answer(pkg('e', 'Next visit'));
+    expect(kept()).toEqual(['Next visit']);
+  });
+
+  it('stops drawing the copy this device kept, once a wipe has taken it', () => {
+    const stop = subscribe();
+    socket(RECORD).answer(pkg('a', 'Kept'));
+    stop();
+    feeds = [];
+    // Offline: the map is drawn from the copy on the device.
+    subscribe();
+    expect(last().status).toBe('cached');
+    expect(titles()).toEqual(['Kept']);
+
+    panicWipe();
+    expect(titles(), 'the map still shows what the wipe destroyed').toEqual([]);
+    expect(last().status).toBe('connecting');
   });
 });

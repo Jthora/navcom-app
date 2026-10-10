@@ -5,6 +5,10 @@
  * This tab only (`sessionStorage`), and its address and title only: where it is on the map is the
  * mission's, and a fresh tab finds it there. Kept out of the mission modules so the terminal can
  * say "Back to …" without loading any of them.
+ *
+ * **Tonight's, and destroyed with it** [invariant 5]. The keys are under `navcom.`, and a panic wipe
+ * and a burn both take every key of ours in this tab's storage (`terminal/storage.ts`). They did
+ * not, once: Status offered "Back to" a mission by name on a phone that had just been wiped.
  */
 
 const ADDRESS = 'navcom.pending-mission';

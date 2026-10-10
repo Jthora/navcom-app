@@ -1,4 +1,5 @@
 import type { Page, Response } from '@playwright/test';
+import type { AccruingField, WipeableField } from '../src/lib/terminal/fields';
 
 /**
  * Putting a device into a known state before the app loads.
@@ -51,12 +52,15 @@ interface Seed {
    */
   watchSecret?: string;
   /**
-   * Arbitrary accruing-tier fields.
+   * Accruing-tier fields, by the names `fields.ts` declares.
    *
    * For states a test needs to *start* in rather than drive a whole screen to reach — the
-   * screen's own markup is then not part of what the test depends on.
+   * screen's own markup is then not part of what the test depends on. Typed from the registry,
+   * so a seed cannot set up a field the app has never written.
    */
-  accruing?: Record<string, unknown>;
+  accruing?: Partial<Record<AccruingField, unknown>>;
+  /** Wipeable-tier fields, by the names `fields.ts` declares: tonight's, for a test that destroys them. */
+  wipeable?: Partial<Record<WipeableField, unknown>>;
   relayEvents?: unknown[];
   /**
    * This device's own key, as 64 hex.
@@ -109,7 +113,7 @@ interface Seed {
  * which is not what a first run looks like.
  */
 export async function blankDevice(page: Page): Promise<void> {
-  await seedDevice(page, { __noStorage: true } as Seed);
+  await seedDevice(page, { __noStorage: true });
 }
 
 export async function seedDevice(page: Page, seed: Seed = {}): Promise<void> {
@@ -317,9 +321,15 @@ export async function seedDevice(page: Page, seed: Seed = {}): Promise<void> {
     // A first run: stub the network and write nothing at all.
     if (s.__noStorage) return;
 
-    // Already set up by an earlier navigation in this test. Leave it alone.
-    if (localStorage.getItem('navcom.seeded') === '1') return;
-    localStorage.setItem('navcom.seeded', '1');
+    /*
+     * Already set up by an earlier navigation in this test. Leave it alone.
+     *
+     * The harness's own key, outside `navcom.`: a burn destroys every key of ours, and a marker
+     * among them went with it, so the next load seeded the identity straight back onto a phone
+     * the test had just burned. Exported as `SEEDED`, for a test that lists what is in storage.
+     */
+    if (localStorage.getItem('e2e.seeded') === '1') return;
+    localStorage.setItem('e2e.seeded', '1');
 
     const accruing: Record<string, unknown> = {};
     const wipeable: Record<string, unknown> = {};
@@ -342,6 +352,7 @@ export async function seedDevice(page: Page, seed: Seed = {}): Promise<void> {
     if (s.contact) accruing['emergency_contact'] = s.contact;
     if (s.peers) accruing['peers'] = s.peers;
     if (s.keepPatrolHistory !== undefined) accruing['keep_patrol_history'] = s.keepPatrolHistory;
+    if (s.wipeable) Object.assign(wipeable, s.wipeable);
 
     localStorage.setItem('navcom.accruing', JSON.stringify(accruing));
     localStorage.setItem('navcom.wipeable', JSON.stringify(wipeable));
@@ -432,15 +443,71 @@ export async function open(page: Page, path: string): Promise<Response | null> {
   return response;
 }
 
-/** What is actually on the device now, for asserting on the result of a flow. */
+/**
+ * What is actually on the device now, for asserting on the result of a flow.
+ *
+ * The two tiers parsed, and **every key of ours** in both storages as stored. This read the two
+ * blobs and nothing else, so every wipe test built on it stayed green with tonight's data on the
+ * phone under any other name — a salvage copy, a crew roster, the mission somebody left in this tab.
+ */
 export async function readDevice(page: Page): Promise<{
   accruing: Record<string, unknown>;
   wipeable: Record<string, unknown>;
+  /** Every `navcom.*` key in localStorage, raw. */
+  local: Record<string, string>;
+  /** Every `navcom.*` key in this tab's sessionStorage, raw. */
+  session: Record<string, string>;
 }> {
-  return page.evaluate(() => ({
-    accruing: JSON.parse(localStorage.getItem('navcom.accruing') ?? '{}') as Record<string, unknown>,
-    wipeable: JSON.parse(localStorage.getItem('navcom.wipeable') ?? '{}') as Record<string, unknown>
-  }));
+  return page.evaluate(() => {
+    const ours = (store: Storage) => {
+      const out: Record<string, string> = {};
+      for (let i = 0; i < store.length; i++) {
+        const key = store.key(i);
+        if (key?.startsWith('navcom.')) out[key] = store.getItem(key) ?? '';
+      }
+      return out;
+    };
+    return {
+      accruing: JSON.parse(localStorage.getItem('navcom.accruing') ?? '{}') as Record<string, unknown>,
+      wipeable: JSON.parse(localStorage.getItem('navcom.wipeable') ?? '{}') as Record<string, unknown>,
+      local: ours(localStorage),
+      session: ours(sessionStorage)
+    };
+  });
+}
+
+/** The harness's own key, which says this page was seeded. Not the app's, and not in `navcom.`. */
+export const SEEDED = 'e2e.seeded';
+
+/**
+ * Everything this origin holds in the four places a page can keep anything, by name.
+ *
+ * For comparing against an allowlist after a destroy path, so a key nobody classified fails the
+ * day somebody writes it. `idb` is null where the engine cannot list its databases.
+ */
+export async function inventory(page: Page): Promise<{
+  local: string[];
+  session: string[];
+  idb: string[] | null;
+  caches: string[];
+}> {
+  return page.evaluate(async () => {
+    const keys = (store: Storage) => {
+      const out: string[] = [];
+      for (let i = 0; i < store.length; i++) out.push(store.key(i) ?? '');
+      return out.sort();
+    };
+    const idb =
+      typeof indexedDB !== 'undefined' && typeof indexedDB.databases === 'function'
+        ? (await indexedDB.databases()).map((d) => d.name ?? '').sort()
+        : null;
+    return {
+      local: keys(localStorage),
+      session: keys(sessionStorage),
+      idb,
+      caches: typeof caches === 'undefined' ? [] : (await caches.keys()).sort()
+    };
+  });
 }
 
 /**
@@ -504,5 +571,5 @@ export async function liveDevice(
     ...seed,
     accruing: { ...(seed.accruing ?? {}), relays_own: [relayUrl] },
     __liveSocket: true
-  } as Seed);
+  });
 }

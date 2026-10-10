@@ -9,6 +9,7 @@ import { describe, expect, it, beforeEach } from 'vitest';
 import { newSecretKey, openBackup, publicKeyOf, sealBackup } from '@navcom/core';
 import { RestoreError, lastMade, makeBackup, restore, restoreCode } from './backup';
 import { get, set } from './storage';
+import { joinWatch, watchKey } from './watch-key';
 import { loadIdentity } from './identity';
 import { addOfferedWatch, loadConfig, offeredWatch } from './config';
 import { relays } from './relays';
@@ -331,5 +332,214 @@ describe('a watch’s escalation key in a backup [G3]', () => {
     addOfferedWatch(offeredWatch()!);
     expect(loadConfig()).toMatchObject({ pubkey: W });
     expect(loadConfig()?.executor, 'a stranger’s key ends this phone’s Distress').toBeUndefined();
+  });
+});
+
+/** A phone nobody has used. */
+function freshPhone(): void {
+  const store = new Map<string, string>();
+  (globalThis as Record<string, unknown>).localStorage = {
+    getItem: (k: string) => store.get(k) ?? null,
+    setItem: (k: string, v: string) => void store.set(k, v),
+    removeItem: (k: string) => void store.delete(k)
+  };
+}
+
+/**
+ * What a backup may carry, by declaration rather than by exception [fields.ts].
+ *
+ * A kit carried every accruing field but one, and restore wrote every field but that one and the
+ * watch's. So whatever key the next feature added crossed by default — and a kit somebody handed
+ * over could plant any field at all: a crew roster where a panic wipe cannot reach it, a key bundle
+ * that stopped the real holder reading this operator's Distress, or a watch key that kept the phone
+ * from ever joining its real watch.
+ */
+describe('what crosses to another phone', () => {
+  const HOLDER = 'c'.repeat(64);
+  const PLANTED_WATCH = 'd'.repeat(63) + '1';
+
+  it('a handed kit restores none of what this phone keeps for itself, nor anything nobody declared', () => {
+    const { keys, withheld } = restore(PASS, handed({
+      callsign: 'Wren',
+      kem_keys: { [HOLDER]: 'a key bundle somebody else chose' },
+      watch_secret: PLANTED_WATCH,
+      watch_founded: true,
+      crews: [{ id: 'planted', members: [HOLDER] }],
+      something_new: 1
+    }));
+    expect(get('accruing', 'callsign')).toBe('Wren');
+    for (const field of ['kem_keys', 'watch_secret', 'watch_founded', 'crews', 'something_new']) {
+      expect(get('accruing', field), `${field} crossed a restore`).toBeNull();
+    }
+    expect(keys).toBe(1);
+    // Named, so the screen can say what stayed behind.
+    expect([...withheld].sort()).toEqual(['crews', 'kem_keys', 'something_new', 'watch_founded', 'watch_secret']);
+  });
+
+  it('a planted watch key cannot stop this phone joining its real watch', () => {
+    // Founding and joining both refuse to replace a key already held, so a planted one would
+    // have kept this phone off its real watch for good.
+    restore(PASS, handed({ callsign: 'Wren', watch_secret: PLANTED_WATCH }));
+    expect(watchKey()).toBeNull();
+    expect(() => joinWatch('e'.repeat(63) + '5')).not.toThrow();
+  });
+
+  it('a kit made here leaves out what is this phone’s own, and what nobody declared', () => {
+    set('accruing', 'callsign', 'Wren');
+    set('accruing', 'relays_own', ['wss://mine.example']);
+    set('accruing', 'kem_keys', { [HOLDER]: 'learned from a relay' });
+    set('accruing', 'watch_secret', PLANTED_WATCH);
+    set('accruing', 'watch_founded', true);
+    set('accruing', 'not_declared', 'whatever a later build wrote');
+    const kit = openBackup<{ accruing: Record<string, unknown> }>(PASS, makeBackup(PASS));
+    expect(Object.keys(kit.accruing)).toEqual(['callsign']);
+  });
+
+  it('a phone holding more fields than a kit may carry still makes one that restores', () => {
+    // A kit restore refuses is a backup that holds nothing, discovered on the day it is needed.
+    localStorage.setItem('navcom.accruing', JSON.stringify({
+      callsign: 'Wren',
+      ...Object.fromEntries(Array.from({ length: 100 }, (_, i) => [`junk${i}`, 'x']))
+    }));
+    const blob = makeBackup(PASS);
+    freshPhone();
+    expect(() => restore(PASS, blob)).not.toThrow();
+    expect(get('accruing', 'callsign')).toBe('Wren');
+  });
+
+  /*
+   * A kit as shipped builds sealed it: every accruing field any version has written, read from the
+   * repository's history rather than from the registry, so a field dropped from the registry fails
+   * here instead of being lost from somebody's backup.
+   */
+  const OLDER: Record<string, unknown> = {
+    secret: 'a'.repeat(63) + '1',
+    callsign: 'Wren',
+    signature: 'low',
+    peers: [{ pubkey: HOLDER, callsign: 'Raven', since: 1 }],
+    emergency_contact: { label: 'Sam', number: '+15555550100' },
+    contact_secret: 'b'.repeat(63) + '2',
+    card: { region: 'us-mo-st-louis' },
+    card_listed: true,
+    card_sent: { id: 'f'.repeat(64), at: 1 },
+    endorsements: [{ kind: 'can-take-watch', from: HOLDER }],
+    endorsements_written: [{ kind: 'can-take-watch', to: HOLDER }],
+    revocations: [],
+    corrections: { 'st-louis-0001': { at: 1 } },
+    corrections_unsent: [],
+    places: [{ id: 'p1' }],
+    places_unsent: [],
+    patrols: [{ started: 1, ended: 2, area: 'North' }],
+    keep_patrol_history: true,
+    position_precision: 'coarse',
+    lightning: 'wren@wallet.example',
+    lightning_squad: 'squad@wallet.example',
+    seen_roots: [{ root: 'r', size: 1, at: 1 }],
+    root_alarms: [],
+    backup_made: '2026-09-01',
+    watchtower: HOLDER,
+    relays: ['wss://watch.example'],
+    watch_holders: [HOLDER],
+    // The signed watch code the escalation key came in (`config.ts`, ESCALATION). Not a valid one:
+    // what is pinned here is that the field is offered and never written, whatever it holds.
+    watch_escalation: 'navcom-watch:v1:a signed code',
+    watch_executor: HOLDER,
+    relays_own: ['wss://mine.example'],
+    kem_keys: { [HOLDER]: 'k' },
+    watch_secret: PLANTED_WATCH,
+    watch_founded: true
+  };
+  const WATCH = ['watchtower', 'relays', 'watch_holders', 'watch_escalation', 'watch_executor'];
+  const DEVICE = ['relays_own', 'kem_keys', 'watch_secret', 'watch_founded'];
+
+  it('an older kit restores every real field it carried, and only those', () => {
+    const { withheld, watch } = restore(PASS, sealBackup(PASS, { v: 1, at: '2026-10-08', accruing: OLDER }));
+    for (const [field, value] of Object.entries(OLDER)) {
+      if (WATCH.includes(field) || DEVICE.includes(field)) continue;
+      // The kit's own date wins: it says how old the safety net is.
+      expect(get('accruing', field), `${field} was lost from a backup`).toEqual(field === 'backup_made' ? '2026-10-08' : value);
+    }
+    // The watch is offered, as it always was, and written by nobody.
+    expect(watch?.pubkey).toBe(HOLDER);
+    for (const field of WATCH) expect(get('accruing', field), `${field} was written in`).toBeNull();
+    expect([...withheld].sort()).toEqual([...DEVICE].sort());
+  });
+
+  it('and says the watch key stayed behind, which it did not take', () => {
+    // An older kit carries the key and is refused it: "Restored" alone would leave a holder
+    // believing she still held the watch.
+    expect(restore(PASS, sealBackup(PASS, { v: 1, at: '2026-10-08', accruing: OLDER })).watchKeyStayed).toBe(true);
+  });
+});
+
+/**
+ * The watch key stays on the phone, and the backup says so on both sides [fields.ts].
+ *
+ * It used to cross, so a holder whose phone was lost got the watch back from the file. It no
+ * longer does, and a cost nobody is told about is one they find out on the day it lands.
+ */
+describe('a watch key, which a backup never carries', () => {
+  const KEY = 'd'.repeat(63) + '1';
+
+  it('is named as staying behind when a kit this build made is restored', () => {
+    set('accruing', 'callsign', 'Wren');
+    set('accruing', 'watch_secret', KEY);
+    const blob = makeBackup(PASS);
+    const kit = openBackup<Record<string, unknown> & { accruing: Record<string, unknown> }>(PASS, blob);
+    // That a key existed, never the key.
+    expect(JSON.stringify(kit)).not.toContain(KEY);
+    freshPhone();
+    const { watchKeyStayed, withheld } = restore(PASS, blob);
+    expect(watchKeyStayed).toBe(true);
+    // Not carried, so not withheld: nothing in the kit was refused.
+    expect(withheld).toEqual([]);
+    expect(watchKey()).toBeNull();
+  });
+
+  it('and not named where there was none', () => {
+    set('accruing', 'callsign', 'Wren');
+    const blob = makeBackup(PASS);
+    freshPhone();
+    expect(restore(PASS, blob).watchKeyStayed).toBe(false);
+  });
+
+  it('a phone holding only a watch key is told why there is nothing to back up', () => {
+    // It would have been a backup once, and the file it did not get would have been the watch.
+    set('accruing', 'watch_secret', KEY);
+    expect(() => makeBackup(PASS)).toThrow(/never carries the watch key/i);
+  });
+});
+
+/**
+ * The patrol record crosses only with the setting that keeps it in the decade [patrol.ts].
+ *
+ * Without the setting it lives in tonight's tier, so a kit that wrote it into the decade put a
+ * record on the phone that no screen reads and no panic wipe reaches.
+ */
+describe('a patrol record in a kit', () => {
+  const PATROLS = [{ started: 1, ended: 2, area: 'North' }];
+
+  it('is not written into the decade without the setting that keeps it there', () => {
+    const { withheld } = restore(PASS, handed({ callsign: 'Wren', patrols: PATROLS }));
+    expect(get('accruing', 'patrols'), 'a record no screen shows and no wipe reaches').toBeNull();
+    expect(withheld).toEqual(['patrols']);
+    // And one the setting says is off, likewise.
+    freshPhone();
+    restore(PASS, handed({ callsign: 'Wren', patrols: PATROLS, keep_patrol_history: false }));
+    expect(get('accruing', 'patrols')).toBeNull();
+    expect(get('accruing', 'keep_patrol_history')).toBe(false);
+    // With it, as every build that kept the record there wrote it, the record comes back.
+    freshPhone();
+    restore(PASS, handed({ callsign: 'Wren', patrols: PATROLS, keep_patrol_history: true }));
+    expect(get('accruing', 'patrols')).toEqual(PATROLS);
+  });
+
+  it('is not sealed without it either, so a kit made here is one restore takes whole', () => {
+    set('accruing', 'callsign', 'Wren');
+    // What `setKeepHistory(false)` leaves behind in the decade after moving the record out.
+    set('accruing', 'patrols', []);
+    set('accruing', 'keep_patrol_history', false);
+    const kit = openBackup<{ accruing: Record<string, unknown> }>(PASS, makeBackup(PASS));
+    expect(Object.keys(kit.accruing).sort()).toEqual(['callsign', 'keep_patrol_history']);
   });
 });

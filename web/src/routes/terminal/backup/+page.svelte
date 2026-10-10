@@ -9,6 +9,7 @@
   import { Slot, Readout, Why } from '$lib/components/panel';
   import { ageInDays, keyPrint, secretToHex } from '@navcom/core';
   import { RestoreError, lastMade, makeBackup, restore, restoreCode, type NamedWatch } from '$lib/terminal/backup';
+  import { carryOf } from '$lib/terminal/fields';
   import { ConfigError, addOfferedWatch, forgetOfferedWatch, offeredWatch } from '$lib/terminal/config';
   import { refusedOf, usable } from '$lib/terminal/relay-url';
   import { loadIdentity } from '$lib/terminal/identity';
@@ -69,7 +70,7 @@
         restoreCode(text);
         done = 'Your key is back — not your callsign or anything you held. That needs a full backup.';
       } else {
-        const { keys, watch } = restore(restorePass, text);
+        const { keys, watch, withheld, watchKeyStayed } = restore(restorePass, text);
         named = watch;
         watchAdded = false;
         watchError = null;
@@ -80,6 +81,19 @@
           : keys === 0
             ? 'This backup holds only a watch. Add it or forget it below.'
             : `${restored} It also names a watch: add it or forget it below, then reopen the terminal.`;
+        /*
+         * What stayed behind, said rather than dropped. A backup no longer carries the watch key
+         * (`fields.ts`), and one an older build made does and is refused it: told only "Restored",
+         * a holder would believe they still held the watch. Other fields this phone keeps for
+         * itself it learns again, and are not worth a sentence.
+         */
+        if (watchKeyStayed) {
+          done += ' The watch key stayed on the old phone: a backup does not carry one. Another holder can hand it to you in person, and a watch held on that phone alone ended with it.';
+        }
+        const unknown = withheld.filter((k) => carryOf(k) === null).length;
+        if (unknown > 0) {
+          done += ` ${unknown} thing${unknown === 1 ? '' : 's'} in it that this version of NavCom does not know ${unknown === 1 ? 'was' : 'were'} left out.`;
+        }
       }
       identity = loadIdentity();
     } catch (e) {
@@ -199,11 +213,16 @@
     <button onclick={make} disabled={!passphrase.trim()}>Make a backup</button>
 
     {#if blob}
+      <!--
+        The watch key was in this list, and every kit carried it: a copy of it is the watch, and a
+        planted one kept a phone off its real watch. It stays on the phone now (`fields.ts`), and the
+        cost is said here, before the phone is lost, because afterwards is too late to act on it.
+      -->
       <p class="cost">
         Everything that outlasts a night: your callsign and key, your peers, your standing,
-        your card, the person you would call and any watch key — so the file carries their
-        number off this phone. <strong>Not tonight's patrol</strong> — a backup that carried it would
-        carry the thing a panic wipe destroys.
+        your card, the person you would call — so the file carries their number off this
+        phone. <strong>Not tonight's patrol</strong>, which a wipe destroys, nor <strong>a watch
+        key</strong>: a watch held only here ends with this phone.
       </p>
       <pre class="blob">{blob}</pre>
       <button onclick={copy}>{copied ? 'Copied' : 'Copy'}</button>

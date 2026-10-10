@@ -119,18 +119,24 @@
   <p>
     Destroys <strong>tonight</strong> and keeps your identity, your standing and the person
     you would call. You can carry on working straight afterwards — nobody has to
-    re-provision you, and your safety net is still there the next night.
+    re-provision you.
   </p>
   <!--
     The cost of stopping what is still sending, said before the hold rather than after. It was
     decided rather than defaulted into: a wipe that left a Distress and a public listing
     running kept transmitting from a phone its owner believed was quiet.
+
+    "In this tab", because that is where it stops them. Another tab's pages let go of tonight's
+    storage when they hear the wipe, but whether a wipe here should also end a Distress or a
+    held watch running there is the owner's to decide [wipe-two-tabs.spec.ts], and until it is,
+    the sentence must not promise it.
   -->
   <p class="cost">
-    <strong>It also stops what this phone is still sending</strong> — a Distress still going,
+    <strong>It also stops what this tab is still sending</strong> — a Distress still going,
     your name on the board as out tonight, your position, and a watch you are holding, which
     reads Dark to everyone within five minutes. If you are wiping because you are in trouble,
-    that silences your own call for help: send it again once you can.
+    that silences your own call for help: send it again once you can. <strong>Another NavCom tab
+    keeps sending until you close it.</strong>
   </p>
   <Action label="Hold to wipe tonight" holdingLabel="Keep holding…" hold={800} tone="alarm" onfire={fireWipe} />
 </section>

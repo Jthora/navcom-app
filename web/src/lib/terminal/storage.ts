@@ -22,17 +22,130 @@
 
 const ACCRUING = 'navcom.accruing';
 const WIPEABLE = 'navcom.wipeable';
+/** Every key this app writes, in either storage, is under this name. */
+const OURS = 'navcom';
 
 /**
- * Every key one tier's data can occupy — the blob, and the salvage copy of a damaged one.
+ * Removes the key `name` and every key under it (`name.…`), in one storage, without reading any.
  *
- * One list, used by both destroy paths, so a new key cannot be added to storage and missed
- * by the wipe.
+ * **Destroyed by name, not by list.** This was a fixed list of two keys per tier — the blob and
+ * its salvage copy — and every later Wipeable thing (a crew roster, the log cache, a keyed store)
+ * needs a key of its own that such a list cannot know about. A key under `navcom.wipeable.` is
+ * tonight's by its name, and goes; nobody has to remember to add it here. Under it, not merely
+ * starting with it: `navcom.wipeablex` would be somebody's new decade.
+ *
+ * Blind to content on purpose: no parsing and no decryption, so a damaged or unreadable value is
+ * destroyed exactly like a good one. In name order, so `navcom.accruing` goes before
+ * `navcom.wipeable` and another tab hears a burn as a burn first.
  */
-const keysOf = (tierKey: string): string[] => [tierKey, `${tierKey}.damaged`];
+function destroy(store: 'localStorage' | 'sessionStorage', name: string): void {
+  let s: Storage | undefined;
+  try {
+    s = globalThis[store];
+  } catch {
+    // A browser refusing this page storage: there is nothing in it to destroy.
+  }
+  if (!s) return;
+  const doomed: string[] = [];
+  // Collected first: removing while counting would skip the key after each one removed.
+  for (let i = 0; i < s.length; i++) {
+    const key = s.key(i);
+    if (key === name || key?.startsWith(name + '.')) doomed.push(key);
+  }
+  for (const key of doomed.sort()) s.removeItem(key);
+}
 
 export type Tier = 'accruing' | 'wipeable';
-const keyFor = (tier: Tier) => (tier === 'accruing' ? ACCRUING : WIPEABLE);
+export const keyFor = (tier: Tier): string => (tier === 'accruing' ? ACCRUING : WIPEABLE);
+export const TIERS: Tier[] = ['accruing', 'wipeable'];
+
+/**
+ * Calls each function with `x`, each one isolated.
+ *
+ * Found in robustness audit that a throwing storage-error watcher propagated straight through
+ * report() -> write() -> set(), breaking the one guarantee this module exists to provide for every
+ * other caller and watcher. A wipe watcher that threw would likewise stop every one after it from
+ * forgetting what it holds.
+ */
+function each<T>(fns: Set<(x: T) => void>, x: T): void {
+  for (const fn of fns) {
+    try {
+      fn(x);
+    } catch (err) {
+      console.error('[storage] a watcher threw:', err);
+    }
+  }
+}
+
+/**
+ * How many times each tier has been destroyed, as far as this document knows.
+ *
+ * A writer that waits — a debounced save, a publish that records how it went — reads, goes away,
+ * and comes back to write. One that began before a wipe and wrote after it put tonight straight
+ * back: a second tab's missions copy recreated `navcom.wipeable` within two seconds. So a writer
+ * takes `generation(tier)` when it starts and hands it to `set`, which refuses it once the tier has
+ * been destroyed since. The board's own guard (`board.svelte.ts`), moved down to where any writer
+ * can take it.
+ *
+ * **Only the missions copy (`live.ts`) takes it so far.** A claim, a release and a report each
+ * write after awaiting a publish (`missions/claims.ts`, `missions/reports.ts`), and sign-on after
+ * awaiting its send (`session.svelte.ts`): a wipe while one is in flight is still followed by what
+ * it records. Each needs `since` taken before its first await.
+ *
+ * Per tier, so a panic wipe refuses nothing bound for the decade, which it does not touch. Kept in
+ * memory only: a persistent "wiped" marker would tell whoever holds the phone there was something
+ * to wipe.
+ */
+const gen: Record<Tier, number> = { accruing: 0, wipeable: 0 };
+
+/**
+ * A field in each tier's blob holding a random name, given to it when it is written without one.
+ *
+ * So a page can tell the blob it read from one made since: a wipe followed by a sign-on leaves a
+ * `navcom.wipeable` on the phone again, and a page that only asked whether one was there missed
+ * the wipe. Not a count and not a date, and it says nothing about whether anything was ever wiped.
+ */
+export const BORN = '~';
+/** The name of each tier's blob as this document last read or wrote it: `true` for one with none yet, false for none. */
+export const born: Partial<Record<Tier, unknown>> = {};
+/** The name this document last gave a blob, so it can recognise one it made after another tab's destroy. */
+export const made: Partial<Record<Tier, unknown>> = {};
+
+export const generation = (tier: Tier): number => gen[tier];
+
+export type Wiped = 'wipe' | 'burn';
+const wipeWatchers = new Set<(what: Wiped) => void>();
+
+/**
+ * Subscribes to a wipe or a burn in this document, another tab, or while this page was in the
+ * back-forward cache (`wiped-elsewhere.ts`). Returns the unsubscribe.
+ *
+ * For whatever holds tonight in memory and must let it go: a page can only clear what it imports,
+ * and a crew handle or a card cache is not something the wipe screen may import [groups.md]. Called
+ * after the tier is gone. A watcher writes nothing back: anything it would write began before.
+ */
+export const onWipe = (fn: (what: Wiped) => void): (() => void) => {
+  wipeWatchers.add(fn);
+  return () => wipeWatchers.delete(fn);
+};
+
+/**
+ * A wipe or a burn happened, here or elsewhere: this tab's own storage goes, older writes are
+ * refused from here on, and every watcher is told. Called by the two destroy paths below and by
+ * `wiped-elsewhere.ts`, and by nothing else.
+ *
+ * Everything of ours in sessionStorage is tonight's whichever act it was — it ends with the tab, so
+ * none of it can be the decade — and each tab's is its own: a wipe in another tab cannot reach this
+ * one's, so this tab destroys it on hearing.
+ */
+export function wiped(what: Wiped): void {
+  destroy('sessionStorage', OURS);
+  for (const tier of what === 'burn' ? TIERS : (['wipeable'] as const)) {
+    gen[tier]++;
+    born[tier] = false;
+  }
+  each(wipeWatchers, what);
+}
 
 /**
  * Tiers whose stored text would not parse.
@@ -49,10 +162,12 @@ export const corruptTiers = (): Tier[] => [...corrupt];
 function read(tier: Tier): Record<string, unknown> {
   if (typeof localStorage === 'undefined') return {};
   const raw = localStorage.getItem(keyFor(tier));
+  born[tier] = raw !== null;
   if (raw === null) return {};
 
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown>;
+    born[tier] = parsed[BORN] ?? true;
     corrupt.delete(tier);
     return parsed;
   } catch {
@@ -106,17 +221,8 @@ const watchers = new Set<Watcher>();
 const report = (message: string | null): void => {
   if (message === lastError) return;
   lastError = message;
-  // Each watcher isolated: found in robustness audit that a throwing watcher propagated
-  // straight through report() -> write() -> set(), breaking the one guarantee this module
-  // exists to provide for every other caller and watcher. Latent today (the one production
-  // subscriber is simple and safe), but a real hole a second watcher would reopen.
-  for (const watcher of watchers) {
-    try {
-      watcher(message);
-    } catch (err) {
-      console.error('[storage] a storage-error watcher threw:', err);
-    }
-  }
+  // Each watcher isolated (`each`): a throwing one must not break the write for the caller.
+  each(watchers, message);
 };
 
 /** Subscribes to write failures. Returns the unsubscribe. */
@@ -138,10 +244,21 @@ export const clearStorageError = (): void => {
  * recorded and returned, and every terminal screen shows it — through the layout, because
  * asking each of thirty call sites to remember is how it went unreported for two milestones.
  */
+/**
+ * Set once this document is loading again after a wipe or a burn it heard (`wiped-elsewhere.ts`):
+ * until the new page replaces it, everything it would write was drawn before, so it writes nothing.
+ */
+let sealed = false;
+export const seal = (): void => {
+  sealed = true;
+};
+
 function write(tier: Tier, data: Record<string, unknown>): boolean {
-  if (typeof localStorage === 'undefined') return false;
+  if (sealed || typeof localStorage === 'undefined') return false;
+  data[BORN] ??= made[tier] = Math.random().toString(36).slice(2);
   try {
     localStorage.setItem(keyFor(tier), JSON.stringify(data));
+    born[tier] = data[BORN];
     report(null);
     return true;
   } catch (e) {
@@ -169,8 +286,14 @@ export function get<T>(tier: Tier, field: string): T | null {
   return v === undefined ? null : (v as T);
 }
 
-/** Returns whether it was actually stored, so a caller can say so. */
-export function set(tier: Tier, field: string, value: unknown): boolean {
+/**
+ * Returns whether it was actually stored, so a caller can say so.
+ *
+ * `since` is `generation(tier)` as it was when the writer began: a write that began before a wipe
+ * of this tier is refused, quietly — nothing failed that the operator could fix.
+ */
+export function set(tier: Tier, field: string, value: unknown, since?: number): boolean {
+  if (since !== undefined && since !== gen[tier]) return false;
   const data = read(tier);
   data[field] = value;
   return write(tier, data);
@@ -197,39 +320,41 @@ export function tierSizes(): { accruing: number; wipeable: number } {
 }
 
 /**
- * Destroys tonight and preserves the decade.
+ * Destroys the Wipeable tier, and preserves the decade [invariant 5].
  *
  * Identity, standing and the Watchtower you belong to all survive — an operator who wipes
  * on a bad night should not have to find a person and be re-provisioned before they can
  * work again.
- */
-/**
- * Destroys the Wipeable tier [invariant 7].
  *
- * **The salvage copy is part of the tier.** A damaged blob is kept under `.damaged` so an
- * operator can recover it by hand, and for two passes that copy sat outside the wipe: a
- * phone whose wipeable storage had ever been corrupted kept a readable copy of it through a
- * panic wipe. The operator holds the button down, watches it clear, and the thing they
- * destroyed is still on the device.
+ * **Every key under `navcom.wipeable` is the tier**, not just the blob. A damaged blob is kept
+ * under `.damaged` so an operator can recover it by hand, and for two passes that copy sat
+ * outside the wipe: the operator held the button down, watched it clear, and the thing they
+ * destroyed was still on the device. A fixed list of keys is how that happened, so there is no
+ * list: a key is tonight's by its name.
  *
- * Anything holding tier data must be listed here. Adding a key elsewhere and forgetting this
- * function is exactly how it happened.
+ * **And everything of ours in this tab's sessionStorage.** It ends with the tab, so nothing in it
+ * can be the decade — and the mission somebody left to take a callsign sat there through a wipe,
+ * so Status went on offering "Back to" it on a phone that had just been wiped.
+ *
+ * Then every `onWipe` watcher in this document is told, and other open tabs hear it too.
  */
 export function panicWipe(): void {
   if (typeof localStorage === 'undefined') return;
-  for (const key of keysOf(WIPEABLE)) localStorage.removeItem(key);
+  destroy('localStorage', WIPEABLE);
+  wiped('wipe');
 }
 
 /**
- * Destroys everything on this device, including identity.
+ * Destroys everything on this device, including identity: every key of ours, in both storages.
  *
  * Deliberate, harder to reach, and irreversible — there is no recovery unless the operator
  * set one up. Meant for compulsion or seizure with intent, not for a phone that might be
- * glanced at.
+ * glanced at. Every other open tab of this app hears it and loads again, with nothing.
  */
 export function burn(): void {
   if (typeof localStorage === 'undefined') return;
-  for (const key of [...keysOf(WIPEABLE), ...keysOf(ACCRUING)]) localStorage.removeItem(key);
+  destroy('localStorage', OURS);
+  wiped('burn');
 }
 
 /**
@@ -297,5 +422,7 @@ export function burnConfirmed(typed: string, callsign: string | null): boolean {
 
 /** What a wipe would actually remove, so the operator can be told before it happens. */
 export function tierSummary(): { accruing: string[]; wipeable: string[] } {
-  return { accruing: Object.keys(read('accruing')), wipeable: Object.keys(read('wipeable')) };
+  // The blob's own name is not something the operator keeps.
+  const fields = (t: Tier) => Object.keys(read(t)).filter((k) => k !== BORN);
+  return { accruing: fields('accruing'), wipeable: fields('wipeable') };
 }
