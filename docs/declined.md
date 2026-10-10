@@ -122,6 +122,11 @@ tasks anyone; nothing judges anyone.
 **Instead:** the log, reviewable by the people it concerns, so an argument at least has
 shared facts.
 
+**Note, 2026-10-09** (decided, not built). This holds everywhere outside a unit. A unit rules
+on its own membership and offices by its charter, never on anyone's wider standing, and
+nothing it decides follows a member out. Orders exist only inside units whose charter chose
+them ([`design/units.md`](design/units.md) §10 and §14).
+
 **Not to be confused with** the short list of cards navcom.app's own pages will not display
 (`web/src/lib/hidden.ts`). That exists for a legal notice or unlawful content, and one
 operator's complaint about another is neither. See [`profiles.md`](product/profiles.md) §3.
@@ -185,6 +190,11 @@ the shape is wrong rather than the details:
   ranking whatever it is called
 - **The mechanics.** *"No streaks, badges, prompts or nudges. Ever."* Those work on children
   better than on adults, which is an argument against, not for
+
+*Note, 2026-10-09* (decided, not built): units may give positions titles and grade names, each
+unit's own, shown inside that unit only, never summed and never on a card
+([`design/units.md`](design/units.md) §13). Inside one unit they still order people, which
+units.md counts as a cost. This entry's decline stands.
 
 **Cost, stated plainly:** a thirteen-year-old who wants to be useful and is being told to
 wait gets nothing from us but a list of other people's courses. That is thin, and the
@@ -600,6 +610,194 @@ or payment ([`design/relay-lists.md`](design/relay-lists.md) §10).
 
 **Cost:** no relay whose policy somebody here can answer for carries operator traffic. All of it
 rests on strangers' relays that NavCom can hold to nothing.
+
+## Units and the Earth Alliance
+
+Shapes [`design/units.md`](design/units.md) considered and did not take, decided with that design on
+2026-10-09. None of the design is built.
+
+### Attendance minimums
+
+Search-and-rescue teams and milsim units drop members, or hold back promotion, when they miss too
+many trainings or call-outs. A unit that depends on people turning up has a real interest in knowing
+who does.
+
+**Declined, decided 2026-10-09.** A charter has no field that could hold an attendance minimum, and
+nothing records attendance, last-seen or being at post. A minimum needs a record of who was absent,
+and absence is silence, which invariant 3 never reads. A unit that judges someone unreliable does so
+as people, by its own door rule, with the reason in their own words.
+
+**Cost:** a unit has no record to point to when it removes someone who stopped coming, and leaders
+will keep informal tallies the software cannot stop.
+
+### Accountability formations, and checking in for an assignment
+
+Military units take a roll, as an accountability formation or a personnel status report up the
+chain, and many volunteer bodies assign work to whoever checks in. Veterans expect both, and a leader
+who knows who is available can plan.
+
+**Declined, decided 2026-10-09.** That is where feeling at home turns into surveillance. A roll is an
+absence ledger kept by the software, and a report of who is present, sent up a chain, is a list of
+where people are. Reports that move up carry no callsign, presence, position or count of members, and
+nothing records who answered.
+
+**Cost:** a leader learns who is available only by asking people. Units that want a roll call will run
+one in Signal.
+
+### Personnel files
+
+A first sergeant traditionally keeps records on the unit's people, and a staff's S1 manages them. A
+new leader inherits nothing without them.
+
+**Declined, decided 2026-10-09.** No field, file or position holds records about members, and the
+Military template has no S1. A file on members is a dossier: a seizure gives it up, and its documented
+uses are bad-jacketing and antisocial punishment. *A unit can take back what it gave you, but never
+what you did*, and nothing negative follows a member out.
+
+**Cost:** a unit's memory of its people is whatever its members remember. A new leader learns who is
+who by meeting them.
+
+### Importing real rank
+
+Veterans earned their grades. Carrying them in would help veterans feel at home and give a unit a
+ready order on its first day.
+
+**Declined, decided 2026-10-09.** Only a position carries authority here, and a rank, where a unit uses
+one, is a rung that unit grants for settled work with it. Importing a grade means proving service, and
+every official proof of service runs on a legal name (invariant 6). A portable grade also invites
+sale: one association sold ranks from $95 for sergeant to $335 for lieutenant general. A member may
+instead write a self-stated line that they served, on their own roster row in one unit, which grants
+nothing.
+
+**Cost:** a retired senior NCO starts in a unit with no grade, unless that unit gives them a title of
+its own.
+
+### Checking service with a third party
+
+Stolen valor is real, and a DD-214, a VA card or an ID.me check would settle a claim of service.
+
+**Declined, decided 2026-10-09.** Each runs on a legal name, which nothing in NavCom may hold. The
+served line reads *"self-stated; NavCom cannot check this"*, appears in one unit only, and grants
+nothing, so a false one gains nothing but a lie between people.
+
+**Cost:** false claims of service are possible inside a unit, bounded only by face-to-face trust, and
+someone accused cannot answer without a legal name.
+
+### Rank as a Nostr badge, verified name or list
+
+NIP-58 badges, NIP-05 identifiers and NIP-51 lists are shown by other Nostr clients, so a rank carried
+in one would be recognised beyond NavCom.
+
+**Declined, decided 2026-10-09.** Each of them publishes everyone who holds the rank: a public list of
+who leads what, which is a target list.
+
+**Cost:** no other client shows a NavCom title. Titles exist only inside their own unit.
+
+### NIP-29 relay-enforced groups
+
+NIP-29 is Nostr's standard for groups, with roles and moderation that other clients already support.
+
+**Declined, decided 2026-10-09.** The relay holds the roster and reads every message, and private reads
+need NIP-42 sign-in, which [`design/relay-lists.md`](design/relay-lists.md) §10 declines. Units use
+sealed crew traffic that no relay can read or enforce ([`design/groups.md`](design/groups.md) §7).
+
+**Cost:** no interoperability with NIP-29 clients.
+
+### The senior person present takes command
+
+Army succession is automatic: when the commander is absent, the senior person present commands.
+Nobody has to vote, and everyone knows the rule.
+
+**Declined, decided 2026-10-09.** It needs seniority, which ranks people on one axis, and something that
+decides a person is absent. Command passes in four ways only: the CO hands over, stands down or says
+they are leaving, has their key removed, or is recalled. The XO is named in advance and becomes acting
+CO.
+
+**Cost:** if the CO and the XO are both gone, nobody commands the unit until its selection rule runs,
+and on a pull-only wire that can take days.
+
+### Succession when a leader goes quiet
+
+A leader who disappears without a word can stall a unit. A timer that hands command to the XO after
+some days of silence would fix it.
+
+**Declined, decided 2026-10-09.** Nothing happens on silence: no succession, lapse, inactive status or
+automatic removal (invariant 3). The CO and the XO already share the authority, so a CO who is away
+stalls nothing and nobody has to declare them absent.
+
+**Cost:** a leader who walks away without saying so holds the office until a recall, the end of the
+term, or the members re-forming. Recall needs 5 to 10 signatures in units of 9 to 15, and members who
+do not read count as no.
+
+### A sealed key for a whole formation, or the whole Alliance
+
+One key held by every member of a battalion, or of the Alliance, would let word reach everyone at
+once, instead of over hours of re-issue down the chain.
+
+**Declined, decided 2026-10-09.** It cannot stay secret. If 2% of phones are taken in a year, the
+chance that some holder's phone is taken in a given week is 21.8% at 640 holders, 62.5% at 2,560 and
+98% at 10,240. Word is carried down by people, one net at a time. A sealed all-hands key below a
+platoon stays a later option, if word proves too slow there.
+
+**Cost:** word is slow. A battalion's word crosses three re-issues to reach its squads, about 6 hours
+on average if each leader opens the app every 4 hours. Units that need real-time command will use
+Signal.
+
+### A single root over the Alliance
+
+An Alliance with nobody at the top cannot speak with one voice between revisions, settle rival texts,
+or remove a bad command. A standing council, or a steward key that signs for the whole, would.
+
+**Declined, decided 2026-10-09.** The top is the Articles, which the owner writes, plus a proposal
+rule: any 3 Alliance commands may jointly publish a proposed version, each co-signing at most one
+open proposal at a time, and units adopt it only by signing it. There is no standing council and
+no steward key, and nobody leads the whole. A root is a lever somebody could be pressed to use, and
+a command over the whole is the shape of the narrative [`lineage.md`](lineage.md) disowns.
+
+**Cost:** no Alliance-wide voice between proposals. The first commands to exist shape the first
+revisions, anyone can publish a rival text, units can end up signed to different texts, and the
+developer still decides which text the release preselects.
+
+### Agents in unit seats
+
+An agent could hold a staff seat for situation, missions or supply, summarise reports, carry word
+down, and never sleep.
+
+**Declined, decided 2026-10-09.** No agent holds a unit key, position, seat, endorsement, petition or
+signature, and no agent carries word or re-forms a unit (invariant 4). One useful agent in many units
+would be one address linking them at the relay, and one store holding all their rosters. An always-on
+agent would also read every line before any person did.
+
+**Cost:** no agent summaries, translations or digests inside units, and an agent smuggled in by a
+person appears unmarked. Reversing this needs an agent design that cannot become a hub across units
+and never reads before a person does. None exists.
+
+### Secret ballots
+
+Every endorsement and recall signature is visible to the unit, including to an officer facing recall.
+Members who fear retaliation may not sign.
+
+**Declined, decided 2026-10-09.** A secret ballot needs new cryptography on a boundary that protects
+people, and the repository has none audited. The menu offers only rules every honest phone can enforce
+from signatures alone ([`design/units.md`](design/units.md) §7).
+
+**Cost:** an officer facing recall sees who signed. Two guards remain: a removal that crosses an open
+vote is void if the officer signed it or it removes an elector, and a recalled officer may not
+co-sign the removal of anyone who signed the petition for the rest of the term.
+
+### Counting ballots cast
+
+Counting signatures against the whole roster makes silence count as no, so quiet members protect
+whoever holds office. A majority of ballots cast is the familiar rule, and it passes far more often.
+
+**Declined, decided 2026-10-09.** Counting ballots cast needs somebody to close the count, and whoever
+posts the closing count chooses which no-votes it carries. Modelled in a squad of nine, 40,000 trials
+a case, those rules passed falsely in 0.9% to 7.5% of trials when electors were split across relays;
+counts against the whole roster gave no false passes. Voting windows, deadlines and tellers fail the
+same way, because each needs a trusted closer or clock.
+
+**Cost:** a unit whose members do not read cannot elect or recall anyone. Its remedies are leaving,
+removing the keys of people known to have left, and re-forming, which needs any two members.
 
 ## What is **not** declined, so nobody mistakes this page for a licence
 

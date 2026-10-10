@@ -27,6 +27,12 @@ settled. Profile, groups and chat are not built. Companions: [`panel.md`](panel.
 | **Search** | People and groups, by name |
 | **Detail of anything** | A mission, a group, a profile, a record — pushed onto the stack |
 
+**Profile, Groups, Chat and Search are designed, 2026-10-09, and not built:** in
+[`groups.md`](groups.md), with what a group may become above a crew in [`units.md`](units.md). The
+owner decided crews with chat and a public crew card held by one member; groups.md marks which
+parts are decided and which are proposed. Search keeps this page's rule: it reads only what the
+phone holds, and matches names.
+
 And what it is **not**: a bulletin board. The map carries missions and reports because that is what a
 map is for, and fine-grained intelligence belongs in Starcom rather than here. Com is the
 *communication* half — who, and with whom — not a second feed of the same events.

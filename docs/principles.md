@@ -24,6 +24,18 @@ Discovery is contextual only: operators active near you tonight, or present at a
 you're in. Answers to questions become directory or playbook entries — knowledge, not
 discussion.
 
+**Notes, 2026-10-09** (decided, not built; [`design/groups.md`](./design/groups.md)):
+
+- **Narrowing what the phone already holds is not browsing people.** Search sends nothing,
+  and matches names only (groups.md §4).
+- **Narrowed: a crew's log is an owner-decided exception to *no scrolling timeline*.** It is one
+  flat list fetched when opened, closed at the end of stored events, with no replies, no threads
+  and no subscription (groups.md §9). A crew also keeps one Agreed line.
+- **A crew card is an owner-decided exception to *no discoverable directory of operators*.** One
+  member may hold a public card for their crew. It carries no roster, count or meeting place,
+  and a knock reaches only that member (groups.md §10). Nothing about a unit's chain or
+  offices is public.
+
 ## 3. Every social primitive answers an operational question
 
 Presence isn't "the network is alive" — it's **who can I actually reach tonight**.
@@ -42,6 +54,13 @@ presented ambiguously as a person.
 assigns. There is no dispatch verb — not for a human holding the board, and least of all for
 an agent. A network of volunteers with no hierarchy cannot give orders, and a system that
 appeared to would be sending people toward danger on its own initiative.
+
+**Narrowed 2026-10-09** (decided, not built). Units may be hierarchical. Inside a unit whose
+charter the member read and accepted before joining, orders exist as that charter allows. Every
+order expires within 7 days, never travels by notification or `Distress`, and needs both the CO
+and the XO to bring more than one person to a place ([`design/units.md`](./design/units.md)
+§10). The default level is word and offers, which leaves this rule as written. The watch still
+never assigns, and no agent orders anyone.
 
 ## 5. Never the people served
 
@@ -126,6 +145,11 @@ scoped, revocable and auditable. See [`product/opt-ins.md`](./product/opt-ins.md
 No clearance levels, no hierarchy, no operator who sees more by status. Whoever holds the
 board has it; when they stand down they don't outrank anyone.
 
+**Narrowed 2026-10-09** (decided, not built). A chain of command may exist inside units that
+choose one, and a unit's leader reads one more net: the one above, where their seat is
+([`design/units.md`](./design/units.md) §11). The watch stays a post. Unit office never makes
+anyone a watch holder or gives any view of the board.
+
 ## 12. Safety independence, not capability independence
 
 Dark is survivable: cached directory, local logging, duress fallback. (Field playbooks are
@@ -148,6 +172,12 @@ in the system may notify anyone about anything.
 
 Growth follows existing trust paths. No referral rewards, invite quotas, contact upload,
 or standing that depends on recruitment.
+
+**Notes, 2026-10-09** (decided, not built). A crew card is an owner-decided exception: growth
+outside existing trust paths, reaching one member by knock
+([`design/groups.md`](./design/groups.md) §10). In units, a position's echelon grows with the
+units under it, but nothing accrues to a person for forming units or admitting members: no
+Honor, rung, writ or Karma ([`design/units.md`](./design/units.md) §16).
 
 ## 14. The device floor
 

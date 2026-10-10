@@ -70,7 +70,7 @@ cannot.
 | **C15** | Presets set switches, never override them. No preset is visible to anyone else |
 | **C34** | An operator may decline to sign on under a specific watch, silently |
 | **C38** | An operator may waive protections for themselves; never for a third party |
-| **C39** | Every opt-in is off by default, honestly priced, encrypted, scoped, revocable, auditable |
+| **C39** | Every opt-in is off by default, honestly priced, encrypted, scoped, revocable, auditable. *A crew card, decided 2026-10-09, cannot be withdrawn by its crew; the tension is recorded in [`groups.md`](../design/groups.md) §10* |
 
 ## Safety mechanics
 
@@ -132,6 +132,11 @@ operators; network needs density that doesn't exist early.
 
 **C11 — Growth follows existing trust paths.** No referral rewards, invite quotas, contact
 upload or proximity pressure.
+*Note, 2026-10-09* (decided, not built): a crew card is an owner-decided exception, growth
+outside existing trust paths that reaches one member by knock
+([`../design/groups.md`](../design/groups.md) §10). In units, a position grows with the units
+under it, but nothing accrues to a person for recruiting
+([`../design/units.md`](../design/units.md) §16).
 
 **C6 — Give the Public Face something designed to leave the app.** Absent one, he
 screenshots something with a teammate's callsign in it.
@@ -146,6 +151,10 @@ screenshots something with a teammate's callsign in it.
 **Deferred** — declined until 2026-09-03, then reversed when a real crew asked; see
 [`declined.md`](../declined.md) and [`build-order.md`](../build-order.md). This is the shape it
 has to take.
+*Note, 2026-10-09* (decided, not built): standing higher units and the Earth Alliance are
+federation *with* membership, standing rather than op-scoped, and they wait on the relay
+commons rather than on Raw Intel. Joint operations between units that do not merge keep this
+shape and its place in the build order ([`../design/units.md`](../design/units.md) §11).
 
 ---
 

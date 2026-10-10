@@ -113,6 +113,11 @@ which binds agents hardest, survives scale, and carries a named failure preceden
 `positioning.md`. A rule against a global ops board stops applying once a cell wants a local
 one. *No dispatch verb* does not.
 
+*Note, 2026-10-09* (decided, not built): that rule is now invariant 8, *nothing tasks anyone
+without their asking*, and units narrow it further. A unit whose charter chose orders, shown
+before anyone joins, has a dispatch verb inside it
+([`../design/units.md`](../design/units.md) §10). The watch and agents still have none.
+
 ---
 
 ## Where they converge

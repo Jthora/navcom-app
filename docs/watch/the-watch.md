@@ -141,6 +141,10 @@ place rather than introducing a rank.
 There is no hierarchy here. Watch is a **post**, not a rank. Whoever holds it has the
 board; when they stand down they don't outrank anyone.
 
+*Note, 2026-10-09* (decided, not built): units may have a chain of command inside them
+([`../design/units.md`](../design/units.md)), and it stops at the watch. Unit office never makes
+anyone a watch holder or gives any view of the board.
+
 ## When nobody has watch
 
 Dark is survivable and the Field Terminal must stay genuinely useful in it:

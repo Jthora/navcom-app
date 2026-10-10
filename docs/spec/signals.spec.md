@@ -604,5 +604,14 @@ unanswered signal, and it degrades the visible watch state.
 
 ## What is NOT here
 
-No free-text chat kind. No threading, no replies to responses, no message history [C2,
-principle 2]. A signal is a transaction and it closes.
+Among the signal kinds `20910`, `20911` and `20912`: no free-text chat kind. No threading, no
+replies to responses, no message history [C2, principle 2]. A signal is a transaction and it
+closes.
+
+**Scoped 2026-10-09, when the owner decided that crews have chat.** The paragraph above binds
+the signal kinds only. Crew traffic is not signals and MUST NOT use `20910` to `20912`. A crews
+spec MAY permit one Agreed line per crew, a flat, pull-only log of lines with no replies and no
+threads, and the bounded governance statements [`../design/units.md`](../design/units.md)
+defines (each length-capped, with no replies or threads). No other free text. That design is
+[`../design/groups.md`](../design/groups.md) §7 and §9, and units.md. It is not built, and no
+crew kind ships before that spec is written.

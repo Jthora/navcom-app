@@ -66,6 +66,10 @@ anything about tonight.
   scrubs, so it is not a secure erase against somebody patient and equipped
   ([`../declined.md`](../declined.md), *Protection from someone holding your unlocked phone*)
 - Exportable deliberately, by the operator, before it's needed
+- **Crews and units live here, and never in a backup** (decided 2026-10-09, not built): rosters,
+  charters, epoch keys, the member's own crew key, governance states, receipts and the sealed log
+  cache ([`../design/groups.md`](../design/groups.md) §8, [`../design/units.md`](../design/units.md)
+  §15). A wipe ends every membership, and the way back is admission in person
 
 Design test: *if this phone is taken, what does it give up?* Ideally nothing beyond the
 existence of the app.
@@ -128,6 +132,7 @@ it that way?*
 | Duress alert | Live (delivery), Wipeable (local record) |
 | Incident log | Wipeable |
 | Cached op detail, drafts | Wipeable |
+| Crews and units: rosters, charters, keys, the log cache *(decided, not built)* | Wipeable, never in a backup |
 | Resource directory | Collective |
 | Field playbooks *(designed, not yet written)* | Collective |
 

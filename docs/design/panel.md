@@ -56,6 +56,10 @@ Bridge watch discipline is terse, procedural, acknowledged, and **requires no ra
 competently**. That is the only register this project's ethics permit, and it happens to be
 the one that produces the feel we want.
 
+**Note, 2026-10-09** (decided, not built). Unit screens may use an army register. The Military
+template in [`units.md`](units.md) §5 brings the echelon ladder, CO and XO, and titles that
+belong to each unit and show inside it only. The watch panel keeps the bridge register.
+
 A bridge at night is quiet, dim and unremarkable, right up until it is not. **Discipline is
 what makes the quiet legible.**
 
@@ -450,7 +454,8 @@ anything, or it has become a notification.
 ## Refused
 
 Everything already in [`../CLAUDE.md`](../CLAUDE.md)'s anti-patterns, plus, specific to this
-work: boot sequences, radar sweeps, holographic chrome, rank and clearance, counts and totals,
+work: boot sequences, radar sweeps, holographic chrome, rank and clearance (a unit's own titles,
+inside that unit, are the 2026-10-09 exception noted under *The register*), counts and totals,
 notification badges, decorative telemetry, easing flourishes on navigation, skeleton shimmer,
 and **motion on directory values** — a field that animates draws the eye to whichever record
 changed last, when the eye should go to whichever record is freshest. That is decoration

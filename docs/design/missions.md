@@ -52,6 +52,23 @@ this"*, handed over rather than indexed, and a claim binds it to a persona. **Me
 credential, not a row in somebody's table** — which means an organisation can exist without a relay's
 permission, and nobody can enumerate its members from outside.
 
+**Notes, 2026-10-09** (decided, not built; [`units.md`](units.md) and [`groups.md`](groups.md)):
+
+- **Narrowed, *a tree is the wrong shape*: units form trees, and people still overlap.** Each unit
+  names at most one higher unit, with the Earth Alliance as the default top and Independent beside
+  it. A key still belongs to any number of units, and the Alliance stays a text that units sign, not
+  a root that owns them (units.md §4).
+- **The Crew row.** A crew is a leaf unit, either *Led*, with the founding pair as CO and XO for a
+  first term and elected after, or *Any two* (units.md §6 to §8).
+- **The other rows.** An organisation is any unit that posts missions in its own name: a body under
+  [`economy.md`](economy.md) §6, which waits on 11.5. A faction is an Independent formation under its
+  own charter (units.md §4).
+- **The Alliance row holds.** The Earth Alliance is the Articles plus a proposal rule, with no
+  standing council and no steward key (units.md §12).
+- **Enumeration holds, with one exception.** A higher unit holds no roster below its own seats. Each
+  crew's two relay operators can list its members by IP address, and before the commons exists they
+  can tie them to card and watch keys by connection (groups.md §11).
+
 ## 3. Missions
 
 Three kinds of mission, and the difference is who may approve them:
@@ -211,6 +228,12 @@ each of them.
 weighting a vote inside one body imports standing earned somewhere else, and rank conferring privilege
 is what titles already do.
 
+**Note, 2026-10-09** (decided, not built). Inside units, offices are chosen one member, one vote,
+counted against a frozen roster, never weighted by Honor ([`units.md`](units.md) §7). Crews and units
+hold no Honor, rungs or writs unless 11.5 makes them bodies (units.md §4, [`groups.md`](groups.md)
+§10). Where a unit that is a body uses ranks, they are this section's rungs: earned by settled
+missions with that unit, never by time served (units.md §13).
+
 Two consequences, both accepted. **A new operator is at neutral, not at a deficit** — the UI reads *no
 history with you* rather than a score of zero. **Karma is not a safety mechanism and must never be
 rendered as one**; what protects somebody from a person who behaved badly is the account of what
@@ -330,9 +353,20 @@ loses if it goes — the three groups being **the people served**, **the operato
    is an offer. Taking one is the operator's act, abandoning it costs nothing, and no mission may be
    assigned to a named person who did not claim it. *What the old rule protected: an operator being
    dispatched by a screen. What the new one keeps: the claim is always theirs.*
+
+   **Narrowed 2026-10-09** (decided, not built): inside a unit whose charter chose orders, joining with
+   that charter shown first is the asking. Under the level that lets orders name a member, declining
+   may lead to removal from that unit after notice and a one-line reply, and never to any loss of
+   Karma or other standing ([`units.md`](units.md) §10).
 9. **Was: the watch state is visible before sign-on.** **Unchanged in force, extended in scope:** a
    mission shows whether anybody is actually behind it before you commit to it. The same honesty, one
    object over.
+
+   **Note, 2026-10-09** (decided, not built): in units a chain can change above a member through
+   other people's acts. That is guarded by the charter shown before joining, a change-of-chain notice
+   before any move under a higher unit applies, free exit, and conservation of authority
+   ([`units.md`](units.md) §11, §16). Leaving a higher unit or the Alliance lowers exposure and takes
+   effect at once.
 
 ### Withdrawn
 

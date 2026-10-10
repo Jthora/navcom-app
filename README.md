@@ -71,7 +71,10 @@ an operational question or it doesn't exist.
 
 **Watch is a post, not a rank.** No clearance levels, no hierarchy, no operator who sees
 more by status. **And nothing tasks anyone** — the watch tells you what is happening, it
-never assigns. There is no dispatch verb.
+never assigns. There is no dispatch verb. *Narrowed 2026-10-09 (decided, not built):* units may
+choose a chain of command inside themselves, and orders exist only inside a unit whose charter
+chose them and which the member joined with that charter shown first. The watch still never
+assigns, and unit office makes nobody a watch holder ([`docs/design/units.md`](docs/design/units.md)).
 
 **Pseudonymity is architectural.** No legal names. Keys on device. No persisted position
 history, no social graph, no legal identities — and `principles.md` states plainly what

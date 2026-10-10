@@ -57,6 +57,17 @@ For each kind of priority illegal content Ofcom's register names: the level, and
 **Overall: low, with fraud by impersonation the highest.** The key print is the main mitigation
 and is built.
 
+**To be reassessed before crews ship, noted 2026-10-09.** The owner decided crews with chat and a
+public crew card ([`../design/groups.md`](../design/groups.md)), and units that may choose to give
+orders ([`../design/units.md`](../design/units.md)). None of it is built. The Low ratings for
+grooming and for encouraging or assisting suicide assume no ongoing chat and no groups, threads or
+sustained contact between strangers. The harassment rating assumes an invite reaches one person
+once, and the organising row assumes no function suited to organising. Crews make each of those
+premises false. The organising row, the harassment row and the overall rating are reassessed by a
+person before crews ship ([`../design/groups.md`](../design/groups.md) phase 2,
+[`../design/units.md`](../design/units.md) U1). Before the crew log (phase 4) and crew cards
+(phase 5), a person reassesses the grooming and suicide rows, with the overall rating again.
+
 ## Children's access assessment
 
 **Children can access the service.** The Act allows concluding otherwise only where age
@@ -100,6 +111,7 @@ case by 2027-09-13:
 - anything that stores what users write on NavCom's own host, including prerendering cards
 - running a relay
 - any image, file, or message thread between users
+- crews, a crew's log, crew cards or units (designed 2026-10-09, not built)
 - money passing through NavCom, or anything ranked or featured
 - regions or a language aimed at a new country
 - a notice that qualified

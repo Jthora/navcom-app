@@ -84,7 +84,9 @@ resolves nowhere, and a page about link rot that rots is worse than none. Doctri
    and no encampment location has anywhere to go. **Gated on the tag vocabulary**, which needs
    local knowledge and is explicitly not agent work — though the schema, anchor enforcement,
    publication split and expiry can all be built against a placeholder first. Crew federation
-   (C37) is reversed and sits behind it
+   (C37) is reversed and sits behind it; standing higher units and the Earth Alliance
+   (2026-10-09, [`units.md`](docs/design/units.md)) wait on the commons instead, and joint
+   operations keep C37's place
 
 **P8 is closed: the system stack stays, and no webfont ships.** It was never a budget
 question — 8–25 KB fits inside the terminal's headroom. It is that **a webfont which has not
@@ -168,9 +170,14 @@ withdrawn with it — see the table below.
 
 8. **Nothing tasks anyone *without their asking*.** A mission is an offer. Taking one is the
    operator's own act, abandoning it costs nothing, and **no mission may be assigned to a named
-   person who did not claim it**. There is still no dispatch verb
+   person who did not claim it**. There is still no dispatch verb.
+   **Narrowed 2026-10-09:** inside a unit whose charter the member accepted, orders exist as that
+   charter allows; see [`docs/design/units.md`](docs/design/units.md) §10. Decided, not built.
+   The watch still never assigns
 9. **A state is visible before somebody commits to it.** The watch state before sign-on, as
-   before — and a mission shows whether anybody is actually behind it before you take it
+   before — and a mission shows whether anybody is actually behind it before you take it.
+   **Extended 2026-10-09:** in units a chain can change above a member through other people's
+   acts; guarded by the charter shown first, a change-of-chain notice and free exit (units.md §16)
 
 ## Anti-patterns — you will want to do these
 
@@ -185,7 +192,7 @@ Every one is a conventional solution that is wrong here.
 | Put a search box on the field terminal that **asks somebody** | `Query` goes to the watch. Someone with both hands free does the lookup. That *is* the product. **Narrowing a list already on the phone is a different act** and is allowed — it asks nobody, works offline, and the root console has had one since it shipped. The line is whether a person is on the other end of it, not whether there is a text input |
 | ~~Make onboarding engaging~~ | **Withdrawn 2026-10-05**, and replaced by a sharper test: a reward that affirms competence or values crowds motivation *in*; one that feels controlling crowds it *out*. Among volunteers, merely mentioning an extrinsic reward measurably reduced it — so recognition by name, yes; payment per task advertised up front, no |
 | Escalate on a missed check-in | Overdue nudges. Alarm fatigue destroys the one mechanism where failure means someone is hurt |
-| Show one number that sums somebody up | **Several kinds of standing, never a total, and nothing purchasable.** Honor is a relationship with one body, not a level; Karma is conduct; Hours, Supply and Intel are records. One aggregate score is what gets farmed, and what makes two people comparable on an axis they did not choose |
+| Show one number that sums somebody up | **Several kinds of standing, never a total, and nothing purchasable.** Honor is a relationship with one body, not a level; Karma is conduct; Hours, Supply and Intel are records. One aggregate score is what gets farmed, and what makes two people comparable on an axis they did not choose. **Narrowed 2026-10-09:** a unit's titles and rungs are its own, shown inside it only and never summed ([`units.md`](docs/design/units.md) §13) |
 | ~~Build a nice map view~~ | **Withdrawn 2026-10-05.** The landing page is a map and a comms panel, and the prepaid-Android-8 floor was formally raised with it. The map's resolution must still match the data's: coarse placement on a street basemap invents precision nobody has |
 | **Write a new rule when you find a gap** | **The rules are already one idea restated many times, and that is why they read as a compliance regime.** Check whether [`attestation.md`](docs/attestation.md) already covers it. Prefer deleting a rule to adding one |
 | **Turn every gap you find into work** | A gap has three fates, not two: fixed, deferred, or **declined**. Nobody here has an institution behind them, and an obligation list that only grows is how a volunteer network drowns. Check [`declined.md`](docs/declined.md) before the build order |

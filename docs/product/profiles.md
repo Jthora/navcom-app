@@ -261,7 +261,10 @@ Samaritan protection. None of that moves the recommendation. The demand test is 
 - **The activity vocabulary.** §5. Needs a person, same as the Raw Intel tag vocabulary.
 - **Whether a card can be a group.** `crew` is currently one term among the activities, which
   is a placeholder for a structural distinction that probably deserves its own field. Deciding
-  that is taxonomy work, so it waits for the same person.
+  that is taxonomy work, so it waits for the same person. *2026-10-09:* the owner allowed a
+  crew card, a `10911` card under a second contact key held by one member
+  ([`../design/groups.md`](../design/groups.md) §10, not built). Whether `crew` stays its term
+  still waits for that person.
 - **A global roster.** Cards are only ever subscribed one region at a time
   (`{kinds: [10911], '#d': [region]}`). There is no "everyone on NavCom" view and no way to
   ask for one, which is a deliberate absence to re-decide rather than a gap to fill.

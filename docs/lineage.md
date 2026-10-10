@@ -103,6 +103,13 @@ rescue organisation exists when none does.
 We state that plainly because the project takes its name seriously and the alternative is
 to look credulous.
 
+**Note, 2026-10-09** (decided, not built). The narrative's Earth Alliance still does not exist.
+A real, small one is now designed, following *The directive* below: the **Articles of the Earth
+Alliance**, a short published text the owner writes, which units sign by carrying its hash. It
+has no hidden members, no secret command and no standing council, and claims no force beyond
+what its units can show. Nobody leads the whole, and Independent units sit beside it at equal
+weight ([`design/units.md`](design/units.md) §12). *What we do not take* stays whole.
+
 ### What the psyop reveals
 
 Strip the claims and look at what the narrative *promises*, because that part is
@@ -154,6 +161,10 @@ All three sources are used the same way. **Take the mechanism. Leave the metaphy
 Fiction gave us a duty roster and we left the chain of command. Steele gave us an
 open-source intelligence architecture and we left the man's last five years. The psyop
 gave us a requirements document and we left every claim in it.
+
+*Note, 2026-10-09* (decided, not built): units may now choose a chain of command inside
+themselves. It is shown before anyone joins and never reaches the watch, and
+[`design/units.md`](design/units.md) gives its reasons and costs rather than citing fiction.
 
 The failure mode to watch for is a source's *aesthetics* arriving without anyone
 deciding to import them — cosmology in the product surface, a secrecy posture in the

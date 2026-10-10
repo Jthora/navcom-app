@@ -83,7 +83,7 @@ watch.
 | A social app | No feed, no browsing people, no comments, anywhere |
 | A tactical map | The device floor is a prepaid Android 8 with 400MB free, and a live position map drew the most refusals of any feature tested |
 | A humanitarian directory | The directory is what operators *do*. The watch is the product |
-| **A dispatch system** | **Nothing here can task anyone.** The watch tells you what is happening; it never assigns. There is no dispatch verb, and there will not be one |
+| **A dispatch system** | **Nothing here can task anyone.** The watch tells you what is happening; it never assigns. There is no dispatch verb, and there will not be one (narrowed 2026-10-09 inside units whose charter chose orders; see the note below) |
 | A chat app | Discord and Signal already work. This builds what chat structurally can't: defined responders and response windows |
 
 **That fourth row is load-bearing and was got wrong once.** An earlier draft of this page
@@ -91,6 +91,14 @@ called NavCom "non-institutional dispatch," which is a good description of the *
 dangerous description of the *authority*. Dispatch assigns. A network of volunteers with no
 hierarchy cannot assign, and a system that appears to would be sending people toward danger
 on its own initiative.
+
+**Narrowed 2026-10-09** (decided, not built). Units may be hierarchical. Inside a unit whose
+charter chose orders, and which the member joined with that charter shown first, orders exist
+within fixed limits ([`design/units.md`](design/units.md) §10). The default is word and offers.
+The watch still never assigns, no agent orders anyone, and nothing outside a member's own
+accepted chain can task them. The chat row narrows too: a crew may keep one Agreed line and a
+flat, pull-only log, read when somebody looks; anything time-critical stays in `Distress` or
+Signal ([`design/groups.md`](design/groups.md) §9).
 
 ## What it never does
 

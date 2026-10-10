@@ -73,6 +73,10 @@ in a respected format would misrepresent it as something the ecosystem could rel
 with defined responders and response windows, a held board, duress with a guaranteed
 human terminus, and knowledge that outlives the scroll.
 
+*Note, 2026-10-09* (decided, not built): a crew may keep one Agreed line and a flat, pull-only
+log, read when somebody looks; anything time-critical stays in `Distress` or Signal
+([`../design/groups.md`](../design/groups.md) §9).
+
 ---
 
 ## Watch systems

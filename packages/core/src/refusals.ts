@@ -64,21 +64,21 @@ export const REFUSALS: readonly Refusal[] = [
   },
   {
     id: 'no-credential-gate',
-    refuses: 'A credential, score, standing or rank used to gate access to anything',
+    refuses: 'A credential, score, standing, title or rank used to gate access to anything. The one narrowing: an office held in a unit gates that unit\'s own acts, and nothing outside the unit that granted it',
     because:
-      'UNCLASSIFIED only — no tiers of operator who see more by status. A claim is evidence a human weighs, never an automated permission. Ratified network-wide after the node that proposed it withdrew it: claims describe, they never gate.'
+      'UNCLASSIFIED only — no tiers of operator who see more by status. A claim is evidence a human weighs, never an automated permission. Ratified network-wide after the node that proposed it withdrew it: claims describe, they never gate. Units narrow this, decided 2026-10-09 and not built (/docs/design/units). A CO and an XO who can do nothing their members cannot are not offices, so an office may gate its own unit\'s acts (admitting, removing, carrying the unit\'s word, and the other acts /docs/design/units §6 lists) and nothing outside it. An office never gates anything outside the unit that granted it: the directory, the map, `Query`, the watch, `Distress`, open missions, other units and public data read the same for everyone. Titles, grade names and standing gate nothing even inside a unit, and never change its room, which is fixed at founding. Units bend "no tiers" in one place: a leader who sits in the higher unit above reads that unit\'s net as one of its members, once teaming up ships after the relay commons. The cost: inside a unit, an office holder can do what other members cannot.'
   },
   {
     id: 'no-tasking',
-    refuses: 'Any message that assigns, dispatches, tasks or directs an operator',
+    refuses: 'Any message that assigns, dispatches, tasks or directs an operator from outside their own accepted chain — and any such message from the watch, an agent, a node or an integrator, in every case',
     because:
-      'There is no dispatch verb. The watch tells you what is happening; it never assigns. This is why NavCom can emit only two of the network\'s six workflow phases — the other four are tasking verbs.'
+      'There is no dispatch verb. The watch tells you what is happening; it never assigns. This is why NavCom can emit only two of the network\'s six workflow phases — the other four are tasking verbs. The one narrowing is inside a unit, decided 2026-10-09 and not built (/docs/design/units). Inside a unit whose charter the member accepted before joining, orders exist only as that charter allows: the charter is shown before anyone joins, joining is the member\'s own asking, and word and offers is the default. An order expires within 7 days, never arrives by notification or the `Distress` kinds, never reaches a non-member, and ends the moment its member leaves. Anything that would bring more than one person to a place needs both the CO\'s and the XO\'s signatures. No agent holds a unit key or an office, so no agent orders anyone. The cost: under the strictest charter, declining an order may cost membership of that one unit, and never Karma, Hours, Supply, Intel or Honor. Orders also wait on a lawyer\'s review. Until they ship, this refuses every such message.'
   },
   {
     id: 'no-operator-traffic-on-a-private-relay',
-    refuses: 'Carrying presence, distress, signals, corrections, places, cards or invites on a private or allowlisted relay',
+    refuses: 'Carrying presence, distress, signals, corrections, places, cards, invites, or crew and unit events on a private or allowlisted relay',
     because:
-      'The protection in NavCom\'s relay model is the anonymity set, not the sealing — which holds anywhere. A squad among thousands of strangers reveals nothing; the same traffic in a small allowlisted room tells its operator exactly who is active tonight, which is a list of where operators are in time if not in space. Only the artifact announcement (kind 30078) may cross such a relay: it names nobody and says nothing that is not already public on the site.'
+      'The protection in NavCom\'s relay model is the anonymity set, not the sealing — which holds anywhere. A squad among thousands of strangers reveals nothing; the same traffic in a small allowlisted room tells its operator exactly who is active tonight, which is a list of where operators are in time if not in space. Only the artifact announcement (kind 30078) may cross such a relay: it names nobody and says nothing that is not already public on the site. Crew and unit events are covered, a higher unit\'s net included: decided 2026-10-09 and not built (/docs/design/groups, /docs/design/units). Sealing hides what a crew says, not who reads it, and on a small relay who reads it is the roster.'
   },
   {
     id: 'no-cloud-inference',

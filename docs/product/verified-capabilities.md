@@ -15,8 +15,10 @@ hold — *current first aid*, *de-escalation training*, *peer recovery specialis
 check's method and age visible, and with no way for anyone to rank, sort or search by it.
 
 What it is not: access, authority, permission, or a tier. Nothing in NavCom reads a capability
-to decide anything. `no-credential-gate` stands exactly as written — **claims describe, they
-never gate** — and this adds no exception to it.
+to decide anything. `no-credential-gate`'s text was narrowed on 2026-10-09, for units that are
+decided and not built, so an office gates only its own unit's acts
+([`../design/units.md`](../design/units.md) §16). **Claims describe, they never gate**, and
+capabilities still gate nothing. This page adds no exception.
 
 ## 2. Four rungs, of which three exist
 

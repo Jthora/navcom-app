@@ -76,6 +76,11 @@ it further.
 
 No free-text chat channel. No group conversation. No message history to scroll.
 
+*Scoped 2026-10-09* (decided, not built): this is about signals. Crews may keep one Agreed line
+and a flat, pull-only log, with no replies and no threads, outside the signal kinds. Anything
+time-critical still belongs to `Distress`, or to Signal
+([`../design/groups.md`](../design/groups.md) §9).
+
 Teams already have Discord and Signal, and those work well for talking. What they don't
 have is a protocol with defined responders and response windows — which is what makes
 this comms rather than social software.

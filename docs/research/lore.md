@@ -34,7 +34,9 @@ right now, from people who are not employees and owe no attendance. Became `Assi
 
 **Comms discipline (everywhere).** Terse, structured, acknowledged. "Watchtower, this is
 Green Arrow, on station." Became the [signal protocol](../watch/signals.md) — six
-signals, defined responders, defined windows, no chat.
+signals, defined responders, defined windows, no chat. (Signals still carry none. Crews,
+decided 2026-10-09 and not built, may keep one Agreed line and a flat log:
+[`../design/groups.md`](../design/groups.md) §9.)
 
 **Ceremony.** Going on duty and standing down are explicit acts that mean something. This
 is culturally native to a community that puts on a costume, and it's why sign-on isn't a
@@ -48,6 +50,11 @@ operator who sees more by status.
 
 **Command hierarchy.** The fiction is full of chains of command. This network has none —
 whoever holds watch has the board, and when they stand down they don't outrank anyone.
+
+*Narrowed 2026-10-09* (decided, not built): units may choose a chain of command inside
+themselves, in the vocabulary veterans know, and a unit's leader reads one more net, the one
+above. Neither reaches the watch: unit office makes nobody a watch holder. Both entries above
+still hold for the watch. See [`../design/units.md`](../design/units.md).
 
 **Secret identity as a plot device.** Pseudonymity here is a safety property with real
 consequences, not a source of drama. Nothing in the product should treat an operator's
@@ -121,7 +128,9 @@ Two caveats, because neither idea imports cleanly:
 - Small-scale infiltration — one or two patient people — is **not defensible by software**
   at all, and [`identity.md`](../product/identity.md) already says so. The design goal is
   blast radius, not immunity: assume it succeeds, and make sure a compromised participant
-  learns little, reaches few, and has no ladder to climb.
+  learns little, reaches few, and has no ladder to climb. (Units, decided 2026-10-09, add a
+  ladder inside units that choose one. [`../design/units.md`](../design/units.md) §11 bounds
+  what a climber gains: structure, not names, about 18 callsigns per rung in its model.)
 
 Neither name appeared here until an outside brief cited them, though the practice long
 predated the citation. That is worth noticing on its own: this project had the behaviour and

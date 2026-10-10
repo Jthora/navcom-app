@@ -64,6 +64,10 @@ settings buried in menus. No engagement of any kind.
 
 Those live on the console, or nowhere.
 
+*Note, 2026-10-09* (decided, not built): profiles, search and crew chat are designed for Com on
+the landing page, not for the field terminal, which keeps this list
+([`../design/groups.md`](../design/groups.md)).
+
 ## Running dark
 
 With no watch and no signal, the terminal still does real work: cached directory, local

@@ -298,6 +298,14 @@ Each rejected alternative had a dominant exploit, which is why this was not clos
 feature. It puts the hard problem in one legible place, where the credential and verification work
 is the right answer, instead of burying it inside a currency where nobody would look for it.
 
+**Note, 2026-10-09** (decided, not built). Crews and units hold no ceiling, rungs or Honor unless
+11.5 designs them as bodies, so a wipe or a removal strands nobody's writs
+([`groups.md`](groups.md) §10, [`units.md`](units.md) §4). A unit that posts missions in its own name
+is a body under this section. Its offers and orders count against the ceiling its members delegated;
+a higher unit holds only what its units delegated, and a unit that leaves takes its delegation back
+(units.md §10 and §11). How a body's Honor, rungs and ceiling survive one member's wipe is 11.5's to
+settle.
+
 ---
 
 ## 7. Settlement when the poster has vanished
@@ -368,6 +376,12 @@ else is the counterparty's own judgement, bounded by the band so it cannot becom
 **Abandoning a claim must never reduce Karma.** Invariant 8 says abandoning costs nothing, and a
 reputation penalty is a cost. This is the rule most likely to be violated by accident later, because
 a stream of abandoned claims looks exactly like something a conduct score should notice.
+
+**Still stands, 2026-10-09.** No Karma is lost for declining anything in a unit, at any authority
+level ([`units.md`](units.md) §10). Under the one level where declining an order that names a member may
+lead to removal from that unit, the removal touches nothing outside it: no Karma, Hours, Supply,
+Intel or Honor. Separately, the claim cap *raised by rung* above is not conserved by §6, and is
+recorded as an open item for 11.5 and 11.6 ([`groups.md`](groups.md) §10).
 
 ---
 
