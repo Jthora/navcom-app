@@ -31,6 +31,7 @@ import { KIND_RESPONSE, open, type ResponsePayload } from '@navcom/core';
 import { loadConfig } from './config';
 import { loadIdentity } from './identity';
 import { subscribeLive } from './subscribe';
+import { watchTargets } from './watch-targets';
 
 /** When the watch last said we were past our window, or null. Unix seconds. */
 let saidAt = $state<number | null>(null);
@@ -65,8 +66,12 @@ export const overdue = {
     closer?.close();
     // Never out of a screen's onMount [audit: relay paths, F01]: unopened is the same as silent.
     try {
+    // Only where a Distress would go: the question names this operator's key, and a relay the watch
+    // lists but nothing is sent to, such as The Record, keeps every address it sees [retrofit audit 16].
+    const targets = watchTargets();
+    if (targets.length === 0) return;
     closer = subscribeLive(
-      config.relays,
+      targets,
       { kinds: [KIND_RESPONSE], authors: [config.pubkey], '#p': [identity.pubkey] },
       {
         onevent: (event) => {
