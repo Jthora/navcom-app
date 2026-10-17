@@ -46,11 +46,19 @@
  *    held while it has none dated in this phone's present: as future-dated if one is from the
  *    future, otherwise as incomplete. Of several second signatures, the first by key that makes the
  *    act valid is used, so a signature from a key that is not a member never displaces one that is.
+ *    An act held only for want of its second signature still has a place in the chain: what is
+ *    built on it is read against what stands without it, because its author's next act names it
+ *    (F7, below) and must not wait on somebody else's signature.
  * 4. **Root.** Two founding statements by two keys, each naming the other, with the same unit and
  *    code. A founder who signed any other founding statement for the unit refuses it, named.
  * 5. **Ancestry.** Each act is checked against the state its own ancestors produce (the rule table
- *    in `checkWith`).
+ *    in `checkWith`). Whoever holds the power an act uses is its author, and the other key co-signs:
+ *    in a Led unit an admission, invitation, or removal of a key that holds no office is authored by
+ *    the CO or the XO. A removal names one key.
  * 6. **Crossing.** Among acts valid by ancestry, in this fixed order, once each:
+ *    - **R10 one line for endings (F7).** A vacate, removal or leave is void if the key that authored
+ *      it also authored a co-signed act concurrent with it, and that key is named. Applied first, so
+ *      no later rule ever reads such an ending.
  *    - **R0 split.** Two concurrent removals each removing a signer of the other: the unit has
  *      split. `follow` keeps one; without it, neither stands, nor anything built only on either.
  *    - **R1 one vote per opener.** One key's concurrent opens for one office, or concurrent
@@ -64,7 +72,8 @@
  *      that needed a position holder's signature is void if every position holder who signed it
  *      lost that position by a concurrent result, recall or vacate.
  *    - **R5 removal wins.** An act signed by a key that a concurrent removal or leave removes is
- *      void, except a vote (below).
+ *      void, except a vote (below). A leave is one key, so it voids only what its own key authored,
+ *      never an act its key co-signed.
  *    - **R6 crossed admissions.** Concurrent admissions that together pass the room are all void,
  *      as are concurrent admissions of one key under two callsigns, and concurrent readmissions of
  *      one removed leader by members using the open election to let them back in.
@@ -103,6 +112,36 @@
  * What is lost is the letter of the rule: a removal by the person a vote is about now stands, and is
  * shown with its receipt. It cannot change the vote.
  *
+ * ## One key, one line for endings (F7)
+ *
+ * A vacate or a leave carries one signature, and concurrency is the signer's choice. Without F7, a
+ * seized CO phone could vacate or leave naming a state from weeks ago, and R4 or R5 would void every
+ * admission and removal the CO made since: removed members back, admitted members gone. A co-signed
+ * act carries two keys, and one key must never undo two. So:
+ *
+ * - whoever holds the power an act uses authors it, and the other key co-signs, which puts every
+ *   door act on its power holder's own line;
+ * - an ending (vacate, removal, leave) is void if its author authored a co-signed act concurrent
+ *   with it (R10, `ending-crossed`, the author named). An honest phone never does: it names its own
+ *   latest authored act in `prev` ({@link prevFor}), even while that act waits for its second
+ *   signature;
+ * - a leave never voids an act its key only co-signed (R5), since that would be one key undoing two
+ *   again, through the co-signer's seat instead of the author's.
+ *
+ * Its cost, which no rule removes: once a key has ended something, that key plus one ally can author
+ * a stale co-signed act concurrent with the ending and void it, and what was built only on the ending
+ * (an election to fill the post it left) falls with it. That takes two keys where it took one. The
+ * remedy is the existing one: any two members remove that key.
+ *
+ * ## Removed holders still count (F5)
+ *
+ * A key removed while holding an office keeps its seat and its vote until that office is filled by a
+ * result: it is in the electorate of every election and petition opened meanwhile, and it takes a
+ * place in the room. So removing office holders never shrinks the electorate that fills their
+ * offices. An acting CO who left the XO post to act holds both, so the order of removals changes
+ * nothing. A readmission names the key it readmits: the new key takes that key's seat and vote and
+ * never adds a second.
+ *
  * ## Choices a reviewer should check
  *
  * These go beyond units.md and governance §2.4, and the owner and a reviewer should sign them off:
@@ -118,17 +157,27 @@
  * not hold it cannot; and a checkpoint naming a head this phone cannot place never replacing
  * history this phone already holds.
  *
+ * Added with the office builder's phase B0 (F5, F7 and one key per removal act): a leave counted as
+ * an ending under R10, since a stale leave reached back exactly as a stale vacate did; a leave never
+ * voiding what its key only co-signed; only a co-signed act that stands by its own ancestry, with a
+ * member's second signature, voiding an ending, so a throwaway key can never do it; R10 applied
+ * before R0; a removed holder keeping a place in the room as well as a vote, which keeps every
+ * electorate within the room; an acting CO who left the XO post counted as holding both; and an act
+ * waiting for its second signature giving its children a place to stand. R4 still asks whether every
+ * position holder who signed lost office (F2's role-by-role reading is for a later phase).
+ *
  * ## What it cannot settle
  *
  * Order comes only from parent links, so any act may name an old state, and every rule that lets one
  * act void a concurrent one can be aimed backwards by whoever writes the stale act. The rules above
  * remove the cases a vote or a minority could exploit, but two remain and need a decision, not a
  * patch: **removal wins (R5) reaches back** (two members who may remove a key can name a state from
- * weeks ago and void what that key signed since, and what stood only on it), and **an electorate is
- * frozen at whatever state the opener names**, so a vote opened on an early, small roster counts
- * against that roster. A co-signed checkpoint that this phone's history now contradicts is reported
- * as a disagreement, so the first is at least never silent. Both need an ordering anchor the design
- * does not yet have.
+ * weeks ago and void what that key signed since, and what stood only on it; F7 narrows this to
+ * removers who have authored nothing co-signed since that state), and **an electorate is frozen at
+ * whatever state the opener names**, so a vote opened on an early, small roster counts against that
+ * roster. A co-signed checkpoint that this phone's history now contradicts is reported as a
+ * disagreement, so the first is at least never silent. Both need an ordering anchor the design does
+ * not yet have. F7's own cost is the same kind of reach-back, and is named above.
  *
  * The evaluator costs roughly the cube of the number of acts since the last checkpoint. That is
  * nothing at tens of acts and unmeasured on the device floor.
@@ -143,8 +192,8 @@ import {
 import { ancestorsOf, isConcurrent, linearize, tipsOf } from './chain.js';
 import {
   MAX_PARENTS, actClass, canonicalSnapshot, checkCompact, isAct, needsCosign, readStatement, rootId,
-  sha256Json, signStatement, snapshotWire, type Act, type Compact, type Office, type RecalledSnap, type RunSnap,
-  type Snapshot, type Statement
+  sha256Json, signStatement, snapshotWire, type Act, type Compact, type Office, type Recall, type RecalledSnap,
+  type Result, type RunSnap, type Snapshot, type Statement
 } from './statements.js';
 
 /** How far into this phone's future a statement may be dated before it is held back. The watch's. */
@@ -220,6 +269,7 @@ export type VoidReason =
   // The chain
   | 'built-on-void' | 'split' | 'split-not-followed' | 'vote-protection' | 'removal-wins'
   | 'crossed-results' | 'crossed-admissions' | 'crossed-opens' | 'office-conflict' | 'office-ended'
+  | 'ending-crossed'
   // The rule table
   | 'no-offices' | 'not-a-member' | 'not-allowed' | 'already-member' | 'was-removed' | 'room-full'
   | 'recalled-signer' | 'not-invited' | 'already-invited' | 'already-accepted' | 'bad-former-signature'
@@ -362,6 +412,30 @@ const petitionKey = (o: Office, key: string, n: number): string => `${o} ${key} 
 const holds = (s: State, key: string): Office[] =>
   (['co', 'xo'] as const).filter((o) => s[o]?.holder === key);
 const sortedKeys = (xs: Iterable<string>): string[] => [...new Set(xs)].sort();
+
+/**
+ * The offices a key's removal leaves unfilled (F5): those it holds, and the XO post as well where it
+ * is acting CO with that post empty, since it left the post to act. So removing the CO and then the
+ * acting CO counts the same as removing them the other way round.
+ */
+const leftUnfilled = (s: State, key: string): Office[] => {
+  const held = holds(s, key);
+  return s.co?.holder === key && s.co.acting && s.xo?.holder === null && !held.includes('xo') ? [...held, 'xo'] : held;
+};
+
+/**
+ * Who a vote opened on `s` counts (F5): the members, and every key removed while holding an office
+ * that no result has filled since. A readmitted holder's old key has left `holding` by then, and its
+ * new key is a member, so one person never counts twice.
+ */
+const electorateOf = (s: State): string[] => sortedKeys([...s.members.keys(), ...s.holding.keys()]);
+
+/**
+ * Places taken in the room (F5): the members, and every removed holder still counted. An admission
+ * that readmits a counted key takes that key's place rather than a new one.
+ */
+const seatsTaken = (s: State, readmits: string | null = null): number =>
+  s.members.size + s.holding.size - (readmits !== null && s.holding.has(readmits) ? 1 : 0);
 
 /** Consecutive CO terms `key` has served, ending with the current term. */
 function termsNow(s: State, key: string): number {
@@ -771,12 +845,13 @@ function evaluateUnchecked(input: UnitInput): UnitView {
           if (va.removed.has(s.key)) return 'was-removed';
           if (s.readmits !== null && (!va.removed.has(s.readmits) || s.readmits === s.key)) return 'not-allowed';
         }
-        if (led && !signers.some((k) => isOfficer(va, k))) {
-          // Command keeps the door, except for a leader whose key was removed, while that office's
-          // election is open: then any two members may let them back in to stand.
+        if (led && !isOfficer(va, x.pubkey)) {
+          // Command keeps the door, and authors what it lets in (F7): an officer who only co-signs
+          // has not used the power. The exception is a leader whose key was removed, while that
+          // office's election is open: then any two members may let them back in to stand.
           if (!(s.t === 'admit' && s.readmits !== null && readmitOpen(va, s.readmits))) return 'not-allowed';
         }
-        if (s.t === 'admit' && va.members.size >= charter.room) return 'room-full';
+        if (s.t === 'admit' && seatsTaken(va, s.readmits) >= charter.room) return 'room-full';
         return null;
       }
       case 'accept': {
@@ -790,10 +865,12 @@ function evaluateUnchecked(input: UnitInput): UnitView {
           !checkCompact(s.former, { t: 'accept-by', unit, invite: s.invite, key: x.pubkey })) {
           return 'bad-former-signature';
         }
-        if (va.members.size >= charter.room) return 'room-full';
+        if (seatsTaken(va) >= charter.room) return 'room-full';
         return null;
       }
       case 'remove': {
+        // One key per removal act: a purge is as many acts as keys, each judged on its own.
+        if (s.keys.length !== 1) return 'not-allowed';
         if (!s.keys.every(member)) return 'not-a-member';
         if (s.keys.length >= va.members.size) return 'not-allowed';
         if (!signers.every(member)) return 'not-a-member';
@@ -801,7 +878,9 @@ function evaluateUnchecked(input: UnitInput): UnitView {
         // One signer alone only in a unit of two, removing the other: never against a larger unit.
         const unitOfTwo = va.members.size === 2 && s.keys.length === 1;
         if (signers.length < 2 && !unitOfTwo) return 'not-allowed';
-        if (led && s.keys.some((k) => !isOfficer(va, k)) && !signers.some((k) => isOfficer(va, k))) return 'not-allowed';
+        // A key that holds no office comes off only by command, which authors the removal (F7). An
+        // office holder's key comes off by any two members other than that holder.
+        if (led && s.keys.some((k) => !isOfficer(va, k)) && !isOfficer(va, x.pubkey)) return 'not-allowed';
         for (const r of va.recalled) {
           if (!signers.includes(r.key)) continue;
           if (va[r.office]?.n === r.n && s.keys.some((k) => r.signers.includes(k))) return 'recalled-signer';
@@ -987,7 +1066,7 @@ function evaluateUnchecked(input: UnitInput): UnitView {
       case 'remove': {
         for (const key of s.keys) {
           if (!st.members.has(key)) continue;
-          const was = holds(va, key);
+          const was = leftUnfilled(va, key);
           if (was.length > 0) {
             const h = st.holding.get(key) ?? new Set<Office>();
             for (const o of was) h.add(o);
@@ -1102,7 +1181,7 @@ function evaluateUnchecked(input: UnitInput): UnitView {
         const kind: RunState['kind'] = off.n === 0 ? 'first' : x.at >= off.end ? 'end' : 'fill';
         st.runs.set(x.id, {
           id: x.id, kind, office: s.office, subject: null, opener: x.pubkey, at: x.at,
-          electorate: sortedKeys(va.members.keys())
+          electorate: electorateOf(va)
         });
         return null;
       }
@@ -1112,7 +1191,7 @@ function evaluateUnchecked(input: UnitInput): UnitView {
         if (!cur || cur.holder !== s.subject || cur.n !== then.n) return 'moot';
         st.runs.set(x.id, {
           id: x.id, kind: 'petition', office: s.office, subject: s.subject, opener: x.pubkey, at: x.at,
-          electorate: sortedKeys([...va.members.keys()].filter((k) => k !== s.subject))
+          electorate: electorateOf(va).filter((k) => k !== s.subject)
         });
         st.petitioned.add(petitionKey(s.office, s.subject, then.n));
         return null;
@@ -1126,8 +1205,9 @@ function evaluateUnchecked(input: UnitInput): UnitView {
           return null;
         }
         if (st.removed.has(s.key)) return 'was-removed';
-        if (st.members.size >= charter.room) return 'room-full';
+        if (seatsTaken(st, s.readmits) >= charter.room) return 'room-full';
         st.members.set(s.key, { key: s.key, callsign: s.callsign, how: 'in-person', at: x.at, by: sortedKeys(signersOf(x)) });
+        // The readmitted key takes the old one's seat and vote (F5).
         if (s.readmits) st.holding.delete(s.readmits);
         return null;
       }
@@ -1144,7 +1224,7 @@ function evaluateUnchecked(input: UnitInput): UnitView {
         }
         if (invite.accepted) return 'already-accepted';
         if (st.removed.has(x.pubkey)) return 'was-removed';
-        if (st.members.size >= charter.room) return 'room-full';
+        if (seatsTaken(st) >= charter.room) return 'room-full';
         invite.accepted = true;
         const inviter = acts.get(s.invite);
         st.members.set(x.pubkey, {
@@ -1282,6 +1362,23 @@ function evaluateUnchecked(input: UnitInput): UnitView {
       }
       cascade();
 
+      // R10 (F7). One key, one line for endings: a vacate, removal or leave is void if its author
+      // also authored a co-signed act concurrent with it. Only a co-signed act that stands by its own
+      // ancestry, with a member's second signature, counts, so no throwaway key can void an ending.
+      // Judged against one reading of what stands, so two concurrent removals by one author both fall.
+      {
+        const live = valid();
+        const cosigned = live.filter((a) => needsCosign(a.s.t) && chosen.has(a.id));
+        const out = live.filter((x) =>
+          (x.s.t === 'vacate' || x.s.t === 'remove' || x.s.t === 'leave') &&
+          cosigned.some((y) => y.id !== x.id && y.pubkey === x.pubkey && concurrent(x.id, y.id)));
+        for (const x of out) {
+          v.set(x.id, 'ending-crossed');
+          names.set(x.id, [x.pubkey]);
+        }
+        if (out.length > 0) cascade();
+      }
+
       // R0. A split: two concurrent removals, each removing a signer of the other.
       const splits: [string, string][] = [];
       let unresolved = false;
@@ -1418,11 +1515,14 @@ function evaluateUnchecked(input: UnitInput): UnitView {
         if (removals.length > 0) {
           for (const y of live) {
             if (VOTES.has(y.s.t)) continue;
-            const out = (k: string) =>
-              removals.some((x) => x.id !== y.id && concurrent(x.id, y.id) && removedBy(x).includes(k));
+            // A leave is one key: it takes out what that key authored, never an act it only
+            // co-signed, or one seized phone could undo every door act it ever co-signed.
+            const out = (k: string, cosigner: boolean) =>
+              removals.some((x) => x.id !== y.id && concurrent(x.id, y.id) && removedBy(x).includes(k) &&
+                !(cosigner && x.s.t === 'leave'));
             const cos = validCos.get(y.id) ?? [];
             // Its signer, or every second signer that would have made it valid.
-            if (out(y.pubkey) || (cos.length > 0 && cos.every(out))) v.set(y.id, 'removal-wins');
+            if (out(y.pubkey, false) || (cos.length > 0 && cos.every((c) => out(c, true)))) v.set(y.id, 'removal-wins');
           }
           cascade();
         }
@@ -1433,11 +1533,13 @@ function evaluateUnchecked(input: UnitInput): UnitView {
         const live = valid();
         const joins = live.filter((a) => newKeyOf(a) !== null);
         const invites = live.filter((a) => a.s.t === 'invite');
-        /** Admitted by members using a removed leader's open election, with no position holder. */
+        /**
+         * Admitted by members using a removed leader's open election, not by a position holder's
+         * authority: an officer who only co-signed has not used the power (F7).
+         */
         const privileged = (a: ActRec): string | null => {
           if (!led || a.s.t !== 'admit' || a.s.readmits === null) return null;
-          const va = foldBefore(a.id).state;
-          return [a.pubkey, ...(validCos.get(a.id) ?? [])].some((k) => isOfficer(va, k)) ? null : a.s.readmits;
+          return isOfficer(foldBefore(a.id).state, a.pubkey) ? null : a.s.readmits;
         };
         const out = new Set<string>();
         for (const a of joins) {
@@ -1453,7 +1555,10 @@ function evaluateUnchecked(input: UnitInput): UnitView {
           if (leader !== null && with_.some((b) => b.id !== a.id && privileged(b) === leader)) out.add(a.id);
           const va = foldBefore(a.id).state;
           const fresh = new Set(with_.map((b) => newKeyOf(b)!).filter((k) => !va.members.has(k)));
-          if (va.members.size + fresh.size > charter.room) out.add(a.id);
+          // A readmission takes the place its removed holder kept (F5), once however often it is named.
+          const freed = new Set(with_.flatMap((b) =>
+            b.s.t === 'admit' && b.s.readmits !== null && va.holding.has(b.s.readmits) ? [b.s.readmits] : []));
+          if (seatsTaken(va) - freed.size + fresh.size > charter.room) out.add(a.id);
         }
         for (const a of invites) {
           if (invites.some((b) => b.id !== a.id && concurrent(a.id, b.id) &&
@@ -1497,7 +1602,13 @@ function evaluateUnchecked(input: UnitInput): UnitView {
 
     // One pass in parent order decides what is held and fills the memos bottom-up.
     const all = linearize([...acts.keys()].filter((id) => !skip.has(id)), parents, (id) => actClass(acts.get(id)!.s.t));
-    const known = (p: string) => base.ids.has(p) || active.has(p);
+    /**
+     * Held only for want of a second signature. Its author's next act names it (F7), so what is
+     * built on it is read against what stands without it, instead of waiting on somebody else's
+     * signature that may never come. It joins the chain beneath them once it is co-signed.
+     */
+    const awaiting = new Set<string>();
+    const known = (p: string) => base.ids.has(p) || active.has(p) || awaiting.has(p);
     for (const id of all) {
       const x = acts.get(id)!;
       if (future(x.at) || compactsOf(x.s).some(future)) {
@@ -1514,6 +1625,7 @@ function evaluateUnchecked(input: UnitInput): UnitView {
         const unitOfTwo = x.s.t === 'remove' && before.members.size === 2 && x.s.keys.length === 1;
         if (!unitOfTwo) {
           heldHere.set(id, x.cosigns.length > 0 ? 'future-dated' : 'incomplete');
+          awaiting.add(id);
           continue;
         }
       }
@@ -1521,7 +1633,7 @@ function evaluateUnchecked(input: UnitInput): UnitView {
       ancestryStatus(id);
     }
     const final = foldSet([...active]);
-    return { active, held: heldHere, final, foldSet, foldBefore };
+    return { active, awaiting, held: heldHere, final, foldSet, foldBefore };
   }
 
   // ---------------------------------------------------------------------------------------------
@@ -1727,9 +1839,17 @@ function evaluateUnchecked(input: UnitInput): UnitView {
 
   // The head: tips of what stands, with the base where nothing builds on it yet.
   const baseIds = mode === 'history' ? [root] : [...anchorHead];
+  // An act waiting for its second signature that something standing builds on lies beneath it, and
+  // so does what that act names: neither is a tip.
   const named = new Set<string>();
-  for (const id of applied) for (const p of acts.get(id)!.s.prev) named.add(p);
-  const head = sortedKeys([...tipsOf(applied, parents), ...baseIds.filter((b) => !named.has(b))]);
+  const nameParents = (id: string) => {
+    for (const p of acts.get(id)!.s.prev) named.add(p);
+  };
+  for (const id of applied) {
+    nameParents(id);
+    for (const a of ancOf(id)) if (run.awaiting.has(a)) nameParents(a);
+  }
+  const head = sortedKeys([...applied.filter((id) => !named.has(id)), ...baseIds.filter((b) => !named.has(b))]);
 
   // Splits, with the tips of each side.
   const splitList = fin.splits.flatMap(([a, b]) => [a, b]).filter((id, i, xs) => xs.indexOf(id) === i).sort().map((via) => {
@@ -1794,6 +1914,35 @@ export function snapshotOf(v: UnitView): Snapshot {
 }
 
 const prevOf = (prev: readonly string[]): string[] => sortedKeys(prev).slice(0, MAX_PARENTS);
+
+/**
+ * The parents a phone's next act names (F7): the head of its view, and the act this phone's key last
+ * authored, even while that act waits for its second signature. A key's acts then form one line, so
+ * an ending it signs is never concurrent with a co-signed act it authored, and R10 never voids it.
+ * At most {@link MAX_PARENTS}; the key's own latest act is always kept. `latest` is null for a key
+ * that has authored nothing in this unit.
+ */
+export function prevFor(head: readonly string[], latest: string | null): string[] {
+  const rest = sortedKeys(head).filter((h) => h !== latest);
+  return latest === null ? rest.slice(0, MAX_PARENTS) : sortedKeys([latest, ...rest.slice(0, MAX_PARENTS - 1)]);
+}
+
+/** An act as its author writes it: everything but the unit and the parents. */
+export type ActBody = Exclude<Act, Result | Recall> extends infer A ? A extends Act ? Omit<A, 'unit' | 'prev'> : never : never;
+
+/**
+ * Signs `act` on `view`'s head and this key's own `latest` act ({@link prevFor}). Results and
+ * recalls have their own builders, which name the vote's state instead. Throws
+ * {@link GovernanceError} where the view has no head to build on.
+ */
+export function buildAct(
+  o: { unit: string; view: UnitView; latest: string | null; act: ActBody; at: number },
+  author: SecretKey
+): Event {
+  const prev = prevFor(o.view.head, o.latest);
+  if (prev.length === 0) throw new GovernanceError('This phone holds no state of this unit to build on.');
+  return signStatement(author, { ...o.act, unit: o.unit, prev } as Act, o.at);
+}
 
 /** Earliest by (created_at, pubkey), one per key: the first set to reach the threshold. */
 function earliest(events: readonly Event[], keep: (s: Statement, pubkey: string, at: number) => boolean): Event[] {

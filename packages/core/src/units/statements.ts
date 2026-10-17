@@ -20,13 +20,16 @@
  *   root id ({@link rootIdOf}). Order in a unit comes from these links, never from a clock.
  * - A compact signature `C` is `[K, created_at, sig]`: everything needed to check a loose statement
  *   whose content the reader rebuilds from context (the watch code's `s` pattern).
+ * - An act that needs a sign is signed by whoever holds the power it uses, and the `sign` comes from
+ *   the other key (F7). A removal's list reads as before, but the evaluator voids one naming more
+ *   than one key, so a purge is as many acts as keys.
  *
  * ```
  * found     [T,'found',U,code,role,otherK,callsign,former]       role co | xo | member; former C | null
  * admit     [T,'admit',U,P,K,callsign,readmits]                 readmits K | null       (needs a sign)
  * invite    [T,'invite',U,P,formerK]                            re-founded units only    (needs a sign)
  * accept    [T,'accept',U,P,inviteId,callsign,C]                signed by the new key
- * remove    [T,'remove',U,P,[K...],reasonH]                                               (needs a sign)
+ * remove    [T,'remove',U,P,[K],reasonH]                        one key per act       (needs a sign)
  * leave     [T,'leave',U,P]
  * vacate    [T,'vacate',U,P,office]                             no successor field
  * open      [T,'open',U,P,office]                               an election; no window, no deadline
