@@ -66,7 +66,14 @@ export const MISSION_RELAYS: readonly string[] = [THE_RECORD, 'wss://blackpi.cos
  * publisher that declares itself an agent is one.
  */
 export const MISSION_PUBLISHERS: Readonly<Record<string, { name: string; agent: boolean }>> = {
-  '6301c4d09a014909e5a48b7d0c9aa859eec18804c2fc87eab4e414aa5a319692': { name: 'Mecha Jono', agent: true }
+  // Retiring. Its secret was exposed on 2026-09-28 (Mecha Jono's key-change letter of 7 Oct). It
+  // stays until the cut-over in early November, then comes off, and every event it signed is
+  // distrusted whatever date it carries: whoever holds the secret can back-date one.
+  '6301c4d09a014909e5a48b7d0c9aa859eec18804c2fc87eab4e414aa5a319692': { name: 'Mecha Jono', agent: true },
+  // Mecha Jono's next key, trusted beside the old one from 2026-10-17 (confirmed by Jono, as the
+  // letter asks); it signs nothing before the cut-over, when each open package is republished under
+  // it at 30079:<this key>:<the same d>.
+  '86f824c3f1e67c60b1dc15ce110648c4de5c3fb879022fbbcc5e8deb720e402c': { name: 'Mecha Jono', agent: true }
 };
 
 export type MissionState = 'open' | 'claimed' | 'closed';

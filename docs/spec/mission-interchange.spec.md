@@ -166,7 +166,7 @@ never a total).
 | | |
 |---|---|
 | Relay | **The Record**, `wss://record.cosmiccodex.app` — authoritative for packages (AGREED, Q8). The five relays rev 10 lists are best-effort mirrors a reader need not read. The Record honours NIP-40 expiry, which its NIP-11 document confirms |
-| Author | `6301c4d09a014909e5a48b7d0c9aa859eec18804c2fc87eab4e414aa5a319692` |
+| Author | `6301c4d09a014909e5a48b7d0c9aa859eec18804c2fc87eab4e414aa5a319692` until Mecha Jono's cut-over in early November, and `86f824c3f1e67c60b1dc15ce110648c4de5c3fb879022fbbcc5e8deb720e402c` beside it from 2026-10-17 and alone after it. The old key's secret was exposed on 2026-09-28; from the cut-over NavCom distrusts everything it signed, whatever date it carries |
 | Filter | `{ "kinds": [30079], "authors": ["6301c4d0…9692"], "#t": ["navcom_mission"] }` |
 
 Measured on 2026-10-06: **90 packages** carry `t=navcom_handoff`; **15** carry `t=navcom_mission`,

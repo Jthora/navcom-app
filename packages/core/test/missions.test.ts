@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure';
-import { MISSION_PACKAGE_KIND, missionActive, missionExpired, readMissionPackage, type Mission } from '../src/index.js';
+import { MISSION_PACKAGE_KIND, MISSION_PUBLISHERS, missionActive, missionExpired, readMissionPackage, type Mission } from '../src/index.js';
 
 /**
  * Real packages, captured from The Record on 2026-10-06 and signed by Mecha Jono — so the
@@ -362,5 +362,23 @@ describe('what the second audit of Milestone 11 found', () => {
     it('skips a code it cannot read rather than letting it hide one it can', () => {
       expect(two('not a code', 'us-co')).toBe('us-co');
     });
+  });
+});
+
+describe('who NavCom reads packages from', () => {
+  /*
+   * The registry is the trust root for every mission on the map: a key here is believed to be its
+   * publisher, so it is pinned exactly. Mecha Jono's old key was exposed on 2026-09-28; its next key
+   * is trusted beside it until the cut-over, when the old one comes off [key-change letter, 7 Oct].
+   */
+  it('trusts exactly Mecha Jono’s two keys, each marked an agent', () => {
+    expect(MISSION_PUBLISHERS).toEqual({
+      '6301c4d09a014909e5a48b7d0c9aa859eec18804c2fc87eab4e414aa5a319692': { name: 'Mecha Jono', agent: true },
+      '86f824c3f1e67c60b1dc15ce110648c4de5c3fb879022fbbcc5e8deb720e402c': { name: 'Mecha Jono', agent: true }
+    });
+  });
+
+  it('still reads a package the current key signed', () => {
+    expect(readMissionPackage(HEAT)).toMatchObject({ ok: true });
   });
 });
