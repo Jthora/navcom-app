@@ -748,7 +748,7 @@
           {#each results as r (r.kind === 'record' ? r.id : 'region:' + r.region)}
             <li>
               {#if r.kind === 'record'}
-                <a href="/directory/{r.id}/" data-hit="record">
+                <a href="/directory/{r.id}/" data-hit="record" data-sveltekit-reload>
                   <span class="nc-results-name">{r.name}</span>
                   <span class="nc-results-meta">{r.type.replace(/_/g, ' ')} · {r.regionName}{#if r.abroad} · <strong data-abroad>in {r.abroad}</strong>{/if}</span>
                 </a>
@@ -916,7 +916,7 @@
         </p>
         <p>
           Anything an operator publishes is theirs to answer for, not NavCom's —
-          <a href="/notice/">who is responsible for what</a>.
+          <a href="/notice/" data-sveltekit-reload>who is responsible for what</a>.
         </p>
       </Why>
     </Panel>
