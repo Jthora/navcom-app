@@ -15,7 +15,7 @@ import { spawnSync } from 'node:child_process';
 
 const result = spawnSync('npx', ['playwright', 'test'], { stdio: 'inherit', shell: false });
 
-if (result.error?.code === 'ENOENT') {
+if (/** @type {NodeJS.ErrnoException | undefined} */ (result.error)?.code === 'ENOENT') {
   console.error('\n  Playwright is not installed. From web/:  npm i -D @playwright/test\n');
   process.exit(1);
 }

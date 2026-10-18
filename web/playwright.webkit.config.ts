@@ -1,4 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
+import { playwrightServer } from './scripts/serve-build.mjs';
+
+/** The same server, port and reuse rule as `playwright.config.ts`. */
+const served = playwrightServer();
 
 /** Pass 0: the same suite, on WebKit, once. Not added to the default run. */
 export default defineConfig({
@@ -7,12 +11,11 @@ export default defineConfig({
   fullyParallel: true,
   retries: 0,
   reporter: [['list']],
-  use: { baseURL: 'http://localhost:4191' },
+  use: { baseURL: served.baseURL },
   projects: [{ name: 'iphone', use: { ...devices['iPhone 13'] } }],
-  webServer: {
-    command: 'npm run preview -- --port 4191 --strictPort',
-    port: 4191,
-    reuseExistingServer: true,
-    timeout: 120_000
-  }
+  /*
+   * This config used to reuse whatever held port 4191, always, so a WebKit pass could run
+   * against another checkout's build or another project. It reuses only this build now.
+   */
+  webServer: served.webServer
 });

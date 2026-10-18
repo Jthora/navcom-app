@@ -31,7 +31,7 @@ import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import { npubEncode } from 'nostr-tools/nip19';
 
 const KEY_FILE = fileURLToPath(new URL('../.navcom-node-key', import.meta.url));
-const hex = (bytes) => Buffer.from(bytes).toString('hex');
+const hex = (/** @type {Uint8Array} */ bytes) => Buffer.from(bytes).toString('hex');
 
 if (existsSync(KEY_FILE)) {
   /*

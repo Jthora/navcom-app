@@ -56,5 +56,5 @@
   "src/routes/terminal/wake/+page.svelte": 73,
   "src/routes/terminal/watch/+page.svelte": 443,
   "src/routes/terminal/who/+page.svelte": 12,
-  "src/routes/terminal/wipe/+page.svelte": 334
+  "src/routes/terminal/wipe/+page.svelte": 333
 }

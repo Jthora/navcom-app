@@ -1,0 +1,14 @@
+{
+  // The browser suite, the Playwright configs and the build scripts, type-checked.
+  //
+  // svelte-check reads tsconfig.json, whose include is src/ only, so none of these were ever
+  // checked: about 15,000 lines of e2e and every script that writes into build/. Vitest and
+  // Playwright both strip types without checking them. Run by `npm run check`.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["e2e/**/*.ts", "playwright*.config.ts", "scripts/**/*.mjs", "scripts/**/*.js", "scripts/**/*.ts"],
+  "exclude": []
+}

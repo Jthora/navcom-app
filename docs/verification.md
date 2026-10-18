@@ -65,8 +65,13 @@ patrols. It now seeds once and gets out of the way.
 
 - **Chromium only.** WebKit would be closer to the iPhone truth and doubles CI time and
   install size. Revisit if a Safari-specific failure ever appears; do not pay for it up front
-- `vite preview` serving `build/`, so the tests exercise **exactly what deploys** — the same
-  discipline the HTML assertions already follow
+- `web/scripts/serve-build.mjs` serving `build/` itself, with `vercel.json`'s redirects and
+  headers, so the tests exercise **exactly what deploys** — the same discipline the HTML assertions
+  already follow. Until 2026-10-17 this said `vite preview` served `build/`; it served
+  `.svelte-kit/output`, before the data files are pruned, and that hid a live bug: a search result
+  on the root console opened "That page does not exist" in production, because the in-page router
+  fetched a pruned `__data.json`. Each checkout gets its own port, and a server is reused only if it
+  is this checkout's, serving this build
 - Tests live in `web/e2e/`, away from `src/**/*.test.ts` so the two runners do not collide
 - Device state is seeded with `addInitScript` writing `localStorage` before load. There is no
   server-side state to set up, which makes this much cheaper here than in most apps
@@ -568,8 +573,9 @@ Ten advisories, three of them serious-sounding. All ten were **dev tooling** —
   advisory needs does not exist in this tree.
 - **HIGH, vite:** `server.fs.deny` bypass on **Windows** alternate paths. Development is on
   darwin and deploys build on Linux.
-- The three moderates all require a running **dev server**. `vite build` and `vite preview` do
-  not start one, and every suite here uses `preview`.
+- The three moderates all require a running **dev server**. `vite build` does not start one, and
+  every suite here runs against the built output (`preview` then, `serve-build.mjs` since
+  2026-10-17).
 
 **One of the ten was genuinely exploitable, and it was not the one marked CRITICAL.** The
 esbuild advisory — *any website can send requests to the dev server and read the response* —

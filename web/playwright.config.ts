@@ -1,4 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
+import { playwrightServer } from './scripts/serve-build.mjs';
+
+/** This checkout's server over `build/`: its port, and whether one already running may be reused. */
+const served = playwrightServer();
 
 /**
  * Browser tests, against the built output.
@@ -55,7 +59,7 @@ export default defineConfig({
   reporter: process.env['CI'] ? [['github'], ['list']] : [['list']],
 
   use: {
-    baseURL: 'http://localhost:4191',
+    baseURL: served.baseURL,
     trace: 'retain-on-failure'
   },
 
@@ -89,25 +93,23 @@ export default defineConfig({
     }
   ],
 
-  webServer: {
-    /**
-     * Serves `build/` — exactly what deploys.
-     *
-     * The same discipline the HTML assertions already follow: testing the source would test
-     * something nobody runs.
-     */
-    /*
-     * A port of our own, not Vite's default.
-     *
-     * `reuseExistingServer` reuses whatever is already listening on that port — and 4173 is
-     * the default for every Vite project on the machine. A run once navigated to a different
-     * application entirely and failed on a missing hydration flag, which reads exactly like a
-     * bug in the screen under test. Reuse is worth keeping; colliding with every other
-     * project is not.
-     */
-    command: 'npm run preview -- --port 4191 --strictPort',
-    port: 4191,
-    reuseExistingServer: !process.env['CI'],
-    timeout: 60_000
-  }
+  /**
+   * Serves `build/`, which is what deploys, through `scripts/serve-build.mjs`.
+   *
+   * This comment used to say the same thing while the command ran `vite preview`, which serves
+   * `.svelte-kit/output` with an SSR fallback. So `prune-data`, `slim-html` and anything else
+   * written into `build/` after `vite build` was never in front of a browser, and a path the
+   * host would 404 could still render. `e2e/served-build.spec.ts` now fails if that comes back.
+   *
+   * The port is this checkout's own (a hash of its path, or `NAVCOM_E2E_PORT`), not a fixed
+   * one. A fixed port with `reuseExistingServer` reused whatever was listening: 4173 once put a
+   * different application under the suite, and with workflows running in worktrees a second
+   * run could test another checkout's build. A running server is now reused only when it is
+   * this checkout's serve-build, as its files stand now, over `build/`, and its `/version.json`
+   * matches this build's. Anything else on the port stops the run with the reason.
+   *
+   * `pretest:browser` writes `build/.well-known/` before the suite, so the receipt production
+   * always has is in front of the browser too.
+   */
+  webServer: served.webServer
 });

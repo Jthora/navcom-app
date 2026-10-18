@@ -85,7 +85,7 @@ for (const slug of slugs) {
     // may not, and nothing in a CSV can tell those apart — so a human confirms.
     if (r.method === 'website' || r.method === 'secondhand') {
       const filled = INTAKE_FIELDS.filter((f) => {
-        const v = (r as Record<string, unknown>)[f];
+        const v = r[f];
         return Array.isArray(v) ? v.length > 0 : v !== undefined;
       });
       if (filled.length) {

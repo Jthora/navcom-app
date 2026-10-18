@@ -7,6 +7,7 @@
     "packages/seeder"
   ],
   "scripts": {
+    "preverify": "node web/scripts/preflight.mjs",
     "verify": "npm run verify --workspace @navcom/core && npm run verify --workspace @navcom/watchtower && npm run verify --workspace @navcom/seeder && npm run verify --workspace navcom-web"
   },
   "//": "vite is declared here, in a workspace root that builds nothing, only to hoist it for vitest's transitive copy: npm's `overrides` reports as applied and installs the old version anyway. See docs/verification.md, npm audit, 2026-09-02.",

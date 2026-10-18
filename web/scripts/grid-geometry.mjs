@@ -37,6 +37,7 @@ const QUANTIZATION = 10000;
  * it as its own country, so a US region implies both. A country missing from this table is a
  * failure rather than a silent omission: see `regionCountries`.
  */
+/** @type {Record<string, string[]>} */
 const NE_CODES = { US: ['USA', 'PRI'], GB: ['GBR'], AU: ['AUS'], CA: ['CAN'], NZ: ['NZL'], IE: ['IRL'] };
 
 /** Sentinel regions used by tests and templates, which are not places. */
@@ -44,6 +45,7 @@ const NOT_A_PLACE = new Set(['XX', 'ZZ']);
 
 function regionCountries() {
   const dir = join(ROOT, 'data', 'regions');
+  /** @type {Set<string>} */
   const found = new Set();
   for (const slug of readdirSync(dir)) {
     const file = join(dir, slug, 'region.json');
@@ -58,6 +60,10 @@ function regionCountries() {
   return [...found].sort();
 }
 
+/**
+ * @param {string} name
+ * @param {string} dir
+ */
 function download(name, dir) {
   const url = `https://raw.githubusercontent.com/nvkelso/natural-earth-vector/${NATURAL_EARTH}/geojson/${name}.geojson`;
   const path = join(dir, `${name}.geojson`);

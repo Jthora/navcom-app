@@ -1282,7 +1282,7 @@ test.describe('a region board with more cards than it can show', () => {
     const events = [];
     for (let i = 0; i < 240; i++) {
       events.push(buildCard(generateSecretKey(), {
-        callsign: `Op${i}`, region: 'st-louis', doing: null, lightning: null
+        callsign: `Op${i}`, region: 'st-louis'
       }, 1_800_000_000 + i));
     }
 
@@ -2025,9 +2025,102 @@ test.describe('handing the record to the phone', () => {
     }
   };
 
-  /** Installs a share sheet that records what it was handed. */
-  const fakeSheet = (page: import('@playwright/test').Page, behaviour = 'accept') =>
-    page.addInitScript((mode) => {
+  /**
+   * How long a tap lets the share sheet open: 5 s. Measured here on 2026-10-17.
+   *
+   * A real `navigator.share` refuses with `NotAllowedError` once the tap's transient activation
+   * has expired, so the operator reads "Not sent". In the Chromium and WebKit these tests run,
+   * `navigator.userActivation.isActive` was still true 4.5 s after a click and false at 5.5 s.
+   *
+   * The fake sheets below cannot ask `navigator.userActivation`, because Playwright grants a gesture
+   * of its own on every `page.evaluate` and every locator read (`userGesture: true` on Chromium,
+   * `emulateUserGesture` on WebKit). With either running every 500 ms after the click, the tap
+   * still read as active 7 s later, so a poll keeps it alive for as long as it polls. That is
+   * probably why the image test once looked to have 6.8 s of activation. So they time the tap
+   * themselves and refuse anything later, as the real sheet would.
+   *
+   * The 2026-10-10 note this replaces raised the wait to 15 s, after two of ten encodes took
+   * 6.7 s. That passed the slow path a person fails on. The screen encodes the PNG after the tap
+   * (`shareImage` in `routes/terminal/patrols/+page.svelte`), and on that path the image never
+   * reaches the sheet. On 2026-10-17 that path came up on its own, at about 6.7 s, once in each of
+   * two full-suite runs and once in 40 repeated shares. These tests now fail there, which is right
+   * until the screen has the file ready before the tap. Do not raise this to make them pass.
+   */
+  const ACTIVATION_MS = 5_000;
+
+  /**
+   * Makes the page's fake sheet refuse a share that comes too long after the tap. The tap's time
+   * is kept in `__tappedAt`. Each call is recorded as how long after the tap it came: in `__called`
+   * if it was inside the window and handed on, in `__late` if it was refused.
+   *
+   * Playwright does not define the order init scripts run in, so this does not wrap whatever
+   * `navigator.share` happens to be when it runs. It holds the sheet behind an accessor: a fake
+   * installed before it is taken over, and one installed after it is assigned through it.
+   */
+  const refuseAfterActivation = (page: import('@playwright/test').Page) =>
+    page.addInitScript((windowMs) => {
+      const w = window as unknown as Record<string, unknown>;
+      w['__late'] = [];
+      w['__called'] = [];
+      w['__tappedAt'] = -Infinity;
+      window.addEventListener(
+        'click',
+        (e) => {
+          if (e.isTrusted) w['__tappedAt'] = performance.now();
+        },
+        true
+      );
+      type Sheet = (data: unknown) => Promise<void>;
+      let sheet = (navigator as unknown as { share?: Sheet }).share;
+      const guarded: Sheet = async (data) => {
+        const since = performance.now() - (w['__tappedAt'] as number);
+        if (since > windowMs) {
+          (w['__late'] as number[]).push(Math.round(since));
+          const err = new Error('Must be handling a user gesture to perform a share request.');
+          err.name = 'NotAllowedError';
+          throw err;
+        }
+        (w['__called'] as number[]).push(Math.round(since));
+        return sheet!.call(navigator, data);
+      };
+      Object.defineProperty(navigator, 'share', {
+        configurable: true,
+        get: () => (typeof sheet === 'function' ? guarded : undefined),
+        set: (next: Sheet) => {
+          sheet = next;
+        }
+      });
+    }, ACTIVATION_MS);
+
+  /**
+   * What the sheet has done since the tap: `shared` once the fake has recorded what it was handed,
+   * and otherwise what is holding it up.
+   *
+   * The window is enforced by the sheet, not by this wait. A share later than `ACTIVATION_MS` is
+   * refused whenever the poll looks, so the wait runs well past the window and cannot pass one.
+   * Waiting past it is what lets a late share fail as "refused, 6700 ms after the tap" rather
+   * than as a timeout, and gives the image test's own `createImageBitmap` time to read a file
+   * that was handed over in time.
+   */
+  const sheetSaid = (page: import('@playwright/test').Page) =>
+    expect.poll(
+      () =>
+        page.evaluate((windowMs) => {
+          const w = window as unknown as Record<string, unknown>;
+          const late = w['__late'] as number[];
+          const called = w['__called'] as number[];
+          if (late.length) return `refused, ${late[0]} ms after the tap (the window is ${windowMs} ms)`;
+          if ((w['__shared'] as unknown[]).length) return 'shared';
+          if (called.length) return `handed over ${called[0]} ms after the tap, still being read`;
+          const since = Math.round(performance.now() - (w['__tappedAt'] as number));
+          return `nothing yet, ${since} ms after the tap (the window is ${windowMs} ms)`;
+        }, ACTIVATION_MS),
+      { timeout: ACTIVATION_MS + 10_000 }
+    );
+
+  /** Installs a share sheet that records what it was handed, and refuses a share after the tap's window. */
+  const fakeSheet = async (page: import('@playwright/test').Page, behaviour = 'accept') => {
+    await page.addInitScript((mode) => {
       const w = window as unknown as Record<string, unknown>;
       w['__shared'] = [];
       const nav = navigator as unknown as Record<string, unknown>;
@@ -2046,6 +2139,8 @@ test.describe('handing the record to the phone', () => {
         }
       };
     }, behaviour);
+    await refuseAfterActivation(page);
+  };
 
   async function openExport(page: import('@playwright/test').Page) {
     await open(page, '/terminal/patrols/');
@@ -2132,13 +2227,12 @@ test.describe('handing the record to the phone', () => {
         });
       };
     });
+    await refuseAfterActivation(page);
     await seedDevice(page, WITH_WORK);
     await openExport(page);
 
     await page.locator('[data-share-image]').click();
-    await expect
-      .poll(async () => ((await page.evaluate(() => (window as unknown as Record<string, unknown>)['__shared'])) as unknown[]).length)
-      .toBe(1);
+    await sheetSaid(page).toBe('shared');
 
     const [sent] = (await page.evaluate(
       () => (window as unknown as Record<string, unknown>)['__shared']
@@ -2175,6 +2269,7 @@ test.describe('handing the record to the phone', () => {
         (w['__shared'] as unknown[]).push(data.text);
       };
     });
+    await refuseAfterActivation(page);
     await seedDevice(page, {
       ...OUT,
       keepPatrolHistory: true,
@@ -2185,9 +2280,7 @@ test.describe('handing the record to the phone', () => {
     await openExport(page);
 
     await page.locator('[data-share-image]').click();
-    await expect
-      .poll(async () => ((await page.evaluate(() => (window as unknown as Record<string, unknown>)['__shared'])) as unknown[]).length)
-      .toBe(1);
+    await sheetSaid(page).toBe('shared');
     const [caption] = (await page.evaluate(
       () => (window as unknown as Record<string, unknown>)['__shared']
     )) as string[];
