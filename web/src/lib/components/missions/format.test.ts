@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Settlement } from '@navcom/core';
-import { alreadyReported, effort, endsIn, endsSoon, placeName, releaseReadout, stampUtc, standingOf } from './format';
+import { alreadyReported, effort, endsIn, endsSoon, filedUnder, kmBetween, placeName, releaseReadout, stampUtc, standingOf } from './format';
 
 const NOW = Date.UTC(2026, 9, 6, 20, 0, 0);
 const at = (hoursFromNow: number) => Math.floor(NOW / 1000) + hoursFromNow * 3600;
@@ -13,6 +13,29 @@ describe('how a mission’s place and end read', () => {
     // Not a guess: a code it does not know reads as that code.
     expect(placeName('gb-eng')).toBe('GB-ENG');
     expect(placeName(null)).toBe('—');
+  });
+
+  it('names a country from its own code, from the phone’s tables, and a subdivision it cannot name as its code', () => {
+    expect(placeName('ke')).toBe('Kenya');
+    expect(placeName('ke-30')).toBe('KE-30');
+  });
+
+  it('files a mission under a place by its jurisdiction, never by an outline: a country holds its subdivisions', () => {
+    expect(filedUnder('ke-30', 'ke')).toBe(true);
+    expect(filedUnder('ke', 'ke')).toBe(true);
+    expect(filedUnder('us-ca', 'us-ca')).toBe(true);
+    // A national mission is filed for every province of its country, so a province shows it too.
+    expect(filedUnder('us', 'us-ca')).toBe(true);
+    expect(filedUnder('us-nv', 'us-ca')).toBe(false);
+    expect(filedUnder('kes', 'ke')).toBe(false);
+    expect(filedUnder('us-ca', 'ke')).toBe(false);
+    expect(filedUnder(null, 'ke')).toBe(false);
+  });
+
+  it('measures how far apart two places are on the ground, not on the projection', () => {
+    // Birmingham to London is about 163 km; Mercator at 52°N would say about 265.
+    expect(kmBetween([52.48, -1.9], [51.51, -0.13])).toBeGreaterThan(155);
+    expect(kmBetween([52.48, -1.9], [51.51, -0.13])).toBeLessThan(170);
   });
 
   it('says how long is left in the largest whole unit, and says when it has ended', () => {

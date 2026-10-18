@@ -76,7 +76,7 @@
   /*
    * Nav: the map, filling the screen behind Com [docs/design/map.md, com.md].
    *
-   * Loaded after first paint. The map cannot draw until its 55 kB of geometry arrives anyway,
+   * Loaded after first paint. The map cannot draw until its 59 kB of geometry arrives anyway,
    * so fetching its code in parallel costs nothing a person can see — and keeps this page's
    * first-paint script inside the budget that has kept the front door fast.
    */
@@ -89,10 +89,14 @@
    */
   let mapUnloaded = $state(false);
   let missionsUnloaded = $state(false);
-  /** Where the regions are: what the map opens on, whether or not it draws them. */
-  const regionPoints = $derived(centroids.map((c) => ({ lon: c.lon, lat: c.lat })));
-  /** Coverage is one switch away; missions are what the map opens on [map.md §6]. */
+  /** Places are one switch away; missions are what the map opens on [map.md §6]. */
   let coverage = $state(false);
+  /**
+   * The map's own word on whether it drew and whether Places arrived. Places is offered only on a
+   * drawn map: without one, or without script, it toggled and nothing changed.
+   */
+  let mapStatus = $state<'loading' | 'ready' | 'failed'>('loading');
+  let placesStatus = $state<'off' | 'loading' | 'ready' | 'failed'>('off');
 
   /** Missions, read live by this device from The Record [$lib/missions/live]. */
   let feed = $state<Feed>({ status: 'connecting' });
@@ -102,10 +106,6 @@
     feed.status === 'live' || feed.status === 'cached'
       ? feed.missions.filter((m) => m.state !== 'closed' && m.validUntil > now / 1000)
       : []
-  );
-  /** Provinces to light. A national mission (`us`) lights nothing — it would light everything. */
-  const lit = $derived(
-    new Set(active.map((m) => m.placement.jurisdiction).filter((j): j is string => !!j && j.includes('-')))
   );
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const stamp = (t: Date) =>
@@ -563,19 +563,26 @@
   <main class="bridge">
     <section class="nav" data-nav aria-label="Map">
       {#if GridMap}
+        <!-- What each mission lights, and what a tap opens, is the map's own [GridMap]. -->
         <GridMap
-          marks={coverage ? regionPoints : []}
-          frame={regionPoints}
-          highlight={lit}
-          label="Map of the provinces with an open mission{coverage ? ', and every directory region' : ''}"
-          onpick={(province) => open({ kind: 'missions', province }, true)}
+          {active}
+          places={coverage}
+          current={top}
+          bind:status={mapStatus}
+          bind:placesStatus
+          label="Map of the Earth, with open missions lit{coverage ? ', and the directory’s places' : ''}"
+          onpick={(s) => open(s, true)}
         />
       {:else}
+        <!-- Prerendered, so with no script, or no map, there is still a way to the places. -->
         <div class="nav-loading" data-grid={mapUnloaded ? 'failed' : 'loading'}>
-          {#if mapUnloaded}
-            <!-- GridMap's own words for its own failure: the same failure reads the same way. -->
-            <strong class="unloaded" data-grid-failed>Map not loaded — it needs one visit with a connection</strong>
-          {/if}
+          <div class="unloaded">
+            {#if mapUnloaded}
+              <!-- GridMap's own words for its own failure: the same failure reads the same way. -->
+              <strong data-grid-failed>Map not loaded — it needs one visit with a connection</strong>
+            {/if}
+            <a href="/directory/">The directory, without the map</a>
+          </div>
         </div>
       {/if}
       <div class="nav-key">
@@ -604,9 +611,10 @@
           ><b class="lit" aria-hidden="true"></b>{active.length > 0 ? 'Open missions' : 'No open missions'} · {missionAge}{#if refused.length > 0}<span data-refused-count> · {refused.length} not read</span>{/if}</button>
         {/if}
         {#if clockBehind}<strong data-clock-behind>This phone's clock is behind — check it before taking part</strong>{/if}
-        <button type="button" class="layer" aria-pressed={coverage} onclick={() => (coverage = !coverage)}>
-          Coverage
+        <button type="button" class="layer" aria-pressed={coverage} disabled={mapStatus !== 'ready'} onclick={() => (coverage = !coverage)}>
+          Places
         </button>
+        {#if placesStatus === 'failed'}<strong data-places="failed">Places not loaded — they need one visit with a connection</strong>{/if}
       </div>
     </section>
 
@@ -917,6 +925,11 @@
     padding: 0;
     background: var(--t-ground, #0b0e12);
     --distress-h: 0px;
+    /*
+     * The sheet's height at peek, given once: the sheet is drawn at it, and the map centres its
+     * opening view above it [--map-inset], so a change to one cannot leave the other behind.
+     */
+    --peek: 12.75rem;
   }
   /*
    * And the document given a height, only while this page is showing. With every child fixed,
@@ -938,9 +951,11 @@
     position: absolute;
     inset: 0 0 var(--distress-h) 0;
   }
+  /* How much of the map's foot the sheet covers at peek: the map centres its opening view above it. */
   .nav {
     position: absolute;
     inset: 0;
+    --map-inset: var(--peek);
   }
   .nav-loading {
     position: absolute;
@@ -953,9 +968,19 @@
     inset-inline: 1rem;
     top: 50%;
     transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
     text-align: center;
     color: var(--t-ink);
     font-size: 0.9rem;
+  }
+  .unloaded a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 3rem;
+    color: var(--t-ink);
   }
   .nav-key {
     position: absolute;
@@ -1014,7 +1039,7 @@
    * an iPhone SE, where its label wraps. Peek shows all of it with room to spare.
    */
   .com[data-detent='peek'] {
-    --detent: 12.75rem;
+    --detent: var(--peek);
   }
   .com[data-detent='half'] {
     --detent: 55%;
@@ -1090,6 +1115,7 @@
     .nav {
       inset-block: 0;
       inset-inline: 0 min(28rem, 42%);
+      --map-inset: 0px;
     }
     .grab {
       display: none;

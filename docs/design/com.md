@@ -9,8 +9,9 @@ phone, which is why both arrived in the same sentence.
 
 Status: **design, decided 2026-10-06. The shell is built** — the two containers, the three detents,
 the search-first root and the `Distress` layer, as the landing page — **and the stack's first
-screens**: the mission list, opened from the map's missions line or a tapped province, and a
-mission's page, both loaded on first open. **The signed-in root has begun**: someone signed on finds
+screens**: the mission list, opened from the map's missions line, a mission's page, and since
+2026-10-18 a place, opened by tapping anything on the map — a province or a country with what is
+filed under it, a region, a record — all loaded on first open. **The signed-in root has begun**: someone signed on finds
 their own missions first — what they hold, what waits to be reported, what they sent and how it
 settled. Profile, groups and chat are not built. Companions: [`panel.md`](panel.md) for the readout rules,
 [`map.md`](map.md) for Nav, [`delivery.md`](../delivery.md) for the budgets this is measured against.
@@ -167,7 +168,8 @@ is on it. Which screens exist, which entry's code draws each and how high the sh
 registry, `web/src/lib/com/screens.ts`, which loads as the page mounts, beside the map and the feed,
 with the one component that draws whatever screen is on top. Each entry is one chunk exporting one
 host that draws all of its screens; *missions* is the only entry so far, and its five screens moved
-out of the page into `MissionsHost.svelte`. The page imports no entry. A new screen is a line in the
+out of the page into `MissionsHost.svelte` (six since 2026-10-18, with the place a tap on the map
+opens). The page imports no entry. A new screen is a line in the
 registry, a new entry is a line there and one in `COM_ENTRIES` (`web/scripts/lib/budget.mjs`), and
 neither changes first paint: `budget.test.ts` fails on the build if an entry is imported by first paint
 again, and `boundaries.test.ts` if the component that draws the screens joins it.

@@ -1,6 +1,6 @@
 # Mission interchange — NavCom ⇄ Starcom / Mecha Jono
 
-**NavCom's side of the boundary, rev 7 — 2026-10-18.** Checked against Starcom rev 15 (`8ecd1045`)
+**NavCom's side of the boundary, rev 8 — 2026-10-18.** Checked against Starcom rev 15 (`8ecd1045`)
 and Mecha Jono Interchange 3.20 (manifest, 2026-10-16). Starcom's side is
 [`starcom.app/spec/starcom-navcom-interchange.spec.md`](https://starcom.app/spec/starcom-navcom-interchange.spec.md).
 Each spec owns its own side; neither restates the other's. The keys NavCom reads, their dates and
@@ -57,6 +57,26 @@ messages go. Decided by the owner on 2026-10-18; everything below is in the next
 - **Operators are told** what was already sealed to the old key, on the rows of their own mission
   history and in one sentence on Status (§5.0)
 
+**Rev 8** (2026-10-18), **PROPOSED**: where a package may put its point. The owner asked NavCom to
+question every rule afraid to use a latitude and longitude, and the cap in §4.2 was one. It is
+offered here for your answer rather than changed under you (Q19, §10). Not yet on the partner page:
+it waits for the owner's OK, as rev 7 does.
+
+- **A subject on public record may be placed at its address**: `geo_precision: address`, five
+  decimals, only with `geo_kind: subject_location`. `city` and `1km` stay as they are. NavCom's
+  reader already keeps it; nothing you publish today changes (§4.2)
+- **A point that stands for a jurisdiction is read as a city**, whatever precision it declares,
+  because a jurisdiction has no doorstep (§4.2). This is the one change to what you publish today,
+  and only for such a point declared finer than `city`; every one NavCom has read was `city`
+- **Invariant 1, said as what it means**: never a person, a home, an encampment or an informal
+  sleeping site. A clinic, a pantry or another facility on public record may be located. **Where
+  people sleep stays off NavCom's map (NavCom's owner, D5, 2026-10-18)**: NavCom keeps the
+  directory's shelters and youth programmes off its map, and a package's point is drawn no finer
+  than `1km` whatever it declares (§4.2, §9.2)
+- **What NavCom draws**: a package with a `subject_location` is a ring at its point on NavCom's map,
+  no finer than `1km` while Q19 is open; one with only a jurisdiction shades it, and a
+  subdivision NavCom has no outline for lights its country, so `ke-30` lights Kenya (§4.2)
+
 **For Starcom:** a client that takes the newest kind `10050` by date is redirected by a list the
 exposed key signs dated ahead; and a reader that keeps the newest version across both keys lets the
 old key override the new one by dating later. Both are answered in §3 and §5.0.
@@ -99,7 +119,8 @@ from whether a builder exists, and this document follows the same discipline.
 |---|---|
 | Reading kind `30079` packages | LIVE — every device subscribes to The Record and its mirror at `wss://blackpi.cosmiccodex.app` at once, verifies each package itself, shows the best signed copy of each, and keeps both subscriptions open, so a new or closed mission shows without a reload |
 | The publisher registry (§3) | LIVE from rev 7's deploy — keys with windows, a frozen key, generations, and the file at `/.well-known/navcom-publishers.json` |
-| The grid (the map missions appear on) | LIVE as the landing page at [`navcom.app`](https://navcom.app/), lighting each mission's province |
+| The grid (the map missions appear on) | LIVE as the landing page at [`navcom.app`](https://navcom.app/), lighting each mission's province, or its country where NavCom draws no province for it. BUILT, 2026-10-18: a `subject_location` drawn as a ring at its point, at the precision it declares and no finer than `1km` until Q19 is answered |
+| `geo_precision: address` (§4.2) | PROPOSED, rev 8 — NavCom's reader keeps it, and its map draws it no finer than `1km` while Q19 is open; Q19 asks whether you will send it |
 | Kind `1911` observation (raw intel) | BUILT — builder and contract exist; published at `/.well-known/navcom-intel.json` |
 | Kind `1912` report | LIVE — operators on navcom.app send them, open or sealed (§5.2); the contract says `emitted: true` |
 | Claims (§5.1) | LIVE — operators on navcom.app send them, open and sealed; three rules PROPOSED (§10, Q11–Q13) |
@@ -224,18 +245,37 @@ such. A package that meets §4.1 is shown; nothing else in this section is a pre
 
 ### 4.2 Placement — where it appears
 
+**Nothing on NavCom's map, and nothing in any package NavCom reads, locates the people being
+served: no encampments, no sleeping sites, no person's position. Places on public record are points.
+dv refuges carry no coordinates at all.**
+
 **`jurisdiction` is enough, and it is what you use today.** `us-ca` lights California on the grid;
 the grid draws provinces for every country NavCom has regions in (today the US, the UK and
-Australia). That is exactly the right resolution for a state-wide campaign.
+Australia). That is exactly the right resolution for a state-wide campaign. A subdivision NavCom
+draws no province for lights its country (`ke-30` lights Kenya), and a national code outlines its
+country (2026-10-18).
 
-**`geo` is optional and coarse.** When present:
+**`geo` is optional, and carries the precision its source earned.** When present:
 
-- `geo_precision` MUST be `city` or `1km`. Nothing finer. NavCom's importer will round anything
-  finer down to ~1 km and treat the extra precision as a defect in the package
+- `geo_precision` is `city`, `1km`, or — **PROPOSED, rev 8** — `address`, five decimals (about a
+  metre), and `address` only with `geo_kind: subject_location`. NavCom keeps the point at the
+  precision declared, rounds anything finer to it and treats the extra precision as a defect in the
+  package, and reads an undeclared or unknown precision as `1km`. *Until rev 8:* it MUST be `city`
+  or `1km`
 - `geo_kind: subject_location` MUST locate an **entity on public record** — an organisation, a
-  facility, infrastructure, a parcel. **Never a person, a home, or a place people sleep**
-  (invariant 1). Your current use — a charity's registered address, geocoded by the Census — is
-  exactly right
+  facility, infrastructure, a parcel. **Never a person, a home, an encampment or an informal
+  sleeping site** (invariant 1). A clinic, a pantry or another facility on public record may be
+  located. Your current use — a charity's registered address, geocoded by the Census — is exactly
+  right, and is what `address` is for. NavCom draws it as a ring at its point
+- **A shelter, youth programme or other place people sleep stays off NavCom's map** (its owner's decision D5, 2026-10-18)
+  on whether a published place people sleep may be a point on its map. A package carries no
+  resource type, so NavCom cannot tell a youth shelter from a library by the package alone. Until
+  Q19 is answered, NavCom keeps the point at the precision declared and **draws it no finer
+  than `1km`**, at the point it rounds to — the hold the directory's own shelters are under. Telling
+  places people sleep apart is your duty in the meantime (§9.2), not something NavCom's reader can
+  check
+- `geo_kind: jurisdiction` is a point that stands for a jurisdiction. NavCom reads it as `city`
+  whatever it declares, and does not draw it as a place: the jurisdiction is shaded instead
 - NavCom never decides which country a point is in from a drawn border. At any public basemap's
   resolution, El Paso's own shelters plot inside Mexico. Placement is by region and jurisdiction
 
@@ -628,7 +668,10 @@ the map opens populated. It is identified as an agent everywhere it appears.
 - Keep `mission_state` true; close what you can no longer settle (§4.4)
 - Carry `valid_until` on every field mission (§4.1)
 - Settle or challenge reports within seven days (§5.3)
-- Locate subjects only when they are on public record, at `city` or `1km` (§4.2)
+- Locate subjects only when they are entities on public record — never a person, a home, an
+  encampment or an informal sleeping site — at `city` or `1km`, or at `address` once rev 8 is
+  agreed; and a place people sleep no finer than `1km` while Q19 is open (§4.2). NavCom's reader
+  cannot tell one apart, so this one is yours to keep
 - Count things, not people (§7.1)
 - Cite the observations you use (§6.2)
 - Never touch the `Distress` channel, never assign a named person, never score an operator
@@ -678,6 +721,12 @@ Answered by Starcom on 2026-10-06; all eight accepted. Three are Mecha Jono's to
 **Settling waits for reports** — agreed. §5.3's seven days start when kind `1912` is emitted; until
 then Mecha Jono records each claim against its package, and no claim on a campaign moves its
 `mission_state`.
+
+### New in rev 8 — where a package may put its point (PROPOSED)
+
+| | Question | NavCom's default if unanswered |
+|---|---|---|
+| Q19 | Will you send `geo_precision: address`, five decimals, for a `subject_location` that is an entity on public record at a geocoded address, and keep `city` or `1km` for everything else? | NavCom's reader keeps `address` already, and its map draws it no finer than `1km` until Q19 is answered. Packages that do not send it read as before: nothing you publish today changes |
 
 ### New in rev 7 — your key, what NavCom trusts, and what operators are told
 

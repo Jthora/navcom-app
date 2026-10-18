@@ -108,11 +108,19 @@ export async function admit(target: Page | BrowserContext, standIns: StandIn[]):
 
 const secs = (iso: string) => Math.floor(new Date(iso).getTime() / 1000);
 
-/** A field mission under `key`: open, in California, ending when given. */
+/** A field mission under `key`: open, in California unless filed elsewhere, ending when given. */
 export function mission(
   key: StandInKey,
   d: string,
-  o: { title?: string; at?: string; ends?: string; state?: string; extra?: string[][]; objectives?: { id: string; ask: string }[] } = {}
+  o: {
+    title?: string;
+    at?: string;
+    ends?: string;
+    state?: string;
+    jurisdiction?: string;
+    extra?: string[][];
+    objectives?: { id: string; ask: string }[];
+  } = {}
 ) {
   return finalizeEvent(
     {
@@ -121,7 +129,7 @@ export function mission(
       content: JSON.stringify({ name: o.title ?? d, objectives: o.objectives ?? [{ id: `${d}#do`, ask: 'Hand out water.' }] }),
       tags: [
         ['d', d], ['t', 'starcom_mission_package'], ['t', 'navcom_handoff'], ['t', 'navcom_mission'],
-        ['mission_state', o.state ?? 'open'], ['valid_until', String(secs(o.ends ?? '2026-12-31T00:00:00Z'))], ['jurisdiction', 'us-ca'],
+        ['mission_state', o.state ?? 'open'], ['valid_until', String(secs(o.ends ?? '2026-12-31T00:00:00Z'))], ['jurisdiction', o.jurisdiction ?? 'us-ca'],
         ...(o.extra ?? [])
       ]
     },

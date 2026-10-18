@@ -3,7 +3,8 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import { blankDevice, chunkOf, open, seedDevice } from './device';
-import { admit, resign, standInKey, type StandIn } from './registry';
+import { frame, inkNear, mapReady, pixelAt, screenAt, tap, tapAt, toneNear, zoomAt } from './map';
+import { admit, mission, resign, standInKey, type StandIn } from './registry';
 
 /**
  * A person's deliberate tap on a visibility choice comes well after the tap that opened it. The
@@ -25,6 +26,8 @@ const HEAT_KEY = standInKey();
 const HEAT_DESK: StandIn = { id: 'heat-desk', name: 'Heat Desk', agent: true, inbox: ['wss://nos.lol', 'wss://relay.primal.net'], keys: [HEAT_KEY] };
 const REAL_PACKAGES = JSON.parse(readFileSync(new URL('../../packages/core/test/fixtures/mission-packages.json', import.meta.url), 'utf8'));
 const HEAT_PACKAGE = resign(REAL_PACKAGES[0], HEAT_KEY);
+/** Its `d`, which every screen showing it marks. */
+const HEAT_MISSION_D = 'starcom_mission_package_field-heat_relief-CA-2026-10-02';
 
 /**
  * The landing page's map, on the phone this project is built for [build-order 11.2, 11.3].
@@ -125,35 +128,33 @@ test.describe('the landing map draws, and tells nobody', () => {
     expect((await picture(page)).hash).not.toBe(zoomed.hash);
   });
 
-  test('it opens on the regions, not on Greenwich', async ({ page }) => {
-    // Found on the first live run: the world view put most of the US off the left edge of a
-    // phone and left the bottom third empty. The opening view frames where most regions are,
-    // so it must show more of them than the whole-world view does.
-    const dotPixels = () =>
-      page.locator('.grid canvas').evaluate((c: HTMLCanvasElement) => {
-        const probe = getComputedStyle(c).getPropertyValue('--t-muted').trim();
-        const hex = probe.startsWith('#') ? probe.slice(1) : '9BA5B2';
-        const [r, g, b] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
-        const d = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
-        let n = 0;
-        for (let i = 0; i < d.length; i += 4) {
-          if (Math.abs(d[i]! - r!) < 6 && Math.abs(d[i + 1]! - g!) < 6 && Math.abs(d[i + 2]! - b!) < 6) n++;
-        }
-        return n;
-      });
-    await blankDevice(page);
-    await page.goto('/', { waitUntil: 'networkidle' });
-    await expect(page.locator('[data-grid="ready"]')).toBeVisible({ timeout: 15_000 });
-    // Coverage is off on the landing map [map.md §6], so the dots this counts are switched on
-    // first. Switching them on does not move the view: framing follows the regions either way.
-    await page.getByRole('button', { name: 'Coverage' }).click();
-    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))));
-    const framed = await dotPixels();
+  test('it opens on the whole Earth, above the sheet, and nothing moves it until a person does', async ({ page }) => {
+    /*
+     * Rewritten on purpose (2026-10-18). It was "it opens on the regions, not on Greenwich": the
+     * opening view framed where most regions are, and 1,889 of the 1,912 are in the US, so it
+     * opened on the US. NavCom is an Earth Alliance app, and opens on the Earth [the owner's
+     * direction, 2026-10-17; map.md §6]. Signed on, so the Distress strip takes its height too.
+     */
+    await seedDevice(page, { callsign: 'kestrel', relayEvents: [] });
+    const regions = page.waitForResponse((r) => r.url().endsWith('/console-regions.json'));
+    await open(page, '/');
+    await mapReady(page);
+    const canvas = page.locator('.grid canvas');
+    const opened = await canvas.getAttribute('data-view');
+    await regions;
+    await frame(page);
+    expect(await canvas.getAttribute('data-view'), 'the regions arriving moved the map').toBe(opened);
+    // Every inhabited continent, above the sheet at peek, and none of it under the map's key.
+    await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'peek');
+    for (const [name, lon, lat] of [
+      ['Lagos', 3.38, 6.52], ['Nairobi', 36.82, -1.29], ['Delhi', 77.21, 28.61], ['Beijing', 116.4, 39.9],
+      ['Sydney', 151.21, -33.87], ['São Paulo', -46.63, -23.55], ['London', -0.13, 51.51], ['New York', -74.0, 40.71]
+    ] as const) {
+      expect((await screenAt(page, lon, lat)).uncovered, `${name} is on screen and uncovered`).toBe(true);
+    }
     await page.getByRole('button', { name: 'Show the whole map' }).click();
-    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))));
-    const world = await dotPixels();
-    expect(framed).toBeGreaterThan(0);
-    expect(framed).toBeGreaterThan(world);
+    await frame(page);
+    expect(await canvas.getAttribute('data-view'), 'the opening view is the whole map').toBe(opened);
   });
 
   test('its controls are thumb-sized, at the terminal’s own floor', async ({ page }) => {
@@ -176,6 +177,8 @@ test.describe('the landing map draws, and tells nobody', () => {
     // Visible to Playwright is not seen by a person. This line sat at the foot of the map, under
     // the phone's sheet, and passed the check above the whole time.
     expect(await uncovered(failed)).toBe(true);
+    // With no map, a switch that changes what the map draws does nothing: it is not offered.
+    await expect(page.getByRole('button', { name: 'Places' })).toBeDisabled();
   });
 
   test('when the map’s own code cannot arrive, it says so instead of a blank map', async ({ page }) => {
@@ -187,6 +190,34 @@ test.describe('the landing map draws, and tells nobody', () => {
     await expect(failed).toBeVisible({ timeout: 15_000 });
     await expect(failed).toContainText(/needs one visit with a connection/);
     expect(await uncovered(failed)).toBe(true);
+    // Places are map-only doors, so with no map they are not offered, and the directory is.
+    await expect(page.getByRole('button', { name: 'Places' })).toBeDisabled();
+    const way = page.locator('.nav-loading a[href="/directory/"]');
+    await expect(way).toBeVisible();
+    expect(await uncovered(way)).toBe(true);
+  });
+
+  test('the map centres above the sheet by the sheet’s own height, given once', async ({ page }) => {
+    await ready(page);
+    await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'peek');
+    const [inset, sheet] = await page.evaluate(() =>
+      ['.grid .inset', '[data-com]'].map((q) => document.querySelector(q)!.getBoundingClientRect().height)
+    );
+    expect(Math.abs(inset! - sheet!), `the map keeps ${inset}px clear, and the sheet is ${sheet}px`).toBeLessThanOrEqual(1);
+    // One number, so a change to the sheet cannot leave the map centring above where it was.
+    const copies = await page.evaluate(() =>
+      [...document.styleSheets]
+        .flatMap((s) => {
+          try {
+            return [...s.cssRules].map((r) => r.cssText);
+          } catch {
+            return [];
+          }
+        })
+        .join('\n')
+        .match(/12\.75rem/g)?.length ?? 0
+    );
+    expect(copies).toBe(1);
   });
 
   test('a device set to low signature gets the map in low signature, not at full brightness', async ({ page }) => {
@@ -202,7 +233,8 @@ test.describe('the landing map draws, and tells nobody', () => {
     await expect(page.locator('[data-grid="ready"]')).toBeVisible({ timeout: 15_000 });
     await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))));
     await expect(page.locator('html')).toHaveAttribute('data-signature', 'low');
-    // The opening view frames the regions; the whole map puts Arctic ocean in the corner.
+    // The opening view is the whole map, so the corner is above the Arctic: ground, which low
+    // signature makes black. Pressed anyway, so the corner is read at the view the button promises.
     await page.getByRole('button', { name: 'Show the whole map' }).click();
     await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))));
     expect(await corner(page)).toEqual([0, 0, 0]);
@@ -354,6 +386,18 @@ test.describe('the landing map draws, and tells nobody', () => {
   });
 });
 
+test.describe('the landing map without its script', () => {
+  test.use({ javaScriptEnabled: false });
+
+  test('says where the directory is without the map, and offers no switch that would do nothing', async ({ page }) => {
+    await page.goto('/');
+    const way = page.locator('.nav-loading a[href="/directory/"]');
+    await expect(way).toBeVisible();
+    expect(await uncovered(way)).toBe(true);
+    await expect(page.getByRole('button', { name: 'Places' })).toBeDisabled();
+  });
+});
+
 test.describe('the landing page: Com over the map', () => {
   const detentOf = (page: Page) => page.locator('[data-com]').getAttribute('data-detent');
   /** One tap on the handle moves one step: peek → half → full → peek. */
@@ -406,7 +450,7 @@ test.describe('the landing page: Com over the map', () => {
 
   // Distress at every height, with and without a screen open, is com-distress.spec.ts.
 
-  test('coverage is one switch away, and off until somebody asks', async ({ page }) => {
+  test('places are one switch away, and off until somebody asks', async ({ page }) => {
     const mutedPixels = () =>
       page.locator('.grid canvas').evaluate((c: HTMLCanvasElement) => {
         const hex = getComputedStyle(c).getPropertyValue('--t-muted').trim().replace('#', '') || '9BA5B2';
@@ -421,7 +465,7 @@ test.describe('the landing page: Com over the map', () => {
     await blankDevice(page);
     await page.goto('/', { waitUntil: 'networkidle' });
     await expect(page.locator('[data-grid="ready"]')).toBeVisible({ timeout: 15_000 });
-    const coverage = page.getByRole('button', { name: 'Coverage' });
+    const coverage = page.getByRole('button', { name: 'Places' });
     await expect(coverage).toHaveAttribute('aria-pressed', 'false');
     const off = await mutedPixels();
     await coverage.click();
@@ -479,27 +523,16 @@ test.describe('the landing page: missions you can open', () => {
     await expect(mission.locator('[data-omitted]')).toContainText('counted people');
   });
 
-  test('tapping a lit province opens its missions; Back and Escape step out again', async ({ page }) => {
+  test('tapping a lit province opens it, with its missions; Back and Escape step out again', async ({ page }) => {
     await withHeat(page);
-    const canvas = page.locator('.grid canvas');
-    await expect(page.locator('[data-grid="ready"]')).toBeVisible();
-    // Where central California is on screen, from the view the map is drawing right now.
-    const spot = await canvas.evaluate((c: HTMLCanvasElement) => {
-      const [cx, cy, scale] = (c.dataset.view ?? '').split(' ').map(Number) as [number, number, number];
-      const r = c.getBoundingClientRect();
-      const lat = 36.8 * (Math.PI / 180);
-      const ux = (-119.4 + 180) / 360;
-      const uy = (1 - Math.log(Math.tan(lat) + 1 / Math.cos(lat)) / Math.PI) / 2;
-      const x = r.left + (ux - cx) * scale + r.width / 2;
-      const y = r.top + (uy - cy) * scale + r.height / 2;
-      // Only a tap the map itself would receive: nothing may be over it there.
-      return document.elementFromPoint(x, y) === c ? { x, y } : null;
-    });
-    expect(spot, 'California should be on screen and uncovered').not.toBeNull();
-    await page.mouse.click(spot!.x, spot!.y);
-    const list = page.locator('[data-screen="missions"][data-province="us-ca"]');
-    await expect(list).toBeVisible();
-    await expect(list.locator('[data-post]')).toHaveText('California');
+    await mapReady(page);
+    // Where central California is on screen at the opening view, from the view the map is drawing.
+    await tapAt(page, -119.4, 36.8, 'California');
+    // A place screen since 2026-10-18 [map.md §6: every shape is a door], listing what is filed there.
+    const place = page.locator('[data-screen="place"][data-place="us-ca"]');
+    await expect(place).toBeVisible();
+    await expect(place.locator('[data-post]').first()).toHaveText('California');
+    await expect(place.locator(`[data-mission="${HEAT_D}"]`)).toBeVisible();
 
     await page.locator('[data-back]').click();
     await expect(page.getByLabel(/where are you, or what do you need/i)).toBeVisible();
@@ -1250,7 +1283,7 @@ test.describe('the landing page: missions you can open', () => {
           // covered "Show the whole map" at every height.
           await withHeat(page, { __noStorage: false, callsign: 'kestrel' });
           await expect(page.locator('[data-grid="ready"]')).toBeVisible({ timeout: 15_000 });
-          for (const name of ['Show the whole map', 'Zoom in', 'Zoom out', 'Coverage']) {
+          for (const name of ['Show the whole map', 'Zoom in', 'Zoom out', 'Places']) {
             expect(await uncovered(page.getByRole('button', { name })), name).toBe(true);
           }
           // Com itself, and Distress, are both there to be reached.
@@ -1259,5 +1292,401 @@ test.describe('the landing page: missions you can open', () => {
         });
       });
     }
+  });
+});
+
+/*
+ * The map's doors, on the phone and then on a desktop. Places, missions and helpers both read.
+ */
+const DURING = new Date('2026-10-06T20:00:00Z');
+const NAIROBI = [36.82, -1.29] as const;
+const TEXAS = [-99.9, 31.5] as const;
+const LONDON = [-0.13, 51.51] as const;
+/** A mission filed under a Kenyan county, which no drawn province matches: it lights Kenya. */
+const KENYA_D = 'test-water-points-ke-30';
+const kenyan = () => mission(HEAT_KEY, KENYA_D, { title: 'Water points', jurisdiction: 'ke-30' });
+/** A mission filed nationally, as real Starcom packages are (`recall_check-home` is `us`): it outlines the US. */
+const NATIONAL_D = 'test-national-recall-check';
+const national = () => mission(HEAT_KEY, NATIONAL_D, { title: 'Recall check', jurisdiction: 'us' });
+/** A mission at a public facility, located at its address [interchange spec §4.2, rev 8]. */
+const LIBRARY_D = 'test-cooling-centre-library';
+const LIBRARY = [-119.7871, 36.7378] as const;
+const library = () =>
+  mission(HEAT_KEY, LIBRARY_D, {
+    title: 'Cooling centre at the library',
+    extra: [['geo', `lat:${LIBRARY[1]},lon:${LIBRARY[0]}`], ['geo_kind', 'subject_location'], ['geo_precision', 'address']]
+  });
+
+async function withMissions(page: Page, events: unknown[], seed: Record<string, unknown> = {}) {
+  await page.clock.setFixedTime(DURING);
+  await seedDevice(page, { relayEvents: events, __noStorage: true, ...seed } as Parameters<typeof seedDevice>[1]);
+  await open(page, '/');
+  await expect(page.locator('[data-missions="open"], [data-missions="none"]')).toContainText('live', { timeout: 15_000 });
+  await mapReady(page);
+}
+
+/** Places on, once its file has arrived and been drawn. */
+async function placesOn(page: Page) {
+  const arrived = page.waitForResponse((r) => r.url().endsWith('/grid/places.json'));
+  await page.getByRole('button', { name: 'Places' }).click();
+  await arrived;
+  await frame(page);
+}
+
+/** A region's centre and figures, as the page itself reads them. */
+const regionOf = (page: Page, slug: string) =>
+  page.evaluate(async (slug) => {
+    const j = (await (await fetch('/console-regions.json')).json()) as {
+      centroids: { region: string; name: string; lat: number; lon: number }[];
+      figures: Record<string, { records: number }>;
+    };
+    return { ...j.centroids.find((c) => c.region === slug)!, records: j.figures[slug]!.records };
+  }, slug);
+
+/**
+ * A region with records and none of them on the map (all held back until D5, say), the one standing
+ * furthest from any drawn record and any other region, so a tap at its centre can only be its own.
+ */
+const heldBack = (page: Page) =>
+  page.evaluate(async () => {
+    const file = (await (await fetch('/grid/places.json')).json()) as { regions: Record<string, ([number, number] | null)[]> };
+    const { centroids } = (await (await fetch('/console-regions.json')).json()) as {
+      centroids: { region: string; name: string; lat: number; lon: number }[];
+    };
+    const drawn = Object.values(file.regions).flatMap((ps) => ps.filter((p): p is [number, number] => p !== null));
+    let best = { gap: 0, c: null as null | (typeof centroids)[number] };
+    for (const c of centroids) {
+      const points = file.regions[c.region] ?? [];
+      // Inside the band the opening view shows uncovered, so the test can reach it before it zooms.
+      if (points.length === 0 || points.some((p) => p !== null) || c.lat > 60 || c.lat < 15) continue;
+      const others = [...drawn, ...centroids.filter((o) => o !== c).map((o) => [o.lon, o.lat] as [number, number])];
+      const gap = Math.min(...others.map(([lon, lat]) => Math.hypot(lon - c.lon, lat - c.lat)));
+      if (gap > best.gap) best = { gap, c };
+    }
+    const c = best.c!;
+    return { slug: c.region, name: c.name, lon: c.lon, lat: c.lat, records: file.regions[c.region]!.length };
+  });
+
+/** The region's record standing furthest from any other, among those whose own coordinates carry all five places. */
+const isolatedRecord = (page: Page, slug: string) =>
+  page.evaluate(async (slug) => {
+    const file = (await (await fetch('/grid/places.json')).json()) as { regions: Record<string, ([number, number] | null)[]> };
+    const index = (await (await fetch(`/console-index/${slug}.json`)).json()) as { id: string; name: string; at?: [number, number] }[];
+    const points = file.regions[slug]!;
+    const five = (n: number) => /\.\d{5}$/.test(String(n));
+    let best = { i: -1, gap: 0 };
+    points.forEach((p, i) => {
+      const own = index[i]?.at;
+      if (!p || !own || !five(own[0]) || !five(own[1])) return;
+      const gap = Math.min(...points.map((q, j) => (q && j !== i ? Math.hypot(q[0] - p[0], q[1] - p[1]) : Infinity)));
+      if (gap > best.gap) best = { i, gap };
+    });
+    return { i: best.i, point: points[best.i]!, entry: index[best.i]! };
+  }, slug);
+
+test.describe('the landing map: every shape and point is a door [map.md §6]', () => {
+  // The worker would serve the build's own code past the registry splice.
+  test.use({ serviceWorkers: 'block' });
+  test.beforeEach(async ({ page }) => void (await admit(page, [HEAT_DESK])));
+
+  test('a tap on unlit Kenya opens Kenya, and says nothing is open there', async ({ page }) => {
+    await withMissions(page, [HEAT_PACKAGE]);
+    await tapAt(page, ...NAIROBI, 'Nairobi');
+    const place = page.locator('[data-screen="place"][data-place="ke"]');
+    await expect(place).toBeVisible();
+    await expect(place).toContainText(/nothing open in Kenya/i);
+    // Directory regions are listed by distance, and there are none within reach of Nairobi yet.
+    await expect(place).toContainText(/no directory region within/i);
+  });
+
+  test('a finger’s tap lifts the outline of what it took while that place is open, and Back lets it go', async ({ page }) => {
+    // Touch has no hover, so nothing else on the map says what a finger took [review, 2026-10-18].
+    await withMissions(page, [HEAT_PACKAGE]);
+    const at = await screenAt(page, ...NAIROBI);
+    expect(await inkNear(page, at.x, at.y, 12), 'ink at Kenya before anything was tapped').toBe(0);
+    await tapAt(page, ...NAIROBI, 'Nairobi');
+    await expect(page.locator('[data-screen="place"][data-place="ke"]')).toBeVisible();
+    await frame(page);
+    await expect(page.locator('[data-chip]')).toHaveText('');
+    expect(await inkNear(page, at.x, at.y, 12), 'Kenya’s outline was not lifted').toBeGreaterThan(20);
+    await page.locator('[data-back]').click();
+    await expect(page.locator('[data-screen="place"]')).toHaveCount(0);
+    await frame(page);
+    expect(await inkNear(page, at.x, at.y, 12), 'Kenya stayed lifted after its place closed').toBe(0);
+  });
+
+  test('a national mission takes no tap from the states it outlines: a finger on Texas opens Texas, and lists it', async ({ page }) => {
+    await withMissions(page, [HEAT_PACKAGE, national()]);
+    await tapAt(page, ...TEXAS, 'Texas');
+    const place = page.locator('[data-screen="place"]');
+    await expect(place).toHaveAttribute('data-place', 'us-tx');
+    await expect(place.locator('[data-post]').first()).toHaveText('Texas');
+    // Filed under `us`, so listed on every state's screen [filedUnder].
+    await expect(place.locator(`[data-mission="${NATIONAL_D}"]`)).toBeVisible();
+  });
+
+  test('a mission filed under a Kenyan county lights Kenya, and a tap there lists it', async ({ page }) => {
+    await withMissions(page, [HEAT_PACKAGE, kenyan()]);
+    await expect(page.locator('[data-missions="open"]')).toContainText('Open missions · live');
+    // A lift in brightness at Nairobi, against unlit Tanzania beside it: both are plain land otherwise.
+    const nairobi = await screenAt(page, ...NAIROBI);
+    const dodoma = await screenAt(page, 35.75, -6.16);
+    const [lit, unlit] = [await pixelAt(page, nairobi.x, nairobi.y), await pixelAt(page, dodoma.x, dodoma.y)];
+    expect(lit.reduce((a, b) => a + b), `Kenya ${lit} against Tanzania ${unlit}`).toBeGreaterThan(unlit.reduce((a, b) => a + b) + 15);
+    await tapAt(page, ...NAIROBI, 'Nairobi');
+    const place = page.locator('[data-screen="place"][data-place="ke"]');
+    await expect(place.locator(`[data-mission="${KENYA_D}"]`)).toContainText('Water points');
+    await place.locator(`[data-mission="${KENYA_D}"]`).click();
+    await expect(page.locator(`[data-screen="mission"][data-mission="${KENYA_D}"]`)).toBeVisible();
+  });
+
+  test('a tap at the whole-Earth view lists what is near without distances it cannot know; zoomed in, it measures', async ({ page }) => {
+    // At this zoom a thumb covers hundreds of kilometres, so "84 km" would be precision the tap does not have.
+    await withMissions(page, [HEAT_PACKAGE]);
+    await tapAt(page, ...LONDON, 'London');
+    const near = page.locator('[data-screen="place"] [data-near]');
+    await expect(near.locator('[data-near-region="london"]')).toBeVisible();
+    await expect(near).toHaveAttribute('data-near', 'coarse');
+    await expect(near.locator('.nc-near-km')).toHaveCount(0);
+    await page.locator('[data-back]').click();
+    await zoomAt(page, ...LONDON, 16);
+    await tapAt(page, ...LONDON, 'London');
+    await expect(near).toHaveAttribute('data-near', 'measured');
+    await expect(near.locator('.nc-near-km').first()).toHaveText(/^\d+ km$/);
+  });
+
+  test('by keyboard alone: focus the map, pan to California, and Enter opens it', async ({ page }) => {
+    await withMissions(page, [HEAT_PACKAGE]);
+    const canvas = page.locator('.grid canvas');
+    await canvas.focus();
+    for (let i = 0; i < 5; i++) await page.keyboard.press('+');
+    // Pan until California is under the reticle, reading where both are from the map itself.
+    for (let i = 0; i < 80; i++) {
+      await frame(page);
+      const [rx, ry] = ((await canvas.getAttribute('data-reticle')) ?? '').split(' ').map(Number) as [number, number];
+      const box = (await canvas.boundingBox())!;
+      const ca = await screenAt(page, -119.4, 36.8);
+      const [dx, dy] = [ca.x - box.x - rx, ca.y - box.y - ry];
+      const step = Math.min(box.width, box.height) * 0.15;
+      if (Math.abs(dx) <= step / 2 && Math.abs(dy) <= step / 2) break;
+      if (Math.abs(dx) > step / 2) await page.keyboard.press(dx < 0 ? 'ArrowLeft' : 'ArrowRight');
+      else await page.keyboard.press(dy < 0 ? 'ArrowUp' : 'ArrowDown');
+    }
+    // The reticle's readout is a polite live region: what is under it, as the keys move it.
+    const chip = page.locator('[data-chip]');
+    await expect(chip).toHaveAttribute('role', 'status');
+    await expect(chip).toHaveText('California · 1 open mission');
+    await page.keyboard.press('Enter');
+    const place = page.locator('[data-screen="place"][data-place="us-ca"]');
+    await expect(place).toBeVisible();
+    await expect(place.locator(`[data-mission="${HEAT_MISSION_D}"]`)).toBeVisible();
+  });
+
+  test('no axe violations with a place open', async ({ page }) => {
+    await withMissions(page, [HEAT_PACKAGE]);
+    await tapAt(page, ...NAIROBI, 'Nairobi');
+    await expect(page.locator('[data-screen="place"][data-place="ke"]')).toContainText(/nothing open in Kenya/i);
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations.map((v) => v.id)).toEqual([]);
+  });
+
+  test('a mission at a public facility is a ring at its point, and a finger on it opens that mission', async ({ page }) => {
+    await withMissions(page, [HEAT_PACKAGE, library()]);
+    const at = await screenAt(page, ...LIBRARY);
+    // The ring is drawn in ink, the brightest neutral there is; California's lift alone is far dimmer.
+    expect(await inkNear(page, at.x, at.y, 10), 'no ring at the library').toBeGreaterThan(20);
+    await tapAt(page, ...LIBRARY, 'the library');
+    await expect(page.locator(`[data-screen="mission"][data-mission="${LIBRARY_D}"]`)).toBeVisible();
+  });
+
+  test('zoomed in to a street, a package’s address is still drawn no finer than a kilometre until D5 and Q19 are answered', async ({ page }) => {
+    /*
+     * A package carries no resource type, so a youth shelter and a library look alike to NavCom: the
+     * same hold the directory's shelters are under, until D5 and Q19 [map.md §6; interchange spec §4.2].
+     * Drawn at the 1 km point it rounds to, as a ring a kilometre across, however far in.
+     */
+    await withMissions(page, [HEAT_PACKAGE, library()]);
+    await zoomAt(page, ...LIBRARY, 2048);
+    // The wheel's pointer is a mouse, whose hover rings the mission: off the map, so only the ring is drawn.
+    await page.locator('.nav-key h1').hover();
+    await frame(page);
+    const [lon, lat] = [Math.round(LIBRARY[0] * 100) / 100, Math.round(LIBRARY[1] * 100) / 100];
+    const exact = await screenAt(page, ...LIBRARY);
+    const centre = await screenAt(page, lon, lat);
+    const scale = Number(((await page.locator('.grid canvas').getAttribute('data-view')) ?? '').split(' ')[2]);
+    const r = (1_113 * scale) / (40_075_017 * Math.cos((lat * Math.PI) / 180));
+    expect(r, 'the ring a kilometre covers is wider than the smallest ring').toBeGreaterThan(20);
+    expect(await inkNear(page, exact.x, exact.y, 8), 'a ring drawn round the address itself').toBe(0);
+    expect(await inkNear(page, centre.x + r, centre.y, 4), 'no kilometre ring round the point it rounds to').toBeGreaterThan(0);
+  });
+
+  test('Places fetches its file once, from navcom.app only, and never before it is switched on', async ({ page }) => {
+    const requested: string[] = [];
+    page.on('request', (r) => requested.push(r.url()));
+    await withMissions(page, [HEAT_PACKAGE]);
+    const places = () => requested.filter((u) => new URL(u).pathname === '/grid/places.json');
+    await page.getByRole('button', { name: 'Zoom in' }).click();
+    await frame(page);
+    expect(places(), 'fetched with Places off').toEqual([]);
+    const button = page.getByRole('button', { name: 'Places' });
+    const arrived = page.waitForResponse((r) => r.url().endsWith('/grid/places.json'));
+    await button.click();
+    await arrived;
+    await button.click();
+    await button.click();
+    await frame(page);
+    expect(places()).toHaveLength(1);
+    const home = new URL(page.url()).origin;
+    expect(requested.filter((u) => new URL(u).origin !== home)).toEqual([]);
+  });
+
+  test('when the places file cannot load, the key says so, and the next switch-on asks again', async ({ page }) => {
+    await withMissions(page, [HEAT_PACKAGE]);
+    let asked = 0;
+    await page.route('**/grid/places.json', (r) => {
+      asked += 1;
+      return r.abort();
+    });
+    const button = page.getByRole('button', { name: 'Places' });
+    await button.click();
+    const failed = page.locator('[data-places="failed"]');
+    await expect(failed).toContainText(/places not loaded/i);
+    expect(await uncovered(failed)).toBe(true);
+    expect(asked).toBe(1);
+    await page.unroute('**/grid/places.json');
+    await button.click();
+    const arrived = page.waitForResponse((r) => r.url().endsWith('/grid/places.json'));
+    await button.click();
+    await arrived;
+    await expect(failed).toHaveCount(0);
+  });
+
+  test('with Places on, regions are rings Earth-wide, hollow so no centre reads as a place; a finger on Birmingham’s opens it', async ({ page }) => {
+    await withMissions(page, [HEAT_PACKAGE]);
+    const melbourne = await regionOf(page, 'melbourne');
+    const london = await regionOf(page, 'london');
+    const muted = async (lon: number, lat: number) => {
+      const at = await screenAt(page, lon, lat);
+      return toneNear(page, at.x, at.y, 6, '--t-muted');
+    };
+    const before = [await muted(melbourne.lon, melbourne.lat), await muted(london.lon, london.lat)];
+    await placesOn(page);
+    // A ring is drawn in the muted neutral, which nothing else on the map is drawn in.
+    expect(await muted(melbourne.lon, melbourne.lat), 'no ring at Melbourne').toBeGreaterThan(before[0]! + 10);
+    expect(await muted(london.lon, london.lat), 'no ring at London').toBeGreaterThan(before[1]! + 10);
+
+    const birmingham = await regionOf(page, 'birmingham-uk');
+    // In close enough that Birmingham's ring is its own and not its neighbours'.
+    await zoomAt(page, birmingham.lon, birmingham.lat, 16);
+    const at = await screenAt(page, birmingham.lon, birmingham.lat);
+    const button = page.getByRole('button', { name: 'Places' });
+    await button.click();
+    await frame(page);
+    const bare = await pixelAt(page, at.x, at.y);
+    await button.click();
+    await frame(page);
+    // A region's centre is a statistic of its records, not a place: never a dot like a record's.
+    expect(await pixelAt(page, at.x, at.y), 'Birmingham’s centre is drawn as a dot').toEqual(bare);
+    expect(await toneNear(page, at.x, at.y, 7, '--t-muted'), 'no ring round Birmingham').toBeGreaterThan(10);
+    await tap(page, at.x, at.y);
+    const place = page.locator('[data-screen="place"][data-place="birmingham-uk"]');
+    await expect(place).toContainText(`${birmingham.records} places`);
+    await place.locator('[data-area-link]').click();
+    await page.waitForURL('**/directory/area/birmingham-uk/');
+  });
+
+  test('from about 2 km a pixel, a region’s records take over from its ring', async ({ page }) => {
+    await withMissions(page, [HEAT_PACKAGE]);
+    const birmingham = await regionOf(page, 'birmingham-uk');
+    await placesOn(page);
+    await zoomAt(page, birmingham.lon, birmingham.lat, 40);
+    const pick = await isolatedRecord(page, 'birmingham-uk');
+    expect(pick.i, 'a Birmingham record with five-place coordinates').toBeGreaterThanOrEqual(0);
+    await tapAt(page, pick.point[0], pick.point[1], pick.entry.name);
+    await expect(page.locator(`[data-screen="place"][data-record="${pick.i}"] [data-post]`).first()).toHaveText(pick.entry.name);
+  });
+
+  test('zoomed into Birmingham, a record’s point opens it, and Open in maps carries its own five places', async ({ page }) => {
+    await withMissions(page, [HEAT_PACKAGE]);
+    const birmingham = await regionOf(page, 'birmingham-uk');
+    await placesOn(page);
+    await zoomAt(page, birmingham.lon, birmingham.lat, 600);
+    const pick = await isolatedRecord(page, 'birmingham-uk');
+    expect(pick.i, 'a Birmingham record with five-place coordinates').toBeGreaterThanOrEqual(0);
+    await tapAt(page, pick.point[0], pick.point[1], pick.entry.name);
+    const place = page.locator(`[data-screen="place"][data-record="${pick.i}"]`);
+    await expect(place.locator('[data-post]').first()).toHaveText(pick.entry.name);
+    await expect(place.locator('[data-record-link]')).toHaveAttribute('href', `/directory/${pick.entry.id}/`);
+    const [lon, lat] = pick.entry.at!;
+    await expect(place.locator('[data-handoff]')).toHaveAttribute('href', new RegExp(`mlat=${lat}&mlon=${lon}#`.replace(/\./g, '\\.')));
+    await expect(place.locator('[data-handoff]')).toHaveAttribute('rel', 'noreferrer');
+  });
+
+  test('zoomed in past where records take over, a region whose places are all held back keeps its ring, and says so', async ({ page }) => {
+    // Blank must read unknown, not none [invariant 7]: a held-back region was a stretch of nothing.
+    await withMissions(page, [HEAT_PACKAGE]);
+    await placesOn(page);
+    const held = await heldBack(page);
+    await zoomAt(page, held.lon, held.lat, 200);
+    await tapAt(page, held.lon, held.lat, held.name);
+    const place = page.locator(`[data-screen="place"][data-place="${held.slug}"]`);
+    await expect(place).toContainText(`${held.records} not on the map`);
+    await expect(place.locator('[data-area-link]')).toBeVisible();
+  });
+});
+
+test.describe('the landing map on a desktop: hover says what is under the pointer', () => {
+  test.use({ serviceWorkers: 'block', viewport: { width: 1280, height: 900 }, isMobile: false, hasTouch: false, deviceScaleFactor: 1 });
+  test.beforeEach(async ({ page }) => void (await admit(page, [HEAT_DESK])));
+
+  test('California with the heat mission, and Kenya with nothing, each say so, under Distress and inside the map', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-10-06T20:00:00Z'));
+    await seedDevice(page, { relayEvents: [HEAT_PACKAGE], callsign: 'kestrel' });
+    await open(page, '/');
+    await expect(page.locator('[data-missions="open"]')).toContainText('Open missions · live', { timeout: 15_000 });
+    await mapReady(page);
+    const chip = page.locator('[data-chip]');
+    const california = await screenAt(page, -119.4, 36.8);
+    await page.mouse.move(california.x, california.y);
+    await expect(chip).toHaveText('California · 1 open mission');
+    const nav = (await page.locator('.nav').boundingBox())!;
+    const box = (await chip.boundingBox())!;
+    expect(box.x >= nav.x && box.y >= nav.y && box.x + box.width <= nav.x + nav.width && box.y + box.height <= nav.y + nav.height, 'the chip leaves the map').toBe(true);
+    const distress = page.getByRole('link', { name: /^distress$/i });
+    expect(
+      await distress.evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+        return hit === el || el.contains(hit);
+      }),
+      'something covers Distress'
+    ).toBe(true);
+    const kenya = await screenAt(page, 36.82, -1.29);
+    await page.mouse.move(kenya.x, kenya.y);
+    await expect(chip).toHaveText('Kenya · Nothing open');
+  });
+
+  test('with a national mission open, a state is still the state under the pointer, and says the mission is open there', async ({ page }) => {
+    await withMissions(page, [HEAT_PACKAGE, national()]);
+    const texas = await screenAt(page, ...TEXAS);
+    await page.mouse.move(texas.x, texas.y);
+    await expect(page.locator('[data-chip]')).toHaveText('Texas · 1 open mission');
+  });
+
+  test('a region’s ring says what it holds, and zoomed in, how many of its places are not on the map', async ({ page }) => {
+    await withMissions(page, [HEAT_PACKAGE]);
+    await placesOn(page);
+    const chip = page.locator('[data-chip]');
+    const birmingham = await regionOf(page, 'birmingham-uk');
+    await zoomAt(page, birmingham.lon, birmingham.lat, 16);
+    const at = await screenAt(page, birmingham.lon, birmingham.lat);
+    await page.mouse.move(at.x, at.y);
+    await expect(chip).toHaveText(`Birmingham · ${birmingham.records} places`);
+    await page.getByRole('button', { name: 'Show the whole map' }).click();
+    const held = await heldBack(page);
+    await zoomAt(page, held.lon, held.lat, 200);
+    const there = await screenAt(page, held.lon, held.lat);
+    await page.mouse.move(there.x, there.y);
+    await expect(chip).toHaveText(`${held.name} · ${held.records} ${held.records === 1 ? 'place' : 'places'} not on the map`);
   });
 });

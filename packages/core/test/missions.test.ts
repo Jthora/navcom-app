@@ -138,13 +138,30 @@ describe('the lines a package may not cross', () => {
 });
 
 describe('what it repairs instead, and records', () => {
-  it('coarsens a coordinate to the precision it declares, and never finer than ~1 km', () => {
+  it('coarsens a coordinate to the precision it declares', () => {
     const fine = ok(pkg([['geo', 'lat:39.37226,lon:-104.85868'], ['geo_precision', '1km'], ['geo_kind', 'subject_location']]), TEST);
-    expect(fine.placement.point).toEqual({ lat: 39.37, lon: -104.86, precision: '1km', coarsened: true });
+    expect(fine.placement.point).toEqual({ lat: 39.37, lon: -104.86, precision: '1km', kind: 'subject_location', coarsened: true });
     const city = ok(pkg([['geo', 'lat:39.37226,lon:-104.85868'], ['geo_precision', 'city'], ['geo_kind', 'jurisdiction']]), TEST);
-    expect(city.placement.point).toMatchObject({ lat: 39.4, lon: -104.9, precision: 'city' });
+    expect(city.placement.point).toMatchObject({ lat: 39.4, lon: -104.9, precision: 'city', kind: 'jurisdiction' });
     const undeclared = ok(pkg([['geo', 'lat:39.37,lon:-104.86'], ['geo_kind', 'subject_location']]), TEST);
     expect(undeclared.placement.point).toMatchObject({ precision: '1km', coarsened: true });
+  });
+
+  it('keeps a subject on public record at the address precision it declares: five places [rev 8, §4.2]', () => {
+    const facility = ok(pkg([['geo', 'lat:39.37226,lon:-104.85868'], ['geo_precision', 'address'], ['geo_kind', 'subject_location']]), TEST);
+    expect(facility.placement.point).toEqual({ lat: 39.37226, lon: -104.85868, precision: 'address', kind: 'subject_location', coarsened: false });
+  });
+
+  it('flags anything finer than it declares as coarsened, at the address precision too', () => {
+    const over = ok(pkg([['geo', 'lat:39.3722612,lon:-104.8586834'], ['geo_precision', 'address'], ['geo_kind', 'subject_location']]), TEST);
+    expect(over.placement.point).toEqual({ lat: 39.37226, lon: -104.85868, precision: 'address', kind: 'subject_location', coarsened: true });
+  });
+
+  it('coarsens a point that stands for a jurisdiction to a city whatever it declares: a jurisdiction has no doorstep', () => {
+    for (const declared of ['address', '1km']) {
+      const m = ok(pkg([['geo', 'lat:39.37226,lon:-104.85868'], ['geo_precision', declared], ['geo_kind', 'jurisdiction']]), TEST);
+      expect(m.placement.point, declared).toEqual({ lat: 39.4, lon: -104.9, precision: 'city', kind: 'jurisdiction', coarsened: true });
+    }
   });
 
   it('drops a coordinate of a kind it does not understand, and keeps the mission', () => {
@@ -326,7 +343,7 @@ describe('what the second audit of Milestone 11 found', () => {
 
     it('says a coordinate was coarsened only when it was', () => {
       const exact = ok(pkg([['geo', 'lat:39.37,lon:-104.86'], ['geo_precision', '1km'], ['geo_kind', 'subject_location']]), TEST);
-      expect(exact.placement.point).toEqual({ lat: 39.37, lon: -104.86, precision: '1km', coarsened: false });
+      expect(exact.placement.point).toEqual({ lat: 39.37, lon: -104.86, precision: '1km', kind: 'subject_location', coarsened: false });
     });
 
     it('reads a jurisdiction in capitals as the same place', () => {

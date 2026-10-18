@@ -91,6 +91,42 @@ describe('the committed geometry', () => {
   });
 });
 
+describe('every shape says what it is', () => {
+  // Hover and tap name what is under them [map.md §6]: a shape with no id or name is a dead tap.
+  it('gives every country an id, in the form a mission files it, except the two Natural Earth leaves without one', () => {
+    const countries = layers['world']!.shapes;
+    for (const s of countries) if (s.id !== null) expect(s.id, s.name ?? '').toMatch(/^[a-z]{2}$/);
+    // Disputed, and coded -99 at the source: named here so a third becomes a decision, not a drift.
+    expect(countries.filter((s) => s.id === null).map((s) => s.name).sort()).toEqual(['N. Cyprus', 'Somaliland']);
+    expect(countries.every((s) => typeof s.name === 'string' && s.name.length > 0)).toBe(true);
+  });
+
+  it('puts Nairobi inside the shape filed as Kenya, which no region is in', () => {
+    const kenya = layers['world']!.shapes.find((s) => s.id === 'ke');
+    expect(kenya?.name).toBe('Kenya');
+    expect(inside(kenya!.rings, mercator(36.82, -1.29))).toBe(true);
+    expect(inside(kenya!.rings, mercator(39.28, -6.8))).toBe(false); // Dar es Salaam
+  });
+
+  it('names each province beside its code', () => {
+    expect(layers['provinces']!.shapes.find((s) => s.id === 'us-ca')?.name).toBe('California');
+    expect(layers['provinces']!.shapes.every((s) => typeof s.name === 'string' && s.name.length > 0)).toBe(true);
+  });
+
+  it('gives every shape a box that holds all of its rings, so a tap can skip it cheaply', () => {
+    for (const { shapes } of Object.values(layers)) {
+      for (const s of shapes) {
+        const [x0, y0, x1, y1] = s.bbox;
+        for (const r of s.rings) {
+          for (let i = 0; i < r.length; i += 2) {
+            expect(r[i]! >= x0 && r[i]! <= x1 && r[i + 1]! >= y0 && r[i + 1]! <= y1).toBe(true);
+          }
+        }
+      }
+    }
+  });
+});
+
 describe('detail follows the regions', () => {
   it('has provinces for every country a region is filed in', () => {
     const dir = join(ROOT, 'data', 'regions');

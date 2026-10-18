@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { COM_ENTRIES } from '../scripts/lib/budget.mjs';
 import { chunkOf, open, seedDevice } from './device';
+import { mapReady, screenAt, tap, tapAt, zoomAt } from './map';
 import { admit, resign, standInKey, type StandIn } from './registry';
 
 /**
@@ -146,6 +147,37 @@ const WAYS_IN: Record<string, WayIn[]> = {
         await toMission(page);
         await page.locator('[data-reports]').click();
         return page.locator('[data-screen="reports"]');
+      }
+    }
+  ],
+  place: [
+    {
+      // A country no region is in, tapped on the map: a place, with nothing open there.
+      name: 'a country tapped on the map',
+      go: async (page) => {
+        await signedOnWithHeat(page);
+        await mapReady(page);
+        await tapAt(page, 36.82, -1.29, 'Nairobi');
+        return page.locator('[data-screen="place"][data-place="ke"]');
+      }
+    },
+    {
+      name: 'a region’s circle, with Places on',
+      go: async (page) => {
+        await signedOnWithHeat(page);
+        await mapReady(page);
+        const arrived = page.waitForResponse((r) => r.url().endsWith('/grid/places.json'));
+        await page.getByRole('button', { name: 'Places' }).click();
+        await arrived;
+        const b = await page.evaluate(async () => {
+          const j = (await (await fetch('/console-regions.json')).json()) as { centroids: { region: string; lat: number; lon: number }[] };
+          return j.centroids.find((c) => c.region === 'birmingham-uk')!;
+        });
+        await zoomAt(page, b.lon, b.lat, 16);
+        const at = await screenAt(page, b.lon, b.lat);
+        expect(at.uncovered, 'Birmingham should be on screen and uncovered').toBe(true);
+        await tap(page, at.x, at.y);
+        return page.locator('[data-screen="place"][data-place="birmingham-uk"]');
       }
     }
   ],

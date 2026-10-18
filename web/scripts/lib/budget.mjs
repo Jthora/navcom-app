@@ -186,8 +186,8 @@ export const SURFACES = {
  * named in neither list is reported on its own line as unclassified rather than guessed into one.
  * SvelteKit's own generated modules, such as its error page, are named apart as `framework`.
  *
- * Reported, not enforced: first paint is the only root tier with a ceiling. The others get theirs
- * when one is derived from a measurement, as every budget here was.
+ * First paint has the root's ceiling, and mount has its own since 2026-10-18 [MOUNT]. Each entry
+ * is reported, not enforced, until a ceiling is derived from a measurement, as every budget here was.
  */
 /**
  * Imported by `+page.svelte` on mount, on every visit. Keys as Vite's manifest spells them. Com's
@@ -234,6 +234,22 @@ export const COM_ENTRIES = /** @type {Record<string, string>} */ ({
  * The same ~20% headroom, and the warning about 8% above the measurement.
  */
 export const DEFERRED = { limit: 57 * 1024, warn: 52 * 1024 };
+
+/*
+ * What every visit to the root fetches as it mounts, beyond first paint: the mount tier's script —
+ * the map, the live feed with core's signature checking, Com's registry [ROOT_MOUNT] — and the
+ * map's geometry, `grid/world.json`, which the map asks for the moment it mounts. The device floor
+ * pays all of it on every first visit, sheet opened or not.
+ *
+ * **Derived 2026-10-18, from a measurement**, when a review found it reported and never enforced:
+ * the map's chunk had grown 2.2 kB and its geometry 3.0 kB in one change and nothing had said so.
+ * Measured with that review's fixes in at **110,132 B: 50,401 B of script and 59,731 B of geometry**
+ * (this gzip's default level; the 59.1 kB in map.md is level 9), from 48.6 kB of script before
+ * them. The same ~20% headroom every surface here gets, and the warning line about 8% above the
+ * measurement. On the coefficients above, first paint's ceiling and this one together come to
+ * ~3.5 s to a drawn map on a congested cell, inside the 4 s the terminal's ceiling is derived from.
+ */
+export const MOUNT = { limit: 129 * 1024, warn: 116 * 1024, geometry: 'grid/world.json' };
 
 /*
  * A ceiling on any single file, because the page budgets above were watching the wrong thing.
@@ -545,7 +561,7 @@ export function measure({ build, manifestPath, log = console.log }) {
       report.root_tiers = tiers;
       const row = (/** @type {Weight} */ w, /** @type {string} */ name, /** @type {string} */ what) =>
         `  ${kb(w.js).padStart(9)} ${kb(w.css).padStart(9)}  ${name.padEnd(17)} ${what}`;
-      log(`\n  Root console by when it loads — reported, not enforced past first paint\n`);
+      log(`\n  Root console by when it loads — first paint and mount enforced, each entry reported\n`);
       log(`  ${'JS'.padStart(9)} ${'CSS'.padStart(9)}`);
       log(row(tiers.first_paint, 'first paint', 'the root budget above'));
       log(row(tiers.mount, 'mount', `every visit, as the page mounts, sheet opened or not (${tiers.mount.chunks} chunk(s))`));
@@ -561,6 +577,23 @@ export function measure({ build, manifestPath, log = console.log }) {
         log(`        ${key} is declared in scripts/lib/budget.mjs and no longer imported by the root page.`);
       }
     }
+  }
+
+  if (report.root_tiers) {
+    // Missing geometry is a build without a map, and counts as nothing rather than failing here:
+    // the map's own tests are what fail on that.
+    const geometry = files.includes(MOUNT.geometry) ? gz(MOUNT.geometry) : 0;
+    const js = report.root_tiers.mount.js;
+    const bytes = js + geometry;
+    report.mount = { bytes, js, geometry, limit: MOUNT.limit };
+    const ok = bytes <= MOUNT.limit;
+    if (!ok) failed = true;
+    const warned = ok && bytes > MOUNT.warn;
+    log(
+      `\n  ${!ok ? 'FAIL' : warned ? 'WARN' : 'PASS'}  ${'Mount'.padEnd(11)} ${kb(bytes).padStart(9)} / ${kb(MOUNT.limit).padStart(9)}` +
+        `  (${Math.round((bytes / MOUNT.limit) * 100)}%)  every visit, as the root mounts: ${kb(js)} of script` +
+        `\n        and ${kb(geometry)} of the map's geometry (${MOUNT.geometry}).`
+    );
   }
 
   if (deferred && !deferred.stale) {

@@ -3,7 +3,8 @@
    * The missions on the map, as a list Com can open [docs/design/com.md §1].
    *
    * The way in that does not need the map: from the missions line in the map's key, by keyboard or
-   * screen reader alike. A tap on a lit province opens the same list, narrowed to that province.
+   * screen reader alike. A tap on the map opens a place [PlaceScreen], which draws this list
+   * narrowed to what is filed under the shape tapped.
    *
    * Every row says an agent posted it when one did [invariant 4], and when it ends, because a
    * mission is volatile and shows its age [invariant 7].
@@ -11,11 +12,12 @@
   import type { Mission } from '@navcom/core';
   import type { Refusal } from '$lib/missions/collect';
   import { Panel, Readout, Slot } from '$lib/components/panel';
-  import { endsIn, endsSoon, placeName } from './format';
+  import { endsIn, endsSoon, filedUnder, placeName } from './format';
 
   let {
     missions,
     province,
+    place = null,
     status,
     now,
     refused = [],
@@ -25,6 +27,11 @@
     missions: readonly Mission[];
     /** Narrowed to one province, or `null` for every mission. */
     province: string | null;
+    /**
+     * Or narrowed to a place tapped on the map, by the jurisdictions filed under its code [filedUnder]
+     * and headed with its own name. Drawn inside the place screen, which carries the marker.
+     */
+    place?: { code: string; name: string } | null;
     /** Where the missions are coming from, so an empty list says why it is empty. */
     status: 'live' | 'cached' | 'connecting' | 'unavailable' | 'unloaded';
     now: number;
@@ -33,11 +40,18 @@
     onopen: (address: string) => void;
   } = $props();
 
-  const shown = $derived(province ? missions.filter((m) => m.placement.jurisdiction === province) : missions);
+  const shown = $derived(
+    place
+      ? missions.filter((m) => filedUnder(m.placement.jurisdiction, place.code))
+      : province
+        ? missions.filter((m) => m.placement.jurisdiction === province)
+        : missions
+  );
+  const named = $derived(place ? place.name : province ? placeName(province) : null);
 </script>
 
-<div data-screen="missions" data-province={province ?? ''}>
-  <Panel label="Missions" post={province ? placeName(province) : 'Everywhere'}>
+<div data-screen={place ? null : 'missions'} data-province={place ? null : (province ?? '')}>
+  <Panel label="Missions" post={named ?? 'Everywhere'}>
     {#if shown.length > 0}
       <ul class="nc-missions">
         {#each shown as m (m.address)}
@@ -61,11 +75,11 @@
         {:else if status === 'unavailable' || status === 'unloaded'}
           <Readout value="Unavailable" tone="warn" sub="no relay answered" />
         {:else}
-          <Readout value="None" tone="cold" sub={province ? `nothing open in ${placeName(province)}` : 'nothing open anywhere'} />
+          <Readout value="None" tone="cold" sub={named ? `nothing open in ${named}` : 'nothing open anywhere'} />
         {/if}
       </Slot>
     {/if}
-    {#if refused.length > 0 && !province}
+    {#if refused.length > 0 && !named}
       <Slot k="Not read">
         <Readout value={`${refused.length} not shown`} tone="warn" sub="a package NavCom could not read; its poster can be told why" />
       </Slot>

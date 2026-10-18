@@ -14,7 +14,12 @@ const EACH: Screen[] = [
   { kind: 'mission', address: '30079:abc:d' },
   { kind: 'yours' },
   { kind: 'report', address: '30079:abc:d' },
-  { kind: 'reports', address: '30079:abc:d' }
+  { kind: 'reports', address: '30079:abc:d' },
+  // A shape tapped on the map, a region's circle, and a record's point in that region.
+  // `within` is how far the tap may be from `at`, in km; `unmapped`, how many of a region's places the map does not draw.
+  { kind: 'place', code: 'ke', region: null, name: 'Kenya', at: '-1,37', record: null, within: '820', unmapped: null },
+  { kind: 'place', code: null, region: 'birmingham-uk', name: 'Birmingham', at: null, record: null, within: null, unmapped: '12' },
+  { kind: 'place', code: null, region: 'birmingham-uk', name: 'Birmingham', at: '52.4791,-1.8936', record: '3', within: null, unmapped: null }
 ];
 
 describe('the screens Com has', () => {
@@ -52,6 +57,11 @@ describe('a screen read back from history', () => {
     expect(readScreen({ kind: 'missions', province: { code: 'us-ca' } })).toBeNull();
     expect(readScreen({ kind: 'missions' })).toBeNull();
     expect(readScreen({ kind: 'missions', province: null })).toEqual({ kind: 'missions', province: null });
+    // A place needs its name, whatever else it lacks: it is what the screen is headed with.
+    expect(readScreen({ kind: 'place', code: 'ke', region: null, name: null, at: null, record: null, within: null, unmapped: null })).toBeNull();
+    expect(readScreen({ kind: 'place', code: 'ke', region: null, name: 'Kenya', at: null })).toBeNull();
+    // A tap's place without how far off it may be would be measured to the kilometre from a guess.
+    expect(readScreen({ kind: 'place', code: 'ke', region: null, name: 'Kenya', at: '-1,37', record: null })).toBeNull();
   });
 
   it('checks every field of every screen it has', () => {

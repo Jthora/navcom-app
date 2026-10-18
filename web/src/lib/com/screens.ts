@@ -30,7 +30,29 @@ export type Screen =
   | { kind: 'mission'; address: string }
   | { kind: 'yours' }
   | { kind: 'report'; address: string }
-  | { kind: 'reports'; address: string };
+  | { kind: 'reports'; address: string }
+  | {
+      kind: 'place';
+      code: string | null;
+      region: string | null;
+      name: string;
+      at: string | null;
+      record: string | null;
+      within: string | null;
+      unmapped: string | null;
+    };
+/**
+ * A place opened from the map [map.md §6: every shape is a door]. `code` is the jurisdiction a
+ * tapped province or country is filed under (`us-ca`, `ke`), so the screen lists what is filed
+ * there; `region` is a directory region's slug, for its ring or one of its records; `at` is where
+ * the tap landed, `lat,lon` to what the view resolves, so the screen can say what is near by
+ * distance and never by which outline holds it [map.md §3]; `within` is how far from `at` the tap
+ * may have meant, in km, a thumb's width at that zoom, so a tap at the whole-Earth view is not
+ * measured to the kilometre; `record` is a record's place in its region's list, which the screen
+ * reads back and checks against `at`; and `unmapped` is how many of a region's places the map does
+ * not draw, when the map knew.
+ */
+export type Place = Extract<Screen, { kind: 'place' }>;
 export type Kind = Screen['kind'];
 /** How high the sheet opens for a screen. Never lower than it already is. */
 export type Height = 'half' | 'full';
@@ -81,7 +103,20 @@ export const SCREENS: { [K in Kind]: { entry: Entry; height: Height; fields: Fie
   mission: { entry: 'missions', height: 'half', fields: { address: 'string' } },
   yours: { entry: 'missions', height: 'half', fields: {} },
   report: { entry: 'missions', height: 'half', fields: { address: 'string' } },
-  reports: { entry: 'missions', height: 'half', fields: { address: 'string' } }
+  reports: { entry: 'missions', height: 'half', fields: { address: 'string' } },
+  place: {
+    entry: 'missions',
+    height: 'half',
+    fields: {
+      code: 'string|null',
+      region: 'string|null',
+      name: 'string',
+      at: 'string|null',
+      record: 'string|null',
+      within: 'string|null',
+      unmapped: 'string|null'
+    }
+  }
 };
 
 /**

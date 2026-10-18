@@ -1,6 +1,7 @@
 import { error } from '@sveltejs/kit';
 import { abroad, countryName } from '@navcom/core';
-import { loadDirectory, loadRegions } from '$lib/directory/load';
+import { loadRegions, regionRecords } from '$lib/directory/load';
+import { onTheMap } from '$lib/grid/places';
 import type { ConsoleRecordEntry } from '$lib/console/types';
 
 export const prerender = true;
@@ -38,14 +39,19 @@ export function GET({ params }: { params: { region: string } }) {
   const region = loadRegions().find((r) => r.slug === params.region);
   if (!region) error(404, 'No such region');
 
-  const entries: ConsoleRecordEntry[] = loadDirectory()
-    .filter((r) => r.region === params.region)
-    .map((r) => {
-      const away = abroad(r, region.country);
-      return away
-        ? { id: r.id, name: r.name, type: r.type, abroad: countryName(away.country) }
-        : { id: r.id, name: r.name, type: r.type };
-    });
+  /*
+   * In the order `grid/places.json` lists the same region's points, from the one function both
+   * use. A record the map draws carries its own coordinates, at the precision its position earned,
+   * so a tap on its point can be checked and handed off [map.md §5]; no other record does.
+   */
+  const entries: ConsoleRecordEntry[] = regionRecords(params.region).map((r) => {
+    const away = abroad(r, region.country);
+    const entry: ConsoleRecordEntry = away
+      ? { id: r.id, name: r.name, type: r.type, abroad: countryName(away.country) }
+      : { id: r.id, name: r.name, type: r.type };
+    if (onTheMap(r)) entry.at = [r.lon!, r.lat!];
+    return entry;
+  });
 
   return new Response(JSON.stringify(entries), {
     headers: {

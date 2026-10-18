@@ -34,8 +34,10 @@
  *
  * ## What it repairs instead, and says so
  *
- * - **A coordinate finer than its declared precision** is coarsened to it — `1km` to two
- *   decimals, `city` to one — because precision is the defect, not the mission.
+ * - **A coordinate finer than its declared precision** is coarsened to it — `address` to five
+ *   decimals, `1km` to two, `city` to one — because precision is the defect, not the mission. A
+ *   subject on public record may be placed at its address (rev 8, §4.2); a point that stands for a
+ *   jurisdiction is coarsened to a city whatever it declares, because a jurisdiction has no doorstep.
  * - **A coordinate of a kind it does not know** is dropped. Only `subject_location` and
  *   `jurisdiction` are understood; anything else might be a person's location, and a mission
  *   without a point is still a mission.
@@ -223,11 +225,22 @@ export interface MissionObjective {
   presence: string | null;
 }
 
+/**
+ * How precisely a package placed its point, as kept: `address` is five decimals (~1 m), for a
+ * subject on public record at a geocoded address; `1km` two; `city` one.
+ */
+export type GeoPrecision = 'address' | '1km' | 'city';
+
 export interface MissionPlacement {
   /** `us-ca`, as the package files it. Drawn as that province. */
   jurisdiction: string | null;
-  /** Never finer than ~1 km, whatever the package carried. */
-  point: { lat: number; lon: number; precision: 'city' | '1km'; coarsened: boolean } | null;
+  /**
+   * Where the package puts it, at the precision its source earned and never finer than it declared
+   * [interchange spec §4.2]. `kind` says what the point is: a `subject_location`, an entity on public
+   * record, which the map draws as a ring; or a point that stands for a `jurisdiction`, which is
+   * never finer than a city and is not drawn as a place [docs/design/map.md §5].
+   */
+  point: { lat: number; lon: number; precision: GeoPrecision; kind: 'subject_location' | 'jurisdiction'; coarsened: boolean } | null;
 }
 
 export interface Mission {
@@ -350,6 +363,9 @@ function jurisdictionOf(e: Event): string | null {
   return subdivisions[0] ?? codes[0]!;
 }
 
+/** Decimal places kept for each precision. */
+const PLACES: Record<GeoPrecision, number> = { address: 5, '1km': 2, city: 1 };
+
 function placementOf(e: Event): MissionPlacement {
   const jurisdiction = jurisdictionOf(e);
 
@@ -359,14 +375,14 @@ function placementOf(e: Event): MissionPlacement {
   if (!m || (kind !== 'subject_location' && kind !== 'jurisdiction')) return { jurisdiction, point: null };
 
   const declared = tag(e, 'geo_precision');
-  const precision: 'city' | '1km' = declared === 'city' ? 'city' : '1km';
-  const places = precision === 'city' ? 1 : 2;
-  const round = (v: string) => Number(Number(v).toFixed(places));
+  const known = declared === 'address' || declared === '1km' || declared === 'city';
+  // A point standing for a jurisdiction is a city at most; an undeclared one is ~1 km.
+  const precision: GeoPrecision = kind === 'jurisdiction' ? 'city' : known ? declared : '1km';
+  const round = (v: string) => Number(Number(v).toFixed(PLACES[precision]));
   const lat = round(m[1]!);
   const lon = round(m[2]!);
-  const coarsened =
-    (declared !== 'city' && declared !== '1km') || lat !== Number(m[1]) || lon !== Number(m[2]);
-  return { jurisdiction, point: { lat, lon, precision, coarsened } };
+  const coarsened = declared !== precision || lat !== Number(m[1]) || lon !== Number(m[2]);
+  return { jurisdiction, point: { lat, lon, precision, kind, coarsened } };
 }
 
 function objectivesOf(manifest: Record<string, unknown>): MissionObjective[] {

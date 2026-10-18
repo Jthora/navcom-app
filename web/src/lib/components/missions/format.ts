@@ -7,6 +7,7 @@
  * rather than as a guess.
  */
 import { MISSION_PUBLISHERS, keyOf, type Settlement } from '@navcom/core';
+import { countryName, filedUnder } from '$lib/grid/topology';
 
 const US: Record<string, string> = {
   al: 'Alabama', ak: 'Alaska', az: 'Arizona', ar: 'Arkansas', ca: 'California', co: 'Colorado',
@@ -21,13 +22,27 @@ const US: Record<string, string> = {
   vi: 'US Virgin Islands', as: 'American Samoa', mp: 'Northern Mariana Islands'
 };
 
-/** `us-ca` → California; `us` → United States; anything else, its code upper-case. */
+/**
+ * `us-ca` → California; `us` → United States; a country by its code from the phone's own tables
+ * (`ke` → Kenya); anything else, its code upper-case.
+ */
 export function placeName(jurisdiction: string | null): string {
   if (!jurisdiction) return '—';
   if (jurisdiction === 'us') return 'United States';
   const [country, sub] = jurisdiction.split('-');
   if (country === 'us' && sub && US[sub]) return US[sub]!;
+  if (!sub && /^[a-z]{2}$/.test(jurisdiction)) return countryName(jurisdiction) ?? jurisdiction.toUpperCase();
   return jurisdiction.toUpperCase();
+}
+
+/** Whether a mission filed under a jurisdiction belongs to a place: the map's test too, so it lives there. */
+export { filedUnder };
+
+/** Great-circle distance in km between two `[lat, lon]` points: what "near" means on the place screen. */
+export function kmBetween([lat1, lon1]: readonly [number, number], [lat2, lon2]: readonly [number, number]): number {
+  const r = Math.PI / 180;
+  const a = Math.sin(((lat2 - lat1) * r) / 2) ** 2 + Math.cos(lat1 * r) * Math.cos(lat2 * r) * Math.sin(((lon2 - lon1) * r) / 2) ** 2;
+  return 6371 * 2 * Math.asin(Math.min(1, Math.sqrt(a)));
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];

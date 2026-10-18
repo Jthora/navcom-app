@@ -625,3 +625,39 @@ describe('the boundaries the built site holds', () => {
     expect(reaches(sources, roots)).toEqual([]);
   });
 });
+
+// ─── The map draws only places of record [invariant 1] ────────────────────────────────────────
+
+/**
+ * Nothing on the map locates the people being served: no encampments, no sleeping sites, no
+ * person's position [map.md §6]. Made structural, the way raw intel's anchor rule is: the map takes
+ * no coordinates of its own, and its only points are `PlaceOfRecord`s, which one module makes from
+ * two sources [grid/places.ts]. Read from source, because a prop is a type and a build keeps none.
+ */
+describe('the map draws only places of record', () => {
+  const GRID_MAP = join(REPO, 'web/src/lib/components/grid/GridMap.svelte');
+  const PLACES = 'web/src/lib/grid/places.ts';
+
+  it('takes no coordinates as a prop', () => {
+    const source = readFileSync(GRID_MAP, 'utf8');
+    const props = /\}\s*:\s*\{([\s\S]*?)\}\s*=\s*\$props\(\)/.exec(uncommented(source))?.[1];
+    expect(props, 'GridMap declares its props as one typed $props() block').toBeDefined();
+    // A free-form point is how a person's position, or a camp's, would reach the map.
+    expect(props!.match(/\b(lat|lon|lng|latitude|longitude|coords?|position)\b/g) ?? []).toEqual([]);
+  });
+
+  it('has its points made in one module, by two constructors, and nowhere else', () => {
+    const own = readFileSync(join(REPO, PLACES), 'utf8');
+    const makers = [...own.matchAll(/^export function (\w+)\(.*?\)\s*:\s*(.+?)\s*\{\s*$/gm)]
+      .filter((m) => /PlaceOfRecord/.test(m[2]!))
+      .map((m) => m[1])
+      .sort();
+    expect(makers).toEqual(['placesOfDirectory', 'placesOfMissions']);
+    const elsewhere: string[] = [];
+    for (const [path, text] of sourcesUnder(['web/src'])) {
+      if (path === PLACES) continue;
+      if (/\bas\s+(?:unknown\s+as\s+)?PlaceOfRecord\b|\bOF_RECORD\b|<PlaceOfRecord>/.test(text)) elsewhere.push(path);
+    }
+    expect(elsewhere).toEqual([]);
+  });
+});

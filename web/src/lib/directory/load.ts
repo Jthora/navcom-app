@@ -70,6 +70,24 @@ export function loadDirectory(): ResourceRecord[] {
   return loadAll().records;
 }
 
+let byRegion: Map<string, ResourceRecord[]> | null = null;
+/**
+ * One region's records, in the order every per-region file lists them: `console-index/<region>.json`
+ * and `grid/places.json` alike. One function for both, because the map finds a tapped record by its
+ * place in this list [grid/places.ts], and two orderings would hand it somebody else's record.
+ */
+export function regionRecords(slug: string): ResourceRecord[] {
+  if (!byRegion) {
+    byRegion = new Map();
+    for (const r of loadDirectory()) {
+      const list = byRegion.get(r.region!) ?? [];
+      list.push(r);
+      byRegion.set(r.region!, list);
+    }
+  }
+  return byRegion.get(slug) ?? [];
+}
+
 export function regionOf(record: ResourceRecord): Region | undefined {
   return loadAll().regions.find((r) => r.slug === record.region);
 }

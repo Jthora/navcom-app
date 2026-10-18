@@ -91,11 +91,17 @@ execFileSync(
     // shape on screen, for a continent no region is filed in. Scenery that misleads is dropped.
     '-filter', 'target=world', 'ADM0_A3 !== "ATA"',
     '-simplify', 'target=provinces', SIMPLIFY, 'keep-shapes',
-    // Names are not drawn and cost bytes; the grid is scenery, not a gazetteer. Provinces keep
-    // one field, their ISO 3166-2 code, because that is how a mission says where it is
-    // (`jurisdiction: us-ca`) and the grid has to find the shape to light.
-    '-filter-fields', 'target=world',
-    '-filter-fields', 'target=provinces', 'iso_3166_2',
+    // Every shape keeps its code, and what a hover or a tap needs to name it [map.md §6: every
+    // shape is a door]. The code is how a mission says where it is (`jurisdiction: us-ca`, or `ke`
+    // for a country), so the grid can find the shape to light. A country's is ISO_A2_EH,
+    // lower-cased to read like a mission's: it fills in France and Norway, which ISO_A2 leaves as
+    // -99. A country is named from its code on the phone (`Intl.DisplayNames`, topology.ts), so
+    // only the two Natural Earth leaves at -99, both disputed (N. Cyprus, Somaliland), carry a name
+    // here: 1.1 KB of names nobody needs to download, measured. grid.test.ts names those two, so a
+    // third is a decision. A province carries its own name, because nothing on the phone has it.
+    '-each', 'target=world', 'iso_a2 = ISO_A2_EH === "-99" ? null : ISO_A2_EH.toLowerCase(), name = ISO_A2_EH === "-99" ? NAME : undefined',
+    '-filter-fields', 'target=world', 'iso_a2,name',
+    '-filter-fields', 'target=provinces', 'iso_3166_2,name',
     '-o', 'target=world,provinces', 'format=topojson', `quantization=${QUANTIZATION}`, raw
   ],
   { stdio: ['ignore', 'ignore', 'inherit'] }

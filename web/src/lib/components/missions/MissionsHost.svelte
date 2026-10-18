@@ -10,6 +10,7 @@
   import type { HostProps } from '$lib/com/screens';
   import MissionList from './MissionList.svelte';
   import MissionPage from './MissionPage.svelte';
+  import PlaceScreen from './PlaceScreen.svelte';
   import ReportScreen from './ReportScreen.svelte';
   import ReportsScreen from './ReportsScreen.svelte';
   import YoursScreen from './YoursScreen.svelte';
@@ -34,6 +35,14 @@
     province={screen.province}
     status={feedUnloaded ? 'unloaded' : feed.status}
     {refused}
+    {now}
+    onopen={(address) => nav.open({ kind: 'mission', address })}
+  />
+{:else if screen.kind === 'place'}
+  <PlaceScreen
+    place={screen}
+    missions={active}
+    status={feedUnloaded ? 'unloaded' : feed.status}
     {now}
     onopen={(address) => nav.open({ kind: 'mission', address })}
   />

@@ -23,7 +23,7 @@ import { describe, expect, it } from 'vitest';
 // Plain .mjs, deliberately: what the deploy runs, not a TypeScript copy of it. Never
 // `scripts/budget.mjs` itself: that one measures the real build and exits whenever it is loaded.
 import { closure, firstPaint, htmlRefs, isStale, readManifest, routeNodes } from '../../scripts/lib/closure.mjs';
-import { COM_ENTRIES, DEFERRED, ROOT_MOUNT, SURFACES, measure } from '../../scripts/lib/budget.mjs';
+import { COM_ENTRIES, DEFERRED, MOUNT, ROOT_MOUNT, SURFACES, measure } from '../../scripts/lib/budget.mjs';
 
 const A = '_app/immutable';
 const NODE = (n: string) => `.svelte-kit/generated/client-optimized/nodes/${n}.js`;
@@ -350,6 +350,33 @@ describe('the budget, run on a build whose answers are known', () => {
     expect(failed).toBe(true);
     expect(report.passed).toBe(false);
     expect(out).toMatch(/FAIL {2}Deferred/);
+  });
+
+  it('caps what every visit fetches as the root mounts: the mount tier’s script and the map’s geometry', () => {
+    /*
+     * Reported and never enforced until 2026-10-18, when a review found the map's chunk had grown
+     * 2.2 kB and its geometry 3.0 kB in one change, on the tier the device floor pays on every visit,
+     * and nothing had said so [budget.mjs MOUNT].
+     */
+    const f = fixture({ chunks: { 'grid/world.json': noise(900) } });
+    const { report, failed, out } = run(f);
+    expect(report.mount).toEqual({
+      bytes: report.root_tiers.mount.js + f.gz('grid/world.json'),
+      js: report.root_tiers.mount.js,
+      geometry: f.gz('grid/world.json'),
+      limit: MOUNT.limit
+    });
+    expect(failed).toBe(false);
+    expect(out).toMatch(/PASS {2}Mount/);
+  });
+
+  it('fails the build when what every visit fetches on mount outgrows its ceiling, geometry included', () => {
+    const script = fixture({ chunks: { [`${A}/chunks/map.js`]: noise(MOUNT.limit) } });
+    expect(run(script).out).toMatch(/FAIL {2}Mount/);
+    expect(run(script).failed).toBe(true);
+    // The geometry alone, with the script as small as the fixture's: the map's file counts too.
+    const geometry = fixture({ chunks: { 'grid/world.json': noise(MOUNT.limit) } });
+    expect(run(geometry).out).toMatch(/FAIL {2}Mount/);
   });
 
   it('says a manifest from another build could not be measured, rather than reporting zero', () => {

@@ -24,6 +24,13 @@ export interface ConsoleRecordEntry {
    * ready to print rather than as a code the page would need a table to translate.
    */
   abroad?: string;
+  /**
+   * Where it is, `[lon, lat]`, at the precision its position earned: five places for a geocoded
+   * address [map.md §0]. What the map's record points are checked against, and what Open in maps
+   * hands off. Absent for a record with no coordinates, and always for one whose location is
+   * withheld [core: directory/confidential.ts].
+   */
+  at?: [number, number];
 }
 
 /** A region's centroid, derived from its own geotagged records — never hand-curated. */
