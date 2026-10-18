@@ -496,7 +496,7 @@ export function intelDocument(root = ROOT) {
         optional: reportEmitted ? ['does', 'region', 'counts', 'supersedes'] : undefined,
         mission_tags: reportEmitted ? ['a', 'ask'] : undefined,
         sealed: reportEmitted
-          ? 'A mission report may instead be sealed to the mission\'s poster (NIP-44, NIP-59, to the relays its kind-10050 list names). The poster\'s labels then name the id inside the seal'
+          ? 'A mission report may instead be sealed to the mission\'s poster (NIP-44, NIP-59), and sent to the poster\'s inbox as NavCom\'s release pins it (interchange spec §5.0); NavCom reads no inbox list off a relay. The poster\'s labels then name the id inside the seal'
           : undefined,
         note: reportEmitted
           ? 'An operator\'s own account of their own work, signed by the contact key. On its own: a callsign, a day (YYYY-MM-DD, never a time) and one to three activity terms, with an optional region in the content and never as a tag. Naming a mission instead: an `a` tag for the package, an `ask` tag per objective done, and counts that each answer one of the poster\'s own `effect` lines verbatim, of things and never of people — a reader drops a count whose line the package does not carry. No g tag, no t tags, no partners, no coordinates, no free text; a report carrying any field or tag outside this is refused, not trimmed. NavCom\'s client sends none the same day as the work.'

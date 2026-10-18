@@ -48,8 +48,10 @@ or Setup. That is D3 enforced strictly, and it is what makes following a list sa
 adds exactly one harm a watch's key does not already carry, sending every operator's address and
 `Distress` timing to a relay the signer chose, and inside the commons the signer chooses none.
 
-One list already ships: a poster's NIP-17 inbox, kind `10050`. Sealed claims and reports follow it,
-and nothing else uses it.
+One list shipped, and no longer does: a poster's NIP-17 inbox, kind `10050`. Sealed claims and
+reports followed it until 2026-10-17, when Mecha Jono's exposed key showed the cost: the newest list
+by date won, and whoever holds a stolen key can date one next year. The poster's inbox is pinned in
+the release now, as the commons is (interchange spec §5.0).
 
 **So G3 is four things: the `Distress` path says what it can and cannot hear (§6, built), a watch
 says where it listens inside the commons (§3), a phone follows that at once when a key it was handed
@@ -88,7 +90,7 @@ and the sentences that argue it stay as written.
 |---|---|---|
 | A watch on a box | NIP-65 kind `10002` (D2), signed by the box's key, naming only commons relays | Only where it publishes its state, which after §6 is where the daemon and the escalation executor both hear. Never to an indexer, and never on a relay it has left |
 | A watch held on phones | The same, under each holder's own key for that watch, once squads have per-member keys and vouching (§11). Until then a squad's relays change only in person | Where that holder hears. The newest from each key counts, as for the state, and a wipe or a burn stops it as it stops the beat |
-| A publisher | Its NIP-17 inbox, as now | Where it chooses. Mecha Jono is asked to put it on The Record as well (§9) |
+| A publisher | Whatever it likes; NavCom reads none of it. Its inbox is pinned in NavCom's release since 2026-10-17 (interchange spec §5.0) | — |
 | An operator's operational key | Nothing | Declined (§10) |
 | An operator's contact key | Nothing | Declined, not deferred (D4, §10) |
 
@@ -125,7 +127,7 @@ only retire the watch, never redirect it, so a seized box can be retired from a 
 A list counts when:
 
 - one of the watch's keys this phone was handed signed it, checked on a copy rebuilt from its own
-  fields, as `inboxRelays` already does. For a box that is the box's key. For a squad it is a
+  fields, so a verdict cached on the copy counts for nothing. For a box that is the box's key. For a squad it is a
   holder's own key for that watch, and that key counts only while two other holders vouch for it
   (one, in a squad of two) in states less than about thirty days old
 - it is that key's newest by `created_at`, then the lower id, across every relay it was read on, so
@@ -169,7 +171,7 @@ watch.
 | The watch's state and list | Published where the watch hears (§6), and read on every relay this phone has for the watch | The executor's hearing counts |
 | Holders' key bundles, the overdue contact | Read on every relay this phone has for the watch | One function for all of it |
 | Presence, invites, key bundles, the card, public presence, corrections, places, observations, open claims and reports | Unchanged: the watch's handed-over relays beside the operator's own list or the built-in pair, and the pair as well for missions. Public work also reaches the meeting relays by default, where partners read (D4); an operator who left them out keeps that choice, with its cost stated | **A watch's list never steers them** |
-| Sealed claims and reports | The poster's inbox and nowhere else, as NIP-17 requires | The order (§9) |
+| Sealed claims and reports | The poster's inbox as NavCom's release pins it, and nowhere else (since 2026-10-17; interchange spec §5.0). No list steers them | The order (§9) |
 | Mission packages | The Record and the Pi's mirror | None |
 
 **One function, `watchTargets()`, serves everything sent to or read from the watch.** Today
@@ -320,10 +322,11 @@ leaves every phone with the release that retires it.
   this phone**, `relay.primal.net` before `nos.lol` today, and the screen says when only a relay that
   also carries the card took it. If that one relay drops it, the poster never counts it. The
   interchange spec's *no relay learns who took what* is corrected to what holds
-- **The poster's inbox is read when missions load, on the mission relays, not at the moment of
-  sealing**, once the poster's list is there (Q16; the Pi's session found The Record does not take
-  kind `10050`). Today the question goes out over the connection that carries the card, a moment
-  before the sealed claim does
+- ~~**The poster's inbox is read when missions load, on the mission relays, not at the moment of
+  sealing**~~ **Superseded 2026-10-17: the poster's inbox is not read at all.** It is pinned in
+  NavCom's release beside the poster's key (interchange spec §5.0), so no question goes out before a
+  sealed claim, over the card's connection or any other, and a list signed with an exposed key moves
+  nothing. That answers Q16
 
 **Not fixed, and named**, as [`../product/what-leaves.md`](../product/what-leaves.md) already names
 it:
@@ -406,7 +409,8 @@ the least now.
 | 5 | **Per-member keys, with vouching**, and the box's recovery key. Every squad re-forms once, in person | Not built |
 | 6 | **Squads follow lists.** §3 and §4 for holders' keys | Not built. Waits on phase 5 |
 
-Beside the order, waiting on nothing: §9's three timing fixes, the inbox read waiting on Q16.
+Beside the order, waiting on nothing: §9's first two timing fixes. The third, the inbox read that
+waited on Q16, is superseded: the inbox is pinned in the release (2026-10-17).
 
 **Tests** run on `web/e2e/relay-server.ts` and `packages/watchtower/test/helpers/local-relay.ts`,
 and each runs first against the code before it, and fails there. The ones that carry the weight:

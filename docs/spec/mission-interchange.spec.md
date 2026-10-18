@@ -1,6 +1,6 @@
 # Mission interchange — NavCom ⇄ Starcom / Mecha Jono
 
-**NavCom's side of the boundary, rev 6 — 2026-10-09.** Starcom's side is
+**NavCom's side of the boundary, rev 7 — 2026-10-17.** Starcom's side is
 [`starcom.app/spec/starcom-navcom-interchange.spec.md`](https://starcom.app/spec/starcom-navcom-interchange.spec.md)
 (rev 10 at the time of writing; rev 11 will carry the answers below). Each spec owns its own
 side; neither restates the other's.
@@ -33,6 +33,16 @@ operator traffic stays on large public relays: NavCom keeps its refusal of opera
 private or allowlisted relay, operators publish no relay list, and no grid node — The Record, its
 mirrors, the Pi — carries operator traffic; grid nodes are read (§5.0, §11.2). Q16 asks where your
 inbox list can be read.
+
+**Rev 7** (2026-10-17): where sealed claims and reports go, and who can open them. Your next key,
+`86f8…`, is trusted beside the old one until the cut-over (§3). **NavCom no longer reads any kind
+`10050` list**: your inbox is pinned in NavCom's release beside each key, because the newest list by
+date won, and whoever holds the old key's exposed secret can sign one dated next year (§5.0). That
+answers Q16 and changes a duty: tell NavCom when your inbox changes, since publishing a new list no
+longer moves it (§9.2). What is sealed to the old key, whoever holds its secret can open, and
+NavCom's screens now say so rather than "only Mecha Jono can see". Q17 asks whether you read wraps
+addressed to the new key on the same inbox. **For Starcom:** a client that sends sealed reports to
+the recipient's newest `10050` list is moved the same way by a list signed with an exposed key.
 
 Written for Mecha Jono's development agent first, and for any human on either team second. It
 says what NavCom now is, exactly how to serve it missions, how raw intel moves in both directions,
@@ -295,8 +305,26 @@ honestly described, and a relay built for permanence is the wrong home for one.
 | Signed by | Published to | Read by |
 |---|---|---|
 | **An operator** — public claims, reports, witness and challenge labels | **NavCom's relays**: today `wss://relay.damus.io` and `wss://nos.lol`, both already among rev 10's mirrors. Every device writes here *as well as* to its own relays — a Watched operator's watch relays are added, never substituted (rev 5). **Operators publish no relay list** (decided 2026-10-08): these are where operators' public work goes. If they ever change, the set moves as a whole, by a NavCom release and a notice here (§11.2) | Starcom and Mecha Jono, filtering `#a` for their packages — LIVE for Mecha Jono (Q9) |
-| **An operator** — a private claim (gift wrap) | The inbox relays in Mecha Jono's NIP-17 kind `10050` list: `wss://nos.lol` and `wss://relay.primal.net` | Mecha Jono only — LIVE (Q4, Q10) |
+| **An operator** — a private claim (gift wrap) | **Mecha Jono's inbox, pinned in NavCom's release** (since 2026-10-17): `wss://nos.lol` and `wss://relay.primal.net`, the relays the old key's kind-`10050` list named (Q10). For the new key, NavCom's assumption until you confirm it (Q17) | Mecha Jono — LIVE (Q4). Sealed to the old key, also whoever holds its exposed secret |
+| **An operator** — a private report (gift wrap) | The same inbox | Mecha Jono — PROPOSED (Q14). Sealed to the old key, also whoever holds its exposed secret |
 | **Mecha Jono** — packages, `settled` and `challenged` labels | **The Record** | NavCom, which already reads it |
+
+**NavCom pins your inbox in its release, and no longer reads your `10050` list** (since
+2026-10-17). It took the newest list by date, and the date is whatever the signer writes. The old
+key's secret was exposed on 2026-09-28: whoever holds it can sign a list dated next year naming
+relays they run, every sealed claim and report from NavCom would go there, and no list you publish
+afterwards would win it back. The lookup also went out over the connection that carries the
+operator's card, a moment before the seal, which Q16 asked about; nothing is asked now. Your inbox
+sits beside each key in NavCom's registry of publishers (`MISSION_PUBLISHERS`), so it moves the way
+the meeting relays do: by a NavCom release and a notice here. A key NavCom no longer reads — the old
+one, after the cut-over — has no inbox, and an operator's screen says nothing was sent sealed rather
+than sending it anywhere else; that holds for sending again something kept from before, too. **If
+your inbox changes, tell us; publishing a new list is not enough.**
+
+**Pinning fixes where a seal goes, not who can open it.** What is sealed to the old key, whoever
+holds its secret can fetch from the inbox and open. Until the cut-over takes that key off, NavCom's
+screens say so beside the choice and on the claim, instead of "only Mecha Jono can see". The inbox
+NavCom names for the new key is the old key's list, assumed: Q17 asks you to confirm it.
 
 ### 5.1 Taking part — a claim
 
@@ -339,8 +367,8 @@ between claimant, other operators, poster and adversary — the reasoning is in
 
 NavCom's own rules, for your information: an operator holds at most three claims at once; taking part
 needs somebody signed on, because every mission here is field work and nobody should set out without
-`Distress`; and a sealed claim goes only to the relays your kind-`10050` list names, never anywhere
-else.
+`Distress`; and a sealed claim goes only to the inbox NavCom's release pins for you (§5.0), never
+anywhere else.
 
 ### 5.2 Doing it — a report
 
@@ -359,7 +387,7 @@ package does not carry, as NavCom does. The same kind, with no mission, is the r
 contract described; it stays valid.
 
 **Sealed to you, if the operator chooses** (PROPOSED, Q14). Like a claim, a report may be sealed to
-the poster and sent to your kind-`10050` relays. It still settles: your `settled` label names the id
+the poster and sent to the inbox NavCom pins for you (§5.0). It still settles: your `settled` label names the id
 inside the seal. Privacy must not cost an operator recognition.
 
 **A sealed report carries a `salt`** (since 2026-10-07): 32 lowercase hex characters in its content,
@@ -549,7 +577,8 @@ the map opens populated. It is identified as an agent everywhere it appears.
 - Count things, not people (§7.1)
 - Cite the observations you use (§6.2)
 - Never touch the `Distress` channel, never assign a named person, never score an operator
-- Keep no record of who reads The Record (§11.1), and keep your `10050` list current (Q10)
+- Keep no record of who reads The Record (§11.1), and tell NavCom when your inbox changes: NavCom
+  pins it in its release and no longer reads your `10050` list (§5.0)
 
 ### 9.3 Permission — go further
 
@@ -592,6 +621,16 @@ Answered by Starcom on 2026-10-06; all eight accepted. Three are Mecha Jono's to
 then Mecha Jono records each claim against its package, and no claim on a campaign moves its
 `mission_state`.
 
+### New in rev 7 — for Mecha Jono
+
+- **NavCom reads no kind-`10050` list.** Your inbox is pinned in its release (§5.0); tell us when it
+  changes (§9.2). Q16 is answered by this
+- **What is sealed to your old key, its secret's holder can open.** NavCom's screens now say so
+
+| | Question | NavCom's default if unanswered |
+|---|---|---|
+| Q17 | Do you read gift wraps addressed to your new key, `86f8…`, on `wss://nos.lol` and `wss://relay.primal.net`? If so, NavCom could also seal claims and reports on old-key packages to the new key before the cut-over, so the exposed secret opens none of them | NavCom sends wraps for the new key there once packages are under it, and goes on sealing old-key packages to the old key, saying who else can open them. If you read the new key's wraps elsewhere, a claim sealed to it reaches nobody until you tell us |
+
 ### New in rev 6 — for Mecha Jono
 
 - **Refuse an open report that carries a `salt`**, and a sealed one whose `salt` is not 32 lowercase
@@ -602,7 +641,7 @@ then Mecha Jono records each claim against its package, and no claim on a campai
 
 | | Question | NavCom's default if unanswered |
 |---|---|---|
-| Q16 | Could The Record or its mirror carry your kind `10050` inbox list? The Pi's session found The Record does not take it today. Read there, a phone learns your inbox when missions load rather than over the connection that carries its card, a moment before a sealed claim | NavCom keeps reading your list from your inbox relays at the moment of sealing |
+| Q16 | Could The Record or its mirror carry your kind `10050` inbox list? The Pi's session found The Record does not take it today. Read there, a phone learns your inbox when missions load rather than over the connection that carries its card, a moment before a sealed claim | **Answered by NavCom, 2026-10-17: no longer needed.** NavCom pins your inbox in its release and reads no `10050` list at all, so nothing is asked before a seal and an exposed key cannot move where sealed claims go (§5.0). The Record need not carry it |
 
 ### New in rev 5 — for Mecha Jono
 

@@ -2,10 +2,22 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import type { Event } from 'nostr-tools/core';
 import type { Filter } from 'nostr-tools/filter';
-import { DEFAULT_RELAYS, KIND_LABEL, MISSION_RELAYS, THE_RECORD, buildDeletion, buildMissionClaim, buildReport, buildReportLabel, readMissionPackage, type Mission } from '@navcom/core';
+import {
+  DEFAULT_RELAYS,
+  KIND_LABEL,
+  MISSION_RELAYS,
+  THE_RECORD,
+  buildDeletion,
+  buildMissionClaim,
+  buildReport,
+  buildReportLabel,
+  readMissionPackage,
+  type Mission,
+  type MissionPublishers
+} from '@navcom/core';
 import { clearField, set } from '$lib/terminal/storage';
 import { ensureContactKey, withdrawCard } from '$lib/terminal/card';
-import { takePart, tookPart, type Wire } from './claims';
+import { takePart, tookPart, type Published, type Wire } from './claims';
 import {
   LABELS_PAGE,
   LABELS_PAGES,
@@ -28,13 +40,16 @@ import { standingOf } from '$lib/components/missions/format';
 /**
  * Reporting from this device: never today, a warning before a series, sealed or open, withdrawn
  * honestly, and settled by what the labels say. The relays are a fake that records what it was
- * given.
+ * given. The test poster's inbox is pinned in a registry these tests stand in, never the shipped one.
  */
 
 const NOW = 1791403200; // 7 Oct 2026, 20:00 UTC
 const posterSecret = generateSecretKey();
 const poster = getPublicKey(posterSecret);
-const publishers = { [poster]: { name: 'Test Poster', agent: true } };
+const INBOX = 'wss://inbox.example';
+const publishers: MissionPublishers = { [poster]: { name: 'Test Poster', agent: true, inbox: [INBOX] } };
+/** A kind-10050 list the poster signed, dated `at`: what NavCom read its inbox from until 2026-10-17. */
+const list = (urls: string[], at = NOW) => finalizeEvent({ kind: 10050, created_at: at, content: '', tags: urls.map((u) => ['relay', u]) }, posterSecret);
 
 function mission(d: string, jurisdiction = 'us-ca'): Mission {
   const e = finalizeEvent(
@@ -58,16 +73,18 @@ function mission(d: string, jurisdiction = 'us-ca'): Mission {
   return r.mission;
 }
 
-function fakeWire(answers: Event[] = []) {
+function fakeWire(answers: Event[] = [], registry: MissionPublishers = publishers) {
   const sentEvents: { urls: string[]; event: Event }[] = [];
+  const asked: Filter[] = [];
   const w: Wire = {
     publish: async (urls, event) => {
       sentEvents.push({ urls, event });
       return 'took' as const;
     },
-    query: async (urls) => ({ events: answers, answered: urls })
+    query: async (urls, f) => (asked.push(f), { events: answers, answered: urls }),
+    publishers: registry
   };
-  return { w, sentEvents };
+  return { w, sentEvents, asked };
 }
 
 const draft = (date: string) => ({ date, asks: ['handout:water'], counts: [{ line: 'Water handed out: a count', n: 12 }] });
@@ -155,18 +172,55 @@ describe('a series in one place', () => {
 });
 
 describe('a report for the poster alone', () => {
-  it('goes sealed to the poster’s own inbox, listed under the id the poster’s labels will name', async () => {
-    const inbox = finalizeEvent({ kind: 10050, created_at: NOW, content: '', tags: [['relay', 'wss://inbox.example']] }, posterSecret);
-    const { w, sentEvents } = fakeWire([inbox]);
+  it('goes sealed to the inbox NavCom pins for the poster, listed under the id the poster’s labels will name', async () => {
+    const { w, sentEvents } = fakeWire();
     const r = await fileReport(mission('a'), draft(localDay(NOW - 86_400)), 'sealed', NOW, {}, w);
     expect(r.ok).toBe(true);
-    expect(sentEvents[0]!.urls).toEqual(['wss://inbox.example']);
+    expect(sentEvents[0]!.urls).toEqual([INBOX]);
     expect(sentEvents[0]!.event.kind).toBe(1059);
     const listed = sent()[0]!;
     expect(listed.visibility).toBe('sealed');
     expect(listed.id).not.toBe(sentEvents[0]!.event.id);
     // Already with its poster: nothing to withdraw, and nothing is pretended.
     expect(await withdraw(listed.id, NOW + 60, w)).toBe('not-open');
+  });
+
+  /*
+   * Mecha Jono's old secret was exposed on 2026-09-28, and a sealed report went to the inbox in the
+   * poster's newest kind-10050 list by date — a date the signer writes. Whoever holds the secret
+   * could sign one dated next year, and every sealed report from NavCom would go to their relays;
+   * the lookup also went out over the connection that carries the card (interchange Q16).
+   */
+  it('asks no relay anything on the way, and never for a kind-10050 list', async () => {
+    const { w, sentEvents, asked } = fakeWire([list([INBOX])]);
+    expect((await fileReport(mission('a'), draft(localDay(NOW - 86_400)), 'sealed', NOW, {}, w)).ok).toBe(true);
+    expect(sentEvents).toHaveLength(1);
+    expect(asked.filter((f) => f.kinds?.includes(10050))).toEqual([]);
+    expect(asked).toEqual([]);
+  });
+
+  it('is not moved by a list the poster’s key signed, dated next year, naming relays somebody else runs', async () => {
+    const { w, sentEvents } = fakeWire([list(['wss://older.example'], NOW - 86_400), list(['wss://attacker.example'], NOW + 365 * 86_400)]);
+    expect((await fileReport(mission('a'), draft(localDay(NOW - 86_400)), 'sealed', NOW, {}, w)).ok).toBe(true);
+    expect(sentEvents.map((s) => s.urls)).toEqual([[INBOX]]);
+    expect(sent()[0]!.relays).toEqual([INBOX]);
+  });
+
+  it('sends nothing to a poster this release does not read, or reads with no inbox, though its own list names one, and says so', async () => {
+    const unread = fakeWire([list([INBOX])], {});
+    expect(await fileReport(mission('a'), draft(localDay(NOW - 86_400)), 'sealed', NOW, {}, unread.w)).toEqual({
+      ok: false,
+      because: 'not-sent',
+      detail: 'NavCom no longer reads the key Test Poster posted this with, so there is nowhere to send it sealed. Nothing was sent.'
+    });
+    const noInbox = fakeWire([list([INBOX])], { [poster]: { name: 'Test Poster', agent: true } });
+    expect(await fileReport(mission('a'), draft(localDay(NOW - 86_400)), 'sealed', NOW, {}, noInbox.w)).toEqual({
+      ok: false,
+      because: 'not-sent',
+      detail: 'NavCom has no inbox for Test Poster, so there is nowhere to send it sealed. Nothing was sent.'
+    });
+    expect([...unread.sentEvents, ...noInbox.sentEvents]).toEqual([]);
+    expect(sent()).toEqual([]);
   });
 });
 
@@ -213,7 +267,7 @@ describe('missions taken part in', () => {
  * `maxFilterLimit`, 500 on the relays NavCom ships with. A fake that always honoured `limit` could
  * not show a relay sending less than it was asked for [audit 11, second grid — review].
  */
-function relayOf(events: Event[], answered?: (urls: string[]) => string[], cap = Infinity) {
+function relayOf(events: Event[], answered?: (urls: string[]) => string[], cap = Infinity, registry: MissionPublishers = publishers) {
   const published: Event[] = [];
   const queries: { urls: string[]; filter: Filter }[] = [];
   const w: Wire = {
@@ -224,7 +278,8 @@ function relayOf(events: Event[], answered?: (urls: string[]) => string[], cap =
     query: async (urls, f) => {
       queries.push({ urls, filter: f });
       return { events: served([...events, ...published], f, cap), answered: answered ? answered(urls) : urls };
-    }
+    },
+    publishers: registry
   };
   return { w, published, queries };
 }
@@ -549,9 +604,11 @@ describe('what the second audit of Milestone 11 found', () => {
      * connection this device's open traffic uses — said which mission it was for, and that it was
      * this device's [what-leaves.md].
      */
+    /** The poster's inbox on a relay operators also use, as Mecha Jono's is. */
+    const onNos: MissionPublishers = { [poster]: { name: 'Test Poster', agent: true, inbox: ['wss://nos.lol'] } };
+
     it('asks where a sealed report stands only of the poster’s own relays, and only for the poster’s word', async () => {
-      const inbox = finalizeEvent({ kind: 10050, created_at: NOW, content: '', tags: [['relay', 'wss://nos.lol']] }, posterSecret);
-      const relay = relayOf([inbox]);
+      const relay = relayOf([], undefined, Infinity, onNos);
       await file(quiet, relay.w, 'sealed');
       const id = sent()[0]!.id;
       relay.published.push(buildReportLabel(posterSecret, 'settled', { id, mission: quiet.address }, NOW + 3_600));
@@ -566,8 +623,7 @@ describe('what the second audit of Milestone 11 found', () => {
     });
 
     it('still asks operators’ relays about a mission this device also reported on in the open', async () => {
-      const inbox = finalizeEvent({ kind: 10050, created_at: NOW, content: '', tags: [['relay', 'wss://nos.lol']] }, posterSecret);
-      const relay = relayOf([inbox]);
+      const relay = relayOf([], undefined, Infinity, onNos);
       await file(quiet, relay.w, 'sealed');
       // Another day's work: a day already reported is not reported again [audit 11.S, finding 52].
       const open = await file(quiet, relay.w, 'open', localDay(NOW - 2 * 86_400));
@@ -745,7 +801,6 @@ describe('what the second audit of Milestone 11 found', () => {
 
 describe('what the second audit left open', () => {
   const m = mission('left-open');
-  const inbox = finalizeEvent({ kind: 10050, created_at: NOW, content: '', tags: [['relay', 'wss://inbox.example']] }, posterSecret);
   const day = (n: number) => localDay(NOW - n * 86_400);
 
   describe('a day already reported [audit 11.S, finding 52]', () => {
@@ -767,7 +822,7 @@ describe('what the second audit left open', () => {
     });
 
     it('is refused if sent again from a screen opened before, and nothing leaves', async () => {
-      const { w, sentEvents } = fakeWire([inbox]);
+      const { w, sentEvents } = fakeWire();
       expect((await fileReport(m, draft(day(1)), 'open', NOW, {}, w)).ok).toBe(true);
       const before = sentEvents.length;
       for (const visibility of ['open', 'sealed'] as const) {
@@ -819,7 +874,7 @@ describe('what the second audit left open', () => {
      * she had already chosen the sealed one, she learned to tap "Send anyway".
      */
     it('is asked only of an open report, and only against open ones', async () => {
-      const { w } = fakeWire([inbox]);
+      const { w } = fakeWire();
       expect((await fileReport(mission('o1'), draft(day(1)), 'open', NOW, {}, w)).ok).toBe(true);
       expect((await fileReport(mission('s1'), draft(day(1)), 'sealed', NOW + 60, {}, w)).ok).toBe(true);
       clearField('wipeable', 'mission_reports');
@@ -869,7 +924,8 @@ describe('what the second audit left open', () => {
           sentEvents.push(event);
           return answers.shift() ?? 'took';
         },
-        query: async (urls) => ({ events: [inbox], answered: urls })
+        query: async (urls) => ({ events: [], answered: urls }),
+        publishers
       };
       return { w, sentEvents };
     }
@@ -1036,7 +1092,7 @@ describe('what the second audit left open', () => {
      * Pi, down for a few weeks, stop every verdict and re-read every report on every open [review].
      */
     it('keeps a sealed report’s verdict once The Record answered, and not from its mirror alone', async () => {
-      await fileReport(m, draft(day(1)), 'sealed', NOW, {}, fakeWire([inbox]).w);
+      await fileReport(m, draft(day(1)), 'sealed', NOW, {}, fakeWire().w);
       const id = sent()[0]!.id;
       const settled = buildReportLabel(posterSecret, 'settled', { id, mission: m.address }, NOW + 3_600);
       const mirror = await settlements(NOW + 8 * 86_400, relays([settled], (u) => u === MISSION_RELAYS[1]));
@@ -1079,5 +1135,55 @@ describe('what the second audit left open', () => {
       expect(sent()[0]).toMatchObject({ final: kept, finalWhole: true });
       expect(asked).toBe(0);
     });
+  });
+});
+
+/*
+ * A sealed report sent before 2026-10-17 went where the poster's newest kind-10050 list said, which
+ * whoever holds an exposed key could sign; and a sent report never lapses, so its "Send again" stays
+ * on the screen for good. Sending it again went wherever it was kept to go [review]. It goes to the
+ * inbox this release pins for the poster now, or nowhere, and says so.
+ */
+describe('a sealed report sent again, kept before the inbox was pinned', () => {
+  const ATTACKER = 'wss://attacker.example';
+  const m = mission('kept');
+  const yesterday = () => draft(localDay(NOW - 86_400));
+  /** Relays that answer each send with the next word given, then take everything, under `registry`. */
+  function answering(registry: MissionPublishers, ...answers: Published[]) {
+    const sentEvents: { urls: string[]; event: Event }[] = [];
+    const w: Wire = {
+      publish: async (urls, event) => (sentEvents.push({ urls, event }), answers.shift() ?? 'took'),
+      query: async (urls) => ({ events: [], answered: urls }),
+      publishers: registry
+    };
+    return { w, sentEvents };
+  }
+  /** What a device kept before this release: the same report, aimed where a forged list said. */
+  const aimedByAList = () => set('wipeable', 'mission_reports', sent().map((s) => ({ ...s, relays: [ATTACKER] })));
+
+  it('goes to the pinned inbox, never to the relays it kept', async () => {
+    expect(await fileReport(m, yesterday(), 'sealed', NOW, {}, answering(publishers, 'unconfirmed').w)).toMatchObject({ because: 'unconfirmed' });
+    aimedByAList();
+    expect(sent()[0]!.relays).toEqual([ATTACKER]);
+    const { w, sentEvents } = answering(publishers);
+    expect(await reportAgain(sent()[0]!, w)).toBe('took');
+    expect(sentEvents.map((s) => s.urls)).toEqual([[INBOX]]);
+    expect(sent()[0]!.unconfirmed).toBeUndefined();
+  });
+
+  it('goes nowhere once its poster has no inbox here, stays listed as maybe arrived, and says so', async () => {
+    await fileReport(m, yesterday(), 'sealed', NOW, {}, answering(publishers, 'unconfirmed').w);
+    aimedByAList();
+    const unread = answering({});
+    expect(await reportAgain(sent()[0]!, unread.w)).toEqual({
+      nowhere:
+        'No relay confirmed it; it may have arrived. NavCom no longer reads the key the poster posted this with, so there is nowhere to send it sealed. Nothing was sent this time.'
+    });
+    const none = answering({ [poster]: { name: 'Test Poster', agent: true } });
+    expect(await reportAgain(sent()[0]!, none.w)).toEqual({
+      nowhere: 'No relay confirmed it; it may have arrived. NavCom has no inbox for Test Poster, so there is nowhere to send it sealed. Nothing was sent this time.'
+    });
+    expect([...unread.sentEvents, ...none.sentEvents]).toEqual([]);
+    expect(sent()[0]!.unconfirmed).toBeDefined();
   });
 });

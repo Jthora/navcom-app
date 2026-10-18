@@ -53,10 +53,12 @@ import {
   inboxOf,
   noInbox,
   operatorRelays,
+  sealedAgain,
   signedOn,
   tookPart,
   usable,
   wire as defaultWire,
+  type Nowhere,
   type Published,
   type TookPart,
   type Visibility,
@@ -242,7 +244,7 @@ export async function fileReport(
       to = operatorRelays();
       refused = 'No relay took it. Nothing was sent; try again with signal.';
     } else {
-      const inbox = await inboxOf(m.publisher.pubkey, w);
+      const inbox = inboxOf(m.publisher.pubkey, w.publishers);
       if (inbox.urls.length === 0) return { ok: false, because: 'not-sent', detail: noInbox(m.publisher.name, inbox) };
       const sealed = buildSealedReport(contact, report, now);
       id = sealed.inner;
@@ -285,11 +287,17 @@ export async function fileReport(
  * never joined by a second report of the same work [audit 11.S, finding 61]. Given the report as
  * the screen holds it, so one this device could not record can still be sent again from there. It
  * stays listed whatever comes back: a relay refusing it now says nothing about the first time.
+ *
+ * **A sealed one goes to the poster's inbox as this release pins it**, never where it was stored:
+ * a report sent before 2026-10-17 was aimed by a kind-10050 list an exposed key could sign, and a
+ * sent report never lapses. With no inbox pinned, nothing goes, and the words say why [`sealedAgain`].
  */
-export async function reportAgain(r: Sent, w: Wire = defaultWire): Promise<Published | 'gone'> {
+export async function reportAgain(r: Sent, w: Wire = defaultWire): Promise<Published | 'gone' | Nowhere> {
   const s = sent().find((x) => x.id === r.id) ?? r;
   if (!s.unconfirmed || s.withdrawn) return 'gone';
-  const result = await w.publish(usable(s.relays ?? operatorRelays()), s.unconfirmed);
+  const to = s.visibility === 'sealed' ? sealedAgain(s.poster, w) : usable(s.relays ?? operatorRelays());
+  if (!Array.isArray(to)) return to;
+  const result = await w.publish(to, s.unconfirmed);
   if (result === 'took') set('wipeable', SENT, sent().map((x) => (x.id === s.id ? confirmed(x) : x)));
   return result;
 }

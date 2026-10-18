@@ -330,6 +330,19 @@ describe('the intel declaration', () => {
     }
   });
 
+  it('says a sealed report goes to the inbox NavCom pins, and names no kind-10050 list', () => {
+    /*
+     * It said a sealed report went "to the relays its kind-10050 list names" after NavCom stopped
+     * reading that list: a list the exposed key could sign moved where sealed reports went, so the
+     * inbox is pinned in the release [interchange spec §5.0]. An implementer reading this file
+     * built against the old rule. Checked on the whole document as it is written to disk.
+     */
+    const written = JSON.stringify(doc(), null, 2);
+    expect(written).not.toMatch(/10050/);
+    const report = doc().defines.find((d) => d.kind === 1912);
+    if (report?.emitted) expect(report.sealed).toMatch(/inbox as NavCom's release pins it/);
+  });
+
   it('publishes a vocabulary read out of the spec, not retyped', () => {
     // Parsed from raw-intel.md. If the fenced block is renamed or reshaped this empties out,
     // and an empty vocabulary would tell a consumer every tag is unknown.

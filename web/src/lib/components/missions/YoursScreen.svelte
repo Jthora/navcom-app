@@ -17,7 +17,7 @@
    */
   import { onMount } from 'svelte';
   import { Panel, Readout, Slot } from '$lib/components/panel';
-  import { held, sendRelease, tookPart, unreleased, type Unreleased } from '$lib/missions/claims';
+  import { MAY_HAVE_ARRIVED, held, sendRelease, tookPart, unreleased, type Unreleased } from '$lib/missions/claims';
   import { reportAgain, sent, settlements, stillToReport, withdraw, type Sent, type Withdrawal } from '$lib/missions/reports';
   import { endsIn, placeName, releaseReadout, standingOf } from './format';
 
@@ -48,8 +48,13 @@
   let version = $state(0);
   /** A withdrawal that did not happen, and why: said where it was asked for. */
   let refused = $state<{ id: string; why: Withdrawal } | null>(null);
-  /** A send from here that no relay took or confirmed, by what it was for: said where it was asked for. */
-  let unsent = $state<{ key: string; why: 'refused' | 'unconfirmed' | 'card' } | null>(null);
+  /**
+   * A send from here that no relay took or confirmed, by what it was for: said where it was asked
+   * for. `nowhere` is something sealed whose poster this release pins no inbox for: nothing went,
+   * and the send's own words say why — "try again with signal" would never change it.
+   */
+  type Unsent = { key: string; why: 'refused' | 'unconfirmed' | 'card' } | { key: string; why: 'nowhere'; words: string };
+  let unsent = $state<Unsent | null>(null);
   let sending = $state(false);
   const t = $derived(Math.floor(now / 1000));
   const holding = $derived.by(() => {
@@ -129,7 +134,7 @@
     sending = true;
     try {
       const got = await reportAgain(r);
-      unsent = got === 'refused' || got === 'unconfirmed' ? { key: r.id, why: got } : null;
+      unsent = typeof got === 'object' ? { key: r.id, why: 'nowhere', words: got.nowhere } : got === 'refused' || got === 'unconfirmed' ? { key: r.id, why: got } : null;
       // There now, so where it stands can be read: until this it was not asked for.
       if (got === 'took') void readStanding();
     } finally {
@@ -143,7 +148,13 @@
     sending = true;
     try {
       const got = await sendRelease(u.address, Math.floor(Date.now() / 1000));
-      unsent = got.sent ? null : { key: u.address, why: 'card' in got ? 'card' : got.unconfirmed ? 'unconfirmed' : 'refused' };
+      unsent = got.sent
+        ? null
+        : 'card' in got
+          ? { key: u.address, why: 'card' }
+          : got.nowhere
+            ? { key: u.address, why: 'nowhere', words: got.because }
+            : { key: u.address, why: got.unconfirmed ? 'unconfirmed' : 'refused' };
     } finally {
       sending = false;
       version += 1;
@@ -155,6 +166,11 @@
     unconfirmed: 'no relay confirmed it; it may have arrived',
     card: 'it was taken with a card this device no longer holds, so only that card could; it ends by itself'
   } as const;
+  /** What a send that did not go says: in its own words when it gave some. "Unconfirmed" only if it may have arrived before. */
+  const unsentReadout = (u: Unsent) =>
+    u.why === 'nowhere'
+      ? { value: u.words.startsWith(MAY_HAVE_ARRIVED) ? 'Unconfirmed' : 'Not sent', sub: u.words }
+      : { value: u.why === 'refused' ? 'Not sent' : 'Unconfirmed', sub: UNSENT[u.why] };
 </script>
 
 <div class="nc-yours" data-screen="yours">
@@ -179,7 +195,7 @@
           <li class="nc-yours-sent" data-unreleased={u.address}>
             <span class="nc-yours-title">{u.title}</span>
             <Readout value={r.value} tone="warn" sub={`let go · ${r.sub}`} />
-            {#if unsent?.key === u.address}<Readout value={unsent.why === 'refused' ? 'Not sent' : 'Unconfirmed'} tone="warn" sub={UNSENT[unsent.why]} />{/if}
+            {#if unsent?.key === u.address}{@const said = unsentReadout(unsent)}<Readout value={said.value} tone="warn" sub={said.sub} />{/if}
             <button type="button" class="nc-yours-withdraw" data-sendrelease={u.address} disabled={sending} onclick={() => release(u)}>Send the release</button>
           </li>
         {/each}
@@ -222,7 +238,7 @@
             {#if refused?.id === r.id}
               <Readout value={refused.why === 'unconfirmed' ? 'Unconfirmed' : 'Not withdrawn'} tone="warn" sub={WHY[refused.why]} />
             {/if}
-            {#if unsent?.key === r.id}<Readout value={unsent.why === 'refused' ? 'Not sent' : 'Unconfirmed'} tone="warn" sub={UNSENT[unsent.why]} />{/if}
+            {#if unsent?.key === r.id}{@const said = unsentReadout(unsent)}<Readout value={said.value} tone="warn" sub={said.sub} />{/if}
             {#if r.unconfirmed && !r.withdrawn}
               <!-- The same report, as it was signed: a second would count the same work twice [finding 61]. -->
               <button type="button" class="nc-yours-withdraw" data-sendagain={r.id} disabled={sending} onclick={() => resend(r)}>

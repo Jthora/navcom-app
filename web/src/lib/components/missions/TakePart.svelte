@@ -13,10 +13,13 @@
    * **What no relay confirmed is said, never called unsent** [audit 11.S, finding 61], and sent
    * again as the same event. **A release that did not go stays here to send** [finding 66]: letting
    * go is instant and free, and the claim it releases is still on relays until it ends.
+   *
+   * **"Only the poster" is said only when it is true.** Sealed to a key whose secret was exposed,
+   * whoever holds that secret can open it, and the choice and the claim both say so [`exposedOn`].
    */
   import type { Mission } from '@navcom/core';
   import { Action, Readout, Slot } from '$lib/components/panel';
-  import { MAY_HAVE_ARRIVED, claimAgain, held, letGo, refusal, takePart, unreleased, type Visibility } from '$lib/missions/claims';
+  import { MAY_HAVE_ARRIVED, claimAgain, exposedOn, held, letGo, refusal, takePart, unreleased, type Visibility } from '$lib/missions/claims';
   import { rememberMission } from '$lib/missions/pending';
   import { endsIn, releaseReadout } from './format';
 
@@ -43,6 +46,8 @@
   let released = $state<Visibility | null>(null);
 
   const t = $derived(Math.floor(now / 1000));
+  /** When the poster's key was exposed, if it was: then it is not only the poster who can read what is sealed to it. */
+  const exposed = $derived(exposedOn(m.publisher.pubkey));
   const mine = $derived.by(() => {
     void version;
     return held(t).find((h) => h.address === m.address) ?? null;
@@ -94,6 +99,7 @@
       const r = await claimAgain(m.address, Math.floor(Date.now() / 1000));
       if (r === 'refused') error = `${MAY_HAVE_ARRIVED} No relay took it this time.`;
       else if (r === 'unconfirmed') error = MAY_HAVE_ARRIVED;
+      else if (typeof r === 'object') error = r.nowhere;
     } catch {
       error = MAY_HAVE_ARRIVED;
     } finally {
@@ -132,7 +138,7 @@
       <Readout
         value={mine.unconfirmed ? 'Unconfirmed' : 'Taking part'}
         tone={mine.unconfirmed ? 'warn' : 'good'}
-        sub="{mine.unconfirmed ? 'no relay confirmed it; it may have arrived · ' : ''}ends in {endsIn(mine.ends, now)} · {mine.visibility === 'open' ? 'everyone can see' : `only ${m.publisher.name} can see`}"
+        sub="{mine.unconfirmed ? 'no relay confirmed it; it may have arrived · ' : ''}ends in {endsIn(mine.ends, now)} · {mine.visibility === 'open' ? 'everyone can see' : exposed ? `sealed to ${m.publisher.name}, whose key was exposed on ${exposed}: whoever holds it may read this` : `only ${m.publisher.name} can see`}"
       />
     </Slot>
     <div class="nc-takepart-row">
@@ -163,8 +169,8 @@
         <span class="nc-takepart-line">anyone can see this card took this mission</span>
       </button>
       <button type="button" data-visibility="sealed" disabled={sending} onclick={() => take('sealed')}>
-        <span class="nc-takepart-who">Only {m.publisher.name}</span>
-        <span class="nc-takepart-line">sealed to the poster; relays see only that somebody wrote</span>
+        <span class="nc-takepart-who">{exposed ? `Sealed to ${m.publisher.name}` : `Only ${m.publisher.name}`}</span>
+        <span class="nc-takepart-line">{exposed ? `its key was exposed on ${exposed}: whoever holds it may read this` : 'sealed to the poster; relays see only that somebody wrote'}</span>
       </button>
     </div>
   {:else}

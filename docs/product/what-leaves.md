@@ -33,9 +33,9 @@ hour later are signed by different keys, and nothing in either event ties them t
 of traffic from one phone sees them arrive over the same connection, from the same address.
 The events cannot be tied together; the phone sending them can. No setting keeps them apart.
 With a watch, its relays carry every `Distress` and, beside it, everything this phone publishes
-except what you seal to a mission's poster, which goes only to the relays that poster names.
-Without one, the relays that carry your card and corrections also carry the requests that name
-your operational key.
+except what you seal to a mission's poster, which goes only to the inbox NavCom's release pins for
+that poster. Without one, the relays that carry your card and corrections also carry the requests
+that name your operational key.
 
 ## What goes out, exactly
 
@@ -136,7 +136,9 @@ Stated as capability rather than intent, because you do not get to choose who ru
 
 **They cannot see:**
 
-- Anything sealed, which is every operational payload
+- Anything sealed, which is every operational payload — unless they also hold the key it is sealed
+  to. Mecha Jono's old key was exposed on 2026-09-28, so whoever holds its secret, relay or not, can
+  open a claim or report sealed to a mission posted under it; the screen offering that seal says so
 - Who holds a Watchtower with you, unless they are one of its relays
 - Which mission a claim or report sealed to its poster is for, or that it is yours — except The
   Record and its mirror, as the line above says, for a sealed report you are waiting to see settled

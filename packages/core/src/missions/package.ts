@@ -58,22 +58,56 @@ export const THE_RECORD = 'wss://record.cosmiccodex.app';
  */
 export const MISSION_RELAYS: readonly string[] = [THE_RECORD, 'wss://blackpi.cosmiccodex.app'];
 
+/** One publisher NavCom reads, as its release pins it. */
+export interface MissionPublisher {
+  name: string;
+  agent: boolean;
+  /**
+   * Where sealed claims and reports to this publisher go: secure relay addresses, pinned here in
+   * the release and never read off a relay [interchange spec §5.0]. Absent, nothing is sent sealed
+   * to it, and the screen says so.
+   *
+   * **Not its kind-10050 list, since 2026-10-17.** The newest list by date won, and the date is
+   * whatever the signer writes: whoever holds an exposed secret can sign a list dated next year
+   * naming relays they run, and every sealed claim and report would go there. Asking for the list
+   * also went out over the connection that carries the operator's card, a moment before the seal
+   * (Q16). An inbox that moves now moves by a NavCom release, as the meeting relays do.
+   */
+  inbox?: readonly string[];
+  /**
+   * The day (`YYYY-MM-DD`) this key's secret was exposed. **Sealing to it hides nothing from
+   * whoever holds that secret**: they can fetch the wraps addressed to it from the inbox and open
+   * them. So a screen offering to seal to it says so, and never "only the poster can see"
+   * [interchange spec §5.0]. Pinning the inbox fixes where a seal goes, not who can open it.
+   */
+  exposed?: string;
+}
+
+export type MissionPublishers = Readonly<Record<string, MissionPublisher>>;
+
 /**
- * Who NavCom reads packages from, and whether each is an agent.
+ * Mecha Jono's inbox, as its old key's kind-10050 list named it with its letter (Q10).
+ * `relay.damus.io` refuses every NIP-42 sign-in. For the new key it is NavCom's assumption until
+ * Mecha Jono confirms it reads wraps addressed to that key there (interchange spec Q17).
+ */
+const MECHA_JONO_INBOX: readonly string[] = ['wss://nos.lol', 'wss://relay.primal.net'];
+
+/**
+ * Who NavCom reads packages from, whether each is an agent, and where each takes sealed messages.
  *
  * A registry rather than trusting the `agent` tag alone: invariant 4 says agents are always
  * identified, and that cannot depend on an agent choosing to say so. The tag is honoured too — a
  * publisher that declares itself an agent is one.
  */
-export const MISSION_PUBLISHERS: Readonly<Record<string, { name: string; agent: boolean }>> = {
+export const MISSION_PUBLISHERS: MissionPublishers = {
   // Retiring. Its secret was exposed on 2026-09-28 (Mecha Jono's key-change letter of 7 Oct). It
   // stays until the cut-over in early November, then comes off, and every event it signed is
   // distrusted whatever date it carries: whoever holds the secret can back-date one.
-  '6301c4d09a014909e5a48b7d0c9aa859eec18804c2fc87eab4e414aa5a319692': { name: 'Mecha Jono', agent: true },
+  '6301c4d09a014909e5a48b7d0c9aa859eec18804c2fc87eab4e414aa5a319692': { name: 'Mecha Jono', agent: true, inbox: MECHA_JONO_INBOX, exposed: '2026-09-28' },
   // Mecha Jono's next key, trusted beside the old one from 2026-10-17 (confirmed by Jono, as the
   // letter asks); it signs nothing before the cut-over, when each open package is republished under
   // it at 30079:<this key>:<the same d>.
-  '86f824c3f1e67c60b1dc15ce110648c4de5c3fb879022fbbcc5e8deb720e402c': { name: 'Mecha Jono', agent: true }
+  '86f824c3f1e67c60b1dc15ce110648c4de5c3fb879022fbbcc5e8deb720e402c': { name: 'Mecha Jono', agent: true, inbox: MECHA_JONO_INBOX }
 };
 
 export type MissionState = 'open' | 'claimed' | 'closed';
@@ -253,10 +287,7 @@ const strings = (v: unknown): string[] =>
   Array.isArray(v) ? v.filter((s): s is string => typeof s === 'string') : typeof v === 'string' ? [v] : [];
 
 /** One event in, one reading out. Pure: no network, no clock. */
-export function readMissionPackage(
-  input: unknown,
-  publishers: Readonly<Record<string, { name: string; agent: boolean }>> = MISSION_PUBLISHERS
-): MissionReading {
+export function readMissionPackage(input: unknown, publishers: MissionPublishers = MISSION_PUBLISHERS): MissionReading {
   const raw = input as Event;
   if (
     !raw || typeof raw !== 'object' || raw.kind !== MISSION_PACKAGE_KIND || typeof raw.pubkey !== 'string' ||

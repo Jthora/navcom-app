@@ -73,7 +73,8 @@ const ROOT_PAINT_OUT = [...RELAYS, 'web/src/lib/missions/claims.ts', 'web/src/li
  * 2026-10-10, both read off core's barrel chunk (`y8zR6RGV.js` in the build stamped eb95b14):
  * - `claim.ts`: `const wt=1985,zr=5,Ti=10050,Te="navcom.mission",Fr=86400,Bc=3`, which is
  *   KIND_LABEL, KIND_DELETION, KIND_INBOX_RELAYS, MISSION_NAMESPACE, CLAIM_LEASE_SECONDS and
- *   CLAIM_CAP. The namespace string is in no other source file
+ *   CLAIM_CAP. The namespace string is in no other source file. KIND_INBOX_RELAYS came off on
+ *   2026-10-17, when the poster's inbox was pinned in the release; the marker is the namespace alone
  * - `seal.ts`: `["expiration",String(Math.max(r.ends,a+Pr+r.within))]`, sealToPoster's lapse,
  *   whose `ends` and `within` are property names and survive
  */

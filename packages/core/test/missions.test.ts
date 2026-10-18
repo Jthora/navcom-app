@@ -370,11 +370,17 @@ describe('who NavCom reads packages from', () => {
    * The registry is the trust root for every mission on the map: a key here is believed to be its
    * publisher, so it is pinned exactly. Mecha Jono's old key was exposed on 2026-09-28; its next key
    * is trusted beside it until the cut-over, when the old one comes off [key-change letter, 7 Oct].
+   *
+   * It pins where sealed claims and reports go, too (since 2026-10-17): the inbox read from a
+   * kind-10050 list was the newest by a date the signer writes, and the exposed key can sign one
+   * dated next year [interchange spec §5.0]. And it marks the old key exposed: sealing to it hides
+   * nothing from whoever holds its secret, so no screen may say only Mecha Jono can see.
    */
-  it('trusts exactly Mecha Jono’s two keys, each marked an agent', () => {
+  it('trusts exactly Mecha Jono’s two keys, each marked an agent, with the inbox it published pinned for both and the old one marked exposed', () => {
+    const inbox = ['wss://nos.lol', 'wss://relay.primal.net'];
     expect(MISSION_PUBLISHERS).toEqual({
-      '6301c4d09a014909e5a48b7d0c9aa859eec18804c2fc87eab4e414aa5a319692': { name: 'Mecha Jono', agent: true },
-      '86f824c3f1e67c60b1dc15ce110648c4de5c3fb879022fbbcc5e8deb720e402c': { name: 'Mecha Jono', agent: true }
+      '6301c4d09a014909e5a48b7d0c9aa859eec18804c2fc87eab4e414aa5a319692': { name: 'Mecha Jono', agent: true, inbox, exposed: '2026-09-28' },
+      '86f824c3f1e67c60b1dc15ce110648c4de5c3fb879022fbbcc5e8deb720e402c': { name: 'Mecha Jono', agent: true, inbox }
     });
   });
 

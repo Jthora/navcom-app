@@ -1,22 +1,28 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import type { Event } from 'nostr-tools/core';
-import { DEFAULT_RELAYS, readMissionPackage, type Mission } from '@navcom/core';
+import { readFileSync } from 'node:fs';
+import type { Filter } from 'nostr-tools/filter';
+import { DEFAULT_RELAYS, MISSION_PUBLISHERS, readMissionPackage, type Mission, type MissionPublishers } from '@navcom/core';
 import { set } from '$lib/terminal/storage';
 import { withdrawCard } from '$lib/terminal/card';
-import { claimAgain, held, letGo, refusal, sendRelease, takePart, tookPart, unreleased, usable, type Published, type Wire } from './claims';
+import { claimAgain, exposedOn, held, letGo, refusal, sendRelease, takePart, tookPart, unreleased, usable, type Published, type Wire } from './claims';
 import { reportableDays } from './reports';
 
 /**
  * Taking part, from this device: the cap, the lease, withdrawal, and where each kind of claim goes.
  * The relays are a fake that records what was sent, so every path — including a relay refusing —
  * can be driven without a network.
+ *
+ * The test poster's inbox is pinned in a registry these tests stand in, as the shipped one pins
+ * Mecha Jono's: no test key is added to the shipped registry.
  */
 
 const NOW = 1791316800;
 const posterSecret = generateSecretKey();
 const poster = getPublicKey(posterSecret);
-const publishers = { [poster]: { name: 'Test Poster', agent: true } };
+const INBOX = 'wss://inbox.example';
+const publishers: MissionPublishers = { [poster]: { name: 'Test Poster', agent: true, inbox: [INBOX] } };
 
 function mission(d: string, over: { ends?: number; claims?: 'one' | 'many'; state?: string } = {}): Mission {
   const e = finalizeEvent(
@@ -37,21 +43,28 @@ function mission(d: string, over: { ends?: number; claims?: 'one' | 'many'; stat
   return r.mission;
 }
 
-/** Relays that take everything, record it, and answer a query with whatever the test planted. */
-function fakeWire(answers: Event[] = [], accept = true) {
+/**
+ * Relays that take everything, record it and every question asked of them, and answer a query with
+ * whatever the test planted. The registry is the test poster's unless a test gives another; `null`
+ * leaves it out, as the app's wire does, so the shipped one decides.
+ */
+function fakeWire(answers: Event[] = [], accept = true, registry: MissionPublishers | null = publishers) {
   const sent: { urls: string[]; event: Event }[] = [];
+  const asked: Filter[] = [];
   const w: Wire = {
     publish: async (urls, event) => {
       sent.push({ urls, event });
       return accept ? 'took' : 'refused';
     },
-    query: async (urls) => ({ events: answers, answered: urls })
+    query: async (urls, filter) => (asked.push(filter), { events: answers, answered: urls }),
+    ...(registry ? { publishers: registry } : {})
   };
-  return { w, sent };
+  return { w, sent, asked };
 }
 
-const inbox = (urls: string[]) =>
-  finalizeEvent({ kind: 10050, created_at: NOW, content: '', tags: urls.map((u) => ['relay', u]) }, posterSecret);
+/** A kind-10050 list the poster signed, dated `at`: what NavCom read its inbox from until 2026-10-17. */
+const list = (urls: string[], at = NOW, secret = posterSecret) =>
+  finalizeEvent({ kind: 10050, created_at: at, content: '', tags: urls.map((u) => ['relay', u]) }, secret);
 
 beforeEach(() => {
   const store = new Map<string, string>();
@@ -146,32 +159,39 @@ describe('a claim in the open', () => {
 });
 
 describe('a claim for the poster only', () => {
-  it('goes to the inbox the poster’s own signed list names, and nowhere else', async () => {
+  it('goes to the inbox NavCom pins for the poster, and nowhere else', async () => {
     signOn();
-    const { w, sent } = fakeWire([inbox(['wss://inbox.example'])]);
+    const { w, sent } = fakeWire();
     const r = await takePart(mission('sealed-a'), 'sealed', NOW, w);
     expect(r.ok).toBe(true);
     expect(sent).toHaveLength(1);
-    expect(sent[0]!.urls).toEqual(['wss://inbox.example']);
+    expect(sent[0]!.urls).toEqual([INBOX]);
     expect(sent[0]!.event.kind).toBe(1059);
     expect(sent[0]!.event.tags).toContainEqual(['p', poster]);
     expect(held(NOW)[0]).toMatchObject({ visibility: 'sealed', claimId: null });
   });
 
-  it('is not sent when the poster’s inbox cannot be found', async () => {
+  it('is not sent when NavCom pins no inbox for the poster, and says so', async () => {
     signOn();
-    const { w, sent } = fakeWire([]);
+    // The poster's own list is there to be read, and is not what decides.
+    const { w, sent } = fakeWire([list([INBOX])], true, { [poster]: { name: 'Test Poster', agent: true } });
     const r = await takePart(mission('sealed-b'), 'sealed', NOW, w);
-    expect(r).toEqual({ ok: false, because: expect.stringMatching(/has not said where they take sealed messages/) });
+    expect(r).toEqual({ ok: false, because: 'NavCom has no inbox for Test Poster, so there is nowhere to send it sealed. Nothing was sent.' });
     expect(sent).toEqual([]);
     expect(held(NOW)).toEqual([]);
   });
 
-  it('says no relay answered, rather than that the poster has no inbox, when nobody did [11.E]', async () => {
+  /*
+   * It said "No relay answered when asking where…" when no relay could be reached [11.E]. Nothing is
+   * asked now, so a phone with no signal is neither told the poster has no inbox nor kept from
+   * sending: the claim goes to the pinned inbox, and whether that inbox takes it is said as for any send.
+   */
+  it('is sent to the pinned inbox whether or not any relay would answer a question, since none is asked', async () => {
     signOn();
-    const silent: Wire = { publish: async () => 'took', query: async () => ({ events: [], answered: [] }) };
-    const r = await takePart(mission('sealed-c'), 'sealed', NOW, silent);
-    expect(r).toEqual({ ok: false, because: expect.stringMatching(/No relay answered/) });
+    const sent: string[][] = [];
+    const silent: Wire = { publish: async (urls) => (sent.push(urls), 'took'), query: async () => ({ events: [], answered: [] }), publishers };
+    expect((await takePart(mission('sealed-c'), 'sealed', NOW, silent)).ok).toBe(true);
+    expect(sent).toEqual([[INBOX]]);
   });
 });
 
@@ -231,7 +251,7 @@ describe('what the second audit of Milestone 11 found', () => {
 
   it('lets a sealed claim go, and renews one, sealed the same way: nothing in the open says who took it', async () => {
     signOn();
-    const { w, sent } = fakeWire([inbox(['wss://inbox.example'])]);
+    const { w, sent } = fakeWire();
     const m = mission('sealed-go');
     await takePart(m, 'sealed', NOW, w);
     expect((await takePart(m, 'sealed', NOW + 3_600, w)).ok).toBe(true);
@@ -239,7 +259,7 @@ describe('what the second audit of Milestone 11 found', () => {
     expect(sent).toHaveLength(3);
     for (const s of sent) {
       expect(s.event.kind).toBe(1059);
-      expect(s.urls).toEqual(['wss://inbox.example']);
+      expect(s.urls).toEqual([INBOX]);
     }
   });
 
@@ -321,31 +341,74 @@ describe('what the second audit of Milestone 11 found', () => {
     expect(await takePart(mission('shut', { state: 'closed' }), 'open', NOW, w)).toEqual({ ok: false, because: 'ended' });
     expect(sent).toEqual([]);
   });
+});
 
-  it('sends a sealed claim to the inbox the poster named last, in whatever order the relays served the lists', async () => {
+/*
+ * Mecha Jono's old secret was exposed on 2026-09-28. NavCom sent a sealed claim to the inbox in the
+ * poster's newest kind-10050 list by date, and the date is whatever the signer writes: whoever holds
+ * the secret could sign a list dated next year naming relays they run, and every sealed claim from
+ * NavCom would go there. The lookup also went out over the connection that carries the card, a
+ * moment before the seal (interchange Q16). Since 2026-10-17 the inbox is pinned in the release.
+ */
+describe('where a sealed claim goes, since an exposed key could sign an inbox list', () => {
+  it('asks no relay anything on the way, and never for a kind-10050 list: to take part, to renew, or to let go', async () => {
     signOn();
-    const older = finalizeEvent({ kind: 10050, created_at: NOW - 86_400, content: '', tags: [['relay', 'wss://old-inbox.example']] }, posterSecret);
-    const newer = finalizeEvent({ kind: 10050, created_at: NOW, content: '', tags: [['relay', 'wss://new-inbox.example']] }, posterSecret);
-    // A relay answers newest first, so the last one served is the oldest: by time, never by place [review].
-    for (const [d, served] of [['oldest-first', [older, newer]], ['newest-first', [newer, older]]] as const) {
-      const { w, sent } = fakeWire([...served]);
-      await takePart(mission(d), 'sealed', NOW, w);
-      expect(sent[0]!.urls, d).toEqual(['wss://new-inbox.example']);
-    }
+    const { w, sent, asked } = fakeWire([list([INBOX])]);
+    const m = mission('no-lookup');
+    expect((await takePart(m, 'sealed', NOW, w)).ok).toBe(true);
+    expect((await takePart(m, 'sealed', NOW + 3_600, w)).ok).toBe(true);
+    expect(await letGo(m, NOW + 7_200, w)).toEqual({ sent: true });
+    expect(sent).toHaveLength(3);
+    expect(asked.filter((f) => f.kinds?.includes(10050))).toEqual([]);
+    expect(asked).toEqual([]);
   });
 
-  it('asks again where the poster takes sealed messages after a lookup that found nothing', async () => {
+  it('is not moved by a list the poster’s key signed, dated next year, naming relays somebody else runs', async () => {
     signOn();
-    const answers: Event[] = [];
-    const sent: string[][] = [];
-    const w: Wire = {
-      publish: async (urls) => (sent.push(urls), 'took'),
-      query: async (urls) => ({ events: answers, answered: urls })
-    };
-    expect((await takePart(mission('retry'), 'sealed', NOW, w)).ok).toBe(false);
-    answers.push(inbox(['wss://inbox.example']));
-    expect((await takePart(mission('retry'), 'sealed', NOW + 60, w)).ok).toBe(true);
-    expect(sent).toEqual([['wss://inbox.example']]);
+    const forged = list(['wss://attacker.example'], NOW + 365 * 86_400);
+    const older = list(['wss://older.example'], NOW - 86_400);
+    const { w, sent } = fakeWire([older, forged]);
+    const m = mission('forged');
+    expect((await takePart(m, 'sealed', NOW, w)).ok).toBe(true);
+    await letGo(m, NOW + 60, w);
+    expect(sent.map((s) => s.urls)).toEqual([[INBOX], [INBOX]]);
+  });
+
+  /*
+   * A key that comes off the registry — the old one, at the cut-over — leaves nowhere to send a
+   * claim on a mission it posted. Its own list naming an inbox changes nothing.
+   */
+  it('sends nothing to a poster this release does not read, though its own list names an inbox, and says so', async () => {
+    signOn();
+    const { w, sent } = fakeWire([list([INBOX])], true, {});
+    const r = await takePart(mission('unread'), 'sealed', NOW, w);
+    expect(r).toEqual({ ok: false, because: 'NavCom no longer reads the key Test Poster posted this with, so there is nowhere to send it sealed. Nothing was sent.' });
+    expect(sent).toEqual([]);
+    expect(held(NOW)).toEqual([]);
+    expect(tookPart(NOW)).toEqual([]);
+  });
+
+  it('sends nothing to the test poster through the shipped registry, which holds no test key', async () => {
+    signOn();
+    const { w, sent } = fakeWire([list([INBOX])], true, null);
+    expect(w.publishers).toBeUndefined();
+    expect(await takePart(mission('shipped'), 'sealed', NOW, w)).toMatchObject({ ok: false, because: expect.stringMatching(/no longer reads the key Test Poster/) });
+    expect(sent).toEqual([]);
+  });
+
+  /** The heat-relief campaign, as Mecha Jono signed it under the key the shipped registry reads. */
+  it('sends a sealed claim on Mecha Jono’s own package to the inbox the shipped registry pins for it', async () => {
+    signOn();
+    const fixtures = JSON.parse(readFileSync(new URL('../../../../packages/core/test/fixtures/mission-packages.json', import.meta.url), 'utf8')) as Event[];
+    const read = readMissionPackage(fixtures[0]);
+    if (!read.ok) throw new Error(read.because);
+    const heat = read.mission;
+    const during = heat.validUntil - 2 * 86_400;
+    const { w, sent, asked } = fakeWire([], true, null);
+    expect((await takePart(heat, 'sealed', during, w)).ok).toBe(true);
+    expect(sent.map((s) => s.urls)).toEqual([['wss://nos.lol', 'wss://relay.primal.net']]);
+    expect(sent[0]!.event.tags).toContainEqual(['p', heat.publisher.pubkey]);
+    expect(asked).toEqual([]);
   });
 });
 
@@ -359,7 +422,8 @@ describe('what the second audit left open', () => {
         sent.push(event);
         return answers.shift() ?? 'took';
       },
-      query: async (urls) => ({ events: [inbox(['wss://inbox.example'])], answered: urls })
+      query: async (urls) => ({ events: [], answered: urls }),
+      publishers
     };
     return { w, sent };
   }
@@ -580,14 +644,122 @@ describe('what the second audit left open', () => {
       await letGo(m, NOW + 60, dies);
       expect(during).toBe(true);
       expect(unreleased(NOW + 60)[0]!.mayHaveArrived).toBeUndefined();
-      // Sealed, and nobody said where the poster takes sealed messages: no release was signed.
+      // Sealed, and its poster's key came off the registry since: no release was signed.
       const s = mission('sealed-none');
       await takePart(s, 'sealed', NOW, answering().w);
-      const nowhere: Wire = { publish: async () => 'took', query: async () => ({ events: [], answered: [] }) };
-      expect(await letGo(s, NOW + 60, nowhere)).toMatchObject({ sent: false, unconfirmed: false, because: expect.stringMatching(/No relay answered/) });
+      const nowhere: Wire = { publish: async () => 'took', query: async () => ({ events: [], answered: [] }), publishers: {} };
+      expect(await letGo(s, NOW + 60, nowhere)).toMatchObject({ sent: false, unconfirmed: false, because: expect.stringMatching(/no longer reads the key/) });
       const kept = unreleased(NOW + 60).find((u) => u.address === s.address)!;
       expect(kept.release).toBeUndefined();
       expect(kept.mayHaveArrived).toBeUndefined();
     });
+  });
+});
+
+/*
+ * A sealed claim or release kept before 2026-10-17 was aimed by the poster's newest kind-10050 list,
+ * which whoever holds an exposed key could sign; and the old key comes off the registry at the
+ * cut-over. Sending one again went wherever it was kept to go [review]. It goes to the inbox this
+ * release pins for the poster now, or nowhere, and says so.
+ */
+describe('a sealed claim or release sent again, kept before the inbox was pinned', () => {
+  const ATTACKER = 'wss://attacker.example';
+  /** Relays that answer each send with the next word given, then take everything, under `registry`. */
+  function answering(registry: MissionPublishers | null, ...answers: Published[]) {
+    const sent: { urls: string[]; event: Event }[] = [];
+    const w: Wire = {
+      publish: async (urls, event) => (sent.push({ urls, event }), answers.shift() ?? 'took'),
+      query: async (urls) => ({ events: [], answered: urls }),
+      ...(registry ? { publishers: registry } : {})
+    };
+    return { w, sent };
+  }
+  /** What a device kept before this release: the same records, aimed where a forged list said. */
+  const aimedByAList = () => {
+    set('wipeable', 'mission_claims', held(NOW).map((h) => ({ ...h, relays: [ATTACKER] })));
+    set('wipeable', 'mission_releases', unreleased(NOW).map((u) => ({ ...u, releaseTo: [ATTACKER] })));
+  };
+
+  it('sends a held claim again to the pinned inbox, never to the relays it kept', async () => {
+    signOn();
+    const m = mission('kept-claim');
+    expect((await takePart(m, 'sealed', NOW, answering(publishers, 'unconfirmed').w)).ok).toBe(true);
+    aimedByAList();
+    const { w, sent } = answering(publishers);
+    expect(await claimAgain(m.address, NOW + 60, w)).toBe('took');
+    expect(sent.map((s) => s.urls)).toEqual([[INBOX]]);
+  });
+
+  it('sends a held claim nowhere once its poster has no inbox here, keeps it as maybe arrived, and says so', async () => {
+    signOn();
+    const m = mission('kept-nowhere');
+    await takePart(m, 'sealed', NOW, answering(publishers, 'unconfirmed').w);
+    aimedByAList();
+    const { w, sent } = answering({});
+    expect(await claimAgain(m.address, NOW + 60, w)).toEqual({
+      nowhere:
+        'No relay confirmed it; it may have arrived. NavCom no longer reads the key the poster posted this with, so there is nowhere to send it sealed. Nothing was sent this time.'
+    });
+    expect(sent).toEqual([]);
+    expect(held(NOW + 60)[0]!.unconfirmed).toBeDefined();
+  });
+
+  it('sends a release again to the pinned inbox, never to where it was kept to go', async () => {
+    signOn();
+    const m = mission('kept-release');
+    await takePart(m, 'sealed', NOW, answering(publishers).w);
+    expect(await letGo(m, NOW + 60, answering(publishers, 'unconfirmed').w)).toMatchObject({ sent: false, unconfirmed: true });
+    aimedByAList();
+    expect(unreleased(NOW + 60)[0]!.releaseTo).toEqual([ATTACKER]);
+    const { w, sent } = answering(publishers);
+    expect(await sendRelease(m.address, NOW + 120, w)).toEqual({ sent: true });
+    expect(sent.map((s) => s.urls)).toEqual([[INBOX]]);
+  });
+
+  it('sends a release nowhere once its poster has no inbox here, keeps it to send, and says so', async () => {
+    signOn();
+    const m = mission('kept-release-nowhere');
+    await takePart(m, 'sealed', NOW, answering(publishers).w);
+    await letGo(m, NOW + 60, answering(publishers, 'unconfirmed').w);
+    aimedByAList();
+    const { w, sent } = answering({ [poster]: { name: 'Test Poster', agent: true } });
+    expect(await sendRelease(m.address, NOW + 120, w)).toEqual({
+      sent: false,
+      unconfirmed: false,
+      because: 'No relay confirmed it; it may have arrived. NavCom has no inbox for Test Poster, so there is nowhere to send it sealed. Nothing was sent this time.',
+      nowhere: true
+    });
+    expect(sent).toEqual([]);
+    expect(unreleased(NOW + 120)).toEqual([expect.objectContaining({ address: m.address, mayHaveArrived: true })]);
+  });
+
+  /** The heat-relief campaign, under the key that comes off at the cut-over. */
+  it('sends nothing sealed to Mecha Jono’s old key again once a release no longer reads it', async () => {
+    signOn();
+    const fixtures = JSON.parse(readFileSync(new URL('../../../../packages/core/test/fixtures/mission-packages.json', import.meta.url), 'utf8')) as Event[];
+    const read = readMissionPackage(fixtures[0]);
+    if (!read.ok) throw new Error(read.because);
+    const heat = read.mission;
+    const during = heat.validUntil - 2 * 86_400;
+    expect((await takePart(heat, 'sealed', during, answering(null, 'unconfirmed').w)).ok).toBe(true);
+    const afterCutOver = Object.fromEntries(Object.entries(MISSION_PUBLISHERS).filter(([k]) => k !== heat.publisher.pubkey));
+    expect(Object.keys(afterCutOver)).toHaveLength(1);
+    const { w, sent } = answering(afterCutOver);
+    expect(await claimAgain(heat.address, during + 60, w)).toMatchObject({ nowhere: expect.stringMatching(/no longer reads the key the poster posted this with/) });
+    expect(sent).toEqual([]);
+  });
+});
+
+/*
+ * "Only Mecha Jono can see" was on every sealed claim, and every mission on the map is under the
+ * key whose secret was exposed on 2026-09-28: whoever holds it can open what is sealed to it
+ * [review]. The registry says which keys those are, and the screens read it from here.
+ */
+describe('who else can open what is sealed to the poster', () => {
+  it('says Mecha Jono’s old key was exposed, and nothing of the new one or of a poster with no such mark', () => {
+    expect(exposedOn('6301c4d09a014909e5a48b7d0c9aa859eec18804c2fc87eab4e414aa5a319692')).toBe('2026-09-28');
+    expect(exposedOn('86f824c3f1e67c60b1dc15ce110648c4de5c3fb879022fbbcc5e8deb720e402c')).toBeNull();
+    expect(exposedOn(poster, publishers)).toBeNull();
+    expect(exposedOn(poster)).toBeNull();
   });
 });

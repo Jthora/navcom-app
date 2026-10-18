@@ -636,7 +636,10 @@ test.describe('the landing page: missions you can open', () => {
     const open = page.locator('[data-visibility="open"]');
     const sealed = page.locator('[data-visibility="sealed"]');
     await expect(open).toBeVisible();
-    await expect(sealed).toContainText('Only Mecha Jono');
+    // Sealed to a key whose secret was exposed: not "only Mecha Jono", and it says so [review].
+    await expect(sealed).toContainText('Sealed to Mecha Jono');
+    await expect(sealed).toContainText('its key was exposed on 2026-09-28: whoever holds it may read this');
+    await expect(sealed).not.toContainText('Only Mecha Jono');
     // Two equal options and no default: neither is pressed, checked or focused for them.
     for (const b of [open, sealed]) {
       expect(await b.getAttribute('aria-pressed')).toBeNull();
@@ -682,7 +685,7 @@ test.describe('the landing page: missions you can open', () => {
     expect(await claims(), 'a double tap chose Everyone').toBe(0);
     await settle(page);
     await page.locator('[data-visibility="sealed"]').tap();
-    await expect(page.locator('[data-takepart]')).toContainText('has not said where they take sealed messages');
+    await expect(page.locator('[data-slot="you"]')).toContainText('sealed to Mecha Jono, whose key was exposed on 2026-09-28');
   });
 
   test('Take part answers a keyboard, which never sends a press [audit 11.I]', async ({ page }) => {
@@ -694,16 +697,42 @@ test.describe('the landing page: missions you can open', () => {
     await expect(page.locator('[data-visibility="open"]')).toBeVisible();
   });
 
-  test('a private claim with no inbox to send it to says nothing was sent', async ({ page }) => {
+  /*
+   * Mecha Jono's old secret was exposed on 2026-09-28. A private claim went to the inbox in its
+   * newest kind-10050 list by date, which whoever holds the secret could sign for next year, and the
+   * question went out over the connection carrying the card a moment before the seal (Q16). Since
+   * 2026-10-17 the inbox is pinned in the release [interchange spec §5.0].
+   */
+  test('a private claim goes to the inbox NavCom pins for Mecha Jono, and asks no relay where that is', async ({ page }) => {
     await withHeat(page, { __noStorage: false, callsign: 'kestrel' });
     await page.locator('[data-missions="open"]').click();
     await page.locator(`[data-mission="${HEAT_D}"]`).click();
     await page.getByRole('button', { name: 'Take part' }).click();
     await settle(page);
+    // Every frame each socket sends from here on, with the relay it went to.
+    await page.evaluate(() => {
+      const w = globalThis as unknown as { __frames: { url: string; message: unknown[] }[]; WebSocket: { prototype: { send(raw: string): void } } };
+      w.__frames = [];
+      const send = w.WebSocket.prototype.send;
+      w.WebSocket.prototype.send = function (this: { url: string }, raw: string) {
+        try {
+          w.__frames.push({ url: this.url, message: JSON.parse(raw) as unknown[] });
+        } catch {
+          /* not JSON: not a relay frame */
+        }
+        return send.call(this, raw);
+      };
+    });
     await page.locator('[data-visibility="sealed"]').click();
-    await expect(page.locator('[data-takepart]')).toContainText('Not sent');
-    await expect(page.locator('[data-takepart]')).toContainText('has not said where they take sealed messages');
-    await expect(page.locator('[data-slot="you"]')).toHaveCount(0);
+    // Every mission on the map is under the key exposed on 2026-09-28, and the claim says what that means.
+    const you = page.locator('[data-slot="you"]');
+    await expect(you).toContainText('sealed to Mecha Jono, whose key was exposed on 2026-09-28: whoever holds it may read this');
+    await expect(you).not.toContainText('only Mecha Jono can see');
+    const frames = await page.evaluate(() => (globalThis as unknown as { __frames: { url: string; message: unknown[] }[] }).__frames);
+    const asked = frames.filter((f) => f.message[0] === 'REQ').flatMap((f) => f.message.slice(2) as { kinds?: number[] }[]);
+    expect(asked.filter((filter) => filter.kinds?.includes(10050)), 'a kind-10050 list was asked for').toEqual([]);
+    const wraps = frames.filter((f) => f.message[0] === 'EVENT' && (f.message[1] as { kind: number }).kind === 1059);
+    expect([...new Set(wraps.map((f) => new URL(f.url).host))].sort()).toEqual(['nos.lol', 'relay.primal.net']);
   });
 
   test('an operator reports the work the day after, and sees it wait to settle', async ({ page }) => {

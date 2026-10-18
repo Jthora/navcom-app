@@ -17,7 +17,7 @@
   import { COUNT_MAX } from '@navcom/core';
   import { Action, Panel, Readout, Slot } from '$lib/components/panel';
   import { fileReport, reportAgain, reportableDays, sent, stillToReport, type Filed, type Sent } from '$lib/missions/reports';
-  import { MAY_HAVE_ARRIVED, tookPart, type Visibility } from '$lib/missions/claims';
+  import { MAY_HAVE_ARRIVED, exposedOn, tookPart, type Visibility } from '$lib/missions/claims';
   import { alreadyReported, placeName } from './format';
 
   let { address, now, ondone }: { address: string; now: number; ondone: () => void } = $props();
@@ -25,6 +25,8 @@
   /** The mission as it was when this device took part — it may have left the map since. */
   const entry = $derived(tookPart(Math.floor(now / 1000)).find((t) => t.mission.address === address) ?? null);
   const m = $derived(entry?.mission ?? null);
+  /** When the poster's key was exposed, if it was: a report sealed to it is not for the poster alone [`exposedOn`]. */
+  const exposed = $derived(m ? exposedOn(m.publisher.pubkey) : null);
   /** Only days the work could have been: from taking part to the mission's end, inside the last week [11.X]. */
   const days = $derived(entry ? reportableDays(Math.floor(now / 1000), entry) : []);
   /** Named as yesterday only when it truly is: the first day offered may be earlier. */
@@ -39,7 +41,7 @@
   /** Sent, but this device could not record it: said before leaving, since it cannot be withdrawn from here [11.E]. */
   let unrecorded = $state(false);
   /** Sent, and no relay confirmed it: it may have arrived [finding 61]. Held here to send again, the same event. */
-  let pending = $state<{ sent: Sent; kept: boolean; again?: 'refused' | 'unconfirmed' } | null>(null);
+  let pending = $state<{ sent: Sent; kept: boolean; again?: 'refused' | 'unconfirmed'; nowhere?: string } | null>(null);
   /** Whether a day of this mission is already reported, so an empty list of days says why. */
   const reportedHere = $derived(sent().some((s) => s.address === address && !s.withdrawn));
 
@@ -96,7 +98,8 @@
     const r = await reportAgain(was.sent);
     phase = 'choosing';
     if (r === 'took' || r === 'gone') return ondone();
-    pending = { ...was, again: r };
+    // Sealed, and no inbox pinned for its poster now: nothing went, and why is said in words.
+    pending = typeof r === 'object' ? { ...was, again: undefined, nowhere: r.nowhere } : { ...was, again: r, nowhere: undefined };
   }
 </script>
 
@@ -148,7 +151,9 @@
           <Readout
             value="Unconfirmed"
             tone="warn"
-            sub={`${MAY_HAVE_ARRIVED}${pending.again === 'refused' ? ' No relay took it this time.' : ''} Sending it again sends the same report, never a second.${pending.kept ? '' : ' This device could not record it.'}`}
+            sub={pending.nowhere
+              ? `${pending.nowhere}${pending.kept ? '' : ' This device could not record it.'}`
+              : `${MAY_HAVE_ARRIVED}${pending.again === 'refused' ? ' No relay took it this time.' : ''} Sending it again sends the same report, never a second.${pending.kept ? '' : ' This device could not record it.'}`}
           />
           <div class="nc-report-row">
             <button type="button" data-sendagain disabled={phase === 'sending'} onclick={again}>Send again</button>
@@ -187,8 +192,8 @@
               <span class="nc-report-line">a public record that this card did this work</span>
             </button>
             <button type="button" data-visibility="sealed" disabled={phase === 'sending'} onclick={() => send('sealed')}>
-              <span class="nc-report-who">Only {m.publisher.name}</span>
-              <span class="nc-report-line">sealed to the poster, who can still settle it</span>
+              <span class="nc-report-who">{exposed ? `Sealed to ${m.publisher.name}` : `Only ${m.publisher.name}`}</span>
+              <span class="nc-report-line">{exposed ? `the poster can still settle it; its key was exposed on ${exposed}: whoever holds it may read this` : 'sealed to the poster, who can still settle it'}</span>
             </button>
           </div>
         {/if}

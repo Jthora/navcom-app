@@ -26,7 +26,7 @@ globalThis.WebSocket = class extends Base {
   }
 } as typeof WebSocket;
 
-const { wire, inboxOf, takePart, held, claimAgain, letGo, unreleased } = await import('./claims');
+const { wire, takePart, held, claimAgain, letGo, unreleased } = await import('./claims');
 const { fileReport, localDay, reportAgain, sent, settlements } = await import('./reports');
 
 type Reply = 'eose' | 'closed' | 'drop' | 'silent';
@@ -137,24 +137,34 @@ beforeEach(() => {
 
 describe('which relays the real wire says answered', () => {
   it('counts a relay that finished answering, and none that refused, dropped, never opened or said nothing', async () => {
-    const posterSecret = generateSecretKey();
-    const list = finalizeEvent({ kind: 10050, created_at: 1791300000, content: '', tags: [['relay', 'wss://inbox.example']] }, posterSecret);
-    const answers = await relay('eose', [list]);
+    const note = signed();
+    const answers = await relay('eose', [note]);
     const refuses = await relay('closed');
     const drops = await relay('drop');
     const hangs = await relay('never-handshake');
     const silent = await relay('silent');
-    const heard = await wire.query([answers, refuses, drops, hangs, silent, 'wss://record.example'], { kinds: [10050] });
+    const heard = await wire.query([answers, refuses, drops, hangs, silent, 'wss://record.example'], { kinds: [1] });
     expect(heard.answered).toEqual([answers]);
-    expect(heard.events.map((e) => e.id)).toEqual([list.id]);
+    expect(heard.events.map((e) => e.id)).toEqual([note.id]);
   }, 20_000);
 
-  it('says nobody answered when no relay could be reached, so a sealed claim says so rather than blaming the poster', async () => {
+  it('says nobody answered when no relay could be reached', async () => {
     const refuses = await relay('closed');
-    const heard = await wire.query([refuses, 'wss://nos.example'], { kinds: [10050] });
+    const heard = await wire.query([refuses, 'wss://nos.example'], { kinds: [1] });
     expect(heard.answered).toEqual([]);
-    const inbox = await inboxOf('a'.repeat(64), wire);
-    expect(inbox).toEqual({ urls: [], answered: false });
+  }, 20_000);
+
+  /*
+   * The question of where the poster takes sealed messages went out first, and with no signal its
+   * answer was "No relay answered when asking where…". Nothing is asked now [interchange spec §5.0]:
+   * the claim goes to the inbox the release pins, and with no signal that inbox is what did not take it.
+   */
+  it('sends a sealed claim with no signal to the pinned inbox, and says that inbox did not take it', async () => {
+    const NOW = 1791403200;
+    const m = heatMission(NOW);
+    const w: Wire = { ...wire, publishers: { [m.publisher.pubkey]: { name: 'Test Poster', agent: true, inbox: ['wss://inbox.example'] } } };
+    expect(await takePart(m, 'sealed', NOW, w)).toEqual({ ok: false, because: "Test Poster's inbox did not take it. Nothing was sent." });
+    expect(held(NOW)).toEqual([]);
   }, 20_000);
 });
 

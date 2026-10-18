@@ -16,14 +16,14 @@ import type { Event } from 'nostr-tools/core';
 import type { Filter } from 'nostr-tools/filter';
 import {
   CLAIM_CAP,
-  KIND_INBOX_RELAYS,
+  MISSION_PUBLISHERS,
   buildClaimDeletion,
   buildMissionClaim,
   buildSealedMissionClaim,
   claimEnds,
-  inboxRelays,
   missionActive,
-  type Mission
+  type Mission,
+  type MissionPublishers
 } from '@navcom/core';
 import { get, set } from '$lib/terminal/storage';
 import { contactPubkey, ensureContactKey } from '$lib/terminal/card';
@@ -65,7 +65,7 @@ export interface Held {
 export interface Unreleased extends Held {
   poster: string;
   posterName: string;
-  /** The signed release, sent again as it is. Absent when none could be built: no inbox was found for a sealed one. */
+  /** The signed release, sent again as it is. Absent when none could be built: no inbox is pinned for a sealed one's poster. */
   release?: Event;
   /** Where the release goes: where operators' traffic goes, or the poster's inbox for a sealed one. */
   releaseTo?: string[];
@@ -101,6 +101,11 @@ export type Published = 'took' | 'refused' | 'unconfirmed';
 export interface Wire {
   publish(urls: string[], event: Event): Promise<Published>;
   query(urls: string[], filter: Filter): Promise<Heard>;
+  /**
+   * Who takes sealed messages where: the registry this release ships when absent, as the app's
+   * wire leaves it. A test stands its own in rather than adding a key to the shipped one.
+   */
+  publishers?: MissionPublishers;
 }
 
 /** What a screen says of something no relay confirmed. Never "nothing was sent": it may have been. */
@@ -319,36 +324,66 @@ export function refusal(m: Mission, now: number, open?: ReadonlySet<string>): Re
 }
 
 /**
- * Where the poster takes sealed messages, read once per page from its own signed list. Kept per
- * wire, so what one set of relays said is never taken as what another would.
+ * Where the poster takes sealed messages: the inbox NavCom's release pins beside the poster's key
+ * [interchange spec §5.0], and nothing any relay says. **No relay is asked**, so nothing about a
+ * sealed claim or report goes out before it does.
+ *
+ * It was the newest kind-10050 list the poster signed, by the date the signer wrote. Mecha Jono's
+ * old secret was exposed on 2026-09-28, and whoever holds it could sign a list dated next year
+ * naming relays they run: every sealed claim and report from NavCom would have gone there, and no
+ * later list from the real Mecha Jono could have won it back. The question also went out over the
+ * connection that carries the operator's card, a moment before the seal (Q16).
+ *
+ * `known` is whether this release reads the poster at all: a key that came off the registry since
+ * a claim was taken has no inbox here, and is said apart from a poster with none pinned.
  */
-const inboxesByWire = new WeakMap<Wire, Map<string, Promise<Inbox>>>();
-/** The poster's inbox relays, and whether any relay answered the question at all. */
-export type Inbox = { urls: string[]; answered: boolean };
-export function inboxOf(poster: string, w: Wire): Promise<Inbox> {
-  let inboxes = inboxesByWire.get(w);
-  if (!inboxes) inboxesByWire.set(w, (inboxes = new Map()));
-  let found = inboxes.get(poster);
-  if (!found) {
-    found = w
-      .query(operatorRelays(), { kinds: [KIND_INBOX_RELAYS], authors: [poster] })
-      .then(({ events, answered }) => {
-        const newest = events.sort((a, b) => b.created_at - a.created_at)[0];
-        return { urls: newest ? usable(inboxRelays(newest, poster)) : [], answered: answered.length > 0 };
-      })
-      .catch(() => ({ urls: [], answered: false }));
-    // A miss is not remembered: the next attempt asks again.
-    void found.then((i) => i.urls.length === 0 && inboxes!.delete(poster));
-    inboxes.set(poster, found);
-  }
-  return found;
+export type Inbox = { urls: string[]; known: boolean };
+const entryOf = (poster: string, publishers: MissionPublishers) => (Object.hasOwn(publishers, poster) ? publishers[poster] : undefined);
+export function inboxOf(poster: string, publishers: MissionPublishers = MISSION_PUBLISHERS): Inbox {
+  const entry = entryOf(poster, publishers);
+  return { urls: usable((entry?.inbox ?? []).filter((u) => u.startsWith('wss://'))), known: entry !== undefined };
 }
 
-/** Why nothing went sealed, in words: a poster with no list and a phone with no signal are different [11.E]. */
-export const noInbox = (poster: string, i: Inbox) =>
-  i.answered
-    ? `${poster} has not said where they take sealed messages, so nothing was sent.`
-    : `No relay answered when asking where ${poster} takes sealed messages. Nothing was sent; try again with signal.`;
+/**
+ * The day the poster's key was exposed, or null: **what is sealed to an exposed key, whoever holds
+ * its secret can open**, by fetching the wraps addressed to it from the inbox. A screen offering
+ * to seal to Mecha Jono's old key said "only Mecha Jono can see", which was false for every
+ * package on the map [interchange spec §5.0]. Pinning the inbox fixes where a seal goes, not that.
+ */
+export function exposedOn(poster: string, publishers: MissionPublishers = MISSION_PUBLISHERS): string | null {
+  return entryOf(poster, publishers)?.exposed ?? null;
+}
+
+/** The poster by the registry's name, for a record that kept only its key. */
+const posterName = (poster: string, publishers: MissionPublishers = MISSION_PUBLISHERS) => entryOf(poster, publishers)?.name ?? 'the poster';
+
+const nowhere = (poster: string, i: Inbox) =>
+  i.known
+    ? `NavCom has no inbox for ${poster}, so there is nowhere to send it sealed.`
+    : `NavCom no longer reads the key ${poster} posted this with, so there is nowhere to send it sealed.`;
+
+/** Why nothing went sealed, in words. No relay was asked, so none is blamed, and no retry is suggested that would change it [11.E]. */
+export const noInbox = (poster: string, i: Inbox) => `${nowhere(poster, i)} Nothing was sent.`;
+
+/** The same, for something sent before that may have arrived: only this attempt is said to have sent nothing [finding 61]. */
+export const noInboxAgain = (poster: string, i: Inbox) => `${MAY_HAVE_ARRIVED} ${nowhere(poster, i)} Nothing was sent this time.`;
+
+/** Something sealed, sent again with nowhere to go: nothing left this time, and why, in words. */
+export type Nowhere = { nowhere: string };
+
+/**
+ * Where something sealed is sent again: **the inbox this release pins for its poster now**, never
+ * where it was stored. A record kept before 2026-10-17 was aimed by the poster's newest kind-10050
+ * list, which whoever holds an exposed key could sign; and a key that came off the registry since —
+ * the old one, at the cut-over — has nowhere to send it at all [interchange spec §5.0].
+ */
+export function sealedAgain(poster: string, w: Wire): string[] | Nowhere {
+  const inbox = inboxOf(poster, w.publishers);
+  return inbox.urls.length > 0 ? inbox.urls : { nowhere: noInboxAgain(posterName(poster, w.publishers), inbox) };
+}
+
+/** The poster's key, from a package's address, `30079:<pubkey>:<d>`. */
+const posterOf = (address: string) => address.split(':')[1] ?? '';
 
 /**
  * `kept: false` is sent but not recorded: storage refused it, and the screen says so [11.E]. A held
@@ -374,7 +409,7 @@ async function build(
     const event = buildMissionClaim(contact, label, t.address, ends, now);
     return { ok: true, event, id: event.id, relays: operatorRelays(), refused: 'No relay took it. Nothing was sent; try again with signal.' };
   }
-  const inbox = await inboxOf(t.poster, w);
+  const inbox = inboxOf(t.poster, w.publishers);
   if (inbox.urls.length === 0) return { ok: false, because: noInbox(t.posterName, inbox) };
   const event = buildSealedMissionClaim(contact, t.poster, label, t.address, ends, now);
   return { ok: true, event, id: null, relays: inbox.urls, refused: `${t.posterName}'s inbox did not take it. Nothing was sent.` };
@@ -441,12 +476,15 @@ export async function takePart(
 /**
  * Send again a claim no relay confirmed: **the same signed event**, so a claim that did arrive is
  * never joined by a second one nobody could withdraw [audit 11.S, finding 61]. It stays held
- * whatever comes back: a relay refusing it now says nothing about the first time.
+ * whatever comes back: a relay refusing it now says nothing about the first time. A sealed one goes
+ * to the poster's inbox as this release pins it, or nowhere, and says so [`sealedAgain`].
  */
-export async function claimAgain(address: string, now: number, w: Wire = wire): Promise<Published | 'gone'> {
+export async function claimAgain(address: string, now: number, w: Wire = wire): Promise<Published | 'gone' | Nowhere> {
   const h = held(now).find((x) => x.address === address);
   if (!h?.unconfirmed) return 'gone';
-  const result = await w.publish(usable(h.relays ?? operatorRelays()), h.unconfirmed);
+  const to = h.visibility === 'sealed' ? sealedAgain(posterOf(h.address), w) : usable(h.relays ?? operatorRelays());
+  if (!Array.isArray(to)) return to;
+  const result = await w.publish(to, h.unconfirmed);
   if (result === 'took') {
     withdrawReplaced(h, now, w);
     keep(held(now).map((x) => (x.address === address ? settledClaim(x) : x)));
@@ -459,7 +497,11 @@ export async function claimAgain(address: string, now: number, w: Wire = wire): 
  * send, and why. `unconfirmed` is this attempt going unanswered; whether the release may be on a
  * relay at all is the kept record's `mayHaveArrived`, which `because` also says.
  */
-export type Release = { sent: true } | { sent: false; card: true } | { sent: false; unconfirmed: boolean; because: string };
+export type Release =
+  | { sent: true }
+  | { sent: false; card: true }
+  /** `nowhere`: sealed, and this release pins no inbox for its poster, so nothing was sent and `because` says why. */
+  | { sent: false; unconfirmed: boolean; because: string; nowhere?: true };
 
 /**
  * Let a claim go: a `released` label the same way the claim went, and for an open one a deletion
@@ -496,6 +538,15 @@ async function release(u: Unreleased, now: number, w: Wire): Promise<Release> {
   }
   let event = u.release;
   let to = u.releaseTo;
+  // A sealed release goes to the inbox this release pins now, never where it was stored [`sealedAgain`].
+  if (u.visibility === 'sealed') {
+    const inbox = inboxOf(u.poster, w.publishers);
+    if (inbox.urls.length === 0) {
+      keepUnreleased(u, now);
+      return { sent: false, unconfirmed: false, because: u.mayHaveArrived ? noInboxAgain(u.posterName, inbox) : noInbox(u.posterName, inbox), nowhere: true };
+    }
+    to = inbox.urls;
+  }
   if (!event || !to) {
     const built = await build(u, 'released', u.visibility, u.ends, now, w);
     if (!built.ok) {

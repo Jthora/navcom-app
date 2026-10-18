@@ -75,9 +75,12 @@ async function publish(url: string, event: unknown): Promise<void> {
   });
 }
 
-/** The registry as the build writes it, and as this story extends it. */
-const REGISTRY = `"${MECHA}":{name:"Mecha Jono",agent:!0}`;
-const EXTENDED = `${REGISTRY},"${poster}":{name:"${POSTER_NAME}",agent:!0}`;
+/**
+ * The registry's first entry as the build writes it, whatever inbox it pins, and the stand-in poster
+ * added after it. No inbox for the stand-in: this story's claims and reports are open.
+ */
+const REGISTRY = new RegExp(`"${MECHA}":\\{name:"Mecha Jono",agent:!0[^}]*\\}`);
+const extended = (entry: string) => `${entry},"${poster}":{name:"${POSTER_NAME}",agent:!0}`;
 
 const contexts: BrowserContext[] = [];
 test.afterEach(async () => {
@@ -102,7 +105,7 @@ async function phone(browser: Browser, relay: LocalRelay): Promise<Page> {
   await page.route('**/_app/immutable/**/*.js', async (route) => {
     const response = await route.fetch();
     const body = await response.text();
-    await route.fulfill({ response, body: body.includes(REGISTRY) ? body.replace(REGISTRY, EXTENDED) : body });
+    await route.fulfill({ response, body: body.replace(REGISTRY, extended) });
   });
   return page;
 }
@@ -331,6 +334,6 @@ test.describe('the Quartermaster’s week', () => {
 // Read once so a build with no registry fails here, loudly, rather than as a mission that never shows.
 test.beforeAll(() => {
   const dir = new URL('../build/_app/immutable/chunks/', import.meta.url);
-  const found = readdirSync(dir).some((f) => readFileSync(new URL(f, dir), 'utf8').includes(REGISTRY));
+  const found = readdirSync(dir).some((f) => REGISTRY.test(readFileSync(new URL(f, dir), 'utf8')));
   if (!found) throw new Error(`no chunk in web/build holds the publisher registry as ${REGISTRY}`);
 });

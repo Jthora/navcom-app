@@ -1,16 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { finalizeEvent, generateSecretKey, getPublicKey, verifyEvent } from 'nostr-tools/pure';
+import { generateSecretKey, getPublicKey, verifyEvent } from 'nostr-tools/pure';
 import * as nip44 from 'nostr-tools/nip44';
 import {
   CLAIM_LEASE_SECONDS,
-  KIND_INBOX_RELAYS,
   KIND_LABEL,
   MISSION_NAMESPACE,
   buildClaimDeletion,
   buildMissionClaim,
   buildSealedMissionClaim,
-  claimEnds,
-  inboxRelays
+  claimEnds
 } from '../src/missions/claim';
 import { KIND_GIFT_WRAP } from '../src/missions/seal';
 
@@ -107,30 +105,6 @@ describe('a claim for the poster only', () => {
   });
 });
 
-describe('where the poster accepts sealed messages', () => {
-  const posterSecret = generateSecretKey();
-  const poster = getPublicKey(posterSecret);
-  const list = (tags: string[][], secret = posterSecret) =>
-    finalizeEvent({ kind: KIND_INBOX_RELAYS, created_at: NOW, content: '', tags }, secret);
-
-  it('reads the secure relays from the poster’s own signed list', () => {
-    const e = list([
-      ['relay', 'wss://nos.lol'],
-      ['relay', 'wss://relay.primal.net'],
-      ['relay', 'ws://insecure.example'],
-      ['relay', 'wss://nos.lol']
-    ]);
-    expect(inboxRelays(e, poster)).toEqual(['wss://nos.lol', 'wss://relay.primal.net']);
-  });
-
-  it('trusts no list the poster did not sign', () => {
-    expect(inboxRelays(list([['relay', 'wss://evil.example']], generateSecretKey()), poster)).toEqual([]);
-    const tampered = { ...list([['relay', 'wss://nos.lol']]), tags: [['relay', 'wss://evil.example']] };
-    expect(inboxRelays(tampered, poster)).toEqual([]);
-    expect(inboxRelays(null, poster)).toEqual([]);
-  });
-});
-
 describe('what the second audit of Milestone 11 found', () => {
   const contact = generateSecretKey();
   const posterSecret = generateSecretKey();
@@ -194,10 +168,5 @@ describe('what the second audit of Milestone 11 found', () => {
       expect(t).toBeGreaterThan(NOW - 2 * 86_400);
     }
     expect(new Set(at).size).toBeGreaterThan(30);
-  });
-
-  it('reads an inbox only from the poster’s kind-10050 list, not from another list of relays it signed', () => {
-    const outbox = finalizeEvent({ kind: 10002, created_at: NOW, content: '', tags: [['relay', 'wss://nos.lol']] }, posterSecret);
-    expect(inboxRelays(outbox, poster)).toEqual([]);
   });
 });
