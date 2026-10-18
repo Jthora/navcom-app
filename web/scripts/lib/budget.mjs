@@ -224,8 +224,16 @@ export const COM_ENTRIES = /** @type {Record<string, string>} */ ({
  * to. A stylesheet reached through `imports` is counted, as it always was, so the change of walker
  * cannot narrow what the ceiling holds either. Folding the rest in is a re-derivation, not a side
  * effect of a refactor.
+ *
+ * **Re-derived 2026-10-18, at 47.9 kB measured** (49,015 B, from 45,619 B at 1979f85). Mecha Jono's
+ * exposed key [interchange spec rev 7]: the registry gate every package passes before it is kept,
+ * which loads with the live feed at mount, and the paused sealed choice, the retiring notice and the
+ * rows that say what was sealed to the leaked key, on the mission screens. First paint is unchanged
+ * to the byte. A second copy of sha256 the gate first pulled in (1.9 kB, for re-checking a pin that
+ * ships beside what it pins) was taken out before this was measured; the pin is the build's to check.
+ * The same ~20% headroom, and the warning about 8% above the measurement.
  */
-export const DEFERRED = { limit: 45 * 1024, warn: 40 * 1024 };
+export const DEFERRED = { limit: 57 * 1024, warn: 52 * 1024 };
 
 /*
  * A ceiling on any single file, because the page budgets above were watching the wrong thing.

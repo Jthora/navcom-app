@@ -50,8 +50,11 @@ adds exactly one harm a watch's key does not already carry, sending every operat
 
 One list shipped, and no longer does: a poster's NIP-17 inbox, kind `10050`. Sealed claims and
 reports followed it until 2026-10-17, when Mecha Jono's exposed key showed the cost: the newest list
-by date won, and whoever holds a stolen key can date one next year. The poster's inbox is pinned in
-the release now, as the commons is (interchange spec §5.0).
+by date won, and whoever holds a stolen key can date one next year. **No phone asks for any kind
+`10050` now**, at the moment of sealing or at any other: the poster's inbox is pinned in the release,
+as the commons is, and the lookup is deleted rather than guarded
+([`../declined.md`](../declined.md), *A runtime inbox lookup*). Nor is anything sealed to a key whose
+secret leaked, wherever its inbox is (interchange spec §5.0, rev 7).
 
 **So G3 is four things: the `Distress` path says what it can and cannot hear (§6, built), a watch
 says where it listens inside the commons (§3), a phone follows that at once when a key it was handed
@@ -171,7 +174,7 @@ watch.
 | The watch's state and list | Published where the watch hears (§6), and read on every relay this phone has for the watch | The executor's hearing counts |
 | Holders' key bundles, the overdue contact | Read on every relay this phone has for the watch | One function for all of it |
 | Presence, invites, key bundles, the card, public presence, corrections, places, observations, open claims and reports | Unchanged: the watch's handed-over relays beside the operator's own list or the built-in pair, and the pair as well for missions. Public work also reaches the meeting relays by default, where partners read (D4); an operator who left them out keeps that choice, with its cost stated | **A watch's list never steers them** |
-| Sealed claims and reports | The poster's inbox as NavCom's release pins it, and nowhere else (since 2026-10-17; interchange spec §5.0). No list steers them | The order (§9) |
+| Sealed claims and reports | The poster's inbox as NavCom's release pins it, and nowhere else (since 2026-10-17; interchange spec §5.0). No list steers them, and none is read. Nothing goes while the publisher's only key trusted to sign is exposed (rev 7) | The order (§9) |
 | Mission packages | The Record and the Pi's mirror | None |
 
 **One function, `watchTargets()`, serves everything sent to or read from the watch.** Today
@@ -321,7 +324,8 @@ leaves every phone with the release that retires it.
 - **A sealed claim or report goes first to the poster's inbox relays that carry nothing else from
   this phone**, `relay.primal.net` before `nos.lol` today, and the screen says when only a relay that
   also carries the card took it. If that one relay drops it, the poster never counts it. The
-  interchange spec's *no relay learns who took what* is corrected to what holds
+  interchange spec's *no relay learns who took what* is corrected to what holds. Not built, and moot
+  while sealed sending to Mecha Jono is paused (rev 7)
 - ~~**The poster's inbox is read when missions load, on the mission relays, not at the moment of
   sealing**~~ **Superseded 2026-10-17: the poster's inbox is not read at all.** It is pinned in
   NavCom's release beside the poster's key (interchange spec §5.0), so no question goes out before a

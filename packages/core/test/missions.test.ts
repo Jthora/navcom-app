@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import { MISSION_PACKAGE_KIND, MISSION_PUBLISHERS, missionActive, missionExpired, readMissionPackage, type Mission } from '../src/index.js';
+import { oneKey } from './helpers/registry.js';
 
 /**
  * Real packages, captured from The Record on 2026-10-06 and signed by Mecha Jono — so the
@@ -23,7 +24,7 @@ const ok = (input: unknown, publishers?: Parameters<typeof readMissionPackage>[1
 
 /** A package signed by a throwaway key, so each refusal is tested on a validly signed event. */
 const secret = generateSecretKey();
-const TEST = { [getPublicKey(secret)]: { name: 'Test publisher', agent: false } };
+const TEST = oneKey(getPublicKey(secret), 'Test publisher', false);
 function pkg(extra: string[][], over: { content?: string; drop?: string[] } = {}) {
   const base = [
     ['d', 'starcom_mission_package_test'],
@@ -46,7 +47,7 @@ describe('a real field campaign', () => {
 
   it('becomes a mission, identified as an agent’s', () => {
     expect(m.address).toBe(`30079:${HEAT.pubkey}:starcom_mission_package_field-heat_relief-CA-2026-10-02`);
-    expect(m.publisher).toEqual({ pubkey: HEAT.pubkey, name: 'Mecha Jono', agent: true });
+    expect(m.publisher).toEqual({ pubkey: HEAT.pubkey, name: 'Mecha Jono', agent: true, entry: 'mecha-jono', generation: 1 });
     expect(m.state).toBe('open');
     expect(m.validUntil).toBe(1791608400);
     expect(m.placement).toEqual({ jurisdiction: 'us-ca', point: null });
@@ -100,7 +101,7 @@ describe('what is not a mission', () => {
   });
 
   it('refuses a real package from a publisher NavCom does not read', () => {
-    expect(readMissionPackage(HEAT, {})).toMatchObject({ ok: false, kind: 'refused', because: expect.stringMatching(/publisher/) });
+    expect(readMissionPackage(HEAT, [])).toMatchObject({ ok: false, kind: 'refused', because: expect.stringMatching(/publisher/) });
   });
 
   it('ignores what is not a package at all', () => {
@@ -266,10 +267,10 @@ describe('what the second audit of Milestone 11 found', () => {
   });
 
   it('names a registered agent as an agent though its package does not say so [invariant 4]', () => {
-    const AGENT = { [getPublicKey(secret)]: { name: 'Registered agent', agent: true } };
+    const AGENT = oneKey(getPublicKey(secret), 'Registered agent', true);
     const m = ok(pkg([]), AGENT);
     expect(pkg([]).tags.some((t) => t[0] === 'agent')).toBe(false);
-    expect(m.publisher).toEqual({ pubkey: getPublicKey(secret), name: 'Registered agent', agent: true });
+    expect(m.publisher).toEqual({ pubkey: getPublicKey(secret), name: 'Registered agent', agent: true, entry: 'registered-agent', generation: 1 });
   });
 
   it('refuses a reference to any of the five Distress kinds, and to none beside them [invariant 2]', () => {
@@ -368,23 +369,75 @@ describe('what the second audit of Milestone 11 found', () => {
 describe('who NavCom reads packages from', () => {
   /*
    * The registry is the trust root for every mission on the map: a key here is believed to be its
-   * publisher, so it is pinned exactly. Mecha Jono's old key was exposed on 2026-09-28; its next key
-   * is trusted beside it until the cut-over, when the old one comes off [key-change letter, 7 Oct].
+   * publisher, so it is pinned exactly. Decided 2026-10-18 [interchange spec rev 7]: Mecha Jono's old
+   * key, whose secret was exposed on 2026-09-28, is frozen and ends on 13 November; its next key is
+   * listed with no start, so nothing it signs is trusted until a later release names the cut-over.
    *
    * It pins where sealed claims and reports go, too (since 2026-10-17): the inbox read from a
    * kind-10050 list was the newest by a date the signer writes, and the exposed key can sign one
-   * dated next year [interchange spec §5.0]. And it marks the old key exposed: sealing to it hides
-   * nothing from whoever holds its secret, so no screen may say only Mecha Jono can see.
+   * dated next year [interchange spec §5.0].
    */
-  it('trusts exactly Mecha Jono’s two keys, each marked an agent, with the inbox it published pinned for both and the old one marked exposed', () => {
-    const inbox = ['wss://nos.lol', 'wss://relay.primal.net'];
-    expect(MISSION_PUBLISHERS).toEqual({
-      '6301c4d09a014909e5a48b7d0c9aa859eec18804c2fc87eab4e414aa5a319692': { name: 'Mecha Jono', agent: true, inbox, exposed: '2026-09-28' },
-      '86f824c3f1e67c60b1dc15ce110648c4de5c3fb879022fbbcc5e8deb720e402c': { name: 'Mecha Jono', agent: true, inbox }
-    });
+  it('is one entry, Mecha Jono, an agent, with its inbox pinned, its old key frozen to 13 November, and its next key not yet trusted to sign', () => {
+    expect(MISSION_PUBLISHERS).toEqual([
+      {
+        id: 'mecha-jono',
+        name: 'Mecha Jono',
+        agent: true,
+        inbox: ['wss://nos.lol', 'wss://relay.primal.net'],
+        keys: [
+          {
+            pubkey: '6301c4d09a014909e5a48b7d0c9aa859eec18804c2fc87eab4e414aa5a319692',
+            generation: 1,
+            notBefore: '2025-01-01T00:00:00Z',
+            notAfter: '2026-11-13T00:00:00Z',
+            exposed: '2026-09-28',
+            frozen: { sha256: 'f225840937640ab8dd7e4e331e104c2a67a63fe9f885f38b85a096dd523e9a76', confirmed: false }
+          },
+          { pubkey: '86f824c3f1e67c60b1dc15ce110648c4de5c3fb879022fbbcc5e8deb720e402c', generation: 2, notAfter: '2027-10-18T00:00:00Z' }
+        ],
+        next: null
+      }
+    ]);
   });
 
-  it('still reads a package the current key signed', () => {
-    expect(readMissionPackage(HEAT)).toMatchObject({ ok: true });
+  it('reads a package the old key signed as Mecha Jono’s, generation 1, retiring and unconfirmed — at its jurisdiction only', () => {
+    const r = readMissionPackage(HEAT);
+    if (!r.ok) throw new Error(r.because);
+    expect(r.mission.publisher).toEqual({ pubkey: HEAT.pubkey, name: 'Mecha Jono', agent: true, entry: 'mecha-jono', generation: 1 });
+    expect(r.mission.retiring).toBe('unconfirmed');
+  });
+
+  it('drops a point an unconfirmed retiring package carries, and keeps it once the list is confirmed', () => {
+    const frozen = (confirmed: boolean) =>
+      oneKey(getPublicKey(secret), 'Test publisher', false, {
+        keys: [{ pubkey: getPublicKey(secret), generation: 1, notBefore: '2020-01-01T00:00:00Z', notAfter: '2100-01-01T00:00:00Z', exposed: '2026-09-28', frozen: { sha256: 'x', confirmed } }]
+      });
+    const placed = pkg([['geo', 'lat:36.77,lon:-119.41'], ['geo_kind', 'subject_location'], ['geo_precision', '1km']]);
+    expect(ok(placed, frozen(false)).placement).toEqual({ jurisdiction: 'us-ca', point: null });
+    expect(ok(placed, frozen(true)).placement.point).toMatchObject({ lat: 36.77, lon: -119.41 });
+    expect(ok(placed, frozen(true)).retiring).toBe('confirmed');
+    expect(ok(placed, TEST).retiring).toBeNull();
+  });
+
+  /*
+   * Decided 2026-10-18 (3b): Mecha Jono signs nothing with its next key before the cut-over, so
+   * anything under it before then is a thief's. It is read as no publisher's: it carries nothing that
+   * could hide a genuine version, whatever it says.
+   */
+  it('reads nothing a key with no start signed, nor anything dated before its key’s start, as anybody’s', () => {
+    const noStart = oneKey(getPublicKey(secret), 'Test publisher', false, {
+      keys: [{ pubkey: getPublicKey(secret), generation: 2, notAfter: '2100-01-01T00:00:00Z' }]
+    });
+    const r = readMissionPackage(pkg([]), noStart);
+    expect(r).toMatchObject({ ok: false, kind: 'refused', because: 'Signed by a key NavCom does not trust to sign yet.' });
+    expect((r as { from?: unknown }).from).toBeUndefined();
+
+    const later = oneKey(getPublicKey(secret), 'Test publisher', false, {
+      keys: [{ pubkey: getPublicKey(secret), generation: 2, notBefore: '2026-10-07T00:00:00Z', notAfter: '2100-01-01T00:00:00Z' }]
+    });
+    // pkg() is dated 1791300000, 2026-10-06T15:20:00Z: before this key's start.
+    const early = readMissionPackage(pkg([]), later);
+    expect(early).toMatchObject({ ok: false, kind: 'refused', because: 'Dated before NavCom trusted the key that signed it.' });
+    expect((early as { from?: unknown }).from).toBeUndefined();
   });
 });

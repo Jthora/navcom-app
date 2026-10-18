@@ -611,6 +611,61 @@ or payment ([`design/relay-lists.md`](design/relay-lists.md) §10).
 **Cost:** no relay whose policy somebody here can answer for carries operator traffic. All of it
 rests on strangers' relays that NavCom can hold to nothing.
 
+## Keys and the interchange
+
+Three of these came from Mecha Jono's exposed key (decided 2026-10-18; interchange spec rev 7). Each
+is a real way the exposure still reaches somebody after NavCom's next deploy.
+
+### Reaching phones that never reload
+
+A phone keeps running the bundle it loaded until it reloads. One that opened navcom.app before the
+deploy that froze Mecha Jono's old key and paused sealing to it still trusts that key, still reads
+Mecha Jono's newest kind `10050` list to find where to seal, and can be redirected by a list the
+exposed key signs dated ahead. No release reaches it.
+
+**Declined, decided 2026-10-18.** There is no channel to a page that is not asking, and building one
+would be a push the device did not request. What reaches such a phone is what it already reads: the
+relays. So the levers are Mecha Jono's, not NavCom's — The Record and blackpi refusing writes from the
+old key, and an empty kind `10050` list republished under it, which turns a redirect into *"nothing
+was sent"*. The race with the key's holder is not won by either.
+
+**Cost:** until it reloads, such a phone can seal to an inbox the holder chose and trusts packages
+the holder signs. Once it reloads it runs a build that carries the old key's end as a date, and from
+13 November that build drops the key whatever the phone's clock says. Which is why every date that
+ends trust ships in the next deploy, and every key carries one.
+
+### A runtime inbox lookup
+
+Reading a publisher's kind `10050` list at the moment of sealing is what NIP-17 describes, and it
+would let an inbox move without a release.
+
+**Declined, decided 2026-10-17, and deleted rather than guarded.** The newest list by date won, and
+the date is whatever the signer writes, so whoever holds an exposed key moves every sealed message by
+dating one ahead; the question also went out over the connection carrying the operator's card a
+moment before the seal; and a key that has published no list, as `86f824c3…` has not, would have
+starved every sealed send. A guard — a tolerance on dates, a second relay — narrows the redirect and
+keeps the rest. It is NavCom's OCSP: a check that can be withheld fails soft. Inboxes are pinned in
+the release beside each publisher (interchange spec §5.0).
+
+**Cost:** an inbox moves only by a NavCom release and a notice, so a publisher that changes relays
+waits on NavCom.
+
+### Holding sealed drafts on the phone
+
+While sealed sending to Mecha Jono is paused, a sealed claim or report could be written now and kept
+on the phone to send once sealing resumes, so nobody has to come back.
+
+**Declined, decided 2026-10-18,** under the rule that there is no queue
+([`design/the-artifact-that-leaves.md`](design/the-artifact-that-leaves.md) P5): a store of unsent
+reports is a store of where somebody has been, on a phone that can be taken. Instead, the sealed
+choice is off with its reason, nothing sealed is built, and once sealing resumes a sealed report's
+days reach back further for a week, so work done in the gap can still be told
+([`spec/mission-interchange.spec.md`](spec/mission-interchange.spec.md) §5.0).
+
+**Cost:** an operator who wants privacy claims in the open or not at all while it is paused, and has
+to come back to report sealed. A sealed claim taken before the pause cannot be released; it ends by
+itself within a day.
+
 ## Units and the Earth Alliance
 
 Shapes [`design/units.md`](design/units.md) considered and did not take, decided with that design on

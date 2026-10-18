@@ -23,6 +23,7 @@
     "pin": "node scripts/pin.mjs",
     "announce": "node scripts/announce.mjs",
     "node-key": "node scripts/node-key.mjs",
+    "frozen-set": "node scripts/frozen-set.mjs",
     "wellknown": "node scripts/well-known.mjs",
     "pretest:browser": "node scripts/preflight.mjs && npm run wellknown",
     "test:browser": "node scripts/browser-tests.mjs",

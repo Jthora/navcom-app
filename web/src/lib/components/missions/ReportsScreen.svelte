@@ -15,7 +15,8 @@
    * nothing to write — and a box is where a description of a person gets in.
    */
   import { onMount } from 'svelte';
-  import { CHALLENGE_WINDOW_SECONDS, settlementOf, type Mission } from '@navcom/core';
+  import { CHALLENGE_WINDOW_SECONDS, MISSION_PUBLISHERS, labelHeard, settlementOf, settlersOf, type Mission } from '@navcom/core';
+  import { floorNow } from '$lib/missions/floor';
   import { Panel, Readout, Slot } from '$lib/components/panel';
   import { cardSent, contactPubkey, myCard } from '$lib/terminal/card';
   import { get } from '$lib/terminal/storage';
@@ -139,7 +140,8 @@
       <ul class="nc-reports">
         {#each read.reports as r (r.id)}
           {@const known = read.answered.poster && read.answered.operators}
-          {@const s = settlementOf(r, m.publisher.pubkey, read.labels, t)}
+          <!-- Settled only by the poster's trusted keys, and no word at all from a listed key that does not speak for its publisher now: one whose secret leaked, or one not trusted yet [rev 7]. -->
+          {@const s = settlementOf(r, settlersOf(m.publisher.pubkey, MISSION_PUBLISHERS, floorNow(t * 1000)), read.labels, t, labelHeard(MISSION_PUBLISHERS, floorNow(t * 1000)))}
           {@const shown = known ? standingOf(s, names, agents) : { value: 'Unknown', tone: 'cold' as const, sub: 'the relays that hold its labels did not answer' }}
           <!-- Filed from here under a card withdrawn since is still hers: never a witness of her own work [audit 11, second grid]. -->
           {@const mine = isMine(r)}

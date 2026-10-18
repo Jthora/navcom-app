@@ -137,6 +137,20 @@ export const CAPABILITIES: Capability[] = [
     requires: []
   },
   {
+    /*
+     * Decided 2026-10-18 (decision 2): every sealed claim and report NavCom ever sent to Mecha Jono
+     * went to a key whose secret had already leaked, so whoever holds it can open them and show
+     * which card sent each. The rows in a phone's own mission history say it of what that phone
+     * sent; this is the one general sentence, for every phone, wiped or not, before anybody asks.
+     */
+    name: 'What was sealed to a key whose secret leaked',
+    screen: 'terminal/',
+    claims: ['can be opened by whoever holds its old key’s leaked secret', 'Nothing is sealed to that key now'],
+    readOnly:
+      'A statement of what already happened to messages this app sent. Nothing sent can be recalled, so there is nothing to operate; the rows it is about are in Your missions.',
+    requires: []
+  },
+  {
     name: 'Set up a callsign',
     screen: 'terminal/setup/',
     claims: [

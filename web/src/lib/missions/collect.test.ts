@@ -3,15 +3,26 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { finalizeEvent, generateSecretKey, getEventHash, getPublicKey } from 'nostr-tools/pure';
 import { READINGS_MAX, collect } from './collect';
+import { FROZEN_SETS, type FrozenSet } from '@navcom/core';
+import { oneKey } from './registry-fixture';
 
 /** Real packages signed by Mecha Jono, captured from The Record — see core's missions test. */
 const FIXTURES = fileURLToPath(new URL('../../../../packages/core/test/fixtures/mission-packages.json', import.meta.url));
 const [HEAT, RECALL, DESK] = JSON.parse(readFileSync(FIXTURES, 'utf8'));
 const NOW = new Date('2026-10-06T20:00:00Z');
+/**
+ * The fixtures were captured on 2026-10-06; the frozen set this release pins holds the newest
+ * version of each of Mecha Jono's missions as read on 2026-10-18, so these older copies are not on
+ * it. A set naming the fixtures' own ids, under the shipped key, lets them stand in for what is.
+ */
+const AS_CAPTURED: FrozenSet = {
+  ...FROZEN_SETS[0]!,
+  packages: [HEAT, RECALL].map((e) => ({ id: e.id, d: e.tags.find((t: string[]) => t[0] === 'd')[1] }))
+};
 
 describe('what a device keeps from what the relay sent', () => {
   it('keeps the open field mission, drops the closed one, and leaves desk work out', () => {
-    const c = collect([HEAT, RECALL, DESK], NOW);
+    const c = collect([HEAT, RECALL, DESK], NOW, undefined, undefined, { sets: [AS_CAPTURED] });
     expect(c.missions.map((m) => m.d)).toEqual(['starcom_mission_package_field-heat_relief-CA-2026-10-02']);
     expect(c.refused).toEqual([]);
   });
@@ -20,7 +31,7 @@ describe('what a device keeps from what the relay sent', () => {
     // A relay returns only the newest of a replaceable event; a live subscription can still
     // deliver the old one first and the new one after, and the old one must not win.
     const secret = generateSecretKey();
-    const publishers = { [getPublicKey(secret)]: { name: 'Test', agent: true } };
+    const publishers = oneKey(getPublicKey(secret), 'Test', true);
     const version = (created_at: number, name: string) =>
       finalizeEvent(
         {
@@ -48,7 +59,7 @@ describe('what a device keeps from what the relay sent', () => {
 
 describe('versions, and what a newer one may do to an older one', () => {
   const secret = generateSecretKey();
-  const publishers = { [getPublicKey(secret)]: { name: 'Test', agent: true } };
+  const publishers = oneKey(getPublicKey(secret), 'Test', true);
   const version = (created_at: number, objectives: unknown[], extra: string[][] = []) =>
     finalizeEvent(
       {
@@ -88,8 +99,20 @@ describe('versions, and what a newer one may do to an older one', () => {
     expect(collect([closed], NOW, publishers).refused).toEqual([]);
   });
 
-  it('notices a clock behind the publisher’s, by more than a day', () => {
-    expect(collect([version(Math.floor(NOW.getTime() / 1000) + 2 * 86_400, one)], NOW, publishers).clockBehind).toBe(true);
+  /*
+   * Decided 2026-10-18: a version dated ahead is how a stolen key wins a sort by date, so it is
+   * dropped, not flagged. Ahead of what is the trust clock — this device's, floored at the build —
+   * so a version is kept, and the clock called behind, only when the build itself is later than
+   * this device's clock says it is.
+   */
+  it('drops a version dated more than a day ahead, and calls the clock behind only for one the build vouches for', () => {
+    const now = Math.floor(NOW.getTime() / 1000);
+    const ahead = version(now + 2 * 86_400, one);
+    expect(collect([ahead], NOW, publishers)).toMatchObject({ missions: [], clockBehind: false });
+    // The build is three days later than this phone says: the same version is kept, and the clock is behind.
+    const vouched = collect([ahead], NOW, publishers, undefined, { at: now + 3 * 86_400 });
+    expect(vouched.missions).toHaveLength(1);
+    expect(vouched.clockBehind).toBe(true);
     expect(collect([version(1791300000, one)], NOW, publishers).clockBehind).toBe(false);
   });
 
@@ -101,7 +124,7 @@ describe('versions, and what a newer one may do to an older one', () => {
 
 describe('what the second audit of Milestone 11 found', () => {
   const secret = generateSecretKey();
-  const publishers = { [getPublicKey(secret)]: { name: 'Test', agent: true } };
+  const publishers = oneKey(getPublicKey(secret), 'Test', true);
   const version = (created_at: number, name: string, over: { state?: string; d?: string; priority?: string; ends?: string } = {}) =>
     finalizeEvent(
       {
@@ -157,11 +180,11 @@ describe('what the second audit of Milestone 11 found', () => {
     expect(titles(collect([b, a], NOW, publishers))).toEqual([lower]);
   });
 
-  it('notices a clock behind the publisher’s only past a day, not a minute', () => {
+  it('keeps a version up to a day ahead, and drops one a second past it', () => {
     const now = Math.floor(NOW.getTime() / 1000);
-    expect(collect([version(now + 60, 'x')], NOW, publishers).clockBehind).toBe(false);
-    expect(collect([version(now + 86_400, 'x')], NOW, publishers).clockBehind).toBe(false);
-    expect(collect([version(now + 86_401, 'x')], NOW, publishers).clockBehind).toBe(true);
+    expect(collect([version(now + 60, 'x')], NOW, publishers)).toMatchObject({ clockBehind: false, missions: [expect.anything()] });
+    expect(collect([version(now + 86_400, 'x')], NOW, publishers)).toMatchObject({ clockBehind: false, missions: [expect.anything()] });
+    expect(collect([version(now + 86_401, 'x')], NOW, publishers)).toMatchObject({ clockBehind: false, missions: [] });
   });
 
   it('orders missions of equal weight and end by address, so every device lists them alike', () => {

@@ -39,7 +39,7 @@ import { createHash } from 'node:crypto';
 import { CID } from 'multiformats/cid';
 import * as Digest from 'multiformats/hashes/digest';
 import { getPublicKey } from 'nostr-tools/pure';
-import { PERMITTED, BROADCAST, REFUSALS, DECISIVE_FIELDS } from '@navcom/core';
+import { PERMITTED, BROADCAST, REFUSALS, DECISIVE_FIELDS, MISSION_PUBLISHERS, registryDocument } from '@navcom/core';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const BUILD = fileURLToPath(new URL('../build/', import.meta.url));
@@ -669,8 +669,46 @@ export function intelDocument(root = ROOT) {
       json_export_note:
         'A convenience, not the contract. Disallowed to crawlers, uncompressed for any client that does not ask for compression, and may be rate limited. Nothing in this document depends on it staying free to poll.'
     },
-    refuses: '/.well-known/navcom-refusals.json'
+    refuses: '/.well-known/navcom-refusals.json',
+    /*
+     * Where the mission interchange's published objects are, each with its digest, so a partner can
+     * check a copy it vendored without fetching it again and compare what it fetched with what this
+     * build pinned [interchange spec §3, rev 7].
+     */
+    interchange: (() => {
+      const publishers = publishersFile();
+      return {
+        spec: 'https://navcom.app/docs/spec/mission-interchange.spec/',
+        publishers: {
+          url: '/.well-known/navcom-publishers.json',
+          version: publishers.doc.version,
+          sha256: publishers.sha256,
+          over: 'the file\'s bytes as served',
+          check:
+            'Each publisher may compare its own entry daily with what it agreed: its inbox, its keys and their dates, and its frozen list. A key or an inbox it never agreed is a release NavCom should not have made; say so in public'
+        }
+      };
+    })()
   };
+}
+
+/**
+ * The publisher registry NavCom's release pins, as a file [interchange spec §3, rev 7].
+ *
+ * Every mission on NavCom's map is believed to be its publisher's because a key is in this list,
+ * and every sealed claim and report goes to the inbox it names. A release made under compulsion
+ * could change either, and no check on the phone resists that: the release ships the checker. So
+ * the list is published, with its digest in the interchange block of `navcom-intel.json`, and a
+ * publisher compares it once a day with what it agreed — the one check that runs somewhere a
+ * release cannot reach. Starcom may vendor it by digest. No script on any page reads it.
+ *
+ * Generated from core's registry at build time, never written by hand, for the reason the header
+ * gives: a copy that can be edited is a copy that drifts.
+ */
+export function publishersFile() {
+  const doc = registryDocument(MISSION_PUBLISHERS);
+  const text = JSON.stringify(doc, null, 2) + '\n';
+  return { doc, text, sha256: createHash('sha256').update(text, 'utf8').digest('hex') };
 }
 
 /** @param {string} name @param {unknown} doc */
@@ -696,6 +734,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
   write('navcom-refusals.json', refusals);
   write('navcom-intel.json', intel);
+  // Written as the exact bytes the interchange block's digest is over.
+  const publishers = publishersFile();
+  writeFileSync(join(BUILD, '.well-known', 'navcom-publishers.json'), publishers.text);
   write('navcom-health.json', health);
   write('navcom-node.json', identity);
 
@@ -712,4 +753,5 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   console.log(
     `[well-known] identity: ${identity.pubkey ?? 'no node key — publishes no pointers'}`
   );
+  console.log(`[well-known] publishers: ${publishers.doc.publishers.length}, sha256 ${publishers.sha256}`);
 }

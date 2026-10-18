@@ -3,11 +3,12 @@ import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure
 import type { Event } from 'nostr-tools/core';
 import { readFileSync } from 'node:fs';
 import type { Filter } from 'nostr-tools/filter';
-import { DEFAULT_RELAYS, MISSION_PUBLISHERS, readMissionPackage, type Mission, type MissionPublishers } from '@navcom/core';
+import { DEFAULT_RELAYS, buildSealedMissionClaim, readMissionPackage, type Mission, type MissionPublishers } from '@navcom/core';
 import { set } from '$lib/terminal/storage';
-import { withdrawCard } from '$lib/terminal/card';
+import { contactPubkey, ensureContactKey, withdrawCard } from '$lib/terminal/card';
 import { claimAgain, exposedOn, held, letGo, refusal, sendRelease, takePart, tookPart, unreleased, usable, type Published, type Wire } from './claims';
 import { reportableDays } from './reports';
+import { oneKey } from './registry-fixture';
 
 /**
  * Taking part, from this device: the cap, the lease, withdrawal, and where each kind of claim goes.
@@ -22,7 +23,7 @@ const NOW = 1791316800;
 const posterSecret = generateSecretKey();
 const poster = getPublicKey(posterSecret);
 const INBOX = 'wss://inbox.example';
-const publishers: MissionPublishers = { [poster]: { name: 'Test Poster', agent: true, inbox: [INBOX] } };
+const publishers: MissionPublishers = oneKey(poster, 'Test Poster', true, { inbox: [INBOX] });
 
 function mission(d: string, over: { ends?: number; claims?: 'one' | 'many'; state?: string } = {}): Mission {
   const e = finalizeEvent(
@@ -174,7 +175,7 @@ describe('a claim for the poster only', () => {
   it('is not sent when NavCom pins no inbox for the poster, and says so', async () => {
     signOn();
     // The poster's own list is there to be read, and is not what decides.
-    const { w, sent } = fakeWire([list([INBOX])], true, { [poster]: { name: 'Test Poster', agent: true } });
+    const { w, sent } = fakeWire([list([INBOX])], true, oneKey(poster, 'Test Poster', true));
     const r = await takePart(mission('sealed-b'), 'sealed', NOW, w);
     expect(r).toEqual({ ok: false, because: 'NavCom has no inbox for Test Poster, so there is nowhere to send it sealed. Nothing was sent.' });
     expect(sent).toEqual([]);
@@ -308,7 +309,7 @@ describe('what the second audit of Milestone 11 found', () => {
       const ended = mission('ended', { ends: NOW + 3_600 });
       await takePart(ended, 'open', NOW, fakeWire().w);
       const later = NOW + 2 * 86_400;
-      const t = tookPart(later).find((x) => x.mission.address === ended.address);
+      const t = tookPart(later, publishers).find((x) => x.mission.address === ended.address);
       expect(t).toBeDefined();
       expect(reportableDays(later, t)).not.toEqual([]);
     });
@@ -318,7 +319,7 @@ describe('what the second audit of Milestone 11 found', () => {
       const m = mission('days');
       await takePart(m, 'open', NOW, fakeWire().w);
       await takePart(m, 'open', NOW + 2 * 86_400, fakeWire().w);
-      expect(tookPart(NOW + 3 * 86_400).find((x) => x.mission.address === m.address)!.since).toBe(NOW);
+      expect(tookPart(NOW + 3 * 86_400, publishers).find((x) => x.mission.address === m.address)!.since).toBe(NOW);
     });
 
     it('renews a claim while holding three, and on a one-person task now listed as claimed because of it', async () => {
@@ -380,12 +381,12 @@ describe('where a sealed claim goes, since an exposed key could sign an inbox li
    */
   it('sends nothing to a poster this release does not read, though its own list names an inbox, and says so', async () => {
     signOn();
-    const { w, sent } = fakeWire([list([INBOX])], true, {});
+    const { w, sent } = fakeWire([list([INBOX])], true, []);
     const r = await takePart(mission('unread'), 'sealed', NOW, w);
     expect(r).toEqual({ ok: false, because: 'NavCom no longer reads the key Test Poster posted this with, so there is nowhere to send it sealed. Nothing was sent.' });
     expect(sent).toEqual([]);
     expect(held(NOW)).toEqual([]);
-    expect(tookPart(NOW)).toEqual([]);
+    expect(tookPart(NOW, publishers)).toEqual([]);
   });
 
   it('sends nothing to the test poster through the shipped registry, which holds no test key', async () => {
@@ -396,19 +397,41 @@ describe('where a sealed claim goes, since an exposed key could sign an inbox li
     expect(sent).toEqual([]);
   });
 
-  /** The heat-relief campaign, as Mecha Jono signed it under the key the shipped registry reads. */
-  it('sends a sealed claim on Mecha Jono’s own package to the inbox the shipped registry pins for it', async () => {
+  /*
+   * Decided 2026-10-18: nothing is sealed to a key whose secret leaked. Whoever holds it can fetch
+   * every wrap addressed to it and open it, and prove which card sent each. Sealing pauses, nothing
+   * is kept to send later, and taking part in the open still works.
+   */
+  it('seals nothing to a poster whose only key leaked: nothing built, sent, held or remembered, and it says why', async () => {
     signOn();
-    const fixtures = JSON.parse(readFileSync(new URL('../../../../packages/core/test/fixtures/mission-packages.json', import.meta.url), 'utf8')) as Event[];
-    const read = readMissionPackage(fixtures[0]);
-    if (!read.ok) throw new Error(read.because);
-    const heat = read.mission;
-    const during = heat.validUntil - 2 * 86_400;
-    const { w, sent, asked } = fakeWire([], true, null);
-    expect((await takePart(heat, 'sealed', during, w)).ok).toBe(true);
-    expect(sent.map((s) => s.urls)).toEqual([['wss://nos.lol', 'wss://relay.primal.net']]);
-    expect(sent[0]!.event.tags).toContainEqual(['p', heat.publisher.pubkey]);
+    const leaked = oneKey(poster, 'Test Poster', true, { inbox: [INBOX], keys: [{ ...publishers[0]!.keys[0]!, exposed: '2026-09-28' }] });
+    const m = mission('leaked');
+    const { w, sent, asked } = fakeWire([], true, leaked);
+    expect(await takePart(m, 'sealed', NOW, w)).toEqual({
+      ok: false,
+      because:
+        "Sealed sending to Test Poster is paused: its key's secret leaked, so whoever holds it could open anything sealed to it. Nothing is kept on this phone; come back once Test Poster reads under a new key. Nothing was sent."
+    });
+    expect(sent).toEqual([]);
     expect(asked).toEqual([]);
+    expect(held(NOW)).toEqual([]);
+    expect(tookPart(NOW, publishers)).toEqual([]);
+    expect((await takePart(m, 'open', NOW, w)).ok).toBe(true);
+    expect(sent.map((s) => s.event.kind)).toEqual([1985]);
+  });
+
+  it('seals a claim to the publisher’s newest key that did not leak, once it is trusted, on a mission its old key posted', async () => {
+    signOn();
+    const next = generateSecretKey();
+    const switched = oneKey(poster, 'Test Poster', true, {
+      inbox: [INBOX],
+      keys: [{ ...publishers[0]!.keys[0]!, exposed: '2026-09-28' }, { pubkey: getPublicKey(next), generation: 2, notBefore: '2020-01-02T00:00:00Z', notAfter: '2100-01-01T00:00:00Z' }]
+    });
+    const m = mission('switched');
+    const { w, sent } = fakeWire([], true, switched);
+    expect((await takePart(m, 'sealed', NOW, w)).ok).toBe(true);
+    expect(sent[0]!.event.tags).toContainEqual(['p', getPublicKey(next)]);
+    expect(held(NOW)[0]).toMatchObject({ sealedTo: getPublicKey(next) });
   });
 });
 
@@ -489,12 +512,12 @@ describe('what the second audit left open', () => {
       const m = mission('renew-refused');
       await takePart(m, 'open', NOW, w);
       const was = held(NOW)[0]!;
-      const history = tookPart(NOW);
+      const history = tookPart(NOW, publishers);
       expect(history).toEqual([expect.objectContaining({ since: NOW })]);
       expect(await takePart(m, 'open', NOW + 3_600, w)).toEqual({ ok: false, because: expect.stringMatching(/Nothing was sent/) });
       expect(held(NOW + 3_600)).toEqual([was]);
       // Its past days stay hers to report: the mission is remembered from when she first took part [review].
-      expect(tookPart(NOW + 3_600)).toEqual(history);
+      expect(tookPart(NOW + 3_600, publishers)).toEqual(history);
     });
 
     /*
@@ -520,7 +543,7 @@ describe('what the second audit left open', () => {
       signOn();
       const { w } = answering('refused');
       await takePart(mission('never'), 'open', NOW, w);
-      expect(tookPart(NOW)).toEqual([]);
+      expect(tookPart(NOW, publishers)).toEqual([]);
       expect(held(NOW)).toEqual([]);
     });
   });
@@ -647,7 +670,7 @@ describe('what the second audit left open', () => {
       // Sealed, and its poster's key came off the registry since: no release was signed.
       const s = mission('sealed-none');
       await takePart(s, 'sealed', NOW, answering().w);
-      const nowhere: Wire = { publish: async () => 'took', query: async () => ({ events: [], answered: [] }), publishers: {} };
+      const nowhere: Wire = { publish: async () => 'took', query: async () => ({ events: [], answered: [] }), publishers: [] };
       expect(await letGo(s, NOW + 60, nowhere)).toMatchObject({ sent: false, unconfirmed: false, because: expect.stringMatching(/no longer reads the key/) });
       const kept = unreleased(NOW + 60).find((u) => u.address === s.address)!;
       expect(kept.release).toBeUndefined();
@@ -695,7 +718,7 @@ describe('a sealed claim or release sent again, kept before the inbox was pinned
     const m = mission('kept-nowhere');
     await takePart(m, 'sealed', NOW, answering(publishers, 'unconfirmed').w);
     aimedByAList();
-    const { w, sent } = answering({});
+    const { w, sent } = answering([]);
     expect(await claimAgain(m.address, NOW + 60, w)).toEqual({
       nowhere:
         'No relay confirmed it; it may have arrived. NavCom no longer reads the key the poster posted this with, so there is nowhere to send it sealed. Nothing was sent this time.'
@@ -722,7 +745,7 @@ describe('a sealed claim or release sent again, kept before the inbox was pinned
     await takePart(m, 'sealed', NOW, answering(publishers).w);
     await letGo(m, NOW + 60, answering(publishers, 'unconfirmed').w);
     aimedByAList();
-    const { w, sent } = answering({ [poster]: { name: 'Test Poster', agent: true } });
+    const { w, sent } = answering(oneKey(poster, 'Test Poster', true));
     expect(await sendRelease(m.address, NOW + 120, w)).toEqual({
       sent: false,
       unconfirmed: false,
@@ -733,20 +756,31 @@ describe('a sealed claim or release sent again, kept before the inbox was pinned
     expect(unreleased(NOW + 120)).toEqual([expect.objectContaining({ address: m.address, mayHaveArrived: true })]);
   });
 
-  /** The heat-relief campaign, under the key that comes off at the cut-over. */
-  it('sends nothing sealed to Mecha Jono’s old key again once a release no longer reads it', async () => {
+  /**
+   * The heat-relief campaign, under the key whose secret leaked [decided 2026-10-18]. Nothing is
+   * sealed to that key any more — not a new claim, not one kept from before sent again, and not the
+   * release of one — and its missions cannot be taken while its list is unconfirmed.
+   */
+  it('seals nothing to Mecha Jono’s old key: its missions cannot be taken, and a sealed claim kept from before neither goes again nor sends a release', async () => {
     signOn();
     const fixtures = JSON.parse(readFileSync(new URL('../../../../packages/core/test/fixtures/mission-packages.json', import.meta.url), 'utf8')) as Event[];
     const read = readMissionPackage(fixtures[0]);
     if (!read.ok) throw new Error(read.because);
     const heat = read.mission;
     const during = heat.validUntil - 2 * 86_400;
-    expect((await takePart(heat, 'sealed', during, answering(null, 'unconfirmed').w)).ok).toBe(true);
-    const afterCutOver = Object.fromEntries(Object.entries(MISSION_PUBLISHERS).filter(([k]) => k !== heat.publisher.pubkey));
-    expect(Object.keys(afterCutOver)).toHaveLength(1);
-    const { w, sent } = answering(afterCutOver);
-    expect(await claimAgain(heat.address, during + 60, w)).toMatchObject({ nowhere: expect.stringMatching(/no longer reads the key the poster posted this with/) });
+    expect(await takePart(heat, 'sealed', during, answering(null).w)).toEqual({ ok: false, because: 'retiring' });
+    expect(await takePart(heat, 'open', during, answering(null).w)).toEqual({ ok: false, because: 'retiring' });
+    // A sealed claim this device took before 2026-10-18, no relay having confirmed it.
+    const wrap = buildSealedMissionClaim(ensureContactKey(), heat.publisher.pubkey, 'claimed', heat.address, during + 86_400, during);
+    set('wipeable', 'mission_claims', [
+      { address: heat.address, title: heat.title, visibility: 'sealed', ends: during + 86_400, claimId: null, relays: ['wss://nos.lol'], signer: contactPubkey(), unconfirmed: wrap }
+    ]);
+    const { w, sent } = answering(null);
+    expect(await claimAgain(heat.address, during + 60, w)).toMatchObject({ nowhere: expect.stringMatching(/Sealed sending to Mecha Jono is paused/) });
+    expect(await letGo(heat, during + 120, w)).toMatchObject({ sent: false, nowhere: true, because: expect.stringMatching(/^The release cannot go\..*ends by itself within a day\.$/) });
     expect(sent).toEqual([]);
+    // Nothing kept to send later [P5].
+    expect(unreleased(during + 120)).toEqual([]);
   });
 });
 

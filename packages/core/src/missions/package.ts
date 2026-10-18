@@ -20,6 +20,10 @@
  * - **A signature that does not verify**, or **a publisher NavCom does not read**. The Record only
  *   accepts writes from an allowlist, but the same event can be carried by any mirror; the
  *   signature and the key are what make it Mecha Jono's.
+ * - **A key NavCom does not trust to sign yet, or an event dated before its key's start** (rev 7).
+ *   Neither carries proof of whose it is, so neither can hide a genuine version. Whether a key's
+ *   window is open *now*, and whether a frozen key's event is on its list, is the reader's clock
+ *   and the registry gate's [trust.ts], asked before anything is kept.
  * - **A `p` tag.** A package addressed to a person is an assignment, and *no mission may be
  *   assigned to a named person who did not claim it* [invariant 8].
  * - **A reference to `Distress`** — a `k` tag naming kinds 20910–20914. *Nothing in the mission
@@ -58,8 +62,58 @@ export const THE_RECORD = 'wss://record.cosmiccodex.app';
  */
 export const MISSION_RELAYS: readonly string[] = [THE_RECORD, 'wss://blackpi.cosmiccodex.app'];
 
-/** One publisher NavCom reads, as its release pins it. */
+/**
+ * One signing key of a publisher, as NavCom's release pins it [interchange spec §3, rev 7].
+ *
+ * **Every date here removes or grants trust on the reader's own clock, never on an event's.** The
+ * date an event carries is whatever its signer wrote, so a stolen key can date anything: past
+ * `notAfter`, nothing the key signed is trusted whatever date it carries. The clock it is judged on
+ * has a floor — the moment this build was made — so a phone set back cannot revive an ended key
+ * [trust.ts, `trustClock`].
+ */
+export interface PublisherKey {
+  /** 64 lowercase hex. */
+  pubkey: string;
+  /**
+   * Raised only by a release. For one publisher and one `d`, a higher generation outranks a lower
+   * one whatever `created_at` says, so a stolen old key cannot override its successor by dating a
+   * version later [trust.ts, `outranks`].
+   */
+  generation: number;
+  /**
+   * ISO 8601, UTC. From when NavCom trusts what this key signs. **Absent, it is not trusted to sign
+   * at all**, and anything it signed is dropped; an event dated before it is dropped too, so a
+   * forgery made in the gap does not become trusted when the date arrives. A start grants trust, so
+   * it may wait for a later release: a late one only keeps its missions off the map longer.
+   */
+  notBefore?: string;
+  /**
+   * ISO 8601, UTC. When NavCom stops trusting this key, judged on the reader's clock with a floor.
+   * At most a year out; renewing it is a person stating the key is still believed good, by release.
+   * An end removes trust, so it ships in the next deploy and is never extended for an exposed key
+   * [registry-rules.ts].
+   */
+  notAfter: string;
+  /**
+   * The day (`YYYY-MM-DD`) this key's secret was exposed. **Sealing to it hides nothing from
+   * whoever holds that secret**, so nothing is sealed to it: on its missions the sealed choice is
+   * off, with its reason [trust.ts, `sealTargetOf`]. None of its labels counts [`settlersOf`].
+   */
+  exposed?: string;
+  /**
+   * Its frozen set: only the package versions listed in `frozen.ts`, and versions that close one of
+   * their missions, are kept from this key [trust.ts, `gate`]. `sha256` pins that list: a list
+   * whose digest differs is refused, and then nothing under this key is kept. `confirmed` is
+   * whether the publisher's own signed list of what it signed confirmed it; until then each such
+   * mission shows at its jurisdiction only and cannot be taken [interchange spec §3].
+   */
+  frozen?: { sha256: string; confirmed: boolean };
+}
+
+/** One publisher NavCom reads, as its release pins it. Every rule keys on `id`, never on the name. */
 export interface MissionPublisher {
+  /** Stable, lowercase: what local history, ranking and replacement key on, across its keys. */
+  id: string;
   name: string;
   agent: boolean;
   /**
@@ -74,41 +128,83 @@ export interface MissionPublisher {
    * (Q16). An inbox that moves now moves by a NavCom release, as the meeting relays do.
    */
   inbox?: readonly string[];
+  keys: readonly PublisherKey[];
   /**
-   * The day (`YYYY-MM-DD`) this key's secret was exposed. **Sealing to it hides nothing from
-   * whoever holds that secret**: they can fetch the wraps addressed to it from the inbox and open
-   * them. So a screen offering to seal to it says so, and never "only the poster can see"
-   * [interchange spec §5.0]. Pinning the inbox fixes where a seal goes, not who can open it.
+   * Reserved for the sha256 of a key committed in advance [interchange spec rev 7, decision 4].
+   * Nothing reads it yet, so the build refuses anything but `null`: a field nothing honours would
+   * claim a protection that is not there.
    */
-  exposed?: string;
+  next: null;
 }
 
-export type MissionPublishers = Readonly<Record<string, MissionPublisher>>;
+export type MissionPublishers = readonly MissionPublisher[];
 
 /**
  * Mecha Jono's inbox, as its old key's kind-10050 list named it with its letter (Q10).
- * `relay.damus.io` refuses every NIP-42 sign-in. For the new key it is NavCom's assumption until
- * Mecha Jono confirms it reads wraps addressed to that key there (interchange spec Q17).
+ * `relay.damus.io` refuses every NIP-42 sign-in. Nothing is sealed to Mecha Jono while its only key
+ * trusted to sign is exposed [trust.ts, `sealTargetOf`].
  */
 const MECHA_JONO_INBOX: readonly string[] = ['wss://nos.lol', 'wss://relay.primal.net'];
 
 /**
- * Who NavCom reads packages from, whether each is an agent, and where each takes sealed messages.
+ * Who NavCom reads packages from, whether each is an agent, under which keys, and where each takes
+ * sealed messages. Published as `/.well-known/navcom-publishers.json` with its digest, so a
+ * publisher can check daily that what NavCom serves is what it agreed [interchange spec §3].
  *
  * A registry rather than trusting the `agent` tag alone: invariant 4 says agents are always
  * identified, and that cannot depend on an agent choosing to say so. The tag is honoured too — a
  * publisher that declares itself an agent is one.
  */
-export const MISSION_PUBLISHERS: MissionPublishers = {
-  // Retiring. Its secret was exposed on 2026-09-28 (Mecha Jono's key-change letter of 7 Oct). It
-  // stays until the cut-over in early November, then comes off, and every event it signed is
-  // distrusted whatever date it carries: whoever holds the secret can back-date one.
-  '6301c4d09a014909e5a48b7d0c9aa859eec18804c2fc87eab4e414aa5a319692': { name: 'Mecha Jono', agent: true, inbox: MECHA_JONO_INBOX, exposed: '2026-09-28' },
-  // Mecha Jono's next key, trusted beside the old one from 2026-10-17 (confirmed by Jono, as the
-  // letter asks); it signs nothing before the cut-over, when each open package is republished under
-  // it at 30079:<this key>:<the same d>.
-  '86f824c3f1e67c60b1dc15ce110648c4de5c3fb879022fbbcc5e8deb720e402c': { name: 'Mecha Jono', agent: true, inbox: MECHA_JONO_INBOX }
-};
+export const MISSION_PUBLISHERS: MissionPublishers = [
+  {
+    id: 'mecha-jono',
+    name: 'Mecha Jono',
+    agent: true,
+    inbox: MECHA_JONO_INBOX,
+    keys: [
+      // Retiring. Its secret was exposed on 2026-09-28 (Mecha Jono's key-change letter of 7 Oct), so
+      // it is frozen: nothing it signs is kept unless it is in the frozen set or closes one of its
+      // missions, none of its labels counts, and nothing is sealed to it. It ends on 13 November
+      // (decided 2026-10-18), on the reader's clock with a floor.
+      {
+        pubkey: '6301c4d09a014909e5a48b7d0c9aa859eec18804c2fc87eab4e414aa5a319692',
+        generation: 1,
+        notBefore: '2025-01-01T00:00:00Z',
+        notAfter: '2026-11-13T00:00:00Z',
+        exposed: '2026-09-28',
+        frozen: { sha256: 'f225840937640ab8dd7e4e331e104c2a67a63fe9f885f38b85a096dd523e9a76', confirmed: false }
+      },
+      // Mecha Jono's next key, confirmed by Jono. **Not trusted to sign until the cut-over**
+      // (decided 2026-10-18): Mecha Jono signs nothing with it before then, so anything under it
+      // before its start is a thief's, and is dropped. A later release gives it its start once
+      // Mecha Jono names the day.
+      {
+        pubkey: '86f824c3f1e67c60b1dc15ce110648c4de5c3fb879022fbbcc5e8deb720e402c',
+        generation: 2,
+        notAfter: '2027-10-18T00:00:00Z'
+      }
+    ],
+    next: null
+  }
+];
+
+/** A key, and the publisher it belongs to. */
+export interface RegisteredKey {
+  entry: MissionPublisher;
+  key: PublisherKey;
+}
+
+/** Which publisher a key is, or null: a key NavCom does not read. */
+export function keyOf(registry: MissionPublishers, pubkey: string): RegisteredKey | null {
+  for (const entry of registry) {
+    const key = entry.keys.find((k) => k.pubkey === pubkey);
+    if (key) return { entry, key };
+  }
+  return null;
+}
+
+/** Unix seconds from an ISO date the registry holds, or NaN. */
+export const registryTime = (iso: string | undefined): number => (iso === undefined ? NaN : Date.parse(iso) / 1000);
 
 export type MissionState = 'open' | 'claimed' | 'closed';
 
@@ -138,7 +234,21 @@ export interface Mission {
   /** The package's addressable coordinate, `30079:<pubkey>:<d>` — what a claim's `a` tag names. */
   address: string;
   d: string;
-  publisher: { pubkey: string; name: string; agent: true } | { pubkey: string; name: string; agent: false };
+  /**
+   * Who posted it: the key that signed it, and the registry entry that key belongs to. `entry` and
+   * `generation` are absent on a mission kept by a build before 2026-10-18, so a reader of kept
+   * missions asks the registry by key instead [trust.ts].
+   */
+  publisher:
+    | { pubkey: string; name: string; agent: true; entry?: string; generation?: number }
+    | { pubkey: string; name: string; agent: false; entry?: string; generation?: number };
+  /**
+   * Posted under a key that is being retired [interchange spec §3]: `unconfirmed` until the
+   * publisher's own signed list of what it signed includes it — then it shows at its jurisdiction
+   * only, cannot be taken, and says it may have been replaced — and `confirmed` after. Null for any
+   * other key, and absent on a mission kept by an earlier build.
+   */
+  retiring?: 'unconfirmed' | 'confirmed' | null;
   title: string;
   summary: string | null;
   state: MissionState;
@@ -319,14 +429,26 @@ export function readMissionPackage(input: unknown, publishers: MissionPublishers
     tags: raw.tags, content: raw.content, sig: raw.sig
   };
   const signed = verifyEvent(e);
-  const known = publishers[e.pubkey];
+  const registered = keyOf(publishers, e.pubkey);
+  /*
+   * A key not trusted to sign, or an event dated before its key's start, proves nothing about whose
+   * it is: it carries no `from`, so it can hide nothing, and the feed drops it [decided 2026-10-18].
+   * Both are read from the release and the event alone; whether the key's window is open now is the
+   * reader's clock, asked in the registry gate before anything is kept [trust.ts, `gate`].
+   */
+  const start = registryTime(registered?.key.notBefore);
+  const signs = !!registered && Number.isFinite(start) && e.created_at >= start;
+  const known = signs ? registered : null;
   const from = signed && known ? { address: `${MISSION_PACKAGE_KIND}:${e.pubkey}:${tag(e, 'd') ?? ''}`, at: e.created_at, id: e.id } : null;
   const no = (kind: 'not-a-package' | 'desk' | 'refused', because: string): MissionReading =>
     from ? { ok: false, kind, because, from } : { ok: false, kind, because };
 
   if (!flag(e, 'starcom_mission_package') || !flag(e, 'navcom_handoff')) return no('not-a-package', 'Not handed off to NavCom.');
   if (!signed) return no('refused', 'The signature does not verify.');
-  if (!known) return no('refused', 'Not a publisher NavCom reads.');
+  if (!registered) return no('refused', 'Not a publisher NavCom reads.');
+  if (!known) {
+    return no('refused', Number.isFinite(start) ? 'Dated before NavCom trusted the key that signed it.' : 'Signed by a key NavCom does not trust to sign yet.');
+  }
 
   if (!flag(e, 'navcom_mission')) return no('desk', 'Not field work.');
 
@@ -373,20 +495,30 @@ export function readMissionPackage(input: unknown, publishers: MissionPublishers
   if (effectAll.some((l) => l.length > EFFECT_LINE_MAX)) return no('refused', 'An effect line is longer than a count could answer.');
   const effect = effectAll.filter((line) => !PEOPLE.test(line));
   const priority = Number(tag(e, 'priority'));
-  const agent = known.agent || tag(e, 'agent') !== undefined;
+  const agent = known.entry.agent || tag(e, 'agent') !== undefined;
+  const who = { pubkey: e.pubkey, name: known.entry.name, entry: known.entry.id, generation: known.key.generation };
+  const retiring = known.key.frozen ? (known.key.frozen.confirmed ? 'confirmed' : 'unconfirmed') : null;
+  const placement = placementOf(e);
 
   return {
     ok: true,
     mission: {
       address: `${MISSION_PACKAGE_KIND}:${e.pubkey}:${d}`,
       d,
-      publisher: agent ? { pubkey: e.pubkey, name: known.name, agent: true } : { pubkey: e.pubkey, name: known.name, agent: false },
+      publisher: agent ? { ...who, agent: true } : { ...who, agent: false },
+      retiring,
       title: typeof manifest['name'] === 'string' && manifest['name'] ? manifest['name'] : d,
       summary: typeof manifest['description'] === 'string' ? manifest['description'] : null,
       state,
       claims,
       validUntil: until,
-      placement: placementOf(e),
+      /*
+       * Unconfirmed under a retiring key, it shows where it is filed and no finer [interchange spec
+       * §3]: every package NavCom has read from the exposed key is dated after the exposure, so
+       * nothing but the publisher's own list tells a planted one from a real one, and a planted
+       * point is where a lure would send somebody.
+       */
+      placement: retiring === 'unconfirmed' ? { jurisdiction: placement.jurisdiction, point: null } : placement,
       family: tag(e, 'mission_family') ?? null,
       categories: prefixed(e, 'category:'),
       variant: prefixed(e, 'variant:')[0] ?? null,

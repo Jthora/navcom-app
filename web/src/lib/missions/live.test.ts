@@ -1,7 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { finalizeEvent, generateSecretKey, getEventHash, getPublicKey } from 'nostr-tools/pure';
 import { panicWipe, set } from '$lib/terminal/storage';
+import { frozenDigest, type FrozenSet, type MissionPublishers } from '@navcom/core';
 import { KEPT_CHARS_MAX, PACKAGES_MAX, UNVERIFIED_MAX, subscribeMissions, type Feed } from './live';
+import { oneKey, trustedKey } from './registry-fixture';
 
 /** Every package read, counted: what a relay can make this phone verify is the cost to bound. */
 const reads = vi.hoisted(() => ({ n: 0 }));
@@ -28,7 +30,7 @@ const MIRROR = 'wss://mirror.test';
 const NOW = new Date('2026-10-06T20:00:00Z');
 
 const secret = generateSecretKey();
-const publishers = { [getPublicKey(secret)]: { name: 'Test', agent: true } };
+const publishers = oneKey(getPublicKey(secret), 'Test', true);
 const pkg = (d: string, title: string, created_at = 1791300000, state = 'open', padding = 0) =>
   finalizeEvent(
     {
@@ -64,8 +66,8 @@ class FakeSocket extends EventTarget {
   }
   answer(...events: unknown[]): void {
     this.dispatchEvent(new Event('open'));
-    for (const e of events) this.frame(['EVENT', 'missions', e]);
-    this.frame(['EOSE', 'missions']);
+    for (const e of events) this.frame(['EVENT', 'missions:0', e]);
+    this.frame(['EOSE', 'missions:0']);
   }
   frame(f: unknown[]): void {
     this.dispatchEvent(Object.assign(new Event('message'), { data: JSON.stringify(f) }));
@@ -247,7 +249,7 @@ describe('a relay that is not on our side, or not all there', () => {
   it('counts a refused subscription as a failure, rather than reaching for it forever', () => {
     subscribe();
     socket(RECORD).dispatchEvent(new Event('open'));
-    socket(RECORD).frame(['CLOSED', 'missions', 'auth-required: sign in']);
+    socket(RECORD).frame(['CLOSED', 'missions:0', 'auth-required: sign in']);
     socket(MIRROR).fail();
     expect(last().status).toBe('unavailable');
   });
@@ -309,9 +311,9 @@ describe('what the second audit of Milestone 11 found', () => {
     socket(RECORD).answer(pkg('a', 'Open'));
     socket(MIRROR).answer();
     expect(titles()).toEqual(['Open']);
-    socket(RECORD).frame(['EVENT', 'missions', pkg('a', 'Open', 1791400000, 'closed')]);
+    socket(RECORD).frame(['EVENT', 'missions:0', pkg('a', 'Open', 1791400000, 'closed')]);
     expect(titles()).toEqual([]);
-    socket(RECORD).frame(['EVENT', 'missions', pkg('b', 'New', 1791400001)]);
+    socket(RECORD).frame(['EVENT', 'missions:0', pkg('b', 'New', 1791400001)]);
     expect(titles()).toEqual(['New']);
   });
 
@@ -378,7 +380,7 @@ describe('what the second audit of Milestone 11 found', () => {
       socket(RECORD).answer(pkg('a', 'Real'));
       socket(MIRROR).answer();
       const before = reads.n;
-      for (let i = 0; i < 300; i++) socket(RECORD).frame(['EVENT', 'missions', junk(i)]);
+      for (let i = 0; i < 300; i++) socket(RECORD).frame(['EVENT', 'missions:0', junk(i)]);
       expect(reads.n - before).toBeLessThanOrEqual(UNVERIFIED_MAX);
       expect(socket(RECORD).closed).toBe(true);
       // Its last answer stands, as for any relay that dropped.
@@ -389,8 +391,8 @@ describe('what the second audit of Milestone 11 found', () => {
       subscribe();
       socket(RECORD).answer(pkg('x', 'Newer', 1791300000), ...Array.from({ length: PACKAGES_MAX - 1 }, (_, i) => pkg(`p${i}`, `P${i}`)));
       const before = reads.n;
-      socket(RECORD).frame(['EVENT', 'missions', pkg('x', 'Older', 1791200000)]);
-      socket(RECORD).frame(['EVENT', 'missions', pkg('over', 'Over the cap')]);
+      socket(RECORD).frame(['EVENT', 'missions:0', pkg('x', 'Older', 1791200000)]);
+      socket(RECORD).frame(['EVENT', 'missions:0', pkg('over', 'Over the cap')]);
       expect(reads.n - before).toBe(0);
     });
 
@@ -422,7 +424,7 @@ describe('what the second audit of Milestone 11 found', () => {
       subscribe();
       const refuse = () => {
         socket(RECORD).dispatchEvent(new Event('open'));
-        socket(RECORD).frame(['CLOSED', 'missions', 'auth-required: sign in']);
+        socket(RECORD).frame(['CLOSED', 'missions:0', 'auth-required: sign in']);
       };
       refuse();
       vi.advanceTimersByTime(5_000);
@@ -438,7 +440,7 @@ describe('what the second audit of Milestone 11 found', () => {
       subscribe();
       const answerThenJunk = () => {
         socket(RECORD).answer(pkg('a', 'Real'));
-        for (let i = 0; i < UNVERIFIED_MAX; i++) socket(RECORD).frame(['EVENT', 'missions', junk(i)]);
+        for (let i = 0; i < UNVERIFIED_MAX; i++) socket(RECORD).frame(['EVENT', 'missions:0', junk(i)]);
       };
       answerThenJunk();
       vi.advanceTimersByTime(5_000);
@@ -450,7 +452,7 @@ describe('what the second audit of Milestone 11 found', () => {
       expect(made(RECORD)).toBe(3);
       // And one that answers and then refuses, the same.
       socket(RECORD).answer(pkg('a', 'Real'));
-      socket(RECORD).frame(['CLOSED', 'missions', 'rate-limited: slow down']);
+      socket(RECORD).frame(['CLOSED', 'missions:0', 'rate-limited: slow down']);
       vi.advanceTimersByTime(10_000);
       expect(made(RECORD)).toBe(3);
       vi.advanceTimersByTime(10_000);
@@ -494,7 +496,7 @@ describe('what the second audit of Milestone 11 found', () => {
     const stop = subscribe();
     socket(RECORD).answer(pkg('a', 'At once'));
     expect(stored().map((e) => JSON.parse(e.content).name)).toEqual(['At once']);
-    socket(RECORD).frame(['EVENT', 'missions', pkg('b', 'Just after', 1791300001)]);
+    socket(RECORD).frame(['EVENT', 'missions:0', pkg('b', 'Just after', 1791300001)]);
     stop();
     expect(stored().map((e) => JSON.parse(e.content).name).sort()).toEqual(['At once', 'Just after']);
   });
@@ -504,7 +506,7 @@ describe('what the second audit of Milestone 11 found', () => {
     socket(RECORD).answer(pkg('a', 'Seen'));
     stop();
     const count = feeds.length;
-    socket(RECORD).frame(['EVENT', 'missions', pkg('b', 'Late', 1791300001)]);
+    socket(RECORD).frame(['EVENT', 'missions:0', pkg('b', 'Late', 1791300001)]);
     expect(feeds.length).toBe(count);
   });
 });
@@ -526,19 +528,19 @@ describe('a wipe while missions are open', () => {
     socket(RECORD).answer(pkg('a', 'Before'));
     expect(kept()).toEqual(['Before']);
     // Arrived after the answer, so its save is waiting on the timer.
-    socket(RECORD).frame(['EVENT', 'missions', pkg('b', 'Just after', 1791300001)]);
+    socket(RECORD).frame(['EVENT', 'missions:0', pkg('b', 'Just after', 1791300001)]);
 
     panicWipe();
     vi.advanceTimersByTime(5_000);
     expect(localStorage.getItem('navcom.wipeable'), 'the waiting save put tonight back').toBeNull();
 
     // News after the wipe is drawn, live, and still not kept by a subscription from before it.
-    socket(RECORD).frame(['EVENT', 'missions', pkg('c', 'After', 1791300002)]);
+    socket(RECORD).frame(['EVENT', 'missions:0', pkg('c', 'After', 1791300002)]);
     expect(last().status).toBe('live');
     expect(titles()).toContain('After');
     vi.advanceTimersByTime(5_000);
     // Nor as the page closes.
-    socket(RECORD).frame(['EVENT', 'missions', pkg('d', 'As it closed', 1791300003)]);
+    socket(RECORD).frame(['EVENT', 'missions:0', pkg('d', 'As it closed', 1791300003)]);
     stop();
     expect(localStorage.getItem('navcom.wipeable'), 'the page closing put tonight back').toBeNull();
 
@@ -561,5 +563,127 @@ describe('a wipe while missions are open', () => {
     panicWipe();
     expect(titles(), 'the map still shows what the wipe destroyed').toEqual([]);
     expect(last().status).toBe('connecting');
+  });
+});
+
+/**
+ * One request per key, and the registry gate before anything counts [core: missions/trust.ts;
+ * decided 2026-10-18]. A frozen key is asked only for its list; every frame is gated before it
+ * costs a signature check, counts against a share, or is merged; and shares are capped per key.
+ */
+describe('what each relay is asked, key by key, and what it may make this phone keep [rev 7]', () => {
+  const frozenKey = generateSecretKey();
+  const other = generateSecretKey();
+  const unstarted = generateSecretKey();
+  const by = (s: Uint8Array, d: string, title: string, created_at = 1791300000) =>
+    finalizeEvent(
+      {
+        kind: 30079,
+        created_at,
+        content: JSON.stringify({ name: title, objectives: [{ id: 'do:it', ask: 'Do it.' }] }),
+        tags: [['d', d], ['t', 'starcom_mission_package'], ['t', 'navcom_handoff'], ['t', 'navcom_mission'], ['mission_state', 'open'], ['valid_until', '1791608400']]
+      },
+      s
+    );
+  const genuine = [1, 2, 3].map((i) => by(frozenKey, `genuine-${i}`, `Genuine ${i}`, 1791300000 + i));
+  /** Dated three days past this phone's clock, at fresh d's: what a stolen key floods a relay with. */
+  const flood = Array.from({ length: 150 }, (_, i) => by(frozenKey, `flood-${i}`, `Lure ${i}`, Math.floor(NOW.getTime() / 1000) + 3 * 86_400 + i));
+  const list: FrozenSet = { key: getPublicKey(frozenKey), taken: '2026-10-18', source: 'a test', packages: genuine.map((e) => ({ id: e.id, d: e.tags[0]![1]! })) };
+  const registry: MissionPublishers = [
+    {
+      id: 'desk',
+      name: 'Test',
+      agent: true,
+      keys: [
+        trustedKey(getPublicKey(frozenKey), { exposed: '2026-09-28', frozen: { sha256: frozenDigest(list), confirmed: true } }),
+        trustedKey(getPublicKey(secret), { generation: 2 }),
+        { pubkey: getPublicKey(unstarted), generation: 3, notAfter: '2100-01-01T00:00:00Z' }
+      ],
+      next: null
+    },
+    { id: 'other', name: 'Other', agent: false, keys: [trustedKey(getPublicKey(other))], next: null }
+  ];
+  const at = () => Math.floor(Date.now() / 1000);
+  const go = () => subscribeMissions((f) => feeds.push(f), { relays: [RECORD], publishers: registry, frozen: [list], trustAt: at });
+  const reqs = (s: FakeSocket) => s.sent.filter((f) => f[0] === 'REQ' && f[1] !== 'still-there');
+  /** A relay that ignores every filter: it answers each request with all of `events`, then ends it. */
+  const answerAll = (s: FakeSocket, events: unknown[]) => {
+    s.dispatchEvent(new Event('open'));
+    for (const [, id] of reqs(s)) {
+      for (const e of events) s.frame(['EVENT', id, e]);
+      s.frame(['EOSE', id]);
+    }
+  };
+
+  it('asks each key trusted to sign on its own, with a limit and nothing past tomorrow; a frozen key only by its list; a key with no start not at all', () => {
+    go();
+    socket(RECORD).dispatchEvent(new Event('open'));
+    const until = at() + 86_400;
+    expect(reqs(socket(RECORD))).toEqual([
+      [
+        'REQ', 'missions:0',
+        { kinds: [30079], authors: [getPublicKey(frozenKey)], ids: list.packages.map((p) => p.id) },
+        { kinds: [30079], authors: [getPublicKey(frozenKey)], '#d': ['genuine-1', 'genuine-2', 'genuine-3'], until }
+      ],
+      // Beside a frozen key, a key trusted to sign is also asked for the frozen list's d's by name: its
+      // version there is what replaces the frozen one, and must be heard whatever else it posted.
+      [
+        'REQ', 'missions:1',
+        { kinds: [30079], authors: [getPublicKey(secret)], '#t': ['navcom_mission'], limit: PACKAGES_MAX, until },
+        { kinds: [30079], authors: [getPublicKey(secret)], '#d': ['genuine-1', 'genuine-2', 'genuine-3'], until }
+      ],
+      ['REQ', 'missions:3', { kinds: [30079], authors: [getPublicKey(other)], '#t': ['navcom_mission'], limit: PACKAGES_MAX, until }]
+    ]);
+  });
+
+  it('shows the 3 on a frozen list and none of 150 dated ahead at fresh d’s, served first, and checks none of the 150', () => {
+    go();
+    const before = reads.n;
+    answerAll(socket(RECORD), [...flood, ...genuine]);
+    expect(last().status).toBe('live');
+    expect(titles()).toEqual(['Genuine 1', 'Genuine 2', 'Genuine 3']);
+    // The gate comes before the signature: what it drops costs nothing.
+    expect(reads.n - before).toBeLessThanOrEqual(genuine.length * 2);
+  });
+
+  it('loads a copy on this device holding the 150 without them', () => {
+    set('wipeable', 'missions', { at: NOW.toISOString(), events: [...flood, ...genuine] });
+    go();
+    expect(last().status).toBe('cached');
+    expect(titles()).toEqual(['Genuine 1', 'Genuine 2', 'Genuine 3']);
+  });
+
+  it('caps each key’s share on its own, so one key filling its share pushes out none of another’s', () => {
+    go();
+    const s = socket(RECORD);
+    s.dispatchEvent(new Event('open'));
+    const theirs = [1, 2, 3].map((i) => by(other, `other-${i}`, `Other ${i}`));
+    for (const [, id] of reqs(s)) {
+      if (id === 'missions:1') for (let i = 0; i < PACKAGES_MAX + 20; i++) s.frame(['EVENT', id, by(secret, `p${i}`, `P${i}`)]);
+      // Another key's packages sent in answer to this key's request are not taken for its own.
+      if (id === 'missions:1') for (const e of theirs) s.frame(['EVENT', id, e]);
+      s.frame(['EOSE', id]);
+    }
+    expect(titles().filter((t) => t.startsWith('P'))).toHaveLength(PACKAGES_MAX);
+    expect(titles().filter((t) => t.startsWith('Other'))).toEqual([]);
+    // Sent in answer to their own key's request, they are kept beside the full share.
+    for (const e of theirs) s.frame(['EVENT', 'missions:3', e]);
+    expect(titles().filter((t) => t.startsWith('Other'))).toEqual(['Other 1', 'Other 2', 'Other 3']);
+  });
+
+  it('asks again before a request’s until runs out, while the page stays open', () => {
+    go();
+    const s = socket(RECORD);
+    answerAll(s, genuine);
+    const first = reqs(s).length;
+    // Six hours of an open page, the relay answering each are-you-there.
+    for (let t = 0; t < 6 * 3_600 + 600; t += 240) {
+      vi.advanceTimersByTime(240_000);
+      const probe = s.sent.at(-1);
+      if (probe?.[0] === 'REQ' && probe[1] === 'still-there') s.frame(['EOSE', 'still-there']);
+    }
+    const again = reqs(s).slice(first);
+    expect(again.map((f) => f[1])).toEqual(['missions:0', 'missions:1', 'missions:3']);
+    expect((again[1]![2] as { until: number }).until).toBeGreaterThan(at() + 86_400 - 600);
   });
 });

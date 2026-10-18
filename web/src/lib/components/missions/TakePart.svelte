@@ -15,18 +15,24 @@
    * go is instant and free, and the claim it releases is still on relays until it ends.
    *
    * **"Only the poster" is said only when it is true.** Sealed to a key whose secret was exposed,
-   * whoever holds that secret can open it, and the choice and the claim both say so [`exposedOn`].
+   * whoever holds that secret could open it — so nothing is sealed to one (decided 2026-10-18). On a
+   * mission whose publisher has no other key yet, the sealed choice is there and off, and says why,
+   * before anything can be sent; taking part in the open still works [`sealTo`].
+   *
+   * **A mission that may have been planted cannot be taken** [`refusal`, `retiring`]: posted under
+   * a retiring key, and not yet on the publisher's own list of what it signed.
    */
   import type { Mission } from '@navcom/core';
   import { Action, Readout, Slot } from '$lib/components/panel';
-  import { MAY_HAVE_ARRIVED, claimAgain, exposedOn, held, letGo, refusal, takePart, unreleased, type Visibility } from '$lib/missions/claims';
+  import { MAY_HAVE_ARRIVED, claimAgain, exposedOn, held, letGo, nowhereFor, refusal, sealTo, takePart, unreleased, type Visibility } from '$lib/missions/claims';
   import { rememberMission } from '$lib/missions/pending';
-  import { endsIn, releaseReadout } from './format';
+  import { endsIn, leakedLine, releaseReadout } from './format';
 
   let { mission: m, now, open }: { mission: Mission; now: number; open?: ReadonlySet<string> } = $props();
 
   /** A refusal in words: never a code on a screen [11.E]. */
   const WORDS: Record<string, string> = {
+    retiring: 'This one cannot be taken: it was posted under a retiring key, and may have been replaced.',
     'signed-out': 'Sign on first.',
     ended: 'This mission has ended.',
     taken: 'The poster lists this one as taken.',
@@ -46,8 +52,9 @@
   let released = $state<Visibility | null>(null);
 
   const t = $derived(Math.floor(now / 1000));
-  /** When the poster's key was exposed, if it was: then it is not only the poster who can read what is sealed to it. */
-  const exposed = $derived(exposedOn(m.publisher.pubkey));
+  /** Where a sealed claim would go now, or why nothing would: paused for a key whose secret leaked [`sealTo`]. */
+  const target = $derived(sealTo(m.publisher.pubkey, t));
+  const sealedOff = $derived(target.ok ? null : nowhereFor(target, m.publisher.name));
   const mine = $derived.by(() => {
     void version;
     return held(t).find((h) => h.address === m.address) ?? null;
@@ -138,18 +145,27 @@
       <Readout
         value={mine.unconfirmed ? 'Unconfirmed' : 'Taking part'}
         tone={mine.unconfirmed ? 'warn' : 'good'}
-        sub="{mine.unconfirmed ? 'no relay confirmed it; it may have arrived · ' : ''}ends in {endsIn(mine.ends, now)} · {mine.visibility === 'open' ? 'everyone can see' : exposed ? `sealed to ${m.publisher.name}, whose key was exposed on ${exposed}: whoever holds it may read this` : `only ${m.publisher.name} can see`}"
+        sub="{mine.unconfirmed ? 'no relay confirmed it; it may have arrived · ' : ''}ends in {endsIn(mine.ends, now)} · {mine.visibility === 'open' ? 'everyone can see' : exposedOn(mine.sealedTo ?? m.publisher.pubkey) ? leakedLine('claim', m.publisher.name, exposedOn(mine.sealedTo ?? m.publisher.pubkey)!) : `only ${m.publisher.name} can see`}"
       />
     </Slot>
     <div class="nc-takepart-row">
-      {#if mine.unconfirmed}
+      {#if mine.unconfirmed && !(mine.visibility === 'sealed' && sealedOff)}
         <!-- The same claim, as it was signed: a second would be one nobody could withdraw [finding 61]. -->
         <button type="button" data-sendagain disabled={sending} onclick={again}>Send again</button>
-      {:else}
+      {:else if !mine.unconfirmed && !(mine.visibility === 'sealed' && sealedOff) && why !== 'retiring'}
         <button type="button" data-renew disabled={sending} onclick={() => take(mine!.visibility)}>Still on it</button>
       {/if}
       <button type="button" data-letgo disabled={sending} onclick={release}>Let it go</button>
     </div>
+    {#if mine.visibility === 'sealed' && sealedOff}
+      <!-- Renewing or sending it again would seal it once more: off, and why [rev 7]. -->
+      <Readout value="Sealed sending paused" tone="cold" sub={`${sealedOff} The claim you hold ends by itself.`} />
+    {/if}
+  {:else if why === 'retiring'}
+    <!-- Nobody can take it, signed on or not: it may have been planted with the leaked secret [rev 7]. -->
+    <span data-refusal="retiring">
+      <Readout value="Not open to take" tone="cold" sub="it cannot be taken: posted under a retiring key, and not yet confirmed by its poster as its own" />
+    </span>
   {:else if why === 'signed-out'}
     <!-- What it asks for, by the word the terminal uses: "Sign on" there starts a patrol [finding 51]. -->
     <a class="nc-act" data-act data-signon href="/terminal/setup/" data-sveltekit-reload onclick={remember}>
@@ -168,9 +184,10 @@
         <span class="nc-takepart-who">Everyone</span>
         <span class="nc-takepart-line">anyone can see this card took this mission</span>
       </button>
-      <button type="button" data-visibility="sealed" disabled={sending} onclick={() => take('sealed')}>
-        <span class="nc-takepart-who">{exposed ? `Sealed to ${m.publisher.name}` : `Only ${m.publisher.name}`}</span>
-        <span class="nc-takepart-line">{exposed ? `its key was exposed on ${exposed}: whoever holds it may read this` : 'sealed to the poster; relays see only that somebody wrote'}</span>
+      <!-- Off, with its reason, when nothing can be sealed to the poster now: never sealed to a leaked key [rev 7]. -->
+      <button type="button" data-visibility="sealed" data-paused={sealedOff ? '' : undefined} disabled={sending || !!sealedOff} onclick={() => take('sealed')}>
+        <span class="nc-takepart-who">{sealedOff ? `Sealed to ${m.publisher.name} — paused` : `Only ${m.publisher.name}`}</span>
+        <span class="nc-takepart-line">{sealedOff ?? 'sealed to the poster; relays see only that somebody wrote'}</span>
       </button>
     </div>
   {:else}

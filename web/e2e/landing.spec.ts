@@ -3,6 +3,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import { blankDevice, chunkOf, open, seedDevice } from './device';
+import { admit, resign, standInKey, type StandIn } from './registry';
 
 /**
  * A person's deliberate tap on a visibility choice comes well after the tap that opened it. The
@@ -10,6 +11,20 @@ import { blankDevice, chunkOf, open, seedDevice } from './device';
  * double tap would otherwise publish to everyone [audit 11.S] -- so a test waits as a person does.
  */
 const settle = (page: Page) => page.waitForTimeout(450);
+
+/**
+ * The heat-relief campaign, as a publisher a test holds the key of would post it.
+ *
+ * The real package is signed by Mecha Jono's old key, whose secret leaked: from 2026-10-18 it is
+ * frozen, cannot be taken until Mecha Jono confirms its list, and ends on 13 November on any build
+ * made after it [core: missions/trust.ts]. These tests are about the map and the screens, not that
+ * key, so the same words, tags and date are signed again by a stand-in publisher added to the served
+ * registry [registry.ts]. What that key's rules do is e2e/key-compromise.spec.ts.
+ */
+const HEAT_KEY = standInKey();
+const HEAT_DESK: StandIn = { id: 'heat-desk', name: 'Heat Desk', agent: true, inbox: ['wss://nos.lol', 'wss://relay.primal.net'], keys: [HEAT_KEY] };
+const REAL_PACKAGES = JSON.parse(readFileSync(new URL('../../packages/core/test/fixtures/mission-packages.json', import.meta.url), 'utf8'));
+const HEAT_PACKAGE = resign(REAL_PACKAGES[0], HEAT_KEY);
 
 /**
  * The landing page's map, on the phone this project is built for [build-order 11.2, 11.3].
@@ -197,10 +212,12 @@ test.describe('the landing map draws, and tells nobody', () => {
   });
 
   test.describe('missions, read live from The Record', () => {
-    /** Real packages signed by Mecha Jono; [0] is the California heat-relief campaign. */
-    const REAL = JSON.parse(readFileSync(new URL('../../packages/core/test/fixtures/mission-packages.json', import.meta.url), 'utf8'));
-    const HEAT = REAL[0];
-    const HEAT_ENDS = Number(HEAT.tags.find((t: string[]) => t[0] === 'valid_until')[1]);
+    // The worker would serve the build's own code past the registry splice.
+    test.use({ serviceWorkers: 'block' });
+    test.beforeEach(async ({ page }) => void (await admit(page, [HEAT_DESK])));
+    /** The California heat-relief campaign, signed again by the stand-in [`HEAT_PACKAGE`]. */
+    const HEAT = HEAT_PACKAGE;
+    const HEAT_ENDS = Number(HEAT.tags.find((t: string[]) => t[0] === 'valid_until')![1]);
     /** The fixtures are real and expire; the clock is fixed so this suite does not, on 10 October. */
     const DURING = new Date('2026-10-06T20:00:00Z');
 
@@ -415,8 +432,11 @@ test.describe('the landing page: Com over the map', () => {
 
 
 test.describe('the landing page: missions you can open', () => {
-  /** Real packages signed by Mecha Jono; [0] is the California heat-relief campaign. */
-  const [HEAT] = JSON.parse(readFileSync(new URL('../../packages/core/test/fixtures/mission-packages.json', import.meta.url), 'utf8'));
+  // The worker would serve the build's own code past the registry splice.
+  test.use({ serviceWorkers: 'block' });
+  test.beforeEach(async ({ page }) => void (await admit(page, [HEAT_DESK])));
+  /** The California heat-relief campaign, signed again by the stand-in [`HEAT_PACKAGE`]. */
+  const HEAT = HEAT_PACKAGE;
   const DURING = new Date('2026-10-06T20:00:00Z');
   const HEAT_D = 'starcom_mission_package_field-heat_relief-CA-2026-10-02';
 
@@ -442,7 +462,7 @@ test.describe('the landing page: missions you can open', () => {
     await expect(mission).toBeVisible();
     await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'half');
     // Invariant 4, said on the mission itself.
-    await expect(mission.locator('[data-slot="posted-by"]')).toContainText('Mecha Jono');
+    await expect(mission.locator('[data-slot="posted-by"]')).toContainText('Heat Desk');
     await expect(mission.locator('[data-slot="posted-by"]')).toContainText('an agent, not a person');
     // The limits, verbatim, above the ask, on every objective [spec §4.3].
     const objectives = mission.locator('[data-objective]');
@@ -517,7 +537,8 @@ test.describe('the landing page: missions you can open', () => {
     /** Aborts the chunk `module` was split into the first time it is asked for, and lets it through after. */
     async function failOnce(page: Page, module: string) {
       let failed = false;
-      await page.route(chunkOf(module), (r) => (failed ? r.continue() : ((failed = true), r.abort())));
+      // Falls back to the registry splice once it has failed, rather than past it.
+      await page.route(chunkOf(module), (r) => (failed ? r.fallback() : ((failed = true), r.abort())));
     }
     /**
      * Opening the screen again changes nothing: the browser keeps a module's failure and answers a
@@ -636,10 +657,9 @@ test.describe('the landing page: missions you can open', () => {
     const open = page.locator('[data-visibility="open"]');
     const sealed = page.locator('[data-visibility="sealed"]');
     await expect(open).toBeVisible();
-    // Sealed to a key whose secret was exposed: not "only Mecha Jono", and it says so [review].
-    await expect(sealed).toContainText('Sealed to Mecha Jono');
-    await expect(sealed).toContainText('its key was exposed on 2026-09-28: whoever holds it may read this');
-    await expect(sealed).not.toContainText('Only Mecha Jono');
+    // Sealed to a key whose secret did not leak: the poster alone. A leaked one is e2e/key-compromise.spec.ts.
+    await expect(sealed).toContainText('Only Heat Desk');
+    await expect(sealed).toBeEnabled();
     // Two equal options and no default: neither is pressed, checked or focused for them.
     for (const b of [open, sealed]) {
       expect(await b.getAttribute('aria-pressed')).toBeNull();
@@ -685,7 +705,7 @@ test.describe('the landing page: missions you can open', () => {
     expect(await claims(), 'a double tap chose Everyone').toBe(0);
     await settle(page);
     await page.locator('[data-visibility="sealed"]').tap();
-    await expect(page.locator('[data-slot="you"]')).toContainText('sealed to Mecha Jono, whose key was exposed on 2026-09-28');
+    await expect(page.locator('[data-slot="you"]')).toContainText('only Heat Desk can see');
   });
 
   test('Take part answers a keyboard, which never sends a press [audit 11.I]', async ({ page }) => {
@@ -703,7 +723,7 @@ test.describe('the landing page: missions you can open', () => {
    * question went out over the connection carrying the card a moment before the seal (Q16). Since
    * 2026-10-17 the inbox is pinned in the release [interchange spec §5.0].
    */
-  test('a private claim goes to the inbox NavCom pins for Mecha Jono, and asks no relay where that is', async ({ page }) => {
+  test('a private claim goes to the inbox NavCom pins for its poster, and asks no relay where that is', async ({ page }) => {
     await withHeat(page, { __noStorage: false, callsign: 'kestrel' });
     await page.locator('[data-missions="open"]').click();
     await page.locator(`[data-mission="${HEAT_D}"]`).click();
@@ -724,10 +744,8 @@ test.describe('the landing page: missions you can open', () => {
       };
     });
     await page.locator('[data-visibility="sealed"]').click();
-    // Every mission on the map is under the key exposed on 2026-09-28, and the claim says what that means.
     const you = page.locator('[data-slot="you"]');
-    await expect(you).toContainText('sealed to Mecha Jono, whose key was exposed on 2026-09-28: whoever holds it may read this');
-    await expect(you).not.toContainText('only Mecha Jono can see');
+    await expect(you).toContainText('only Heat Desk can see');
     const frames = await page.evaluate(() => (globalThis as unknown as { __frames: { url: string; message: unknown[] }[] }).__frames);
     const asked = frames.filter((f) => f.message[0] === 'REQ').flatMap((f) => f.message.slice(2) as { kinds?: number[] }[]);
     expect(asked.filter((filter) => filter.kinds?.includes(10050)), 'a kind-10050 list was asked for').toEqual([]);

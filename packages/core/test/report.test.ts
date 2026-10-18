@@ -17,6 +17,7 @@ import {
 import { KIND_REPORT } from '../src/events/kinds';
 import { buildDeletion } from '../src/missions/claim';
 import { readMissionPackage, type Mission } from '../src/missions/package';
+import { oneKey } from './helpers/registry.js';
 
 /**
  * Kind 1912: an operator's own account of their own work [interchange spec §5.2]. Every rule a
@@ -205,59 +206,59 @@ describe('where a report stands', () => {
     );
 
   it('waits seven days for a challenge', () => {
-    expect(settlementOf(report, poster, [], NOW + 60)).toEqual({ state: 'pending', until: NOW + CHALLENGE_WINDOW_SECONDS, challengedBy: [] });
+    expect(settlementOf(report, new Set([poster]), [], NOW + 60)).toEqual({ state: 'pending', until: NOW + CHALLENGE_WINDOW_SECONDS, challengedBy: [] });
   });
 
   it('is settled by the poster, and only by the poster', () => {
-    expect(settlementOf(report, poster, [label(posterSecret, 'settled')], NOW + 7_200)).toMatchObject({ state: 'settled', how: 'poster' });
-    expect(settlementOf(report, poster, [label(generateSecretKey(), 'settled')], NOW + 7_200).state).toBe('pending');
+    expect(settlementOf(report, new Set([poster]), [label(posterSecret, 'settled')], NOW + 7_200)).toMatchObject({ state: 'settled', how: 'poster' });
+    expect(settlementOf(report, new Set([poster]), [label(generateSecretKey(), 'settled')], NOW + 7_200).state).toBe('pending');
   });
 
   it('is settled by a witness who is not the reporter', () => {
-    expect(settlementOf(report, poster, [label(generateSecretKey(), 'witnessed')], NOW + 7_200)).toMatchObject({ state: 'settled', how: 'witness' });
-    expect(settlementOf(report, poster, [label(contact, 'witnessed')], NOW + 7_200).state).toBe('pending');
+    expect(settlementOf(report, new Set([poster]), [label(generateSecretKey(), 'witnessed')], NOW + 7_200)).toMatchObject({ state: 'settled', how: 'witness' });
+    expect(settlementOf(report, new Set([poster]), [label(contact, 'witnessed')], NOW + 7_200).state).toBe('pending');
   });
 
   it('settles by itself after seven days of silence', () => {
-    expect(settlementOf(report, poster, [], NOW + CHALLENGE_WINDOW_SECONDS)).toEqual({
+    expect(settlementOf(report, new Set([poster]), [], NOW + CHALLENGE_WINDOW_SECONDS)).toEqual({
       state: 'settled', how: 'silence', at: NOW + CHALLENGE_WINDOW_SECONDS, challengedBy: []
     });
   });
 
   it('names a challenge and reverses nothing; a late one counts for nothing', () => {
     const challenger = generateSecretKey();
-    const s = settlementOf(report, poster, [label(challenger, 'challenged'), label(posterSecret, 'settled')], NOW + 7_200);
+    const s = settlementOf(report, new Set([poster]), [label(challenger, 'challenged'), label(posterSecret, 'settled')], NOW + 7_200);
     expect(s).toMatchObject({ state: 'settled', how: 'poster', challengedBy: [getPublicKey(challenger)] });
     const late = label(generateSecretKey(), 'challenged', NOW + CHALLENGE_WINDOW_SECONDS + 1);
-    expect(settlementOf(report, poster, [late], NOW + CHALLENGE_WINDOW_SECONDS + 2).challengedBy).toEqual([]);
+    expect(settlementOf(report, new Set([poster]), [late], NOW + CHALLENGE_WINDOW_SECONDS + 2).challengedBy).toEqual([]);
   });
 
   it('names who settled it, when somebody did', () => {
     const witness = generateSecretKey();
-    expect(settlementOf(report, poster, [label(witness, 'witnessed')], NOW + 7_200)).toMatchObject({ how: 'witness', by: getPublicKey(witness) });
-    expect(settlementOf(report, poster, [label(posterSecret, 'settled')], NOW + 7_200)).toMatchObject({ how: 'poster', by: poster });
+    expect(settlementOf(report, new Set([poster]), [label(witness, 'witnessed')], NOW + 7_200)).toMatchObject({ how: 'witness', by: getPublicKey(witness) });
+    expect(settlementOf(report, new Set([poster]), [label(posterSecret, 'settled')], NOW + 7_200)).toMatchObject({ how: 'poster', by: poster });
   });
 
   it('lets the poster’s settlement outrank a witness’s, whichever claims to be first', () => {
     const early = label(generateSecretKey(), 'witnessed', NOW + 60);
     const late = label(posterSecret, 'settled', NOW + 7_200);
-    expect(settlementOf(report, poster, [early, late], NOW + 7_300)).toMatchObject({ how: 'poster' });
+    expect(settlementOf(report, new Set([poster]), [early, late], NOW + 7_300)).toMatchObject({ how: 'poster' });
   });
 
   it('stops counting challenges the moment it settles by itself, not a second after', () => {
     const at = NOW + CHALLENGE_WINDOW_SECONDS;
     const onTheDeadline = label(generateSecretKey(), 'challenged', at);
-    expect(settlementOf(report, poster, [onTheDeadline], at)).toMatchObject({ state: 'settled', how: 'silence', challengedBy: [] });
+    expect(settlementOf(report, new Set([poster]), [onTheDeadline], at)).toMatchObject({ state: 'settled', how: 'silence', challengedBy: [] });
   });
 
   it('does not read a label from a clock more than a day ahead', () => {
     const fromTheFuture = label(generateSecretKey(), 'witnessed', NOW + 3 * 86_400);
-    expect(settlementOf(report, poster, [fromTheFuture], NOW + 60).state).toBe('pending');
+    expect(settlementOf(report, new Set([poster]), [fromTheFuture], NOW + 60).state).toBe('pending');
   });
 
   it('ignores a label whose signature does not verify', () => {
     const forged = { ...label(posterSecret, 'settled'), created_at: NOW + 1 };
-    expect(settlementOf(report, poster, [forged], NOW + 7_200).state).toBe('pending');
+    expect(settlementOf(report, new Set([poster]), [forged], NOW + 7_200).state).toBe('pending');
   });
 });
 
@@ -281,7 +282,7 @@ describe('a label on somebody’s report', () => {
   it('is read by the settlement reader as what it says', () => {
     const report = { id, author: getPublicKey(contact), at: NOW };
     const witnessed = buildReportLabel(signer, 'witnessed', { id, mission: ADDRESS }, NOW + 60);
-    expect(settlementOf(report, poster, [witnessed], NOW + 120)).toMatchObject({ state: 'settled', how: 'witness', by: getPublicKey(signer) });
+    expect(settlementOf(report, new Set([poster]), [witnessed], NOW + 120)).toMatchObject({ state: 'settled', how: 'witness', by: getPublicKey(signer) });
   });
 
   it('refuses anything that is not a report on a mission', () => {
@@ -349,10 +350,10 @@ describe('what the second audit of Milestone 11 found', () => {
       posterLabel(challenger, 'challenged', wrens.id, NOW + 60)
     ];
     const at = NOW + 3_600;
-    expect(settlementOf({ id: wrens.id, author: wrens.pubkey, at: NOW }, poster, labels, at)).toMatchObject({
+    expect(settlementOf({ id: wrens.id, author: wrens.pubkey, at: NOW }, new Set([poster]), labels, at)).toMatchObject({
       state: 'settled', how: 'poster', challengedBy: [getPublicKey(challenger)]
     });
-    expect(settlementOf({ id: kestrels.id, author: kestrels.pubkey, at: NOW }, poster, labels, at)).toEqual({
+    expect(settlementOf({ id: kestrels.id, author: kestrels.pubkey, at: NOW }, new Set([poster]), labels, at)).toEqual({
       state: 'pending', until: NOW + 604_800, challengedBy: []
     });
   });
@@ -360,13 +361,13 @@ describe('what the second audit of Milestone 11 found', () => {
   describe('the seven days, as a number of seconds rather than as the constant compared with itself', () => {
     const report = { id: 'f'.repeat(64), author: getPublicKey(contact), at: NOW };
     it('waits until the last second of the seventh day, and settles at the next', () => {
-      expect(settlementOf(report, poster, [], NOW + 604_799).state).toBe('pending');
-      expect(settlementOf(report, poster, [], NOW + 604_800)).toMatchObject({ state: 'settled', how: 'silence', at: NOW + 604_800 });
+      expect(settlementOf(report, new Set([poster]), [], NOW + 604_799).state).toBe('pending');
+      expect(settlementOf(report, new Set([poster]), [], NOW + 604_800)).toMatchObject({ state: 'settled', how: 'silence', at: NOW + 604_800 });
     });
     it('reads the poster’s and a witness’s settlement over silence when read after the seven days', () => {
       const day8 = NOW + 8 * 86_400;
-      expect(settlementOf(report, poster, [posterLabel(posterSecret, 'settled', report.id, NOW + 3_600)], day8)).toMatchObject({ how: 'poster' });
-      expect(settlementOf(report, poster, [posterLabel(generateSecretKey(), 'witnessed', report.id, NOW + 3_600)], day8)).toMatchObject({ how: 'witness' });
+      expect(settlementOf(report, new Set([poster]), [posterLabel(posterSecret, 'settled', report.id, NOW + 3_600)], day8)).toMatchObject({ how: 'poster' });
+      expect(settlementOf(report, new Set([poster]), [posterLabel(generateSecretKey(), 'witnessed', report.id, NOW + 3_600)], day8)).toMatchObject({ how: 'witness' });
     });
   });
 
@@ -406,7 +407,7 @@ describe('what the second audit of Milestone 11 found', () => {
   describe('a package NavCom shows can always be reported, at every edge, and one past an edge is not shown', () => {
     const secret = generateSecretKey();
     const pub = getPublicKey(secret);
-    const registry = { [pub]: { name: 'Edge poster', agent: false } };
+    const registry = oneKey(pub, 'Edge poster', false);
     const signed = (d: string, objectives: unknown[], effect: string[]) =>
       finalizeEvent(
         {
@@ -548,27 +549,27 @@ describe('what the second audit of Milestone 11 found', () => {
     const at = NOW + 3_600;
 
     it('reads a label dated up to a day past its own clock, and not a second beyond', () => {
-      expect(settlementOf(report, poster, [posterLabel(posterSecret, 'settled', report.id, at + 86_400)], at).state).toBe('settled');
-      expect(settlementOf(report, poster, [posterLabel(posterSecret, 'settled', report.id, at + 86_401)], at).state).toBe('pending');
+      expect(settlementOf(report, new Set([poster]), [posterLabel(posterSecret, 'settled', report.id, at + 86_400)], at).state).toBe('settled');
+      expect(settlementOf(report, new Set([poster]), [posterLabel(posterSecret, 'settled', report.id, at + 86_401)], at).state).toBe('pending');
     });
 
     it('reads only a label, in NavCom’s namespace, saying its word in that namespace', () => {
-      expect(settlementOf(report, poster, [posterLabel(posterSecret, 'settled', report.id, at, { kind: 1986 })], at).state).toBe('pending');
-      expect(settlementOf(report, poster, [posterLabel(posterSecret, 'settled', report.id, at, { L: 'other.namespace' })], at).state).toBe('pending');
-      expect(settlementOf(report, poster, [posterLabel(posterSecret, 'settled', report.id, at, { ns: 'other.namespace' })], at).state).toBe('pending');
+      expect(settlementOf(report, new Set([poster]), [posterLabel(posterSecret, 'settled', report.id, at, { kind: 1986 })], at).state).toBe('pending');
+      expect(settlementOf(report, new Set([poster]), [posterLabel(posterSecret, 'settled', report.id, at, { L: 'other.namespace' })], at).state).toBe('pending');
+      expect(settlementOf(report, new Set([poster]), [posterLabel(posterSecret, 'settled', report.id, at, { ns: 'other.namespace' })], at).state).toBe('pending');
     });
 
     it('skips, rather than throws on, a label with a tag that is not a list', () => {
       const odd = { ...posterLabel(posterSecret, 'settled', report.id, at), tags: [null, ['L', 'navcom.mission']] };
-      expect(() => settlementOf(report, poster, [odd], at)).not.toThrow();
-      expect(settlementOf(report, poster, [odd], at).state).toBe('pending');
+      expect(() => settlementOf(report, new Set([poster]), [odd], at)).not.toThrow();
+      expect(settlementOf(report, new Set([poster]), [odd], at).state).toBe('pending');
     });
 
     it('counts no challenge from the reporter, and each challenger once', () => {
-      expect(settlementOf(report, poster, [posterLabel(contact, 'challenged', report.id, at)], at).challengedBy).toEqual([]);
+      expect(settlementOf(report, new Set([poster]), [posterLabel(contact, 'challenged', report.id, at)], at).challengedBy).toEqual([]);
       const heron = generateSecretKey();
       const twice = [posterLabel(heron, 'challenged', report.id, at), posterLabel(heron, 'challenged', report.id, at + 1)];
-      expect(settlementOf(report, poster, twice, at + 2).challengedBy).toEqual([getPublicKey(heron)]);
+      expect(settlementOf(report, new Set([poster]), twice, at + 2).challengedBy).toEqual([getPublicKey(heron)]);
     });
 
     it('withdraws only on a deletion request, not on another kind of event naming the report', () => {

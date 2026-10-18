@@ -148,12 +148,15 @@ export function buildReport(contactSecret: Uint8Array, r: Report, createdAt: num
 }
 
 /**
- * For the poster alone: the same report, sealed to the poster the mission names. A recap has no
- * poster, so only a mission report can be sealed.
+ * For the poster alone: the same report, sealed to `recipient` — the key its publisher takes sealed
+ * messages under now, which the caller asks the registry for [missions/trust.ts, `sealTargetOf`] —
+ * or, absent, to the key the mission names. A recap has no poster, so only a mission report can be
+ * sealed. The `a` tag inside still names the mission as posted, whichever key it is sealed to.
  */
-export function buildSealedReport(contactSecret: Uint8Array, r: Report, createdAt: number): Sealed {
+export function buildSealedReport(contactSecret: Uint8Array, r: Report, createdAt: number, recipient?: string): Sealed {
   const poster = r.mission ? posterOf(r.mission.address) : null;
   if (!poster) throw new ReportError('Only a mission report can be sealed, to the mission’s poster.');
+  if (recipient !== undefined && !/^[0-9a-f]{64}$/.test(recipient)) throw new ReportError('A sealed report goes to a key.');
   const { content, tags } = checkReport(r, createdAt);
   /*
    * A salt, because the poster settles a sealed report in public by the id inside the seal, and
@@ -163,7 +166,7 @@ export function buildSealedReport(contactSecret: Uint8Array, r: Report, createdA
    * report to the poster and to nobody else.
    */
   const salted = JSON.stringify({ ...JSON.parse(content), salt: bytesToHex(randomBytes(16)) });
-  return sealToPoster(contactSecret, poster, { kind: KIND_REPORT, created_at: createdAt, content: salted, tags });
+  return sealToPoster(contactSecret, recipient ?? poster, { kind: KIND_REPORT, created_at: createdAt, content: salted, tags });
 }
 
 /** The salt a sealed report carries, and only a sealed one. */
@@ -282,19 +285,30 @@ export type Settlement =
  * Where a report stands, from the labels on it [spec §5.3]. **Nothing here adjudicates:** a
  * challenge reverses nothing, and both it and the settlement are shown for the reader to weigh.
  *
- * - `settled` counts only from the mission's poster; `witnessed` from anybody but the reporter.
- *   **The poster's outranks a witness's whenever both exist** — they are different evidence, and
- *   a timestamp is the signer's own to choose, so the order they claim decides nothing [11.R]
+ * - `settled` counts only from `settlers`: **the keys of the mission's publisher that NavCom trusts
+ *   to sign now, none exposed and none frozen** [missions/trust.ts, `settlersOf`]. A key whose
+ *   secret leaked could settle anything, and settling is where standing mints; a report it would
+ *   have settled settles by silence instead, which still counts [interchange spec §5.3, rev 7].
+ *   `witnessed` from anybody but the reporter. **The poster's outranks a witness's whenever both
+ *   exist** — they are different evidence, and a timestamp is the signer's own to choose, so the
+ *   order they claim decides nothing [11.R]
  * - With neither, it settles by silence once seven days have passed
  * - `challenged` counts from anybody but the reporter, before the seven days are up, by their own
  *   key. The window is half-open, so the moment it settles is the moment challenges stop counting
  * - A label dated more than a day past `now` is not read: it is from a clock nobody shares
+ * - **A label `heard` refuses is not read at all**, whichever of the three words it says: a key the
+ *   registry lists that does not speak for its publisher now — exposed, frozen, or not trusted to
+ *   sign [missions/trust.ts, `labelHeard`]. Excluding such a key from `settled` alone left its
+ *   `witnessed` settling the report and its `challenged` standing beside it, under the publisher's
+ *   own name [decided 2026-10-18, decision 3]. Absent, every key is heard: only a test of these
+ *   rules on their own leaves it out
  */
 export function settlementOf(
   report: { id: string; author: string; at: number },
-  poster: string,
+  settlers: ReadonlySet<string>,
   labels: readonly unknown[],
-  now: number
+  now: number,
+  heard: (pubkey: string, signedAt: number) => boolean = () => true
 ): Settlement {
   const until = report.at + CHALLENGE_WINDOW_SECONDS;
   const latest = now + FUTURE_TOLERANCE_DAYS * 86_400;
@@ -312,9 +326,10 @@ export function settlementOf(
     if (!l.tags.some((t) => t[0] === 'e' && t[1] === report.id)) continue;
     const kind = l.tags.find((t) => t[0] === 'l' && t[2] === MISSION_NAMESPACE)?.[1];
     if (kind !== 'settled' && kind !== 'witnessed' && kind !== 'challenged') continue;
+    if (!heard(l.pubkey, l.created_at)) continue;
     if (!verified(l)) continue;
     const at = l.created_at;
-    if (kind === 'settled' && l.pubkey === poster) {
+    if (kind === 'settled' && settlers.has(l.pubkey)) {
       if (!byPoster || at < byPoster.at) byPoster = { by: l.pubkey, at };
     } else if (kind === 'witnessed' && l.pubkey !== report.author) {
       if (!byWitness || at < byWitness.at) byWitness = { by: l.pubkey, at };

@@ -11,6 +11,7 @@
    */
   import type { Mission } from '@navcom/core';
   import { Panel, Readout, Slot, Why } from '$lib/components/panel';
+  import { retiringOf } from '$lib/missions/claims';
   import { effort, endsIn, endsSoon, placeName, stampUtc } from './format';
   import TakePart from './TakePart.svelte';
 
@@ -31,6 +32,12 @@
   } = $props();
 
   const state = $derived(m.state === 'closed' ? 'Closed' : m.state === 'claimed' ? 'Taken' : 'Open');
+  /**
+   * Posted under a key that is being retired [interchange spec §3, rev 7]. Until the publisher's own
+   * list confirms it, it may have been planted with the leaked secret: said here, before anybody
+   * decides, and it cannot be taken [TakePart].
+   */
+  const retiring = $derived(retiringOf(m));
   const paragraphs = $derived((m.summary ?? '').split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean));
 </script>
 
@@ -48,6 +55,19 @@
       <!-- Invariant 4: an agent is always shown as one, whatever its packages say. -->
       <Readout value={m.publisher.name} verbatim sub={m.publisher.agent ? 'an agent, not a person' : null} />
     </Slot>
+    {#if retiring}
+      <Slot k="Key">
+        <span data-retiring={retiring}>
+          <Readout
+            value="Retiring"
+            tone={retiring === 'unconfirmed' ? 'warn' : 'cold'}
+            sub={retiring === 'unconfirmed'
+              ? 'posted under a retiring key; it may have been replaced, so it shows where it is filed and no finer, and cannot be taken'
+              : 'posted under a retiring key; its poster confirmed it as its own'}
+          />
+        </span>
+      </Slot>
+    {/if}
     <Slot k="Where">
       <Readout value={placeName(m.placement.jurisdiction)} />
     </Slot>

@@ -17,6 +17,7 @@
   import * as standing from '$lib/terminal/standing';
   import { loadIdentity } from '$lib/terminal/identity';
   import { backTo, pendingMission, type PendingMission } from '$lib/missions/pending';
+  import { leakedSentences } from '$lib/missions/leaked';
   import { corruptTiers, onWipe } from '$lib/terminal/storage';
   import { offline } from '$lib/terminal/offline.svelte';
   import { readClock, type ClockRead } from '$lib/terminal/clock';
@@ -42,6 +43,7 @@
    * reimplement "reachable" and then drift from it.
    */
   const nowS = $derived(Math.floor(Date.now() / 1000));
+  const leaked = leakedSentences();
   const reachable = $derived(pageableNow(s.oncall, nowS).map((o) => o.author.callsign));
   const watchRead = $derived(
     s.state === 'dark'
@@ -592,6 +594,11 @@
         {#if configured}
           <HeardWhy heard={heardNow} />
         {/if}
+        <!--
+          What was sealed to a publisher key whose secret leaked, said to every phone [decision 2,
+          2026-10-18]: the rows in your own mission history say it of what this phone sent.
+        -->
+        {#if leaked.length > 0}<p data-sealed-exposed>{leaked.join(' ')}</p>{/if}
 
         {#if !identity}
           <h2>Start here</h2>

@@ -16,9 +16,21 @@
  * cannot stop the feed either: an event is checked before it is kept, so one malformed frame is
  * dropped rather than stored and replayed into every reload.
  *
- * What each relay learns is that a device opened NavCom's missions: one subscription to all of
- * them, never which part of the map anybody looked at. The Record also logs the address each
- * connection comes from until it applies the grid's reader rule [grid.md §1]; its mirror does not.
+ * What each relay learns is that a device opened NavCom's missions: one request per publisher key
+ * NavCom trusts, the same on every device, never which part of the map anybody looked at. The Record
+ * also logs the address each connection comes from until it applies the grid's reader rule
+ * [grid.md §1]; its mirror does not.
+ *
+ * **The registry gate, before anything is kept** [core: missions/trust.ts, rev 7]. Each key trusted
+ * to sign is asked on its own, with a limit and nothing dated past tomorrow; **a frozen key is asked
+ * only for the versions on its list, by id, and for its list's missions by `d`**, so a flood under
+ * a stolen key at fresh `d`s is never asked for. Every frame is gated before it counts against a
+ * relay's share, before versions are merged, and again as the copy on this device is read back, so
+ * a copy kept before a key was frozen or ended carries nothing back in. Shares are capped per key
+ * first, so one key cannot push another's packages out. A key NavCom does not trust to sign yet,
+ * or any more, is not asked at all. **Beside a frozen key, its publisher's trusted keys are also
+ * asked for the frozen list's `d`s by name**, outside every cap, so the version that replaces a
+ * frozen one is always heard [`plan`].
  *
  * **Offline is a normal state** [C10]. The last set seen is kept on this device, in the Wipeable
  * tier — mission history is Wipeable [invariant 5], so a panic wipe takes it — and shown with its
@@ -31,11 +43,27 @@
  * Loaded by dynamic import after first paint: verification brings the signature library, and the
  * map should draw before it arrives.
  */
-import { MISSION_PACKAGE_KIND, MISSION_PUBLISHERS, MISSION_RELAYS } from '@navcom/core';
+import {
+  FROZEN_SETS,
+  FUTURE_TOLERANCE_DAYS,
+  MISSION_PACKAGE_KIND,
+  MISSION_PUBLISHERS,
+  MISSION_RELAYS,
+  frozenSetOf,
+  gate,
+  keyOf,
+  outranks,
+  rankOf,
+  slotOf,
+  trustedToSign,
+  type FrozenSet,
+  type MissionPublishers
+} from '@navcom/core';
 import { generation, get, onWipe, set } from '$lib/terminal/storage';
 // So this page hears a wipe in another tab, or one it slept through in the back-forward cache.
 import '$lib/terminal/wiped-elsewhere';
-import { collect, readingOf, type Collected, type Readings } from './collect';
+import { collect, gateable, readingOf, type Collected, type Readings } from './collect';
+import { floorNow } from './floor';
 
 export type Feed =
   | ({ status: 'live'; at: Date } & Collected)
@@ -65,8 +93,16 @@ const ANSWER_MS = 30_000;
  * a picture nobody was updating [11.E]. Nostr has no ping, so the question is an empty request.
  */
 const PROBE_MS = 240_000;
-/** The most packages kept from any one relay, and on this device: a night has dozens, not hundreds. */
+/**
+ * The most packages kept from any one key, per relay and on this device: a night has dozens, not
+ * hundreds. Per key first, so a flood under one key cannot push another key's packages out.
+ */
 export const PACKAGES_MAX = 100;
+/**
+ * How long a request's `until` lasts before it is asked again: well inside the day of tolerance
+ * it adds, so a page left open keeps hearing packages signed now.
+ */
+const RENEW_SECONDS = 6 * 3_600;
 /** Characters the stored copy may take: a fifth of a browser's usual quota, which the tier shares. */
 export const KEPT_CHARS_MAX = 1_000_000;
 /**
@@ -86,28 +122,122 @@ export interface Sources {
   /** The relays to read, all at once. */
   relays?: readonly string[];
   /** Whose packages count. The app reads its registered publishers; a test signs its own. */
-  publishers?: NonNullable<Parameters<typeof collect>[2]>;
+  publishers?: MissionPublishers;
+  /** The clock trust is judged on, in Unix seconds: this device's, floored at the build [floor.ts]. */
+  trustAt?: () => number;
+  /** The frozen keys' lists: the release's own, unless a test stands its own in. */
+  frozen?: readonly FrozenSet[];
 }
 
-/** The shape a package must have before anything else is asked of it, and before it is kept. */
-function wellFormed(e: unknown, publishers: Record<string, unknown>): e is Signed {
-  const x = e as Partial<Signed> | null;
-  return (
-    !!x && typeof x === 'object' && x.kind === MISSION_PACKAGE_KIND &&
-    typeof x.id === 'string' && /^[0-9a-f]{64}$/.test(x.id) &&
-    typeof x.pubkey === 'string' && Object.hasOwn(publishers, x.pubkey) &&
-    Number.isInteger(x.created_at) && typeof x.content === 'string' && typeof x.sig === 'string' &&
-    Array.isArray(x.tags) && x.tags.every((t) => Array.isArray(t) && t.every((v) => typeof v === 'string'))
-  );
+/** One request: a key, and what it is asked for. */
+interface Ask {
+  id: string;
+  key: string;
+  filters: Record<string, unknown>[];
 }
 
-const addressOf = (e: Signed) => `${e.kind}:${e.pubkey}:${e.tags.find((t) => t[0] === 'd')?.[1] ?? ''}`;
-const newer = (a: Signed, b: Signed) => a.created_at > b.created_at || (a.created_at === b.created_at && a.id < b.id);
+/**
+ * The `d`s of each publisher's missions that a frozen key it holds still competes at: its list's,
+ * while that key is trusted to sign at `at`. Keyed by entry id, as every slot is [core: trust.ts].
+ */
+function frozenDs(publishers: MissionPublishers, at: number, sets: readonly FrozenSet[]): Map<string, ReadonlySet<string>> {
+  const out = new Map<string, ReadonlySet<string>>();
+  for (const entry of publishers) {
+    const ds = new Set<string>();
+    for (const key of entry.keys) {
+      if (!key.frozen || !trustedToSign(key, at)) continue;
+      for (const d of frozenSetOf(key, sets)?.ds ?? []) ds.add(d);
+    }
+    if (ds.size > 0) out.set(entry.id, ds);
+  }
+  return out;
+}
+
+/**
+ * What each relay is asked, from the registry at `at`. Numbered by the key's place in the registry,
+ * so a request keeps its id while the registry stands, and asking again replaces it [NIP-01].
+ *
+ * **A key trusted beside a frozen one is also asked for the frozen list's `d`s by name**, with no
+ * limit and whatever the version says it is. Its version at such a `d` is what replaces the frozen
+ * one [core: trust.ts, `outranks`], and the frozen one is asked by id with no limit, so it is always
+ * heard: asked only for its newest hundred field missions, the publisher's republish of a frozen
+ * campaign fell outside them once a hundred newer versions piled up on a relay — ended ones count,
+ * since a relay keeps the latest of every `d` — and the old key's version was drawn in its place. And
+ * one moved to the publisher's desk, which is no longer field work, still has to be heard, since a
+ * version NavCom will not show still supersedes [11.E]. One version per `d`, so the answer is
+ * bounded by the list.
+ */
+function plan(publishers: MissionPublishers, at: number, sets: readonly FrozenSet[]): Ask[] {
+  const asks: Ask[] = [];
+  const until = at + FUTURE_TOLERANCE_DAYS * 86_400;
+  const frozen = frozenDs(publishers, at, sets);
+  let n = 0;
+  for (const entry of publishers) {
+    for (const key of entry.keys) {
+      const id = `missions:${n++}`;
+      if (!trustedToSign(key, at)) continue;
+      const authored = { kinds: [MISSION_PACKAGE_KIND], authors: [key.pubkey] };
+      if (key.frozen) {
+        const list = frozenSetOf(key, sets);
+        if (!list) continue;
+        const filters: Record<string, unknown>[] = [];
+        if (list.ids.size > 0) filters.push({ ...authored, ids: [...list.ids] });
+        // The list's own missions, so a version that closes one can be heard; one per `d` at most.
+        if (list.ds.size > 0) filters.push({ ...authored, '#d': [...list.ds], until });
+        if (filters.length > 0) asks.push({ id, key: key.pubkey, filters });
+      } else {
+        const filters: Record<string, unknown>[] = [{ ...authored, '#t': ['navcom_mission'], limit: PACKAGES_MAX, until }];
+        const ds = frozen.get(entry.id);
+        if (ds) filters.push({ ...authored, '#d': [...ds], until });
+        asks.push({ id, key: key.pubkey, filters });
+      }
+    }
+  }
+  return asks;
+}
 
 export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources = {}): () => void {
   const relays = sources.relays ?? MISSION_RELAYS;
   const publishers = sources.publishers ?? MISSION_PUBLISHERS;
+  const trustAt = sources.trustAt ?? (() => floorNow());
+  const sets = sources.frozen ?? FROZEN_SETS;
   const readings: Readings = new Map();
+  /**
+   * The shape a package must have, and the registry gate, before anything else is asked of it and
+   * before it is kept [core: trust.ts]: asked before a relay's share is capped, before the merge,
+   * and of every package in the copy this device kept.
+   */
+  const wellFormed = (e: unknown): e is Signed => {
+    if (!gateable(e)) return false;
+    const x = e as Partial<Signed>;
+    if (x.kind !== MISSION_PACKAGE_KIND || !/^[0-9a-f]{64}$/.test(e.id) || typeof x.content !== 'string' || typeof x.sig !== 'string') return false;
+    return gate(e, publishers, trustAt(), sets) === null;
+  };
+  /** Where a version competes: its publisher and its `d`, never its address [core: trust.ts, `slotOf`]. */
+  const slotOfE = (e: Signed) => slotOf(e, publishers) ?? '';
+  /**
+   * Whether a version is at a `d` a frozen key of its publisher still competes at. **Such a version
+   * is never counted against a key's cap, and never pushed out by one** [`plan`]: there is one slot
+   * per `d` on the frozen list, so they are bounded by it, and a replacement cut by the cap would
+   * leave the frozen version drawn in its place.
+   */
+  let frozenAt = NaN;
+  let frozenNow: Map<string, ReadonlySet<string>> = new Map();
+  const atFrozenD = (e: Signed) => {
+    const at = trustAt();
+    // Worked out once per second of the trust clock: it changes only when a frozen key ends.
+    if (at !== frozenAt) {
+      frozenAt = at;
+      frozenNow = frozenDs(publishers, at, sets);
+    }
+    if (frozenNow.size === 0) return false;
+    const found = keyOf(publishers, e.pubkey);
+    const d = e.tags.find((t) => t[0] === 'd')?.[1];
+    return !!found && d !== undefined && (frozenNow.get(found.entry.id)?.has(d) ?? false);
+  };
+  /** Whether `a` should replace `b` in one slot: the higher generation, then the newer, then the lower id. */
+  const newer = (a: Signed, b: Signed) => outranks(rankOf(a, publishers), rankOf(b, publishers));
+  const opts = () => ({ at: trustAt(), sets });
   /** Whether an event is worth keeping: a package that is, or genuinely was, its publisher's. */
   const authentic = (e: Signed) => {
     const r = readingOf(e, publishers, readings);
@@ -140,19 +270,37 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
 
   const stored = get<Stored>('wipeable', STORE);
   if (stored && Array.isArray(stored.events)) {
-    for (const e of stored.events) if (wellFormed(e, publishers)) kept.set(addressOf(e), e);
+    for (const e of stored.events) {
+      if (!wellFormed(e)) continue;
+      const held = kept.get(slotOfE(e));
+      if (!held || newer(e, held)) kept.set(slotOfE(e), e);
+    }
     if (kept.size > 0) keptAt = new Date(stored.at);
   }
 
-  /** The kept copy, bounded: newest version per package, the most recent first, under the caps. */
-  const bounded = (byAddress: Map<string, Signed>) => {
+  /**
+   * The kept copy, bounded: the best version per package, the most recent first, under the caps —
+   * **per key first**, then the characters the tier can spare, shared out among the keys it holds.
+   */
+  const bounded = (bySlot: Map<string, Signed>) => {
     const out = new Map<string, Signed>();
-    let chars = 0;
-    for (const e of [...byAddress.values()].sort((a, b) => b.created_at - a.created_at)) {
+    const all = [...bySlot.values()].sort((a, b) => b.created_at - a.created_at);
+    // At a frozen `d` first, and outside the caps: bounded by the list, and the one thing a cut
+    // here must never drop is the version that replaced a frozen one [`atFrozenD`].
+    const frozenFirst = all.filter(atFrozenD);
+    for (const e of frozenFirst) out.set(slotOfE(e), e);
+    const rest = all.filter((e) => !out.has(slotOfE(e)));
+    const share = KEPT_CHARS_MAX / Math.max(1, new Set(rest.map((e) => e.pubkey)).size);
+    const count = new Map<string, number>();
+    const chars = new Map<string, number>();
+    for (const e of rest) {
       const size = e.content.length + 512;
-      if (out.size >= PACKAGES_MAX || chars + size > KEPT_CHARS_MAX) break;
-      out.set(addressOf(e), e);
-      chars += size;
+      const n = count.get(e.pubkey) ?? 0;
+      const c = chars.get(e.pubkey) ?? 0;
+      if (n >= PACKAGES_MAX || c + size > share) continue;
+      out.set(slotOfE(e), e);
+      count.set(e.pubkey, n + 1);
+      chars.set(e.pubkey, c + size);
     }
     return out;
   };
@@ -171,9 +319,9 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
     if (shares.size > 0) {
       const merged = new Map<string, Signed>();
       for (const share of shares.values()) {
-        for (const [address, e] of share) {
-          const held = merged.get(address);
-          if (!held || newer(e, held)) merged.set(address, e);
+        for (const [slot, e] of share) {
+          const held = merged.get(slot);
+          if (!held || newer(e, held)) merged.set(slot, e);
         }
       }
       /*
@@ -181,10 +329,10 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
        * serves. A package no relay serves any more is not brought back from the copy: only what
        * some relay answered with is drawn.
        */
-      for (const [address, e] of kept) {
-        const served = merged.get(address);
+      for (const [slot, e] of kept) {
+        const served = merged.get(slot);
         // Only a copy whose signature still verifies: a tampered one may hide nothing.
-        if (served && newer(e, served) && authentic(e)) merged.set(address, e);
+        if (served && newer(e, served) && authentic(e)) merged.set(slot, e);
       }
       if (live.size > 0) {
         kept = bounded(merged);
@@ -192,13 +340,13 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
         // Each relay's full answer is kept at once; the events that follow it, a moment later [11.R].
         if (settled) save();
         else saveSoon();
-        onFeed({ status: 'live', at: keptAt, ...collect([...merged.values()], keptAt, publishers, readings) });
+        onFeed({ status: 'live', at: keptAt, ...collect([...merged.values()], keptAt, publishers, readings, opts()) });
       } else {
         // Every relay has dropped: the picture stands as of the last moment one was heard.
-        onFeed({ status: 'cached', at: keptAt!, ...collect([...merged.values()], new Date(), publishers, readings) });
+        onFeed({ status: 'cached', at: keptAt!, ...collect([...merged.values()], new Date(), publishers, readings, opts()) });
       }
     } else if (kept.size > 0 && keptAt) {
-      onFeed({ status: 'cached', at: keptAt, ...collect([...kept.values()], new Date(), publishers, readings) });
+      onFeed({ status: 'cached', at: keptAt, ...collect([...kept.values()], new Date(), publishers, readings, opts()) });
     } else if (firstTry.size > 0) {
       // One relay failing while another is still reaching is not "unavailable" yet.
       onFeed({ status: 'connecting' });
@@ -235,8 +383,13 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
       if (stopped) return;
       /** How many times in a row this relay had failed when this connection was made. */
       const tries = attempt;
-      /** What this connection has received, newest per package. Becomes the relay's share at EOSE. */
+      /** What this connection has received, the best version per package. Becomes the relay's share at EOSE. */
       const received = new Map<string, Signed>();
+      /** What this connection asked, by request id, and which requests have not finished answering. */
+      let asks = new Map<string, Ask>();
+      const unanswered = new Set<string>();
+      /** When the requests were last sent, on the trust clock: their `until` is renewed from it. */
+      let askedAt = 0;
       let caughtUp = false;
       let failed = false;
       /** Frames on this connection whose signature did not verify. */
@@ -287,16 +440,69 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
           fail();
         }
       };
+      /**
+       * Send each key's request, as the registry stands at this moment on the trust clock. Asked
+       * again, a request keeps its id and replaces itself; one whose key stopped being trusted since
+       * is closed, and the gate drops what it brought from every picture drawn after [`collect`].
+       */
+      const ask = () => {
+        const at = trustAt();
+        const next = new Map(plan(publishers, at, sets).map((a) => [a.id, a]));
+        for (const id of asks.keys()) if (!next.has(id)) send(['CLOSE', id]);
+        asks = next;
+        askedAt = at;
+        for (const a of asks.values()) {
+          unanswered.add(a.id);
+          send(['REQ', a.id, ...a.filters]);
+        }
+        // Nothing to ask for — no key trusted to sign — is an answer of nothing, at once.
+        if (asks.size === 0) answered();
+      };
       /** Ask whether the relay is still there: an empty request, which an answering relay ends at once. */
       const probe = () => {
+        // A request's `until` runs a day ahead of when it was sent: renewed well before then.
+        if (trustAt() - askedAt > RENEW_SECONDS) ask();
         send(['REQ', 'still-there', { ids: ['0'.repeat(64)] }]);
         waiting = setTimeout(fail, CONNECT_MS);
+      };
+      /** Every request has finished answering. The first time is the relay's answer; after that, a renewal's. */
+      const answered = () => {
+        if (caughtUp) {
+          shares.set(url, received);
+          report(true);
+          return;
+        }
+        if (waiting) clearTimeout(waiting);
+        waiting = null;
+        caughtUp = true;
+        /*
+         * The wait starts over only once the relay has really answered, as `terminal/subscribe.ts`
+         * does — and not for good: one that then refuses or sends what does not verify takes it
+         * back (`refuse`). Reset when the socket merely opened, a relay that opened and then
+         * refused was asked again every five seconds for as long as the page was open [audit 11,
+         * second grid].
+         */
+        attempt = 0;
+        firstTry.delete(url);
+        live.add(url);
+        shares.set(url, received);
+        report(true);
+        probing = setTimeout(probe, PROBE_MS);
+      };
+      /**
+       * The packages one key has in this relay's answer: its share is capped on its own
+       * [`PACKAGES_MAX`] — not counting those at a frozen `d`, which are bounded by the list [`atFrozenD`].
+       */
+      const heldBy = (key: string) => {
+        let n = 0;
+        for (const e of received.values()) if (e.pubkey === key && !atFrozenD(e)) n++;
+        return n;
       };
       waiting = setTimeout(fail, CONNECT_MS);
       ws.addEventListener('open', () => {
         if (waiting) clearTimeout(waiting);
         waiting = setTimeout(fail, ANSWER_MS);
-        send(['REQ', 'missions', { kinds: [MISSION_PACKAGE_KIND], authors: Object.keys(publishers), '#t': ['navcom_mission'] }]);
+        ask();
       });
       ws.addEventListener('message', (m: MessageEvent) => {
         // A browser delivers nothing once a socket is closing; a socket that still does is not listened to.
@@ -309,45 +515,36 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
         }
         if (!Array.isArray(frame)) return;
         heard.set(url, Date.now());
-        if (frame[0] === 'EVENT' && frame[1] === 'missions') {
+        const asked = typeof frame[1] === 'string' ? asks.get(frame[1]) : undefined;
+        if (frame[0] === 'EVENT' && asked) {
           const e = frame[2];
-          // Checked before it is kept: shape, publisher and signature [11.R] — the cheap questions
-          // first, so nothing this would not keep costs a signature check [audit 11, second grid].
-          if (!wellFormed(e, publishers)) return;
-          const address = addressOf(e);
-          const held = received.get(address);
-          if (held ? !newer(e, held) : received.size >= PACKAGES_MAX) return;
+          /*
+           * Checked before it is kept: shape and the registry gate, then the share, then the
+           * signature [11.R, rev 7] — the cheap questions first, so nothing this would not keep costs
+           * a signature check [audit 11, second grid]. Only the key this request asked for: a relay
+           * answering one key's request with another's could fill that other key's share.
+           */
+          if (!wellFormed(e) || e.pubkey !== asked.key) return;
+          const slot = slotOfE(e);
+          const held = received.get(slot);
+          if (held ? !newer(e, held) : !atFrozenD(e) && heldBy(e.pubkey) >= PACKAGES_MAX) return;
           if (!authentic(e)) {
             if (++unverified >= UNVERIFIED_MAX) refuse();
             return;
           }
-          received.set(address, e);
+          received.set(slot, e);
           // Before EOSE the relay is replaying what it holds; after it, every event is news.
           if (caughtUp) report();
-        } else if (frame[0] === 'EOSE' && frame[1] === 'missions') {
-          if (waiting) clearTimeout(waiting);
-          waiting = null;
-          caughtUp = true;
-          /*
-           * The wait starts over only once the relay has really answered, as `terminal/subscribe.ts`
-           * does — and not for good: one that then refuses or sends what does not verify takes it
-           * back (`refuse`). Reset when the socket merely opened, a relay that opened and then
-           * refused was asked again every five seconds for as long as the page was open [audit 11,
-           * second grid].
-           */
-          attempt = 0;
-          firstTry.delete(url);
-          live.add(url);
-          shares.set(url, received);
-          report(true);
-          probing = setTimeout(probe, PROBE_MS);
+        } else if (frame[0] === 'EOSE' && asked) {
+          unanswered.delete(asked.id);
+          if (unanswered.size === 0) answered();
         } else if ((frame[0] === 'EOSE' || frame[0] === 'CLOSED') && frame[1] === 'still-there') {
           // Any answer is an answer: a relay that refuses the question is still there to refuse it.
           if (waiting) clearTimeout(waiting);
           waiting = null;
           send(['CLOSE', 'still-there']);
           probing = setTimeout(probe, PROBE_MS);
-        } else if (frame[0] === 'CLOSED' && frame[1] === 'missions') {
+        } else if (frame[0] === 'CLOSED' && asked) {
           // Refused — wants sign-in, is rate-limiting, or is shutting down: a failure, said as one.
           refuse();
         }

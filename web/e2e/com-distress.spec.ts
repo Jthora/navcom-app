@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { COM_ENTRIES } from '../scripts/lib/budget.mjs';
 import { chunkOf, open, seedDevice } from './device';
+import { admit, resign, standInKey, type StandIn } from './registry';
 
 /**
  * `Distress` on the landing page, with every screen Com can show, at every height of the sheet.
@@ -54,10 +55,16 @@ function comScreens(): string[] {
 }
 const KINDS = comScreens();
 
-/** Real packages signed by Mecha Jono; [0] is the California heat-relief campaign. */
-const [HEAT] = JSON.parse(
-  readFileSync(new URL('../../packages/core/test/fixtures/mission-packages.json', import.meta.url), 'utf8')
-) as { pubkey: string }[];
+/**
+ * The California heat-relief campaign, signed again by a stand-in publisher added to the served
+ * registry [registry.ts]: the real one is under Mecha Jono's frozen key, and cannot be taken.
+ */
+const HEAT_KEY = standInKey();
+const HEAT_DESK: StandIn = { id: 'heat-desk', name: 'Heat Desk', agent: true, inbox: ['wss://nos.lol', 'wss://relay.primal.net'], keys: [HEAT_KEY] };
+const HEAT = resign(
+  JSON.parse(readFileSync(new URL('../../packages/core/test/fixtures/mission-packages.json', import.meta.url), 'utf8'))[0],
+  HEAT_KEY
+);
 /** The fixtures are real and expire: the clock is fixed inside the campaign. */
 const DURING = new Date('2026-10-06T20:00:00Z');
 const HEAT_D = 'starcom_mission_package_field-heat_relief-CA-2026-10-02';
@@ -315,6 +322,7 @@ const PHONES = [
 for (const phone of PHONES) {
   test.describe(`Distress over Com — ${phone.name}`, () => {
     if (phone.viewport) test.use({ viewport: phone.viewport });
+    test.beforeEach(async ({ page }) => void (await admit(page, [HEAT_DESK])));
 
     test('Com’s root, signed on: at every height, and nothing covers it', async ({ page }) => {
       // The test panicWipe never had [verification.md]: not that the control renders, but that a

@@ -4,6 +4,7 @@ import WebSocket from 'ws';
 import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import { open } from './device';
 import { startRelay, type LocalRelay } from './relay-server';
+import { admit, type StandIn } from './registry';
 
 /**
  * **The Quartermaster's week.**
@@ -14,8 +15,8 @@ import { startRelay, type LocalRelay } from './relay-server';
  *
  * ## The one thing changed about the world, and why
  *
- * Every mission NavCom shows comes from a registered poster, and the registry holds one key, Mecha
- * Jono's, whose secret no test has. So no browser test could ever see a poster *answer*: settle a
+ * Every mission NavCom shows comes from a registered poster, and the registry holds Mecha Jono's
+ * keys, whose secrets no test has. So no browser test could ever see a poster *answer*: settle a
  * report, or keep an inbox for a sealed one [audit 11.S]. Here a stand-in poster is added to that
  * registry in the code the preview serves — as an agent, the way Mecha Jono is listed — and every
  * socket goes to a relay on this machine. That changes who posts, not what the phones do: the
@@ -25,7 +26,6 @@ import { startRelay, type LocalRelay } from './relay-server';
  * Signing on happens on the terminal's own screens, and she then opens navcom.app, as she would.
  */
 
-const MECHA = '6301c4d09a014909e5a48b7d0c9aa859eec18804c2fc87eab4e414aa5a319692';
 const posterSecret = generateSecretKey();
 const poster = getPublicKey(posterSecret);
 const POSTER_NAME = 'Supply Desk';
@@ -76,11 +76,17 @@ async function publish(url: string, event: unknown): Promise<void> {
 }
 
 /**
- * The registry's first entry as the build writes it, whatever inbox it pins, and the stand-in poster
- * added after it. No inbox for the stand-in: this story's claims and reports are open.
+ * The stand-in poster, added to the registry the build writes [registry.ts]: one key, trusted, not
+ * exposed, so its settlements count. No inbox for the stand-in: this story's claims and reports are open.
  */
-const REGISTRY = new RegExp(`"${MECHA}":\\{name:"Mecha Jono",agent:!0[^}]*\\}`);
-const extended = (entry: string) => `${entry},"${poster}":{name:"${POSTER_NAME}",agent:!0}`;
+const SUPPLY: StandIn = {
+  id: 'supply-desk',
+  name: POSTER_NAME,
+  agent: true,
+  keys: [{ secret: posterSecret, pubkey: poster, generation: 1, notBefore: '2020-01-01T00:00:00Z', notAfter: '2100-01-01T00:00:00Z' }]
+};
+/** How the registry's first entry reads in the build, which the splice is anchored on. */
+const REGISTRY = /\{id:"mecha-jono",/;
 
 const contexts: BrowserContext[] = [];
 test.afterEach(async () => {
@@ -102,11 +108,7 @@ async function phone(browser: Browser, relay: LocalRelay): Promise<Page> {
     }
     (globalThis as unknown as { WebSocket: unknown }).WebSocket = Here;
   }, relay.url);
-  await page.route('**/_app/immutable/**/*.js', async (route) => {
-    const response = await route.fetch();
-    const body = await response.text();
-    await route.fulfill({ response, body: body.replace(REGISTRY, extended) });
-  });
+  await admit(page, [SUPPLY]);
   return page;
 }
 

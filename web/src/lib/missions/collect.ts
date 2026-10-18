@@ -5,7 +5,16 @@
  * the same rule — newest version of each package, active only, every refusal named — applies
  * whether the events arrived live or from this device's own copy.
  *
- * **The newest version of a package wins even when NavCom cannot read it** [11.E]. A version the
+ * **The registry gate comes first** [core: missions/trust.ts, `gate`]. Before a signature is
+ * checked, a package from a key NavCom does not trust to sign — none yet, not any more on this
+ * device's floored clock, or frozen and not on its list — is dropped, as is one dated more than a
+ * day ahead: a date ahead is how a stolen key wins a sort by date, so it is dropped, not flagged.
+ *
+ * **Versions compete by publisher and `d`, never by address** [11.E, rev 7]. The address holds the
+ * key, so grouped by address a republish under a new key showed beside the old one. In one slot
+ * the higher generation wins whatever either says about when, then the newer, then the lower id.
+ *
+ * **The best version of a package wins even when NavCom cannot read it** [11.E]. A version the
  * publisher genuinely signed but NavCom refuses still supersedes the older one, so a package the
  * publisher changed into something unreadable leaves the map rather than staying on it as it was.
  * A forged version cannot do this: it carries no proof of whose it is, so it supersedes nothing.
@@ -15,12 +24,21 @@
 import { getEventHash } from 'nostr-tools/pure';
 import type { Event } from 'nostr-tools/core';
 import {
+  FROZEN_SETS,
   FUTURE_TOLERANCE_DAYS,
   MISSION_PUBLISHERS,
+  gate,
   missionActive,
+  outranks,
+  rankOf,
   readMissionPackage,
+  slotOf,
+  type FrozenSet,
+  type Gated,
   type Mission,
-  type MissionReading
+  type MissionPublishers,
+  type MissionReading,
+  type Ranked
 } from '@navcom/core';
 
 export interface Refusal {
@@ -40,8 +58,9 @@ export interface Collected {
    */
   refused: Refusal[];
   /**
-   * A package signed more than a day after this device's clock says it is: the clock is behind, so
-   * whether a mission has ended, and the dates a claim or report carries, are this device's to doubt.
+   * A package kept though it is signed more than a day after this device's clock says it is — kept
+   * because the build this device runs is later than its clock: the clock is behind, so whether a
+   * mission has ended, and the dates a claim or report carries, are this device's to doubt.
    */
   clockBehind: boolean;
 }
@@ -83,7 +102,7 @@ function keyOf(event: unknown): string | null {
   return key;
 }
 
-export function readingOf(event: unknown, publishers: Parameters<typeof readMissionPackage>[1], memo?: Readings): MissionReading {
+export function readingOf(event: unknown, publishers: MissionPublishers, memo?: Readings): MissionReading {
   const key = memo ? keyOf(event) : null;
   const known = key ? memo!.get(key) : undefined;
   if (known) return known;
@@ -107,40 +126,64 @@ const tagOf = (event: unknown, name: string): string | undefined => {
   return typeof t?.[1] === 'string' ? t[1] : undefined;
 };
 
+/** Whether an event has the fields the gate reads, every tag a list of strings [11.R]. */
+export function gateable(e: unknown): e is Gated {
+  const x = e as Partial<Gated> | null;
+  return (
+    !!x && typeof x === 'object' && typeof x.id === 'string' && typeof x.pubkey === 'string' && Number.isInteger(x.created_at) &&
+    Array.isArray(x.tags) && x.tags.every((t) => Array.isArray(t) && t.every((v) => typeof v === 'string'))
+  );
+}
+
+/** What the gate and the ranking are asked against: the clock trust is judged on, and the frozen lists. */
+export interface Trust {
+  /** Unix seconds: this device's clock, floored at the build [floor.ts]. Defaults to `now`. */
+  at?: number;
+  sets?: readonly FrozenSet[];
+}
+
 export function collect(
   events: readonly unknown[],
   now: Date,
-  publishers: Parameters<typeof readMissionPackage>[1] = MISSION_PUBLISHERS,
-  memo?: Readings
+  publishers: MissionPublishers = MISSION_PUBLISHERS,
+  memo?: Readings,
+  trust: Trust = {}
 ): Collected {
   const nowSeconds = Math.floor(now.getTime() / 1000);
-  type Version = { at: number; id: string; reading: MissionReading; event: unknown };
-  const newest = new Map<string, Version>();
+  const at = trust.at ?? nowSeconds;
+  const sets = trust.sets ?? FROZEN_SETS;
+  type Version = { address: string; rank: Ranked; reading: MissionReading; event: unknown };
+  const best = new Map<string, Version>();
   let clockBehind = false;
 
   for (const event of events) {
+    // The registry gate, before any signature is checked [core: trust.ts].
+    if (!gateable(event) || gate(event, publishers, at, sets) !== null) continue;
     const reading = readingOf(event, publishers, memo);
     const from = reading.ok
-      ? { address: reading.mission.address, at: reading.mission.publishedAt, id: (event as { id: string }).id }
+      ? { address: reading.mission.address, at: reading.mission.publishedAt, id: event.id }
       : reading.from;
     // Proves nothing about whose it is — forged, or a copy changed on this device — so it is dropped, never listed.
     if (!from) continue;
     if (from.at > nowSeconds + FUTURE_TOLERANCE_DAYS * 86_400) clockBehind = true;
-    const held = newest.get(from.address);
-    // Newer wins; at the same second, the lower id does [NIP-01], so every device agrees.
-    if (held && (held.at > from.at || (held.at === from.at && held.id <= from.id))) continue;
-    newest.set(from.address, { at: from.at, id: from.id, reading, event });
+    const slot = slotOf(event, publishers);
+    if (slot === null) continue;
+    const rank = rankOf(event, publishers);
+    const held = best.get(slot);
+    // The higher generation, then the newer, then the lower id [NIP-01], so every device agrees.
+    if (held && !outranks(rank, held.rank)) continue;
+    best.set(slot, { address: from.address, rank, reading, event });
   }
 
   const missions: Mission[] = [];
   const refused: Refusal[] = [];
-  for (const [address, v] of newest) {
+  for (const v of best.values()) {
     if (v.reading.ok) {
       if (missionActive(v.reading.mission, now)) missions.push(v.reading.mission);
     } else if (v.reading.kind === 'refused') {
       const until = Number(tagOf(v.event, 'valid_until'));
       const over = tagOf(v.event, 'mission_state') === 'closed' || (Number.isFinite(until) && until > 0 && until < nowSeconds);
-      if (!over) refused.push({ address, d: tagOf(v.event, 'd') ?? '', because: v.reading.because });
+      if (!over) refused.push({ address: v.address, d: tagOf(v.event, 'd') ?? '', because: v.reading.because });
     }
   }
   missions.sort(

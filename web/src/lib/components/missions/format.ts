@@ -6,7 +6,7 @@
  * filed by US state today, so those have names; anything else reads as its code, upper-case,
  * rather than as a guess.
  */
-import { MISSION_PUBLISHERS, type Settlement } from '@navcom/core';
+import { MISSION_PUBLISHERS, keyOf, type Settlement } from '@navcom/core';
 
 const US: Record<string, string> = {
   al: 'Alabama', ak: 'Alaska', az: 'Arizona', ar: 'Arkansas', ca: 'California', co: 'Colorado',
@@ -105,7 +105,8 @@ const NO_AGENTS: ReadonlySet<string> = new Set();
  * shown, and it read as a bare key on one screen and as a person's name on the other [audit 11.I].
  */
 export function nameOf(key: string, names: ReadonlyMap<string, string>, agents: ReadonlySet<string> = NO_AGENTS): string {
-  const registered = MISSION_PUBLISHERS[key];
+  // By the key's own entry, never by a name: a second entry can never read as the first [rev 7].
+  const registered = keyOf(MISSION_PUBLISHERS, key)?.entry;
   const name = registered?.name ?? names.get(key);
   const id = key.slice(0, 8);
   if (registered?.agent || agents.has(key)) return name ? `${name} (${id}, an agent)` : `${id} (an agent)`;
@@ -130,4 +131,38 @@ export function standingOf(
     return { value: 'Settled', tone: 'good', sub: challenged ? `seven days passed${challenged}` : 'unchallenged for seven days' };
   }
   return { value: 'Settled', tone: 'good', sub: `${s.how === 'poster' ? 'by the poster' : 'by a witness'}, ${nameOf(s.by, names, agents)}${challenged}` };
+}
+
+const MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+/** `2026-09-28` → `28 September`: a day said the way a person says it. */
+export function dayName(day: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day);
+  const month = m ? MONTHS_LONG[Number(m[2]) - 1] : undefined;
+  return m && month ? `${Number(m[3])} ${month}` : day;
+}
+
+/** `8 Oct, 03:14:15 UTC`: the second something left this phone, as the row it is on says it. */
+export function secondUtc(unixSeconds: number): string {
+  const t = new Date(unixSeconds * 1000);
+  if (!Number.isFinite(t.getTime())) return '—';
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${t.getUTCDate()} ${MONTHS[t.getUTCMonth()]}, ${p(t.getUTCHours())}:${p(t.getUTCMinutes())}:${p(t.getUTCSeconds())} UTC`;
+}
+
+/**
+ * What a row in this device's own mission history says about something it sealed to a key whose
+ * secret leaked [decided 2026-10-18, decision 2]: past tense, on the row it is about — what was in
+ * it, what was not, and that there is nothing to do. Never a banner, never red, and never
+ * "compromised": the operator did nothing wrong.
+ */
+export function leakedLine(kind: 'report' | 'claim', name: string, exposed: string, sentAt?: number): string {
+  const when = dayName(exposed);
+  if (kind === 'claim') {
+    return `Sealed to ${name}'s old key, whose secret leaked on ${when}: whoever holds it can see that your card took part in this mission, and the second you did.`;
+  }
+  return (
+    `Sealed to ${name}'s old key. Its secret leaked on ${when}, so whoever holds it can open this report and show others it came from your card. ` +
+    `It held your callsign, the day, the mission, the objectives you ticked, your counts and the second you sent it${sentAt === undefined ? '' : `, ${secondUtc(sentAt)}`}: no place, and nothing else from this phone.`
+  );
 }

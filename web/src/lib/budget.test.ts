@@ -341,11 +341,11 @@ describe('the budget, run on a build whose answers are known', () => {
       // component renders.
       css: f.sum(`${A}/assets/map.css`, `${A}/assets/missions.css`, `${A}/assets/lazy.css`)
     });
-    expect(DEFERRED).toEqual({ limit: 45 * 1024, warn: 40 * 1024 });
+    expect(DEFERRED).toEqual({ limit: 57 * 1024, warn: 52 * 1024 });
   });
 
   it('still fails the build when what loads later outgrows the ceiling', () => {
-    const f = fixture({ chunks: { [`${A}/chunks/missions.js`]: noise(48 * 1024) } });
+    const f = fixture({ chunks: { [`${A}/chunks/missions.js`]: noise(60 * 1024) } });
     const { report, failed, out } = run(f);
     expect(failed).toBe(true);
     expect(report.passed).toBe(false);
@@ -399,7 +399,7 @@ describe('the command the deploy runs', () => {
   });
 
   it('fails there too, when something is over', () => {
-    const { ran, report } = beside({ [`${A}/chunks/missions.js`]: noise(48 * 1024) });
+    const { ran, report } = beside({ [`${A}/chunks/missions.js`]: noise(60 * 1024) });
     expect(ran.status).toBe(1);
     expect(report?.passed).toBe(false);
   });

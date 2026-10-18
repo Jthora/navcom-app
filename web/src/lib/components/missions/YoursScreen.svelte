@@ -14,12 +14,30 @@
    *
    * **What no relay confirmed is said, and can be sent again as the same event** — a claim, a
    * report, or the release of a claim let go with no signal [audit 11.S, findings 61 and 66].
+   *
+   * **A row for something sealed to a key whose secret leaked says so** (decided 2026-10-18,
+   * decision 2): whoever holds the key can open it, what it held, and for a report the second it
+   * left — on the row it is about, worked out from what the row kept. Never a banner, never a
+   * notification, never red: nothing sent can be recalled, and there is nothing to do.
    */
   import { onMount } from 'svelte';
   import { Panel, Readout, Slot } from '$lib/components/panel';
-  import { MAY_HAVE_ARRIVED, held, sendRelease, tookPart, unreleased, type Unreleased } from '$lib/missions/claims';
+  import { MAY_HAVE_ARRIVED, held, leakedTo, posterOfAddress, sendRelease, tookPart, unreleased, type Unreleased } from '$lib/missions/claims';
   import { reportAgain, sent, settlements, stillToReport, withdraw, type Sent, type Withdrawal } from '$lib/missions/reports';
-  import { endsIn, placeName, releaseReadout, standingOf } from './format';
+  import { endsIn, leakedLine, placeName, releaseReadout, standingOf } from './format';
+
+  /** The line for a sealed claim's row, when the key it went to leaked; null otherwise. */
+  const claimLeak = (c: { visibility: string; address: string; sealedTo?: string }) => {
+    if (c.visibility !== 'sealed') return null;
+    const l = leakedTo(c.sealedTo ?? posterOfAddress(c.address));
+    return l ? leakedLine('claim', l.name, l.exposed) : null;
+  };
+  /** The same for a sealed report, with the second it left this phone, from the Sent list. */
+  const reportLeak = (r: Sent) => {
+    if (r.visibility !== 'sealed') return null;
+    const l = leakedTo(r.sealedTo ?? r.poster);
+    return l ? leakedLine('report', l.name, l.exposed, r.at) : null;
+  };
 
   let {
     now,
@@ -186,6 +204,7 @@
               <span class="nc-yours-meta">
                 {#if open && !open.has(h.address)}{unread?.has(h.address) ? 'the mission could not be read' : 'the mission is over'} · this lapses by itself{:else}{h.unconfirmed ? 'unconfirmed · ' : ''}ends in {endsIn(h.ends, now)} · {h.visibility === 'open' ? 'everyone can see' : 'sealed to the poster'}{/if}
               </span>
+              {#if claimLeak(h)}<span class="nc-yours-leaked" data-leaked>{claimLeak(h)}</span>{/if}
             </button>
           </li>
         {/each}
@@ -195,6 +214,7 @@
           <li class="nc-yours-sent" data-unreleased={u.address}>
             <span class="nc-yours-title">{u.title}</span>
             <Readout value={r.value} tone="warn" sub={`let go · ${r.sub}`} />
+            {#if claimLeak(u)}<span class="nc-yours-leaked" data-leaked>{claimLeak(u)}</span>{/if}
             {#if unsent?.key === u.address}{@const said = unsentReadout(unsent)}<Readout value={said.value} tone="warn" sub={said.sub} />{/if}
             <button type="button" class="nc-yours-withdraw" data-sendrelease={u.address} disabled={sending} onclick={() => release(u)}>Send the release</button>
           </li>
@@ -235,6 +255,7 @@
             <span class="nc-yours-title">{r.title}</span>
             <span class="nc-yours-meta">{r.date} · {r.visibility === 'open' ? 'everyone can see' : 'sealed to the poster'}</span>
             <Readout value={s.value} tone={s.tone} sub={s.sub} />
+            {#if reportLeak(r)}<span class="nc-yours-leaked" data-leaked>{reportLeak(r)}</span>{/if}
             {#if refused?.id === r.id}
               <Readout value={refused.why === 'unconfirmed' ? 'Unconfirmed' : 'Not withdrawn'} tone="warn" sub={WHY[refused.why]} />
             {/if}
@@ -310,6 +331,12 @@
   }
   .nc-yours-title {
     font-weight: 600;
+    color: var(--t-ink);
+  }
+  /* A readout, the way volatile data shows its age: plain ink, never red [decision 2]. */
+  .nc-yours-leaked {
+    font-size: 0.8rem;
+    line-height: 1.35;
     color: var(--t-ink);
   }
   .nc-yours-meta,

@@ -13,11 +13,16 @@
    *
    * A report no relay confirmed is said to have maybe arrived, never "not sent", and is sent again
    * as the same event: a second report of the same work would count twice [finding 61].
+   *
+   * **Nothing is sealed to a key whose secret leaked** (decided 2026-10-18): on such a mission the
+   * sealed choice is there and off, with its reason, and the open one works. Once sealed sending
+   * resumes, the days reach back further for a week, sealed only, so work done while it was paused
+   * can still be told [reports.ts, `sealedReach`].
    */
   import { COUNT_MAX } from '@navcom/core';
   import { Action, Panel, Readout, Slot } from '$lib/components/panel';
-  import { fileReport, reportAgain, reportableDays, sent, stillToReport, type Filed, type Sent } from '$lib/missions/reports';
-  import { MAY_HAVE_ARRIVED, exposedOn, tookPart, type Visibility } from '$lib/missions/claims';
+  import { fileReport, openReach, reportAgain, reportableDays, sent, stillToReport, type Filed, type Sent } from '$lib/missions/reports';
+  import { MAY_HAVE_ARRIVED, nowhereFor, sealTo, tookPart, type Visibility } from '$lib/missions/claims';
   import { alreadyReported, placeName } from './format';
 
   let { address, now, ondone }: { address: string; now: number; ondone: () => void } = $props();
@@ -25,13 +30,19 @@
   /** The mission as it was when this device took part — it may have left the map since. */
   const entry = $derived(tookPart(Math.floor(now / 1000)).find((t) => t.mission.address === address) ?? null);
   const m = $derived(entry?.mission ?? null);
-  /** When the poster's key was exposed, if it was: a report sealed to it is not for the poster alone [`exposedOn`]. */
-  const exposed = $derived(m ? exposedOn(m.publisher.pubkey) : null);
+  /** Why a sealed report cannot go now, if it cannot: never to a key whose secret leaked [`sealTo`]. */
+  const sealedOff = $derived.by(() => {
+    if (!m) return null;
+    const target = sealTo(m.publisher.pubkey, Math.floor(now / 1000));
+    return target.ok ? null : nowhereFor(target, m.publisher.name);
+  });
   /** Only days the work could have been: from taking part to the mission's end, inside the last week [11.X]. */
   const days = $derived(entry ? reportableDays(Math.floor(now / 1000), entry) : []);
   /** Named as yesterday only when it truly is: the first day offered may be earlier. */
   const yesterday = $derived(reportableDays(Math.floor(now / 1000))[0]);
   let date = $state('');
+  /** A day more than a week back is offered only while a sealed report may reach it: never in the open. */
+  const openOff = $derived(date !== '' && date < openReach(Math.floor(now / 1000)));
   let asks = $state<string[]>([]);
   let counts = $state<Record<string, number | null | undefined>>({});
   let phase = $state<'editing' | 'choosing' | 'sending'>('editing');
@@ -187,13 +198,14 @@
           <Action label="Send report" disabled={!ready} onfire={() => ((phase = 'choosing'), (shownAt = performance.now()))} />
         {:else}
           <div class="nc-report-choices" role="group" aria-label="Who sees this report">
-            <button type="button" data-visibility="open" disabled={phase === 'sending'} onclick={() => send('open')}>
+            <button type="button" data-visibility="open" disabled={phase === 'sending' || openOff} onclick={() => send('open')}>
               <span class="nc-report-who">Everyone</span>
-              <span class="nc-report-line">a public record that this card did this work</span>
+              <span class="nc-report-line">{openOff ? 'a day more than a week back can be told only sealed, as sealed sending was paused then' : 'a public record that this card did this work'}</span>
             </button>
-            <button type="button" data-visibility="sealed" disabled={phase === 'sending'} onclick={() => send('sealed')}>
-              <span class="nc-report-who">{exposed ? `Sealed to ${m.publisher.name}` : `Only ${m.publisher.name}`}</span>
-              <span class="nc-report-line">{exposed ? `the poster can still settle it; its key was exposed on ${exposed}: whoever holds it may read this` : 'sealed to the poster, who can still settle it'}</span>
+            <!-- Off, with its reason, when nothing can be sealed to the poster now: never sealed to a leaked key [rev 7]. -->
+            <button type="button" data-visibility="sealed" data-paused={sealedOff ? '' : undefined} disabled={phase === 'sending' || !!sealedOff} onclick={() => send('sealed')}>
+              <span class="nc-report-who">{sealedOff ? `Sealed to ${m.publisher.name} — paused` : `Only ${m.publisher.name}`}</span>
+              <span class="nc-report-line">{sealedOff ?? 'sealed to the poster, who can still settle it'}</span>
             </button>
           </div>
         {/if}

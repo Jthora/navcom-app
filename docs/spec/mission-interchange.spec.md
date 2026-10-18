@@ -1,9 +1,12 @@
 # Mission interchange — NavCom ⇄ Starcom / Mecha Jono
 
-**NavCom's side of the boundary, rev 7 — 2026-10-17.** Starcom's side is
-[`starcom.app/spec/starcom-navcom-interchange.spec.md`](https://starcom.app/spec/starcom-navcom-interchange.spec.md)
-(rev 10 at the time of writing; rev 11 will carry the answers below). Each spec owns its own
-side; neither restates the other's.
+**NavCom's side of the boundary, rev 7 — 2026-10-18.** Checked against Starcom rev 15 (`8ecd1045`)
+and Mecha Jono Interchange 3.20 (manifest, 2026-10-16). Starcom's side is
+[`starcom.app/spec/starcom-navcom-interchange.spec.md`](https://starcom.app/spec/starcom-navcom-interchange.spec.md).
+Each spec owns its own side; neither restates the other's. The keys NavCom reads, their dates and
+the inbox it seals to are published as
+[`/.well-known/navcom-publishers.json`](https://navcom.app/.well-known/navcom-publishers.json), with
+its sha256 in the `interchange` block of `/.well-known/navcom-intel.json`.
 
 **Rev 2** records Starcom's reply of the same day — all eight proposals accepted — and closes a
 gap neither side had seen: The Record accepts writes only from an allowlist, so operators' claims
@@ -34,15 +37,29 @@ private or allowlisted relay, operators publish no relay list, and no grid node 
 mirrors, the Pi — carries operator traffic; grid nodes are read (§5.0, §11.2). Q16 asks where your
 inbox list can be read.
 
-**Rev 7** (2026-10-17): where sealed claims and reports go, and who can open them. Your next key,
-`86f8…`, is trusted beside the old one until the cut-over (§3). **NavCom no longer reads any kind
-`10050` list**: your inbox is pinned in NavCom's release beside each key, because the newest list by
-date won, and whoever holds the old key's exposed secret can sign one dated next year (§5.0). That
-answers Q16 and changes a duty: tell NavCom when your inbox changes, since publishing a new list no
-longer moves it (§9.2). What is sealed to the old key, whoever holds its secret can open, and
-NavCom's screens now say so rather than "only Mecha Jono can see". Q17 asks whether you read wraps
-addressed to the new key on the same inbox. **For Starcom:** a client that sends sealed reports to
-the recipient's newest `10050` list is moved the same way by a list signed with an exposed key.
+**Rev 7** (2026-10-18): your exposed key, what NavCom still trusts from it, and where sealed
+messages go. Decided by the owner on 2026-10-18; everything below is in the next deploy, before
+30 October. The detail is in **New in rev 7** (§10).
+
+- **Your old key `6301c4d0…` is frozen, and ends on 13 November**, on each reader's own clock and
+  never one earlier than the build it runs. NavCom keeps only the package versions on its frozen
+  list — the newest of each mission it read, until your signed list of the `30079` ids you signed
+  replaces it — and a version not on it only if it closes one of them. Until your list confirms a
+  mission, it shows at its jurisdiction only, cannot be taken, and says it may have been replaced.
+  None of its labels counts (§3, §5.3)
+- **Your next key `86f824c3…` is listed and not trusted to sign** until a later release names the
+  cut-over day. Anything under it before then is dropped, and stays dropped once the day comes (§3)
+- **For one mission, a higher generation outranks a lower one whatever the dates say**, and a
+  version dated more than a day ahead of the reader's clock is dropped (§3)
+- **Nothing is sealed to a key whose secret leaked.** Sealed claims and reports to you are paused
+  until NavCom can seal to a key of yours that was not exposed; open ones still go. NavCom reads no
+  kind `10050` list: your inbox is pinned in its release (§5.0)
+- **Operators are told** what was already sealed to the old key, on the rows of their own mission
+  history and in one sentence on Status (§5.0)
+
+**For Starcom:** a client that takes the newest kind `10050` by date is redirected by a list the
+exposed key signs dated ahead; and a reader that keeps the newest version across both keys lets the
+old key override the new one by dating later. Both are answered in §3 and §5.0.
 
 Written for Mecha Jono's development agent first, and for any human on either team second. It
 says what NavCom now is, exactly how to serve it missions, how raw intel moves in both directions,
@@ -80,7 +97,8 @@ from whether a builder exists, and this document follows the same discipline.
 
 | | Status |
 |---|---|
-| Reading kind `30079` packages | LIVE — every device subscribes to The Record and its mirror at `wss://blackpi.cosmiccodex.app` at once, verifies each package itself, shows the newest signed copy of each, and keeps both subscriptions open, so a new or closed mission shows without a reload |
+| Reading kind `30079` packages | LIVE — every device subscribes to The Record and its mirror at `wss://blackpi.cosmiccodex.app` at once, verifies each package itself, shows the best signed copy of each, and keeps both subscriptions open, so a new or closed mission shows without a reload |
+| The publisher registry (§3) | LIVE from rev 7's deploy — keys with windows, a frozen key, generations, and the file at `/.well-known/navcom-publishers.json` |
 | The grid (the map missions appear on) | LIVE as the landing page at [`navcom.app`](https://navcom.app/), lighting each mission's province |
 | Kind `1911` observation (raw intel) | BUILT — builder and contract exist; published at `/.well-known/navcom-intel.json` |
 | Kind `1912` report | LIVE — operators on navcom.app send them, open or sealed (§5.2); the contract says `emitted: true` |
@@ -176,8 +194,9 @@ never a total).
 | | |
 |---|---|
 | Relay | **The Record**, `wss://record.cosmiccodex.app` — authoritative for packages (AGREED, Q8). The five relays rev 10 lists are best-effort mirrors a reader need not read. The Record honours NIP-40 expiry, which its NIP-11 document confirms |
-| Author | `6301c4d09a014909e5a48b7d0c9aa859eec18804c2fc87eab4e414aa5a319692` until Mecha Jono's cut-over in early November, and `86f824c3f1e67c60b1dc15ce110648c4de5c3fb879022fbbcc5e8deb720e402c` beside it from 2026-10-17 and alone after it. The old key's secret was exposed on 2026-09-28; from the cut-over NavCom distrusts everything it signed, whatever date it carries |
-| Filter | `{ "kinds": [30079], "authors": ["6301c4d0…9692"], "#t": ["navcom_mission"] }` |
+| Author | The keys in NavCom's registry, each with a window judged on the reader's clock, floored at the build — never on an event's date (rev 7). **`6301c4d0…9692`**, generation 1: its secret was exposed on 2026-09-28, so it is **frozen** — only the versions on NavCom's frozen list are kept, and a version not on it only if it closes one of them — and it **ends on 2026-11-13T00:00:00Z**. Until your signed list of the `30079` ids you signed under it confirms one, that mission shows at its jurisdiction only, cannot be taken, and reads that it was posted under a retiring key and may have been replaced. **`86f824c3…402c`**, generation 2: **not trusted to sign** until a later release gives it a start, the cut-over day; anything it signs before that start is dropped for good. The registry is the authority, and reaches phones only by release |
+| Filter | One request per key trusted to sign. The frozen key is asked only by `ids` (its list) and by its list's `#d`, so a flood at fresh `d`s is never asked for: `{ "kinds": [30079], "authors": ["6301c4d0…9692"], "ids": [<the list>] }`, `{ "kinds": [30079], "authors": ["6301c4d0…9692"], "#d": [<the list's d>], "until": <now + 1 day> }`. A key trusted and not frozen: `{ "kinds": [30079], "authors": [<key>], "#t": ["navcom_mission"], "limit": 100, "until": <now + 1 day> }`, and beside a frozen key of the same publisher also `{ "kinds": [30079], "authors": [<key>], "#d": [<the frozen list's d>], "until": <now + 1 day> }`, with no `#t` and no limit: your version there is what replaces the frozen one, so it is heard however many newer missions you post, and when it is no longer field work. Neither cap counts it |
+| Ranking | For one publisher and one `d` — never one address — the higher generation first, whatever `created_at` says; then the newer; then the lower id. A version dated more than a day past the reader's clock is dropped, not flagged. Every package is gated on these rules before it counts against a relay's share, and again when a device reads back its own copy |
 
 Measured on 2026-10-06: **90 packages** carry `t=navcom_handoff`; **15** carry `t=navcom_mission`,
 of which 9 are `open`. NavCom's grid shows **`navcom_mission` packages only** — boots-on-ground
@@ -305,8 +324,8 @@ honestly described, and a relay built for permanence is the wrong home for one.
 | Signed by | Published to | Read by |
 |---|---|---|
 | **An operator** — public claims, reports, witness and challenge labels | **NavCom's relays**: today `wss://relay.damus.io` and `wss://nos.lol`, both already among rev 10's mirrors. Every device writes here *as well as* to its own relays — a Watched operator's watch relays are added, never substituted (rev 5). **Operators publish no relay list** (decided 2026-10-08): these are where operators' public work goes. If they ever change, the set moves as a whole, by a NavCom release and a notice here (§11.2) | Starcom and Mecha Jono, filtering `#a` for their packages — LIVE for Mecha Jono (Q9) |
-| **An operator** — a private claim (gift wrap) | **Mecha Jono's inbox, pinned in NavCom's release** (since 2026-10-17): `wss://nos.lol` and `wss://relay.primal.net`, the relays the old key's kind-`10050` list named (Q10). For the new key, NavCom's assumption until you confirm it (Q17) | Mecha Jono — LIVE (Q4). Sealed to the old key, also whoever holds its exposed secret |
-| **An operator** — a private report (gift wrap) | The same inbox | Mecha Jono — PROPOSED (Q14). Sealed to the old key, also whoever holds its exposed secret |
+| **An operator** — a private claim (gift wrap) | **Mecha Jono's inbox, pinned in NavCom's release** (since 2026-10-17): `wss://nos.lol` and `wss://relay.primal.net`, the relays the old key's kind-`10050` list named (Q10). **Paused from rev 7**: nothing is sealed to a key whose secret leaked | Mecha Jono — LIVE (Q4) until rev 7. Everything sealed to the old key, also whoever holds its exposed secret |
+| **An operator** — a private report (gift wrap) | The same inbox, paused the same way | Mecha Jono — PROPOSED (Q14) |
 | **Mecha Jono** — packages, `settled` and `challenged` labels | **The Record** | NavCom, which already reads it |
 
 **NavCom pins your inbox in its release, and no longer reads your `10050` list** (since
@@ -321,10 +340,38 @@ one, after the cut-over — has no inbox, and an operator's screen says nothing 
 than sending it anywhere else; that holds for sending again something kept from before, too. **If
 your inbox changes, tell us; publishing a new list is not enough.**
 
-**Pinning fixes where a seal goes, not who can open it.** What is sealed to the old key, whoever
-holds its secret can fetch from the inbox and open. Until the cut-over takes that key off, NavCom's
-screens say so beside the choice and on the claim, instead of "only Mecha Jono can see". The inbox
-NavCom names for the new key is the old key's list, assumed: Q17 asks you to confirm it.
+**Pinning fixes where a seal goes, not who can open it, so from rev 7 nothing is sealed to a key
+whose secret leaked** (decided 2026-10-18). Whoever holds the old key's secret can fetch every wrap
+addressed to it from the inbox, open it, and show which card sent it, since the seal is signed by
+the operator's card. The seal target is your newest key that NavCom trusts to sign and that was not
+exposed; today there is none, so **sealed sending to you is paused**:
+
+- On each of your missions the sealed choice is there and off, before anything can be sent, with its
+  reason: *"Sealed sending to Mecha Jono is paused: its key's secret leaked, so whoever holds it could
+  open anything sealed to it. Nothing is kept on this phone; come back once Mecha Jono reads under a
+  new key."* Open claims and open reports still go. Where no key of a publisher is current for any
+  other reason — one ended unrenewed, or a phone running a version past its keys' ends — the choice
+  is off the same way, and says so without saying that a key leaked
+- **Nothing is held on the phone to send later** (the-artifact-that-leaves.md P5: a store of unsent
+  reports is a store of where somebody has been). A sealed claim taken before rev 7 is not sent
+  again, nor is its release; it ends by itself within a day
+- **When sealing resumes**, a sealed report's days reach back to the switch plus seven days, capped
+  at the 30 days a mission is remembered, so work done while sealing was paused can still be told,
+  sealed. Only the days offered change; nothing is sent by itself. Spec §5.2 asks you to accept a
+  report whose claim came before the mission's end: please accept such a late report too
+- **Sealing resumes by release**, after the owner confirms out of band that you read the key it
+  names. As the registry stands, the release that gives `86f824c3…` its start makes it the seal
+  target for every one of your missions, old addresses included, unless the same release names a
+  separate inbox key (decided 2026-10-18; not yet built)
+
+**What was already sealed to the old key is said to the operator who sent it**: on each sealed row in
+their own mission history, from what that row kept — whoever holds the leaked key can open it, what
+it held, and for a report the second it was sent — and in one sentence on Status for every phone:
+sealed claims and reports sent to you from 6 October, and once a release names the switch, *until*
+that day, can be opened by whoever holds the leaked secret. The sentence is worked out from the
+registry, so the release that gives `86f824c3…` its start bounds it without another edit, and it
+never says that what is sealed to the new key can be opened with the old one.
+Never a banner and never a notification: nothing sent can be recalled, and there is nothing to do.
 
 ### 5.1 Taking part — a claim
 
@@ -388,7 +435,9 @@ contract described; it stays valid.
 
 **Sealed to you, if the operator chooses** (PROPOSED, Q14). Like a claim, a report may be sealed to
 the poster and sent to the inbox NavCom pins for you (§5.0). It still settles: your `settled` label names the id
-inside the seal. Privacy must not cost an operator recognition.
+inside the seal. Privacy must not cost an operator recognition. **Paused from rev 7** while your only
+key NavCom trusts to sign is exposed; when sealing resumes, a sealed report may tell of a day further
+back than the usual week, for a week after the switch (§5.0).
 
 **A sealed report carries a `salt`** (since 2026-10-07): 32 lowercase hex characters in its content,
 beside `callsign` and `date`, and never in an open report — please refuse an open report that has
@@ -408,9 +457,9 @@ All NIP-32 labels on the **report**, namespace `navcom.mission`:
 
 | Label | Signed by | Effect |
 |---|---|---|
-| `settled` | The poster — Mecha Jono, autonomously | Standing mints (§8). Reads *settled by poster* |
-| `witnessed` | Anyone who was there | Settles immediately. Reads *settled by witness* |
-| `challenged` | **Anyone, under their own name** | Reverses nothing. Reads *settled, challenged by <name>* |
+| `settled` | The poster — Mecha Jono, autonomously — under a key NavCom trusts to sign now, **never one exposed or frozen** (rev 7): a `settled` from `6301c4d0…` counts for nothing, and the report settles by silence instead, which still counts | Standing mints (§8). Reads *settled by poster* |
+| `witnessed` | Anyone who was there — but no key in NavCom's registry that does not speak for its publisher now (rev 7) | Settles immediately. Reads *settled by witness* |
+| `challenged` | **Anyone, under their own name** — with the same exception | Reverses nothing. Reads *settled, challenged by <name>* |
 
 **If you say nothing for seven days, the report settles itself** and reads *settled
 unchallenged*. Silence is acceptance. **To dispute a report, label it `challenged` within seven
@@ -442,6 +491,12 @@ nothing is adjudicated, and neither is offered on the operator's own report.
 - **The seven days are half-open.** A challenge counts if it is dated before the seventh day ends;
   at that moment the report settles by silence, and a challenge dated then counts for nothing
 - **A label dated more than a day after the reader's own clock is not read**
+- **No label from a key in NavCom's registry that does not speak for its publisher now is read,
+  whichever word it says** (rev 7): one exposed or frozen, one not trusted to sign yet or any more on
+  the reader's clock, or one dated before its key's start. Whoever holds `6301c4d0…`'s secret could
+  otherwise settle an open report as a witness — or a sealed one beside it, by the id inside the seal
+  that the secret opens — or challenge one, and either would read under your name. A verdict a
+  device kept from such a label before rev 7 is read again
 
 **Mecha Jono settles and challenges; it does not score people.** There is no input anywhere for an
 agent to rate an operator. Standing is derived by NavCom from these events alone.
@@ -579,6 +634,9 @@ the map opens populated. It is identified as an agent everywhere it appears.
 - Never touch the `Distress` channel, never assign a named person, never score an operator
 - Keep no record of who reads The Record (§11.1), and tell NavCom when your inbox changes: NavCom
   pins it in its release and no longer reads your `10050` list (§5.0)
+- Tell NavCom a key's start a week ahead, and compare NavCom's published registry with what you
+  agreed once a day: a key or an inbox you never agreed is a release NavCom should not have made, and
+  saying so in public is the one check a compelled release cannot remove (rev 7)
 
 ### 9.3 Permission — go further
 
@@ -621,15 +679,65 @@ Answered by Starcom on 2026-10-06; all eight accepted. Three are Mecha Jono's to
 then Mecha Jono records each claim against its package, and no claim on a campaign moves its
 `mission_state`.
 
-### New in rev 7 — for Mecha Jono
+### New in rev 7 — your key, what NavCom trusts, and what operators are told
 
-- **NavCom reads no kind-`10050` list.** Your inbox is pinned in its release (§5.0); tell us when it
-  changes (§9.2). Q16 is answered by this
-- **What is sealed to your old key, its secret's holder can open.** NavCom's screens now say so
+Decided by the owner on 2026-10-18, against the attacks written up beside the decisions. Every date
+that removes trust ships in the next deploy; a date that grants trust may wait for a later release,
+because a late grant only keeps things off the map longer, while a late removal keeps trusting.
+
+**The registry** (§3). One entry per publisher — an id every rule keys on, never the name; the agent
+mark; the pinned inbox; and keys, each with a generation, a start (`notBefore`), an end (`notAfter`),
+whether its secret was exposed, and whether it is frozen; and a reserved `next` that nothing reads
+yet. Published as `/.well-known/navcom-publishers.json` with its sha256 beside it, so you can check
+once a day that what NavCom serves for you is what you agreed. The build refuses:
+
+- an exposed key whose end is later than the latest pinned for it — 2026-11-13 for `6301c4d0…`;
+- a publisher with at least one key that is not exposed and has a start, none of which ends 60 days
+  or more after the build. Today your only key with a start is exposed, so this does not bite; from
+  the release that gives `86f824c3…` its start, that key must run 60 days past every build;
+- an end more than a year after the build; two entries whose names read alike — the same letters
+  under NFKC and case-folding, with punctuation and spacing dropped, zero and one read as o and l, and
+  Greek and Cyrillic letters that draw as Latin ones read as those (so `Mеcha Jono` with a Cyrillic
+  `е` is refused), or a name reserved to NavCom and those it speaks for; a frozen list that does not
+  match its pinned digest; anything in `next`.
+
+**The frozen key.** Kept: the versions on NavCom's frozen list, and a version not on it only if it
+closes one of its missions — closing sends nobody anywhere, while anything else from a key whose
+secret is out could be a lure. Until your own signed list confirms a mission, it shows at its
+jurisdiction only with any point dropped, cannot be taken (*"posted under a retiring key; it may have
+been replaced"*), and none of its labels or citations counts. At 2026-11-13T00:00:00Z it ends on every
+phone whose build is from then, whatever its clock says.
+
+**What a phone already holds is asked again.** A mission a device took part in is kept in its own
+history as the build it ran then read it, and the bundle before rev 7 trusted `86f824c3…` at once,
+while every earlier one kept anything `6301c4d0…` signed. From rev 7 a mission in that history is
+offered for a report, and a report on it is sent, only while the build would keep it now: its key
+trusted to sign on the reader's clock, the mission dated from that key's start, and under the frozen
+key only at a `d` on its list. So neither a mission planted under your next key nor one planted under
+the old key since the leak can draw a report — open or sealed — that tells whoever signed it which
+card did the work.
+
+**What NavCom asks of you, in order.**
+
+1. **Post a board row listing every `30079` event id you signed under `6301c4d0…`**, from your
+   signing log, and have the owner confirm it out of band. It replaces NavCom's snapshot, and the
+   missions on it can be taken again
+2. **Name the cut-over day a week ahead.** A release gives `86f824c3…` its start on that day. Sign
+   nothing with it before then: anything under it before its start is dropped for good
+3. **Republish each open mission under `86f824c3…` at the same `d`** after the cut-over. NavCom ranks
+   generation 2 above generation 1 at each `d`, whatever the dates
+4. **Have The Record and blackpi refuse `6301c4d0…` writes** for kinds `30079`, `1985`, `10050`, `0`,
+   `5` and `62`, refuse `86f824c3…` writes until the cut-over, and refuse events dated more than 15
+   minutes ahead. NavCom reads packages only from those two, so this protects phones running bundles
+   from before rev 7, which no release reaches
+5. **Read your whole old inbox now**, every wrap `p`-tagged to `6301c4d0…`, and keep it; then send a
+   NIP-62 request to vanish naming `wss://nos.lol` and `wss://relay.primal.net` only, so whoever
+   obtains the leaked secret later cannot harvest there
 
 | | Question | NavCom's default if unanswered |
 |---|---|---|
-| Q17 | Do you read gift wraps addressed to your new key, `86f8…`, on `wss://nos.lol` and `wss://relay.primal.net`? If so, NavCom could also seal claims and reports on old-key packages to the new key before the cut-over, so the exposed secret opens none of them | NavCom sends wraps for the new key there once packages are under it, and goes on sealing old-key packages to the old key, saying who else can open them. If you read the new key's wraps elsewhere, a claim sealed to it reaches nobody until you tell us |
+| Q17 | Which key will you read sealed claims and reports under once sealing resumes? The owner decided on a dedicated inbox key, separate from your signing key and signed by it, rotated at each registry renewal | Sealing stays paused until a release names a key you read, confirmed by the owner out of band. As the registry stands, the release that gives `86f824c3…` its start would make it the seal target |
+| Q18 | Will you post the list of `30079` ids you signed under `6301c4d0…` (ask 1)? | Your missions under the old key stay at their jurisdiction only and cannot be taken until it ends on 13 November |
 
 ### New in rev 6 — for Mecha Jono
 

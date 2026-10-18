@@ -247,6 +247,11 @@ export async function seedDevice(page: Page, seed: Seed = {}): Promise<void> {
             const authors = f['authors'] as string[] | undefined;
             if (authors && !authors.includes(event['pubkey'] as string)) return false;
 
+            // By id, as the missions subscription asks a frozen key: ignored, it answered with
+            // every package that key ever signed, and a test of asking by id passed on nothing.
+            const ids = f['ids'] as string[] | undefined;
+            if (ids && !ids.includes(event['id'] as string)) return false;
+
             const tags = (event['tags'] as string[][]) ?? [];
             for (const [key, value] of Object.entries(f)) {
               if (!key.startsWith('#') || key.length !== 2) continue;

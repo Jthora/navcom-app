@@ -31,6 +31,7 @@ import {
   KIND_DELETION,
   KIND_LABEL,
   KIND_REPORT,
+  MISSION_PUBLISHERS,
   MISSION_RELAYS,
   THE_RECORD,
   againstMission,
@@ -40,9 +41,14 @@ import {
   buildSealedReport,
   readCard,
   readReport,
+  keptMissionTrusted,
+  keyOf,
+  labelHeard,
   settlementOf,
+  settlersOf,
   withdrawnReports,
   type Mission,
+  type MissionPublishers,
   type Report,
   type Settlement
 } from '@navcom/core';
@@ -50,9 +56,9 @@ import { get, set } from '$lib/terminal/storage';
 import { contactPubkey, ensureContactKey } from '$lib/terminal/card';
 import { isHidden } from '$lib/hidden';
 import {
-  inboxOf,
   noInbox,
   operatorRelays,
+  sealTo,
   sealedAgain,
   signedOn,
   tookPart,
@@ -64,12 +70,20 @@ import {
   type Visibility,
   type Wire
 } from './claims';
+import { floorNow } from './floor';
 
 const SENT = 'mission_reports';
 /** The window inside which a second report in one place is warned about. */
 export const SERIES_DAYS = 7;
 /** How many days back a report may tell of. */
 export const REPORT_DAYS = 7;
+/**
+ * How far back a sealed report may reach while sealed sending to its publisher has just resumed
+ * after a pause: the 30 days a mission is remembered [claims.ts, `HISTORY_DAYS`]. It lasts until a
+ * week after the switch, so work done while sealing was paused can still be told sealed — and only
+ * then, and only sealed: nothing was held on the phone meanwhile [decided 2026-10-18].
+ */
+export const STRETCH_DAYS = 30;
 
 export interface Sent {
   /** The report's id: the event's own, or for a sealed report the id inside the seal. */
@@ -103,6 +117,8 @@ export interface Sent {
    * sending it again sends this same event: one report of the day's work, never two.
    */
   unconfirmed?: Event;
+  /** The key a sealed report was sealed to [rev 7]. Absent on one kept before 2026-10-18: the key that posted its mission. */
+  sealedTo?: string;
 }
 
 /** What this device has sent. */
@@ -124,19 +140,36 @@ function reportedDays(address: string): Set<string> {
 }
 
 /**
+ * How many days back a sealed report on `m` may reach now: `STRETCH_DAYS` while sealed sending to
+ * its publisher resumed after a pause less than a week ago, otherwise `REPORT_DAYS`. A pause is a
+ * publisher with an exposed key; the switch is when the key it is sealed to now became trusted
+ * [core: trust.ts, `sealTargetOf`].
+ */
+export function sealedReach(now: number, m: Mission, publishers: MissionPublishers = MISSION_PUBLISHERS): number {
+  const t = sealTo(m.publisher.pubkey, now, publishers);
+  const paused = keyOf(publishers, m.publisher.pubkey)?.entry.keys.some((k) => k.exposed !== undefined) ?? false;
+  return t.ok && paused && now < t.since + REPORT_DAYS * 86_400 ? STRETCH_DAYS : REPORT_DAYS;
+}
+
+/**
  * The days a report may tell of: yesterday and the six before it, never today — and, for a mission,
  * only days from when this device took part until the mission ended [11.X], and none it has already
  * reported. A day reported was offered again with nothing to say so, and the same work was sent
  * twice [audit 11.S, finding 52].
  *
+ * **Stretched for a sealed report after a pause** [`sealedReach`]: while sealed sending to the
+ * publisher resumed less than a week ago, the days reach back 30, so the work done while it was
+ * paused can still be told; a day more than a week back can be reported only sealed [`openReach`].
+ *
  * Stepped by calendar day, at noon. Stepping back 24 hours at a time gave the same day twice after
  * the clocks went back, and skipped one after they went forward — and a list keyed by day threw on
  * the repeat, so the report screen could not open for an hour on six nights a year [11.X].
  */
-export function reportableDays(now: number, mission?: TookPart): string[] {
+export function reportableDays(now: number, mission?: TookPart, publishers: MissionPublishers = MISSION_PUBLISHERS): string[] {
   const today = new Date(now * 1000);
   const days: string[] = [];
-  for (let k = 1; k <= REPORT_DAYS; k++) {
+  const reach = mission ? sealedReach(now, mission.mission, publishers) : REPORT_DAYS;
+  for (let k = 1; k <= reach; k++) {
     days.push(dayOf(new Date(today.getFullYear(), today.getMonth(), today.getDate() - k, 12)));
   }
   if (!mission) return days;
@@ -144,6 +177,12 @@ export function reportableDays(now: number, mission?: TookPart): string[] {
   const until = localDay(mission.mission.validUntil);
   const reported = reportedDays(mission.mission.address);
   return days.filter((d) => d >= from && d <= until && !reported.has(d));
+}
+
+/** The oldest day an open report may tell of: the week before today, never stretched. */
+export function openReach(now: number): string {
+  const today = new Date(now * 1000);
+  return dayOf(new Date(today.getFullYear(), today.getMonth(), today.getDate() - REPORT_DAYS, 12));
 }
 
 /**
@@ -221,6 +260,20 @@ export async function fileReport(
   w: Wire = defaultWire
 ): Promise<Filed> {
   if (!signedOn()) return { ok: false, because: 'signed-out' };
+  /*
+   * Only on a mission this build would keep now [core: trust.ts, `keptMissionTrusted`]. A mission
+   * from this device's history may have been kept by an earlier build under a key this one refuses,
+   * and a report — open or sealed — tells whoever signed the mission which card did the work.
+   */
+  const registry = w.publishers ?? MISSION_PUBLISHERS;
+  if (!keptMissionTrusted(m, registry, floorNow(now * 1000))) {
+    // A sealed one says what it always said of a key this release does not read: nowhere to seal it.
+    const detail =
+      visibility === 'sealed' && !keyOf(registry, m.publisher.pubkey)
+        ? noInbox({ ok: false, why: 'unknown' }, m.publisher.name)
+        : `NavCom does not trust the key ${m.publisher.name} posted this mission under, so nothing was sent.`;
+    return { ok: false, because: 'not-sent', detail };
+  }
   if (draft.date >= localDay(now)) return { ok: false, because: 'today' };
   const already = sent().find((s) => s.address === m.address && s.date === draft.date && !s.withdrawn);
   if (already) return { ok: false, because: 'reported', sent: already };
@@ -237,6 +290,7 @@ export async function fileReport(
   let to: string[];
   let event: Event;
   let refused: string;
+  let sealedTo: string | undefined;
   try {
     if (visibility === 'open') {
       event = buildReport(contact, report, now);
@@ -244,12 +298,16 @@ export async function fileReport(
       to = operatorRelays();
       refused = 'No relay took it. Nothing was sent; try again with signal.';
     } else {
-      const inbox = inboxOf(m.publisher.pubkey, w.publishers);
-      if (inbox.urls.length === 0) return { ok: false, because: 'not-sent', detail: noInbox(m.publisher.name, inbox) };
-      const sealed = buildSealedReport(contact, report, now);
+      // Nothing is built, signed or kept before the target is known to be one: never a key whose
+      // secret leaked, and nothing held to send later [claims.ts, `sealTo`; rev 7].
+      const target = sealTo(m.publisher.pubkey, now, w.publishers);
+      if (!target.ok) return { ok: false, because: 'not-sent', detail: noInbox(target, m.publisher.name) };
+      to = usable([...target.inbox]);
+      if (to.length === 0) return { ok: false, because: 'not-sent', detail: noInbox({ ok: false, why: 'no-inbox', entry: target.entry }, m.publisher.name) };
+      const sealed = buildSealedReport(contact, report, now, target.key);
       id = sealed.inner;
       event = sealed.wrap;
-      to = inbox.urls;
+      sealedTo = target.key;
       refused = `${m.publisher.name}'s inbox did not take it. Nothing was sent.`;
     }
   } catch (err) {
@@ -267,7 +325,8 @@ export async function fileReport(
     visibility,
     relays: to,
     signer: contactPubkey() ?? undefined,
-    unconfirmed: event
+    unconfirmed: event,
+    ...(sealedTo ? { sealedTo } : {})
   };
   // Whether this device could also record it is said, never assumed [11.E].
   const recorded = set('wipeable', SENT, [...sent(), s]);
@@ -295,7 +354,7 @@ export async function fileReport(
 export async function reportAgain(r: Sent, w: Wire = defaultWire): Promise<Published | 'gone' | Nowhere> {
   const s = sent().find((x) => x.id === r.id) ?? r;
   if (!s.unconfirmed || s.withdrawn) return 'gone';
-  const to = s.visibility === 'sealed' ? sealedAgain(s.poster, w) : usable(s.relays ?? operatorRelays());
+  const to = s.visibility === 'sealed' ? sealedAgain(s.poster, s.sealedTo, Math.floor(Date.now() / 1000), w) : usable(s.relays ?? operatorRelays());
   if (!Array.isArray(to)) return to;
   const result = await w.publish(to, s.unconfirmed);
   if (result === 'took') set('wipeable', SENT, sent().map((x) => (x.id === s.id ? confirmed(x) : x)));
@@ -391,15 +450,18 @@ const ON_A_REPORT = ['settled', 'witnessed', 'challenged'];
 async function labelsOn(
   address: string,
   w: Wire,
-  poster?: string
+  settlers?: readonly string[]
 ): Promise<{ labels: Event[]; answered: Answered; partial: boolean; whole: boolean }> {
-  const urls = poster ? posterRelays() : everywhere();
-  const filter: Filter = poster
-    ? { kinds: [KIND_LABEL], authors: [poster], '#a': [address], '#l': ['settled'] }
+  // No key whose `settled` would count: nothing a relay holds can settle it but silence, which
+  // needs no relay — and none is asked [rev 7].
+  if (settlers && settlers.length === 0) return { labels: [], answered: { poster: true, operators: true }, partial: false, whole: true };
+  const urls = settlers ? posterRelays() : everywhere();
+  const filter: Filter = settlers
+    ? { kinds: [KIND_LABEL], authors: [...settlers], '#a': [address], '#l': ['settled'] }
     : { kinds: [KIND_LABEL], '#a': [address], '#l': ON_A_REPORT };
   // Every relay that holds a label this read asks for — The Record for the poster's, the shipped
   // relays for everybody else's: a verdict is kept only when all of them answered.
-  const needed = poster ? recordRelay() : [...recordRelay(), ...everybodysRelays()];
+  const needed = settlers ? recordRelay() : [...recordRelay(), ...everybodysRelays()];
   const got = new Map<string, Event>();
   let heard: Answered = { poster: true, operators: true };
   let whole = true;
@@ -514,9 +576,21 @@ export async function settlements(
   /** Reports on a mission that had more labels than this reads: unknown, and not for want of signal. */
   partial: ReadonlySet<string>;
 }> {
+  const registry = w.publishers ?? MISSION_PUBLISHERS;
+  const at = floorNow(now * 1000);
+  /** Whose labels are read at all: no word from a listed key that does not speak for its publisher now [core: trust.ts, `labelHeard`]. */
+  const heard = labelHeard(registry, at);
+  /**
+   * Whether a kept verdict still stands on what this build hears. One an earlier build kept from a
+   * label this one does not read — a witness or a settlement under a key whose secret leaked, or a
+   * challenge by one — is read again, as the labels a relay serves are [rev 7]: a copy kept by an
+   * earlier build cannot carry back in what this one refuses. A challenger's label time is not kept,
+   * so it is asked as of now, which only a key that speaks for its publisher now passes.
+   */
+  const stands = (f: Settlement) => ('by' in f ? heard(f.by, f.at) : true) && f.challengedBy.every((k) => heard(k, at));
   // Kept before a verdict needed a whole read: perhaps from no answer at all [audit 11, second grid].
-  if (sent().some((s) => s.final && !s.finalWhole)) {
-    set('wipeable', SENT, sent().map(({ final, finalWhole, ...s }) => (final && finalWhole ? { ...s, final, finalWhole } : s)));
+  if (sent().some((s) => s.final && (!s.finalWhole || !stands(s.final)))) {
+    set('wipeable', SENT, sent().map(({ final, finalWhole, ...s }) => (final && finalWhole && stands(final) ? { ...s, final, finalWhole } : s)));
   }
   const mine = sent().filter((s) => !s.withdrawn && !s.unconfirmed);
   const me = contactPubkey();
@@ -529,9 +603,11 @@ export async function settlements(
   for (const s of open) byMission.set(s.address, [...(byMission.get(s.address) ?? []), s]);
 
   const final = new Map<string, Settlement>();
+  /** Whose `settled` counts on a mission: its publisher's trusted keys, none exposed [core: trust.ts]. */
+  const settlersFor = (poster: string) => settlersOf(poster, registry, at);
   await inTurn([...byMission], READS_AT_ONCE, async ([address, reports]) => {
     const sealed = reports.every((s) => s.visibility === 'sealed');
-    const read = await labelsOn(address, w, sealed ? reports[0]!.poster : undefined);
+    const read = await labelsOn(address, w, sealed ? [...settlersFor(reports[0]!.poster)] : undefined);
     answered.poster &&= read.answered.poster;
     if (!sealed) answered.operators &&= read.answered.operators;
     if (read.partial) {
@@ -540,7 +616,7 @@ export async function settlements(
     }
     if (!read.answered.poster || (!sealed && !read.answered.operators)) return;
     for (const s of reports) {
-      const st = settlementOf({ id: s.id, author: (s.signer ?? me)!, at: s.at }, s.poster, read.labels, now);
+      const st = settlementOf({ id: s.id, author: (s.signer ?? me)!, at: s.at }, settlersFor(s.poster), read.labels, now, heard);
       standing.set(s.id, st);
       if (read.whole && st.state === 'settled' && now >= s.at + CHALLENGE_WINDOW_SECONDS) final.set(s.id, st);
     }
@@ -649,7 +725,7 @@ export async function labelReport(
 ): Promise<Labelled> {
   if (!signedOn()) return { ok: false, because: 'signed-out' };
   if (isMine(r)) return { ok: false, because: 'own' };
-  if (kind === 'witnessed' && !tookPart(now).some((t) => t.mission.address === m.address)) {
+  if (kind === 'witnessed' && !tookPart(now, w.publishers).some((t) => t.mission.address === m.address)) {
     return { ok: false, because: 'not-there' };
   }
   if (kind === 'challenged' && now >= r.at + CHALLENGE_WINDOW_SECONDS) return { ok: false, because: 'late' };

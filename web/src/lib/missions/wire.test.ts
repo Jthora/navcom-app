@@ -17,6 +17,7 @@ import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure
 import type { Event } from 'nostr-tools/core';
 import { readMissionPackage, type Mission } from '@navcom/core';
 import { set } from '$lib/terminal/storage';
+import { oneKey } from './registry-fixture';
 
 /** No signal: anything not on this machine is dialled at a port nothing listens on. */
 const Base = globalThis.WebSocket;
@@ -162,7 +163,7 @@ describe('which relays the real wire says answered', () => {
   it('sends a sealed claim with no signal to the pinned inbox, and says that inbox did not take it', async () => {
     const NOW = 1791403200;
     const m = heatMission(NOW);
-    const w: Wire = { ...wire, publishers: { [m.publisher.pubkey]: { name: 'Test Poster', agent: true, inbox: ['wss://inbox.example'] } } };
+    const w: Wire = { ...wire, publishers: oneKey(m.publisher.pubkey, 'Test Poster', true, { inbox: ['wss://inbox.example'] }) };
     expect(await takePart(m, 'sealed', NOW, w)).toEqual({ ok: false, because: "Test Poster's inbox did not take it. Nothing was sent." });
     expect(held(NOW)).toEqual([]);
   }, 20_000);
@@ -200,7 +201,8 @@ describe('what the real wire says became of an event [audit 11.S, finding 61]', 
     set('accruing', 'relays_own', [relay.url]);
     const NOW = 1791403200;
     const m = heatMission(NOW);
-    const filed = await fileReport(m, { date: localDay(NOW - 86_400), asks: ['handout:water'], counts: [] }, 'open', NOW, {}, wire);
+    // The real wire, under the registry the mission was posted in: a report goes only on a mission this build trusts.
+    const filed = await fileReport(m, { date: localDay(NOW - 86_400), asks: ['handout:water'], counts: [] }, 'open', NOW, {}, { ...wire, publishers: oneKey(m.publisher.pubkey, 'Test Poster', true) });
     expect(filed).toMatchObject({ ok: false, because: 'unconfirmed' });
     expect(sent()).toHaveLength(1);
     relay.takes = 'ok';
@@ -250,7 +252,7 @@ describe('letting go with no signal, through the real wire [audit 11.S, finding 
 /** A mission package as the poster signs it, ending ten days after `now`. */
 function heatMission(now: number): Mission {
   const posterSecret = generateSecretKey();
-  const publishers = { [getPublicKey(posterSecret)]: { name: 'Test Poster', agent: true } };
+  const publishers = oneKey(getPublicKey(posterSecret), 'Test Poster', true);
   const e = finalizeEvent(
     {
       kind: 30079,
@@ -267,7 +269,7 @@ function heatMission(now: number): Mission {
 describe('a report read with no signal', () => {
   const NOW = 1791403200; // 7 Oct 2026, 20:00 UTC
   const posterSecret = generateSecretKey();
-  const publishers = { [getPublicKey(posterSecret)]: { name: 'Test Poster', agent: true } };
+  const publishers = oneKey(getPublicKey(posterSecret), 'Test Poster', true);
   const e = finalizeEvent(
     {
       kind: 30079,
@@ -282,7 +284,7 @@ describe('a report read with no signal', () => {
   const m = (read as { mission: Mission }).mission;
 
   it('is unknown on the ninth day, and nothing is kept as how it settled', async () => {
-    const took: Wire = { publish: async () => 'took', query: async (urls) => ({ events: [], answered: urls }) };
+    const took: Wire = { publish: async () => 'took', query: async (urls) => ({ events: [], answered: urls }), publishers };
     const filed = await fileReport(m, { date: localDay(NOW - 86_400), asks: ['handout:water'], counts: [] }, 'open', NOW, {}, took);
     expect(filed.ok).toBe(true);
     // Every relay it would ask is somewhere else, and there is no signal to reach it.

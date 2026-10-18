@@ -138,7 +138,9 @@ Stated as capability rather than intent, because you do not get to choose who ru
 
 - Anything sealed, which is every operational payload — unless they also hold the key it is sealed
   to. Mecha Jono's old key was exposed on 2026-09-28, so whoever holds its secret, relay or not, can
-  open a claim or report sealed to a mission posted under it; the screen offering that seal says so
+  open every claim and report sealed to it, and show which card sent each. Since 2026-10-18 nothing
+  is sealed to a key whose secret leaked: the sealed choice is off on those missions, and says why.
+  What was sent before is said on its row in Your missions, and on Status
 - Who holds a Watchtower with you, unless they are one of its relays
 - Which mission a claim or report sealed to its poster is for, or that it is yours — except The
   Record and its mirror, as the line above says, for a sealed report you are waiting to see settled

@@ -77,12 +77,23 @@ const ROOT_PAINT_OUT = [...RELAYS, 'web/src/lib/missions/claims.ts', 'web/src/li
  *   2026-10-17, when the poster's inbox was pinned in the release; the marker is the namespace alone
  * - `seal.ts`: `["expiration",String(Math.max(r.ends,a+Pr+r.within))]`, sealToPoster's lapse,
  *   whose `ends` and `within` are property names and survive
+ *
+ * 2026-10-18, read off the chunk the live feed and the mission screens share (`BuzNj8fY.js`, built on
+ * 1979f85 with the registry gate):
+ * - `trust.ts`, the registry gate and the seal target, whose every literal is one word:
+ *   `return{ok:!1,why:"paused",entry:o}`, sealTargetOf's answer for a publisher whose keys are all
+ *   exposed. `why` and `entry` are property names; claims.ts only compares `why` to "paused"
+ *
+ * 2026-10-18 again, after the adversary pass split that answer in two (`CWsvlMGh.js`): it reads
+ * `why:a.some(o=>o.exposed!==void 0||o.frozen)?"paused":"lapsed",entry:`, so the marker is the pair
+ * of words and the property after them; no other source file names "lapsed" beside "paused"
  */
 const INVISIBLE: { measured: string; modules: Record<string, RegExp | null> } = {
   measured: '2026-10-10',
   modules: {
     'packages/core/src/missions/claim.ts': /["'`]navcom\.mission["'`]/,
     'packages/core/src/missions/seal.ts': /Math\.max\([\w$]+\.ends,[\w$.]+\+[\w$.]+\+[\w$]+\.within\)/,
+    'packages/core/src/missions/trust.ts': /\?"paused":"lapsed",entry:/,
     // No literal of its own and no stable shape once minified. Held instead at the import graph:
     // packages/core/test/units-unreached.test.ts proves nothing in web/src or the box imports units/
     // (merged 2026-10-10), so no built chunk can carry it.

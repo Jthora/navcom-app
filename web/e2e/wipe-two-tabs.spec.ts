@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { holdUntil, inventory, open, seedDevice } from './device';
+import { admit, resign, standInKey, type StandIn } from './registry';
 
 /**
  * A wipe honoured by every page that is open, not just the one that wiped [invariant 5].
@@ -17,9 +18,19 @@ import { holdUntil, inventory, open, seedDevice } from './device';
  * another tab goes on sending until it is closed.
  */
 
-/** Real packages signed by the registered publisher; [0] is the California heat-relief campaign. */
+/**
+ * Real packages, signed again by a stand-in publisher added to the served registry [registry.ts]:
+ * the originals are under Mecha Jono's frozen key, which keeps only its list. [0] is the California
+ * heat-relief campaign.
+ */
+const KEY = standInKey();
+const DESK: StandIn = { id: 'heat-desk', name: 'Heat Desk', agent: true, keys: [KEY] };
 const REAL = JSON.parse(readFileSync(new URL('../../packages/core/test/fixtures/mission-packages.json', import.meta.url), 'utf8'));
-const [HEAT, RECALL, LATER] = REAL;
+const [HEAT, RECALL, LATER] = REAL.map((e: Parameters<typeof resign>[0]) => resign(e, KEY));
+
+// The worker would serve the build's own code past the registry splice.
+test.use({ serviceWorkers: 'block' });
+test.beforeEach(async ({ page }) => void (await admit(page, [DESK])));
 /** The fixtures are real and expire; the clock is fixed so this suite does not. */
 const DURING = new Date('2026-10-06T20:00:00Z');
 const MISSION = `30079:${HEAT.pubkey}:x`;

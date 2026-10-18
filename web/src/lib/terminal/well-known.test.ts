@@ -5,11 +5,12 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
-import { REFUSALS, PERMITTED, BROADCAST, buildObservation } from '@navcom/core';
+import { REFUSALS, PERMITTED, BROADCAST, FROZEN_SETS, MISSION_PUBLISHERS, buildObservation, registryDocument } from '@navcom/core';
+import { createHash } from 'node:crypto';
 import { generateSecretKey } from 'nostr-tools/pure';
 // Plain .mjs, deliberately: this is the file node runs during a build, long after the
 // TypeScript is gone, and testing the thing that actually runs is the point.
-import { refusalsDocument, healthDocument, changedPaths, metroFigures, nodeIdentity, intelDocument, vocabularyCid, canonicalVocabulary } from '../../../scripts/well-known.mjs';
+import { refusalsDocument, healthDocument, changedPaths, metroFigures, nodeIdentity, intelDocument, vocabularyCid, canonicalVocabulary, publishersFile } from '../../../scripts/well-known.mjs';
 import { measure } from '../../../scripts/lib/budget.mjs';
 
 /**
@@ -519,5 +520,42 @@ describe('the intel declaration', () => {
     // single change that undoes both hard prohibitions at once.
     expect(d.defines[0].required).not.toContain('note');
     expect(d.defines[0].required).not.toContain('description');
+  });
+});
+
+/**
+ * The publisher registry, as the file a publisher checks daily [interchange spec §3, rev 7]. A
+ * release made under compulsion could change a key or an inbox, and no check on the phone resists
+ * it; this file, compared elsewhere, does. So it must be exactly what the release pins.
+ */
+describe('the publisher registry NavCom publishes', () => {
+  it('is core’s registry as the rules read it, and the same bytes however often it is made', () => {
+    const one = publishersFile();
+    expect(one.doc).toEqual(registryDocument(MISSION_PUBLISHERS));
+    expect(publishersFile().text).toBe(one.text);
+    expect(one.sha256).toBe(createHash('sha256').update(one.text, 'utf8').digest('hex'));
+  });
+
+  it('is named, with its digest, in the interchange block of the contract partners read', () => {
+    const block = intelDocument().interchange;
+    expect(block.publishers).toMatchObject({ url: '/.well-known/navcom-publishers.json', version: '1.0.0', sha256: publishersFile().sha256 });
+  });
+
+  it('is in the built output as those bytes, when there is one', () => {
+    const built = fileURLToPath(new URL('../../../build/.well-known/navcom-publishers.json', import.meta.url));
+    if (!existsSync(built)) return;
+    expect(readFileSync(built, 'utf8')).toBe(publishersFile().text);
+  });
+});
+
+/**
+ * The frozen set is written by a script the owner runs [scripts/frozen-set.mjs]: a file whose
+ * writer would write it differently is one somebody edited by hand.
+ */
+describe('the frozen set', () => {
+  it('is the file its script would write from the set it holds', async () => {
+    const { source } = await import('../../../scripts/frozen-set.mjs');
+    const file = fileURLToPath(new URL('../../../../packages/core/src/missions/frozen.ts', import.meta.url));
+    expect(source(FROZEN_SETS[0]!)).toBe(readFileSync(file, 'utf8'));
   });
 });
