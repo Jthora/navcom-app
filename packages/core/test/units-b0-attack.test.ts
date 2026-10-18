@@ -12,6 +12,11 @@ import { DAY, REASON, T0, TestUnit, ledUnit, names } from './helpers/units.js';
  * against the evaluator as committed. The `// actual:` notes record what that evaluator did. Nothing
  * in src/ was changed.
  *
+ * Repaired on units-b0-attack: every break now passes. One line was corrected where the repair
+ * showed it wrong, marked "Corrected" with the reason beside it (BREAK 5's last case asserted the
+ * break's own effect as a step). What each repair leaves is written down in the governance.ts
+ * docblock, under "What it cannot settle".
+ *
  * Personas: a seized key, two colluders, a stale prev, a withheld second signature, and a replayed
  * act. Each describe says whether B0 introduced the break or it was already in g1. "Already in g1"
  * was checked by running the same scenario against the parent commit's evaluator (1d8f5cf5): it
@@ -241,8 +246,13 @@ describe('B0-BREAK 5 (HIGH, introduced by B0): a seized CO key and the member it
     const u = ledUnit(NINE);
     const before = u.tips();
     const rm7 = u.remove(['m7'], ['co', 'm1'], T0 + 10 * DAY);
-    u.remove(['m5'], ['co', 'm7'], T0 + 40 * DAY, before);
-    expect(u.members()).toContain('m7');
+    const poison = u.remove(['m5'], ['co', 'm7'], T0 + 40 * DAY, before);
+    // Corrected with the repair: this line asserted the break itself as a step (m7 back after the
+    // poison). The poison is now two keys like any removal and is left to R5, which voids it because
+    // its second signer is the member removed beside it, so m7 never comes back and the remedy below
+    // has nothing to restore. The test still runs the remedy and checks it changes nothing.
+    expect(u.voidReason(poison.id)).toBe('removal-wins');
+    expect(u.members()).not.toContain('m7');
     // Two members remove the seized CO key on the current head.
     u.remove(['co'], ['m1', 'm2'], T0 + 41 * DAY);
     expect(u.members()).not.toContain('co');

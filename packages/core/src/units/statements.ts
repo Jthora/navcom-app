@@ -144,8 +144,9 @@ export type ServedSnap = readonly [key: string, last: number, count: number];
  * and the previous change of command. The rest is what a phone anchored here needs to check the
  * next act: the electorates of open runs (a digest alone could not tell it whether a signer
  * counts), who was removed (who may never be admitted again), who was removed while holding an
- * office (who may be re-admitted by any two while that office's election is open), the
- * invitations of a re-founded unit, and who served the CO office in the last two terms.
+ * office (who may be re-admitted by any two while that office's election is open, and who keeps a
+ * vote until it is filled) with the key readmitted in that place, the invitations of a re-founded
+ * unit, and who served the CO office in the last two terms.
  *
  * `cap` is the count governance §2.4 names: the CO holder and the consecutive CO terms they have
  * served. It is read from `served`, which is what the cap is applied from, because a CO cap that
@@ -161,7 +162,8 @@ export interface Snapshot {
   runs: readonly RunSnap[];
   recalled: readonly RecalledSnap[];
   removed: readonly string[];
-  holding: readonly (readonly [string, readonly Office[]])[];
+  /** `[key, offices, readmitted]`: a key removed while holding offices, and the key readmitted in its place. */
+  holding: readonly (readonly [string, readonly Office[], string | null])[];
   invited: readonly (readonly [string, string, boolean])[];
   prevCommand: string | null;
   served: readonly ServedSnap[];
@@ -291,7 +293,8 @@ function snapshotFrom(v: unknown): Snapshot | null {
   )) return null;
   if (!sortedSet(removed, 0, 4096, isKey)) return null;
   if (!Array.isArray(holding) || holding.length > 4096 || !holding.every((h) =>
-    Array.isArray(h) && h.length === 2 && isKey(h[0]) && sortedSet(h[1], 1, 2, isOffice)
+    Array.isArray(h) && h.length === 3 && isKey(h[0]) && sortedSet(h[1], 1, 2, isOffice) &&
+    (h[2] === null || (isKey(h[2]) && h[2] !== h[0]))
   )) return null;
   if (!Array.isArray(invited) || invited.length > 4096 || !invited.every((i) =>
     Array.isArray(i) && i.length === 3 && isHash(i[0]) && isKey(i[1]) && (i[2] === 0 || i[2] === 1)
@@ -323,7 +326,7 @@ function snapshotFrom(v: unknown): Snapshot | null {
       key: r[0], office: r[1], n: r[2], signers: r[3]
     })),
     removed: removed as string[],
-    holding: (holding as [string, Office[]][]).map((h) => [h[0], h[1]] as const),
+    holding: (holding as [string, Office[], string | null][]).map((h) => [h[0], h[1], h[2]] as const),
     invited: (invited as [string, string, 0 | 1][]).map((i) => [i[0], i[1], i[2] === 1] as const),
     prevCommand: prevCommand as string | null,
     served: (served as [string, number, number][]).map((s) => [s[0], s[1], s[2]] as const)
@@ -355,7 +358,7 @@ export function snapshotWire(s: Snapshot): unknown[] {
     byJson(s.runs.map((r) => [r.id, r.kind, r.office, r.subject, r.opener, r.at, [...r.electorate].sort()])),
     byJson(s.recalled.map((r) => [r.key, r.office, r.n, [...r.signers].sort()])),
     [...s.removed].sort(),
-    byJson(s.holding.map((h) => [h[0], [...h[1]].sort()])),
+    byJson(s.holding.map((h) => [h[0], [...h[1]].sort(), h[2]])),
     byJson(s.invited.map((i) => [i[0], i[1], i[2] ? 1 : 0])),
     s.prevCommand,
     [...s.served]

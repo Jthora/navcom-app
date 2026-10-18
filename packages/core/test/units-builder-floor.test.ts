@@ -15,6 +15,13 @@ import { DAY, REASON, T0, ledUnit, makeUnit, names, shuffled } from './helpers/u
  * author rule the CO, not a plain member, authors the acts. Both FAILED on g1 as committed before
  * B0, as the draft predicted: the `// before B0:` notes record what that evaluator did. The rest
  * were written with the repair, and those marked "before B0" also failed against it.
+ *
+ * Five were corrected with the repairs of B0's adversarial pass (test/units-b0-attack.test.ts), each
+ * marked "Corrected" with the reason: two concurrent removals by one author now both stand (BREAK 5);
+ * a phone no longer names, or builds on, its own act while it waits for a second signature, so the two
+ * waiting-admission cases changed (BREAK 2); F7's cost is reached by a stale act that stands on
+ * something the vacate did not see (BREAK 2); and a readmitted key takes a holder's place but not its
+ * vote (BREAK 6).
  */
 
 const NINE = names(7); // with co and xo, a unit of nine
@@ -122,14 +129,19 @@ describe('F7: a stale leave is an ending too', () => {
 });
 
 describe('F7: one line for endings', () => {
-  it('two concurrent removals authored by one key both fall, and the key is named', () => {
+  it('two concurrent removals authored by one key are two keys each, and both stand', () => {
+    // Corrected with the B0 attack repair (B0-BREAK 5): this asserted that both fall, ending-crossed.
+    // A co-signed removal carries two keys, and R10 is for endings that carry one. Counted as F7
+    // endings, removals let a stale co-signed act by their author and the very member one of them
+    // removed void every removal that author made. Neither of these undoes the other: each removes a
+    // key the other's signers do not include.
     const u = ledUnit(NINE);
     const h = u.tips();
     const a = u.remove(['m6'], ['co', 'm1'], T0 + 2 * DAY, h);
     const b = u.remove(['m7'], ['co', 'm2'], T0 + 2 * DAY, h);
-    const v = u.view();
-    for (const r of [a, b]) expect(v.void.find((x) => x.id === r.id)).toEqual({ id: r.id, reason: 'ending-crossed', names: [u.key('co')] });
-    expect(u.members()).toEqual(expect.arrayContaining(['m6', 'm7']));
+    expect([u.voidReason(a.id), u.voidReason(b.id)]).toEqual([undefined, undefined]);
+    expect(u.members()).not.toContain('m6');
+    expect(u.members()).not.toContain('m7');
     // In one line, both stand.
     const w = ledUnit(NINE);
     const c = w.remove(['m6'], ['co', 'm1'], T0 + 2 * DAY);
@@ -176,7 +188,13 @@ describe('F7: one line for endings', () => {
   });
 });
 
-describe('F7: a phone names its own latest authored act, even while it waits for a second signature', () => {
+describe('F7: a phone names its own latest authored act, never one it holds back', () => {
+  // Corrected with the B0 attack repair (B0-BREAK 2). B0 had a phone name its own act while it waited
+  // for a second signature, and gave what was built on it a place to stand without it. Co-signed late,
+  // that act landed beneath everything since and changed every electorate frozen there: one late
+  // signature undid an election. Now a phone never names an act it holds back, nothing stands on an
+  // act still waiting, and a late-completed act is read beside what came after it. R10 does not void
+  // an ending for a co-signed act whose ancestry the ending saw, so the honest ending stands.
   it('prevFor keeps the key\'s own latest act within the parent limit', () => {
     const ids = ['a', 'b', 'c', 'd', 'e'].map((c) => c.repeat(64));
     const mine = 'f'.repeat(64);
@@ -186,37 +204,42 @@ describe('F7: a phone names its own latest authored act, even while it waits for
     expect(prevFor([mine, ids[0]!], mine)).toEqual([ids[0]!, mine]);
   });
 
-  it('an honest CO vacates while its own admission waits; the admission and the vacate both stand once co-signed', () => {
+  it('an honest CO vacates while its own admission waits; the vacate stands, and the admission falls with the office', () => {
     const u = ledUnit(NINE);
     // The CO admits n1 in person; m1's second signature has not reached this phone yet.
     const ad = buildAct({ unit: u.unit, view: u.view(), latest: null, act: { t: 'admit', key: u.key('n1'), callsign: 'N1', readmits: null }, at: T0 + 10 * DAY }, u.sk('co'));
     u.chain.push({ act: ad });
     expect(u.heldReason(ad.id)).toBe('incomplete');
-    // The CO's next act names it, and is read now rather than held behind it.
+    // The CO's next act does not name it, so it is read now rather than held behind it.
     const vacate = buildAct({ unit: u.unit, view: u.view(), latest: ad.id, act: { t: 'vacate', office: 'co' }, at: T0 + 11 * DAY }, u.sk('co'));
     const read = readStatement(vacate);
     if (!read.ok || read.statement.t !== 'vacate') throw new Error('not a vacate');
-    expect(read.statement.prev).toContain(ad.id);
+    expect(read.statement.prev).not.toContain(ad.id);
     u.chain.push({ act: vacate });
     expect(u.heldReason(vacate.id)).toBeUndefined();
     expect(u.offices()).toMatchObject({ co: 'xo', coActing: true });
     expect(u.view().head).toEqual([vacate.id]);
-    // The second signature arrives: the admission joins the chain beneath the vacate.
+    // The second signature arrives. The admission is read beside the vacate, which saw everything it
+    // stood on, so R10 leaves the vacate alone; the CO's authority ended with it, so R4 ends the
+    // admission. The CO admits n1 again, or waits for the signature before stepping down.
     u.loose.push(u.sign('m1', { t: 'sign', unit: u.unit, act: ad.id }, T0 + 12 * DAY));
-    expect([u.voidReason(ad.id), u.heldReason(ad.id), u.voidReason(vacate.id)]).toEqual([undefined, undefined, undefined]);
-    expect(u.members()).toContain('n1');
+    expect([u.voidReason(ad.id), u.heldReason(ad.id), u.voidReason(vacate.id)]).toEqual(['office-ended', undefined, undefined]);
+    expect(u.members()).not.toContain('n1');
     expect(u.offices()).toMatchObject({ co: 'xo', coActing: true });
   });
 
-  it('a phone that vacates past its own waiting admission loses the vacate when the admission is co-signed', () => {
+  it('a phone that names its own waiting admission anyway waits with it, and both stand once co-signed', () => {
     const u = ledUnit(NINE);
     const ad = buildAct({ unit: u.unit, view: u.view(), latest: null, act: { t: 'admit', key: u.key('n1'), callsign: 'N1', readmits: null }, at: T0 + 10 * DAY }, u.sk('co'));
     u.chain.push({ act: ad });
-    const vacate = buildAct({ unit: u.unit, view: u.view(), latest: null, act: { t: 'vacate', office: 'co' }, at: T0 + 11 * DAY }, u.sk('co'));
-    u.chain.push({ act: vacate });
-    u.loose.push(u.sign('m1', { t: 'sign', unit: u.unit, act: ad.id }, T0 + 12 * DAY));
-    expect(u.voidReason(vacate.id)).toBe('ending-crossed');
+    // A hand-rolled phone names it: nothing stands on an act still waiting, so the vacate waits too.
+    const vacate = u.act('co', { t: 'vacate', office: 'co', prev: [ad.id] }, T0 + 11 * DAY);
+    expect(u.heldReason(vacate.id)).toBe('waiting-for-earlier');
     expect(u.offices()).toMatchObject({ co: 'co', xo: 'xo' });
+    u.loose.push(u.sign('m1', { t: 'sign', unit: u.unit, act: ad.id }, T0 + 12 * DAY));
+    expect([u.voidReason(ad.id), u.voidReason(vacate.id)]).toEqual([undefined, undefined]);
+    expect(u.members()).toContain('n1');
+    expect(u.offices()).toMatchObject({ co: 'xo', coActing: true });
   });
 
   it('buildAct refuses a view with no head', () => {
@@ -237,13 +260,21 @@ describe('F7: what remains (its cost)', () => {
     const vacate = u.vacate('co', 'co', T0 + 5 * DAY);
     const { result } = u.elect({ office: 'co', opener: 'm1', candidate: 'xo', voters: ['xo', 'm1', 'm2', 'm3', 'm4'], at: T0 + 6 * DAY });
     expect(u.offices()).toMatchObject({ co: 'xo', coActing: false, xo: null });
-    const sock = u.admit('sock', ['co', 'm7'], T0 + 40 * DAY, { prev: before });
+    // Corrected with the B0 attack repair: a stale act on the very state the vacate names no longer
+    // voids it, since the vacate saw everything that act stood on (R10 reads it as earlier on the
+    // CO's line), and R4 ends it instead. The cost remains where the stale act also stands on
+    // something the vacate never saw: here the ally's own petition, signed on the old state.
+    const plain = u.admit('sock0', ['co', 'm7'], T0 + 39 * DAY, { prev: before });
+    expect(u.voidReason(plain.id)).toBe('office-ended');
+    expect(u.voidReason(vacate.id)).toBeUndefined();
+    const seen = u.petition('m7', 'co', 'co', T0 + 40 * DAY, before);
+    const sock = u.admit('sock', ['co', 'm7'], T0 + 40 * DAY + 60, { prev: [seen.id] });
     expect(u.voidReason(vacate.id)).toBe('ending-crossed');
     expect(u.voidReason(result.id)).toBe('built-on-void');
     expect(u.offices()).toMatchObject({ co: 'co', xo: 'xo' });
     expect(u.members()).toContain('sock');
-    // Two members who have authored nothing co-signed since remove the key on the same old state:
-    // what it signed since falls (R5), and the XO acts as CO. The election has to be run again.
+    // Two members remove the key on the same old state: what it signed since falls (R5), and the XO
+    // acts as CO. The election has to be run again.
     u.remove(['co'], ['m1', 'm2'], T0 + 41 * DAY, before);
     expect(u.voidReason(sock.id)).toBe('removal-wins');
     expect(u.members()).not.toContain('sock');
@@ -284,11 +315,17 @@ describe('F5: removed holders still count, until their office is filled', () => 
     expect(pv.m).toBe(8);
   });
 
-  it('a readmitted holder\'s new key replaces the old one, and never adds a second vote', () => {
+  it('a readmitted holder\'s new key takes the old one\'s place, and the vote stays with the old key until the office is filled', () => {
+    // Corrected with the B0 attack repair (B0-BREAK 6): this asserted that the new key takes the old
+    // one's vote. Nothing ties the new key to the holder, so two members who name a removed holder
+    // could hand that holder's vote to a sock. A readmission never moves a vote, and still never adds
+    // one: the new key does not vote while the old key does.
     const u = ledUnit(NINE);
     u.remove(['co'], ['m1', 'm2'], T0 + 10 * DAY);
     const run1 = u.open('m3', 'co', T0 + 11 * DAY);
     u.admit('co2', ['m4', 'm5'], T0 + 12 * DAY, { readmits: 'co' });
+    // One key in the holder's place, ever.
+    expect(u.voidReason(u.admit('co3', ['m4', 'm6'], T0 + 12 * DAY + 60, { readmits: 'co' }).id)).toBe('not-allowed');
     const run2 = u.open('m6', 'xo', T0 + 13 * DAY);
     const v = u.view();
     const e1 = v.runs.find((r) => r.id === run1.id)!.electorate;
@@ -296,10 +333,33 @@ describe('F5: removed holders still count, until their office is filled', () => 
     // Opened before the readmission: frozen with the old key, and the new one is not an elector.
     expect(e1).toContain(u.key('co'));
     expect(e1).not.toContain(u.key('co2'));
-    // Opened after it: the new key in place of the old, the same count.
+    // Opened after it, with the CO post still unfilled: the old key still, the same count.
+    expect(e2).toContain(u.key('co'));
+    expect(e2).not.toContain(u.key('co2'));
+    expect([e1.length, e2.length]).toEqual([9, 9]);
+    // A checkpoint carries the pairing, so a phone starting from one reads the same electorates.
+    expect(v.snapshot!.holding).toEqual([[u.key('co'), ['co'], u.key('co2')]]);
+    // The readmitted key may stand, and once the CO post is filled the old key's vote ends and the
+    // new key's begins.
+    u.vote(run1.id, 'co2', ['co', 'm1', 'm2', 'm3', 'm4'], T0 + 14 * DAY);
+    u.result('m3', run1.id, 'co2', T0 + 14 * DAY + 600);
+    expect(u.offices().co).toBe('co2');
+    expect(u.view().snapshot!.holding).toEqual([]);
+  });
+
+  it('a readmitted key votes once its holder\'s office is filled', () => {
+    const u = ledUnit(NINE);
+    u.remove(['co'], ['m1', 'm2'], T0 + 10 * DAY);
+    const run1 = u.open('m3', 'co', T0 + 11 * DAY);
+    u.admit('co2', ['m4', 'm5'], T0 + 12 * DAY, { readmits: 'co' });
+    u.vote(run1.id, 'm3', ['co', 'm1', 'm2', 'm3', 'm4'], T0 + 13 * DAY);
+    u.result('m3', run1.id, 'm3', T0 + 13 * DAY + 600);
+    // Removing the CO made the XO acting CO and left the XO post empty; its fill opens now.
+    const run2 = u.open('m6', 'xo', T0 + 14 * DAY);
+    const e2 = u.view().runs.find((r) => r.id === run2.id)!.electorate;
     expect(e2).toContain(u.key('co2'));
     expect(e2).not.toContain(u.key('co'));
-    expect([e1.length, e2.length]).toEqual([9, 9]);
+    expect(e2).toHaveLength(9);
   });
 
   it('a removed holder keeps a place in the room until the office is filled or they are readmitted', () => {
