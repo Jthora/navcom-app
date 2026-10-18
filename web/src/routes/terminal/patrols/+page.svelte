@@ -21,6 +21,7 @@
   import { Slot, Readout } from '$lib/components/panel';
   import { canShareText, shareText } from '$lib/terminal/share';
   import { RECAP_FILENAME, RECAP_SIZE, canShareFile, drawRecap, recapAlt } from '$lib/terminal/recap';
+  import { onWipe } from '$lib/terminal/storage';
 
   let list = $state<Patrol[]>([]);
   let keep = $state(false);
@@ -70,6 +71,11 @@
   let shareSaid = $state<'' | 'refused' | 'saved'>('');
 
   onMount(() => {
+    // A wipe here or in another tab closes the preview and drops the image with it.
+    const unwiped = onWipe(() => {
+      showExport = false;
+      list = patrols();
+    });
     list = patrols();
     keep = keepsHistory();
     callsign = operator.callsign;
@@ -77,6 +83,7 @@
     myCorrections = storedCorrections();
     myPlaces = storedPlaces();
     canShare = canShareText();
+    return unwiped;
   });
 
   const total = $derived(list.reduce((n, p) => n + (p.ended - p.started), 0));
@@ -123,35 +130,63 @@
     if ((await shareText(text)) === 'refused') shareSaid = 'refused';
   }
 
-  /**
-   * The image, which is the only version of this that reaches Instagram.
-   *
-   * Drawn at the moment of the tap rather than kept anywhere: it is derived from the record one
-   * line at a time, and an image of where somebody has been is not a thing to leave lying in
-   * storage. The caption that rides with it is the sentence an operator can also paste as alt text.
-   */
-  async function shareImage() {
-    shareSaid = '';
-    copied = false;
-    const input = { callsign, patrols: list, includeAreas, includeNotes };
+  type Recap = { file: File; blob: Blob; alt: string };
+
+  /** Draws and encodes the image for these inputs, or null where this browser cannot. */
+  async function encodeRecap(input: Parameters<typeof drawRecap>[1]): Promise<Recap | null> {
     const canvas = document.createElement('canvas');
     canvas.width = RECAP_SIZE;
     canvas.height = RECAP_SIZE;
     const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      shareSaid = 'refused';
-      return;
-    }
+    if (!ctx) return null;
     drawRecap(ctx, input);
     const blob = await new Promise<Blob | null>((done) => canvas.toBlob(done, 'image/png'));
-    if (!blob) {
+    if (!blob) return null;
+    return { file: new File([blob], RECAP_FILENAME, { type: 'image/png' }), blob, alt: recapAlt(input) };
+  }
+
+  /**
+   * The image, encoded while the preview is open, so the tap only hands it over.
+   *
+   * A share sheet accepts a file only within five seconds of the tap that asked for it, and
+   * Chromium encodes a PNG in idle time: measured at 10 ms, about 1 s, and on its slow path about
+   * 6.7 s, with nothing else running [retrofit lane 4, 2026-10-17]. Encoding on the tap missed the
+   * window on that path and the operator read "Not sent". So it is drawn as soon as the preview
+   * opens and again whenever what it shows changes, and kept **in memory only**: dropped when the
+   * preview closes, when its inputs change, and on a wipe in any tab. An image of where somebody
+   * has been is still never written to storage.
+   */
+  let recap: Promise<Recap | null> | null = null;
+  /** Off until the image for what the preview shows is encoded, so a tap is never the slow part. */
+  let recapReady = $state(false);
+  $effect(() => {
+    recapReady = false;
+    if (!showExport) {
+      recap = null;
+      return;
+    }
+    const input = { callsign, patrols: list, includeAreas, includeNotes };
+    const encoding = encodeRecap(input);
+    recap = encoding;
+    void encoding.then(() => {
+      if (recap === encoding) recapReady = true;
+    });
+  });
+
+  async function shareImage() {
+    shareSaid = '';
+    copied = false;
+    // Normally ready long before the tap. If somebody taps the instant the preview opens, this
+    // waits for the one encode already running rather than starting a second.
+    const ready = await (recap ?? encodeRecap({ callsign, patrols: list, includeAreas, includeNotes }));
+    if (!ready) {
       shareSaid = 'refused';
       return;
     }
-    const file = new File([blob], RECAP_FILENAME, { type: 'image/png' });
+    const { file, blob } = ready;
     if (canShareFile(file)) {
       try {
-        await navigator.share({ files: [file], text: recapAlt(input) });
+        await navigator.share({ files: [file], text: ready.alt });
       } catch (err: unknown) {
         const name = (err as { name?: string } | null)?.name ?? '';
         if (name !== 'AbortError') shareSaid = 'refused';
@@ -287,7 +322,7 @@
         {#if canShare}
           <button data-share onclick={share}>Share</button>
         {/if}
-        <button data-share-image onclick={shareImage}>Image</button>
+        <button data-share-image onclick={shareImage} disabled={!recapReady} aria-busy={!recapReady}>Image</button>
         <button onclick={copy}>{copied ? 'Copied' : 'Copy'}</button>
       </div>
       {#if shareSaid}
