@@ -1,9 +1,6 @@
 /**
- * Com's mission screens, loaded the first time somebody opens one [docs/design/com.md §6]: first
- * paint never needs them, and the landing page's script budget has no room to carry them there.
+ * Com's missions entry, loaded the first time somebody opens one of its screens [docs/design/com.md
+ * §6]: first paint never needs it, and the landing page's script budget has no room to carry it
+ * there. One host draws every screen of the entry [$lib/com/screens].
  */
-export { default as MissionList } from './MissionList.svelte';
-export { default as MissionPage } from './MissionPage.svelte';
-export { default as YoursScreen } from './YoursScreen.svelte';
-export { default as ReportScreen } from './ReportScreen.svelte';
-export { default as ReportsScreen } from './ReportsScreen.svelte';
+export { default as Host } from './MissionsHost.svelte';

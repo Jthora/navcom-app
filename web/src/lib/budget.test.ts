@@ -31,11 +31,13 @@ const APP = '.svelte-kit/generated/client-optimized/app.js';
 const MAP = 'src/lib/components/grid/GridMap.svelte';
 const LIVE = 'src/lib/missions/live.ts';
 const MISSIONS = 'src/lib/components/missions/index.ts';
+const COM = 'src/lib/components/com/index.ts';
 const ERROR_PAGE = '.svelte-kit/generated/shared/error-template.js';
 
 /**
- * A landing page that mounts a map and a feed and opens a missions entry, a roster, a Status page
- * heavy on script, a Find page heavy on HTML, and a public page with none.
+ * A landing page that mounts a map, a feed and Com's registry, whose registry opens a missions
+ * entry; a roster, a Status page heavy on script, a Find page heavy on HTML, and a public page with
+ * none.
  *
  * - `_shared.js` is loaded at first paint and ALSO imported dynamically by the root: it must be
  *   charged to first paint and to nothing later
@@ -56,7 +58,7 @@ function manifest(): Record<string, { file: string; isEntry?: boolean; isDynamic
       isEntry: true,
       isDynamicEntry: true,
       imports: ['_shared.js'],
-      dynamicImports: [MAP, LIVE, MISSIONS, '_shared.js', NODE('2'), ERROR_PAGE],
+      dynamicImports: [MAP, LIVE, COM, '_shared.js', NODE('2'), ERROR_PAGE],
       css: [`${A}/assets/0.css`]
     },
     [NODE('1')]: { file: `${A}/nodes/1.js`, isEntry: true, isDynamicEntry: true, imports: ['_shared.js', '_core.js'] },
@@ -65,6 +67,7 @@ function manifest(): Record<string, { file: string; isEntry?: boolean; isDynamic
     [NODE('4')]: { file: `${A}/nodes/4.js`, isEntry: true, isDynamicEntry: true, imports: [] },
     [MAP]: { file: `${A}/chunks/map.js`, isDynamicEntry: true, src: MAP, imports: ['_shared.js'], css: [`${A}/assets/map.css`] },
     [LIVE]: { file: `${A}/chunks/live.js`, isDynamicEntry: true, src: LIVE, imports: ['_core.js'] },
+    [COM]: { file: `${A}/chunks/com.js`, isDynamicEntry: true, src: COM, imports: ['_shared.js'], dynamicImports: [MISSIONS] },
     [MISSIONS]: {
       file: `${A}/chunks/missions.js`,
       isDynamicEntry: true,
@@ -106,6 +109,7 @@ function fixture(overrides: { manifest?: ReturnType<typeof manifest>; chunks?: R
     [`${A}/nodes/4.js`]: noise(50),
     [`${A}/chunks/map.js`]: noise(500),
     [`${A}/chunks/live.js`]: noise(250),
+    [`${A}/chunks/com.js`]: noise(120),
     [`${A}/chunks/missions.js`]: noise(900),
     [`${A}/chunks/error.js`]: noise(60),
     [`${A}/chunks/shared.js`]: noise(700),
@@ -251,8 +255,8 @@ describe('the budget, run on a build whose answers are known', () => {
     expect(tiers.first_paint.js).toBe(report.surfaces.root.js);
     expect(tiers.first_paint.js).toBe(f.sum(`${A}/entry/app.js`, `${A}/nodes/0.js`, `${A}/chunks/shared.js`));
     expect(tiers.first_paint.css).toBe(f.gz(`${A}/assets/0.css`));
-    // The map, the feed and the core chunk the feed pulls: every visit pays for these.
-    expect(tiers.mount.js).toBe(f.sum(`${A}/chunks/map.js`, `${A}/chunks/live.js`, `${A}/chunks/core.js`));
+    // The map, the feed, the core chunk the feed pulls and Com's registry: every visit pays for these.
+    expect(tiers.mount.js).toBe(f.sum(`${A}/chunks/map.js`, `${A}/chunks/live.js`, `${A}/chunks/core.js`, `${A}/chunks/com.js`));
     expect(tiers.mount.css).toBe(f.gz(`${A}/assets/map.css`));
     // The entry pays for its own code and what mount did not already load: not core again.
     expect(tiers.entries.missions.js).toBe(f.sum(`${A}/chunks/missions.js`, `${A}/chunks/pool.js`));
@@ -285,7 +289,7 @@ describe('the budget, run on a build whose answers are known', () => {
     });
     const { report } = run(f);
     const tiers = report.root_tiers;
-    expect(tiers.mount.js).toBe(f.sum(`${A}/chunks/map.js`, `${A}/chunks/live.js`, `${A}/chunks/core.js`));
+    expect(tiers.mount.js).toBe(f.sum(`${A}/chunks/map.js`, `${A}/chunks/live.js`, `${A}/chunks/core.js`, `${A}/chunks/com.js`));
     expect(tiers.entries.missions.js).toBe(f.sum(`${A}/chunks/missions.js`, `${A}/chunks/pool.js`));
     // Each in its own tier, named for what to declare it as, and paying nothing mount already loaded.
     expect(tiers.unclassified).toEqual({
@@ -303,7 +307,7 @@ describe('the budget, run on a build whose answers are known', () => {
   it('reports a dynamic import nobody declared on a line of its own, and a declared one that went away', () => {
     const m = manifest();
     m['src/lib/components/people/index.ts'] = { file: `${A}/chunks/people.js`, isDynamicEntry: true };
-    m[NODE('0')].dynamicImports = [MAP, MISSIONS, 'src/lib/components/people/index.ts'];
+    m[NODE('0')].dynamicImports = [MAP, COM, 'src/lib/components/people/index.ts'];
     const f = fixture({ manifest: m, chunks: { [`${A}/chunks/people.js`]: noise(120) } });
     const { report, out } = run(f);
     expect(report.root_tiers.unclassified['src/lib/components/people/index.ts'].js).toBe(f.gz(`${A}/chunks/people.js`));
@@ -325,6 +329,7 @@ describe('the budget, run on a build whose answers are known', () => {
       bytes: f.sum(
         `${A}/chunks/map.js`,
         `${A}/chunks/live.js`,
+        `${A}/chunks/com.js`,
         `${A}/chunks/missions.js`,
         `${A}/chunks/pool.js`,
         `${A}/assets/only.css`,
@@ -404,21 +409,22 @@ describe('the root tiers are declared to match the page that loads them', () => 
   const BUILD = fileURLToPath(new URL('../../build/', import.meta.url));
   const MANIFEST = fileURLToPath(new URL('../../.svelte-kit/output/client/.vite/manifest.json', import.meta.url));
   const PAGE = fileURLToPath(new URL('../routes/+page.svelte', import.meta.url));
+  const REGISTRY = fileURLToPath(new URL('./com/screens.ts', import.meta.url));
   const spec = (key: string) => key.replace(/^src\/lib\//, '$lib/').replace(/\/index\.ts$/, '').replace(/\.ts$/, '');
 
-  it('imports the mount tier as it mounts, and each Com entry only when a screen opens', () => {
+  it('imports the mount tier as it mounts, and leaves every Com entry to Com’s registry', () => {
     /*
-     * The manifest cannot say when an import fires. `+page.svelte` can: fire-and-forget on mount,
-     * awaited when a screen opens. A mount import moved behind the sheet, or an entry pulled into
-     * mount, makes the declaration in budget.mjs wrong, and this is where that shows.
+     * The manifest cannot say when an import fires. `+page.svelte` can: it imports its mount tier as
+     * it mounts, waiting on none of it, and no Com entry at all. Each entry's one import site is the
+     * registry's, so a new entry adds nothing to the page, its preload list included, and the page's
+     * first paint stays where it was [groups.md §13]. A mount import moved behind the sheet, or an
+     * entry imported by the page again, makes the declaration in budget.mjs wrong, and this is where
+     * that shows.
      */
-    const page = readFileSync(PAGE, 'utf8');
-    const quote = (s: string) => s.replace(/[$.*+?^{}()|[\]\\/]/g, '\\$&');
-    for (const key of ROOT_MOUNT) expect(page, `${key} is not imported on mount`).toMatch(new RegExp(`void import\\('${quote(spec(key))}'\\)`));
-    for (const key of Object.values(COM_ENTRIES)) {
-      expect(page, `${key} is not awaited when a screen opens`).toMatch(new RegExp(`await import\\('${quote(spec(key))}'\\)`));
-      expect(page).not.toMatch(new RegExp(`void import\\('${quote(spec(key))}'\\)`));
-    }
+    const imports = (file: string) => [...new Set([...readFileSync(file, 'utf8').matchAll(/\bimport\s*\(\s*'([^']+)'\s*\)/g)].map((m) => m[1]))].sort();
+    expect(imports(PAGE), 'what the page imports later is its mount tier, and nothing else').toEqual(ROOT_MOUNT.map(spec).sort());
+    expect(readFileSync(PAGE, 'utf8'), 'the page waits on an import').not.toMatch(/\bawait\s+import\s*\(/);
+    expect(imports(REGISTRY), 'Com’s registry imports each entry, and only those').toEqual(Object.values(COM_ENTRIES).map(spec).sort());
   });
 
   it('declares every dynamic import the built landing page makes, and none it no longer makes', () => {
@@ -448,5 +454,7 @@ describe('the root tiers are declared to match the page that loads them', () => 
     expect(undeclared, 'the landing page loads these later; say in scripts/lib/budget.mjs whether on mount or on opening a screen').toEqual([]);
     expect([...ROOT_MOUNT].filter((k) => !seeds.has(k)), 'imported on mount no longer, or not by the page itself').toEqual([]);
     expect([...declared].filter((k) => !seeds.has(k) && !nested.has(k)), 'declared in scripts/lib/budget.mjs and no longer imported by the landing page').toEqual([]);
+    // Opened from inside the mount tier, never by first paint itself, which would carry its preload list.
+    expect(Object.values(COM_ENTRIES).filter((k) => seeds.has(k)), 'a Com entry imported by the landing page’s first paint').toEqual([]);
   });
 });

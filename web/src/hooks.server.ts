@@ -25,16 +25,22 @@ import type { Handle } from '@sveltejs/kit';
  * So the shell stays universal and this is injected per route. The public site keeps its
  * zero and the terminal gets its bootstrap.
  *
- * ## Why the script is shaped the way it is
+ * ## Why the scripts are shaped the way they are
  *
- * **Inline**, so it costs no request and cannot itself be the thing still downloading.
- * **Classic rather than a module**, so it is not deferred. **At the end of the body**, so
- * the markup it fills has already been parsed — and deliberately *not* on
- * `DOMContentLoaded`, which waits for deferred module scripts and would put it back behind
- * the very bundle it exists to get ahead of.
+ * **Inline**, so they cost no request and cannot themselves be the thing still downloading.
+ * **Classic rather than modules**, so they are not deferred, and deliberately *not* on
+ * `DOMContentLoaded`, which waits for deferred module scripts and would put them back behind
+ * the very bundle they exist to get ahead of.
  *
- * It writes with DOM methods rather than `innerHTML`: the label is the operator's own text
- * on their own device, but building markup out of stored strings is a habit worth not
+ * **Each runs where its markup is parsed.** The bootstrap fills the Distress page's links, so
+ * it ends the body, after that markup. The reveal is not in it: it sits inside the control it
+ * shows [REVEAL]. It used to end the body too, and the landing page is 158 kB, the region
+ * picker's 1,913 options before its end. On a slow connection the browser paints what has
+ * arrived, so the map and the search were on screen for 2.4 s at the budget's design point with
+ * no Distress on them [invariant 2; e2e/distress-before-hydration.spec.ts].
+ *
+ * The bootstrap writes with DOM methods rather than `innerHTML`: the label is the operator's own
+ * text on their own device, but building markup out of stored strings is a habit worth not
  * having.
  */
 
@@ -44,18 +50,6 @@ const BOOTSTRAP = `<script>
     var raw = localStorage.getItem('navcom.accruing');
     if (!raw) return;
     var store = JSON.parse(raw);
-
-    // Status: the way TO Distress, before the bundle arrives.
-    //
-    // The rest of this script solved being *on* the Distress screen early. Getting there was
-    // still behind the bundle: the Distress action and the whole rail sit inside
-    // \`{#if identity}\`, and identity is read from storage on mount, so for the first few
-    // seconds Status offered two links -- the directory and setup. On the device floor that is
-    // about three seconds, measured, and it is the screen somebody reaches for while something
-    // is happening. Same trick, same file, a few hundred more bytes.
-    var early = document.getElementById('distress-early');
-    if (early && store.secret) early.hidden = false;
-
     var slot = document.getElementById('reach-now');
     var section = document.getElementById('reach-early');
     if (!slot || !section) return;
@@ -82,19 +76,43 @@ const BOOTSTRAP = `<script>
 
 const MARKER = '<!--navcom-bootstrap-->';
 
+/**
+ * The way TO Distress, before the bundle arrives: shows the prerendered `#distress-early` on a
+ * device with an operator, and nowhere else.
+ *
+ * The bootstrap solved being *on* the Distress screen early. Getting there was still behind the
+ * bundle: the terminal's Distress action sits inside `{#if identity}`, and identity is read from
+ * storage on mount, so for the first few seconds Status offered two links, the directory and setup.
+ * The landing page's Distress layer is revealed on mount the same way [com.md §4].
+ *
+ * **Inside the element, as its last child**, so it runs the moment the control is parsed and not
+ * when the document ends. Hydration never walks it: both pages' copies are static markup, which
+ * Svelte claims whole and does not descend into. Any storage it cannot read leaves the control
+ * hidden, and the application shows it a moment later if it should.
+ */
+const REVEAL =
+  "<script>try{if(JSON.parse(localStorage.getItem('navcom.accruing')).secret)document.getElementById('distress-early').hidden=false}catch(e){}</script>";
+/** The prerendered early copy through its own closing tag: a section on `/`, a div on `/terminal/`. */
+const EARLY = /(<(section|div)\b[^>]*\bid="distress-early"[^>]*>[\s\S]*?)(<\/\2>)/;
+
 export const handle: Handle = async ({ event, resolve }) => {
   /*
-   * The terminal, and the landing page. The landing page joined on 2026-10-06 when Com moved
-   * onto it, because Com carries Distress for an operator in a layer nothing covers [com.md §4]
-   * — and the reason this script exists is that Distress must not wait three seconds for a
-   * bundle. The root already ships script, so it has no zero-JavaScript promise to break.
+   * The reveal goes wherever a page carries the early copy: the terminal, and the landing page,
+   * which joined on 2026-10-06 when Com moved onto it, because Com carries Distress for an
+   * operator in a layer nothing covers [com.md §4]. The root already ships script, so it has no
+   * zero-JavaScript promise to break. The bootstrap goes to the terminal only, where the
+   * Distress page it fills is.
    *
    * The marker is removed everywhere else rather than left in place, so a public page carries
    * no trace of a script it is not allowed to have.
    */
   const path = event.url.pathname;
-  const bootstraps = path === '/' || path.startsWith('/terminal');
+  const terminal = path.startsWith('/terminal');
+  const reveals = terminal || path === '/';
   return resolve(event, {
-    transformPageChunk: ({ html }) => html.replace(MARKER, bootstraps ? BOOTSTRAP : '')
+    transformPageChunk: ({ html }) => {
+      const page = html.replace(MARKER, terminal ? BOOTSTRAP : '');
+      return reveals ? page.replace(EARLY, (_, open: string, _tag, close: string) => open + REVEAL + close) : page;
+    }
   });
 };

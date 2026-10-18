@@ -1,8 +1,8 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure';
-import { blankDevice, open, seedDevice } from './device';
+import { blankDevice, chunkOf, open, seedDevice } from './device';
 
 /**
  * A person's deliberate tap on a visibility choice comes well after the tap that opened it. The
@@ -42,19 +42,6 @@ async function uncovered(locator: Locator): Promise<boolean> {
     const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
     return hit === el || el.contains(hit);
   });
-}
-
-/** The URL pattern of the chunk a module was split into, read from the build under test. */
-function chunkOf(module: string): string {
-  const manifest = JSON.parse(
-    readFileSync(new URL('../.svelte-kit/output/client/.vite/manifest.json', import.meta.url), 'utf8')
-  ) as Record<string, { file: string }>;
-  const file = manifest[module]?.file;
-  if (!file) throw new Error(`${module} is not in the Vite manifest`);
-  // A manifest from another build names a chunk this server does not have, and a route on it
-  // would block nothing — the test would pass for the wrong reason. Fail here instead.
-  if (!existsSync(new URL(`../build/${file}`, import.meta.url))) throw new Error(`${file} is not in web/build`);
-  return `**/${file}`;
 }
 
 /** Wraps whatever WebSocket the harness installed, so a test can see where the page connects. */
@@ -400,26 +387,7 @@ test.describe('the landing page: Com over the map', () => {
     await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'peek');
   });
 
-  test('an operator can reach Distress at every height of the sheet, and nothing covers it', async ({ page }) => {
-    // The test panicWipe never had [verification.md]: not that the control renders, but that a
-    // person can reach it whatever state the interface is in [com.md §4, invariant 2].
-    await seedDevice(page, { callsign: 'kestrel' } as Parameters<typeof seedDevice>[1]);
-    await open(page, '/');
-    const distress = page.locator('.distress-layer a');
-    for (const detent of ['peek', 'half', 'full'] as const) {
-      await setDetent(page, detent);
-      await expect(distress, detent).toBeVisible();
-      await expect(distress, detent).toBeInViewport();
-      const box = await distress.boundingBox();
-      expect(box!.height, detent).toBeGreaterThanOrEqual(48);
-      const onTop = await distress.evaluate((el) => {
-        const r = el.getBoundingClientRect();
-        const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
-        return hit === el || el.contains(hit);
-      });
-      expect(onTop, `something covers Distress at ${detent}`).toBe(true);
-    }
-  });
+  // Distress at every height, with and without a screen open, is com-distress.spec.ts.
 
   test('coverage is one switch away, and off until somebody asks', async ({ page }) => {
     const mutedPixels = () =>
@@ -524,22 +492,79 @@ test.describe('the landing page: missions you can open', () => {
     await expect(page.locator('[data-screen="missions"]')).toBeVisible();
   });
 
-  test('an operator can still reach Distress, uncovered, with a mission open', async ({ page }) => {
-    // Storage this time: an operator is somebody with a key on this device.
-    await withHeat(page, { __noStorage: false, callsign: 'kestrel' });
-    await page.locator('[data-missions="open"]').click();
-    await page.locator(`[data-mission="${HEAT_D}"]`).click();
-    await expect(page.locator('[data-screen="mission"]')).toBeVisible();
-    const distress = page.locator('.distress-layer a');
-    await expect(distress).toBeVisible();
-    expect(await uncovered(distress)).toBe(true);
-  });
-
-  test('when the screens’ own code cannot arrive, the sheet says so instead of a blank', async ({ page }) => {
-    await page.route(chunkOf('src/lib/components/missions/index.ts'), (r) => r.abort());
+  test('a screen another version left in history says so, and Back still leaves it', async ({ page }) => {
+    // History outlives a build: Back after an update lands on entries the other version wrote.
     await withHeat(page);
     await page.locator('[data-missions="open"]').click();
-    await expect(page.locator('[data-screen-failed]')).toContainText('needs one visit with a connection');
+    await expect(page.locator('[data-screen="missions"]')).toBeVisible();
+    await page.evaluate(() =>
+      history.replaceState({ ...history.state, 'sveltekit:states': { com: [{ kind: 'profile', handle: 'h1' }] } }, '')
+    );
+    await page.locator(`[data-mission="${HEAT_D}"]`).click();
+    await expect(page.locator('[data-screen="mission"]')).toBeVisible();
+    await page.locator('[data-back]').click();
+    const unknown = page.locator('[data-screen-unknown]');
+    await expect(unknown).toContainText('Not in this version');
+    await expect(unknown).toContainText('another version of NavCom opened this screen');
+    await page.locator('[data-back]').click();
+    await expect(page.getByLabel(/where are you, or what do you need/i)).toBeVisible();
+  });
+
+  test.describe('when the code for Com’s screens cannot arrive', () => {
+    // The worker would serve the code from its cache and the routes below would block nothing.
+    test.use({ serviceWorkers: 'block' });
+
+    /** Aborts the chunk `module` was split into the first time it is asked for, and lets it through after. */
+    async function failOnce(page: Page, module: string) {
+      let failed = false;
+      await page.route(chunkOf(module), (r) => (failed ? r.continue() : ((failed = true), r.abort())));
+    }
+    /**
+     * Opening the screen again changes nothing: the browser keeps a module's failure and answers a
+     * second import from it [$lib/com/entries]. The reload on the screen is what fetches it, and with
+     * the connection back, the screens open.
+     */
+    async function reloadIntoMissions(page: Page) {
+      await page.locator('[data-back]').click();
+      await page.locator('[data-missions="open"]').click();
+      await expect(page.locator('[data-screen-failed]'), 'opened again, and asked again').toBeVisible();
+      // The new document's load, not a selector: the page being left already matches any of them.
+      const reloaded = page.waitForEvent('load');
+      await page.locator('[data-reload]').click();
+      await reloaded;
+      await page.waitForSelector('html[data-hydrated="true"]');
+      await expect(page.locator('[data-missions="open"]')).toContainText('Open missions · live', { timeout: 15_000 });
+      await page.locator('[data-missions="open"]').click();
+      await expect(page.locator('[data-screen="missions"]')).toBeVisible();
+    }
+
+    /*
+     * KNOWN GAP on WebKit, every browser on iOS (2026-10-17) [com.md §6]. Its failure outlives the
+     * page: after the reload, and after a fresh navigation, an import of the chunk fails with no
+     * request made, against an aborted request, a 503 and a real 404 from the server alike. Only the
+     * same URL with a query loads. Playwright fails these the day WebKit fetches it: then delete it.
+     */
+    test.fail(({ browserName }) => browserName === 'webkit', 'KNOWN GAP: WebKit keeps a failed module past a reload');
+
+    test('the mission screens’ code: the sheet says so instead of a blank, and its reload brings them', async ({ page }) => {
+      await failOnce(page, 'src/lib/components/missions/index.ts');
+      await withHeat(page);
+      await page.locator('[data-missions="open"]').click();
+      await expect(page.locator('[data-screen-failed]')).toContainText('Not loaded — it needs one visit with a connection');
+      await reloadIntoMissions(page);
+    });
+
+    test('Com’s own code: the map and its key still work, a screen says it is not loaded, and its reload brings it', async ({ page }) => {
+      await failOnce(page, 'src/lib/components/com/index.ts');
+      await withHeat(page);
+      await expect(page.locator('[data-grid="ready"]')).toBeVisible();
+      await page.locator('[data-missions="open"]').click();
+      await expect(page.locator('[data-screen-failed]')).toContainText('Not loaded — it needs one visit with a connection');
+      await page.locator('[data-back]').click();
+      await expect(page.getByLabel(/where are you, or what do you need/i)).toBeVisible();
+      await page.locator('[data-missions="open"]').click();
+      await reloadIntoMissions(page);
+    });
   });
 
   test('no axe violations with a mission open', async ({ page }) => {

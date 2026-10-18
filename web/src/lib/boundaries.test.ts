@@ -52,9 +52,12 @@ const RELAYS = ['packages/core/src/relays.ts', 'web/src/lib/terminal/pool.ts'];
 /**
  * What the landing page's first paint must not carry, beyond every guarded family: the relay stack,
  * because first paint connects nowhere; claims code, because `holding` reads storage instead
- * [+page.svelte]; and the map, which loads as the page mounts and is budgeted there.
+ * [+page.svelte]; the map, which loads as the page mounts and is budgeted there; and the component
+ * that draws Com's screens, which loads beside it, so that a screen added to Com adds nothing to
+ * first paint [$lib/com/screens].
  */
-const ROOT_PAINT_OUT = [...RELAYS, 'web/src/lib/missions/claims.ts', 'web/src/lib/components/grid/GridMap.svelte'];
+const COM_SCREEN = 'web/src/lib/components/com/ComScreen.svelte';
+const ROOT_PAINT_OUT = [...RELAYS, 'web/src/lib/missions/claims.ts', 'web/src/lib/components/grid/GridMap.svelte', COM_SCREEN];
 
 /**
  * Guarded modules with no literal of their own, so no fingerprint can find them. Dated, and held
@@ -538,7 +541,8 @@ describe('the boundaries the built site holds', () => {
       ['packages/core/src/missions/package.ts', MISSIONS_ENTRY],
       ['packages/core/src/relays.ts', MISSIONS_ENTRY],
       ['web/src/lib/terminal/pool.ts', MISSIONS_ENTRY],
-      ['web/src/lib/components/grid/GridMap.svelte', 'src/lib/components/grid/GridMap.svelte']
+      ['web/src/lib/components/grid/GridMap.svelte', 'src/lib/components/grid/GridMap.svelte'],
+      [COM_SCREEN, 'src/lib/components/com/index.ts']
     ];
     for (const [path, entry] of where) {
       expect(prints.has(path), `${path} has no literal of its own left to recognise it by`).toBe(true);

@@ -112,6 +112,19 @@ exactly what this control must not have.
 **This needs the test that `panicWipe` lacked**: not that the component renders, but that the control
 is reachable from every screen with the sheet at every detent.
 
+It has it. `web/e2e/com-distress.spec.ts` reads Com's screens out of the source and its entries out of
+`COM_ENTRIES`, opens each screen, fails each entry's code, and taps for `Distress` at every detent;
+so too over every state of the sheet that is no screen's own: Com's code or an entry's still arriving
+or never arriving, a screen another version left in history, and a screen that threw. A screen or an
+entry it has no way to open fails by name. Before the bundle, `web/e2e/distress-before-hydration.spec.ts`
+checks every page that carries a prerendered copy, with the bundle blocked, arriving slowly, and on
+the budget's design-point cell, frame by frame. **The gap it found is closed (2026-10-17).** The
+script that revealed `Distress` ended the landing page's 158 kB document, so on a slow connection the
+map and the search painted with no `Distress` on them: 2.4 s at the design point, and with the host's
+compression 6.4 s at 128 kbps. The reveal now runs inside the control it shows, as the control is
+parsed, and `web/src/lib/distress-early.test.ts` holds it there in the built pages. The on-screen
+keyboard is a device check: no browser test models it.
+
 ---
 
 ## 5. Chat is pull-only, and nothing ever announces itself
@@ -149,6 +162,23 @@ so it is protecting something real rather than expressing a preference.
 collapsed Com bar inside the existing budget. The stack, chat, search and detail views load the moment
 somebody opens the sheet.
 
+**How it is split (2026-10-17).** The landing page keeps the stack, in history, and nothing about what
+is on it. Which screens exist, which entry's code draws each and how high the sheet opens for it is a
+registry, `web/src/lib/com/screens.ts`, which loads as the page mounts, beside the map and the feed,
+with the one component that draws whatever screen is on top. Each entry is one chunk exporting one
+host that draws all of its screens; *missions* is the only entry so far, and its five screens moved
+out of the page into `MissionsHost.svelte`. The page imports no entry. A new screen is a line in the
+registry, a new entry is a line there and one in `COM_ENTRIES` (`web/scripts/lib/budget.mjs`), and
+neither changes first paint: `budget.test.ts` fails on the build if an entry is imported by first paint
+again, and `boundaries.test.ts` if the component that draws the screens joins it.
+
+Measured on the move, against a build of the same commit without it, gzipped: root first paint
+**61,342 → 60,592 B** of 61,440; mount 41,217 → 42,913 B, the registry's 1.7 kB arriving on every
+visit; the missions entry 29,251 → 29,995 B; and the deferred line **42,838 → 45,287 B of 46,080**.
+The bytes the page gave up went to the deferred line, with the cost of a chunk of their own on top,
+and **793 B are left there**: the next entry needs its ceiling derived before it merges, and this
+step spent the line before any was [groups.md §13].
+
 This preserves precisely what the budget was protecting — **how fast the first screen becomes
 usable** — while putting no ceiling on what Com eventually holds. Raising the number would have
 removed the pressure that has kept the first screen fast for its whole life, and that pressure is the
@@ -180,7 +210,8 @@ never counted, though a reader who opens a mission from the map and has never op
 downloads it all the same. **Measured 2026-10-09: 68.9 kB after first paint for one landing-page
 visit that opens the sheet, against the deferred line's 41.8, and 39.7 kB of it is not the sheet's.**
 The page imports the map and the live mission feed as it mounts, on every visit, sheet opened or not,
-and the feed pulls the core chunk with the signature checking. Opening the mission screens adds
+and the feed pulls the core chunk with the signature checking. Since 2026-10-17 it imports Com's
+registry then too. Opening the mission screens adds
 28.6 kB. An earlier version of this paragraph gave the whole 68.9 kB as the cost of opening the sheet.
 The budget script now reports that figure beside the deferred line, split into first paint, mount and
 each Com entry [groups.md §13]; it is enforced once a ceiling is derived from it, before profile,
@@ -189,7 +220,21 @@ groups and chat add to it.
 **An opened sheet on a dead connection must say so.** A chunk that fails to arrive is a blank sheet,
 and offline is a normal state here [C10]. The service worker's whole-origin cache covers this after
 one visit — but the *first* visit is exactly the case the device floor exists to protect, so the
-failure has to read as a failure rather than as an empty panel.
+failure has to read as a failure rather than as an empty panel. Each entry fails on its own, and so
+does the registry, and each says so with a **Reload** beside it. Once a module fails to arrive, the
+browser keeps the failure and answers a second import of it without fetching anything, so reopening
+the screen cannot bring it (measured 2026-10-17, and so the screens no longer pretend to try). On
+Chromium the failure lasts for the life of the page and the reload fetches it again; an installed app
+has no reload of its own to reach for, so the button is the only way back short of closing it.
+**On WebKit, every browser on iOS, it is open:** the failure outlives the page. After a reload, and
+after a fresh navigation to `/`, an `import()` of that chunk still fails with no request made, though
+a plain `fetch()` of the same URL goes out and returns it, and only the same URL with a query on it
+loads. Measured in Playwright's WebKit against an aborted request, a 503 and a real 404 from the
+server, so it is the engine and not the test's interception; Safari itself has not been checked. The
+map and the mission feed are dynamic imports too and have not been checked for it. The reload tests
+are marked as failing on WebKit until something fetches the entry under a URL of its own. A screen another version of NavCom left in history, reached by Back
+after an update, reads *Not in this version* rather than a blank, and so does one whose fields this
+version cannot read.
 
 ---
 

@@ -25,6 +25,7 @@
   import { get, onWipe, set } from '$lib/terminal/storage';
   import { forgetMission, pendingMission } from '$lib/missions/pending';
   import type { Feed } from '$lib/missions/live';
+  import type { Screen } from '$lib/com/screens';
   import type GridMapType from '$lib/components/grid/GridMap.svelte';
 
   /**
@@ -81,9 +82,10 @@
    */
   let GridMap = $state<typeof GridMapType | null>(null);
   /**
-   * Set when the map's or the missions' code did not arrive. Both come by dynamic import, so on a
-   * first visit — before the service worker holds them — either can fail, and without these the
-   * page would sit at a blank map and "Reaching The Record…" for as long as it is open [com.md §6].
+   * Set when the map's or the mission feed's code did not arrive. Both come by dynamic import, so
+   * on a first visit — before the service worker holds them — either can fail, and without these
+   * the page would sit at a blank map and "Reaching The Record…" for as long as it is open
+   * [com.md §6].
    */
   let mapUnloaded = $state(false);
   let missionsUnloaded = $state(false);
@@ -101,13 +103,6 @@
       ? feed.missions.filter((m) => m.state !== 'closed' && m.validUntil > now / 1000)
       : []
   );
-  /** What is still open, by address: a claim on a mission closed early holds no place in the cap. */
-  const openSet = $derived(new Set(active.map((m) => m.address)));
-  /**
-   * Whether this device knows which missions are open at all. Until it does — reaching, no relay,
-   * or no missions code — a claim's mission is unknown, not over [invariant 7; audit 11.I].
-   */
-  const missionsKnown = $derived(!missionsUnloaded && (feed.status === 'live' || feed.status === 'cached'));
   /** Provinces to light. A national mission (`us`) lights nothing — it would light everything. */
   const lit = $derived(
     new Set(active.map((m) => m.placement.jurisdiction).filter((j): j is string => !!j && j.includes('-')))
@@ -120,8 +115,6 @@
   );
   /** Packages NavCom would not show: counted in the key, so a dark map is never mistaken for a quiet night. */
   const refused = $derived(feed.status === 'live' || feed.status === 'cached' ? feed.refused : []);
-  /** The addresses of those packages: a claim on one reads "could not be read", never "over" [11.E]. */
-  const unreadSet = $derived(new Set(refused.map((r) => r.address)));
   const clockBehind = $derived((feed.status === 'live' || feed.status === 'cached') && feed.clockBehind);
 
   /*
@@ -155,26 +148,30 @@
   };
 
   /**
-   * Com is a navigation stack whose root is the search [com.md §1, §2]. Missions are its first
-   * screens: the list, narrowed to a province when one is tapped, and one mission.
-   */
-  type Screen =
-    | { kind: 'missions'; province: string | null }
-    | { kind: 'mission'; address: string }
-    | { kind: 'yours' }
-    | { kind: 'report'; address: string }
-    | { kind: 'reports'; address: string };
-  /**
+   * Com is a navigation stack whose root is the search [com.md §1, §2]. Which screens there are,
+   * which entry's code draws each and how high the sheet opens for it is `$lib/com/screens`, loaded
+   * as the page mounts: this page keeps the stack and nothing about what is on it, so a new screen
+   * or a new entry leaves its first paint as it was [groups.md §13].
+   *
    * The stack lives in the browser's history, one shallow entry per screen, so the phone's back
    * gesture steps back through Com exactly as Back and Escape do. Kept in component state, the
    * system back left the page with a mission open, and the list and the mission with it
    * [audit 11.I]. A reload starts at the root: SvelteKit restores no state until the next step.
+   * History outlives a build, so what it holds is read as another version's until Com says otherwise.
    */
-  const stack = $derived((page.state as { com?: Screen[] }).com ?? []);
-  const top = $derived(stack.at(-1) ?? null);
-  /** Loaded the first time a screen opens: code first paint never needs [com.md §6]. */
-  let screens = $state<typeof import('$lib/components/missions') | null>(null);
-  let screensUnloaded = $state(false);
+  const stack = $derived.by(() => {
+    const com = (page.state as { com?: unknown }).com;
+    return Array.isArray(com) ? (com as unknown[]) : [];
+  });
+  const top = $derived(stack.at(-1));
+  /**
+   * Com's own code: its screens, and the one component that draws whichever is on top [com.md §6].
+   * Imported once, as the page mounts. A failure is final for the page: the browser keeps it, and a
+   * second import fetches nothing [$lib/com/entries].
+   */
+  let Com = $state<typeof import('$lib/components/com') | null>(null);
+  let comUnloaded = $state(false);
+  let comArrives: Promise<unknown> = Promise.resolve();
   let screenEl = $state<HTMLElement>();
   let comEl = $state<HTMLElement>();
   /** Escape steps back, when focus is in Com: anywhere else it belongs to whatever has it. */
@@ -182,19 +179,19 @@
     if (e.key === 'Escape' && stack.length > 0 && comEl?.contains(document.activeElement)) back();
   }
 
-  /** Open a screen. A mission opens with the map still in view: half, never full [com.md §7]. */
+  /** Every screen moves to another through this: no destination needs a callback of its own. */
+  const nav = { open, back };
+  /**
+   * Open a screen. The sheet rises to the height its kind asks for and never falls: a mission opens
+   * with the map still in view, half and never full [com.md §7]. At least half at once, so that what
+   * is arriving shows; then full, if Com says so once it is here, which on a slow cell is later.
+   */
   async function open(s: Screen, fresh = false) {
-    const com: Screen[] = fresh ? [s] : [...stack, s];
-    pushState('', { com });
+    pushState('', { com: fresh ? [s] : [...stack, s] });
     if (detent === 'peek') detent = 'half';
-    if (!screens) {
-      screensUnloaded = false;
-      try {
-        screens = await import('$lib/components/missions');
-      } catch {
-        screensUnloaded = true;
-      }
-    }
+    await comArrives;
+    if (Com?.SCREENS[s.kind].height === 'full') detent = 'full';
+    await Com?.load(s.kind);
     // Where a keyboard or screen reader goes next: the screen that just opened.
     await tick();
     screenEl?.focus();
@@ -426,8 +423,8 @@
 
     /*
      * An operator on this device gets Distress, in its own layer that nothing covers
-     * [com.md §4]. The prerendered bar is revealed by the bootstrap before the bundle arrives
-     * [hooks.server.ts]; this repeats it for a device that signed on after that ran.
+     * [com.md §4]. The prerendered bar is revealed as it is parsed, before the bundle arrives
+     * [hooks.server.ts REVEAL]; this repeats it for a device that signed on after that ran.
      */
     if (get('accruing', 'secret')) document.getElementById('distress-early')?.removeAttribute('hidden');
     operator = !!get('accruing', 'secret');
@@ -459,6 +456,10 @@
     void import('$lib/components/grid/GridMap.svelte')
       .then((m) => (GridMap = m.default))
       .catch(() => (mapUnloaded = true));
+    comArrives = import('$lib/components/com').then(
+      (m) => void (Com = m),
+      () => void (comUnloaded = true)
+    );
     let stopMissions: (() => void) | null = null;
     let gone = false;
     void import('$lib/missions/live')
@@ -540,7 +541,12 @@
   <!--
     Distress, first in the document and outside both panes, so that no sheet, map or detail can
     ever cover it [com.md §4]. Prerendered hidden and shown only on a device with an operator:
-    by the bootstrap before the bundle arrives, and by onMount after.
+    by the script hooks.server.ts puts inside it, as it is parsed and before the bundle arrives,
+    and by onMount after.
+
+    It stays in this page's own markup, and is not one of Com's screens or anything their registry
+    loads: that script can only reveal a copy the prerendered HTML already has, and the strip it
+    takes is the `:has()` rule below, in this page's scope. Anywhere else it would wait on code.
   -->
   <!-- A landmark of its own, so a screen reader's landmark list finds it like the map and Com. -->
   <section id="distress-early" class="distress-layer" aria-label="Distress" hidden>
@@ -610,7 +616,7 @@
         so a keyboard can reach it — a click with no pointer behind it (detail 0) is a key.
       -->
       <div class="com-head">
-        {#if top}
+        {#if stack.length > 0}
           <!-- Escape does the same, anywhere in Com. -->
           <button type="button" class="back" data-back onclick={back}>Back</button>
         {/if}
@@ -649,72 +655,25 @@
         >{sig === 'low' ? 'Document' : 'Low signature'}</button>
       </div>
       <div class="com-body">
-        {#if top}
-          <!-- The screen on top of Com's stack. Focus lands here when it opens. -->
+        {#if stack.length > 0}
+          <!--
+            The screen on top of Com's stack, whatever its kind: one branch, which the registry
+            and each entry's host fill in [$lib/com/screens]. Focus lands here when it opens.
+          -->
           <div class="com-screen" bind:this={screenEl} tabindex="-1">
-            <!--
-              A screen that throws is said to have failed, here, and nothing else stops: without a
-              boundary one bad render reset the whole page's updates [audit 11.X].
-            -->
-            <svelte:boundary>
-              {#snippet failed(_error, reset)}
-                <strong class="screen-unloaded" data-screen-failed>This screen could not be shown</strong>
-                <button type="button" class="back" onclick={reset}>Try again</button>
-              {/snippet}
-            {#if screens}
-              {#if top.kind === 'missions'}
-                <screens.MissionList
-                  missions={active}
-                  province={top.province}
-                  status={missionsUnloaded ? 'unloaded' : feed.status}
-                  {refused}
-                  {now}
-                  onopen={(address) => open({ kind: 'mission', address })}
-                />
-              {:else if top.kind === 'yours'}
-                <screens.YoursScreen
-                  {now}
-                  open={missionsKnown ? openSet : undefined}
-                  unread={unreadSet}
-                  onopen={(address) => open({ kind: 'mission', address })}
-                  onreport={(address) => open({ kind: 'report', address })}
-                  onreports={(address) => open({ kind: 'reports', address })}
-                />
-              {:else if top.kind === 'report'}
-                <screens.ReportScreen address={top.address} {now} ondone={back} />
-              {:else if top.kind === 'reports'}
-                <screens.ReportsScreen address={top.address} missions={active} {now} />
-              {:else if top.kind === 'mission'}
-                {@const address = top.address}
-                {@const m = active.find((x) => x.address === address)}
-                {#if m}
-                  <screens.MissionPage mission={m} {now} open={openSet} asOf={feed.status === 'cached' ? feed.at : null} onreports={() => open({ kind: 'reports', address })} />
-                {:else if missionsUnloaded}
-                  <!-- The key's own words for the same failure: "Loading" here never ended [audit 11.I]. -->
-                  <strong class="screen-unloaded" data-mission-unloaded>Missions not loaded — they need one visit with a connection</strong>
-                {:else if feed.status === 'connecting'}
-                  <Readout value="Loading" tone="cold" />
-                {:else if feed.status === 'unavailable'}
-                  <!-- No relay answered and nothing is remembered: whether it is open is not known, and is not "gone". -->
-                  <Panel label="Mission" post="Unknown">
-                    <Slot k="Open"><Readout value="Unknown" tone="cold" sub="neither The Record nor its mirror can be reached" /></Slot>
-                  </Panel>
-                {:else}
-                  <!-- It ended, or was closed, while open here: said, not left blank. -->
-                  {@const why = refused.find((r) => r.address === address)?.because}
-                  <Panel label="Mission" post="Gone">
-                    <!-- A package NavCom could not read is not one that ended: said as what it is [11.E]. -->
-                    <Slot k="Open"><Readout value={why ? 'Could not be read' : 'No longer open'} tone="cold" sub={why ?? 'it ended or was closed'} /></Slot>
-                  </Panel>
-                {/if}
-              {/if}
-            {:else if screensUnloaded}
-              <!-- The same words the map uses for the same failure [com.md §6]. -->
+            {#if Com}
+              <Com.ComScreen screen={top} {nav} {now} {feed} {active} feedUnloaded={missionsUnloaded} />
+            {:else if comUnloaded}
+              <!--
+                The same words the map uses for the same failure [com.md §6], and the reload that is
+                that visit: nothing in the page fetches Com's code again, and an installed app has no
+                browser reload to reach for. On WebKit even a reload does not, yet [com.md §6].
+              -->
               <strong class="screen-unloaded" data-screen-failed>Not loaded — it needs one visit with a connection</strong>
+              <div class="nc-rail"><button type="button" data-reload onclick={() => location.reload()}>Reload</button></div>
             {:else}
               <Readout value="Loading" tone="cold" />
             {/if}
-            </svelte:boundary>
           </div>
         {:else}
   <div class="nc-bridge">
@@ -968,7 +927,10 @@
   :global(body:has(.landing)) {
     height: 100%;
   }
-  /* Distress takes the bottom strip when it shows; Com sits above it, never over it. */
+  /*
+   * Distress takes the bottom strip when it shows; Com sits above it, never over it. Here, in this
+   * page's scope, because the prerendered copy it measures is this page's markup [com.md §4].
+   */
   .landing:has(.distress-layer:not([hidden])) {
     --distress-h: 3.75rem;
   }

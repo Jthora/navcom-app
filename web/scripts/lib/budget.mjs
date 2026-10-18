@@ -102,9 +102,9 @@ export const SURFACES = {
    * much smaller budget rather than inheriting one sized for that stack. That the relays stay out of
    * its first paint is held by `src/lib/boundaries.test.ts`, not by this comment.
    *
-   * First paint only. As the page mounts it imports the map and the live mission feed, on every
-   * visit, and the feed brings core's signature checking with it: that is the *mount* tier below,
-   * reported beside this budget and not inside it.
+   * First paint only. As the page mounts it imports the map, the live mission feed and Com's list
+   * of screens, on every visit, and the feed brings core's signature checking with it: that is the
+   * *mount* tier below, reported beside this budget and not inside it.
    *
    * Re-derived against a real build rather than guessed: measured at 49.7 kB JS / 66.8 kB
    * page total the day this shipped. `js` leaves ~20% headroom over that; `page` leaves more,
@@ -189,9 +189,17 @@ export const SURFACES = {
  * Reported, not enforced: first paint is the only root tier with a ceiling. The others get theirs
  * when one is derived from a measurement, as every budget here was.
  */
-/** Imported by `+page.svelte` on mount, on every visit. Keys as Vite's manifest spells them. */
-export const ROOT_MOUNT = ['src/lib/components/grid/GridMap.svelte', 'src/lib/missions/live.ts'];
-/** Loaded the first time somebody opens one of Com's screens [com.md §6], by entry name. */
+/**
+ * Imported by `+page.svelte` on mount, on every visit. Keys as Vite's manifest spells them. Com's
+ * own code is one of them: its list of screens and the one component that draws each, so that the
+ * page's first paint names no entry [$lib/com/screens].
+ */
+export const ROOT_MOUNT = ['src/lib/components/grid/GridMap.svelte', 'src/lib/missions/live.ts', 'src/lib/components/com/index.ts'];
+/**
+ * Loaded the first time somebody opens one of Com's screens [com.md §6], by entry name. Imported by
+ * Com's registry (`ENTRIES` in `src/lib/com/screens.ts`), never by the page, so each is a tier the
+ * walk finds inside mount.
+ */
 export const COM_ENTRIES = /** @type {Record<string, string>} */ ({
   missions: 'src/lib/components/missions/index.ts'
 });

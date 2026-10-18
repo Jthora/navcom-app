@@ -69,8 +69,8 @@ Every piece below already ships. Nothing in this design replaces any of them.
 
 | Already there | Where | Used here for |
 |---|---|---|
-| The Com stack: a `Screen` union kept in browser history; screens imported lazily on first open | `web/src/routes/+page.svelte` | Each new screen is a new `Screen` kind |
-| One dynamic entry re-exporting the five mission screens | `web/src/lib/components/missions/index.ts` | Split into three entries (§13) |
+| The Com stack, kept in browser history by the landing page; a registry of `Screen` kinds, each with its entry and opening height, loaded as the page mounts; screens from another version read *Not in this version* | `web/src/routes/+page.svelte`, `web/src/lib/com/screens.ts` | Each new screen is a new `Screen` kind and a line in `SCREENS` |
+| One dynamic entry, *missions*, whose one host draws its five screens | `web/src/lib/components/missions/index.ts`, `MissionsHost.svelte` | Two more entries beside it (§13) |
 | A signed-in root that reads storage directly: `holding` counts wipeable `mission_claims` without loading claims code | `web/src/routes/+page.svelte` | The *Crews* row reads storage the same way |
 | `Distress` in its own layer, `position: fixed` at the bottom; a viewport meta with no `interactive-widget` | `.distress-layer`; `web/src/app.html` | The keyboard question (§9) |
 | Cards: `readCard` refuses any content field outside `CARD_FIELDS`; anything newer rides in tags | `packages/core/src/events/public.ts`, `profile.ts`, `links.ts` | Profiles, and the agent tag |
@@ -866,34 +866,34 @@ never as sent.
 
 ## 13. The script budgets
 
-**Measured 2026-10-09** (`web/build/.budget.json`, from the build stamped `eb95b14` with uncommitted
-changes). That build predates the Distress-debt merge (634ab870) and everything after it, so the
-terminal row, and the headroom on every row, may not be HEAD's. **Re-measure at HEAD before any step
-spends the 528 B or the 3,288 B.** Scripts, gzipped:
+**Measured 2026-10-17** (`web/build/.budget.json`, from the build of `3516b7e` with Com's registry
+uncommitted on it), the day the mission screens moved out of the landing page into the missions
+entry's host and the landing page's Distress reveal moved inside the control. Scripts, gzipped:
 
 | Surface | Now | Ceiling | Left |
 |---|---|---|---|
-| Root, first paint | 60,912 B | 61,440 B | **528 B**, past the 52 kB warning |
-| **Root, later**: what one landing-page visit downloads after first paint if it opens the sheet. The script prints it as *later, all*; `root_later` in `.budget.json` | **70,536 B (68.9 kB)** | None yet. **Reported, not enforced** | — |
-| of which *mount*: the map and the live mission feed, imported as the page mounts, on every visit, sheet opened or not | 40,624 B (39.7 kB) | Reported, not enforced | — |
-| of which entry *missions*: what opening the mission screens adds beyond first paint and mount | 29,256 B (28.6 kB) | Reported, not enforced | — |
+| Root, first paint | 60,592 B | 61,440 B | **848 B**, past the 52 kB warning. 61,342 B before the move. Page total 104,311 B of 122,880, from 105,824: the end-of-body bootstrap no longer ships here, only the reveal |
+| **Root, later**: what one landing-page visit downloads after first paint if it opens the sheet. The script prints it as *later, all*; `root_later` in `.budget.json` | **73,564 B (71.8 kB)** | None yet. **Reported, not enforced** | — |
+| of which *mount*: the map, the live mission feed and Com's registry, imported as the page mounts, on every visit, sheet opened or not | 42,913 B (41.9 kB), of which the registry 1,702 B | Reported, not enforced | — |
+| of which entry *missions*: what opening the mission screens adds beyond first paint and mount | 29,995 B (29.3 kB) | Reported, not enforced | — |
 | of which SvelteKit's error page, loaded only when something fails | 656 B | Reported, not enforced | — |
-| Deferred, dynamic imports | 42,792 B | 46,080 B | 3,288 B, past the 40 kB warning |
-| Terminal | 167,392 B | 225,280 B | 57,888 B, past the 160 kB warning. The worst script page is Status (`terminal/index.html`). `terminal/find` is the worst only on page total, 181,004 B of 266,240 B |
-| Roster | 96,198 B | 97,280 B | 1,082 B, past the 86 kB warning |
+| Deferred, dynamic imports | 45,287 B | 46,080 B | **793 B**, past the 40 kB warning. 42,838 B before the move |
+| Terminal | 168,326 B | 225,280 B | 56,954 B, past the 160 kB warning. The worst script page is Status (`terminal/index.html`). `terminal/find` is the worst only on page total, 181,557 B of 266,240 B |
+| Roster | 96,606 B | 97,280 B | 674 B, past the 86 kB warning |
 | Public | 0 B | 0 B | — |
 
-Stylesheets are reported beside these and counted against no ceiling: 1,511 B after the root's first
-paint, and 1,663 B beside the deferred line, which counts what it was derived on, every file an import
+Stylesheets are reported beside these and counted against no ceiling: 1,606 B after the root's first
+paint, and 1,758 B beside the deferred line, which counts what it was derived on, every file an import
 reaches, and on every build so far that has been scripts alone.
 
 **The per-visit figure is the one a Com screen spends.** The deferred line counts what the whole app
 can pull in later and leaves out any chunk some page loads at first paint, so the signature-checking
 crypto the terminal loads up front was never counted for a reader who only opened a mission from the
-map. *Root, later* counts it: 68.9 kB against the deferred line's 41.8. **Most of that is not the
-sheet's:** 39.7 kB is *mount*, which arrives on every visit, because the live mission feed pulls the
-signature-checking chunk as the page mounts. Opening the mission screens adds 28.6 kB. An earlier
-version of this table described the whole 68.9 kB as the cost of opening the sheet. com.md §6 says it
+map. *Root, later* counts it: 68.9 kB against the deferred line's 41.8 when this was first measured
+(2026-10-09). **Most of that is not the sheet's:** 39.7 kB was *mount*, which arrives on every visit,
+because the live mission feed pulls the signature-checking chunk as the page mounts. Opening the
+mission screens added 28.6 kB. An earlier version of this table described the whole 68.9 kB as the
+cost of opening the sheet. com.md §6 says it
 is enforced once a ceiling is derived from its measurement, **before profile, groups and chat add to
 it.** So phase 1 derives that ceiling, from the measurement plus the same headroom every surface here
 gets, before its first screen merges.
@@ -908,21 +908,28 @@ measurement to derive a ceiling from.
 **Root, first paint: not re-derived.** Its ceiling comes from about 3 seconds to interactive at
 0.8 Mbps. Raising it to fit this work would be the silent raise `budget.mjs` exists to stop.
 
-- **Phase 1 changes how the root renders Com screens.** Today `+page.svelte` has one branch per
-  screen. The people and crews entries each export one host component that renders its own screens,
-  so the root gains one branch per entry, not one per screen. The host lives inside its entry's
-  chunk, already loaded when a screen opens, so it adds no round trip. If the measurement needs it,
-  the five mission branches move into a missions host the same way. Unmeasured, **measured before
-  merge.**
+- **The root renders Com screens through one branch, whatever the entry (done 2026-10-17).**
+  `+page.svelte` had one branch per screen. It now hands the top of the stack to `ComScreen`, which
+  loads with the registry as the page mounts and draws it through its entry's host, so the root gains
+  nothing per entry either. Each entry exports one `Host` that draws its own screens, inside its own
+  chunk, already loaded when a screen opens, so it adds no round trip; the five mission branches moved
+  into `MissionsHost.svelte` this way. Measured: first paint 750 B smaller, and the deferred line
+  2,449 B larger, because the bytes moved there and the registry is a chunk of its own, carrying the
+  missions entry's preload list that first paint used to. Mount, which every visit downloads, grew
+  by the registry's 1,702 B. **The plan's review asked for each entry's ceiling to be derived before
+  this step spent the deferred line, and it was not.** Whether 750 B of first paint is worth 2,449 B
+  of deferred and 1.7 kB more on every visit is the owner's trade, and is put to them with this step.
 - **Phase 3 adds one fixed row, *Crews*,** reading the crews storage key directly the way `holding`
-  reads `mission_claims`, names only. Estimated at 150 to 300 B gzipped. With 528 B left, **if it does
+  reads `mission_claims`, names only. Estimated at 150 to 300 B gzipped. With 848 B left, **if it does
   not fit, the row lives in the Yours screen instead.**
 
-**Split the entry (phase 1).** `$lib/components/missions/index.ts` becomes three entries: *missions*
-(unchanged), *people* (profile, you, find, the card cache) and *crews* (crews, crew, roster, member,
-start, join, admit, the log). Opening a mission never loads crew code. Each entry then gets its own
+**Split the entry (phase 1).** Com's entries are `ENTRIES` in `$lib/com/screens.ts`, with *missions*
+the only one. Phase 1 adds two beside it: *people* (profile, you, find, the card cache) and *crews*
+(crews, crew, roster, member, start, join, admit, the log), each a line there and one in
+`COM_ENTRIES`, and each kind a line in `SCREENS`. Opening a mission never loads crew code. Each entry then gets its own
 ceiling from its measurement plus headroom, because a person waits for the one entry they open, not
-the total of every screen they might.
+the total of every screen they might. **That derivation comes before phase 1's first screen merges**,
+because the deferred line has 793 B left and no people entry fits in it.
 
 **Estimates, to be replaced by measurement (gzipped):**
 

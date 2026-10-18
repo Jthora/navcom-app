@@ -449,8 +449,8 @@
 <!--
   The same control, twice, and only ever one of them on screen.
 
-  This one is prerendered and hidden, and `hooks.server.ts` reveals it before the bundle
-  loads if this device has an identity. The one below is the real `Action` and replaces it on
+  This one is prerendered and hidden, and a script `hooks.server.ts` puts inside it reveals it
+  as it is parsed, before the bundle loads, if this device has an identity. The one below is the real `Action` and replaces it on
   mount. Without the pair, the most urgent control in the app was behind roughly three seconds
   of hydration on the phone this app is written for — while `hooks.server.ts` already existed
   to solve exactly that problem one screen deeper.

@@ -1,5 +1,19 @@
+import { existsSync, readFileSync } from 'node:fs';
 import type { Page, Response } from '@playwright/test';
 import type { AccruingField, WipeableField } from '../src/lib/terminal/fields';
+
+/** The URL pattern of the chunk a module was split into, read from the build under test. */
+export function chunkOf(module: string): string {
+  const manifest = JSON.parse(
+    readFileSync(new URL('../.svelte-kit/output/client/.vite/manifest.json', import.meta.url), 'utf8')
+  ) as Record<string, { file: string }>;
+  const file = manifest[module]?.file;
+  if (!file) throw new Error(`${module} is not in the Vite manifest`);
+  // A manifest from another build names a chunk this server does not have, and a route on it
+  // would block nothing — the test would pass for the wrong reason. Fail here instead.
+  if (!existsSync(new URL(`../build/${file}`, import.meta.url))) throw new Error(`${file} is not in web/build`);
+  return `**/${file}`;
+}
 
 /**
  * Putting a device into a known state before the app loads.
