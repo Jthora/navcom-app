@@ -18,6 +18,11 @@ import { DAY, LATER, T0, TestUnit, ledUnit, makeUnit, names } from './helpers/un
  * BREAK 4's second case, BREAK 5's last assertion and BREAK 8's result step). BREAK 5 also gained a
  * case for the reach-back that remains, which is now reported rather than silent.
  *
+ * Kept closed through the office builder's phase B0 (F5, F7 and one key per removal act;
+ * test/units-builder-floor.test.ts). BREAK 4's first case was corrected so that the purge it
+ * describes is still attempted, one key per act, rather than closed by the new rule alone. Every
+ * act here already had its power holder as author, so nothing else needed to change.
+ *
  * Personas: a hostile member, an infiltrator, a captured CO, a closer choosing what to carry, a
  * phone on an older release, a forged or replayed statement, two halves split for a week, a clock
  * set wrong, and a re-former pulling members from a healthy unit.
@@ -158,7 +163,13 @@ describe('BREAK 4 (HIGH): a captured CO and one ally kill a recall that already 
     const p = u.petition('m1', 'co', 'co', T0 + 31 * DAY);
     u.support(['m2', 'm3', 'm4', 'm5'], p.id, T0 + 32 * DAY);
     expect(u.view().petitions[0]!.postable).toBe(true); // the petition has passed on every honest phone
-    u.remove(['xo', 'm1', 'm2', 'm3', 'm4', 'm5', 'm6'], ['co', 'm7'], T0 + 32 * DAY + 3600);
+    // Corrected with the office builder's B0 (one key per removal act): the purge in one act is now
+    // void on its own, which would close this break trivially. The purge is made the only way left,
+    // one key per act in one line, and the recall must still pass.
+    const purge = u.remove(['xo', 'm1', 'm2', 'm3', 'm4', 'm5', 'm6'], ['co', 'm7'], T0 + 32 * DAY + 3600);
+    expect(u.voidReason(purge.id)).toBe('not-allowed');
+    for (const [i, n] of ['xo', 'm1', 'm2', 'm3', 'm4', 'm5', 'm6'].entries()) u.remove([n], ['co', 'm7'], T0 + 32 * DAY + 3700 + i);
+    expect(u.members()).toEqual(['co', 'm7']);
     const r = u.recall('m1', p.id, T0 + 33 * DAY); // m1 holds every signature and posts
     expect(u.voidReason(r.id)).toBeUndefined(); // actual: 'not-a-member'
     expect(u.offices().co).not.toBe('co'); // actual: the CO keeps the office

@@ -334,11 +334,14 @@ describe('A6: a removal racing a recall', () => {
 
 describe('A7: stale-prev attacks', () => {
   it('an act by a removed key on a pre-removal prev is void, however its id is ground', () => {
+    // Corrected with the office builder's B0 (F7): a plain member can no longer author an
+    // admission, so the removed key is now the second signer of each, with the XO authoring. Each
+    // still stands only on that key, and falls with it.
     const u = ledUnit(NINE);
     const h = u.tips();
     u.remove(['m5'], ['co', 'xo'], T0 + 2 * DAY, h);
     const attacks: Event[] = [];
-    for (let i = 0; i < 12; i++) attacks.push(u.admit(`x${i}`, ['m5', 'xo'], T0 + 2 * DAY + i, { prev: h }));
+    for (let i = 0; i < 12; i++) attacks.push(u.admit(`x${i}`, ['xo', 'm5'], T0 + 2 * DAY + i, { prev: h }));
     const v = u.view();
     for (const a of attacks) expect(u.voidReason(a.id)).toBe('removal-wins');
     expect(u.members()).not.toContain('m5');
@@ -349,7 +352,7 @@ describe('A7: stale-prev attacks', () => {
     const ground = ledUnit(NINE);
     const h2 = ground.tips();
     ground.remove(['m5'], ['co', 'xo'], T0 + 2 * DAY, h2);
-    for (let i = 0; i < 12; i++) ground.admit(`x${i}`, ['m5', 'xo'], T0 + 3 * DAY + 7 * i, { prev: h2 });
+    for (let i = 0; i < 12; i++) ground.admit(`x${i}`, ['xo', 'm5'], T0 + 3 * DAY + 7 * i, { prev: h2 });
     ground.chain = shuffled(ground.chain);
     expect(ground.members()).toEqual(u.members());
     expect(ground.offices()).toEqual(u.offices());
@@ -1097,7 +1100,10 @@ describe('A22: repairs made alongside the units-core-attack breaks', () => {
     const g = w.tips();
     const bd = w.admit('n1', ['co', 'm1'], T0 + 2 * DAY, { prev: g });
     w.loose.push(w.sign('m2', { t: 'sign', unit: w.unit, act: bd.id }, T0 + 2 * DAY + 60));
-    w.remove(['m1', 'm2'], ['xo', 'm3'], T0 + 2 * DAY, g);
+    // Corrected with B0's one key per removal act: one removal of both is void, so the XO removes
+    // them in two acts, in one line, each concurrent with the admission.
+    const r1 = w.remove(['m1'], ['xo', 'm3'], T0 + 2 * DAY, g);
+    w.remove(['m2'], ['xo', 'm3'], T0 + 2 * DAY + 1, [r1.id]);
     expect(w.voidReason(bd.id)).toBe('removal-wins');
   });
 
