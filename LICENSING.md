@@ -107,6 +107,21 @@ missing by the same audit, and added in the same change that replaced the OpenSt
 
 The attribution Overture asks for: *Overture Maps Foundation, overturemaps.org.*
 
+### The map's own data
+
+**Natural Earth** draws the grid's outlines and its time zones (`web/static/grid/world.json`,
+`web/static/grid/timezones.json`). It is public domain, so it binds nothing; it is credited anyway,
+on the map's own layers screen.
+
+**Starcom's Zones** (the Zone and Sector Protocol 2.0 partition) are **CC BY 4.0**, from the first
+stage NavCom vendors, which is no earlier than 23 October 2026. Attribution only, so the code and the
+directory keep their own licences. What it asks for travels with them: the layers screen and the map's
+own readout carry the attribution the vendored manifest gives. NavCom's vendoring script refuses any
+set, or any source a Sector's lines were drawn from, that is share-alike or non-commercial
+[`docs/design/map.md`](docs/design/map.md) §8. **The code that reads them is NavCom's own**: Starcom's code
+is AGPL-3.0-only, which would bind an Apache-2.0 codebase, so none of it is copied, and a test fails if
+anything under `packages/core/src/zones/` carries its licence.
+
 ## Contributing
 
 By contributing you agree your contribution is licensed under whichever of the three covers
