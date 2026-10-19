@@ -14,13 +14,32 @@
    * Where it sits reads down the levels, Terra › Zone › Sector, each a way up. While the partition is a
    * draft it says so and keeps nothing; once it is final, a Sector can be kept as where somebody works,
    * on this phone only [D7].
+   *
+   * And what is open there: **missions, counted, never people**, from the missions already on this
+   * phone, placed by the point each package gives its subject and never by its jurisdiction, which
+   * names no Zone. Those are counted apart and said to be [map.md, Missions on Zones].
    */
+  import type { Mission } from '@navcom/core';
   import { Panel, Readout, Slot } from '$lib/components/panel';
   import type { Nav } from '$lib/com/screens';
+  import type { Feed } from '$lib/missions/live';
   import { layerData, mapLayers } from '$lib/grid/layer.svelte';
+  import { placesOfMissions } from '$lib/grid/places';
   import { keepWork, workSector } from './work';
 
-  let { id, nav }: { id: string; nav: Nav } = $props();
+  let { id, nav, active = [], feed }: { id: string; nav: Nav; active?: readonly Mission[]; feed?: Feed } = $props();
+
+  /** What counts the missions by Zone: its own code, by `import()`, as the map loads it [budget.mjs MAP_LINES]. */
+  let counting = $state.raw<typeof import('$lib/grid/layers/zone-missions') | null>(null);
+  $effect(() => void import('$lib/grid/layers/zone-missions').then((m) => (counting = m), () => undefined));
+  /** The feed's age, as the map's key says it; null while the missions have not been read, which is unknown. */
+  const age = $derived.by(() => {
+    if (feed?.status === 'live') return 'live';
+    if (feed?.status !== 'cached') return null;
+    const t = feed.at;
+    return `as of ${t.toISOString().slice(0, 16).replace('T', ' ')} UTC, offline`;
+  });
+  const rings = $derived(placesOfMissions(active).flatMap((p) => (p.kind === 'mission' ? [p] : [])));
 
   /** The Zones' own code, which reads them: loaded by `import()`, as the map loads it [budget.mjs MAP_LINES]. */
   let zones = $state.raw<typeof import('$lib/grid/layers/zones') | null>(null);
@@ -59,6 +78,10 @@
   /** A Sector this stage does not hold: known only once its container is open, and never fetched to find out. */
   const gone = $derived(isSector && chain !== null && containerHere && chain.sector === null);
   const containerWord = $derived(chain?.container.props.level === 'mare' ? 'Mare' : 'Terra');
+  const openMission = (address: string) => nav.open({ kind: 'mission', address });
+  const counted = $derived(counting && outlines ? counting.countsOf(outlines, data.sectors, rings, data.sectorDrift) : null);
+  const openHere = $derived(counted?.in.get(id) ?? []);
+  const nearHere = $derived(counted?.near.get(id) ?? []);
 
   function keep() {
     if (!isSector || !named || !chain?.zone || !outlines || draft) return;
@@ -130,6 +153,35 @@
           {:else}
             <button type="button" class="nc-keep" data-work-keep onclick={keep}>I work here</button>
           {/if}
+        </Slot>
+      {/if}
+      <Slot k="Open missions">
+        {#if age === null}
+          <Readout value="Not read yet" tone="cold" sub="unknown, not none: the missions have not arrived" />
+        {:else if !counted}
+          <Readout value="Counting" tone="cold" />
+        {:else}
+          <Readout
+            value={counting!.openSaid(openHere.length)}
+            tone="neutral"
+            sub="{age}; placed by where each package puts its subject"
+          />
+        {/if}
+      </Slot>
+      {#if age !== null && openHere.length > 0}
+        <ul class="nc-areas" data-zone-missions>
+          {#each openHere as m (m.address)}
+            <li><button type="button" data-zone-mission={m.address} onclick={() => openMission(m.address)}>{m.title}</button></li>
+          {/each}
+        </ul>
+      {/if}
+      {#each nearHere as n (n.mission.address)}
+        <!-- The drawn lines are simplified; which side of one a point that close is on, they cannot say. -->
+        <Slot k="Near an edge"><Readout value="Near its edge" tone="cold" sub="{n.mission.title}: may be in {n.with.join(', ')} instead" /></Slot>
+      {/each}
+      {#if age !== null && active.length > rings.length}
+        <Slot k="Not placed">
+          <Readout value="{active.length - rings.length} by jurisdiction only" tone="cold" sub="filed under a country or province, and placed in no Zone" />
         </Slot>
       {/if}
       <Slot k="Source">

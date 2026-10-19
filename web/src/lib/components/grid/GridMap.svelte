@@ -23,6 +23,9 @@
    * or none. The choice is `$lib/grid/layer.svelte`, made in Com's layers screen, and each layer's
    * code and files arrive by `import()` only once it is chosen [budget.mjs MAP_LINES]. A layer's areas
    * answer a tap and a hover the way a country does under Nation States; points answer first in all.
+   * Over a layer, overlays that answer no tap of their own: day and night, worked out on the phone;
+   * the directory's regions by when they were last checked; open missions counted by Zone. Each is
+   * a module of its own, loaded the same way, and says in the key what it is and how old.
    *
    * Built for the device floor, a prepaid Android 8. Each layer becomes one `Path2D` in map units
    * when the file loads, and a pan or zoom only changes the canvas transform: one matrix and a
@@ -33,7 +36,7 @@
   import type { Screen } from '$lib/com/screens';
   import { HEIGHT, METRES_PER_UNIT, decode, edgeOfEarth, filedUnder, inside, lightsOf, unproject, type Shape, type Topology } from '$lib/grid/topology';
   import { LIT_SLOP, pick, screenAt, unitAt, type Hit, type View } from '$lib/grid/pick';
-  import { mapLayers, type DrawnLayer } from '$lib/grid/layer.svelte';
+  import { daylightDrawn, layerData, loaded, mapLayers, type DrawnLayer, type Ink, type Overlay, type Swatch } from '$lib/grid/layer.svelte';
   import {
     placesOfDirectory,
     placesOfMissions,
@@ -50,6 +53,7 @@
     status = $bindable('loading'),
     placesStatus = $bindable('off'),
     legend = $bindable(null),
+    missionsAge = null,
     cover,
     onpick
   }: {
@@ -71,6 +75,11 @@
      * open at half, covers the canvas's foot, where a readout of what is drawn was present and unseen.
      */
     legend?: { layer: string; text: string } | null;
+    /**
+     * How old the missions are, as the key says it (`live`, or `as of …, offline`), or null while they
+     * have not been read, which is unknown and never none: what counts them by Zone says so.
+     */
+    missionsAge?: string | null;
     /** What the page lays over the canvas's top: its key. The opening view keeps the Earth out from under it. */
     cover?: HTMLElement;
     /**
@@ -86,6 +95,7 @@
   let reachEl = $state<HTMLElement>();
   let chipEl = $state<HTMLElement>();
   let controlsEl = $state<HTMLElement>();
+  let swatchEl = $state<HTMLElement>();
 
   let land: Path2D | null = null;
   let provinceLines: Path2D | null = null;
@@ -109,6 +119,14 @@
   let drawn = $state.raw<DrawnLayer | null>(null);
   /** What a layer has open in Com, lifted while it is, whether a tap or a list opened it. */
   let layerOpen: Path2D | null = null;
+  /**
+   * What is drawn over the chosen layer, each once its own code is here [layer.svelte.ts Overlay]: day
+   * and night, the directory by when it was last checked, and the open missions counted by Zone.
+   */
+  let sun = $state.raw<Overlay | null>(null);
+  let ages = $state.raw<Overlay | null>(null);
+  let counts = $state.raw<Overlay | null>(null);
+  const overlays = (): Overlay[] => [sun, ages, counts].filter((o): o is Overlay => o !== null);
 
   function pathOf(rings: Shape['rings']): Path2D {
     const p = new Path2D();
@@ -152,7 +170,15 @@
   /** The directory's places, once fetched: its regions, and its records. */
   let directory = $state.raw<{ regions: PlaceOfRecord[]; records: PlaceOfRecord[] } | null>(null);
   let directoryAsked = false;
-  const rings = $derived(placesOfMissions(active));
+  /** Whether only the regions were asked for, for the ages over Nation States, and Places' own file not yet. */
+  let regionsAsked = false;
+  /**
+   * The missions' rings, rebuilt only when what is open changes. The page's clock ticks every minute and
+   * hands over a new list each time, the same missions in it, and redrawing for that was a redraw a
+   * minute on a phone left open on the map.
+   */
+  let rings: PlaceOfRecord[] = [];
+  let ringsOf = '';
   /** Regions with places the map does not draw: their rings stay where the records take over. */
   const held = $derived(directory?.regions.filter((r) => r.kind === 'region' && (r.unmapped ?? 0) > 0) ?? []);
 
@@ -232,27 +258,54 @@
     return (canvas && getComputedStyle(canvas).getPropertyValue(name).trim()) || fallback;
   }
 
-  /** Whether the records are drawn, rather than their regions' rings. */
-  const close = () => !!directory && directory.records.length > 0 && scale >= fit() * RECORD_ZOOM;
+  /** Whether the directory's regions are drawn by when they were last checked: over Nation States, while ticked. */
+  const agesOn = $derived(mapLayers.chosen === 'nations' && mapLayers.ages);
+
+  /** Whether the records are drawn, rather than their regions' rings: only with Places on. */
+  const close = () => places && !!directory && directory.records.length > 0 && scale >= fit() * RECORD_ZOOM;
+
+  /** The directory's places drawn at this zoom: its regions, or closer in with Places on, its records. */
+  function directoryShown(): readonly PlaceOfRecord[] {
+    if (!directory || !(places || agesOn)) return [];
+    return close() ? directory.records : directory.regions;
+  }
 
   /**
    * The points drawn and tappable at this zoom: missions' rings always; with Places on, regions'
    * rings, or closer in the records, with the ring of each region that has places the map does not
-   * draw, so a region of held-back shelters reads as that and not as nothing [invariant 7].
+   * draw, so a region of held-back shelters reads as that and not as nothing [invariant 7]. With the
+   * directory's ages on, the regions' rings without Places too.
    */
   function shownPoints(): readonly PlaceOfRecord[] {
-    if (!places || !directory) return rings;
-    return close() ? [...rings, ...directory.records, ...held] : [...rings, ...directory.regions];
+    const shown = directoryShown();
+    if (shown.length === 0) return rings;
+    return close() ? [...rings, ...shown, ...held] : [...rings, ...shown];
   }
 
   let focused = $state(false);
+
+  /** The neutrals, read once a frame from what the page now says: Low signature changes every one. */
+  function inks(): Ink {
+    const style = canvas ? getComputedStyle(canvas) : null;
+    const t = (name: string, fallback: string) => style?.getPropertyValue(name).trim() || fallback;
+    return {
+      ink: t('--t-ink', '#F2F5F8'),
+      muted: t('--t-muted', '#9BA5B2'),
+      faint: t('--t-faint', '#78828F'),
+      line: t('--t-line', '#232B35'),
+      strong: t('--t-line-strong', '#38424F'),
+      sunk: t('--t-sunk', '#05070A'),
+      ground: t('--t-ground', '#0B0E12')
+    };
+  }
 
   function draw() {
     queued = false;
     const ctx = canvas?.getContext('2d');
     if (!ctx || width === 0) return;
+    const tones = inks();
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.fillStyle = token('--t-ground', '#0B0E12');
+    ctx.fillStyle = tones.ground;
     ctx.fillRect(0, 0, width, height);
     if (!land || !provinceLines) return;
 
@@ -264,16 +317,16 @@
     ctx.setTransform(dpr * scale, 0, 0, dpr * scale, dpr * ox, dpr * oy);
     ctx.fillStyle = token('--t-raised', '#141920');
     ctx.fill(land, 'evenodd');
-    const ink = token('--t-ink', '#F2F5F8');
+    const { ink, muted } = tones;
     if (edge) {
       ctx.lineWidth = 1 / scale;
-      ctx.strokeStyle = token('--t-line', '#232B35');
+      ctx.strokeStyle = tones.line;
       ctx.stroke(edge);
     }
-    const muted = token('--t-muted', '#9BA5B2');
     const chosen = mapLayers.chosen;
-    const tones = { ink, muted, line: token('--t-line', '#232B35'), strong: token('--t-line-strong', '#38424F') };
+    const over = overlays();
     drawn?.fill?.(ctx, tones);
+    for (const o of over) o.under?.(ctx, scale, tones, edge);
     if (litFill) {
       // A lift in brightness, never a hue: every hue on these screens is a watch state.
       ctx.globalAlpha = 0.16;
@@ -294,6 +347,7 @@
       ctx.stroke(land);
     }
     drawn?.lines(ctx, scale, tones);
+    for (const o of over) o.over?.(ctx, scale, tones, edge);
     if (litLine) {
       ctx.lineWidth = 1.5 / scale;
       ctx.strokeStyle = muted;
@@ -313,7 +367,10 @@
     const dots = new Path2D();
     const regionRings = new Path2D();
     const circles = new Path2D();
-    for (const p of shownPoints()) {
+    // An overlay that draws the directory's points its own way, by when each was checked, draws them here.
+    const shown = directoryShown();
+    const drewOwn = shown.length > 0 && over.some((o) => o.points?.(ctx, v, tones, shown) === true);
+    for (const p of drewOwn ? (near ? [...rings, ...held] : rings) : shownPoints()) {
       const [x, y] = screenAt(v, [p.x, p.y]);
       if (p.kind === 'mission') {
         // A ring the same size on screen, never smaller than what the point's precision covers:
@@ -343,6 +400,9 @@
     ctx.lineWidth = 2;
     ctx.strokeStyle = ink;
     ctx.stroke(circles);
+    for (const o of over) o.marks?.(ctx, v, tones);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = ink;
     for (const lifted of [hovered?.kind === 'point' ? hovered.place : null, pickedOn ? picked?.place : null]) {
       if (!lifted) continue;
       const [x, y] = screenAt(v, [lifted.x, lifted.y]);
@@ -397,9 +457,12 @@
     return n === 0 ? 'Nothing open' : n === 1 ? '1 open mission' : `${n} open missions`;
   }
 
+  /** What the layer and the overlays add, each its own phrase: a region's clocks, when it was checked, what is open in a Zone. */
+  const also = (said: string, more: (string | null | undefined)[]) => [said, ...more.filter(Boolean)].join(' · ');
+
   function sayOf(hit: Hit): string {
     if (hit.kind === 'shape') return `${hit.shape.name ?? 'Unnamed'} · ${openAt(hit.shape.id)}`;
-    if (hit.kind === 'area') return drawn?.say(hit.shape) ?? hit.shape.name ?? 'Unnamed';
+    if (hit.kind === 'area') return also(drawn?.say(hit.shape) ?? hit.shape.name ?? 'Unnamed', overlays().map((o) => o.about?.(hit.shape)));
     const p = hit.place;
     if (p.kind === 'mission') return `${p.title} · open mission`;
     const count = (n: number) => `${n} ${n === 1 ? 'place' : 'places'}`;
@@ -407,10 +470,9 @@
       // Where its records are drawn, a region's ring stands for the ones that are not.
       const said = close() && p.unmapped ? `${p.name} · ${count(p.unmapped)} not on the map` : `${p.name} · ${count(p.records)}`;
       // With Time zones drawn, its own clocks: its IANA zone knows daylight saving, the bands do not.
-      const clocks = drawn?.region?.(p.region);
-      return clocks ? `${said} · ${clocks}` : said;
+      return also(said, [drawn?.region?.(p.region), ...overlays().map((o) => o.region?.(p.region))]);
     }
-    return `A place in ${p.regionName}`;
+    return also(`A place in ${p.regionName}`, overlays().map((o) => o.region?.(p.region, p.index)));
   }
 
   /**
@@ -702,6 +764,23 @@
     }
   }
 
+  /** Measures the canvas and what covers it again: set once the canvas is mounted. */
+  let resize = () => {};
+  let resized: ResizeObserver | null = null;
+  /*
+   * The overlays' key comes and goes with them, after the map has mounted: measured while it is there,
+   * and measured again once it has gone, so the opening view keeps the Earth clear of it and no longer.
+   */
+  $effect(() => {
+    const el = swatchEl;
+    if (!el || !resized) return;
+    resized.observe(el);
+    return () => {
+      resized?.unobserve(el);
+      queueMicrotask(resize);
+    };
+  });
+
   onMount(() => {
     if (!canvas) return;
     const el = canvas;
@@ -718,6 +797,14 @@
         const l = r.left - box.left, t = r.top - box.top;
         return r.width > 0 && r.height > 0 ? [{ l, t, r: l + r.width, b: t + r.height }] : [];
       });
+      // A key of the overlays' own goes under the page's, wherever that ends: covering where it is about
+      // to be put, not where it was, which a move alone would never say to a size observer.
+      const key = cover?.getBoundingClientRect();
+      swatchAt = key && key.height > 0 ? { left: key.left - box.left, top: key.bottom - box.top + 6 } : { left: 12, top: 12 };
+      const swatch = swatchEl?.getBoundingClientRect();
+      if (swatch && swatch.width > 0 && swatch.height > 0) {
+        covers.push({ l: swatchAt.left, t: swatchAt.top, r: swatchAt.left + swatch.width, b: swatchAt.top + swatch.height });
+      }
       // Capped at 2: a 3x phone would quadruple the pixels filled for no visible gain.
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       el.width = Math.round(width * dpr);
@@ -727,17 +814,27 @@
       clamp();
       request();
     };
-    const resized = new ResizeObserver(size);
-    resized.observe(el);
-    if (insetEl) resized.observe(insetEl);
-    if (reachEl) resized.observe(reachEl);
-    if (cover) resized.observe(cover);
+    resize = size;
+    const observer = new ResizeObserver(size);
+    resized = observer;
+    observer.observe(el);
+    if (insetEl) observer.observe(insetEl);
+    if (reachEl) observer.observe(reachEl);
+    if (cover) observer.observe(cover);
+    if (swatchEl) observer.observe(swatchEl);
     size();
 
     // Wheel must be non-passive to stop the page scrolling under the map.
     el.addEventListener('wheel', onWheel, { passive: false });
     const scheme = window.matchMedia('(prefers-color-scheme: dark)');
     scheme.addEventListener('change', request);
+    /*
+     * Low signature changes every token the map draws with, and is set on the document itself
+     * (`html[data-signature]`), which no media query sees: until this, the canvas kept its document
+     * colours until somebody next moved the map.
+     */
+    const signature = new MutationObserver(request);
+    signature.observe(document.documentElement, { attributes: true, attributeFilter: ['data-signature'] });
 
     fetch('/grid/world.json')
       .then((r) => (r.ok ? (r.json() as Promise<Topology>) : Promise.reject(new Error(String(r.status)))))
@@ -747,6 +844,7 @@
         provinceLines = pathOf(layers['provinces']?.rings ?? []);
         provinceShapes = layers['provinces']?.shapes ?? [];
         countryShapes = layers['world']?.shapes ?? [];
+        layerData.countries = countryShapes;
         relight();
         status = 'ready';
         request();
@@ -756,7 +854,9 @@
       });
 
     return () => {
-      resized.disconnect();
+      observer.disconnect();
+      resized = null;
+      signature.disconnect();
       el.removeEventListener('wheel', onWheel);
       scheme.removeEventListener('change', request);
     };
@@ -768,11 +868,26 @@
    * whole, never by what is on screen — looking at the map tells nobody where anybody looked
    * [map.md §2]. A record's own details load only when somebody taps it.
    */
+  const json = <T,>(url: string) => fetch(url).then((r) => (r.ok ? (r.json() as Promise<T>) : Promise.reject(new Error(url))));
+  /*
+   * The regions alone, for their ages over Nation States without Places: the region file the page
+   * already holds, from the browser's cache, and never Places' own file, which stays Places'.
+   */
+  $effect(() => {
+    if (!agesOn || places || directory || regionsAsked) return;
+    regionsAsked = true;
+    void json<RegionsFile>('/console-regions.json').then(
+      (regions) => {
+        if (!directory) directory = placesOfDirectory(regions, null);
+        request();
+      },
+      () => (regionsAsked = false)
+    );
+  });
   $effect(() => {
     if (!places || directoryAsked) return;
     directoryAsked = true;
     placesStatus = 'loading';
-    const json = <T,>(url: string) => fetch(url).then((r) => (r.ok ? (r.json() as Promise<T>) : Promise.reject(new Error(url))));
     void Promise.all([json<RegionsFile>('/console-regions.json'), json<PlacesFile>('/grid/places.json').catch(() => null)])
       .then(([regions, file]) => {
         // The regions without their records still draw. Either way the key says what did not
@@ -800,7 +915,14 @@
     hovered = null;
     hoverLine = null;
     chip = null;
-    const code = chosen === 'zones' ? import('$lib/grid/layers/zones') : chosen === 'timezones' ? import('$lib/grid/layers/timezones') : null;
+    const code =
+      chosen === 'zones'
+        ? import('$lib/grid/layers/zones')
+        : chosen === 'spheres'
+          ? import('$lib/grid/layers/spheres')
+          : chosen === 'timezones'
+            ? import('$lib/grid/layers/timezones')
+            : null;
     code?.then(
       (m) => {
         if (mapLayers.chosen !== chosen) return;
@@ -809,14 +931,47 @@
       },
       () => {
         if (chosen === 'zones') mapLayers.zones = 'failed';
+        else if (chosen === 'spheres') mapLayers.spheres = 'failed';
         else mapLayers.times = 'failed';
       }
     );
     request();
   });
-  // What a layer has loaded is a new picture, and so is what it has open in Com.
+  /*
+   * The overlays, each the first time it is wanted and never before, by `import()` [budget.mjs
+   * MAP_LINES]; each stopped and dropped when it is not drawn, so a tick it keeps stops with it.
+   */
+  function overlay(on: () => boolean, code: () => Promise<{ overlay: Overlay }>, set: (o: Overlay | null) => void, failed: () => void) {
+    $effect(() => {
+      if (!on()) return;
+      let live = true;
+      let held: Overlay | null = null;
+      code().then(
+        (m) => {
+          if (!live) return;
+          held = m.overlay;
+          held.load();
+          set(held);
+          request();
+        },
+        failed
+      );
+      return () => {
+        live = false;
+        held?.stop?.();
+        set(null);
+        request();
+      };
+    });
+  }
+  overlay(daylightDrawn, () => import('$lib/grid/layers/daylight'), (o) => (sun = o), () => (mapLayers.sun = 'failed'));
+  overlay(() => agesOn, () => import('$lib/grid/layers/ages'), (o) => (ages = o), () => (mapLayers.agesFile = 'failed'));
+  overlay(() => mapLayers.chosen === 'zones', () => import('$lib/grid/layers/zone-missions'), (o) => (counts = o), () => (mapLayers.counts = 'failed'));
+
+  // What a layer has loaded is a new picture, and so is what it has open in Com, and the Sphere picked out.
   $effect(() => {
     void mapLayers.loaded;
+    void mapLayers.sphere;
     const shape = drawn?.lifted?.(current) ?? null;
     layerOpen = shape ? pathOf(shape.rings) : null;
     request();
@@ -827,26 +982,59 @@
    * the layer's own words once its code is here, and the map's for a layer whose files or code did not
    * arrive, so a map drawn without its layer never passes for one with nothing in it.
    */
-  const said = $derived(
-    mapLayers.chosen === 'nations' || mapLayers.chosen === 'none'
-      ? ''
-      : mapLayers[mapLayers.chosen === 'zones' ? 'zones' : 'times'] === 'failed'
-        ? 'Layer not loaded — it needs one visit with a connection'
-        : (drawn?.legend() ?? '')
-  );
+  const failedSay = 'not loaded — it needs one visit with a connection';
+  const said = $derived.by(() => {
+    void mapLayers.loaded;
+    const chosen = mapLayers.chosen;
+    const own = chosen === 'zones' ? mapLayers.zones : chosen === 'timezones' ? mapLayers.times : chosen === 'spheres' ? mapLayers.spheres : 'off';
+    const lines = [chosen === 'nations' || chosen === 'none' ? '' : own === 'failed' ? `Layer ${failedSay}` : (drawn?.legend() ?? '')];
+    // One short line for each overlay, under the layer's, so a taller key pushes the Earth down as little as it can.
+    for (const [on, o, state, name] of [
+      [daylightDrawn(), sun, mapLayers.sun, 'Day and night'],
+      [agesOn, ages, mapLayers.agesFile, 'Regions by last check'],
+      [chosen === 'zones', counts, mapLayers.counts, 'Missions by Zone']
+    ] as const) {
+      if (on) lines.push(state === 'failed' ? `${name} ${failedSay}` : (o?.legend() ?? ''));
+    }
+    return lines.filter(Boolean).join('\n');
+  });
   $effect(() => {
     legend = said ? { layer: mapLayers.chosen, text: said } : null;
   });
-
-  // New missions are a new picture; Places on or off is too.
-  $effect(() => {
-    void active;
-    relight();
-    request();
+  /** The overlays' own key, a row a class, under the page's: only while one draws classes it has to name. */
+  const swatches = $derived.by((): readonly Swatch[] => {
+    void mapLayers.loaded;
+    return overlays().flatMap((o) => o.swatches?.() ?? []);
   });
+  let swatchAt = $state({ left: 12, top: 12 });
+  /** Night's dots in a swatch, as day and night lays them: a 6 px grid, and its tiles' middles. */
+  const NIGHT_DOTS = [[0, 0], [6, 0], [3, 3], [9, 3], [0, 6], [6, 6], [3, 9], [9, 9]].map(([x, y]) => `M${x! + 1} ${y! + 1}h1v1h-1z`).join('');
+
+  // New missions are a new picture, and only new ones are: the page hands over a new list every minute.
+  $effect(() => {
+    const now = active.map((m) => {
+      const p = m.placement.point;
+      return `${m.address} ${m.title} ${m.placement.jurisdiction} ${p ? `${p.kind} ${p.lon} ${p.lat} ${p.precision}` : ''}`;
+    });
+    const key = now.join('\n');
+    if (key !== ringsOf) {
+      ringsOf = key;
+      rings = placesOfMissions(active);
+      relight();
+      request();
+    }
+    // What counts them by Zone reads them here, so no layer's code reads the mission feed itself.
+    const unplaced = active.length - rings.length;
+    const had = layerData.missions;
+    if (!had || had.rings !== rings || had.unplaced !== unplaced || had.age !== missionsAge) {
+      layerData.missions = { rings, unplaced, age: missionsAge };
+      loaded();
+    }
+  });
+  // Places on or off is a new picture, and so is the directory arriving.
   $effect(() => {
     void places;
-    void rings;
+    void agesOn;
     void directory;
     request();
   });
@@ -893,6 +1081,21 @@
     sits before the controls and the page's own layers, so none of them is ever under it.
   -->
   <div class="chip" bind:this={chipEl} role="status" data-chip style:left="{chipAt.left}px" style:top="{chipAt.top}px">{chip?.text ?? ''}</div>
+  <!--
+    The overlays' own key: what each mark they draw means, drawn as the canvas draws it, under the
+    page's key and clear of the Earth [covers]. Present only while something draws classes to name.
+  -->
+  {#if swatches.length > 0}
+    <ul class="swatches" bind:this={swatchEl} data-swatches style:left="{swatchAt.left}px" style:top="{swatchAt.top}px">
+      {#each swatches as s (s.text)}
+        <li data-swatch={s.mark}>
+          <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" class={s.tone}>
+            {#if s.mark === 'square'}<rect x="2" y="2" width="8" height="8" />{:else if s.mark === 'dots'}<path d={NIGHT_DOTS} />{:else}<circle cx="6" cy="6" r={s.mark === 'dot' ? 3.5 : 4.5} />{/if}
+          </svg>{s.text}
+        </li>
+      {/each}
+    </ul>
+  {/if}
   <div class="controls" bind:this={controlsEl}>
     <button type="button" aria-label="Zoom in" onclick={() => zoomAt(1.5)}>+</button>
     <button type="button" aria-label="Zoom out" onclick={() => zoomAt(1 / 1.5)}>−</button>
@@ -953,6 +1156,39 @@
     padding: 0;
     border: 0;
   }
+  .swatches {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    max-width: calc(100% - 6rem);
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.7rem;
+    color: var(--t-muted);
+    pointer-events: none;
+  }
+  .swatches li {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .swatches svg {
+    flex: none;
+    stroke-width: 1.5;
+  }
+  /* As the canvas draws each: a disc and a dot filled, a ring and a square hollow. */
+  .swatches .ink { color: var(--t-ink); }
+  .swatches .muted { color: var(--t-muted); }
+  .swatches .faint { color: var(--t-faint); }
+  [data-swatch='disc'] svg,
+  [data-swatch='dot'] svg { fill: currentColor; stroke: none; }
+  [data-swatch='ring'] svg,
+  [data-swatch='square'] svg { fill: none; stroke: currentColor; }
+  /* Night's dots, at the spacing the canvas lays them, and as faint. */
+  [data-swatch='dots'] svg { fill: currentColor; stroke: none; opacity: 0.8; }
   .controls {
     position: absolute;
     inset-inline-end: 0.75rem;

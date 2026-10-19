@@ -575,6 +575,7 @@
           bind:status={mapStatus}
           bind:placesStatus
           bind:legend={mapLegend}
+          missionsAge={missionAge || null}
           cover={keyEl}
           label="Map of the Earth, with open missions lit{coverage ? ', and the directory’s places' : ''}"
           onpick={(s) => open(s, true)}
@@ -1015,6 +1016,10 @@
   }
   .nav-key strong {
     font-weight: 400;
+  }
+  /* A layer's line, then one for each thing drawn over it [GridMap legend]. */
+  .nav-key [data-legend] {
+    white-space: pre-line;
   }
   .nav-key .lit {
     display: inline-block;

@@ -4,6 +4,7 @@ import { COM_ENTRIES } from '../scripts/lib/budget.mjs';
 import { chunkOf, open, seedDevice } from './device';
 import { mapReady, screenAt, tap, tapAt, zoomAt } from './map';
 import { admit, resign, standInKey, type StandIn } from './registry';
+import { serveSpheres } from './spheres';
 import { serveZones } from './zsp';
 
 /**
@@ -191,6 +192,20 @@ const WAYS_IN: Record<string, WayIn[]> = {
         await page.getByRole('button', { name: 'Map layers' }).click();
         return page.locator('[data-screen="layers"]');
       }
+    },
+    {
+      // The overlays' own key goes under the map's: it must not push anything over Distress either.
+      name: 'the map’s layers, with day and night and the directory by last check ticked',
+      go: async (page) => {
+        await signedOnWithHeat(page);
+        await mapReady(page);
+        await page.getByRole('button', { name: 'Map layers' }).click();
+        const screen = page.locator('[data-screen="layers"]');
+        await screen.locator('[data-daylight]').check();
+        await screen.locator('[data-ages]').check();
+        await expect(page.locator('[data-swatches]')).toBeVisible();
+        return screen;
+      }
     }
   ],
   zone: [
@@ -228,6 +243,24 @@ const WAYS_IN: Record<string, WayIn[]> = {
         const lookup = page.locator('[data-screen="lookup"]');
         await expect(lookup.locator('[data-found]').first()).toBeVisible();
         return lookup;
+      }
+    }
+  ],
+  sphere: [
+    {
+      // NavCom's fixture lists by route: the build has no Spheres before they are vendored [./spheres.ts].
+      name: 'a Sphere opened from the layers, picked out on the map',
+      go: async (page) => {
+        await serveSpheres(page);
+        await signedOnWithHeat(page);
+        await mapReady(page);
+        await page.getByRole('button', { name: 'Map layers' }).click();
+        await page.locator('[data-screen="layers"]').getByRole('radio', { name: /^Spheres/ }).check();
+        await expect(page.locator('[data-legend="spheres"]')).toContainText('draft lists');
+        await page.locator('[data-sphere-open="sphere:test-anglosphere"]').click();
+        const sphere = page.locator('[data-screen="sphere"][data-sphere="sphere:test-anglosphere"]');
+        await expect(sphere.locator('[data-sphere-member]')).toHaveCount(8);
+        return sphere;
       }
     }
   ],

@@ -110,8 +110,10 @@ The attribution Overture asks for: *Overture Maps Foundation, overturemaps.org.*
 ### The map's own data
 
 **Natural Earth** draws the grid's outlines and its time zones (`web/static/grid/world.json`,
-`web/static/grid/timezones.json`). It is public domain, so it binds nothing; it is credited anyway,
-on the map's own layers screen.
+`web/static/grid/timezones.json`), and gives the label points a small state is drawn at as a circle
+when a Sphere names it (`web/scripts/data/label-points.json`, D9). It is public domain, so it binds
+nothing; it is credited anyway, on the map's own layers screen. Day and night is worked out on the
+phone from its own clock, and draws on no data at all.
 
 **Starcom's Zones** (the Zone and Sector Protocol 2.0 partition) are **CC BY 4.0**, from the first
 stage NavCom vendors, which is no earlier than 23 October 2026. Attribution only, so the code and the
@@ -121,6 +123,12 @@ set, or any source a Sector's lines were drawn from, that is share-alike or non-
 [`docs/design/map.md`](docs/design/map.md) §8. **The code that reads them is NavCom's own**: Starcom's code
 is AGPL-3.0-only, which would bind an Apache-2.0 codebase, so none of it is copied, and a test fails if
 anything under `packages/core/src/zones/` carries its licence.
+
+**The Spheres' membership lists** (Mecha Jono's Part 2, due 26 October 2026) are not in any build yet:
+their licence and the attribution they ask for are recorded here, and carried on the map and the layers
+screen, in the change that vendors them (`web/scripts/spheres-vendor.mjs`), which refuses lists, or any
+cited source, that are share-alike or non-commercial. Until then only NavCom's own test fixture exists,
+and it never ships. The reader is NavCom's own too (`packages/core/src/spheres/`), with the same test.
 
 ## Contributing
 

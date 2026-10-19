@@ -44,7 +44,8 @@ export type Screen =
   | { kind: 'layers' }
   | { kind: 'zone'; id: string }
   | { kind: 'lookup' }
-  | { kind: 'time'; offset: string };
+  | { kind: 'time'; offset: string }
+  | { kind: 'sphere'; id: string | null; code: string | null };
 /**
  * A place opened from the map [map.md §6: every shape is a door]. `code` is the jurisdiction a
  * tapped province or country is filed under (`us-ca`, `ke`), so the screen lists what is filed
@@ -62,7 +63,8 @@ export type Place = Extract<Screen, { kind: 'place' }>;
  * map divides the Earth by; `zone` is one Terra, Mare, Zone or Sector, by its ZSP 2.0 id, opened from
  * the map or a list, and a tap on the map names a Sector once its container is open; `lookup` says
  * which Sector this phone is in, from its own position-once fix, looked up on the phone and never
- * kept in history or sent; `time` is one standard-time band, by its offset in hours.
+ * kept in history or sent; `time` is one standard-time band, by its offset in hours; `sphere` is one
+ * Sphere by its id, or the Spheres a country is in by its ISO code, or, with neither, every Sphere.
  */
 export type Kind = Screen['kind'];
 /** How high the sheet opens for a screen. Never lower than it already is. */
@@ -133,7 +135,8 @@ export const SCREENS: { [K in Kind]: { entry: Entry; height: Height; fields: Fie
   layers: { entry: 'layers', height: 'half', fields: {} },
   zone: { entry: 'layers', height: 'half', fields: { id: 'string' } },
   lookup: { entry: 'layers', height: 'half', fields: {} },
-  time: { entry: 'layers', height: 'half', fields: { offset: 'string' } }
+  time: { entry: 'layers', height: 'half', fields: { offset: 'string' } },
+  sphere: { entry: 'layers', height: 'half', fields: { id: 'string|null', code: 'string|null' } }
 };
 
 /**

@@ -31,6 +31,14 @@
  * the stage, and the credit. A stage before `final` is a draft (D6): the map says so, and nothing a
  * person keeps may name one of its ids.
  *
+ * Every Terra, Mare, Zone and Sector carries a `label`, `[lon, lat]` to two places: a point inside its
+ * full-resolution outline, as far from its edges as `labelPoint` finds, where the map hangs a count of
+ * the missions open in it. And every file of outlines says how far its simplified lines drift from the
+ * source, `simplified_m`, measured here at every source vertex: `outlines.json` for the Terrae, Maria and
+ * Zones, and each container's file for its own Sectors, which are simplified apart from them and drift
+ * by their own amount. Within that of an edge, which side a point is on is not something the drawn
+ * lines can say, and the map says so rather than count it on one side.
+ *
  * `--dir` reads a partition from a directory instead, for NavCom's own test fixture and nothing else.
  * **A working tree never ships**: `static/grid/zsp/` takes only `--repo` at a full commit with
  * `--manifest-sha256`, whatever a manifest read with `--dir` calls its maker, and the fixture is refused
@@ -45,7 +53,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync,
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { checkPartition, zspStem } from '@navcom/core/zones';
+import { checkPartition, edgeMetres, labelPoint, zspStem } from '@navcom/core/zones';
 
 const MAPSHAPER = 'mapshaper@0.7.78';
 /** The world view: a Sector line there is a pixel or two, so the outlines keep a tenth of their points. */
@@ -166,6 +174,20 @@ const work = join(tmpdir(), `navcom-zsp-${process.pid}`);
 rmSync(work, { recursive: true, force: true });
 mkdirSync(work, { recursive: true });
 
+/** A GeoJSON Polygon's or MultiPolygon's rings, as core's geometry takes them. */
+const ringsOf = (/** @type {any} */ geometry) =>
+  (geometry.type === 'Polygon' ? [geometry.coordinates] : geometry.coordinates).flat().map((/** @type {number[][]} */ r) => Float64Array.from(r.flat()));
+
+/** Where each area is labelled, by its id, from its full-resolution outline. */
+/** @type {Map<string, [number, number]>} */
+const labels = new Map();
+/** Each Terra's, Mare's and Zone's source rings, by id, to measure the simplified outlines against. */
+/** @type {Map<string, Float64Array[]>} */
+const sources = new Map();
+/** Each container's Sectors' source rings, by container and then by id, for its own file's drift. */
+/** @type {Map<string, Map<string, Float64Array[]>>} */
+const sectorSources = new Map();
+
 /** Each container file's own GeoJSON features, by level, with only the properties NavCom shows. */
 /** @type {Record<string, any[]>} */
 const features = { containers: [], zones: [] };
@@ -175,6 +197,10 @@ for (const c of manifest.containers) {
   const doc = JSON.parse(files[c.file].toString('utf8'));
   for (const f of doc.features) {
     const p = f.properties;
+    const rings = ringsOf(f.geometry);
+    labels.set(p.id, labelPoint(rings));
+    if (p.level !== 'sector') sources.set(p.id, rings);
+    else (sectorSources.get(c.id) ?? sectorSources.set(c.id, new Map()).get(c.id))?.set(p.id, rings);
     if (p.level === 'terra' || p.level === 'mare') {
       features.containers.push({ type: 'Feature', properties: { id: p.id, name: p.name, level: p.level }, geometry: f.geometry });
     } else if (p.level === 'zone') {
@@ -240,13 +266,96 @@ if (everySector.length > 0) {
   mapshaper([geojson('sectors', everySector)], ['-rename-layers', 'sectors'], `quantization=${INDEX.quantization} ${join(written, 'index.json')}`);
 }
 
+/**
+ * A topology's areas as rings of longitude and latitude, by id: what the phone will draw, decoded the
+ * way `topology.ts` decodes it, to measure against the source.
+ *
+ * @param {any} topology
+ */
+function decoded(topology) {
+  const [sx, sy] = topology.transform?.scale ?? [1, 1];
+  const [tx, ty] = topology.transform?.translate ?? [0, 0];
+  const arcs = topology.arcs.map((/** @type {number[][]} */ arc) => {
+    let x = 0, y = 0;
+    return arc.map(([dx, dy]) => [(x += dx) * sx + tx, (y += dy) * sy + ty]);
+  });
+  const stitch = (/** @type {number[]} */ indices) => {
+    /** @type {number[]} */
+    const out = [];
+    for (const i of indices) {
+      const arc = i >= 0 ? arcs[i] : [...arcs[~i]].reverse();
+      for (let k = out.length === 0 ? 0 : 1; k < arc.length; k++) out.push(arc[k][0], arc[k][1]);
+    }
+    return Float64Array.from(out);
+  };
+  /** @type {Map<string, Float64Array[]>} */
+  const byId = new Map();
+  for (const layer of Object.values(topology.objects)) {
+    for (const g of /** @type {any} */ (layer).geometries) {
+      const polys = g.type === 'Polygon' ? [g.arcs] : g.type === 'MultiPolygon' ? g.arcs : [];
+      byId.set(g.properties.id, polys.flat().map(stitch));
+    }
+  }
+  return byId;
+}
+
+/**
+ * The farthest any source vertex lies from the simplified outline of its own area, in metres, rounded
+ * up to the next hundred. Segments are bucketed by quarter-degree cell, so a stage of tens of thousands
+ * of points is measured in seconds; a vertex with no segment near it is measured against them all.
+ *
+ * @param {Map<string, Float64Array[]>} drawn
+ * @param {Map<string, Float64Array[]>} from the source rings of the areas the file draws
+ */
+function drift(drawn, from) {
+  const CELL = 0.25;
+  let worst = 0;
+  for (const [id, source] of from) {
+    const simple = drawn.get(id);
+    if (!simple) throw new Error(`${id} is in the source and not in the outlines`);
+    /** @type {Map<string, Float64Array[]>} */
+    const cells = new Map();
+    for (const r of simple) {
+      for (let i = 2; i < r.length; i += 2) {
+        const seg = Float64Array.of(r[i - 2], r[i - 1], r[i], r[i + 1]);
+        for (let cx = Math.floor(Math.min(r[i - 2], r[i]) / CELL); cx <= Math.floor(Math.max(r[i - 2], r[i]) / CELL); cx++) {
+          for (let cy = Math.floor(Math.min(r[i - 1], r[i + 1]) / CELL); cy <= Math.floor(Math.max(r[i - 1], r[i + 1]) / CELL); cy++) {
+            const key = `${cx},${cy}`;
+            (cells.get(key) ?? cells.set(key, []).get(key))?.push(seg);
+          }
+        }
+      }
+    }
+    for (const r of source) {
+      for (let i = 0; i < r.length; i += 2) {
+        const [lon, lat] = [r[i], r[i + 1]];
+        /** @type {Float64Array[]} */
+        const near = [];
+        for (let dx = -2; dx <= 2; dx++) {
+          for (let dy = -2; dy <= 2; dy++) near.push(...(cells.get(`${Math.floor(lon / CELL) + dx},${Math.floor(lat / CELL) + dy}`) ?? []));
+        }
+        const d = near.length > 0 ? edgeMetres(near, lon, lat) : edgeMetres(simple, lon, lat);
+        if (d > worst) worst = d;
+      }
+    }
+  }
+  return Math.ceil(worst / 100) * 100;
+}
+
 /** @param {string} file @param {Record<string, unknown>} block */
 function stamp(file, block) {
   const path = join(written, file);
   const topology = JSON.parse(readFileSync(path, 'utf8'));
   for (const [name, layer] of Object.entries(topology.objects ?? {})) {
     if (!/** @type {any} */ (layer).geometries?.length) throw new Error(`${file}: layer "${name}" is empty`);
+    // Each area's label, from its source outline, so a count is hung inside it however it was simplified.
+    for (const g of /** @type {any} */ (layer).geometries) {
+      const at = labels.get(g.properties?.id);
+      if (at && file !== 'index.json') g.properties.label = at;
+    }
   }
+  if (file === 'outlines.json') block = { ...block, simplified_m: drift(decoded(topology), sources) };
+  if (typeof block.container === 'string') block = { ...block, simplified_m: drift(decoded(topology), sectorSources.get(block.container) ?? new Map()) };
   topology.navcom = block;
   writeFileSync(path, JSON.stringify(topology));
 }

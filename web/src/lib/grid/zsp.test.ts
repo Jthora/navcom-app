@@ -15,7 +15,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { checkPartition, placeAt, zspIndex } from '@navcom/core/zones';
+import { checkPartition, holds, placeAt, zspIndex } from '@navcom/core/zones';
 import { decode, lonLat, type Topology } from './topology';
 import { chainOf, outlinesOf, sectorsOf, type ZonesOutlines } from './layers/zones';
 import { indexOf } from './layers/zones-lookup';
@@ -175,6 +175,30 @@ describe('the files the map reads', () => {
       // And nothing else beside them that no container names.
       const named = new Set(['outlines.json', 'index.json', ...navcom.containers.map((c) => c.file)]);
       expect(readdirSync(dir).filter((f) => !named.has(f))).toEqual([]);
+    });
+
+    it(`${label}: labels every Terra, Mare, Zone and Sector inside itself, and says how far its lines drift`, () => {
+      // Where the map hangs a count of open missions: inside the area as drawn, never in a hollow of it.
+      const files = ['outlines.json', ...outlines.navcom.containers.filter((c) => c.sectors > 0).map((c) => c.file)];
+      let labelled = 0;
+      for (const f of files) {
+        for (const layer of Object.values(decode(json<Topology>(join(dir, f)), lonLat))) {
+          for (const shape of layer.shapes) {
+            const at = shape.props.label as [number, number] | undefined;
+            expect(Array.isArray(at), `${shape.id} has no label`).toBe(true);
+            expect(at!.map((v) => Math.round(v * 100) / 100), `${shape.id}'s label to two places`).toEqual(at);
+            expect(holds(shape.rings, at![0], at![1]), `${shape.id}'s label ${at} is outside it`).toBe(true);
+            labelled += 1;
+          }
+        }
+      }
+      expect(labelled).toBeGreaterThan(outlines.navcom.containers.length);
+      // Measured by the script, at every source vertex: a figure, never a guess.
+      const drift = outlines.navcom.simplified_m!;
+      expect(Number.isInteger(drift)).toBe(true);
+      expect(drift % 100).toBe(0);
+      expect(drift).toBeGreaterThan(0);
+      expect(drift).toBeLessThan(100_000);
     });
 
     it(`${label}: its index holds every Sector the containers' files hold, and nothing else, under the same digest`, () => {

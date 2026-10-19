@@ -230,13 +230,14 @@ export const COM_ENTRIES = /** @type {Record<string, string>} */ ({
  * warning line about 8% above the measurement. The measurement is kept beside it, so `budget.test.ts`
  * can hold the headroom to that rule. Nothing here is measured that does not exist yet. The layers'
  * screens, Zones, the lookup and Time zones are written, and their code was measured on 2026-10-19, as
- * Time zones' two files were, so those ceilings are derived. The rest stay `null` until what they
- * measure exists: the Zones outlines' data and one container's Sectors, none before Stage 1 lands
- * (23 Oct), the fixture they are built against until then never shipping; the lookup's index, none
- * before a stage with Sectors in it; and Spheres, code and data, not written until its lists land
- * (D9). A container's Sectors have no code of their own, which arrives with the Zones line. The change
- * that lands each part derives its ceiling from what it measured; the failure prints the numbers to
- * write.
+ * Time zones' two files were, so those ceilings are derived; so were the four slices drawn over a layer
+ * that evening, day and night, the directory by last check with its file, missions by Zone, and the
+ * Spheres' code. The rest stay `null` until what they measure exists: the Zones outlines' data and one
+ * container's Sectors, none before Stage 1 lands (23 Oct), the fixture they are built against until then
+ * never shipping; the lookup's index, none before a stage with Sectors in it; and the Spheres' lists,
+ * none until they are vendored (26 Oct, D9), their fixture never shipping either. A container's Sectors
+ * have no code of their own, which arrives with the Zones line. The change that lands each part derives
+ * its ceiling from what it measured; the failure prints the numbers to write.
  *
  * Each line's code is one module under `src/lib/grid/layers/`, loaded by `import()` from the map or
  * from a Com screen, and never statically. A layer something imports statically arrives with that
@@ -284,13 +285,17 @@ export const MAP_LINES = {
     files: null,
     per: 'all',
     js: {
-      limit: 6_934,
-      warn: 6_241,
-      measured: 5_779,
+      limit: 12_436,
+      warn: 11_193,
+      measured: 10_364,
       why:
-        'Measured 2026-10-19 at 5,779 B: the picker, a Terra, Mare, Zone or Sector, which Sector this ' +
-        'phone is in, and a time zone, four screens in one Com entry, with where somebody works kept in ' +
-        'the Wipeable tier. Each layer’s own code is its own line, so none of it is here.'
+        'Re-derived 2026-10-19 at 10,364 B, from 5,779 B the same morning, for what the four new map ' +
+        'slices put on these screens: the day-and-night box and where the sun is overhead; the directory-' +
+        'by-last-check box and its full key, every class with its count; a Zone’s open missions, each a ' +
+        'way to it, its near-edge notes and what is placed in no Zone; the Spheres panel; and a fifth ' +
+        'screen, a Sphere, its members as doors, its groups and its cited sources. Each layer’s own code ' +
+        'is still its own line, so none of it is here; it is the screens alone, paid only on opening the ' +
+        'map’s layers.'
     },
     data: null
   },
@@ -382,16 +387,108 @@ export const MAP_LINES = {
     }
   },
   /*
-   * The Spheres' lists, due 26 Oct, and the label points D9 draws their small member states at, as
-   * circles. Whatever is fetched only while Spheres is on is this line's data, so a file of its own
-   * for those points is added to `files` here.
+   * The Spheres' lists, due 26 Oct, with the label points D9 draws their small member states at, as
+   * circles, written into the same file by `scripts/spheres-vendor.mjs`. The code is written and
+   * measured; the data has no ceiling until the lists are vendored, and nothing synthetic ships.
    */
   spheres: {
     when: 'choosing Spheres',
     code: `${LAYER_CODE}spheres.ts`,
     files: (f) => f === 'grid/spheres.json',
     per: 'all',
-    js: null,
+    js: {
+      limit: 2_604,
+      warn: 2_344,
+      measured: 2_170,
+      why:
+        'Re-derived 2026-10-19 at 2,170 B, from 2,014 B the same day: reading the vendored lists, the ' +
+        'Sphere opened hatched in screen space and nothing shaded until one is, a small state as a dotted ' +
+        'circle at its label point and a filled one in the Sphere opened, the key naming what is hatched ' +
+        'and the lists’ read dates oldest to newest, and answering a hover or a tap with every Sphere a ' +
+        'country is in. Its data has no ceiling until Mecha Jono’s lists are vendored (due 26 Oct), ' +
+        'estimated at 6 to 12 kB, which is not a measurement: the change that vendors them derives one.'
+    },
+    data: null
+  },
+  /*
+   * Day and night: drawn whenever Time zones is chosen and over any other layer while its box is
+   * ticked. Worked out on the phone from its own clock, so it has no data at all, and never will.
+   */
+  daylight: {
+    when: 'drawing day and night: choosing Time zones, or ticking it over another layer',
+    code: `${LAYER_CODE}daylight.ts`,
+    files: null,
+    per: 'all',
+    js: {
+      limit: 2_491,
+      warn: 2_242,
+      measured: 2_076,
+      why:
+        'Re-derived 2026-10-19 at 2,076 B, from 1,567 B the same day: the sun’s position from the ' +
+        'almanac’s formulas; twilight and night as two caps, each a darker step and a grid of dots kept ' +
+        'on device pixels, since tone alone cannot carry night on land this dark; the caps’ runs along ' +
+        '±180° drawn in steps so the night reaches the Earth’s bulging edge; the line between and the ' +
+        'sun where it is overhead, rebuilt once a minute, on the minute, never while the page is hidden; ' +
+        'and the swatch that says what the dots are. Nothing is fetched for it.'
+    },
+    data: null
+  },
+  /*
+   * The directory by last check, over Nation States: each record's check date, read on the phone
+   * against its own clock, so it ages between deploys. Its data's ceiling is derived from a model of
+   * the file after months of re-checking region by region, not from today's three dates, because the
+   * dates are what it grows with first [budget.test.ts, the 90-day model].
+   */
+  ages: {
+    when: 'showing the directory by last check',
+    code: `${LAYER_CODE}ages.ts`,
+    files: (f) => f === 'grid/region-ages.json',
+    per: 'all',
+    js: {
+      limit: 3_163,
+      warn: 2_847,
+      measured: 2_636,
+      why:
+        'Re-derived 2026-10-19 at 2,636 B, from 1,983 B the same day: reading the dates as runs and ' +
+        'laying them out once, every region’s and record’s reading worked out once a day so a frame ' +
+        'only looks them up, a region by its oldest, four shapes rather than four tones at the size ' +
+        'their swatches are, thinned where they would crowd so the most cautious is the one drawn, and ' +
+        'the words, which name how long ago and never what a page shows.'
+    },
+    data: {
+      limit: 17_228,
+      warn: 15_506,
+      measured: 14_357,
+      why:
+        'Derived 2026-10-19 from a model, measured at 14,357 B: grid/region-ages.json as it would be with ' +
+        'the real 1,912 regions each re-checked on one of 90 days, a tenth of those with three or more ' +
+        'places in three runs (budget.test.ts builds it from the build). Today’s file, three dates, is ' +
+        '10,843 B. The first ceiling was 13,328 B from today’s file with one index a record, and ten ' +
+        'dates would have failed it before the directory grew by one record; the file is runs of a date ' +
+        'now, and 8.7 kB of it is the regions’ names. A directory checked record by record on scattered ' +
+        'days is not this model and outgrows it (about 22 kB at 30 days): re-derive then, on purpose.'
+    }
+  },
+  /*
+   * Open missions counted by Zone and Sector, while Zones is chosen: from the missions already on the
+   * phone, so it fetches nothing. The label points it hangs each count on ride in the outlines, which
+   * are the Zones line's data.
+   */
+  'zone-missions': {
+    when: 'choosing Zones, which counts its open missions',
+    code: `${LAYER_CODE}zone-missions.ts`,
+    files: null,
+    per: 'all',
+    js: {
+      limit: 2_555,
+      warn: 2_299,
+      measured: 2_129,
+      why:
+        'Re-derived 2026-10-19 at 2,129 B, from 2,004 B the same day: placing each mission’s drawn point ' +
+        'in its Terra or Mare, Zone and open Sector; saying, at every level it is counted in and by that ' +
+        'file’s own drift, which are near an edge the simplified lines cannot settle; and a count drawn at ' +
+        'each label point, dashed where it holds one of those, a Sector’s once it is wide enough on screen.'
+    },
     data: null
   }
 };

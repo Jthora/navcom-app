@@ -20,6 +20,10 @@
       "types": "./dist/zones/index.d.ts",
       "default": "./dist/zones/index.js"
     },
+    "./spheres": {
+      "types": "./dist/spheres/index.d.ts",
+      "default": "./dist/spheres/index.js"
+    },
     "./src/*": "./src/*"
   },
   "scripts": {

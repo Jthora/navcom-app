@@ -3,8 +3,9 @@
  * [docs/design/map.md, Layers].
  *
  * One layer at a time, as Starcom's picker has it: Nation States, which is today's map; Starcom's
- * Zones; Time zones; or none. A pick leaves that layer on and the others off. The missions light
- * whichever is drawn, because they are not a way of dividing the Earth.
+ * Zones; the Spheres; Time zones; or none. A pick leaves that layer on and the others off. The missions
+ * light whichever is drawn, because they are not a way of dividing the Earth. Over a layer, overlays:
+ * day and night, the directory by when it was last checked, and the open missions counted by Zone.
  *
  * Only the choice and a few small flags live here, loaded with the map as it mounts. Each layer's own
  * code and data arrive when somebody chooses it, never before [scripts/lib/budget.mjs MAP_LINES]:
@@ -18,11 +19,13 @@
 
 import type { Screen } from '$lib/com/screens';
 import type { View } from './pick';
+import type { PlaceOfRecord } from './places';
 import type { Shape } from './topology';
+import type { SpheresFile } from './layers/spheres';
 import type { ZonesOutlines } from './layers/zones';
 
-export type MapLayer = 'nations' | 'zones' | 'timezones' | 'none';
-export const MAP_LAYERS: readonly MapLayer[] = ['nations', 'zones', 'timezones', 'none'];
+export type MapLayer = 'nations' | 'zones' | 'spheres' | 'timezones' | 'none';
+export const MAP_LAYERS: readonly MapLayer[] = ['nations', 'zones', 'spheres', 'timezones', 'none'];
 
 /** Where the vendored Zones are served from: navcom.app's own origin, and nowhere else [D6]. */
 export const ZSP_DIR = '/grid/zsp/';
@@ -36,12 +39,22 @@ export interface Band {
   shape: Shape;
 }
 
-/** The map's neutral tokens, read once per frame: every hue on these screens is a watch state. */
+/**
+ * The map's neutral tokens, read once per frame, so a drawing follows Low signature the moment it is
+ * switched: every hue on these screens is a watch state. In Low signature the three text tones are
+ * close in brightness (ink to muted ΔE 10, muted to faint ΔE 2), so nothing drawn here tells two
+ * things apart by tone alone: shape, fill and size carry every difference, and tone only adds to it.
+ */
 export interface Ink {
   ink: string;
   muted: string;
+  faint: string;
   line: string;
   strong: string;
+  /** The deepest neutral: night's shade, under everything else. */
+  sunk: string;
+  /** The canvas's own ground: a badge's fill. */
+  ground: string;
 }
 
 /**
@@ -66,8 +79,69 @@ export interface DrawnLayer {
   region?(slug: string): string | null;
 }
 
+/**
+ * Something drawn over whichever layer is chosen, rather than instead of it: day and night, the
+ * directory by last check, open missions counted by Zone. Each is a module of its own under
+ * `layers/`, loaded by `import()` when it is first wanted and charged to its own line
+ * [budget.mjs MAP_LINES], and none of them answers a tap: the layer under it, and the points, do.
+ */
+export interface Overlay {
+  /** Starts it: its files, once, and any tick it keeps. */
+  load(): void;
+  /** Stops any tick it keeps, when it is no longer drawn. */
+  stop?(): void;
+  /** In map units, after the layer's own lift and before the missions' lights. `edge` is the Earth's outline. */
+  under?(ctx: CanvasRenderingContext2D, scale: number, ink: Ink, edge: Path2D | null): void;
+  /** In map units, over the layer's lines. */
+  over?(ctx: CanvasRenderingContext2D, scale: number, ink: Ink, edge: Path2D | null): void;
+  /**
+   * In CSS px, in place of the directory's own points: `points` are the regions or records shown at this
+   * zoom. True when it drew them, so the map draws only the missions' rings, and the dashed rings of
+   * the regions whose places it holds back.
+   */
+  points?(ctx: CanvasRenderingContext2D, view: View, ink: Ink, points: readonly PlaceOfRecord[]): boolean;
+  /** In CSS px, over every point: a badge, the sun. Under only what a hover or a tap lifted, and the reticle. */
+  marks?(ctx: CanvasRenderingContext2D, view: View, ink: Ink): void;
+  /** Its line in the map's key: what it is, whose, and how old [invariant 7]. */
+  legend(): string;
+  /** What it adds to what a hover over an area says. */
+  about?(shape: Shape): string | null;
+  /** What it adds to what a directory region's ring, or one of its records, says. */
+  region?(slug: string, record?: number): string | null;
+  /** Rows under the map's key: one swatch per class it draws, in the shape it draws it. */
+  swatches?(): readonly Swatch[];
+}
+
+/** One row of a key under the map's own: a mark drawn as the map draws it, and what it means. */
+export interface Swatch {
+  /** `dots`: a patch of night's dots, as day and night lays them over an area. */
+  mark: 'disc' | 'dot' | 'ring' | 'square' | 'dots';
+  tone: 'ink' | 'muted' | 'faint';
+  text: string;
+}
+
+/**
+ * Whether day and night is drawn: always with Time zones, and over any other layer while its box is
+ * ticked. One place, so whether Time zones draws it always is one line to change.
+ */
+export const daylightDrawn = (): boolean => mapLayers.chosen === 'timezones' || mapLayers.daylight;
+
 /** A directory region's own clocks: `12:05 BST` and its IANA zone, or null for a region with none known. */
 export type RegionTime = (region: string) => { time: string; zone: string } | null;
+
+/** How a region's places stand by when they were last checked, from this phone's clock [layers/ages.ts]. */
+export interface RegionAge {
+  /** The oldest and the newest check among its records, as dates, or null when none is dated. */
+  oldest: string | null;
+  newest: string | null;
+  /**
+   * A region's cautious reading, its oldest check's, so everything there was checked at least this
+   * recently; or, when one record was asked for, that record's own.
+   */
+  reading: 'current' | 'hours' | 'stale' | 'unknown';
+  /** One record's own check, when asked for one. */
+  record: string | null;
+}
 
 /**
  * The choice, and how each layer's files stand: small, and read everywhere. `loaded` counts what the
@@ -75,10 +149,24 @@ export type RegionTime = (region: string) => { time: string; zone: string } | nu
  */
 export const mapLayers = $state({
   chosen: 'nations' as MapLayer,
+  /** Day and night over a layer other than Time zones, which always draws it [daylightDrawn]. */
+  daylight: false,
+  /** The directory's regions by when they were last checked, over Nation States. */
+  ages: false,
+  /** The Sphere picked out on the Spheres layer, by its id; null shows every Sphere's members alike. */
+  sphere: null as string | null,
   /** Starcom's outlines: every Terra, Mare and Zone, fetched whole when Zones is chosen [D10]. */
   zones: 'off' as Loading,
   /** Natural Earth's standard-time bands, and the regions' own zones, fetched when Time zones is chosen [D8]. */
   times: 'off' as Loading,
+  /** Day and night's code: nothing is fetched for it, so only its code can fail to arrive. */
+  sun: 'off' as Loading,
+  /** The directory's check dates, `/grid/region-ages.json`, fetched when the ages are first shown. */
+  agesFile: 'off' as Loading,
+  /** Open missions counted by Zone: its code, which fetches nothing. */
+  counts: 'off' as Loading,
+  /** The Spheres' lists and their small members' label points, fetched when Spheres is chosen [D9]. */
+  spheres: 'off' as Loading,
   loaded: 0
 });
 
@@ -91,6 +179,8 @@ export const layerData = {
   outlines: null as ZonesOutlines | null,
   /** A container's Sectors, by its id, fetched when somebody opens it and never by what is on screen [D10]. */
   sectors: {} as Record<string, Shape[]>,
+  /** Each opened container file's own drift from its source, in metres, as the vendoring measured it. */
+  sectorDrift: {} as Record<string, number | undefined>,
   /**
    * Sectors' names this phone holds without their containers: what the lookup found, named from its own
    * index. A Sector opened from there is named from here, and its container is never fetched for it [D7].
@@ -99,7 +189,25 @@ export const layerData = {
   opening: {} as Record<string, Loading>,
   bands: null as Band[] | null,
   /** Set by the time zones layer, so a screen that shows a region's clocks carries none of its code. */
-  regionTime: null as RegionTime | null
+  regionTime: null as RegionTime | null,
+  /** Where the sun is overhead, by this phone's clock, to the minute: set by day and night [layers/daylight.ts]. */
+  sun: null as { lat: number; lon: number; at: number } | null,
+  /** Set by the directory's ages, so the place screen can say when a place was checked and carries none of its code. */
+  regionAges: null as ((region: string, record?: number) => RegionAge | null) | null,
+  /**
+   * The open missions the map draws, as the map has them: the rings of those whose package locates
+   * their subject, how many are filed by jurisdiction only, and the feed's age, null while the missions
+   * have not been read, which is unknown and not none. Set by the map and read by the Zones' counts, so
+   * no layer's code reads the mission feed itself.
+   */
+  missions: null as { rings: readonly PlaceOfRecord[]; unplaced: number; age: string | null } | null,
+  /**
+   * The world's countries as the map decoded them, for a layer that draws over them by code: Spheres'
+   * members. Set by the map when its geometry arrives.
+   */
+  countries: null as Shape[] | null,
+  /** The Spheres' lists, vendored, fetched whole when Spheres is chosen [layers/spheres.ts; D9]. */
+  spheres: null as SpheresFile | null
 };
 
 /** Says that `layerData` changed. */

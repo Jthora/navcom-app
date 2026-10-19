@@ -19,7 +19,7 @@
  * invariant 9 already demands of every field on every page, asked of the whole directory at once.
  */
 
-import { STALE_AFTER_DAYS, STALENESS_MARGIN_DAYS } from './volatility.js';
+import { STALE_AFTER_DAYS, STALENESS_MARGIN_DAYS, ageInDays } from './volatility.js';
 import type { VolatilityClass } from './types.js';
 
 export interface TierFreshness {
@@ -87,4 +87,30 @@ export function freshness(checkDates: readonly string[], today: string): Freshne
     // Nothing checked at all is also dark, and reads the same way on a page: no value to show.
     volatileDark: (tiers.find((t) => t.cls === 'volatile')?.showing ?? 0) === 0
   };
+}
+
+/**
+ * How old one record's last check is, in a word, by the windows its page turns at.
+ *
+ * - `current`: checked within the volatile window, 0–13 days with the margin
+ * - `hours`: past the volatile window, two weeks on, where hours a record has read "call first"
+ * - `stale`: past the slow window too, three months on, where its slower fields read stale
+ * - `unknown`: it carries no date that can be read, which is not the same as old [invariant 7]
+ *
+ * **The age of the check, and nothing about the fields.** It is held to the same windows and margin as
+ * `displayField` and `confidenceForField` (`freshness.test.ts` holds them together on every day of a
+ * year, for a record that has those fields), but it knows nothing of which fields a record has, its
+ * flag, or rule 7: a record with no hours at all shows none whatever its age. So what shades a map by
+ * this names an age, never what a page shows. A date in this phone's future reads `stale`, as the page's
+ * confidence does: one clock or the other is wrong, and the cautious word is the one to give.
+ */
+export type Reading = 'current' | 'hours' | 'stale' | 'unknown';
+
+export function readingOf(lastVerified: string | null | undefined, now: Date, marginDays: number = STALENESS_MARGIN_DAYS): Reading {
+  const d = lastVerified?.trim() ?? '';
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || !Number.isFinite(Date.parse(`${d}T00:00:00Z`))) return 'unknown';
+  const age = ageInDays(d, now) + marginDays;
+  if (age > STALE_AFTER_DAYS.slow) return 'stale';
+  if (age > STALE_AFTER_DAYS.volatile) return 'hours';
+  return 'current';
 }

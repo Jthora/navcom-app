@@ -490,23 +490,25 @@ describe('the map’s layers, each a line of its own', () => {
 
   it('fails the build when a layer arrives before its ceiling is derived, and prints what to derive', () => {
     /*
-     * The real declaration. Spheres' code is not written, so it has no ceiling, and the change that
-     * writes it is the one that has to derive one: here it arrives, as a chunk the map imports. Zones'
-     * data has none either until Stage 1 is vendored. Time zones' were measured, so they have.
+     * The real declaration, with one layer more whose code is written and not yet measured: the
+     * change that writes a layer is the one that has to derive its ceiling, and here it arrives, as a
+     * chunk the map imports. Zones' data has none until Stage 1 is vendored, nor Spheres' until their
+     * lists are. Time zones' were measured, so they have.
      */
-    const SPHERES = `${LAYER_CODE}spheres.ts`;
+    const HEAT = `${LAYER_CODE}heat.ts`;
+    const lines = { ...MAP_LINES, heat: { when: 'choosing heat', code: HEAT, files: null, per: 'all' as const, js: null, data: null } };
     const m = manifest();
-    m[MAP].dynamicImports = [SPHERES];
-    m[SPHERES] = { file: `${A}/chunks/spheres.js`, isDynamicEntry: true, src: SPHERES, imports: ['_shared.js'] };
+    m[MAP].dynamicImports = [HEAT];
+    m[HEAT] = { file: `${A}/chunks/heat.js`, isDynamicEntry: true, src: HEAT, imports: ['_shared.js'] };
     const f = fixture({
       manifest: m,
-      chunks: { [`${A}/chunks/spheres.js`]: noise(400), 'grid/zsp/outlines.json': noise(500), 'grid/timezones.json': noise(600) }
+      chunks: { [`${A}/chunks/heat.js`]: noise(400), 'grid/zsp/outlines.json': noise(500), 'grid/timezones.json': noise(600), 'grid/spheres.json': noise(700) }
     });
-    const { report, failed, out } = run(f);
+    const { report, failed, out } = run(f, lines);
     expect(failed).toBe(true);
-    expect(out).toMatch(/FAIL {2}spheres code +\S+ kB arrived with no ceiling/);
-    expect(MAP_LINES.spheres.code).toBe(SPHERES);
-    const js = report.lines.spheres.js as number;
+    expect(out).toMatch(/FAIL {2}heat code +\S+ kB arrived with no ceiling/);
+    expect(out).toMatch(/FAIL {2}spheres data +\S+ kB arrived with no ceiling/);
+    const js = report.lines.heat.js as number;
     expect(js).toBeGreaterThan(0);
     expect(out).toContain(`measured ${js} B, so a limit near ${Math.floor(js * 1.2)} B and a warning\n        near ${Math.round(js * 1.08)} B.`);
     expect(out).toMatch(/FAIL {2}zones data +\S+ kB arrived with no ceiling/);
@@ -574,7 +576,7 @@ describe('the map’s layers, each a line of its own', () => {
   });
 
   it('declares each of the map’s new layers, with every ceiling ~20% over the measurement it came from', () => {
-    expect(Object.keys(MAP_LINES).sort()).toEqual(['layers', 'spheres', 'timezones', 'zones', 'zones-container', 'zones-lookup']);
+    expect(Object.keys(MAP_LINES).sort()).toEqual(['ages', 'daylight', 'layers', 'spheres', 'timezones', 'zone-missions', 'zones', 'zones-container', 'zones-lookup']);
     for (const [name, line] of Object.entries(MAP_LINES)) {
       // A layer's own module, or a Com entry of the same name: the picker's screens are `layers`.
       if (line.code !== null) expect([`${LAYER_CODE}${name}.ts`, COM_ENTRIES[name]], name).toContain(line.code);
@@ -593,12 +595,17 @@ describe('the map’s layers, each a line of its own', () => {
     expect(MAP_LINES.layers!.files).toBeNull();
     // Natural Earth's time zones, as D8 decided them, at the finer setting, with each region's own zone beside them.
     expect(MAP_LINES.timezones.data).toMatchObject({ measured: 53_698, limit: 63 * 1024, warn: 57 * 1024 });
-    // Every line whose code is written has a ceiling for it; Zones' data waits on Stage 1, Spheres on their lists.
-    for (const name of ['layers', 'zones', 'zones-lookup', 'timezones'] as const) expect(MAP_LINES[name].js, name).not.toBeNull();
+    // Every line whose code is written has a ceiling for it; Zones' data waits on Stage 1, Spheres' on their lists.
+    for (const name of ['layers', 'zones', 'zones-lookup', 'timezones', 'spheres', 'daylight', 'ages', 'zone-missions'] as const) {
+      expect(MAP_LINES[name]!.js, name).not.toBeNull();
+    }
     expect(MAP_LINES.zones.data).toBeNull();
-    expect(MAP_LINES.spheres.js).toBeNull();
+    expect(MAP_LINES.spheres.data).toBeNull();
+    // Day and night is worked out on the phone, and the Zones' counts from what it holds: neither fetches a file.
+    expect(MAP_LINES.daylight!.files).toBeNull();
+    expect(MAP_LINES['zone-missions']!.files).toBeNull();
     // Each file the layers will fetch belongs to exactly one line, and a container's file is not an outline.
-    for (const file of ['grid/zsp/outlines.json', 'grid/zsp/index.json', 'grid/zsp/terra-africana.json', 'grid/timezones.json', 'grid/spheres.json']) {
+    for (const file of ['grid/zsp/outlines.json', 'grid/zsp/index.json', 'grid/zsp/terra-africana.json', 'grid/timezones.json', 'grid/spheres.json', 'grid/region-ages.json']) {
       expect(Object.entries(MAP_LINES).filter(([, l]) => l.files?.(file)).length, file).toBe(1);
     }
     expect(MAP_LINES['zones-container'].files!('grid/zsp/sectors/terra-africana.json')).toBe(false);
@@ -720,4 +727,51 @@ describe('the root tiers are declared to match the page that loads them', () => 
     const paidFor = (f: string) => f === MOUNT.geometry || f === 'grid/places.json' || Object.values(MAP_LINES).some((l) => l.files?.(f));
     expect(grid.filter((f) => !paidFor(f)), 'a file under grid/ that no line, and no other budget, measures').toEqual([]);
   });
+
+  it('holds the directory’s ages inside their ceiling however many days it is re-checked on, region by region', () => {
+    /*
+     * The ceiling was first set from a file with three check dates, and one index per record: ten dates
+     * would have failed it before the directory grew by a record. The file is runs now, and the ceiling
+     * is derived from this model of it: the real regions, each re-checked on one of 90 days, a tenth of
+     * those with three or more places in three runs. A directory checked record by record on scattered
+     * days is not this, and outgrows it; the line says so, and is re-derived then.
+     */
+    const file = join(BUILD, 'grid/region-ages.json');
+    if (!existsSync(file)) throw new Error('No build output. Run `npm run build` first.');
+    const built = JSON.parse(readFileSync(file, 'utf8')) as { regions: Record<string, [number, number][]>; dates: string[] };
+    const model = agesModel(built, 90);
+    expect(model.dates).toHaveLength(90);
+    const bytes = gzipSync(JSON.stringify(model)).length;
+    expect(bytes, `the 90-day model is ${bytes} B`).toBeLessThanOrEqual(MAP_LINES.ages!.data!.limit);
+    // The ceiling is that model's, with the ~20% every line gets: not a figure picked to fit it.
+    expect(MAP_LINES.ages!.data!.measured / bytes).toBeGreaterThan(0.97);
+    expect(MAP_LINES.ages!.data!.measured / bytes).toBeLessThan(1.03);
+    // And today's file, three dates, well under it.
+    expect(gzipSync(readFileSync(file)).length).toBeLessThan(bytes);
+  });
 });
+
+/**
+ * The directory's ages as they would be re-checked region by region over `days` days: every region on
+ * one day, a tenth of those with three or more places on two, in three runs. Seeded, so the same build
+ * always models the same file.
+ */
+function agesModel(built: { regions: Record<string, [number, number][]>; dates: string[] }, days: number) {
+  let seed = 7;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const regions: Record<string, [number, number][]> = {};
+  for (const [slug, runs] of Object.entries(built.regions)) {
+    const count = runs.reduce((t, r) => t + r[1], 0);
+    if (count === 0) {
+      regions[slug] = [];
+      continue;
+    }
+    const d = Math.floor(rnd() * days);
+    if (rnd() < 0.1 && count >= 3) {
+      const a = Math.floor(count / 3);
+      regions[slug] = [[d, a], [Math.floor(rnd() * days), a], [d, count - 2 * a]];
+    } else regions[slug] = [[d, count]];
+  }
+  const dates = Array.from({ length: days }, (_, i) => new Date(Date.UTC(2026, 0, 1) + i * 86_400_000).toISOString().slice(0, 10));
+  return { ...built, dates, regions };
+}

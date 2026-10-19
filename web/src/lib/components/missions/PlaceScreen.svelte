@@ -56,6 +56,19 @@
 
   /** A region's own clocks, from its IANA zone, once Time zones has brought them [D8]: daylight saving and all. */
   const regionClock = $derived(place.region && now && mapLayers.loaded >= 0 ? (layerData.regionTime?.(place.region) ?? null) : null);
+  /**
+   * When it was checked, once the directory's ages have brought their dates [layers/ages.ts]: a region's
+   * oldest and newest, or a record's own, read against this phone's clock. **How long ago, and nothing
+   * about what that lets a page show**: the dates know nothing of a record's fields, and most carry no
+   * hours at all, so the record's own page is the one that says.
+   */
+  const checked = $derived(
+    place.region && now && mapLayers.loaded >= 0 ? (layerData.regionAges?.(place.region, place.record === null ? undefined : Number(place.record)) ?? null) : null
+  );
+  const ago = (d: string) => {
+    const days = Math.floor((now - Date.parse(`${d}T00:00:00Z`)) / 86_400_000);
+    return days < 0 ? d : days === 0 ? 'today' : days === 1 ? 'yesterday' : `${days} days ago`;
+  };
 
   /** How far "near" reaches. Past it, the nearest region is somewhere else, and is said to be. */
   const NEAR_KM = 250;
@@ -136,6 +149,11 @@
       <Panel label="Place" post={entry.name} data-record-id={entry.id}>
         <Slot k="Type"><Readout value={entry.type.replace(/_/g, ' ')} tone="neutral" sub={entry.abroad ? `in ${entry.abroad}` : null} /></Slot>
         <Slot k="Region"><Readout value={place.name} tone="neutral" verbatim /></Slot>
+        {#if checked}
+          <Slot k="Checked">
+            <Readout value={checked.record ? `Checked ${ago(checked.record)}` : 'Unknown'} tone={checked.reading === 'current' ? 'neutral' : checked.reading === 'unknown' ? 'cold' : 'warn'} sub={checked.record ? `on ${checked.record}; its page says what that still shows` : 'it carries no check date'} />
+          </Slot>
+        {/if}
         <div class="nc-rail">
           <a href="/directory/{entry.id}/" data-sveltekit-reload data-record-link>Open the record</a>
           {#if handoff}<a href={handoff} rel="noreferrer" data-handoff>Open in maps</a>{/if}
@@ -165,6 +183,16 @@
         <!-- Held back until D5, or with nowhere to draw: said, so the map's gap is not read as none [invariant 7]. -->
         <Slot k="Map">
           <Readout value="{place.unmapped} not on the map" tone="neutral" sub="search, or open the region" />
+        </Slot>
+      {/if}
+      {#if checked}
+        <!-- By its oldest record, the cautious word; the newest beside it, so one fresh check is not read as all of them. -->
+        <Slot k="Checked">
+          {#if checked.oldest}
+            <Readout value="Oldest {ago(checked.oldest)}" tone={checked.reading === 'current' ? 'neutral' : 'warn'} sub="newest {checked.newest === checked.oldest ? 'the same' : ago(checked.newest ?? checked.oldest)}; each place’s page says what its check still shows" />
+          {:else}
+            <Readout value="Unknown" tone="cold" sub="none of its places carries a check date" />
+          {/if}
         </Slot>
       {/if}
       {#if regionClock}

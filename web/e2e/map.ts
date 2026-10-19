@@ -1,5 +1,5 @@
 import { expect, type Page } from '@playwright/test';
-import { project } from '../src/lib/grid/topology';
+import { HEIGHT, project, unproject } from '../src/lib/grid/topology';
 
 /**
  * Driving the landing page's map by longitude and latitude, as a person would by eye.
@@ -159,10 +159,11 @@ export async function pixelAt(page: Page, x: number, y: number): Promise<number[
 export const inkNear = (page: Page, x: number, y: number, half = 12) => toneNear(page, x, y, half, '--t-ink');
 
 /** How many pixels in a box of `half` CSS px around a point are within 24 of a token's colour on every channel. */
-export async function toneNear(page: Page, x: number, y: number, half: number, token: '--t-ink' | '--t-muted'): Promise<number> {
+export async function toneNear(page: Page, x: number, y: number, half: number, token: '--t-ink' | '--t-muted' | '--t-faint'): Promise<number> {
   return canvas(page).evaluate(
     (c: HTMLCanvasElement, [x, y, half, token]) => {
-      const hex = getComputedStyle(c).getPropertyValue(token as string).trim().replace('#', '') || (token === '--t-ink' ? 'F2F5F8' : '9BA5B2');
+      const fallback = token === '--t-ink' ? 'F2F5F8' : token === '--t-muted' ? '9BA5B2' : '78828F';
+      const hex = getComputedStyle(c).getPropertyValue(token as string).trim().replace('#', '') || fallback;
       const ink = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
       const r = c.getBoundingClientRect();
       const k = c.width / r.width;
@@ -191,3 +192,27 @@ export async function seen(locator: import('@playwright/test').Locator): Promise
     return top !== null && (top === el || el.contains(top));
   });
 }
+
+/**
+ * Whether any part of an element covers the Earth itself, by its outline rather than its box: its
+ * corners, edges' middles and centre, each turned back into a place with the map's own inverse.
+ */
+export async function overEarth(page: Page, locator: import('@playwright/test').Locator): Promise<boolean> {
+  const box = await locator.boundingBox();
+  if (!box) return false;
+  const view = ((await canvas(page).getAttribute('data-view')) ?? '').split(' ').map(Number) as [number, number, number];
+  const r = (await canvas(page).boundingBox())!;
+  for (const fx of [0, 0.5, 1]) {
+    for (const fy of [0, 0.5, 1]) {
+      const sx = box.x + box.width * fx - r.x;
+      const sy = box.y + box.height * fy - r.y;
+      const ux = view[0] + (sx - r.width / 2) / view[2];
+      const uy = view[1] + (sy - r.height / 2) / view[2];
+      if (uy < 0 || uy > HEIGHT) continue;
+      const [lon] = unproject(ux, uy);
+      if (Math.abs(lon) <= 180) return true;
+    }
+  }
+  return false;
+}
+

@@ -43,7 +43,10 @@ test.describe('the time zones layer', () => {
     await landed(page);
     expect(asked.filter((u) => /timezones|region-times/.test(u)), 'fetched before it was chosen').toEqual([]);
     await chooseTimes(page);
-    await expect(page.locator('[data-legend="timezones"]')).toHaveText('Time zones · standard time as drawn in 2012, no daylight saving · Natural Earth');
+    // And under it day and night, which Time zones always draws, worked out here [daylight.spec.ts].
+    await expect(page.locator('[data-legend="timezones"]')).toHaveText(
+      'Time zones · standard time as drawn in 2012, no daylight saving · Natural Earth Day and night at 11:05 UTC · worked out on this phone, nothing fetched'
+    );
     // Seen, with the layers screen open over the map at half, not merely present under the sheet [invariant 7].
     await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'half');
     expect(await seen(page.locator('[data-legend="timezones"]')), 'how old the lines are is under the sheet').toBe(true);
@@ -119,7 +122,7 @@ test.describe('the time zones layer on a desktop: hover says the time', () => {
   });
 });
 
-test('the service worker installs without either layer’s files: only somebody who chooses one pays for it', async ({ page }) => {
+test('the service worker installs without any layer’s files: only somebody who chooses one pays for it', async ({ page }) => {
   await seedDevice(page, { __noStorage: true });
   await open(page, '/');
   await serviceWorkerReady(page);
@@ -131,5 +134,5 @@ test('the service worker installs without either layer’s files: only somebody 
     return out;
   });
   expect(cached, 'the map’s own geometry is installed').toContain('/grid/world.json');
-  expect(cached.filter((p) => p === '/grid/timezones.json' || p.startsWith('/grid/zsp/'))).toEqual([]);
+  expect(cached.filter((p) => /^\/grid\/(timezones|region-times|region-ages|spheres)\.json$/.test(p) || p.startsWith('/grid/zsp/'))).toEqual([]);
 });

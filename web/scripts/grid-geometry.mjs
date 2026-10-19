@@ -20,13 +20,13 @@ import { mkdirSync, readFileSync, readdirSync, writeFileSync, existsSync } from 
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
+import { NATURAL_EARTH, download } from './lib/natural-earth.mjs';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const OUT = fileURLToPath(new URL('../static/grid/world.json', import.meta.url));
 const TIMEZONES = fileURLToPath(new URL('../static/grid/timezones.json', import.meta.url));
 
-/** Natural Earth, pinned. Public domain; no attribution required, though it is credited. */
-const NATURAL_EARTH = 'ca96624a56bd078437bca8184e78163e5039ad19';
+/* Natural Earth, pinned in `lib/natural-earth.mjs`, which `label-points.mjs` reads it at too. */
 const MAPSHAPER = 'mapshaper@0.7.78';
 /** map.md §3: 20% keeps 146 records' positions onshore against the coastline where 1% kept 372. */
 const SIMPLIFY = '20%';
@@ -67,17 +67,6 @@ function regionCountries() {
     throw new Error(`No Natural Earth code for region country ${unmapped.join(', ')}. Add it to NE_CODES.`);
   }
   return [...found].sort();
-}
-
-/**
- * @param {string} name
- * @param {string} dir
- */
-function download(name, dir) {
-  const url = `https://raw.githubusercontent.com/nvkelso/natural-earth-vector/${NATURAL_EARTH}/geojson/${name}.geojson`;
-  const path = join(dir, `${name}.geojson`);
-  execFileSync('curl', ['-sSfL', '-o', path, url], { stdio: 'inherit' });
-  return path;
 }
 
 const countries = regionCountries();

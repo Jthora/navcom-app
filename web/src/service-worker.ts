@@ -101,11 +101,11 @@ const isTerminalScope = (pathname: string) =>
  */
 /**
  * The map's layers' own data, which only somebody who chooses that layer pays for [map.md, Layers;
- * budget.mjs MAP_LINES]: Starcom's Zones and the time zones. Precached, every first install would fetch
+ * budget.mjs MAP_LINES]: Starcom's Zones, the time zones and the Spheres. Precached, every first install would fetch
  * them, on a device floor that is short of storage as much as of signal. Cached on first use instead,
  * in the site cache, as `/grid/places.json` is.
  */
-const isLayerData = (f: string) => f.startsWith(`${base}/grid/zsp/`) || f === `${base}/grid/timezones.json`;
+const isLayerData = (f: string) => f.startsWith(`${base}/grid/zsp/`) || f === `${base}/grid/timezones.json` || f === `${base}/grid/spheres.json`;
 
 const SHELL = [
   ...build,

@@ -8,7 +8,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { STALE_AFTER_DAYS, STALENESS_MARGIN_DAYS, freshness } from '../src/index.js';
+import { STALE_AFTER_DAYS, STALENESS_MARGIN_DAYS, confidenceForField, displayField, freshness, readingOf } from '../src/index.js';
+import type { ResourceRecord } from '../src/directory/types.js';
 
 const TODAY = '2026-10-05';
 /** An ISO date `n` days before TODAY. */
@@ -76,5 +77,45 @@ describe('data a volunteer typed', () => {
 
   it('never throws, whatever is in the column', () => {
     expect(() => freshness(['0000-00-00', '2026-02-30', 'null'], TODAY)).not.toThrow();
+  });
+});
+
+describe('one record’s check, read the way its page reads it', () => {
+  /*
+   * The map shades the directory by when it was checked [web: grid/layers/ages.ts], by the age of the
+   * check alone. The ages it names turn on the same days a page's fields do, so the reading is held to
+   * the page's own windows, for a record that has the fields: hours (volatile) for `current`, intake
+   * rules (slow) for `stale`. Whether a record has hours at all is not the reading's to say, and the map
+   * names no field for it.
+   */
+  const NOW = new Date(`${TODAY}T12:00:00Z`);
+  const record = (last_verified: string) =>
+    ({
+      id: 'r1', name: 'S', type: 'meal', region: 'x', hours: '09:00-17:00', accepts: ['adults'],
+      flag: 'ok', verified_by: 'a website', method: 'website', last_verified
+    }) as unknown as ResourceRecord;
+
+  it('turns at the same days the page does: hours at two weeks, intake rules at three months', () => {
+    expect(readingOf(ago(0), NOW)).toBe('current');
+    expect(readingOf(ago(13), NOW)).toBe('current');
+    expect(readingOf(ago(14), NOW)).toBe('hours');
+    expect(readingOf(ago(89), NOW)).toBe('hours');
+    expect(readingOf(ago(90), NOW)).toBe('stale');
+    expect(readingOf(ago(400), NOW)).toBe('stale');
+  });
+
+  it('agrees with the page, field by field, on every day of a year', () => {
+    for (let n = -1; n <= 366; n++) {
+      const r = record(ago(n));
+      const reading = readingOf(ago(n), NOW);
+      expect(reading === 'current', `day ${n}: hours shown`).toBe(displayField(r, 'hours', NOW).kind === 'value');
+      expect(reading === 'stale', `day ${n}: intake rules stale`).toBe(confidenceForField(r, 'accepts', NOW) === 'stale');
+    }
+  });
+
+  it('is unknown when there is no date to read, and never current', () => {
+    for (const d of [undefined, null, '', 'not-a-date', '2026-13-45']) expect(readingOf(d, NOW), String(d)).toBe('unknown');
+    // A date in this phone's future is a wrong clock somewhere: cautious, as the page is.
+    expect(readingOf('2099-01-01', NOW)).toBe('stale');
   });
 });

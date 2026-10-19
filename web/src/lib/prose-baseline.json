@@ -10,6 +10,7 @@
   "src/lib/components/layers/LayersHost.svelte": 0,
   "src/lib/components/layers/LayersScreen.svelte": 1,
   "src/lib/components/layers/LookupScreen.svelte": 0,
+  "src/lib/components/layers/SphereScreen.svelte": 0,
   "src/lib/components/layers/TimeScreen.svelte": 0,
   "src/lib/components/layers/ZoneScreen.svelte": 2,
   "src/lib/components/missions/MissionList.svelte": 6,

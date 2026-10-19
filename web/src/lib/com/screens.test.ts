@@ -26,7 +26,11 @@ const EACH: Screen[] = [
   { kind: 'zone', id: 'terra:africana' },
   { kind: 'zone', id: 'zone:east-african-rift/sector:afar' },
   { kind: 'lookup' },
-  { kind: 'time', offset: '5.75' }
+  { kind: 'time', offset: '5.75' },
+  // A Sphere by its id, the Spheres a tapped country is in, and every Sphere.
+  { kind: 'sphere', id: 'sphere:anglosphere', code: null },
+  { kind: 'sphere', id: null, code: 'mt' },
+  { kind: 'sphere', id: null, code: null }
 ];
 
 describe('the screens Com has', () => {
@@ -57,6 +61,9 @@ describe('a screen read back from history', () => {
     expect(readScreen({ kind: 'reports', id: '30079:abc:d' })).toBeNull();
     expect(readScreen({ kind: 'zone' })).toBeNull();
     expect(readScreen({ kind: 'time', offset: 3 })).toBeNull();
+    // A Sphere from history written before Spheres had a screen, or with its country as a number.
+    expect(readScreen({ kind: 'sphere', id: 'sphere:anglosphere' })).toBeNull();
+    expect(readScreen({ kind: 'sphere', id: null, code: 7 })).toBeNull();
   });
 
   it('is not, when a field that may be empty holds something else: it reached the host and threw there', () => {

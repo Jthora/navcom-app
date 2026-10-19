@@ -1,0 +1,43 @@
+{
+  "lists": "1.0",
+  "generator": "navcom-test-fixture",
+  "generated": "2026-10-19T00:00:00Z",
+  "licence": "CC-BY-4.0",
+  "attribution": "NavCom test fixture, never shipped",
+  "spheres": [
+    {
+      "id": "sphere:test-anglosphere",
+      "name": "Test Anglosphere",
+      "family": "language",
+      "members": [
+        { "code": "GB", "source": "the fixture's own list" },
+        { "code": "us" },
+        { "code": "ca" },
+        { "code": "ie" },
+        { "code": "mt" },
+        { "code": "sg" },
+        { "code": "bb" },
+        { "code": "mu" }
+      ],
+      "groups": [{ "id": "core", "name": "Core", "members": ["gb", "us", "ca"] }],
+      "sources": [{ "name": "NavCom test fixture", "url": "https://navcom.app/docs/design/map/", "licence": "CC-BY-4.0" }],
+      "read": "2026-10-19"
+    },
+    {
+      "id": "sphere:test-francophonie",
+      "name": "Test Francophonie",
+      "family": "language",
+      "members": [{ "code": "fr" }, { "code": "ca" }, { "code": "mu" }],
+      "sources": [{ "name": "NavCom test fixture" }],
+      "read": "2026-08-03"
+    },
+    {
+      "id": "sphere:test-atlantic",
+      "name": "Test Atlantic community",
+      "family": "political",
+      "members": [{ "code": "gb" }, { "code": "us" }, { "code": "ca" }, { "code": "fr" }, { "code": "ie" }],
+      "sources": [{ "name": "NavCom test fixture" }],
+      "read": "2026-10-19"
+    }
+  ]
+}

@@ -30,6 +30,12 @@ export interface ZspProvenance {
   licence: string;
   /** The attribution CC BY 4.0 asks for. */
   credit: string;
+  /**
+   * How far the simplified outlines drift from the source at worst, in metres, as the vendoring measured
+   * it: within this of a drawn edge, which side a point is on is not something the drawn lines can say.
+   * Absent from files vendored before it was measured.
+   */
+  simplified_m?: number;
   containers: { id: string; name: string; level: 'terra' | 'mare'; file: string; sectors: number; source_sha256: string; source_bytes: number }[];
   retired: { id: string; name: string; covered_by: string[] }[];
 }
@@ -123,7 +129,10 @@ export function openContainer(id: string): Promise<void> {
     }
     set('loading');
     try {
-      const shapes = sectorsOf(await json(await fetch(`${ZSP_DIR}${entry.file}`)));
+      const topology = await json(await fetch(`${ZSP_DIR}${entry.file}`));
+      const shapes = sectorsOf(topology);
+      // Its own drift, before its Sectors, so whatever counts them never reads one without the other.
+      layerData.sectorDrift = { ...layerData.sectorDrift, [id]: (topology.navcom as { simplified_m?: number } | undefined)?.simplified_m };
       layerData.sectors = { ...layerData.sectors, [id]: shapes };
       set('ready');
     } catch {

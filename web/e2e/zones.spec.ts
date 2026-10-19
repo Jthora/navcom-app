@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { open, seedDevice } from './device';
-import { frame, mapReady, screenAt, seen, tapAt, toneNear } from './map';
+import { frame, inkNear, mapReady, screenAt, seen, tapAt, toneNear } from './map';
+import { admit, mission, standInKey, type StandIn } from './registry';
 import { serveZones } from './zsp';
 
 /**
@@ -188,3 +189,160 @@ test.describe('Starcom’s Zones on the map', () => {
     await expect(screen.locator('[data-slot="credit"]')).toContainText('NavCom test fixture, never shipped');
   });
 });
+
+/*
+ * Open missions counted by Zone and by Sector [map.md, Missions on Zones]: missions, never people, from
+ * the missions already on the phone, each placed by the point its package gives its subject. One filed
+ * only by jurisdiction names no Zone, and is counted apart rather than put in one.
+ */
+const DESK_KEY = standInKey();
+const DESK: StandIn = { id: 'zone-desk', name: 'Zone Desk', agent: true, inbox: ['wss://nos.lol', 'wss://relay.primal.net'], keys: [DESK_KEY] };
+/** Inside the missions' campaign window, as the fixtures' dates are. */
+const DURING = new Date('2026-10-06T20:00:00Z');
+/** A depot in Manitoba, located at its address as a public facility is: in Laurentia West, Sector north, of the fixture. */
+const PLACED_D = 'test-zone-depot';
+const placed = () =>
+  mission(DESK_KEY, PLACED_D, {
+    title: 'Water at the depot',
+    jurisdiction: 'ca-mb',
+    extra: [['geo', 'lat:55,lon:-100'], ['geo_kind', 'subject_location'], ['geo_precision', 'address']]
+  });
+/** Filed nationally, with no point: in no Zone. */
+const FILED_D = 'test-zone-recall';
+const filed = () => mission(DESK_KEY, FILED_D, { title: 'Recall check', jurisdiction: 'us' });
+/** Laurentia West's label in the fixture, where its count hangs, as the vendoring stamped it. */
+const WEST_LABEL = [-120, 30] as const;
+const EAST_LABEL = [-60, 30] as const;
+/** 0.01° west of the line between the two Laurentian Zones, about 790 m: inside what the drawn lines drift. */
+const EDGE_D = 'test-zone-edge';
+const onTheEdge = () =>
+  mission(DESK_KEY, EDGE_D, {
+    title: 'Blankets at the line',
+    jurisdiction: 'ca-mb',
+    extra: [['geo', 'lat:45,lon:-90.01'], ['geo_kind', 'subject_location'], ['geo_precision', 'address']]
+  });
+/** Well inside Laurentia East, with nothing near an edge. */
+const CLEAR_D = 'test-zone-clear';
+const clearOfIt = () =>
+  mission(DESK_KEY, CLEAR_D, {
+    title: 'Water in the east',
+    jurisdiction: 'ca-qc',
+    extra: [['geo', 'lat:50,lon:-45'], ['geo_kind', 'subject_location'], ['geo_precision', 'address']]
+  });
+
+async function withMissions(page: Page, seed: Parameters<typeof seedDevice>[1]) {
+  await page.clock.setFixedTime(DURING);
+  await seedDevice(page, seed);
+  await open(page, '/');
+  await mapReady(page);
+}
+
+test.describe('open missions counted by Zone', () => {
+  test.beforeEach(async ({ page }) => void (await admit(page, [DESK])));
+
+  test('a mission placed in Laurentia West is a count of one at its label; the one filed by jurisdiction is counted apart', async ({ page }) => {
+    await serveZones(page);
+    await withMissions(page, { relayEvents: [placed(), filed()], __noStorage: true });
+    await expect(page.locator('[data-missions="open"]')).toContainText('live');
+    await chooseZones(page);
+    await expect(page.locator('[data-legend="zones"]')).toContainText('Missions by Zone · 1 placed, 1 by jurisdiction only · live');
+    await frame(page);
+    // Read where it is once the key has its lines: a taller key moves the opening view.
+    const label = await screenAt(page, ...WEST_LABEL);
+    expect(label.uncovered, 'Laurentia West’s label should be in view').toBe(true);
+    expect(await inkNear(page, label.x, label.y, 8), 'no count at Laurentia West’s label').toBeGreaterThan(20);
+    // Laurentia East holds nothing, and has no badge.
+    const east = await screenAt(page, -60, 30);
+    expect(await inkNear(page, east.x, east.y, 8), 'a badge where nothing is open').toBe(0);
+  });
+
+  test('its Zone lists it, as a way to it, and says what it could not place', async ({ page }) => {
+    await serveZones(page);
+    await withMissions(page, { relayEvents: [placed(), filed()], __noStorage: true });
+    await expect(page.locator('[data-missions="open"]')).toContainText('live');
+    const screen = await chooseZones(page);
+    await screen.locator('[data-zone-open="terra:laurentia"]').click();
+    await page.locator('[data-zone-open="zone:laurentia-west"]').click();
+    const zone = page.locator('[data-screen="zone"][data-zone="zone:laurentia-west"]');
+    await expect(zone.locator('[data-slot="open-missions"]')).toContainText('1 open mission');
+    await expect(zone.locator('[data-slot="open-missions"]')).toContainText('live');
+    await expect(zone.locator('[data-slot="not-placed"]')).toContainText('1 by jurisdiction only');
+    await zone.locator(`[data-zone-mission$="${PLACED_D}"]`).click();
+    await expect(page.locator(`[data-screen="mission"][data-mission="${PLACED_D}"]`)).toBeVisible();
+    // Laurentia East: nothing open, said in words.
+    await page.locator('[data-back]').click();
+    await page.locator('[data-back]').click();
+    await page.locator('[data-zone-open="zone:laurentia-east"]').click();
+    await expect(page.locator('[data-screen="zone"][data-zone="zone:laurentia-east"] [data-slot="open-missions"]')).toContainText('Nothing open');
+  });
+
+  test('a count with a mission near its edge is dashed, where one clear of any edge is solid', async ({ page }) => {
+    await serveZones(page);
+    await withMissions(page, { relayEvents: [onTheEdge(), clearOfIt()], __noStorage: true });
+    await expect(page.locator('[data-missions="open"]')).toContainText('live');
+    await chooseZones(page);
+    await expect(page.locator('[data-legend="zones"]')).toContainText('2 placed');
+    await frame(page);
+    const west = await screenAt(page, ...WEST_LABEL);
+    const east = await screenAt(page, ...EAST_LABEL);
+    expect(west.uncovered && east.uncovered, 'both labels in view').toBe(true);
+    // Both read "1"; the one whose mission the drawn line cannot settle has a broken ring.
+    const dashed = await inkNear(page, west.x, west.y, 12);
+    const solid = await inkNear(page, east.x, east.y, 12);
+    expect(dashed, 'no count at Laurentia West').toBeGreaterThan(20);
+    expect(dashed / solid, `west ${dashed} against east ${solid}: the near-edge count is not dashed`).toBeLessThan(0.85);
+    // And its Zone's screen names it, and the neighbour it may be in instead.
+    const screen = page.locator('[data-screen="layers"]');
+    await screen.locator('[data-zone-open="terra:laurentia"]').click();
+    await page.locator('[data-zone-open="zone:laurentia-west"]').click();
+    const zone = page.locator('[data-screen="zone"][data-zone="zone:laurentia-west"]');
+    await expect(zone.locator('[data-slot="near-an-edge"]')).toContainText('Blankets at the line: may be in Laurentia East Zone instead');
+    // Its container is open now, so its Sectors count too: the Zone still says it, not only the Sector.
+    await expect(zone.locator('[data-zone-open="zone:laurentia-west/sector:north"]')).toBeVisible();
+    await expect(zone.locator('[data-slot="near-an-edge"]')).toHaveCount(1);
+  });
+
+  test('with the relays out of reach, no count is drawn and the key says the missions were not read', async ({ page }) => {
+    await serveZones(page);
+    // No relay answers: unknown, which is not none.
+    await withMissions(page, {});
+    await expect(page.locator('[data-missions="unavailable"]')).toBeVisible({ timeout: 15_000 });
+    await chooseZones(page);
+    await expect(page.locator('[data-legend="zones"]')).toContainText('Missions by Zone · not read yet');
+    await frame(page);
+    const label = await screenAt(page, ...WEST_LABEL);
+    expect(label.uncovered).toBe(true);
+    expect(await inkNear(page, label.x, label.y, 8), 'a count drawn from missions nobody read').toBe(0);
+  });
+});
+
+test.describe('open missions counted by Zone, on a desktop', () => {
+  test.use({ viewport: { width: 1280, height: 900 }, isMobile: false, hasTouch: false, deviceScaleFactor: 1 });
+  test.beforeEach(async ({ page }) => void (await admit(page, [DESK])));
+
+  test('a hover over a Zone says how many missions are open in it', async ({ page }) => {
+    await serveZones(page);
+    await withMissions(page, { relayEvents: [placed(), filed()], __noStorage: true });
+    await expect(page.locator('[data-missions="open"]')).toContainText('live');
+    await chooseZones(page);
+    await expect(page.locator('[data-legend="zones"]')).toContainText('1 placed');
+    const west = await screenAt(page, -125, 15);
+    await page.mouse.move(west.x, west.y);
+    await expect(page.locator('[data-chip]')).toHaveText('Laurentia West Zone · Terra Laurentia · 1 open mission');
+    const east = await screenAt(page, -60, 15);
+    await page.mouse.move(east.x, east.y);
+    await expect(page.locator('[data-chip]')).toHaveText('Laurentia East Zone · Terra Laurentia · Nothing open');
+  });
+
+  test('a hover over a Zone says how many of its missions are near an edge', async ({ page }) => {
+    await serveZones(page);
+    await withMissions(page, { relayEvents: [onTheEdge()], __noStorage: true });
+    await expect(page.locator('[data-missions="open"]')).toContainText('live');
+    await chooseZones(page);
+    await expect(page.locator('[data-legend="zones"]')).toContainText('1 placed');
+    const west = await screenAt(page, -125, 15);
+    await page.mouse.move(west.x, west.y);
+    await expect(page.locator('[data-chip]')).toHaveText('Laurentia West Zone · Terra Laurentia · 1 open mission · 1 near an edge');
+  });
+});
+

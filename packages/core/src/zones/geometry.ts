@@ -92,6 +92,54 @@ export function edgeMetres(rings: readonly LonLatRing[], lon: number, lat: numbe
   return best;
 }
 
+/** Where a line at constant latitude (`across`) or longitude crosses the rings' edges, sorted. */
+function crossings(rings: readonly LonLatRing[], at: number, across: boolean): number[] {
+  const out: number[] = [];
+  const [u, v] = across ? [1, 0] : [0, 1];
+  for (const r of rings) {
+    for (let i = 0, j = r.length - 2; i < r.length; j = i, i += 2) {
+      const a = r[j + u]!, b = r[i + u]!;
+      if (a > at !== b > at) out.push(r[j + v]! + ((r[i + v]! - r[j + v]!) * (at - a)) / (b - a));
+    }
+  }
+  return out.sort((x, y) => x - y);
+}
+
+/**
+ * A point inside a shape to hang a label on, to two places: as far in from its edges as a search along
+ * 32 parallels finds. On each parallel, each stretch inside the shape (even-odd, so a hole is outside
+ * and both halves of a shape split at the antimeridian count); at each stretch's middle, the stretch
+ * inside along that meridian; the point is the middle of the latter, from the stretch whose shorter
+ * side, east-west on the ground or north-south, is longest. A box's centre, or the mean of the vertices,
+ * can fall outside a coastline; a cap that runs along a pole is labelled halfway to it, not on it.
+ */
+export function labelPoint(rings: readonly LonLatRing[]): [number, number] {
+  const [w, s, e, n] = boxOf(rings);
+  let best: [number, number] = [(w + e) / 2, (s + n) / 2];
+  let score = -Infinity;
+  const steps = 32;
+  for (let k = 0; k < steps; k++) {
+    const lat = s + ((n - s) * (k + 0.5)) / steps + 1e-9;
+    const xs = crossings(rings, lat, true);
+    for (let i = 0; i + 1 < xs.length; i += 2) {
+      const lon = (xs[i]! + xs[i + 1]!) / 2;
+      const wide = (xs[i + 1]! - xs[i]!) * Math.cos(lat * RAD);
+      const ys = crossings(rings, lon, false);
+      for (let j = 0; j + 1 < ys.length; j += 2) {
+        if (ys[j]! > lat || ys[j + 1]! < lat) continue;
+        const tall = ys[j + 1]! - ys[j]!;
+        if (Math.min(wide, tall) > score) {
+          score = Math.min(wide, tall);
+          best = [lon, (ys[j]! + ys[j + 1]!) / 2];
+        }
+      }
+    }
+  }
+  const round = (v: number) => Math.round(v * 100) / 100;
+  const rounded: [number, number] = [round(best[0]), round(best[1])];
+  return holds(rings, ...rounded) ? rounded : best;
+}
+
 /** Whether segments ab and cd cross, touching at an end excepted. */
 function crosses(ax: number, ay: number, bx: number, by: number, cx: number, cy: number, dx: number, dy: number): boolean {
   const o = (px: number, py: number, qx: number, qy: number, rx: number, ry: number) => Math.sign((qx - px) * (ry - py) - (qy - py) * (rx - px));
