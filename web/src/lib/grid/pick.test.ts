@@ -8,19 +8,21 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { decode, inside, lightsOf, mercator, type Topology } from './topology';
+import { HEIGHT, areaAt, decode, inside, lightsOf, project, type Topology } from './topology';
 import { LIT_SLOP, pick, unitAt, type View } from './pick';
+import { outlinesOf, sectorsOf } from './layers/zones';
+import { bandsOf } from './layers/timezones';
 
 const FILE = fileURLToPath(new URL('../../../static/grid/world.json', import.meta.url));
 const layers = decode(JSON.parse(readFileSync(FILE, 'utf8')) as Topology);
 const provinces = layers['provinces']!.shapes;
 const countries = layers['world']!.shapes;
 
-/** The whole world on a 393 px wide phone. */
-const WORLD: View = { cx: 0.5, cy: 0.5, scale: 393, width: 393, height: 600 };
+/** The whole world on a 393 px wide phone, in Equal Earth: 393 px wide and 191 tall. */
+const WORLD: View = { cx: 0.5, cy: HEIGHT / 2, scale: 393, width: 393, height: 600 };
 
 function screenOf(v: View, lon: number, lat: number): [number, number] {
-  const [x, y] = mercator(lon, lat);
+  const [x, y] = project(lon, lat);
   return [(x - v.cx) * v.scale + v.width / 2, (y - v.cy) * v.scale + v.height / 2];
 }
 
@@ -42,7 +44,7 @@ describe('what is under a point on the map', () => {
     // Ely is 5 px from lit California at this zoom, so the slack gives it to California: what is
     // lit is what there is to do. Zoomed in, Nevada is Nevada.
     expect(pick(WORLD, screenOf(WORLD, -114.9, 39.25), { provinces, countries, lit })).toMatchObject({ shape: { id: 'us-ca' } });
-    const [cx, cy] = mercator(-114.9, 39.25);
+    const [cx, cy] = project(-114.9, 39.25);
     const near: View = { ...WORLD, cx, cy, scale: 393 * 16 };
     expect(pick(near, screenOf(near, -114.9, 39.25), { provinces, countries, lit })).toMatchObject({ shape: { id: 'us-nv' } });
   });
@@ -59,7 +61,7 @@ describe('what is under a point on the map', () => {
     expect([...outline]).toEqual(['us']);
     expect([...fill]).toEqual(['us-ca']);
     for (const zoom of [1, 8, 64]) {
-      const [cx, cy] = mercator(-99.9, 31.5);
+      const [cx, cy] = project(-99.9, 31.5);
       const v: View = { ...WORLD, cx, cy, scale: 393 * zoom };
       expect(pick(v, screenOf(v, -99.9, 31.5), { provinces, countries, lit: fill }), `×${zoom}`).toMatchObject({
         layer: 'provinces',
@@ -108,11 +110,38 @@ describe('what is under a point on the map', () => {
     const near: View = { ...WORLD, scale: 393 * 512 };
     const california = provinces.find((s) => s.id === 'us-ca')!;
     // Recentred inland of the Big Sur coast, which runs straight with no bay to cross, then out to sea.
-    const [ux, uy] = mercator(-121.3, 36.1);
+    const [ux, uy] = project(-121.3, 36.1);
     const v: View = { ...near, cx: ux, cy: uy };
     let [sx, sy] = [v.width / 2, v.height / 2];
     expect(inside(california.rings, unitAt(v, [sx, sy]))).toBe(true);
     while (inside(california.rings, unitAt(v, [sx, sy]))) sx -= 1;
     expect(pick(v, [sx - 30, sy], { provinces, countries, lit: new Set(['us-ca']) })).toBeNull();
+  });
+});
+
+describe('what is under a point, with a layer chosen [layer.svelte.ts]', () => {
+  const read = (path: string) => JSON.parse(readFileSync(fileURLToPath(new URL(path, import.meta.url)), 'utf8')) as Topology;
+  const outlines = outlinesOf(read('../../../e2e/fixtures/zsp/outlines.json'));
+  const laurentia = sectorsOf(read('../../../e2e/fixtures/zsp/terra-laurentia.json'));
+  const bands = bandsOf(read('../../../static/grid/timezones.json')).map((b) => b.shape);
+
+  it('finds a Sector once its container is open, its Zone before, and its Terra where a stage has no Zones', () => {
+    const at = screenOf(WORLD, -120, 45);
+    expect(areaAt(WORLD, at, [])).toBeNull();
+    expect(areaAt(WORLD, at, outlines.zones)?.id).toBe('zone:laurentia-west');
+    expect(areaAt(WORLD, at, laurentia)?.id).toBe('zone:laurentia-west/sector:north');
+    expect(areaAt(WORLD, at, outlines.containers)?.id).toBe('terra:laurentia');
+  });
+
+  it('answers at 89°N and across the antimeridian, which Web Mercator could not draw or could not join', () => {
+    expect(areaAt(WORLD, screenOf(WORLD, 20, 89), outlines.zones)?.id).toBe('zone:arcticum-east');
+    expect(areaAt(WORLD, screenOf(WORLD, -20, -89), outlines.zones)?.id).toBe('zone:antarctica-west');
+    expect(areaAt(WORLD, screenOf(WORLD, 179.5, 10), outlines.zones)?.id).toBe('zone:pacificum-north');
+    expect(areaAt(WORLD, screenOf(WORLD, -179.5, 10), outlines.zones)?.id).toBe('zone:pacificum-north');
+  });
+
+  it('finds the standard-time band under a point: Nairobi is UTC+3', () => {
+    expect(areaAt(WORLD, screenOf(WORLD, 36.82, -1.29), bands)?.props.zone).toBe(3);
+    expect(areaAt(WORLD, [-50, -50], bands), 'off the edge of the Earth').toBeNull();
   });
 });

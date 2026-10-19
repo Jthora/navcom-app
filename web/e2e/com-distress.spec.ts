@@ -4,6 +4,7 @@ import { COM_ENTRIES } from '../scripts/lib/budget.mjs';
 import { chunkOf, open, seedDevice } from './device';
 import { mapReady, screenAt, tap, tapAt, zoomAt } from './map';
 import { admit, resign, standInKey, type StandIn } from './registry';
+import { serveZones } from './zsp';
 
 /**
  * `Distress` on the landing page, with every screen Com can show, at every height of the sheet.
@@ -181,6 +182,71 @@ const WAYS_IN: Record<string, WayIn[]> = {
       }
     }
   ],
+  layers: [
+    {
+      name: 'the map’s layers',
+      go: async (page) => {
+        await signedOnWithHeat(page);
+        await mapReady(page);
+        await page.getByRole('button', { name: 'Map layers' }).click();
+        return page.locator('[data-screen="layers"]');
+      }
+    }
+  ],
+  zone: [
+    {
+      // NavCom's fixture partition by route: the build has no Zones before Stage 1 [./zsp.ts].
+      name: 'a Zone tapped on the map, with Zones drawn and its Sectors open',
+      go: async (page) => {
+        await serveZones(page);
+        await signedOnWithHeat(page);
+        await mapReady(page);
+        await page.getByRole('button', { name: 'Map layers' }).click();
+        await page.locator('[data-screen="layers"]').getByRole('radio', { name: /^Zones/ }).check();
+        await expect(page.locator('[data-legend="zones"]')).toContainText('CC BY 4.0');
+        await page.locator('[data-back]').click();
+        // Clear of lit California's 12 px, which answers first in every layer [map.md §8].
+        await tapAt(page, -100, 55, 'Laurentia West');
+        const zone = page.locator('[data-screen="zone"][data-zone="zone:laurentia-west"]');
+        await expect(zone.locator('[data-zone-open="zone:laurentia-west/sector:north"]')).toBeVisible();
+        return zone;
+      }
+    }
+  ],
+  lookup: [
+    {
+      name: 'which Sector this phone is in',
+      go: async (page) => {
+        await page.context().grantPermissions(['geolocation']);
+        await page.context().setGeolocation({ latitude: 45.25, longitude: -120.25 });
+        await serveZones(page);
+        await signedOnWithHeat(page);
+        await mapReady(page);
+        await page.getByRole('button', { name: 'Map layers' }).click();
+        await page.locator('[data-screen="layers"]').getByRole('radio', { name: /^Zones/ }).check();
+        await page.locator('[data-lookup-here]').click();
+        const lookup = page.locator('[data-screen="lookup"]');
+        await expect(lookup.locator('[data-found]').first()).toBeVisible();
+        return lookup;
+      }
+    }
+  ],
+  time: [
+    {
+      name: 'a time zone tapped on the map',
+      go: async (page) => {
+        await signedOnWithHeat(page);
+        await mapReady(page);
+        await page.getByRole('button', { name: 'Map layers' }).click();
+        const arrived = page.waitForResponse((r) => r.url().endsWith('/grid/timezones.json'));
+        await page.locator('[data-screen="layers"]').getByRole('radio', { name: /^Time zones/ }).check();
+        await arrived;
+        await page.locator('[data-back]').click();
+        await tapAt(page, 36.82, -1.29, 'Nairobi');
+        return page.locator('[data-screen="time"]');
+      }
+    }
+  ],
   report: [
     {
       name: 'reporting the work',
@@ -211,6 +277,11 @@ const OPEN_ONE_OF: Record<string, (page: Page) => Promise<void>> = {
   missions: async (page) => {
     await signedOnWithHeat(page);
     await page.locator('[data-missions="open"]').click();
+  },
+  layers: async (page) => {
+    await signedOnWithHeat(page);
+    await mapReady(page);
+    await page.getByRole('button', { name: 'Map layers' }).click();
   }
 };
 

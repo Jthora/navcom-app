@@ -97,6 +97,10 @@
    */
   let mapStatus = $state<'loading' | 'ready' | 'failed'>('loading');
   let placesStatus = $state<'off' | 'loading' | 'ready' | 'failed'>('off');
+  /** What the chosen map layer is, whose and how old, in the map's own words [GridMap legend]. */
+  let mapLegend = $state<{ layer: string; text: string } | null>(null);
+  /** The key, which the map's opening view keeps the Earth out from under [GridMap cover]. */
+  let keyEl = $state<HTMLElement>();
 
   /** Missions, read live by this device from The Record [$lib/missions/live]. */
   let feed = $state<Feed>({ status: 'connecting' });
@@ -570,6 +574,8 @@
           current={top}
           bind:status={mapStatus}
           bind:placesStatus
+          bind:legend={mapLegend}
+          cover={keyEl}
           label="Map of the Earth, with open missions lit{coverage ? ', and the directory’s places' : ''}"
           onpick={(s) => open(s, true)}
         />
@@ -585,7 +591,7 @@
           </div>
         </div>
       {/if}
-      <div class="nav-key">
+      <div class="nav-key" bind:this={keyEl}>
         <!--
           Not "The Watchtower" — that term names a specific node's keypair elsewhere
           [docs/spec/bootstrap.spec.md]. This is the one screen every kind of visitor sees
@@ -615,6 +621,8 @@
           Places
         </button>
         {#if placesStatus === 'failed'}<strong data-places="failed">Places not loaded — they need one visit with a connection</strong>{/if}
+        <!-- The chosen layer's own readout: what is drawn, whose, how old [invariant 7]. At the top, where the sheet never reaches. -->
+        {#if mapLegend}<strong data-legend={mapLegend.layer}>{mapLegend.text}</strong>{/if}
       </div>
     </section>
 
@@ -930,6 +938,11 @@
      * opening view above it [--map-inset], so a change to one cannot leave the other behind.
      */
     --peek: 12.75rem;
+    /*
+     * Its height at half, given once too: every screen a tap on the map opens comes up at half, the
+     * layer picker among them, and the map keeps the whole Earth in view above it [--map-reach].
+     */
+    --half: 55%;
   }
   /*
    * And the document given a height, only while this page is showing. With every child fixed,
@@ -956,6 +969,7 @@
     position: absolute;
     inset: 0;
     --map-inset: var(--peek);
+    --map-reach: var(--half);
   }
   .nav-loading {
     position: absolute;
@@ -1042,7 +1056,7 @@
     --detent: var(--peek);
   }
   .com[data-detent='half'] {
-    --detent: 55%;
+    --detent: var(--half);
   }
   .com[data-detent='full'] {
     --detent: calc(100% - 4rem);
@@ -1116,6 +1130,7 @@
       inset-block: 0;
       inset-inline: 0 min(28rem, 42%);
       --map-inset: 0px;
+      --map-reach: 0px;
     }
     .grab {
       display: none;

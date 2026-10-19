@@ -2,7 +2,7 @@
  * The grid's geometry, decoded and projected once.
  *
  * `static/grid/world.json` is quantised TopoJSON: shared borders stored once as delta-encoded
- * integer arcs, which is most of why the whole world fits in 55 KB. This turns it into rings of
+ * integer arcs, which is most of why the whole world fits in 59 KB. This turns it into rings of
  * projected points the canvas can draw without doing any trigonometry per frame — the device
  * floor is a prepaid Android 8, and a map that projects every vertex on every pan is a map that
  * stutters under somebody's thumb.
@@ -10,25 +10,80 @@
  * Pure: no DOM, no fetch. Tested directly. [docs/design/map.md §3]
  */
 
-/** Web Mercator's own limit: beyond this the projection runs to infinity. */
-export const MAX_LAT = 85.05112878;
-
-/**
- * Longitude and latitude to Web Mercator, as a unit square: x and y in [0, 1], y downward.
+/*
+ * Equal Earth [Šavrič, Patterson and Jenny, 2018], decided 2026-10-18 (D1) in place of Web Mercator.
  *
- * Mercator is wrong for a world view and is used anyway, because a road layer has to line up
- * with this one at the same viewport, and every road layer is Mercator. [map.md §3]
+ * Mercator stopped at 85°, left Antarctica out, and drew Greenland larger than Brazil. Its one reason
+ * was a road layer that would have to line up with this one, and that layer was never built
+ * [map.md §3, §4]. Starcom's partition runs pole to pole and defines a Sector by its area on the
+ * ground, so the grid draws the whole Earth, at its true areas, in one projection everything here
+ * shares: the geometry, the points, the tap, and the browser tests that tap by longitude and latitude.
  */
-export function mercator(lon: number, lat: number): [number, number] {
-  const phi = (Math.max(-MAX_LAT, Math.min(MAX_LAT, lat)) * Math.PI) / 180;
-  return [(lon + 180) / 360, (1 - Math.log(Math.tan(Math.PI / 4 + phi / 2)) / Math.PI) / 2];
+const A1 = 1.340264;
+const A2 = -0.081106;
+const A3 = 0.000893;
+const A4 = 0.003796;
+const M = Math.sqrt(3) / 2;
+/** Half the world's width and height in the projection's own units, Earth radii. */
+const X_MAX = Math.PI / (M * A1);
+const Y_MAX = yOf(Math.PI / 3);
+
+function yOf(t: number): number {
+  const t2 = t * t;
+  const t6 = t2 * t2 * t2;
+  return t * (A1 + A2 * t2 + t6 * (A3 + A4 * t2));
 }
 
-/** The inverse, for turning a tap back into a place. */
-export function unmercator(x: number, y: number): [number, number] {
-  const lon = x * 360 - 180;
-  const lat = (Math.atan(Math.sinh(Math.PI * (1 - 2 * y))) * 180) / Math.PI;
-  return [lon, lat];
+/** How tall the whole world is when it is one unit wide: about 0.487, so a map 2.05 times as wide as it is tall. */
+export const HEIGHT = Y_MAX / X_MAX;
+
+/**
+ * How many metres on the ground one unit of the map stands for, by area: a circle of r metres is drawn
+ * with the area of a circle of `r / METRES_PER_UNIT` units, wherever it is, because the projection is
+ * equal-area. About 34,500 km.
+ */
+export const METRES_PER_UNIT = 2 * X_MAX * 6_371_008.8;
+
+/**
+ * Longitude and latitude to Equal Earth, as a rectangle one unit wide and `HEIGHT` tall: x in [0, 1],
+ * y in [0, HEIGHT], downward, with the equator across the middle and both poles drawn as lines.
+ */
+export function project(lon: number, lat: number): [number, number] {
+  const phi = (Math.max(-90, Math.min(90, lat)) * Math.PI) / 180;
+  const t = Math.asin(M * Math.sin(phi));
+  const t2 = t * t;
+  const t6 = t2 * t2 * t2;
+  const x = ((lon * Math.PI) / 180) * Math.cos(t) / (M * (A1 + 3 * A2 * t2 + t6 * (7 * A3 + 9 * A4 * t2)));
+  return [(x + X_MAX) / (2 * X_MAX), (Y_MAX - yOf(t)) / (2 * X_MAX)];
+}
+
+/**
+ * The inverse, for turning a tap back into a place. Newton's method on the latitude, as the authors
+ * give it. A point off the edge of the Earth comes back with a longitude beyond ±180, which no place has.
+ */
+export function unproject(x: number, y: number): [number, number] {
+  const px = x * 2 * X_MAX - X_MAX;
+  const py = Math.max(-Y_MAX, Math.min(Y_MAX, Y_MAX - y * 2 * X_MAX));
+  let t = py;
+  for (let i = 0; i < 12; i++) {
+    const t2 = t * t;
+    const t6 = t2 * t2 * t2;
+    const delta = (yOf(t) - py) / (A1 + 3 * A2 * t2 + t6 * (7 * A3 + 9 * A4 * t2));
+    t -= delta;
+    if (Math.abs(delta) < 1e-12) break;
+  }
+  const t2 = t * t;
+  const t6 = t2 * t2 * t2;
+  const lam = (M * px * (A1 + 3 * A2 * t2 + t6 * (7 * A3 + 9 * A4 * t2))) / Math.cos(t);
+  return [(lam * 180) / Math.PI, (Math.asin(Math.min(1, Math.max(-1, Math.sin(t) / M))) * 180) / Math.PI];
+}
+
+/** The Earth's own edge, the two halves of the antimeridian from pole to pole: what the map draws round it. */
+export function edgeOfEarth(): Ring {
+  const out: number[] = [];
+  for (let lat = -90; lat <= 90; lat += 2) out.push(...project(-180, lat));
+  for (let lat = 90; lat >= -90; lat -= 2) out.push(...project(180, lat));
+  return Float32Array.from(out);
 }
 
 /**
@@ -36,7 +91,7 @@ export function unmercator(x: number, y: number): [number, number] {
  * ISO 3166-1 alpha-2 code lower-cased, and a name only for a country with no code
  * [scripts/grid-geometry.mjs].
  */
-type Props = { properties?: { iso_3166_2?: string; iso_a2?: string | null; name?: string } };
+type Props = { properties?: { iso_3166_2?: string; iso_a2?: string | null; name?: string; id?: string } & Record<string, unknown> };
 type Polygon = { type: 'Polygon'; arcs: number[][] } & Props;
 type MultiPolygon = { type: 'MultiPolygon'; arcs: number[][][] } & Props;
 type Empty = { type: null } & Props;
@@ -46,11 +101,14 @@ export interface Topology {
   transform?: { scale: [number, number]; translate: [number, number] };
   arcs: number[][][];
   objects: Record<string, { type: 'GeometryCollection'; geometries: (Polygon | MultiPolygon | Empty)[] }>;
-  /** What the generator recorded about this file. See `scripts/grid-geometry.mjs`. */
-  navcom?: { source: string; simplify: string; regionCountries: string[]; provincesFor: string[] };
+  /**
+   * What the generator recorded about this file: `scripts/grid-geometry.mjs` for the world's and the
+   * time zones', `scripts/zsp-vendor.mjs` for the Zones'. Read by each file's own reader and its tests.
+   */
+  navcom?: Record<string, unknown>;
 }
 
-/** A closed ring of projected points, packed as x0, y0, x1, y1, … in the unit square. */
+/** A closed ring of projected points, packed as x0, y0, x1, y1, … in the map's unit rectangle [project]. */
 export type Ring = Float32Array;
 
 /** One province or country: its code where the file carries one, its name, and its rings. */
@@ -63,8 +121,10 @@ export interface Shape {
   /** What a hover or a tap says is here. Null only if the file and the phone both lack one. */
   name: string | null;
   rings: Ring[];
-  /** The box around every ring, in the unit square: x0, y0, x1, y1. A cheap test before a costly one. */
+  /** The box around every ring, in the map's rectangle: x0, y0, x1, y1. A cheap test before a costly one. */
   bbox: [number, number, number, number];
+  /** Every property the file gives it, as it gives them: a Zone's parent and system, a time zone's offset. */
+  props: Readonly<Record<string, unknown>>;
 }
 
 let regions: Intl.DisplayNames | null | undefined;
@@ -170,17 +230,22 @@ function absoluteArcs(topology: Topology): number[][][] {
  * shapes is stored once and used by both. Consecutive arcs share an endpoint, so every arc after
  * the first contributes all but its first point.
  */
-function stitch(indices: number[], arcs: number[][][]): Ring {
+function stitch(indices: number[], arcs: number[][][], toPoint: ToPoint): Ring {
   const points: number[] = [];
   for (const index of indices) {
     const arc = index >= 0 ? arcs[index]! : [...arcs[~index]!].reverse();
     for (let k = points.length === 0 ? 0 : 1; k < arc.length; k++) {
-      const [x, y] = mercator(arc[k]![0]!, arc[k]![1]!);
+      const [x, y] = toPoint(arc[k]![0]!, arc[k]![1]!);
       points.push(x, y);
     }
   }
   return Float32Array.from(points);
 }
+
+/** Where a longitude and latitude goes: onto the map [project] for drawing, or nowhere, for a lookup on the ground. */
+export type ToPoint = (lon: number, lat: number) => [number, number];
+/** Longitude and latitude as they are, for a lookup that must not be projected: Sectors run to the poles. */
+export const lonLat: ToPoint = (lon, lat) => [lon, lat];
 
 /**
  * Whether a projected point is inside a shape: even-odd across every ring, so a hole and an
@@ -197,8 +262,34 @@ export function inside(rings: readonly Ring[], [x, y]: readonly [number, number]
   return c;
 }
 
-/** Every layer in the file, decoded and projected. */
-export function decode(topology: Topology): Record<string, Layer> {
+/**
+ * The first of `shapes` holding a point on screen, in a view as `pick.ts` describes one: its box, then
+ * its rings. For a layer whose areas tile what they cover, as Starcom's partition and the time zones do,
+ * there is one, and no slack is given: a thumb near an edge takes whichever side it is on, and what it
+ * took stays lifted while it is open. Here rather than in `pick.ts`, which only the map's own chunk
+ * holds, so a layer's code that answers a tap does not pull the map in with it [budget.mjs MAP_LINES].
+ */
+export function areaAt(
+  v: { cx: number; cy: number; scale: number; width: number; height: number },
+  [sx, sy]: readonly [number, number],
+  shapes: readonly Shape[]
+): Shape | null {
+  if (v.scale <= 0) return null;
+  const x = v.cx + (sx - v.width / 2) / v.scale;
+  const y = v.cy + (sy - v.height / 2) / v.scale;
+  for (const s of shapes) {
+    const b = s.bbox;
+    if (x >= b[0] && x <= b[2] && y >= b[1] && y <= b[3] && inside(s.rings, [x, y])) return s;
+  }
+  return null;
+}
+
+/**
+ * Every layer in the file, decoded and projected, or decoded and left in longitude and latitude
+ * (`lonLat`). A shape's rings are Float32 either way: about 2 m at a longitude of 180°, far finer than
+ * any file here was quantised to.
+ */
+export function decode(topology: Topology, toPoint: ToPoint = project): Record<string, Layer> {
   const arcs = absoluteArcs(topology);
   const out: Record<string, Layer> = {};
   for (const [name, collection] of Object.entries(topology.objects)) {
@@ -206,12 +297,14 @@ export function decode(topology: Topology): Record<string, Layer> {
     const shapes: Shape[] = [];
     for (const g of collection.geometries) {
       const own: Ring[] = [];
-      if (g.type === 'Polygon') for (const r of g.arcs) own.push(stitch(r, arcs));
-      else if (g.type === 'MultiPolygon') for (const p of g.arcs) for (const r of p) own.push(stitch(r, arcs));
+      if (g.type === 'Polygon') for (const r of g.arcs) own.push(stitch(r, arcs, toPoint));
+      else if (g.type === 'MultiPolygon') for (const p of g.arcs) for (const r of p) own.push(stitch(r, arcs, toPoint));
       rings.push(...own);
       const p = g.properties ?? {};
-      const id = p.iso_3166_2?.toLowerCase() ?? p.iso_a2 ?? null;
-      shapes.push({ id, name: p.name ?? (id ? countryName(id) : null), rings: own, bbox: boxOf(own) });
+      // A Zone's file names each by its own id; the world's, by its ISO code, which is how a mission files it.
+      const id = typeof p.id === 'string' ? p.id : (p.iso_3166_2?.toLowerCase() ?? p.iso_a2 ?? null);
+      const named = typeof p.name === 'string' ? p.name : null;
+      shapes.push({ id, name: named ?? (id && typeof p.id !== 'string' ? countryName(id) : null), rings: own, bbox: boxOf(own), props: p });
     }
     out[name] = { rings, shapes };
   }

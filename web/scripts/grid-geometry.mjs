@@ -1,5 +1,6 @@
 /**
- * Generates the grid's geometry: `static/grid/world.json`.
+ * Generates the grid's geometry: `static/grid/world.json`, and the time zones layer,
+ * `static/grid/timezones.json`.
  *
  * **Run by hand, and the output is committed.** A build never downloads this — Vercel building
  * the site must not depend on GitHub serving 40 MB of shapefiles that day. Rerun it when a region
@@ -22,6 +23,7 @@ import { tmpdir } from 'node:os';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const OUT = fileURLToPath(new URL('../static/grid/world.json', import.meta.url));
+const TIMEZONES = fileURLToPath(new URL('../static/grid/timezones.json', import.meta.url));
 
 /** Natural Earth, pinned. Public domain; no attribution required, though it is credited. */
 const NATURAL_EARTH = 'ca96624a56bd078437bca8184e78163e5039ad19';
@@ -29,6 +31,13 @@ const MAPSHAPER = 'mapshaper@0.7.78';
 /** map.md §3: 20% keeps 146 records' positions onshore against the coastline where 1% kept 372. */
 const SIMPLIFY = '20%';
 const QUANTIZATION = 10000;
+/**
+ * The time zones layer (D8, decided 2026-10-18): Natural Earth's 1:10m zones, dissolved by standard
+ * offset into one band each, at the finer of the two settings measured for `MAP_LINES.timezones`
+ * (scripts/lib/budget.mjs). Each band keeps only its offset: its label is written from that number on
+ * the phone, because the file's own `utc_format` disagrees with its `zone` on two polygons.
+ */
+const TIMEZONES_SIMPLIFY = '10%';
 
 /**
  * Region country (ISO 3166-1 alpha-2, as `region.json` files it) to Natural Earth's codes.
@@ -87,9 +96,9 @@ execFileSync(
     '-i', world, 'name=world',
     '-i', provinces, 'name=provinces',
     '-filter', 'target=provinces', `${JSON.stringify(provincesFor)}.indexOf(adm0_a3) > -1`,
-    // Web Mercator stretches Antarctica into a band across the whole bottom edge — the largest
-    // shape on screen, for a continent no region is filed in. Scenery that misleads is dropped.
-    '-filter', 'target=world', 'ADM0_A3 !== "ATA"',
+    // Antarctica is kept since 2026-10-18 (D1). Under Web Mercator it was a band across the whole
+    // bottom edge, the largest shape on screen, and was dropped as scenery that misleads; Equal Earth
+    // draws it at its true area, and Starcom's Terra Antarctica and Mare Australe run to the pole.
     '-simplify', 'target=provinces', SIMPLIFY, 'keep-shapes',
     // Every shape keeps its code, and what a hover or a tap needs to name it [map.md §6: every
     // shape is a door]. The code is how a mission says where it is (`jurisdiction: us-ca`, or `ke`
@@ -106,6 +115,35 @@ execFileSync(
   ],
   { stdio: ['ignore', 'ignore', 'inherit'] }
 );
+
+// The time zones: standard offsets as Natural Earth drew them in 2012, with no daylight saving.
+const zonesSource = download('ne_10m_time_zones', work);
+const zonesRaw = join(work, 'timezones.json');
+execFileSync(
+  'npx',
+  [
+    '-y', MAPSHAPER,
+    '-i', zonesSource, 'name=bands',
+    '-dissolve', 'zone',
+    // On the sphere, as the budget measured it. Planar was tried (2026-10-18): it parted the
+    // Chatham Islands' UTC+12:45 from the hole UTC+12 leaves for it, which Natural Earth does not
+    // draw vertex for vertex. Each band's edge along a pole survives, being an arc of its own.
+    '-simplify', TIMEZONES_SIMPLIFY, 'keep-shapes',
+    '-o', 'format=topojson', `quantization=${QUANTIZATION}`, zonesRaw
+  ],
+  { stdio: ['ignore', 'ignore', 'inherit'] }
+);
+const bands = JSON.parse(readFileSync(zonesRaw, 'utf8'));
+if (!bands.objects?.bands?.geometries?.length) throw new Error('layer "bands" is empty');
+bands.navcom = {
+  source: `natural-earth@${NATURAL_EARTH}`,
+  layer: 'ne_10m_time_zones',
+  simplify: TIMEZONES_SIMPLIFY,
+  /** As the file's own timestamps say, and what the map says of it [invariant 7]. */
+  drawn: '2012',
+  standard: 'standard offsets from UTC only; no daylight saving'
+};
+writeFileSync(TIMEZONES, JSON.stringify(bands));
 
 const topology = JSON.parse(readFileSync(raw, 'utf8'));
 for (const layer of ['world', 'provinces']) {
@@ -127,5 +165,6 @@ mkdirSync(fileURLToPath(new URL('../static/grid/', import.meta.url)), { recursiv
 writeFileSync(OUT, JSON.stringify(topology));
 console.log(
   `grid: ${topology.objects.world.geometries.length} countries, ` +
-    `${topology.objects.provinces.geometries.length} provinces for ${provincesFor.join(' ')} → static/grid/world.json`
+    `${topology.objects.provinces.geometries.length} provinces for ${provincesFor.join(' ')} → static/grid/world.json; ` +
+    `${bands.objects.bands.geometries.length} time zone bands → static/grid/timezones.json`
 );

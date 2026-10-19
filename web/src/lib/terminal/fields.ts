@@ -87,7 +87,10 @@ export const WIPEABLE_FIELDS = [
   'mission_claims',
   'mission_history',
   'mission_releases',
-  'mission_reports'
+  'mission_reports',
+  // The Sector somebody said they work in, on this phone only and never published [the owner's map
+  // decision D7]. A place a person goes to is tonight's, whatever its size.
+  'work_sector'
 ] as const;
 
 export type AccruingField = keyof typeof ACCRUING_FIELDS;

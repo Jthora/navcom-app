@@ -1,0 +1,90 @@
+{
+ "zsp": "2.0",
+ "generated": "2026-10-18T00:00:00Z",
+ "generator": "navcom-test-fixture",
+ "licence": "CC-BY-4.0",
+ "containers": [
+  {
+   "id": "mare:arcticum",
+   "name": "Mare Arcticum",
+   "level": "mare",
+   "file": "mare-arcticum.zsp.geojson",
+   "sha256": "ff14075f798d647e7fca28c271fa48d03d01f8b97fb39eb7cf2e538ce674af28",
+   "bytes": 8526
+  },
+  {
+   "id": "terra:laurentia",
+   "name": "Terra Laurentia",
+   "level": "terra",
+   "file": "terra-laurentia.zsp.geojson",
+   "sha256": "161ab102b63363d3ca3910bb44d945a6f5a3ccd2a980462e90af72f922ad6528",
+   "bytes": 5765
+  },
+  {
+   "id": "terra:amazonia",
+   "name": "Terra Amazonia",
+   "level": "terra",
+   "file": "terra-amazonia.zsp.geojson",
+   "sha256": "b9c42ce01f553208a17bdd4fc169ad6b752a26f69c3fa7d70cc8c70585561045",
+   "bytes": 5982
+  },
+  {
+   "id": "terra:europaea",
+   "name": "Terra Europaea",
+   "level": "terra",
+   "file": "terra-europaea.zsp.geojson",
+   "sha256": "677565b3421fa7966230d7d7e875e7c5f7328bc8f677dfebd5640ff1a59c6c19",
+   "bytes": 4988
+  },
+  {
+   "id": "terra:africana",
+   "name": "Terra Africana",
+   "level": "terra",
+   "file": "terra-africana.zsp.geojson",
+   "sha256": "327c0beb3b250580ff372daa71070eae8f2fe8fa33fa240c1c15696edadb8dab",
+   "bytes": 5201
+  },
+  {
+   "id": "terra:sinica",
+   "name": "Terra Sinica",
+   "level": "terra",
+   "file": "terra-sinica.zsp.geojson",
+   "sha256": "95814551fe4274b82f18b093dd171755ba64fa1466726183ea22c71f48f07d81",
+   "bytes": 5045
+  },
+  {
+   "id": "terra:sahulica",
+   "name": "Terra Sahulica",
+   "level": "terra",
+   "file": "terra-sahulica.zsp.geojson",
+   "sha256": "acb1217b9e2a083daa8ed1a85accd6d95248f450d7a1a9209fa895d85353bb33",
+   "bytes": 5316
+  },
+  {
+   "id": "mare:pacificum",
+   "name": "Mare Pacificum",
+   "level": "mare",
+   "file": "mare-pacificum.zsp.geojson",
+   "sha256": "7a22f06f98240383dba44e54f89bce6793d7c35a4df05bb92868035621ee4c42",
+   "bytes": 8959
+  },
+  {
+   "id": "terra:antarctica",
+   "name": "Terra Antarctica",
+   "level": "terra",
+   "file": "terra-antarctica.zsp.geojson",
+   "sha256": "d00dca6ed0ae7585af7bb695ab3b15969edaa4bf1cfdd61ee80b7ac98d773c2b",
+   "bytes": 9236
+  }
+ ],
+ "retired": [
+  {
+   "id": "zone:sahel",
+   "name": "Sahel Zone",
+   "covered_by": [
+    "zone:africana-west",
+    "zone:europaea-west"
+   ]
+  }
+ ]
+}

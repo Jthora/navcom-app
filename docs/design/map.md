@@ -7,7 +7,9 @@ and which one we hand off.
 
 Status: **design, decided where marked. The grid (§3) and its Places switch (§6) are built** and
 are the landing page; since 2026-10-18 every shape and point on it is a door, it opens on the whole
-Earth, and places on public record are points. The road layer and the mini-map are not built; the
+Earth, and places on public record are points. Since 2026-10-19 it is drawn in Equal Earth, Antarctica
+included (§3), and has layers somebody chooses: Nation States, Starcom's Zones, Time zones, or none
+(§8). The road layer and the mini-map are not built; the
 handoff is built for a record's point (§5). Normative sources it leans on: [`panel.md`](panel.md),
 [`missions.md`](missions.md), [`directory-schema.md`](../product/directory-schema.md),
 [`delivery.md`](../delivery.md).
@@ -172,21 +174,29 @@ one. The one place a record's country matters is decided from its phone number i
 lists the missions *filed* under that shape's code — `ke-30` is in `ke`, `us` is in every US state —
 and the directory regions nearest the tap *by distance*, never the ones a border holds.
 
-**Projection: Web Mercator**, accepted with a known cost. Mercator is wrong for a world
-view — it inflates Alaska and flatters the northern hemisphere, and an equal-area projection
-would be both more honest and more distinctive. We take Mercator anyway, because §4's road
-layer has to align with the grid at the same viewport, and a reprojection at switch time
-turns a layer swap into a different map. One projection, two layers. **Decided 2026-10-18
-(D1): Equal Earth replaces Mercator, before any Zone is drawn.** The road layer is not built, the map
-opens on the whole Earth, and Starcom's Zones run pole to pole, while Mercator stops at 85° and leaves
-Antarctica out. Not built yet: until it is, Mercator stays.
+**Projection: Equal Earth** (Šavrič, Patterson and Jenny, 2018), **decided and built 2026-10-18
+(D1)**, in place of Web Mercator. Mercator stopped at 85°, left Antarctica out, and drew Greenland
+larger than Brazil. Its one reason here was that §4's road layer would have to line up with the grid
+at the same viewport, and that layer was never built. Starcom's partition runs pole to pole and
+defines a Sector by its area on the ground (50,000 to 500,000 km²), so the grid draws the whole Earth,
+Antarctica included, at its true areas. The world is about 2.05 times as wide as it is tall, so on a
+portrait phone it is a band with room above and below it, and the opening view places it (§6).
 
-**How far in** (2026-10-18). Down to about 15 m a pixel on a phone at 52°N, so a street's records
+One projection is shared by everything that places something: the geometry, the points, the tap's
+inverse, a mission ring's size (equal-area, so a circle of *r* metres is drawn with its own area
+anywhere), and the browser tests, which import it rather than write it out again
+(`web/src/lib/grid/topology.ts` `project`, `unproject`). Changing it again is one edit. The Zone
+lookup is the exception, on purpose: it is answered in longitude and latitude, never projected
+(§8). If a road layer is ever built, it is a separate view behind a visible switch, not this map
+reprojected.
+
+**How far in** (2026-10-18). Down to about 20 m a pixel on a phone at 52°N, so a street's records
 separate. The outlines are 1:10m at best and look it there; what is worth drawing that close is the
 records, at the precision their positions earned (§5), and the doorstep is still the handoff's (§1).
 A region's ring gives way to its records at about 2 km a pixel, where a region is still many pixels
-across: its centre is a statistic of its records, not a place, and drawn closer in it would sit on
-one block and read as one. It was 500 m until a review found exactly that (2026-10-18). For the same
+across (about 2.7 km under Equal Earth, which keeps that figure by area at every latitude): its centre is a statistic of its records, not a place, and
+drawn closer in it would sit on one block and read as one. It was 500 m until a review found exactly
+that (2026-10-18). For the same
 reason a region is a hollow ring and a record a dot.
 
 **Canvas 2D, not SVG.** Three thousand county paths as DOM nodes is the thing that kills a
@@ -197,7 +207,8 @@ point, then a shape a mission fills, then a province, then a country. A national
 is not a fill: it holds every state inside it, and answering first it opened the United States for a
 tap on Texas (review, 2026-10-18). There is no quadtree: an earlier version of this page said there
 was, and at 471 shapes a box test is enough. A filled shape answers within 12 px of its edge, because
-at the whole-world zoom California is 11 px wide on a Pixel 5.
+at the whole-world zoom on a phone California is about 10 px across and a thumb is several times that.
+The 12 px is the finger's, so it stays 12 px however narrow the world is drawn (§6).
 
 **Both themes are ours**, which is the quiet advantage of drawing it: there is no white tile
 to dim and no third-party style to fight. Colours come from `panel.md`'s tokens, so dark is
@@ -271,9 +282,23 @@ reaches. Built the same day; the switch was **Coverage**, and is **Places** sinc
 
 **It opens on the whole Earth** (decided by the owner, 2026-10-17). It used to frame where most
 regions are, and 1,889 of the 1,912 are in the US, so it opened on the US. NavCom is an Earth
-Alliance app, and the opening view is exactly what *Show the whole map* shows, with the land centred
-in what nothing covers — above the phone's sheet at peek, or beside the wide screen's sidebar — and
-nothing moves it until a person does. Province detail still follows the regions, because that is
+Alliance app, and the opening view is exactly what *Show the whole map* shows, and nothing moves it
+until a person does. **The whole Earth sits in what nothing covers** (2026-10-19): clear of the map's
+key and its controls, and above the phone's sheet **at half as well as at peek**, because every screen
+a tap on the map opens comes up at half, the layer picker among them, and what a tap lifts or a layer
+draws has to be in view while its screen is open. On a wide screen that is the whole canvas beside the
+sidebar, the world as wide as it, with the key and the controls in its empty corners. On a phone the
+controls' column runs down the side the world would fill, so the world is drawn a little narrower,
+left of them and under the key: about 317 px of a Pixel 5's 393. Zooming out goes no further than
+that, so the whole map is still the whole map. **A lit shape's 12 px reaches further there, and that
+is kept** (2026-10-19): at 317 px it spans about 13.6° of longitude at the equator where 393 px gave
+11°, so at the opening view a tap in the middle of Texas takes a lit California, 11.6 px away. The
+slack is a thumb's, which does not shrink with the world, and a California 5 to 10 px across needs
+all of it; capping it by ground instead would take the slack away where the shapes are smallest.
+What a tap took stays lifted while its screen is open, so a finger sees which it got, and one step
+of zoom parts the two. The browser tests' Texas sits past the 12 px for that reason. The key and the sheet's two heights are measured, not
+assumed (`--map-inset`, `--map-reach`, and the key's own box), so a change to either moves the view
+with it. Province detail still follows the regions, because that is
 what the data holds; every country lights and answers anyway.
 
 **Every shape and point is a door** (2026-10-18; it was *a lit province is a door*). A hover, with a
@@ -324,7 +349,8 @@ Budgets, all of them targets to measure rather than claims:
 |---|---|
 | Grid geometry, world outlines + provinces where regions are | ≤ 250 KB gzipped — **measured 59.1 KB** (2026-10-18, with codes and names) |
 | Places, every record the map draws | ≤ 80 KB gzipped, **only when Places is switched on** — never at mount, never in the install precache |
-| Mount, every visit: the map's code, the mission feed, Com's registry and the geometry | ≤ 129 kB gzipped, **enforced** since 2026-10-18 (`MOUNT` in `web/scripts/lib/budget.mjs`) — measured 107.6 kB, of which 58.3 kB is the geometry at the build's gzip level |
+| Mount, every visit: the map's code, the mission feed, Com's registry and the geometry | ≤ 129 kB gzipped, **enforced** since 2026-10-18 (`MOUNT` in `web/scripts/lib/budget.mjs`) — measured 110.1 kB on 2026-10-19, 51.4 kB of script and 58.7 kB of geometry at the build's gzip level. It was 107.6 kB the day before; the layers and Equal Earth added the projection, the hooks each layer draws through, and an opening view that keeps the Earth uncovered, and the deferred line, which counts mount too, was re-derived for them, to 69 kB |
+| The layers somebody chooses: Zones' outlines, one Terra or Mare's Sectors, the Sector lookup and its index, Time zones, Spheres | **A line each**, `MAP_LINES` in `web/scripts/lib/budget.mjs`, enforced since 2026-10-18. Each line has a ceiling for its code and one for its data, and a line's code is never charged to the shared deferred line, which had 1.6 kB left that day. A line whose code or data reaches the build before its ceiling is derived fails the build, and so does one whose code loads at first paint or mount. Measured 2026-10-19: the layers' screens 6.1 kB of code, of a 6.8 kB ceiling derived at 5.6 kB, the Sector screen that fetches nothing and the time screen that says when its code did not arrive adding 0.4 kB; Zones 1.4 kB; the Sector lookup 1.3 kB; Time zones 1.3 kB, and 52.4 kB of data (the bands, 43.3 kB, and each region's IANA zone, 9.2 kB), ceiling 63 kB. Zones' files have no ceiling until Stage 1 is vendored, and the vendoring change derives it |
 | Requests at first paint to anyone but navcom.app | **None** — the mission subscriptions open after first paint, to The Record and its mirror only |
 | Repeat visit, no new deploy | Zero network for the grid — service worker now covers the whole origin |
 | Device floor | Interactive on a prepaid Android 8, 400 MB free |
@@ -338,3 +364,149 @@ Budgets, all of them targets to measure rather than claims:
   map (§0): all 9,623 published coordinates.
 - **Satellite is declined**, per [`declined.md`](../declined.md)'s rule that a gap may be
   closed rather than carried.
+- **Zones from Stage 1 (23 Oct), and every stage after it**: run `web/scripts/zsp-vendor.mjs` on
+  the stage as it lands in starcom-app, with the manifest's digest as reviewed and the attribution
+  the licence asks for, then derive the Zones lines' ceilings from what the build measures (§8).
+- **Spheres** (§8) wait on Mecha Jono's Part 2 lists, due 26 Oct.
+
+---
+
+## 8. Layers
+
+**Decided 2026-10-18 (the owner's map decisions D6 to D10), built 2026-10-19.** The grid divides the
+Earth one way at a time, and somebody chooses which: **Nation States**, which is what it always drew;
+**Zones**, Starcom's partition of the whole surface; **Time zones**; or **None**, the land and the
+missions alone. **Spheres** join them when their lists land (D9). A choice leaves that layer on and the
+others off, as Starcom's picker does. The missions light whichever is drawn, because they are not a
+way of dividing the Earth, and a lit shape answers a tap first in every layer, after a point and with
+the same 12 px, so it stays a door (§6) whatever is drawn under it. The choice lasts the page's life
+and is not stored.
+
+The picker is a screen in Com, opened by the map's *Map layers* control, so nothing it opens can
+cover Distress [`com.md`](com.md) §4; `e2e/com-distress.spec.ts` taps for Distress over it, and over
+every screen a layer opens, at every height of the sheet.
+
+**Drawn in neutral weights only.** Every hue on these screens is a watch state, so Starcom's earth
+hues are not copied: a layer is lines and lifts in brightness, from `panel.md`'s tokens.
+
+**Paid for only by somebody who chooses it.** Each layer's code is a module of its own under
+`web/src/lib/grid/layers/`, loaded by `import()` when the layer is chosen, and its files are fetched
+from navcom.app, whole, then: never at first paint, never at mount, never by what is on screen, and
+never in the service worker's install precache (they are cached on first use, as Places is). Each
+moment a layer costs somebody something is a line of its own in the budget, `MAP_LINES` in
+`web/scripts/lib/budget.mjs`, with a ceiling for its code and one for its data (§6).
+
+**Every layer says on the map what it is, whose, and how old** (invariant 7), in the map's key at the
+top, where the sheet never reaches: a readout of it at the canvas's foot was behind the sheet whenever
+a layer's screen was open, and present to every test (2026-10-19). The key says so too when a layer's
+code or files did not arrive.
+
+### Zones
+
+Starcom's Zone and Sector Protocol 2.0: seventeen Terrae and Maria, the Zones that tile each, and the
+Sectors that tile each Zone, every point of the Earth in exactly one Sector. Ids are `terra:<slug>`,
+`mare:<slug>`, `zone:<slug>` and `zone:<slug>/sector:<slug>`.
+
+**Vendored by digest, never fetched from starcom.app (D6).** A fetch from Starcom would hand its host
+every visitor's address and timing, would not work offline, is refused by CORS today, and fails the
+landing page's "talks to nobody" test by design. And starcom.app serves ZSP 1.0 until its own checks
+pass the whole partition on 12 November, so it would give NavCom nothing until then. So each stage is
+taken from starcom-app's repository at a pinned commit, by hand:
+
+    node scripts/zsp-vendor.mjs --repo ../../starcom-app --commit <sha> \
+      --manifest-sha256 <hex> --stage 1 --credit "<the attribution the licence asks for>"
+
+The script reads the files out of git at that commit, never from a working tree, and refuses a
+manifest whose sha256 is not the one given. Its `--dir`, which reads a directory, is for the test
+fixture and is refused for `static/grid/zsp/` whatever the manifest calls its maker; `--out` must be a
+directory named `zsp`; and what a run replaces there is only what an earlier run wrote, known by its
+stamp, so a mistyped `--out` deletes nothing else. It then checks every container file's sha256 and length
+against the manifest, and runs the same kinds of check Starcom's build runs, with NavCom's own reader
+(`packages/core/src/zones`): ids and levels, rings closed, wound as RFC 7946 winds them and not
+crossing themselves, Sectors of 50,000 to 500,000 km² or saying why not, licences (public domain, CC0
+or attribution only, for the set and for every source a Sector's lines were drawn from), the IAU's
+landform words, retired 1.0 ids, and coverage: every point of a 2° grid in exactly one Terra or Mare,
+and, where a container has Zones, in exactly one Zone and one Sector of it. **And every edge, which
+Starcom's checks do not look at** (2026-10-19): the grid misses a strip that falls between its points,
+and a Sector moved sideways keeps its area, so a Sector moved 0.6° west, overlapping the next
+container's by a strip and leaving one bare in its own Zone, passed both. At each level, the
+containers over the Earth, a container's Zones and a Zone's Sectors, every edge must be found again,
+reversed, beside it, as the format's shared edges are (ZR9); an edge that is not is looked at from a
+metre either side, where there must be exactly this area and exactly one neighbour. The areas then add
+up to a part in a billion, since with shared edges they are exact to rounding. On a synthetic partition
+near the real one's size, 2,700 Sectors with a vertex every 0.05°, every check together takes about two
+seconds, and four when no edge is shared. How much of the Earth must have Zones depends on the stage. A
+partition with any problem writes nothing. **The reader is NavCom's own**: Starcom's code is AGPL-3.0-only and NavCom is Apache-2.0, and a
+test fails if anything under `packages/core/src/zones` carries Starcom's licence.
+
+What it writes to `web/static/grid/zsp/` is quantised TopoJSON, each shared edge stored once:
+`outlines.json`, every Terra, Mare and Zone simplified for the world view; one file per Terra or Mare
+holding its Sectors; and `index.json`, every Sector at lookup precision. Each records the source and
+commit, the manifest's digest, the stage and the credit.
+
+**Stages.** Stage 1 is the seventeen outlines (23 Oct), Stage 2 Terra Africana with its Zones and
+Sectors (30 Oct), Stage 3 the rest (9 Nov), and the set Starcom swaps to on 12 November is `final`.
+**Every stage before it is a draft, and is labelled as one, view only**, on the map and on every screen
+that shows it. **Until Stage 1 the build carries no Zones at all**, and the map says so (*Zones · not
+in this build yet*) rather than drawing nothing. Nothing synthetic ships. The tests use NavCom's own
+fixture partition, in the format exactly: nine containers (the four renamed on 2026-10-18 among them),
+eighteen Zones and thirty-eight Sectors, pole to pole, with both polar caps and one Sector split across
+the antimeridian (`packages/core/test/fixtures/zsp/`); the browser tests serve what the script makes of
+it by route (`web/e2e/fixtures/zsp/`), and the script refuses to write it where the map reads from.
+
+**Loading (D10).** Every outline, whole, when Zones is chosen. A Terra's or Mare's Sectors when somebody
+opens it, or one of its Zones, by a tap or from a list, and never because of what is on screen or where
+anybody is: opening a Sector fetches nothing, because a Sector can be opened from the lookup or from
+where somebody works. Opening one tells navcom.app's host which container was opened, as picking a region in the
+search does; looking at the map tells it nothing (§2). The lookup's index, whole, the first time
+somebody asks.
+
+**Drawing, in three weights.** A Terra's or Mare's edge heaviest, a Zone's lighter, and a Sector's faint
+and thin, drawn only for a container that is open, because a whole-Earth partition puts lines
+everywhere at once. Country borders are not drawn while Zones is.
+
+**A tap opens what it lands on**: a Sector of an open container, else its Zone, else its Terra or
+Mare. Com shows where it sits, *Terra › Zone › Sector*, each a way up; a Zone's system; a Sector's
+landform in the IAU's word; and the source, with the draft's stage while it is one.
+
+**Which Sector this phone is in (D7)** is answered on the phone. Its position is asked for once and
+rounded to 500 m, as the search's is, and never leaves it; the index of every Sector on Earth is
+fetched whole, the same file for everybody, and the lookup runs here, in longitude and latitude, never
+projected, so a Sector that runs to the pole is answered like any other. Nothing chosen by where the
+phone is is fetched, not even its container, and the fix is never put in history. **Opening a Sector
+it found fetches nothing either** (2026-10-19; one tap there used to fetch the container the phone is
+in): the Sector is named from the index and its Zone and Terra from the outlines, and its screen says
+that opening its Zone would fetch its Terra's Sectors and tell navcom.app which Terra. *Where you work*
+opens the same way. Edges are simplified
+to about a kilometre, so within 1.5 km of one both Sectors are offered and the person chooses.
+
+**Where I work (D7)**: one Sector, kept on this phone only, in the Wipeable tier (`work_sector`), so a
+panic wipe takes it. Never published, never sent, never in a backup. **Only from a final partition**:
+a draft's ids may change before Starcom's swap (D6), and a Sector kept under an id that went would be a
+place that is no longer anywhere. It is kept with the manifest digest it was chosen from.
+
+**Credit.** The partition is CC BY 4.0, so the layers screen and the map's readout carry the
+attribution the vendored manifest gives, from the first stage vendored.
+
+### Time zones
+
+**Natural Earth's 1:10m time zones (D8)**, public domain, from the same pinned commit as the world's
+outlines (`web/scripts/grid-geometry.mjs`): dissolved by standard offset into forty bands, simplified
+to 10% on the sphere, `web/static/grid/timezones.json`. Each band keeps only its offset; its label
+(*UTC+5:45*) is written on the phone, because the file's own `utc_format` disagrees with its `zone` on
+two polygons. Drawn as alternating lifts. **They are standard offsets as Natural Earth drew them in
+2012, with no daylight saving, and the map says exactly that.** A tap on a band opens it: its offset,
+the time at that offset by this phone's clock, and its age.
+
+**A place's own clocks are a different answer, and are never passed off as the band's.** Each directory
+region names a validated IANA zone, so with Time zones chosen a region's ring, and its place in Com,
+give the time its clocks show, from the phone's `Intl`, daylight saving included: Birmingham in July
+reads *12:05 BST, Europe/London* where its band says 11:05. The zones come from
+`/grid/region-times.json`, prerendered from each `region.json`, fetched with the bands and never at
+mount, so `console-regions.json`, which every visit fetches, does not grow for it.
+
+### Spheres
+
+Not built. They wait on Mecha Jono's Part 2 lists (26 Oct): cited membership lists of countries,
+drawn over the world's own outlines by their ISO codes, and a small member state with no 1:110m shape
+as a circle at Natural Earth's label point (D9).

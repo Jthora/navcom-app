@@ -11,7 +11,9 @@ Status: **design, decided 2026-10-06. The shell is built** — the two container
 the search-first root and the `Distress` layer, as the landing page — **and the stack's first
 screens**: the mission list, opened from the map's missions line, a mission's page, and since
 2026-10-18 a place, opened by tapping anything on the map — a province or a country with what is
-filed under it, a region, a record — all loaded on first open. **The signed-in root has begun**: someone signed on finds
+filed under it, a region, a record — all loaded on first open. **Since 2026-10-19 a second entry,
+*layers***: the map's layer picker and what a layer opens — a Terra, Mare, Zone or Sector, which
+Sector this phone is in, a time zone ([`map.md`](map.md) §8). **The signed-in root has begun**: someone signed on finds
 their own missions first — what they hold, what waits to be reported, what they sent and how it
 settled. Profile, groups and chat are not built. Companions: [`panel.md`](panel.md) for the readout rules,
 [`map.md`](map.md) for Nav, [`delivery.md`](../delivery.md) for the budgets this is measured against.
@@ -169,7 +171,9 @@ registry, `web/src/lib/com/screens.ts`, which loads as the page mounts, beside t
 with the one component that draws whatever screen is on top. Each entry is one chunk exporting one
 host that draws all of its screens; *missions* is the only entry so far, and its five screens moved
 out of the page into `MissionsHost.svelte` (six since 2026-10-18, with the place a tap on the map
-opens). The page imports no entry. A new screen is a line in the
+opens). Since 2026-10-19 *layers* is the second: the map's layer picker, a Zone or Sector, the
+Sector this phone is in, and a time zone, in `web/src/lib/components/layers/`, and also a line of its
+own in the budget's `MAP_LINES` rather than Deferred's. The page imports no entry. A new screen is a line in the
 registry, a new entry is a line there and one in `COM_ENTRIES` (`web/scripts/lib/budget.mjs`), and
 neither changes first paint: `budget.test.ts` fails on the build if an entry is imported by first paint
 again, and `boundaries.test.ts` if the component that draws the screens joins it.

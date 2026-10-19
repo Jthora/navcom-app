@@ -4,7 +4,9 @@ import AxeBuilder from '@axe-core/playwright';
 import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import { blankDevice, chunkOf, open, seedDevice } from './device';
 import { frame, inkNear, mapReady, pixelAt, screenAt, tap, tapAt, toneNear, zoomAt } from './map';
+import { METRES_PER_UNIT } from '../src/lib/grid/topology';
 import { admit, mission, resign, standInKey, type StandIn } from './registry';
+import { serveZones } from './zsp';
 
 /**
  * A person's deliberate tap on a visibility choice comes well after the tap that opened it. The
@@ -86,6 +88,62 @@ async function ready(page: Page) {
   await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))));
 }
 
+/**
+ * Somewhere on every inhabited continent, the corners of the map a key or a column of controls would
+ * sit over (Anchorage, Tokyo, Wellington), and both ends of the Earth, which Web Mercator cut off at
+ * 85° and Equal Earth draws [D1]. The opening view leaves every one of them on screen and uncovered.
+ */
+const EVERYWHERE = [
+  ['Lagos', 3.38, 6.52], ['Nairobi', 36.82, -1.29], ['Delhi', 77.21, 28.61], ['Beijing', 116.4, 39.9],
+  ['Tokyo', 139.69, 35.69], ['Sydney', 151.21, -33.87], ['Wellington', 174.78, -41.29], ['São Paulo', -46.63, -23.55],
+  ['London', -0.13, 51.51], ['Reykjavík', -21.9, 64.1], ['New York', -74.0, 40.71], ['Anchorage', -149.9, 61.2],
+  ['80°N', 0, 80], ['80°S', 0, -80], ['the South Pole', 30, -89.5]
+] as const;
+
+/*
+ * The opening view on the phones the project claims, where the world is a short band and the key and
+ * the map's controls take a real share of the screen. Signed on, the Distress strip takes its height
+ * too. Equal Earth made the world half as tall as it is wide, and centred above the sheet it sat under
+ * the key: Britain was under it on a 375 × 667 phone, and Tokyo under the controls (2026-10-19). And at
+ * half, where every screen the map opens comes up, the layer picker among them, the sheet covered the
+ * southern half of it. The world now sits clear of all of them, narrower where it has to be.
+ */
+for (const viewport of [{ width: 393, height: 727 }, { width: 375, height: 667 }, { width: 320, height: 568 }]) {
+  test.describe(`the opening view on a ${viewport.width} × ${viewport.height} phone`, () => {
+    test.use({ viewport });
+
+    for (const signedOn of [false, true]) {
+      test(`${signedOn ? 'signed on' : 'not signed on'}: the whole Earth, and none of it under the key, the controls or the sheet`, async ({ page }) => {
+        await seedDevice(page, signedOn ? { callsign: 'kestrel', relayEvents: [] } : { __noStorage: true });
+        await open(page, '/');
+        await mapReady(page);
+        await frame(page);
+        await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'peek');
+        for (const [name, lon, lat] of EVERYWHERE) {
+          expect((await screenAt(page, lon, lat)).uncovered, `${name} is on screen and uncovered`).toBe(true);
+        }
+        // With the layer picker open, at half: what a choice there draws is in view while it is made.
+        await page.getByRole('button', { name: 'Map layers' }).click();
+        await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'half');
+        await frame(page);
+        for (const [name, lon, lat] of EVERYWHERE) {
+          expect((await screenAt(page, lon, lat)).uncovered, `${name}, with the sheet at half`).toBe(true);
+        }
+        // And it is still the whole map: the ⌂ button shows exactly this, and zooming out goes no further.
+        const canvas = page.locator('.grid canvas');
+        const opened = await canvas.getAttribute('data-view');
+        await page.getByRole('button', { name: 'Zoom out' }).click();
+        await frame(page);
+        expect(await canvas.getAttribute('data-view')).toBe(opened);
+        await page.getByRole('button', { name: 'Zoom in' }).click();
+        await page.getByRole('button', { name: 'Show the whole map' }).click();
+        await frame(page);
+        expect(await canvas.getAttribute('data-view')).toBe(opened);
+      });
+    }
+  });
+}
+
 test.describe('the landing map draws, and tells nobody', () => {
   test('it draws land, not an empty box', async ({ page }) => {
     await ready(page);
@@ -146,10 +204,7 @@ test.describe('the landing map draws, and tells nobody', () => {
     expect(await canvas.getAttribute('data-view'), 'the regions arriving moved the map').toBe(opened);
     // Every inhabited continent, above the sheet at peek, and none of it under the map's key.
     await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'peek');
-    for (const [name, lon, lat] of [
-      ['Lagos', 3.38, 6.52], ['Nairobi', 36.82, -1.29], ['Delhi', 77.21, 28.61], ['Beijing', 116.4, 39.9],
-      ['Sydney', 151.21, -33.87], ['São Paulo', -46.63, -23.55], ['London', -0.13, 51.51], ['New York', -74.0, 40.71]
-    ] as const) {
+    for (const [name, lon, lat] of EVERYWHERE) {
       expect((await screenAt(page, lon, lat)).uncovered, `${name} is on screen and uncovered`).toBe(true);
     }
     await page.getByRole('button', { name: 'Show the whole map' }).click();
@@ -1283,7 +1338,7 @@ test.describe('the landing page: missions you can open', () => {
           // covered "Show the whole map" at every height.
           await withHeat(page, { __noStorage: false, callsign: 'kestrel' });
           await expect(page.locator('[data-grid="ready"]')).toBeVisible({ timeout: 15_000 });
-          for (const name of ['Show the whole map', 'Zoom in', 'Zoom out', 'Places']) {
+          for (const name of ['Show the whole map', 'Zoom in', 'Zoom out', 'Map layers', 'Places']) {
             expect(await uncovered(page.getByRole('button', { name })), name).toBe(true);
           }
           // Com itself, and Distress, are both there to be reached.
@@ -1300,7 +1355,12 @@ test.describe('the landing page: missions you can open', () => {
  */
 const DURING = new Date('2026-10-06T20:00:00Z');
 const NAIROBI = [36.82, -1.29] as const;
-const TEXAS = [-99.9, 31.5] as const;
+/**
+ * Central Texas, about 17° of longitude from California: past the 12 px a lit shape answers within at
+ * the whole-Earth view, which on a phone is about 317 px wide (2026-10-19), so the slack a lit
+ * California is given is never what a test of Texas measures [pick.ts LIT_SLOP].
+ */
+const TEXAS = [-97.7, 31.0] as const;
 const LONDON = [-0.13, 51.51] as const;
 /** A mission filed under a Kenyan county, which no drawn province matches: it lights Kenya. */
 const KENYA_D = 'test-water-points-ke-30';
@@ -1388,6 +1448,27 @@ test.describe('the landing map: every shape and point is a door [map.md §6]', (
   // The worker would serve the build's own code past the registry splice.
   test.use({ serviceWorkers: 'block' });
   test.beforeEach(async ({ page }) => void (await admit(page, [HEAT_DESK])));
+
+  test('with Zones drawn, a lit California is still a door: a tap on it opens its place, not the Zone under it', async ({ page }) => {
+    // The missions light whichever layer is drawn [map.md §8], and a lit shape answers first in every
+    // one, as it does under Nation States. It was painted and opened the Zone (review, 2026-10-19).
+    await serveZones(page);
+    await withMissions(page, [HEAT_PACKAGE]);
+    await page.getByRole('button', { name: 'Map layers' }).click();
+    await page.locator('[data-screen="layers"]').getByRole('radio', { name: /^Zones/ }).check();
+    await expect(page.locator('[data-legend="zones"]')).toContainText('CC BY 4.0');
+    await page.locator('[data-back]').click();
+    await frame(page);
+    await tapAt(page, -119.4, 36.8, 'California');
+    const place = page.locator('[data-screen="place"][data-place="us-ca"]');
+    await expect(place.locator(`[data-mission="${HEAT_MISSION_D}"]`)).toBeVisible();
+    await expect(page.locator('[data-screen="zone"]')).toHaveCount(0);
+    // Clear of the lit shape and its 12 px, the layer answers: the sea off Mexico, about 31 px from
+    // California at this view, is the fixture's Laurentia West Zone.
+    await page.locator('[data-back]').click();
+    await tapAt(page, -130, 10, 'the sea off Mexico');
+    await expect(page.locator('[data-screen="zone"][data-zone="zone:laurentia-west"]')).toBeVisible();
+  });
 
   test('a tap on unlit Kenya opens Kenya, and says nothing is open there', async ({ page }) => {
     await withMissions(page, [HEAT_PACKAGE]);
@@ -1514,7 +1595,8 @@ test.describe('the landing map: every shape and point is a door [map.md §6]', (
     const exact = await screenAt(page, ...LIBRARY);
     const centre = await screenAt(page, lon, lat);
     const scale = Number(((await page.locator('.grid canvas').getAttribute('data-view')) ?? '').split(' ')[2]);
-    const r = (1_113 * scale) / (40_075_017 * Math.cos((lat * Math.PI) / 180));
+    // Equal Earth keeps areas, so a kilometre's circle is drawn with a kilometre's area anywhere [topology.ts].
+    const r = (1_113 * scale) / METRES_PER_UNIT;
     expect(r, 'the ring a kilometre covers is wider than the smallest ring').toBeGreaterThan(20);
     expect(await inkNear(page, exact.x, exact.y, 8), 'a ring drawn round the address itself').toBe(0);
     expect(await inkNear(page, centre.x + r, centre.y, 4), 'no kilometre ring round the point it rounds to').toBeGreaterThan(0);

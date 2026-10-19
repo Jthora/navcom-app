@@ -19,7 +19,14 @@ const EACH: Screen[] = [
   // `within` is how far the tap may be from `at`, in km; `unmapped`, how many of a region's places the map does not draw.
   { kind: 'place', code: 'ke', region: null, name: 'Kenya', at: '-1,37', record: null, within: '820', unmapped: null },
   { kind: 'place', code: null, region: 'birmingham-uk', name: 'Birmingham', at: null, record: null, within: null, unmapped: '12' },
-  { kind: 'place', code: null, region: 'birmingham-uk', name: 'Birmingham', at: '52.4791,-1.8936', record: '3', within: null, unmapped: null }
+  { kind: 'place', code: null, region: 'birmingham-uk', name: 'Birmingham', at: '52.4791,-1.8936', record: '3', within: null, unmapped: null },
+  // The map's layers: the picker, a Zone and a Sector by their ZSP ids, which Sector this phone is in
+  // (its fix is never in history), and a time zone by its offset.
+  { kind: 'layers' },
+  { kind: 'zone', id: 'terra:africana' },
+  { kind: 'zone', id: 'zone:east-african-rift/sector:afar' },
+  { kind: 'lookup' },
+  { kind: 'time', offset: '5.75' }
 ];
 
 describe('the screens Com has', () => {
@@ -48,6 +55,8 @@ describe('a screen read back from history', () => {
     expect(readScreen({ kind: 'mission', address: 7 })).toBeNull();
     expect(readScreen({ kind: 'mission', address: null })).toBeNull();
     expect(readScreen({ kind: 'reports', id: '30079:abc:d' })).toBeNull();
+    expect(readScreen({ kind: 'zone' })).toBeNull();
+    expect(readScreen({ kind: 'time', offset: 3 })).toBeNull();
   });
 
   it('is not, when a field that may be empty holds something else: it reached the host and threw there', () => {

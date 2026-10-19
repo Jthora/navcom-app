@@ -99,9 +99,17 @@ const isTerminalScope = (pathname: string) =>
  * needs the directory is the moment they have no signal, and "we'll fetch it when you open
  * the screen" is a fallback that only works when you did not need a fallback.
  */
+/**
+ * The map's layers' own data, which only somebody who chooses that layer pays for [map.md, Layers;
+ * budget.mjs MAP_LINES]: Starcom's Zones and the time zones. Precached, every first install would fetch
+ * them, on a device floor that is short of storage as much as of signal. Cached on first use instead,
+ * in the site cache, as `/grid/places.json` is.
+ */
+const isLayerData = (f: string) => f.startsWith(`${base}/grid/zsp/`) || f === `${base}/grid/timezones.json`;
+
 const SHELL = [
   ...build,
-  ...files.filter((f) => !f.endsWith('.csv')),
+  ...files.filter((f) => !f.endsWith('.csv') && !isLayerData(f)),
   /*
    * The landing page, where a signed-on operator in a browser works missions with Distress on
    * the screen [com.md §4]. It lived only in the site cache, which evicts its oldest entry first

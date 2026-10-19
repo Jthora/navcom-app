@@ -22,7 +22,7 @@
 import type { ConsoleCentroid, ConsoleRegionFigures } from '$lib/console/types';
 import type { GeoPrecision, Mission, ResourceRecord, ResourceType } from '@navcom/core';
 import { atPrecision, isConfidential, locatingLeaks } from '@navcom/core';
-import { mercator } from './topology';
+import { project } from './topology';
 
 declare const OF_RECORD: unique symbol;
 
@@ -31,7 +31,7 @@ interface Point {
   readonly [OF_RECORD]: true;
   readonly lon: number;
   readonly lat: number;
-  /** Projected once, into the unit square the map draws in. */
+  /** Projected once, into the rectangle the map draws in [topology.ts project]. */
   readonly x: number;
   readonly y: number;
   /** How far from it a tap still lands on it, in CSS px. */
@@ -128,7 +128,7 @@ function at<K extends PlaceOfRecord['kind']>(
   lat: number,
   rest: Omit<Extract<PlaceOfRecord, { kind: K }>, keyof Point | 'kind'>
 ): PlaceOfRecord {
-  const [x, y] = mercator(lon, lat);
+  const [x, y] = project(lon, lat);
   return { kind, lon, lat, x, y, reach: REACH[kind], ...rest } as unknown as PlaceOfRecord;
 }
 

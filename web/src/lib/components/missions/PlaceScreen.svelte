@@ -36,6 +36,7 @@
   import { isConfidential } from '@navcom/core';
   import { Panel, Readout, Slot } from '$lib/components/panel';
   import type { Place } from '$lib/com/screens';
+  import { layerData, mapLayers } from '$lib/grid/layer.svelte';
   import MissionList from './MissionList.svelte';
   import { kmBetween } from './format';
 
@@ -52,6 +53,9 @@
     now: number;
     onopen: (address: string) => void;
   } = $props();
+
+  /** A region's own clocks, from its IANA zone, once Time zones has brought them [D8]: daylight saving and all. */
+  const regionClock = $derived(place.region && now && mapLayers.loaded >= 0 ? (layerData.regionTime?.(place.region) ?? null) : null);
 
   /** How far "near" reaches. Past it, the nearest region is somewhere else, and is said to be. */
   const NEAR_KM = 250;
@@ -163,6 +167,9 @@
           <Readout value="{place.unmapped} not on the map" tone="neutral" sub="search, or open the region" />
         </Slot>
       {/if}
+      {#if regionClock}
+        <Slot k="Local time"><Readout value={regionClock.time} tone="neutral" verbatim sub="times are local to {regionClock.zone.replace(/_/g, ' ')}" /></Slot>
+      {/if}
       <Slot k="Verify">
         {#if figures && figures.confirmedByPerson > 0}
           <Readout value="{figures.confirmedByPerson} confirmed by a person" tone="good" />
@@ -178,6 +185,7 @@
     {#if place.code !== null}
       <MissionList {missions} province={null} place={{ code: place.code, name: place.name }} {status} {now} {onopen} />
     {/if}
+
     <Panel label="Directory" post="Near here">
       {#if near.length > 0}
         <ul class="nc-near" data-near={coarse ? 'coarse' : 'measured'}>
@@ -243,4 +251,5 @@
     align-items: center;
     min-height: 3rem;
   }
+
 </style>

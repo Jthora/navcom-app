@@ -70,7 +70,7 @@ Every piece below already ships. Nothing in this design replaces any of them.
 | Already there | Where | Used here for |
 |---|---|---|
 | The Com stack, kept in browser history by the landing page; a registry of `Screen` kinds, each with its entry and opening height, loaded as the page mounts; screens from another version read *Not in this version* | `web/src/routes/+page.svelte`, `web/src/lib/com/screens.ts` | Each new screen is a new `Screen` kind and a line in `SCREENS` |
-| One dynamic entry, *missions*, whose one host draws its six screens | `web/src/lib/components/missions/index.ts`, `MissionsHost.svelte` | Two more entries beside it (§13) |
+| Two dynamic entries: *missions*, whose one host draws its six screens, and since 2026-10-19 *layers*, the map's layer picker and its four screens | `web/src/lib/components/missions/index.ts`, `MissionsHost.svelte`; `web/src/lib/components/layers/` | Two more entries beside them (§13) |
 | A signed-in root that reads storage directly: `holding` counts wipeable `mission_claims` without loading claims code | `web/src/routes/+page.svelte` | The *Crews* row reads storage the same way |
 | `Distress` in its own layer, `position: fixed` at the bottom; a viewport meta with no `interactive-widget` | `.distress-layer`; `web/src/app.html` | The keyboard question (§9) |
 | Cards: `readCard` refuses any content field outside `CARD_FIELDS`; anything newer rides in tags | `packages/core/src/events/public.ts`, `profile.ts`, `links.ts` | Profiles, and the agent tag |

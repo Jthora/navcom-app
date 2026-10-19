@@ -151,6 +151,7 @@ Stated as capability rather than intent, because you do not get to choose who ru
 |---|---|
 | Your secret keys | Never transmitted, never escrowed, never registered |
 | Field notes | Wipeable tier, this device. `notes.ts` — never published, never seen by a peer or a watch |
+| Which Zone and Sector you are in, and the one you work in | This phone. The lookup runs here over an index everybody fetches whole, from a position asked for once and rounded to 500 m; opening a Sector it found, or the one you keep, fetches nothing. Opening that Sector's Zone or Terra is your own tap, and fetches its Terra's Sectors, so navcom.app's host learns which of seventeen Terrae and Maria, and the screen says so before you tap. The Sector you keep is Wipeable and never published [`map.md`](../design/map.md) §8 |
 | Your patrol record | This device, unless you deliberately export it |
 | Your emergency contact | This phone. The escalation ladder's contact rung is *device-initiated* — your phone reaches your person, so no number is stored anywhere else |
 | Credentials you hold | Held and presented by you. Nothing looks them up |

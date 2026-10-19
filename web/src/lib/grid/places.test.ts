@@ -14,7 +14,7 @@ import { gzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import type { Mission, ResourceRecord } from '@navcom/core';
 import { RESOURCE_TYPES, atPrecision, decimalsOf, isConfidential } from '@navcom/core';
-import { mercator } from './topology';
+import { project } from './topology';
 import {
   ON_THE_MAP,
   PLACES_DECIMALS,
@@ -42,7 +42,7 @@ describe('a mission’s ring', () => {
       mission({ lat: 36.77, lon: -119.41, precision: '1km', kind: 'subject_location', coarsened: false })
     ]);
     expect(ring).toMatchObject({ kind: 'mission', address: '30079:abc:d', title: 'Water at the library', lat: 36.77, lon: -119.41 });
-    const [x, y] = mercator(-119.41, 36.77);
+    const [x, y] = project(-119.41, 36.77);
     expect(ring!.x).toBeCloseTo(x, 9);
     expect(ring!.y).toBeCloseTo(y, 9);
     const metres = (p: (typeof ring)) => (p?.kind === 'mission' ? p.metres : NaN);

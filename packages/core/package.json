@@ -16,6 +16,10 @@
       "types": "./dist/directory/index.d.ts",
       "default": "./dist/directory/index.js"
     },
+    "./zones": {
+      "types": "./dist/zones/index.d.ts",
+      "default": "./dist/zones/index.js"
+    },
     "./src/*": "./src/*"
   },
   "scripts": {

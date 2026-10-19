@@ -6,8 +6,11 @@
  *
  * One fixed order, topmost first: a point (a mission's ring, a directory record, a region's
  * ring), then a shape a mission fills, then any province, then any country. A lit shape counts within
- * `LIT_SLOP` CSS px of its edge, because at the whole-world zoom California is about 11 px wide
- * on a Pixel 5 and a thumb is not; zoomed in, the same 12 px is a street, and nothing is gained.
+ * `LIT_SLOP` CSS px of its edge, because at the whole-world zoom on a phone California is about 10 px
+ * across and a thumb is not; zoomed in, the same 12 px is a street, and nothing is gained. The 12 px
+ * is the finger's and does not shrink with the world, so at the phone's opening view, about 317 px
+ * wide, it reaches 13.6° at the equator and the middle of Texas takes a lit California; that is kept,
+ * and what a tap took stays lifted [map.md §6].
  *
  * This names the shape that was tapped. It never decides which country a *place* is in: the
  * place screen lists missions by the jurisdiction their packages are filed under, and directory
@@ -17,7 +20,7 @@
 import type { Shape } from './topology';
 import type { PlaceOfRecord } from './places';
 
-/** Which point of the unit square sits at the centre of the canvas, and how many CSS px it spans. */
+/** Which point of the map's rectangle sits at the centre of the canvas, and how many CSS px its width spans. */
 export interface View {
   cx: number;
   cy: number;
@@ -26,19 +29,21 @@ export interface View {
   height: number;
 }
 
-/** How far outside its edge a lit shape still answers a tap, in CSS px. */
+/** How far outside its edge a lit shape still answers a tap, in CSS px, at every zoom: a thumb's slack, not a distance on the ground. */
 export const LIT_SLOP = 12;
 
 export type Hit =
   | { kind: 'shape'; layer: 'provinces' | 'world'; shape: Shape }
+  /** An area of the chosen layer: one of Starcom's Terrae, Maria, Zones or Sectors, or a time zone [layer.svelte.ts]. */
+  | { kind: 'area'; shape: Shape }
   | { kind: 'point'; place: PlaceOfRecord };
 
-/** A screen point, in CSS px from the canvas's top left, as a point of the unit square. */
+/** A screen point, in CSS px from the canvas's top left, as a point of the map's rectangle [topology.ts project]. */
 export function unitAt(v: View, [sx, sy]: readonly [number, number]): [number, number] {
   return [v.cx + (sx - v.width / 2) / v.scale, v.cy + (sy - v.height / 2) / v.scale];
 }
 
-/** A point of the unit square, on screen. */
+/** A point of the map's rectangle, on screen. */
 export function screenAt(v: View, [ux, uy]: readonly [number, number]): [number, number] {
   return [(ux - v.cx) * v.scale + v.width / 2, (uy - v.cy) * v.scale + v.height / 2];
 }
@@ -59,7 +64,7 @@ function holds(rings: Shape['rings'], x: number, y: number): boolean {
   return c;
 }
 
-/** The shortest distance from (x, y) to any edge of any ring, in unit-square units. */
+/** The shortest distance from (x, y) to any edge of any ring, in the map's units. */
 function edgeDistance(rings: Shape['rings'], x: number, y: number): number {
   let best = Infinity;
   for (const r of rings) {
@@ -149,3 +154,4 @@ export function pick(
   }
   return null;
 }
+

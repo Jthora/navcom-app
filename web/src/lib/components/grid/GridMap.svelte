@@ -18,6 +18,12 @@
    * it draws the rings of verified missions and, with Places on, the directory's own regions and
    * records, each made by `$lib/grid/places`, which is the only module that can make one.
    *
+   * **One layer at a time** [map.md, Layers]: Nation States, which is what the map always drew;
+   * Starcom's Zones, in three neutral weights, container heaviest; Time zones, as alternating lifts;
+   * or none. The choice is `$lib/grid/layer.svelte`, made in Com's layers screen, and each layer's
+   * code and files arrive by `import()` only once it is chosen [budget.mjs MAP_LINES]. A layer's areas
+   * answer a tap and a hover the way a country does under Nation States; points answer first in all.
+   *
    * Built for the device floor, a prepaid Android 8. Each layer becomes one `Path2D` in map units
    * when the file loads, and a pan or zoom only changes the canvas transform: one matrix and a
    * redraw, never per-frame geometry. Redraws happen on demand, at most once per frame.
@@ -25,8 +31,9 @@
   import { onMount, tick } from 'svelte';
   import type { Mission } from '@navcom/core';
   import type { Screen } from '$lib/com/screens';
-  import { decode, filedUnder, lightsOf, mercator, unmercator, type Shape, type Topology } from '$lib/grid/topology';
+  import { HEIGHT, METRES_PER_UNIT, decode, edgeOfEarth, filedUnder, inside, lightsOf, unproject, type Shape, type Topology } from '$lib/grid/topology';
   import { LIT_SLOP, pick, screenAt, unitAt, type Hit, type View } from '$lib/grid/pick';
+  import { mapLayers, type DrawnLayer } from '$lib/grid/layer.svelte';
   import {
     placesOfDirectory,
     placesOfMissions,
@@ -42,6 +49,8 @@
     current = null,
     status = $bindable('loading'),
     placesStatus = $bindable('off'),
+    legend = $bindable(null),
+    cover,
     onpick
   }: {
     /** The missions open now. Each lights where it is filed: its province, or else its country. */
@@ -57,6 +66,14 @@
     /** Whether Places' files arrived, so the map's key can say so when they did not [invariant 7]. */
     placesStatus?: 'off' | 'loading' | 'ready' | 'failed';
     /**
+     * What the chosen layer is, whose, and how old, for the page's key to say [invariant 7; D6, D8]. In
+     * the key rather than on the canvas: the key is at the top, and the sheet, which a layer's screens
+     * open at half, covers the canvas's foot, where a readout of what is drawn was present and unseen.
+     */
+    legend?: { layer: string; text: string } | null;
+    /** What the page lays over the canvas's top: its key. The opening view keeps the Earth out from under it. */
+    cover?: HTMLElement;
+    /**
      * Something on the map was tapped, or chosen by keyboard: the screen that opens it. A shortcut,
      * never the only way in — whatever opens from here is also reachable without the map, by
      * keyboard and screen reader alike.
@@ -66,6 +83,7 @@
 
   let canvas = $state<HTMLCanvasElement>();
   let insetEl = $state<HTMLElement>();
+  let reachEl = $state<HTMLElement>();
   let chipEl = $state<HTMLElement>();
   let controlsEl = $state<HTMLElement>();
 
@@ -77,9 +95,20 @@
   let litFill: Path2D | null = null;
   let litLine: Path2D | null = null;
   let litIds = new Set<string>();
+  /** Only the shapes a mission fills, for a tap under another layer, where they still answer first. */
+  let litProvinces: Shape[] = [];
+  let litCountries: Shape[] = [];
   /** The shape under the pointer or the reticle, lifted by its outline and never by a hue. */
   let hovered: Hit | null = null;
   let hoverLine: Path2D | null = null;
+
+  /**
+   * The chosen layer, once its own code is here: it draws itself and answers for its areas, so the map
+   * every visit loads carries none of either [layer.svelte.ts DrawnLayer; budget.mjs MAP_LINES].
+   */
+  let drawn = $state.raw<DrawnLayer | null>(null);
+  /** What a layer has open in Com, lifted while it is, whether a tap or a list opened it. */
+  let layerOpen: Path2D | null = null;
 
   function pathOf(rings: Shape['rings']): Path2D {
     const p = new Path2D();
@@ -102,8 +131,9 @@
       active.map((m) => m.placement.jurisdiction),
       new Set(provinceShapes.map((s) => s.id))
     );
-    const all = [...provinceShapes, ...countryShapes];
-    const filled = all.filter((s) => s.id !== null && fill.has(s.id));
+    litProvinces = provinceShapes.filter((s) => s.id !== null && fill.has(s.id));
+    litCountries = countryShapes.filter((s) => s.id !== null && fill.has(s.id));
+    const filled = [...litProvinces, ...litCountries];
     const lined = [...filled, ...countryShapes.filter((s) => s.id !== null && outline.has(s.id))];
     litFill = filled.length > 0 ? pathOf(filled.flatMap((s) => s.rings)) : null;
     litLine = lined.length > 0 ? pathOf(lined.flatMap((s) => s.rings)) : null;
@@ -126,29 +156,41 @@
   /** Regions with places the map does not draw: their rings stay where the records take over. */
   const held = $derived(directory?.regions.filter((r) => r.kind === 'region' && (r.unmapped ?? 0) > 0) ?? []);
 
-  // The view: which point of the unit square sits at the centre, and how many CSS px it spans.
+  // The view: which point of the map's rectangle sits at the centre, and how many CSS px its width spans.
   let cx = 0.5;
-  let cy = 0.5;
+  let cy = HEIGHT / 2;
   let scale = 0;
   let width = 0;
   let height = 0;
   let dpr = 1;
+  /**
+   * What lies over the canvas, in CSS px from its top left: the page's key and the map's own controls,
+   * measured whenever either changes size. The opening view keeps the Earth out from under them.
+   */
+  let covers: { l: number; t: number; r: number; b: number }[] = [];
+  /**
+   * CSS px at the canvas's foot the page covers at the height Com opens to for whatever the map opens,
+   * the phone's sheet at half, read from `--map-reach`. The opening view keeps the Earth above it, so
+   * what a tap lifts, and the layer the picker draws, are in view while their screen is open.
+   */
+  let reach = 0;
   /** CSS px at the canvas's foot that the page covers — the phone's sheet at peek — read from `--map-inset`. */
   let inset = 0;
   /**
-   * Up to about 15 m a pixel on a phone at 52°N, so a street's records separate. The outlines are
+   * Up to about 20 m a pixel on a phone at 52°N, so a street's records separate. The outlines are
    * 1:10m at best and look it there; what is drawn that close is the records, at the precision
    * their positions earned, and the doorstep is still the handoff's [map.md §5].
    */
   const MAX_ZOOM = 4096;
   /**
-   * From here in, a region's ring gives way to its records: about 2 km a pixel on a phone at 52°N,
+   * From here in, a region's ring gives way to its records: about 2.7 km a pixel on a phone, by area,
    * where a region is still many pixels across. A region's centre is a statistic of its records,
    * not a place, and drawn closer in it would sit on one block and read as one (review, 2026-10-18).
    */
   const RECORD_ZOOM = 32;
-  /** The land band in the file, 75°N to 56°S, which the opening view centres in what nothing covers. */
-  const LAND_MID = (mercator(0, 75)[1] + mercator(0, -56)[1]) / 2;
+  /** The Earth's own edge, drawn round it: off it there is nothing, not sea [topology.ts edgeOfEarth]. */
+  const earth = edgeOfEarth();
+  const edge = typeof Path2D === 'undefined' ? null : pathOf([earth]);
 
   const view = (): View => ({ cx, cy, scale, width, height });
   /** Where the keyboard's reticle sits: the centre of the part of the canvas nothing covers. */
@@ -168,17 +210,22 @@
    * than the screen — so the button labelled "Show the whole map" showed a band centred on
    * Greenwich with the Americas cut off. A control that does not keep its label's promise is a
    * defect, so the whole map means the whole map, with empty space above and below it on a tall
-   * screen.
+   * screen. On a phone too short for the world to clear the map's own controls at the screen's width,
+   * it is the width left of them instead, so that the whole map is whole there too [world()].
    */
-  const fit = () => width;
+  let least = 0;
+  const fit = () => (least > 0 ? Math.min(width, least) : width);
 
-  /** Within the world, and when the whole world is shorter than the canvas, wholly on it. */
+  /**
+   * Within the world, and when the whole world is shorter than the canvas, wholly on it. The world is
+   * one unit wide and `HEIGHT` tall, about half as tall as it is wide [topology.ts project].
+   */
   function clamp() {
     scale = Math.min(Math.max(scale, fit()), fit() * MAX_ZOOM);
     const halfW = width / 2 / scale;
     const halfH = height / 2 / scale;
-    cx = halfW >= 0.5 ? 0.5 : Math.min(Math.max(cx, halfW), 1 - halfW);
-    cy = halfH >= 0.5 ? Math.min(Math.max(cy, 1 - halfH), halfH) : Math.min(Math.max(cy, halfH), 1 - halfH);
+    cx = halfW >= 0.5 ? Math.min(Math.max(cx, 1 - halfW), halfW) : Math.min(Math.max(cx, halfW), 1 - halfW);
+    cy = halfH >= HEIGHT / 2 ? Math.min(Math.max(cy, HEIGHT - halfH), halfH) : Math.min(Math.max(cy, halfH), HEIGHT - halfH);
   }
 
   function token(name: string, fallback: string): string {
@@ -218,7 +265,15 @@
     ctx.fillStyle = token('--t-raised', '#141920');
     ctx.fill(land, 'evenodd');
     const ink = token('--t-ink', '#F2F5F8');
+    if (edge) {
+      ctx.lineWidth = 1 / scale;
+      ctx.strokeStyle = token('--t-line', '#232B35');
+      ctx.stroke(edge);
+    }
     const muted = token('--t-muted', '#9BA5B2');
+    const chosen = mapLayers.chosen;
+    const tones = { ink, muted, line: token('--t-line', '#232B35'), strong: token('--t-line-strong', '#38424F') };
+    drawn?.fill?.(ctx, tones);
     if (litFill) {
       // A lift in brightness, never a hue: every hue on these screens is a watch state.
       ctx.globalAlpha = 0.16;
@@ -227,22 +282,28 @@
       ctx.globalAlpha = 1;
     }
     ctx.lineJoin = 'round';
-    ctx.lineWidth = 0.6 / scale;
-    ctx.strokeStyle = token('--t-line', '#232B35');
-    ctx.stroke(provinceLines);
-    ctx.lineWidth = 1 / scale;
-    ctx.strokeStyle = token('--t-line-strong', '#38424F');
-    ctx.stroke(land);
+    if (chosen === 'nations' || chosen === 'timezones') {
+      // The borders, as ever; faintly under the time zones, for where the bands are.
+      if (chosen === 'nations') {
+        ctx.lineWidth = 0.6 / scale;
+        ctx.strokeStyle = tones.line;
+        ctx.stroke(provinceLines);
+      }
+      ctx.lineWidth = (chosen === 'nations' ? 1 : 0.6) / scale;
+      ctx.strokeStyle = chosen === 'nations' ? tones.strong : tones.line;
+      ctx.stroke(land);
+    }
+    drawn?.lines(ctx, scale, tones);
     if (litLine) {
       ctx.lineWidth = 1.5 / scale;
       ctx.strokeStyle = muted;
       ctx.stroke(litLine);
     }
-    for (const line of [hoverLine, pickedOn ? picked?.line : null]) {
-      if (!line) continue;
+    for (const lifted of [hoverLine, pickedOn ? picked?.line : null, layerOpen]) {
+      if (!lifted) continue;
       ctx.lineWidth = 2 / scale;
       ctx.strokeStyle = ink;
-      ctx.stroke(line);
+      ctx.stroke(lifted);
     }
 
     // Points in screen space, so each is the same size at every zoom.
@@ -256,8 +317,9 @@
       const [x, y] = screenAt(v, [p.x, p.y]);
       if (p.kind === 'mission') {
         // A ring the same size on screen, never smaller than what the point's precision covers:
-        // a `city` point is an 11 km ring however far in somebody zooms.
-        const r = Math.max(7, (p.metres * scale) / (40_075_017 * Math.cos((p.lat * Math.PI) / 180)));
+        // a `city` point is an 11 km ring however far in somebody zooms. Equal Earth keeps areas, so
+        // a circle on the ground is drawn with its own area wherever it is [METRES_PER_UNIT].
+        const r = Math.max(7, (p.metres * scale) / METRES_PER_UNIT);
         if (x < -r || y < -r || x > width + r || y > height + r) continue;
         circles.moveTo(x + r, y);
         circles.arc(x, y, r, 0, Math.PI * 2);
@@ -308,9 +370,25 @@
 
   // ─── What is under a point, and what it says ──────────────────────────────────────────────
 
+  /**
+   * What is under (sx, sy) in the layer chosen: points first in every layer, then a shape a mission
+   * fills, within the same slack it has under Nation States, then the layer's own areas. The missions
+   * light whichever layer is drawn, and a lit shape is a door in every one of them [map.md §6, §8]. A
+   * layer with nothing loaded answers as Nation States, so a tap is never dead.
+   */
   function hitAt(sx: number, sy: number): Hit | null {
     if (status !== 'ready') return null;
-    return pick(view(), [sx, sy], { provinces: provinceShapes, countries: countryShapes, lit: litIds, points: shownPoints() });
+    const v = view();
+    const at: [number, number] = [sx, sy];
+    const layer = drawn;
+    if (layer) {
+      // Given only the lit shapes, `pick` answers a point, then a lit shape, then nothing.
+      const first = pick(v, at, { provinces: litProvinces, countries: litCountries, lit: litIds, points: shownPoints() });
+      if (first) return first;
+      const shape = layer.hit(v, at);
+      if (shape !== undefined) return shape ? { kind: 'area', shape } : null;
+    }
+    return pick(v, at, { provinces: provinceShapes, countries: countryShapes, lit: litIds, points: shownPoints() });
   }
 
   /** `N open missions` or `Nothing open`, by the codes the missions are filed under. */
@@ -321,11 +399,17 @@
 
   function sayOf(hit: Hit): string {
     if (hit.kind === 'shape') return `${hit.shape.name ?? 'Unnamed'} · ${openAt(hit.shape.id)}`;
+    if (hit.kind === 'area') return drawn?.say(hit.shape) ?? hit.shape.name ?? 'Unnamed';
     const p = hit.place;
     if (p.kind === 'mission') return `${p.title} · open mission`;
     const count = (n: number) => `${n} ${n === 1 ? 'place' : 'places'}`;
-    // Where its records are drawn, a region's ring stands for the ones that are not.
-    if (p.kind === 'region') return close() && p.unmapped ? `${p.name} · ${count(p.unmapped)} not on the map` : `${p.name} · ${count(p.records)}`;
+    if (p.kind === 'region') {
+      // Where its records are drawn, a region's ring stands for the ones that are not.
+      const said = close() && p.unmapped ? `${p.name} · ${count(p.unmapped)} not on the map` : `${p.name} · ${count(p.records)}`;
+      // With Time zones drawn, its own clocks: its IANA zone knows daylight saving, the bands do not.
+      const clocks = drawn?.region?.(p.region);
+      return clocks ? `${said} · ${clocks}` : said;
+    }
     return `A place in ${p.regionName}`;
   }
 
@@ -336,11 +420,14 @@
    * and `within` says how far off it may be, so the place screen measures nothing more finely.
    */
   function screenOf(hit: Hit, sx: number, sy: number): Screen {
+    // An area is only ever found by a layer whose code is here; if it went since, its picker answers.
+    if (hit.kind === 'area') return drawn ? drawn.open(hit.shape) : { kind: 'layers' };
     if (hit.kind === 'shape') {
-      const [lon, lat] = unmercator(...unitAt(view(), [sx, sy]));
+      const [lon, lat] = unproject(...unitAt(view(), [sx, sy]));
+      // A thumb's width in degrees at the equator, where one unit is 360°, and on the ground by area.
       const deg = (LIT_SLOP * 360) / scale;
       const d = deg >= 1 ? 0 : 1;
-      const within = String(Math.max(1, Math.round(deg * 111.32 * Math.cos((lat * Math.PI) / 180))));
+      const within = String(Math.max(1, Math.round((LIT_SLOP * METRES_PER_UNIT) / scale / 1000)));
       const name = hit.shape.name ?? hit.shape.id?.toUpperCase() ?? 'This place';
       return { kind: 'place', code: hit.shape.id, region: null, name, at: `${lat.toFixed(d)},${lon.toFixed(d)}`, record: null, within, unmapped: null };
     }
@@ -359,14 +446,14 @@
 
   function sameHit(a: Hit | null, b: Hit | null): boolean {
     if (!a || !b) return a === b;
-    if (a.kind === 'shape' && b.kind === 'shape') return a.shape === b.shape;
-    return a.kind === 'point' && b.kind === 'point' && a.place === b.place;
+    if (a.kind === 'point' || b.kind === 'point') return a.kind === 'point' && b.kind === 'point' && a.place === b.place;
+    return a.kind === b.kind && a.shape === b.shape;
   }
 
   function show(hit: Hit | null, sx: number, sy: number) {
     if (!sameHit(hit, hovered)) {
       hovered = hit;
-      hoverLine = hit?.kind === 'shape' ? pathOf(hit.shape.rings) : null;
+      hoverLine = hit && hit.kind !== 'point' ? pathOf(hit.shape.rings) : null;
       request();
     }
     chip = hit ? { text: sayOf(hit), x: sx, y: sy } : null;
@@ -421,7 +508,7 @@
     const screen = screenOf(hit, sx, sy);
     picked = {
       key: JSON.stringify(screen),
-      line: hit.kind === 'shape' ? pathOf(hit.shape.rings) : null,
+      line: hit.kind !== 'point' ? pathOf(hit.shape.rings) : null,
       place: hit.kind === 'point' ? hit.place : null
     };
     pickedOn = true;
@@ -465,16 +552,61 @@
   /** Set once a person moves the map. After that, nothing moves it for them. */
   let touched = false;
 
+  /** Whether anything over the canvas covers some of the Earth itself, its outline rather than its box. */
+  function earthCovered(): boolean {
+    const v = view();
+    for (const c of covers) {
+      for (let i = 0; i <= 4; i++) {
+        for (let j = 0; j <= 4; j++) {
+          if (inside([earth], unitAt(v, [c.l + ((c.r - c.l) * i) / 4, c.t + ((c.b - c.t) * j) / 4]))) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /** CSS px kept between the Earth and what covers the canvas, when the Earth is fitted between them. */
+  const GAP = 8;
+
   /**
-   * The whole Earth, with its land centred in the part of the canvas nothing covers: above the
-   * phone's sheet at peek, or the whole canvas beside the wide screen's sidebar. NavCom is an Earth
-   * Alliance app and opens on the Earth [decided 2026-10-17; map.md §6]. Nothing moves it until a
-   * person does.
+   * The whole Earth in the part of the canvas nothing covers [decided 2026-10-17; map.md §3, §6]: above
+   * the phone's sheet, at half, where every screen the map opens comes up, the layer picker among them,
+   * and clear of the page's key and the map's own controls. As wide as the canvas where it can be,
+   * centred between the sheet and the highest line it can sit under with nothing over the Earth's own
+   * outline: no line at all on a wide screen, where the key and the controls sit in its empty corners. On
+   * a phone, where the controls' column runs down the side the world would fill, narrower, in what is
+   * left of the controls and below the key, so the whole map is the whole map and stays in view while Com
+   * is open. Where that would leave it less than half the screen's width, the same above the sheet at
+   * peek; and on a screen too small even for that, full width and as clear of them as it fits. Nothing
+   * moves it until a person does.
    */
   function world() {
-    scale = fit();
+    least = 0;
     cx = 0.5;
-    cy = LAND_MID + inset / 2 / scale;
+    for (const floor of [height - Math.max(inset, reach), height - inset]) {
+      scale = width;
+      const centredBelow = (top: number) => HEIGHT / 2 + (height - top - floor) / 2 / scale;
+      const lines = [...new Set([0, ...covers.map((c) => c.b)])].filter((top) => top >= 0 && floor - top >= HEIGHT * scale).sort((a, b) => a - b);
+      for (const line of lines) {
+        cy = centredBelow(line);
+        if (!earthCovered()) return clamp();
+      }
+      // Left of whatever covers the canvas's right side, below whatever covers its left.
+      const right = Math.min(width, ...covers.filter((c) => c.l > width / 2).map((c) => c.l - GAP));
+      const top = Math.max(0, ...covers.filter((c) => c.l <= width / 2).map((c) => c.b + GAP));
+      const fits = Math.min(right, (floor - top) / HEIGHT);
+      if (fits >= width / 2) {
+        least = fits;
+        scale = fits;
+        cx = 0.5 + (width - right) / 2 / scale;
+        cy = centredBelow(top);
+        return clamp();
+      }
+    }
+    const floor = height - inset;
+    scale = width;
+    const lines = [0, ...covers.map((c) => c.b)].filter((top) => top >= 0 && floor - top >= HEIGHT * scale);
+    cy = HEIGHT / 2 + (height - Math.max(0, ...lines) - floor) / 2 / scale;
     clamp();
   }
 
@@ -579,6 +711,13 @@
       width = box.width;
       height = box.height;
       inset = Math.min(insetEl?.getBoundingClientRect().height ?? 0, height);
+      reach = Math.min(reachEl?.getBoundingClientRect().height ?? 0, height);
+      covers = [cover, controlsEl].flatMap((c) => {
+        if (!c) return [];
+        const r = c.getBoundingClientRect();
+        const l = r.left - box.left, t = r.top - box.top;
+        return r.width > 0 && r.height > 0 ? [{ l, t, r: l + r.width, b: t + r.height }] : [];
+      });
       // Capped at 2: a 3x phone would quadruple the pixels filled for no visible gain.
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       el.width = Math.round(width * dpr);
@@ -591,6 +730,8 @@
     const resized = new ResizeObserver(size);
     resized.observe(el);
     if (insetEl) resized.observe(insetEl);
+    if (reachEl) resized.observe(reachEl);
+    if (cover) resized.observe(cover);
     size();
 
     // Wheel must be non-passive to stop the page scrolling under the map.
@@ -647,6 +788,56 @@
       });
   });
 
+  /*
+   * The layer chosen in Com: its code and files, the first time it is chosen and never before, each
+   * from navcom.app and fetched whole [D10; budget.mjs MAP_LINES]. A layer whose code does not arrive
+   * says so, as one whose files do not.
+   */
+  $effect(() => {
+    const chosen = mapLayers.chosen;
+    drawn = null;
+    // A hover in one layer names nothing in the next.
+    hovered = null;
+    hoverLine = null;
+    chip = null;
+    const code = chosen === 'zones' ? import('$lib/grid/layers/zones') : chosen === 'timezones' ? import('$lib/grid/layers/timezones') : null;
+    code?.then(
+      (m) => {
+        if (mapLayers.chosen !== chosen) return;
+        m.layer.load();
+        drawn = m.layer;
+      },
+      () => {
+        if (chosen === 'zones') mapLayers.zones = 'failed';
+        else mapLayers.times = 'failed';
+      }
+    );
+    request();
+  });
+  // What a layer has loaded is a new picture, and so is what it has open in Com.
+  $effect(() => {
+    void mapLayers.loaded;
+    const shape = drawn?.lifted?.(current) ?? null;
+    layerOpen = shape ? pathOf(shape.rings) : null;
+    request();
+  });
+
+  /**
+   * What the chosen layer is, where it came from, and how old, on the map itself [invariant 7; D6, D8]:
+   * the layer's own words once its code is here, and the map's for a layer whose files or code did not
+   * arrive, so a map drawn without its layer never passes for one with nothing in it.
+   */
+  const said = $derived(
+    mapLayers.chosen === 'nations' || mapLayers.chosen === 'none'
+      ? ''
+      : mapLayers[mapLayers.chosen === 'zones' ? 'zones' : 'times'] === 'failed'
+        ? 'Layer not loaded — it needs one visit with a connection'
+        : (drawn?.legend() ?? '')
+  );
+  $effect(() => {
+    legend = said ? { layer: mapLayers.chosen, text: said } : null;
+  });
+
   // New missions are a new picture; Places on or off is too.
   $effect(() => {
     void active;
@@ -695,6 +886,8 @@
   ></canvas>
   <!-- How much of the canvas's foot the page covers, measured rather than parsed [--map-inset]. -->
   <div class="inset" bind:this={insetEl} aria-hidden="true"></div>
+  <!-- And how much it covers at half, where every screen the map opens comes up [--map-reach]. -->
+  <div class="inset reach" bind:this={reachEl} aria-hidden="true"></div>
   <!--
     What is under the pointer or the reticle. A live region, so the keyboard's moves are said; it
     sits before the controls and the page's own layers, so none of them is ever under it.
@@ -704,6 +897,10 @@
     <button type="button" aria-label="Zoom in" onclick={() => zoomAt(1.5)}>+</button>
     <button type="button" aria-label="Zoom out" onclick={() => zoomAt(1 / 1.5)}>−</button>
     <button type="button" aria-label="Show the whole map" onclick={reset}>⌂</button>
+    <!-- What the map divides the Earth by: chosen in Com, so nothing it opens can cover Distress [com.md §4]. -->
+    <button type="button" aria-label="Map layers" data-layers disabled={status !== 'ready' || !onpick} onclick={() => onpick?.({ kind: 'layers' })}>
+      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 4 3 9l9 5 9-5zm-9 9 9 5 9-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" /></svg>
+    </button>
   </div>
   {#if status === 'failed'}
     <!-- Offline is a normal state here [C10]. Say what happened rather than show an empty box. -->
@@ -734,6 +931,9 @@
     width: 0;
     height: var(--map-inset, 0px);
     pointer-events: none;
+  }
+  .reach {
+    height: var(--map-reach, 0px);
   }
   .chip {
     position: absolute;
@@ -771,6 +971,10 @@
     line-height: 1;
   }
   .controls button:focus-visible { outline: 2px solid var(--t-ink); outline-offset: 1px; }
+  .controls svg {
+    display: block;
+    margin: auto;
+  }
   /* Centred, not at the foot: on a phone the landing page's sheet covers the bottom of the map at
      every height, and a failure under it was present, "visible" to a test, and seen by nobody. */
   .state {

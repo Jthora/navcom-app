@@ -40,7 +40,11 @@ export type Screen =
       record: string | null;
       within: string | null;
       unmapped: string | null;
-    };
+    }
+  | { kind: 'layers' }
+  | { kind: 'zone'; id: string }
+  | { kind: 'lookup' }
+  | { kind: 'time'; offset: string };
 /**
  * A place opened from the map [map.md §6: every shape is a door]. `code` is the jurisdiction a
  * tapped province or country is filed under (`us-ca`, `ke`), so the screen lists what is filed
@@ -53,6 +57,13 @@ export type Screen =
  * not draw, when the map knew.
  */
 export type Place = Extract<Screen, { kind: 'place' }>;
+/*
+ * The map's layers [map.md, Layers; the owner's map decisions D6 to D10]. `layers` chooses what the
+ * map divides the Earth by; `zone` is one Terra, Mare, Zone or Sector, by its ZSP 2.0 id, opened from
+ * the map or a list, and a tap on the map names a Sector once its container is open; `lookup` says
+ * which Sector this phone is in, from its own position-once fix, looked up on the phone and never
+ * kept in history or sent; `time` is one standard-time band, by its offset in hours.
+ */
 export type Kind = Screen['kind'];
 /** How high the sheet opens for a screen. Never lower than it already is. */
 export type Height = 'half' | 'full';
@@ -82,7 +93,9 @@ export interface HostProps {
  * that draws every screen of that entry. The only import sites of Com's entries are here.
  */
 export const ENTRIES = {
-  missions: () => import('$lib/components/missions')
+  missions: () => import('$lib/components/missions'),
+  // The map's layers: each layer's own code and data arrive later still, when it is chosen [budget.mjs MAP_LINES].
+  layers: () => import('$lib/components/layers')
 } satisfies Record<string, () => Promise<{ Host: Component<HostProps> }>>;
 export type Entry = keyof typeof ENTRIES;
 
@@ -116,7 +129,11 @@ export const SCREENS: { [K in Kind]: { entry: Entry; height: Height; fields: Fie
       within: 'string|null',
       unmapped: 'string|null'
     }
-  }
+  },
+  layers: { entry: 'layers', height: 'half', fields: {} },
+  zone: { entry: 'layers', height: 'half', fields: { id: 'string' } },
+  lookup: { entry: 'layers', height: 'half', fields: {} },
+  time: { entry: 'layers', height: 'half', fields: { offset: 'string' } }
 };
 
 /**

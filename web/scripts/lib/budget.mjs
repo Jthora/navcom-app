@@ -188,6 +188,8 @@ export const SURFACES = {
  *
  * First paint has the root's ceiling, and mount has its own since 2026-10-18 [MOUNT]. Each entry
  * is reported, not enforced, until a ceiling is derived from a measurement, as every budget here was.
+ * The map's layers are the exception, also since 2026-10-18: each is a line with ceilings of its
+ * own, enforced from the moment it exists and charged to it rather than to Deferred [MAP_LINES].
  */
 /**
  * Imported by `+page.svelte` on mount, on every visit. Keys as Vite's manifest spells them. Com's
@@ -201,8 +203,198 @@ export const ROOT_MOUNT = ['src/lib/components/grid/GridMap.svelte', 'src/lib/mi
  * walk finds inside mount.
  */
 export const COM_ENTRIES = /** @type {Record<string, string>} */ ({
-  missions: 'src/lib/components/missions/index.ts'
+  missions: 'src/lib/components/missions/index.ts',
+  // Also a map line, so its code is charged to that line and never to Deferred [MAP_LINES].
+  layers: 'src/lib/components/layers/index.ts'
 });
+
+/*
+ * The map's layers, each a line of its own. Since 2026-10-18.
+ *
+ * The map is getting layers somebody chooses: Zones and their Sectors, time zones, and later Spheres
+ * (the owner's map decisions, D6 to D10). Each brings code and data that arrive when somebody chooses
+ * it, never at first paint and never at mount. Charged to the shared lines, they had nowhere to go.
+ * Measured at 654622b, the day this was written, the root's first paint was at 60,678 B of 61,440 and
+ * Deferred at 56,767 B of 58,368, with 1.6 kB left. The Zones reader and lookup alone were estimated
+ * at 3 to 5 kB. The first layer to land would have spent Deferred's last kilobyte and a half, and
+ * re-deriving Deferred upward to fit the second is the silent raise this file exists to stop.
+ *
+ * So each moment a layer costs somebody something is a line here. A line says what loads at that
+ * moment, and has two ceilings: one for its code beyond first paint and mount, one for its data. A
+ * line's code is charged to the line and never to Deferred. A chunk it shares with anything else
+ * stays in Deferred, because that other thing loads it anyway.
+ *
+ * **A line that arrives before its ceiling fails the build.** Com's entries are reported until a
+ * ceiling is derived. A layer is not, because "reported until measured" is how a shared line gets
+ * eaten. A ceiling is derived from a measurement, in this file's unit, with ~20% headroom and a
+ * warning line about 8% above the measurement. The measurement is kept beside it, so `budget.test.ts`
+ * can hold the headroom to that rule. Nothing here is measured that does not exist yet. The layers'
+ * screens, Zones, the lookup and Time zones are written, and their code was measured on 2026-10-19, as
+ * Time zones' two files were, so those ceilings are derived. The rest stay `null` until what they
+ * measure exists: the Zones outlines' data and one container's Sectors, none before Stage 1 lands
+ * (23 Oct), the fixture they are built against until then never shipping; the lookup's index, none
+ * before a stage with Sectors in it; and Spheres, code and data, not written until its lists land
+ * (D9). A container's Sectors have no code of their own, which arrives with the Zones line. The change
+ * that lands each part derives its ceiling from what it measured; the failure prints the numbers to
+ * write.
+ *
+ * Each line's code is one module under `src/lib/grid/layers/`, loaded by `import()` from the map or
+ * from a Com screen, and never statically. A layer something imports statically arrives with that
+ * something, and its line would be measuring a moment that never happens. A Com entry can be a line
+ * too, by naming its key as the line's `code`; the line then takes it from the entries. Two more
+ * things fail: a module under that directory that no line declares, and a line's code that loads at
+ * first paint or mount.
+ */
+/**
+ * A ceiling, and the measurement it was derived from, in this file's unit: bytes, gzipped at zlib's
+ * default level.
+ *
+ * @typedef {{ limit: number, warn: number, measured: number, why: string }} Ceiling
+ */
+/**
+ * `when` is the moment somebody pays for this line. `code` is its module as Vite's manifest keys it,
+ * or null when its code arrives with something else. `files` picks its data out of `build/`. `per`
+ * says whether that moment fetches every one of those files (`all`), or one of them (`each`), in
+ * which case the largest is the figure. `js` and `data` stay null until there is something to measure.
+ *
+ * @typedef {{
+ *   when: string,
+ *   code: string | null,
+ *   files: ((file: string) => boolean) | null,
+ *   per: 'all' | 'each',
+ *   js: Ceiling | null,
+ *   data: Ceiling | null
+ * }} MapLine
+ */
+/** Where the layers' code lives: one module per line, and nothing else. */
+export const LAYER_CODE = 'src/lib/grid/layers/';
+const ZSP = 'grid/zsp/';
+
+/** @type {Record<string, MapLine>} */
+export const MAP_LINES = {
+  /*
+   * The picker, and the screens a layer opens in Com: the layers, a Zone or Sector, a lookup's answer,
+   * a time zone. A Com entry, named here as this line's code, so it is charged here and not to the
+   * Deferred line it would otherwise have eaten [COM_ENTRIES]. Its own data is none: every file it
+   * shows is another line's.
+   */
+  layers: {
+    when: 'opening the map’s layers',
+    code: 'src/lib/components/layers/index.ts',
+    files: null,
+    per: 'all',
+    js: {
+      limit: 6_934,
+      warn: 6_241,
+      measured: 5_779,
+      why:
+        'Measured 2026-10-19 at 5,779 B: the picker, a Terra, Mare, Zone or Sector, which Sector this ' +
+        'phone is in, and a time zone, four screens in one Com entry, with where somebody works kept in ' +
+        'the Wipeable tier. Each layer’s own code is its own line, so none of it is here.'
+    },
+    data: null
+  },
+  /*
+   * D10: every outline, whole, when Zones is chosen. The reader and the drawing are one module, and
+   * nothing is fetched by what is on screen.
+   */
+  zones: {
+    when: 'choosing Zones',
+    code: `${LAYER_CODE}zones.ts`,
+    files: (f) => f === `${ZSP}outlines.json`,
+    per: 'all',
+    js: {
+      limit: 1_676,
+      warn: 1_509,
+      measured: 1_397,
+      why:
+        'Measured 2026-10-19 at 1,397 B: reading the outlines and a container’s Sectors, drawing them in ' +
+        'three weights, and answering a tap. The data has no ceiling until Stage 1 is vendored (23 Oct): ' +
+        'the change that vendors it derives one from what it measures.'
+    },
+    data: null
+  },
+  /*
+   * D10: a container's Sectors, one file, when somebody opens that Terra or Mare. Its code is the
+   * reader the Zones line already loaded.
+   */
+  'zones-container': {
+    when: 'opening one Terra or Mare',
+    code: null,
+    files: (f) =>
+      f.startsWith(ZSP) && f.endsWith('.json') && !f.slice(ZSP.length).includes('/') && f !== `${ZSP}outlines.json` && f !== `${ZSP}index.json`,
+    per: 'each',
+    js: null,
+    data: null
+  },
+  /*
+   * D7 and D10: the whole-Earth index, fetched the first time somebody asks which Sector a place is in,
+   * and the lookup that answers it on the phone. Nothing is sent. Estimated at 0.4 to 0.55 MB of
+   * index, which is not a measurement.
+   */
+  'zones-lookup': {
+    when: 'the first lookup of which Sector a place is in',
+    code: `${LAYER_CODE}zones-lookup.ts`,
+    files: (f) => f === `${ZSP}index.json`,
+    per: 'all',
+    js: {
+      limit: 1_598,
+      warn: 1_439,
+      measured: 1_332,
+      why:
+        'Measured 2026-10-19 at 1,332 B: core’s lookup in longitude and latitude, with the bounding-box ' +
+        'prefilter and the edge test that offers both Sectors within 1.5 km. Its index has no ceiling ' +
+        'until a stage with Sectors is vendored.'
+    },
+    data: null
+  },
+  /*
+   * D8: Natural Earth's 1:10m time zones, standard offsets, loaded when chosen. The code and both its
+   * files ship, and all three were measured on 2026-10-19.
+   */
+  timezones: {
+    when: 'choosing Time zones',
+    code: `${LAYER_CODE}timezones.ts`,
+    // The bands, and each directory region's own IANA zone, fetched together when it is chosen.
+    files: (f) => f === 'grid/timezones.json' || f === 'grid/region-times.json',
+    per: 'all',
+    js: {
+      limit: 1_581,
+      warn: 1_423,
+      measured: 1_318,
+      why:
+        'Measured 2026-10-19 at 1,318 B: decoding the bands, drawing them as alternating lifts, naming an ' +
+        'offset, and each region’s own clock through Intl.'
+    },
+    data: {
+      limit: 63 * 1024,
+      warn: 57 * 1024,
+      measured: 53_698,
+      why:
+        'Re-derived 2026-10-19 at 53,698 B, from 44,252 B the day before, because the line now carries ' +
+        'two files where it was measured with one. The bands are 44,292 B: ne_10m_time_zones at the ' +
+        'pinned Natural Earth commit (ca96624), dissolved by standard offset to its 40 bands, keeping only ' +
+        '`zone`, simplified to 10% on the sphere with keep-shapes and quantised to 10,000, with mapshaper ' +
+        '0.7.78; the 3% setting parted the Chatham Islands from the hole left for them. Beside them, 9,406 B ' +
+        'of grid/region-times.json: each directory region’s IANA zone, so a region’s ring and its place ' +
+        'give the time its clocks show, daylight saving included, which the bands cannot (D8). Its own ' +
+        'file rather than console-regions.json, which every visit fetches.'
+    }
+  },
+  /*
+   * The Spheres' lists, due 26 Oct, and the label points D9 draws their small member states at, as
+   * circles. Whatever is fetched only while Spheres is on is this line's data, so a file of its own
+   * for those points is added to `files` here.
+   */
+  spheres: {
+    when: 'choosing Spheres',
+    code: `${LAYER_CODE}spheres.ts`,
+    files: (f) => f === 'grid/spheres.json',
+    per: 'all',
+    js: null,
+    data: null
+  }
+};
 
 /*
  * The ceiling 11.3 owed [build-order, Milestone 11 gates]. Derived, not chosen: measured at 27.7 kB
@@ -232,8 +424,23 @@ export const COM_ENTRIES = /** @type {Record<string, string>} */ ({
  * to the byte. A second copy of sha256 the gate first pulled in (1.9 kB, for re-checking a pin that
  * ships beside what it pins) was taken out before this was measured; the pin is the build's to check.
  * The same ~20% headroom, and the warning about 8% above the measurement.
+ *
+ * **The map's layers are not in it, since 2026-10-18** [MAP_LINES]. What only a line's code reaches
+ * is that line's, and is counted against its ceilings. A chunk anything else also reaches stays here,
+ * and so does anything a line opens later by `import()`. When this was derived no layer existed, so
+ * it still holds what it held when it was derived: 56,767 B at 654622b, before and after the change.
+ *
+ * **Re-derived 2026-10-19, at 57.8 kB measured** (59,155 B, from 56,770 B the day before). Not the
+ * layers: their code is on their own lines, 9,826 B of it. What grew is the mount tier, which this line
+ * counts too: the map's script went from 50,401 B to 52,574 B. Equal Earth and its inverse, so the whole
+ * Earth is drawn at its true areas, Antarctica included (D1); the hooks each layer draws and answers
+ * through, so none of a layer's code loads at mount; and the opening view that keeps the Earth clear of
+ * the key, the controls and the sheet at half. Every visit pays that, and `MOUNT` holds it there, at
+ * 112.7 kB of 129 kB. The rest is the place screen reading a region's own clock. The same ~20% headroom,
+ * and the warning 7% above the measurement: 62 kB, the whole kilobyte nearest the usual 8% without
+ * passing it.
  */
-export const DEFERRED = { limit: 57 * 1024, warn: 52 * 1024 };
+export const DEFERRED = { limit: 69 * 1024, warn: 62 * 1024 };
 
 /*
  * What every visit to the root fetches as it mounts, beyond first paint: the mount tier's script —
@@ -302,6 +509,16 @@ function walk(dir) {
 const kb = (n) => `${(n / 1024).toFixed(1)} kB`;
 
 /**
+ * Every map line's code, as the manifest keys it.
+ *
+ * @param {Record<string, MapLine>} lines
+ * @returns {string[]}
+ */
+export function lineCodes(lines) {
+  return Object.values(lines).flatMap((l) => (l.code ? [l.code] : []));
+}
+
+/**
  * Which build was measured. The deploy stamp `vite.config.ts` writes beside the pages, read rather
  * than asked of git: a build is often measured at a later commit than it was made from, and a
  * figure filed under the wrong commit is how a regression gets blamed on the change after it.
@@ -335,9 +552,12 @@ function stampOf(build) {
  * working directory: run from the repo root, a cwd-relative manifest path finds nothing and the
  * deferred check reports nothing, silently, which is the one way that check must never fail.
  *
- * @param {{ build: string, manifestPath: string, log?: (line: string) => void }} options
+ * `lines` is the map's lines, given only by a test that needs ceilings the real ones do not have yet;
+ * `comEntries` is Com's entries, given only by a test whose fixture build has its own registry.
+ *
+ * @param {{ build: string, manifestPath: string, log?: (line: string) => void, lines?: Record<string, MapLine>, comEntries?: Record<string, string> }} options
  */
-export function measure({ build, manifestPath, log = console.log }) {
+export function measure({ build, manifestPath, log = console.log, lines = MAP_LINES, comEntries = COM_ENTRIES }) {
   if (!existsSync(build) || !statSync(build).isDirectory()) {
     throw new Error('No build/ directory. Run `npm run build` first.');
   }
@@ -512,12 +732,21 @@ export function measure({ build, manifestPath, log = console.log }) {
   else if (graph) {
     const reach = closure(graph, entries(graph));
     const later = (/** @type {string} */ f) => !referenced.has(f) && existsSync(at(f));
+    /*
+     * A map line's own, which its line counts and this one does not [MAP_LINES]: what a line's code
+     * reaches statically and nothing else reaches at all. What a line opens later by `import()` is
+     * not its own, so it stays here.
+     */
+    const codes = lineCodes(lines).filter((k) => Object.hasOwn(graph, k));
+    const others = codes.length > 0 ? closure(graph, entries(graph), codes).files : reach.files;
+    const owned = new Set(codes.flatMap((k) => [...closure(graph, [k], [], { dynamic: false }).files]));
+    const shared = (/** @type {string} */ f) => later(f) && !(owned.has(f) && !others.has(f));
     // The enforced figure, counted as it was derived [DEFERRED]; the stylesheets beside it, reported.
     const sized = counted(reach)
-      .filter(later)
+      .filter(shared)
       .map((f) => ({ f, bytes: gz(f) }))
       .sort((a, b) => b.bytes - a.bytes);
-    const sheets = [...reach.sheets].filter(later);
+    const sheets = [...reach.sheets].filter(shared);
     deferred = {
       stale: false,
       files: new Set([...reach.files].filter(later)),
@@ -555,18 +784,21 @@ export function measure({ build, manifestPath, log = console.log }) {
   if (graph) {
     const root = pages.find((p) => p.name === 'index.html');
     if (root) {
-      const { root_later, ...tiers } = rootTiers(graph, root, weigh, (reach) => counted(reach).reduce((n, f) => n + gz(f), 0));
+      const { root_later, ...tiers } = rootTiers(graph, root, weigh, (reach) => counted(reach).reduce((n, f) => n + gz(f), 0), lines, comEntries);
       // The figure the health file has always published, counted as it always was.
       report.root_later = { bytes: root_later };
       report.root_tiers = tiers;
       const row = (/** @type {Weight} */ w, /** @type {string} */ name, /** @type {string} */ what) =>
         `  ${kb(w.js).padStart(9)} ${kb(w.css).padStart(9)}  ${name.padEnd(17)} ${what}`;
-      log(`\n  Root console by when it loads — first paint and mount enforced, each entry reported\n`);
+      log(`\n  Root console by when it loads — first paint, mount and each map layer enforced, each Com entry reported\n`);
       log(`  ${'JS'.padStart(9)} ${'CSS'.padStart(9)}`);
       log(row(tiers.first_paint, 'first paint', 'the root budget above'));
       log(row(tiers.mount, 'mount', `every visit, as the page mounts, sheet opened or not (${tiers.mount.chunks} chunk(s))`));
       for (const [name, w] of Object.entries(tiers.entries)) {
         log(row(w, `entry: ${name}`, `on first opening it, beyond first paint and mount (${w.chunks} chunk(s))`));
+      }
+      for (const [name, w] of Object.entries(tiers.lines)) {
+        log(row(w, `map: ${name}`, `on ${lines[name]?.when ?? 'choosing it'}, beyond first paint and mount (${w.chunks} chunk(s))`));
       }
       if (tiers.framework.chunks > 0) log(row(tiers.framework, 'framework', 'SvelteKit\'s own, such as its error page: only when something fails'));
       for (const [key, w] of Object.entries(tiers.unclassified)) {
@@ -596,6 +828,82 @@ export function measure({ build, manifestPath, log = console.log }) {
     );
   }
 
+  /*
+   * The map's lines [MAP_LINES]: each layer's code and data, each against a ceiling of its own, and
+   * each failing the build rather than waiting to be measured.
+   */
+  {
+    report.lines = {};
+    const lineOf = new Map(Object.entries(lines).flatMap(([name, l]) => (l.code ? [[l.code, name]] : [])));
+    /** Chunks that import a line's code statically: it arrives with them, not when somebody chooses it. */
+    /** @type {Map<string, string[]>} */
+    const statics = new Map();
+    for (const [key, entry] of Object.entries(graph ?? {})) {
+      for (const dep of entry.imports ?? []) {
+        const name = lineOf.get(dep);
+        if (name !== undefined) statics.set(name, [...(statics.get(name) ?? []), key]);
+      }
+    }
+    const strays = Object.keys(graph ?? {}).filter((k) => k.startsWith(LAYER_CODE) && !lineOf.has(k));
+    const early = /** @type {Record<string, string>} */ (report.root_tiers?.lines_loaded_early ?? {});
+    const measuredLines = /** @type {Record<string, Weight>} */ (report.root_tiers?.lines ?? {});
+    const status = (/** @type {boolean} */ over, /** @type {boolean} */ warned) => (over ? 'FAIL' : warned ? 'WARN' : 'PASS');
+
+    log(`\n  Map layers, each a line of its own: loaded when somebody chooses it, and never counted in Deferred\n`);
+    for (const [name, line] of Object.entries(lines)) {
+      const code = line.code !== null ? measuredLines[name] ?? null : null;
+      const sized = (line.files ? files.filter(line.files) : []).map((f) => ({ f, bytes: gz(f) })).sort((a, b) => b.bytes - a.bytes);
+      const fetched = line.per === 'each' ? sized.slice(0, 1) : sized;
+      const data = fetched.length > 0 ? fetched.reduce((n, x) => n + x.bytes, 0) : null;
+      report.lines[name] = {
+        js: code?.js ?? null,
+        js_limit: line.js?.limit ?? null,
+        data,
+        data_limit: line.data?.limit ?? null,
+        files: fetched.map((x) => x.f)
+      };
+
+      const label = (/** @type {string} */ part) => `${name} ${part}`.padEnd(22);
+      const check = (/** @type {string} */ part, /** @type {number | null} */ actual, /** @type {Ceiling | null} */ ceiling, /** @type {string} */ what) => {
+        if (actual === null) return false;
+        if (ceiling === null) {
+          failed = true;
+          log(
+            `  FAIL  ${label(part)} ${kb(actual).padStart(9)} arrived with no ceiling  ${what}` +
+              `\n        Derive one from this measurement, with the reason beside it, in MAP_LINES` +
+              `\n        (scripts/lib/budget.mjs): measured ${actual} B, so a limit near ${Math.floor(actual * 1.2)} B and a warning` +
+              `\n        near ${Math.round(actual * 1.08)} B.`
+          );
+          return true;
+        }
+        const over = actual > ceiling.limit;
+        if (over) failed = true;
+        log(
+          `  ${status(over, actual > ceiling.warn)}  ${label(part)} ${kb(actual).padStart(9)} / ${kb(ceiling.limit).padStart(9)}` +
+            `  (${Math.round((actual / ceiling.limit) * 100)}%)  ${what}`
+        );
+        return true;
+      };
+      const shown = [
+        check('code', code?.js ?? null, line.js, `on ${line.when}, beyond first paint and mount`),
+        check('data', data, line.data, `on ${line.when}: ${fetched.map((x) => x.f).join(', ')}${line.per === 'each' ? `, the largest of ${sized.length}` : ''}`)
+      ];
+      if (early[name]) {
+        failed = true;
+        log(`  FAIL  ${label('code')} loads at ${early[name]}, on every visit, before anybody chose it.`);
+      }
+      if (statics.has(name)) {
+        failed = true;
+        log(`  FAIL  ${label('code')} is imported statically by ${statics.get(name)?.join(', ')}, so it arrives with that and not when chosen.`);
+      }
+      if (!shown.some(Boolean) && !early[name] && !statics.has(name)) log(`  ----  ${label('')} not in this build  (${line.when})`);
+    }
+    for (const key of strays) {
+      failed = true;
+      log(`  FAIL  ${key} is a map layer's code with no line of its own. Declare it in MAP_LINES (scripts/lib/budget.mjs).`);
+    }
+  }
+
   if (deferred && !deferred.stale) {
     const { bytes, css } = deferred;
     report.deferred = { bytes, limit: DEFERRED.limit, css };
@@ -605,7 +913,8 @@ export function measure({ build, manifestPath, log = console.log }) {
     log(
       `\n  ${!ok ? 'FAIL' : warned ? 'WARN' : 'PASS'}  ${'Deferred'.padEnd(11)} ${kb(bytes).padStart(9)} / ${kb(DEFERRED.limit).padStart(9)}` +
         `  (${Math.round((bytes / DEFERRED.limit) * 100)}%)  loaded later, by dynamic import: every file an` +
-        `\n        import reaches, as derived. ${kb(css)} of stylesheets only a css list names is reported, not counted.`
+        `\n        import reaches, as derived, less what only a map line's code reaches (its line counts that).` +
+        `\n        ${kb(css)} of stylesheets only a css list names is reported, not counted.`
     );
   }
 
@@ -677,12 +986,19 @@ export function measure({ build, manifestPath, log = console.log }) {
  * `root_later` is the one figure walked the old way, every chunk reachable at all, shared chunks
  * once, counted by `count` the way the health file has always published it.
  *
+ * A map line's code is filed under its line, ahead of `COM_ENTRIES`, wherever the walk finds it. A
+ * line whose code is in the build but which the landing page never opens is still weighed, the same
+ * way, so that no line's code goes unmeasured. A line whose code loads at first paint or mount is not
+ * weighed. It is named in `lines_loaded_early`, which fails the build [MAP_LINES].
+ *
  * @param {import('./closure.mjs').Manifest} manifest
  * @param {Page} root
  * @param {(files: Iterable<string>) => Weight} weigh
  * @param {(reach: import('./closure.mjs').Closure) => number} count
+ * @param {Record<string, MapLine>} [lines]
+ * @param {Record<string, string>} [entries]
  */
-export function rootTiers(manifest, root, weigh, count) {
+export function rootTiers(manifest, root, weigh, count, lines = MAP_LINES, entries = COM_ENTRIES) {
   const paint = root.assets;
   const painted = new Set(paint);
   const nodes = routeNodes(manifest);
@@ -722,7 +1038,17 @@ export function rootTiers(manifest, root, weigh, count) {
     queue.push(...imported(reach.keys, (dep) => reach.keys.has(dep)));
   }
 
-  const entryOf = new Map(Object.entries(COM_ENTRIES).map(([name, key]) => [key, name]));
+  const entryOf = new Map(Object.entries(entries).map(([name, key]) => [key, name]));
+  const lineOf = new Map(Object.entries(lines).flatMap(([name, l]) => (l.code ? [[l.code, name]] : [])));
+  /** @type {Record<string, Weight>} */
+  const lineWeights = {};
+  /** @type {Record<string, string>} */
+  const early = {};
+  for (const [key, name] of lineOf) {
+    if (!manifest[key]) continue;
+    if (painted.has(manifest[key].file)) early[name] = 'first paint';
+    else if (mount.keys.has(key)) early[name] = 'mount';
+  }
   /** @type {Record<string, Weight>} */
   const entryWeights = {};
   /*
@@ -735,11 +1061,19 @@ export function rootTiers(manifest, root, weigh, count) {
   /** @type {Record<string, Weight>} */
   const unclassified = {};
   for (const [key, reach] of lazy) {
+    const line = lineOf.get(key);
     const name = entryOf.get(key);
-    if (name !== undefined) entryWeights[name] = weigh(reach.files);
+    if (line !== undefined) lineWeights[line] = weigh(reach.files);
+    else if (name !== undefined) entryWeights[name] = weigh(reach.files);
     else if (key.startsWith('.svelte-kit/')) framework.push(key);
     // An import of something first paint or mount already loaded costs nothing and is not a tier.
     else if (reach.files.size > 0) unclassified[key] = weigh(reach.files);
+  }
+  // A line's code in the build that the landing page never opens, a terminal page's say: still its line's.
+  for (const [key, line] of lineOf) {
+    if (manifest[key] && !(line in lineWeights) && !(line in early)) {
+      lineWeights[line] = weigh(closure(manifest, [key], before, { dynamic: false }).files);
+    }
   }
   const all = closure(manifest, seeds, [...paint, ...nodes]);
 
@@ -747,6 +1081,8 @@ export function rootTiers(manifest, root, weigh, count) {
     first_paint: { js: root.js, css: root.css, chunks: paint.filter((f) => f.endsWith('.js')).length },
     mount: weigh(mount.files),
     entries: entryWeights,
+    lines: lineWeights,
+    lines_loaded_early: early,
     framework: weigh(closure(manifest, framework, before, { dynamic: false }).files),
     unclassified,
     later: weigh(all.files),

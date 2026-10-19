@@ -133,6 +133,7 @@ it that way?*
 | Incident log | Wipeable |
 | Cached op detail, drafts | Wipeable |
 | Crews and units: rosters, charters, keys, the log cache *(decided, not built)* | Wipeable, never in a backup |
+| The Sector you work in, if you keep one *(the map's Zones, D7)* | Wipeable, never published, never in a backup |
 | Resource directory | Collective |
 | Field playbooks *(designed, not yet written)* | Collective |
 

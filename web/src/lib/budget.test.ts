@@ -12,7 +12,7 @@
  * figure should include, so a test names the set and the script has to arrive at the same sum.
  */
 
-import { cpSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { cpSync, mkdtempSync, mkdirSync, readFileSync, readdirSync, writeFileSync, existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { tmpdir } from 'node:os';
@@ -23,7 +23,7 @@ import { describe, expect, it } from 'vitest';
 // Plain .mjs, deliberately: what the deploy runs, not a TypeScript copy of it. Never
 // `scripts/budget.mjs` itself: that one measures the real build and exits whenever it is loaded.
 import { closure, firstPaint, htmlRefs, isStale, readManifest, routeNodes } from '../../scripts/lib/closure.mjs';
-import { COM_ENTRIES, DEFERRED, MOUNT, ROOT_MOUNT, SURFACES, measure } from '../../scripts/lib/budget.mjs';
+import { COM_ENTRIES, DEFERRED, LAYER_CODE, MAP_LINES, MOUNT, ROOT_MOUNT, SURFACES, lineCodes, measure } from '../../scripts/lib/budget.mjs';
 
 const A = '_app/immutable';
 const NODE = (n: string) => `.svelte-kit/generated/client-optimized/nodes/${n}.js`;
@@ -151,10 +151,53 @@ function fixture(overrides: { manifest?: ReturnType<typeof manifest>; chunks?: R
   return { build, manifestPath, gz, sum };
 }
 
-function run(f: ReturnType<typeof fixture>) {
-  const lines: string[] = [];
-  const { report, failed } = measure({ build: f.build, manifestPath: f.manifestPath, log: (l: string) => lines.push(l) });
-  return { report, failed, out: lines.join('\n') };
+type Lines = NonNullable<Parameters<typeof measure>[0]['lines']>;
+
+/** The fixture's own Com registry: one entry, as the landing page had before the map's layers. */
+const FIXTURE_ENTRIES = { missions: MISSIONS };
+
+function run(f: ReturnType<typeof fixture>, lines?: Lines) {
+  const out: string[] = [];
+  const { report, failed } = measure({ build: f.build, manifestPath: f.manifestPath, log: (l: string) => out.push(l), lines, comEntries: FIXTURE_ENTRIES });
+  return { report, failed, out: out.join('\n') };
+}
+
+/** A map layer, as the map would load it: by `import()`, from the map's own chunk, which mount loads. */
+const ZONES = `${LAYER_CODE}zones.ts`;
+function layered(m = manifest()) {
+  m[MAP].dynamicImports = [ZONES];
+  /*
+   * Its own chunk, a reader only it uses, and two it shares: `_shared.js`, which first paint loads,
+   * and `_pool.js`, which the missions entry loads.
+   */
+  m[ZONES] = { file: `${A}/chunks/zones.js`, isDynamicEntry: true, src: ZONES, imports: ['_shared.js', '_reader.js', '_pool.js'] };
+  m['_reader.js'] = { file: `${A}/chunks/reader.js` };
+  return m;
+}
+const LAYER_FILES = () => ({
+  [`${A}/chunks/zones.js`]: noise(400),
+  [`${A}/chunks/reader.js`]: noise(300),
+  'grid/zsp/outlines.json': noise(500)
+});
+/** Every file the fixture's Deferred line counted before any map layer existed. */
+const DEFERRED_BEFORE = [
+  `${A}/chunks/map.js`,
+  `${A}/chunks/live.js`,
+  `${A}/chunks/com.js`,
+  `${A}/chunks/missions.js`,
+  `${A}/chunks/pool.js`,
+  `${A}/assets/only.css`,
+  `${A}/chunks/error.js`,
+  `${A}/nodes/4.js`
+];
+
+/** Ceilings no fixture comes near, unless a test says otherwise. */
+const roomy = (over: Partial<{ limit: number; warn: number }> = {}) => ({ limit: 64 * 1024, warn: 60 * 1024, measured: 50 * 1024, why: 'a test', ...over });
+function testLines(zones: Partial<Lines[string]> = {}): Lines {
+  return {
+    zones: { when: 'choosing Zones', code: ZONES, files: (f) => f === 'grid/zsp/outlines.json', per: 'all', js: roomy(), data: roomy(), ...zones },
+    'zones-container': { when: 'opening one Terra or Mare', code: null, files: (f) => f.startsWith('grid/zsp/terra-'), per: 'each', js: null, data: roomy() }
+  };
 }
 
 describe('one walk over the manifest', () => {
@@ -341,11 +384,11 @@ describe('the budget, run on a build whose answers are known', () => {
       // component renders.
       css: f.sum(`${A}/assets/map.css`, `${A}/assets/missions.css`, `${A}/assets/lazy.css`)
     });
-    expect(DEFERRED).toEqual({ limit: 57 * 1024, warn: 52 * 1024 });
+    expect(DEFERRED).toEqual({ limit: 69 * 1024, warn: 62 * 1024 });
   });
 
   it('still fails the build when what loads later outgrows the ceiling', () => {
-    const f = fixture({ chunks: { [`${A}/chunks/missions.js`]: noise(60 * 1024) } });
+    const f = fixture({ chunks: { [`${A}/chunks/missions.js`]: noise(DEFERRED.limit + 1024) } });
     const { report, failed, out } = run(f);
     expect(failed).toBe(true);
     expect(report.passed).toBe(false);
@@ -398,6 +441,171 @@ describe('the budget, run on a build whose answers are known', () => {
   });
 });
 
+describe('the map’s layers, each a line of its own', () => {
+  /*
+   * On 2026-10-18 the root's first paint had 762 B left and Deferred 1.6 kB, and the Zones reader and
+   * lookup alone were estimated at 3 to 5 kB [budget.mjs MAP_LINES]. Charged to Deferred, the first
+   * layer to land would have spent it, and the second would have been the reason to raise it.
+   */
+  it('charges a layer’s code to its own line and never to Deferred, and leaves there what it shares', () => {
+    const f = fixture({ manifest: layered(), chunks: LAYER_FILES() });
+    const { report, failed } = run(f, testLines());
+    // Deferred holds exactly what it held before the layer existed: the pool stays, the layer's own go.
+    expect(report.deferred.bytes).toBe(f.sum(...DEFERRED_BEFORE));
+    const tiers = report.root_tiers;
+    // Its own chunk, its reader, and the pool the missions entry also loads; not what first paint has.
+    const js = f.sum(`${A}/chunks/zones.js`, `${A}/chunks/reader.js`, `${A}/chunks/pool.js`);
+    expect(tiers.lines.zones.js).toBe(js);
+    expect(report.lines.zones).toEqual({
+      js,
+      js_limit: 64 * 1024,
+      data: f.gz('grid/zsp/outlines.json'),
+      data_limit: 64 * 1024,
+      files: ['grid/zsp/outlines.json']
+    });
+    expect(tiers.unclassified).toEqual({});
+    // Every visit's tier is untouched, and the total still counts each chunk once.
+    expect(tiers.mount.js).toBe(f.sum(`${A}/chunks/map.js`, `${A}/chunks/live.js`, `${A}/chunks/core.js`, `${A}/chunks/com.js`));
+    expect(tiers.later.js).toBe(tiers.mount.js + tiers.entries.missions.js + f.sum(`${A}/chunks/zones.js`, `${A}/chunks/reader.js`) + tiers.framework.js);
+    expect(failed).toBe(false);
+  });
+
+  it('fails the build when a layer’s code or data outgrows its own ceiling, and warns past its ratchet', () => {
+    const f = fixture({ manifest: layered(), chunks: LAYER_FILES() });
+    const code = run(f, testLines({ js: roomy({ limit: 100, warn: 90 }) }));
+    expect(code.failed).toBe(true);
+    expect(code.out).toMatch(/FAIL {2}zones code/);
+    // Deferred never saw it, so it is not Deferred that says no.
+    expect(code.out).not.toMatch(/FAIL {2}Deferred/);
+    const data = run(f, testLines({ data: roomy({ limit: 100, warn: 90 }) }));
+    expect(data.failed).toBe(true);
+    expect(data.out).toMatch(/FAIL {2}zones data/);
+    const warned = run(f, testLines({ js: roomy({ warn: 100 }) }));
+    expect(warned.failed).toBe(false);
+    expect(warned.out).toMatch(/WARN {2}zones code/);
+    const within = run(f, testLines());
+    expect(within.out).toMatch(/PASS {2}zones code/);
+    expect(within.out).toMatch(/PASS {2}zones data/);
+  });
+
+  it('fails the build when a layer arrives before its ceiling is derived, and prints what to derive', () => {
+    /*
+     * The real declaration. Spheres' code is not written, so it has no ceiling, and the change that
+     * writes it is the one that has to derive one: here it arrives, as a chunk the map imports. Zones'
+     * data has none either until Stage 1 is vendored. Time zones' were measured, so they have.
+     */
+    const SPHERES = `${LAYER_CODE}spheres.ts`;
+    const m = manifest();
+    m[MAP].dynamicImports = [SPHERES];
+    m[SPHERES] = { file: `${A}/chunks/spheres.js`, isDynamicEntry: true, src: SPHERES, imports: ['_shared.js'] };
+    const f = fixture({
+      manifest: m,
+      chunks: { [`${A}/chunks/spheres.js`]: noise(400), 'grid/zsp/outlines.json': noise(500), 'grid/timezones.json': noise(600) }
+    });
+    const { report, failed, out } = run(f);
+    expect(failed).toBe(true);
+    expect(out).toMatch(/FAIL {2}spheres code +\S+ kB arrived with no ceiling/);
+    expect(MAP_LINES.spheres.code).toBe(SPHERES);
+    const js = report.lines.spheres.js as number;
+    expect(js).toBeGreaterThan(0);
+    expect(out).toContain(`measured ${js} B, so a limit near ${Math.floor(js * 1.2)} B and a warning\n        near ${Math.round(js * 1.08)} B.`);
+    expect(out).toMatch(/FAIL {2}zones data +\S+ kB arrived with no ceiling/);
+    expect(report.lines.timezones).toEqual({
+      js: null,
+      js_limit: MAP_LINES.timezones.js!.limit,
+      data: f.gz('grid/timezones.json'),
+      data_limit: MAP_LINES.timezones.data!.limit,
+      files: ['grid/timezones.json']
+    });
+    expect(out).toMatch(/PASS {2}timezones data/);
+    // And a line with nothing in the build says so, rather than passing at zero.
+    expect(out).toMatch(/---- {2}zones-container +not in this build/);
+  });
+
+  it('fails the build when a layer’s code loads at mount or first paint, or is imported statically', () => {
+    // Imported statically by the map, which mount loads: every visit pays for it.
+    const atMount = layered();
+    atMount[MAP].dynamicImports = [];
+    atMount[MAP].imports = ['_shared.js', ZONES];
+    const mounted = run(fixture({ manifest: atMount, chunks: LAYER_FILES() }), testLines());
+    expect(mounted.failed).toBe(true);
+    expect(mounted.out).toMatch(/FAIL {2}zones code +loads at mount/);
+    expect(mounted.out).toContain(`imported statically by ${MAP}`);
+    // Imported statically by the landing page's own node: it is in first paint.
+    const atPaint = layered();
+    atPaint[NODE('0')].imports = ['_shared.js', ZONES];
+    const painted = run(fixture({ manifest: atPaint, chunks: LAYER_FILES() }), testLines());
+    expect(painted.failed).toBe(true);
+    expect(painted.out).toMatch(/FAIL {2}zones code +loads at first paint/);
+  });
+
+  it('fails the build on a layer’s module that no line declares, rather than reporting it unclassified', () => {
+    const HEAT = `${LAYER_CODE}heat.ts`;
+    const m = manifest();
+    m[MAP].dynamicImports = [HEAT];
+    m[HEAT] = { file: `${A}/chunks/heat.js`, isDynamicEntry: true, src: HEAT };
+    const { failed, out } = run(fixture({ manifest: m, chunks: { [`${A}/chunks/heat.js`]: noise(200) } }));
+    expect(failed).toBe(true);
+    expect(out).toContain(`FAIL  ${HEAT} is a map layer's code with no line of its own`);
+  });
+
+  it('takes a Com entry named as a line’s code from the entries, onto that line', () => {
+    // The layer picker, say, if it is an entry of Com's own rather than part of the missions entry.
+    const f = fixture();
+    const { report } = run(f, { picker: { when: 'opening the layer picker', code: MISSIONS, files: null, per: 'all', js: roomy(), data: null } });
+    expect(report.root_tiers.entries).toEqual({});
+    expect(report.root_tiers.lines.picker.js).toBe(f.sum(`${A}/chunks/missions.js`, `${A}/chunks/pool.js`));
+    // Nothing else reaches either chunk, so neither is Deferred's any more.
+    expect(report.deferred.bytes).toBe(f.sum(...DEFERRED_BEFORE.filter((p) => !/missions|pool|only\.css/.test(p))));
+    expect(report.root_tiers.undeclared).toEqual([]);
+  });
+
+  it('takes the largest file for a moment that fetches one of several, and names it', () => {
+    const f = fixture({ chunks: { 'grid/zsp/terra-a.json': noise(300), 'grid/zsp/terra-b.json': noise(900) } });
+    const { report, out } = run(f, testLines());
+    expect(out).toMatch(/PASS {2}zones-container data .*grid\/zsp\/terra-b\.json, the largest of 2/);
+    expect(report.lines['zones-container']).toEqual({
+      js: null,
+      js_limit: null,
+      data: f.gz('grid/zsp/terra-b.json'),
+      data_limit: 64 * 1024,
+      files: ['grid/zsp/terra-b.json']
+    });
+  });
+
+  it('declares each of the map’s new layers, with every ceiling ~20% over the measurement it came from', () => {
+    expect(Object.keys(MAP_LINES).sort()).toEqual(['layers', 'spheres', 'timezones', 'zones', 'zones-container', 'zones-lookup']);
+    for (const [name, line] of Object.entries(MAP_LINES)) {
+      // A layer's own module, or a Com entry of the same name: the picker's screens are `layers`.
+      if (line.code !== null) expect([`${LAYER_CODE}${name}.ts`, COM_ENTRIES[name]], name).toContain(line.code);
+      for (const ceiling of [line.js, line.data]) {
+        if (ceiling === null) continue;
+        expect(ceiling.limit / ceiling.measured, name).toBeGreaterThanOrEqual(1.15);
+        expect(ceiling.limit / ceiling.measured, name).toBeLessThanOrEqual(1.25);
+        expect(ceiling.warn, name).toBeGreaterThan(ceiling.measured);
+        expect(ceiling.warn, name).toBeLessThan(ceiling.limit);
+        // The reason names the measurement it was derived from.
+        expect(ceiling.why, name).toContain(ceiling.measured.toLocaleString('en-US'));
+      }
+    }
+    // The picker and the screens a layer opens are Com's entry and this line's at once, so Deferred never holds them.
+    expect(MAP_LINES.layers!.code).toBe(COM_ENTRIES.layers);
+    expect(MAP_LINES.layers!.files).toBeNull();
+    // Natural Earth's time zones, as D8 decided them, at the finer setting, with each region's own zone beside them.
+    expect(MAP_LINES.timezones.data).toMatchObject({ measured: 53_698, limit: 63 * 1024, warn: 57 * 1024 });
+    // Every line whose code is written has a ceiling for it; Zones' data waits on Stage 1, Spheres on their lists.
+    for (const name of ['layers', 'zones', 'zones-lookup', 'timezones'] as const) expect(MAP_LINES[name].js, name).not.toBeNull();
+    expect(MAP_LINES.zones.data).toBeNull();
+    expect(MAP_LINES.spheres.js).toBeNull();
+    // Each file the layers will fetch belongs to exactly one line, and a container's file is not an outline.
+    for (const file of ['grid/zsp/outlines.json', 'grid/zsp/index.json', 'grid/zsp/terra-africana.json', 'grid/timezones.json', 'grid/spheres.json']) {
+      expect(Object.entries(MAP_LINES).filter(([, l]) => l.files?.(file)).length, file).toBe(1);
+    }
+    expect(MAP_LINES['zones-container'].files!('grid/zsp/sectors/terra-africana.json')).toBe(false);
+    expect(MAP_LINES['zones-container'].files!(MOUNT.geometry)).toBe(false);
+  });
+});
+
 describe('the command the deploy runs', () => {
   /*
    * `npm run budget` is `node scripts/budget.mjs`, run from `web/`. It used to run its check only
@@ -426,7 +634,7 @@ describe('the command the deploy runs', () => {
   });
 
   it('fails there too, when something is over', () => {
-    const { ran, report } = beside({ [`${A}/chunks/missions.js`]: noise(60 * 1024) });
+    const { ran, report } = beside({ [`${A}/chunks/missions.js`]: noise(DEFERRED.limit + 1024) });
     expect(ran.status).toBe(1);
     expect(report?.passed).toBe(false);
   });
@@ -477,11 +685,39 @@ describe('the root tiers are declared to match the page that loads them', () => 
       }
     }
     const declared = new Set([...ROOT_MOUNT, ...Object.values(COM_ENTRIES)]);
-    const undeclared = [...seeds, ...nested].filter((k) => !declared.has(k) && !k.startsWith('.svelte-kit/'));
-    expect(undeclared, 'the landing page loads these later; say in scripts/lib/budget.mjs whether on mount or on opening a screen').toEqual([]);
+    // A map line is declared before its code exists, so one the build does not have yet is no fault.
+    const undeclared = [...seeds, ...nested].filter((k) => !declared.has(k) && !lineCodes(MAP_LINES).includes(k) && !k.startsWith('.svelte-kit/'));
+    expect(undeclared, 'the landing page loads these later; say in scripts/lib/budget.mjs whether on mount, on opening a screen or on choosing a layer').toEqual([]);
     expect([...ROOT_MOUNT].filter((k) => !seeds.has(k)), 'imported on mount no longer, or not by the page itself').toEqual([]);
     expect([...declared].filter((k) => !seeds.has(k) && !nested.has(k)), 'declared in scripts/lib/budget.mjs and no longer imported by the landing page').toEqual([]);
     // Opened from inside the mount tier, never by first paint itself, which would carry its preload list.
     expect(Object.values(COM_ENTRIES).filter((k) => seeds.has(k)), 'a Com entry imported by the landing page’s first paint').toEqual([]);
+  });
+
+  it('loads no map layer’s code as the landing page paints or mounts, and leaves no map file without a line', () => {
+    /*
+     * The built landing page, not the declaration: whatever a layer is, it is not in what every
+     * visit downloads. And every file under grid/ is paid for somewhere a number is kept: the map's
+     * geometry by mount [MOUNT], Places' records by `PLACES_MAX_GZ` in places.test.ts, and every other
+     * one by its line. A layer's file with another name would otherwise measure as nothing at all.
+     */
+    if (!existsSync(join(BUILD, 'index.html'))) throw new Error('No build output. Run `npm run build` first.');
+    const m = readManifest(MANIFEST);
+    if (!m) throw new Error('No Vite manifest beside the build.');
+    const paint = closure(m, htmlRefs(readFileSync(join(BUILD, 'index.html'), 'utf8'), 'index.html'), [], { dynamic: false });
+    const mount = closure(m, ROOT_MOUNT, [...paint.files], { dynamic: false });
+    for (const code of lineCodes(MAP_LINES)) {
+      expect(paint.keys.has(code), `${code} at first paint`).toBe(false);
+      expect(mount.keys.has(code), `${code} at mount`).toBe(false);
+      expect(Object.keys(m).filter((k) => m[k].imports?.includes(code)), `${code} imported statically`).toEqual([]);
+    }
+    const grid = (function walk(dir: string, at: string): string[] {
+      return readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+        e.isDirectory() ? walk(join(dir, e.name), `${at}${e.name}/`) : [`${at}${e.name}`]
+      );
+    })(join(BUILD, 'grid'), 'grid/');
+    expect(grid, 'the map’s geometry is in the build').toContain(MOUNT.geometry);
+    const paidFor = (f: string) => f === MOUNT.geometry || f === 'grid/places.json' || Object.values(MAP_LINES).some((l) => l.files?.(f));
+    expect(grid.filter((f) => !paidFor(f)), 'a file under grid/ that no line, and no other budget, measures').toEqual([]);
   });
 });
