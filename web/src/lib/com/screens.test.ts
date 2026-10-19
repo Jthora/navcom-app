@@ -30,7 +30,9 @@ const EACH: Screen[] = [
   // A Sphere by its id, the Spheres a tapped country is in, and every Sphere.
   { kind: 'sphere', id: 'sphere:anglosphere', code: null },
   { kind: 'sphere', id: null, code: 'mt' },
-  { kind: 'sphere', id: null, code: null }
+  { kind: 'sphere', id: null, code: null },
+  // What a tap on Hazards' marks took, by the events' own ids, nearest first.
+  { kind: 'hazard', ids: 'usgs:us6000u3ch,usgs:us6000u3c1', of: '2' }
 ];
 
 describe('the screens Com has', () => {

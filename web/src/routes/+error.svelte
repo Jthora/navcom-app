@@ -13,7 +13,12 @@
   <p class="lead">
     {page.error?.message ?? 'No further detail.'}
   </p>
-  <p class="links">
+  <!--
+    Reloads: shown inside the terminal, which runs the client router, a link followed without a reload
+    would open the root under the terminal's headers, and the root's Content-Security-Policy with them
+    would never arrive [docs/product/what-leaves.md; src/lib/outside.test.ts].
+  -->
+  <p class="links" data-sveltekit-reload>
     <a href="/directory/">Open the directory</a> ·
     <a href="/">Start over</a>
   </p>

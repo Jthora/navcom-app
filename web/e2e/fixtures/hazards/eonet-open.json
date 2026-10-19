@@ -1,0 +1,125 @@
+{
+ "title": "EONET Events",
+ "description": "Natural events from EONET.",
+ "link": "https://eonet.gsfc.nasa.gov/api/v3/events",
+ "events": [
+  {
+   "id": "EONET_25340",
+   "title": "Tropical Cyclone Wati",
+   "description": null,
+   "link": "https://eonet.gsfc.nasa.gov/api/v3/events/EONET_25340",
+   "closed": null,
+   "categories": [
+    {
+     "id": "severeStorms",
+     "title": "Severe Storms"
+    }
+   ],
+   "sources": [
+    {
+     "id": "JTWC",
+     "url": "https://www.metoc.navy.mil/jtwc/products/sh0127.tcw"
+    }
+   ],
+   "geometry": [
+    {
+     "magnitudeValue": 50.0,
+     "magnitudeUnit": "kts",
+     "date": "2026-10-19T00:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      -158.9,
+      -19.9
+     ]
+    },
+    {
+     "magnitudeValue": 45.0,
+     "magnitudeUnit": "kts",
+     "date": "2026-10-19T06:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      -156.8,
+      -20.7
+     ]
+    }
+   ]
+  },
+  {
+   "id": "EONET_20710",
+   "title": "Nevados del Chillan Volcano, Chile",
+   "description": null,
+   "link": "https://eonet.gsfc.nasa.gov/api/v3/events/EONET_20710",
+   "closed": null,
+   "categories": [
+    {
+     "id": "volcanoes",
+     "title": "Volcanoes"
+    }
+   ],
+   "sources": [
+    {
+     "id": "SIVolcano",
+     "url": "https://volcano.si.edu/volcano.cfm?vn=357070"
+    },
+    {
+     "id": "Fixture",
+     "url": "javascript:alert(document.domain)"
+    }
+   ],
+   "geometry": [
+    {
+     "magnitudeValue": null,
+     "magnitudeUnit": null,
+     "date": "2026-06-15T00:00:00Z",
+     "type": "Point",
+     "coordinates": [
+      -71.378,
+      -36.868
+     ]
+    }
+   ]
+  },
+  {
+   "id": "EONET_FIXTURE_POLYGON",
+   "title": "Fixture storm given only as an area",
+   "description": null,
+   "link": "https://eonet.gsfc.nasa.gov/api/v3/events/EONET_FIXTURE_POLYGON",
+   "closed": null,
+   "categories": [
+    {
+     "id": "severeStorms",
+     "title": "Severe Storms"
+    }
+   ],
+   "sources": [],
+   "geometry": [
+    {
+     "magnitudeValue": null,
+     "magnitudeUnit": null,
+     "date": "2026-10-18T00:00:00Z",
+     "type": "Polygon",
+     "coordinates": [
+      [
+       [
+        10,
+        10
+       ],
+       [
+        11,
+        10
+       ],
+       [
+        11,
+        11
+       ],
+       [
+        10,
+        10
+       ]
+      ]
+     ]
+    }
+   ]
+  }
+ ]
+}

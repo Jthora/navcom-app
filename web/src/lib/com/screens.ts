@@ -45,7 +45,8 @@ export type Screen =
   | { kind: 'zone'; id: string }
   | { kind: 'lookup' }
   | { kind: 'time'; offset: string }
-  | { kind: 'sphere'; id: string | null; code: string | null };
+  | { kind: 'sphere'; id: string | null; code: string | null }
+  | { kind: 'hazard'; ids: string; of: string };
 /**
  * A place opened from the map [map.md §6: every shape is a door]. `code` is the jurisdiction a
  * tapped province or country is filed under (`us-ca`, `ke`), so the screen lists what is filed
@@ -64,7 +65,10 @@ export type Place = Extract<Screen, { kind: 'place' }>;
  * the map or a list, and a tap on the map names a Sector once its container is open; `lookup` says
  * which Sector this phone is in, from its own position-once fix, looked up on the phone and never
  * kept in history or sent; `time` is one standard-time band, by its offset in hours; `sphere` is one
- * Sphere by its id, or the Spheres a country is in by its ISO code, or, with neither, every Sphere.
+ * Sphere by its id, or the Spheres a country is in by its ISO code, or, with neither, every Sphere;
+ * `hazard` is what a tap on Hazards' marks took, by the events' own ids, comma-separated, from the
+ * lists this phone last read, and `of` how many were in reach, which the ids may name fewer of, kept
+ * few so history holds them: opening it asks nobody [layers/hazards.ts].
  */
 export type Kind = Screen['kind'];
 /** How high the sheet opens for a screen. Never lower than it already is. */
@@ -136,7 +140,8 @@ export const SCREENS: { [K in Kind]: { entry: Entry; height: Height; fields: Fie
   zone: { entry: 'layers', height: 'half', fields: { id: 'string' } },
   lookup: { entry: 'layers', height: 'half', fields: {} },
   time: { entry: 'layers', height: 'half', fields: { offset: 'string' } },
-  sphere: { entry: 'layers', height: 'half', fields: { id: 'string|null', code: 'string|null' } }
+  sphere: { entry: 'layers', height: 'half', fields: { id: 'string|null', code: 'string|null' } },
+  hazard: { entry: 'layers', height: 'half', fields: { ids: 'string', of: 'string' } }
 };
 
 /**

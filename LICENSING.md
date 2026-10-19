@@ -130,6 +130,16 @@ screen, in the change that vendors them (`web/scripts/spheres-vendor.mjs`), whic
 cited source, that are share-alike or non-commercial. Until then only NavCom's own test fixture exists,
 and it never ships. The reader is NavCom's own too (`packages/core/src/spheres/`), with the same test.
 
+**Hazards and the weather warnings are read live and never vendored** (2026-10-19,
+[`docs/design/map.md`](docs/design/map.md) §8): nothing of them is in the repository or in any build, so
+they bind nothing NavCom ships. The U.S. Geological Survey's earthquake feeds and the National Weather
+Service's alerts are works of the US government and in the public domain. NASA EONET asks to be credited,
+and GDACS, the Global Disaster Alert and Coordination System of the United Nations and the European
+Commission, publishes terms of its own; both are credited by name on every screen that shows a mark of
+theirs, and whether GDACS's terms ask more of NavCom than that is for the owner to confirm before this
+ships. The code that reads them (`web/src/lib/grid/layers/hazards.ts`, `web/src/lib/missions/nws.ts`) is
+NavCom's own: Starcom's readers of the same feeds are AGPL-3.0-only, and none of them is copied.
+
 ## Contributing
 
 By contributing you agree your contribution is licensed under whichever of the three covers

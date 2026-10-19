@@ -8,11 +8,17 @@
    *
    * Opens with the sheet at half, never full: a mission is about a place, and the map behind it is
    * what makes the place mean anything [com.md §7]. Nothing here can be claimed yet; that is 11.4.
+   *
+   * **Below it, apart from taking part, the weather warnings** the US National Weather Service issued
+   * for the state it is filed under, asked only when somebody taps [NwsWarnings]. They inform and never
+   * gate: `TakePart` reads nothing from them, and taking the mission stays the operator's act
+   * [invariants 8 and 9].
    */
   import type { Mission } from '@navcom/core';
   import { Panel, Readout, Slot, Why } from '$lib/components/panel';
   import { retiringOf } from '$lib/missions/claims';
   import { effort, endsIn, endsSoon, placeName, stampUtc } from './format';
+  import NwsWarnings from './NwsWarnings.svelte';
   import TakePart from './TakePart.svelte';
 
   let {
@@ -166,6 +172,8 @@
       </button>
     {/if}
   </Panel>
+  <!-- Its own panel, after the mission and never in taking part's: it informs and never gates. -->
+  <NwsWarnings jurisdiction={m.placement.jurisdiction} {now} />
 </div>
 
 <style>

@@ -253,10 +253,27 @@ export const COM_ENTRIES = /** @type {Record<string, string>} */ ({
  * @typedef {{ limit: number, warn: number, measured: number, why: string }} Ceiling
  */
 /**
+ * What one moment asks of hosts outside navcom.app, which no build holds, so it is measured from the
+ * hosts themselves and written here with how [docs/product/what-leaves.md]. `measured` is one round on
+ * the wire, the sum of `feeds`; `caps` are the decoded bytes the phone reads of each answer before it
+ * drops it, which `src/lib/outside.ts` enforces and `budget.test.ts` holds equal. The build prints it
+ * and cannot enforce it: the phone does. `peak` is the most a round can cost when the answer that
+ * swings with the seasons grows past its cap, everything else as measured: a measurement is of one
+ * day, and a feed's busy season is not that day.
+ *
+ * @typedef {{
+ *   measured: number, limit: number, warn: number, why: string,
+ *   feeds: { url: string, wire: number, decoded: number, encoding: string, how: string }[],
+ *   caps: Record<string, number>,
+ *   peak?: { bytes: number, swings: string, why: string }
+ * }} Remote
+ */
+/**
  * `when` is the moment somebody pays for this line. `code` is its module as Vite's manifest keys it,
  * or null when its code arrives with something else. `files` picks its data out of `build/`. `per`
  * says whether that moment fetches every one of those files (`all`), or one of them (`each`), in
  * which case the largest is the figure. `js` and `data` stay null until there is something to measure.
+ * `remote` is what it asks of anybody outside navcom.app, for the one line that does [Remote].
  *
  * @typedef {{
  *   when: string,
@@ -264,7 +281,8 @@ export const COM_ENTRIES = /** @type {Record<string, string>} */ ({
  *   files: ((file: string) => boolean) | null,
  *   per: 'all' | 'each',
  *   js: Ceiling | null,
- *   data: Ceiling | null
+ *   data: Ceiling | null,
+ *   remote?: Remote | null
  * }} MapLine
  */
 /** Where the layers' code lives: one module per line, and nothing else. */
@@ -285,10 +303,16 @@ export const MAP_LINES = {
     files: null,
     per: 'all',
     js: {
-      limit: 12_436,
-      warn: 11_193,
-      measured: 10_364,
+      limit: 17_854,
+      warn: 16_068,
+      measured: 14_878,
       why:
+        'Re-derived 2026-10-19 at 14,878 B, from 10,689 B measured that afternoon against a 10,364 B ' +
+        'derivation, for Hazards: its box and, beside it, in plain words before it is ticked, which three ' +
+        'hosts it asks and what each learns; a row per feed once it is on, each with its age or not read; ' +
+        'a sixth screen, what a tap on a hazard took, in its source’s own words with its links, https only; ' +
+        'and outside.ts, the one list of what the page asks outside navcom.app (1,549 B), which the Hazards ' +
+        'line and the missions entry load too. ' +
         'Re-derived 2026-10-19 at 10,364 B, from 5,779 B the same morning, for what the four new map ' +
         'slices put on these screens: the day-and-night box and where the sun is overhead; the directory-' +
         'by-last-check box and its full key, every class with its count; a Zone’s open missions, each a ' +
@@ -490,6 +514,70 @@ export const MAP_LINES = {
         'each label point, dashed where it holds one of those, a Sector’s once it is wide enough on screen.'
     },
     data: null
+  },
+  /*
+   * Hazards over any layer: three public feeds' whole-world lists, asked when its box is ticked and at
+   * most every 10 minutes after while the map is on screen [src/lib/outside.ts]. Nothing is fetched
+   * from navcom.app for it, so it has no data line; what it asks of the feeds is `remote`, measured from
+   * the feeds on 2026-10-19, one GET each from a laptop on a home connection.
+   */
+  hazards: {
+    when: 'turning Hazards on, and every 10 minutes after while the map is on screen',
+    code: `${LAYER_CODE}hazards.ts`,
+    files: null,
+    per: 'all',
+    js: {
+      limit: 7_609,
+      warn: 6_848,
+      measured: 6_341,
+      why:
+        'Re-derived 2026-10-19 at 6,341 B, from 5,827 B the same day: reading three feeds’ answers in the ' +
+        'shapes measured that day, each source’s words kept as given and only https links made links; ' +
+        'asking at most every 10 minutes, never while the page is hidden, and nothing left running once it ' +
+        'stops; six kinds by shape and hatching, gathered into cells where they would crowd, and a tap’s ' +
+        'hit-test; the key’s ages and not read: unknown. The review’s fixes are the 514 B: each of a feed’s ' +
+        'asks read on its own and one past its cap not asked again, a feed that listed entries and could ' +
+        'read none of them not read, GDACS’s current flag read whichever way it is sent, kinds looked up by ' +
+        'own key only, each source’s time named, and how many a tap left out. With outside.ts, which the ' +
+        'layers screens and the missions entry share.'
+    },
+    data: null,
+    remote: {
+      measured: 195_831,
+      limit: 234_997,
+      warn: 211_497,
+      why:
+        'Measured 2026-10-19 at 195,831 B on the wire a round, in a quiet month for fires: GDACS 124,555 B ' +
+        '(64%), EONET 68,428 B and USGS 2,848 B, one GET of each URL asked, from a laptop on a home ' +
+        'connection. EONET’s two asks were first derived from one GET of its whole open list, 4,878,035 B ' +
+        'sent uncompressed although gzip was asked for, about 49 s at the device floor’s 0.8 Mbps and never ' +
+        'asked; then each was fetched as written, and came back as derived: 39 volcanoes and storms, both ' +
+        'categories, in 47,097 B, and the 31 wildfires dated in the last 30 days in 21,331 B, both sent ' +
+        'uncompressed and labelled application/rss+xml although they are JSON. About 1.96 s a round at ' +
+        '0.8 Mbps, in the background, and about 1.17 MB an hour with Hazards on and the map on screen. The ' +
+        'NWS, asked from a mission’s screen and never by Hazards, measured 2,819 B on the wire for ' +
+        'California, 13,941 B decoded.',
+      feeds: [
+        { url: 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson', wire: 2_636, decoded: 17_733, encoding: 'gzip', how: 'measured: one GET' },
+        { url: 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/significant_day.geojson', wire: 212, decoded: 257, encoding: 'gzip', how: 'measured: one GET' },
+        { url: 'https://eonet.gsfc.nasa.gov/api/v3/events?status=open&category=volcanoes,severeStorms', wire: 47_097, decoded: 47_097, encoding: 'none', how: 'measured: one GET' },
+        { url: 'https://eonet.gsfc.nasa.gov/api/v3/events?status=open&category=wildfires&days=30', wire: 21_331, decoded: 21_331, encoding: 'none', how: 'measured: one GET' },
+        { url: 'https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH', wire: 124_555, decoded: 124_555, encoding: 'none', how: 'measured: one GET' }
+      ],
+      // Decoded bytes, past which the phone drops an answer and the feed reads not read: unknown.
+      caps: { usgs: 1024 * 1024, eonet: 512 * 1024, gdacs: 512 * 1024, nws: 4 * 1024 * 1024 },
+      peak: {
+        bytes: 698_788,
+        swings: 'https://eonet.gsfc.nasa.gov/api/v3/events?status=open&category=wildfires&days=30',
+        why:
+          'Derived 2026-10-19 from the measured whole open list: the busiest 30 days of the fires still open ' +
+          'in it ended 15 August 2024, with 1,340 of them, about 922 kB at 688 B a fire, and fires closed ' +
+          'since would have made it more; March 2026 held 379, about 261 kB. Past EONET’s 512 KiB cap the ' +
+          'answer is read that far and dropped, so a round is then at most 698,788 B, about 7 s at 0.8 Mbps, ' +
+          'and the wildfires are not asked again on that page. The cap is held below that peak on purpose ' +
+          '[outside.ts CAPS].'
+      }
+    }
   }
 };
 
@@ -957,7 +1045,8 @@ export function measure({ build, manifestPath, log = console.log, lines = MAP_LI
         js_limit: line.js?.limit ?? null,
         data,
         data_limit: line.data?.limit ?? null,
-        files: fetched.map((x) => x.f)
+        files: fetched.map((x) => x.f),
+        ...(line.remote ? { remote: { measured: line.remote.measured, limit: line.remote.limit } } : {})
       };
 
       const label = (/** @type {string} */ part) => `${name} ${part}`.padEnd(22);
@@ -985,6 +1074,17 @@ export function measure({ build, manifestPath, log = console.log, lines = MAP_LI
         check('code', code?.js ?? null, line.js, `on ${line.when}, beyond first paint and mount`),
         check('data', data, line.data, `on ${line.when}: ${fetched.map((x) => x.f).join(', ')}${line.per === 'each' ? `, the largest of ${sized.length}` : ''}`)
       ];
+      if (line.remote) {
+        // Not this build's to enforce: measured from the hosts, and held on the phone by outside.ts's caps.
+        const r = line.remote;
+        log(
+          `  ----  ${label('remote')} ${kb(r.measured).padStart(9)} / ${kb(r.limit).padStart(9)}  a round, from ${r.feeds.length} URL(s) outside navcom.app:` +
+            ` measured from the live feeds, enforced on the phone by outside.ts CAPS, not by this build`
+        );
+        if (r.peak) {
+          log(`  ----  ${label('remote peak')} ${kb(r.peak.bytes).padStart(9)}              a round when ${r.peak.swings} passes its cap, as in a busy season`);
+        }
+      }
       if (early[name]) {
         failed = true;
         log(`  FAIL  ${label('code')} loads at ${early[name]}, on every visit, before anybody chose it.`);

@@ -11,8 +11,11 @@ Earth, and places on public record are points. Since 2026-10-19 it is drawn in E
 included (§3), and has layers somebody chooses: Nation States, Starcom's Zones, the Spheres, Time zones,
 or none (§8). Over a layer, since the same day: day and night, worked out on the phone; the directory's
 regions by when they were last checked; and open missions counted by Zone. Spheres and Zones are built
-against NavCom's own fixtures until their data lands, and nothing synthetic ships. The road layer and
-the mini-map are not built; the
+against NavCom's own fixtures until their data lands, and nothing synthetic ships. **Since 2026-10-19 too,
+Hazards (§8)**: three public feeds' fires, volcanoes, storms, floods, droughts and earthquakes over any
+layer, the first thing on the map that asks anybody outside navcom.app, and only once somebody chooses it;
+and on a mission's screen, the US National Weather Service's warnings for its state, asked on a tap. The
+road layer and the mini-map are not built; the
 handoff is built for a record's point (§5). Normative sources it leans on: [`panel.md`](panel.md),
 [`missions.md`](missions.md), [`directory-schema.md`](../product/directory-schema.md),
 [`delivery.md`](../delivery.md).
@@ -83,7 +86,7 @@ and where, to the precision each earned, and never which door, which street or w
 
 | | What it is | Whose |
 |---|---|---|
-| **The grid** | Vector outlines we draw ourselves, and points for places of record: regions, records, missions, reports. The landing map, always | Ours. No third party, no key, works offline |
+| **The grid** | Vector outlines we draw ourselves, and points for places of record: regions, records, missions, reports. The landing map, always | Ours. No third party unless Hazards is chosen (§8), and then three public feeds' whole-world lists; no key; works offline |
 | **The handoff** | At the moment somebody needs a doorstep, we leave. One tap opens *their* map app with a pin | Theirs. Google, Apple, OSM, or whatever the phone has registered |
 
 And one optional thing in between, §4: a **road layer** the operator can switch on, and a
@@ -119,7 +122,10 @@ a timestamp and a referrer. So: the handoff is always user-initiated and never a
 link carries `rel="noreferrer"`; and no handoff is ever offered for a confidential record
 (§5). The grid itself makes no request to any third party, which means **the common case —
 looking at the map — tells nobody anything about where you are looking.** That is the property
-worth protecting, and it is why the heavy layer is opt-in rather than lazy.
+worth protecting, and it is why the heavy layer is opt-in rather than lazy. **The one exception is
+Hazards** (§8, 2026-10-19), and it keeps the property: chosen, it asks three public feeds for their
+whole-world lists, so each learns this phone's address, which can place it roughly, often to a city, its
+browser, the time and that it asked from navcom.app, and still nothing about where anybody looks.
 
 **The connections it does make are to the relays that hold the missions** (2026-10-06). Every
 device reads the missions itself, from The Record and its mirror at once, and verifies each one,
@@ -228,6 +234,7 @@ Three layers. Only the first is on at first paint.
 | **Grid** | Ours | **On.** No third-party request; one subscription each to The Record and its mirror, for missions |
 | **Roads** | [OpenFreeMap](https://openfreemap.org) public instance — OSM vector tiles, no key, no registration, no cookies, dark styles available | Off. Loads when chosen, and says what choosing costs |
 | **Satellite** | — | **Declined.** No free keyless source whose terms permit it |
+| **Hazards**, over any layer (§8) | USGS, NASA EONET and GDACS, read live | Off. Asks when chosen, for the whole world, and says before it is chosen what choosing costs and who learns what |
 
 **OpenFreeMap is the right dependency and an honest risk.** It is keyless and unmetered by
 its own statement, fully open source including the production setup, and it has served
@@ -354,7 +361,8 @@ Budgets, all of them targets to measure rather than claims:
 | Places, every record the map draws | ≤ 80 KB gzipped, **only when Places is switched on** — never at mount, never in the install precache |
 | Mount, every visit: the map's code, the mission feed, Com's registry and the geometry | ≤ 129 kB gzipped, **enforced** since 2026-10-18 (`MOUNT` in `web/scripts/lib/budget.mjs`) — measured 110.1 kB on 2026-10-19, 51.4 kB of script and 58.7 kB of geometry at the build's gzip level. It was 107.6 kB the day before; the layers and Equal Earth added the projection, the hooks each layer draws through, and an opening view that keeps the Earth uncovered, and the deferred line, which counts mount too, was re-derived for them, to 69 kB |
 | The layers somebody chooses, and what is drawn over them: Zones' outlines, one Terra or Mare's Sectors, the Sector lookup and its index, Time zones, Spheres, day and night, the directory by last check, missions counted by Zone | **A line each**, `MAP_LINES` in `web/scripts/lib/budget.mjs`, enforced since 2026-10-18. Each line has a ceiling for its code and one for its data, and a line's code is never charged to the shared deferred line, which had 1.6 kB left that day. A line whose code or data reaches the build before its ceiling is derived fails the build, and so does one whose code loads at first paint or mount. Measured 2026-10-19: the layers' screens 6.1 kB of code, of a 6.8 kB ceiling derived at 5.6 kB, the Sector screen that fetches nothing and the time screen that says when its code did not arrive adding 0.4 kB; Zones 1.4 kB; the Sector lookup 1.3 kB; Time zones 1.3 kB, and 52.4 kB of data (the bands, 43.3 kB, and each region's IANA zone, 9.2 kB), ceiling 63 kB. Zones' files have no ceiling until Stage 1 is vendored, and the vendoring change derives it. **Measured again that evening**, with the four slices of §8 in: the layers' screens 10.1 kB, re-derived to 12.1 kB for the boxes, the full key of the ages, a Zone's missions and a fifth screen, a Sphere's; day and night 1.5 kB of code and no data, ever; the directory by last check 1.9 kB and 10.8 kB of data (`/grid/region-ages.json`, which grows with the directory); missions by Zone 2.0 kB and no data; Spheres 2.0 kB of code, their data without a ceiling until the lists are vendored. Mount grew 1.8 kB, to 111.9 kB, for the overlays' hooks, the key under the key and the redraw on Low signature, and first paint 16 B, to 60,871 B of 61,440 |
-| Requests at first paint to anyone but navcom.app | **None** — the mission subscriptions open after first paint, to The Record and its mirror only |
+| Hazards, a round: what it asks of the feeds, each answer capped on the phone | **A line of its own**, `MAP_LINES.hazards` (2026-10-19): 6.2 kB of code, ceiling 7.4 kB, re-derived the same day from 5.7 kB for the review's fixes, with `outside.ts` in it; and `remote`, one GET of each URL asked, 195,831 B on the wire a round in a quiet month for fires, about 1.96 s at 0.8 Mbps in the background, and `remote.peak`, 698,788 B, about 7 s, when the wildfires pass their cap in a busy season; printed by the build and enforced on the phone by decoded caps per answer (`CAPS` in `web/src/lib/outside.ts`). The layers' screens re-derived the same day to 17.4 kB for its box, its disclosure, its feed rows and a sixth screen |
+| Requests at first paint to anyone but navcom.app | **None** — the mission subscriptions open after first paint, to The Record and its mirror only. None to anybody else until Hazards is chosen or a mission's weather warnings are asked for |
 | Repeat visit, no new deploy | Zero network for the grid — service worker now covers the whole origin |
 | Device floor | Interactive on a prepaid Android 8, 400 MB free |
 
@@ -386,6 +394,23 @@ Budgets, all of them targets to measure rather than claims:
   jurisdiction cannot be counted in one without inventing a place (§8, Missions on Zones). Counting them
   honestly needs a `["zone", id]` or `["zone_sector", id]` tag from the publisher: a rev 9 ask to
   partners, which is the owner's to make. The ids change at Starcom's 12 November swap.
+- **Hazards' open choices, the owner's** (§8). GDACS's `SEARCH` is asked unparameterised, 124,555 B,
+  64% of a round; `?eventlist=FL;DR;TC` would roughly halve it but is unmeasured and its syntax
+  unverified, and a wrong parameter is a feed that reads *not read: unknown* for ever, so it waits for one
+  measured GET. **Unasked, it lists only orange and red alerts** (68 and 18 that day, none green, from
+  May 2025 on: a default of the server's, by alert level and over some window, that GDACS does not
+  document), and the screens say so; its green floods and cyclones are never drawn. An explicit
+  `alertlevel=Green;Orange;Red` is the same kind of unmeasured parameter. EONET's wildfires are asked for
+  the last 30 days (`days=30` in `outside.ts`, one constant): 7 kept 3 fires and 14 kept 13 on the day,
+  and one GET of each EONET URL as written confirmed both categories and the 30 days. **The busy season
+  is the owner's too.** The fires still open in EONET's list put 1,340 in the 30 days to 15 August 2024,
+  about 922 kB, past the 512 KiB cap, where the wildfires read *not read: unknown* and the volcanoes and
+  storms still draw; 14 days held 659 (about 453 kB) and 7 held 362 (about 249 kB). A shorter window
+  shows a busy season and drops the fires that have burned longest; this one keeps them and goes dark in
+  the worst weeks. Either is one constant and one measured GET. GDACS's terms (its credit, and whether non-commercial use
+  binds) and EONET's credit request are credited by name on the screens and in `LICENSING.md`, and are for
+  the owner to confirm before this ships. The root's policy covers the root alone (§8); a terminal-wide
+  one is a separate decision.
 - **The directory's cliff, 2 December 2026.** Of the 1,911 regions with places, 1,846 were last checked
   on 3 September, so on 2 December every one of them turns from *14–89 days ago* to *90+ days ago* on
   the map, the day their pages mark what they hold past its slow window stale; one turns on 16 November
@@ -400,12 +425,13 @@ Budgets, all of them targets to measure rather than claims:
 Earth one way at a time, and somebody chooses which: **Nation States**, which is what it always drew;
 **Zones**, Starcom's partition of the whole surface; **Spheres**, cited lists of countries (D9); **Time
 zones**; or **None**, the land and the missions alone. A choice leaves that layer on and the others off,
-as Starcom's picker does. **Over** whichever is chosen, things that divide nothing and answer no tap of
-their own: day and night, over any layer and always with Time zones; the directory by last check, over
-Nation States; and open missions counted by Zone, with Zones. The missions light whichever is drawn, because they are not a
-way of dividing the Earth, and a lit shape answers a tap first in every layer, after a point and with
-the same 12 px, so it stays a door (§6) whatever is drawn under it. The choice lasts the page's life
-and is not stored.
+as Starcom's picker does. **Over** whichever is chosen, things that divide nothing: day and night, over
+any layer and always with Time zones; the directory by last check, over Nation States; open missions
+counted by Zone, with Zones; and Hazards, over any layer. Only Hazards' marks answer a tap of their own,
+after the points and before a lit shape. The missions light whichever is drawn, because they are not a
+way of dividing the Earth, and a lit shape answers a tap first in every layer, after a point and a
+hazard's mark and with the same 12 px, so it stays a door (§6) whatever is drawn under it. The choice
+lasts the page's life and is not stored.
 
 The picker is a screen in Com, opened by the map's *Map layers* control, so nothing it opens can
 cover Distress [`com.md`](com.md) §4; `e2e/com-distress.spec.ts` taps for Distress over it, and over
@@ -422,7 +448,8 @@ until somebody moved it.
 **Paid for only by somebody who chooses it.** Each layer's code is a module of its own under
 `web/src/lib/grid/layers/`, loaded by `import()` when the layer is chosen, and its files are fetched
 from navcom.app, whole, then: never at first paint, never at mount, never by what is on screen, and
-never in the service worker's install precache (they are cached on first use, as Places is). Each
+never in the service worker's install precache (they are cached on first use, as Places is). Hazards
+fetches nothing from navcom.app, and what it asks of its feeds is never cached. Each
 moment a layer costs somebody something is a line of its own in the budget, `MAP_LINES` in
 `web/scripts/lib/budget.mjs`, with a ceiling for its code and one for its data (§6).
 
@@ -676,3 +703,121 @@ well as the newest**, *read 3 Aug–19 Oct*, never the freshest list's date alon
 Sphere a country is in, the most specific first; a tap opens them, each a door to its members, its
 groups, its sources (links a person chooses to follow, carrying no referrer), when it was read and
 whether it is a draft. A country in no Sphere answers as Nation States does, so a tap is never dead.
+
+### Hazards
+
+**Built 2026-10-19.** Fires, volcanoes, storms, floods, droughts and earthquakes, from three public feeds,
+over any layer, behind a box on the layers screen: `web/src/lib/grid/layers/hazards.ts`, its own map line
+(§6). **It is the only thing on the map that asks anybody outside navcom.app and the relays**, and the
+one list of what it asks is `web/src/lib/outside.ts`.
+
+**What it asks, whole-world and never by position.** Five URLs, written out in `outside.ts`, with nothing
+in them chosen by the view, the zoom, a tap or where the phone is; `src/lib/boundaries.test.ts` holds that
+no host is named anywhere else and no URL is built there but the NWS's, from a state's two letters.
+Measured from the live feeds on 2026-10-19, one GET each, and the variant chosen for the device floor:
+
+| Feed | Asked | Measured | Why this variant |
+|---|---|---|---|
+| USGS | `summary/4.5_day.geojson` and `summary/significant_day.geojson`, merged by id | 2,636 B and 212 B gzipped; 25 quakes and none that day | `all_day` is every small quake on Earth |
+| NASA EONET | `events?status=open&category=volcanoes,severeStorms`, and `events?status=open&category=wildfires&days=30` | 47,097 B and 21,331 B, uncompressed; 39 volcanoes and storms, both categories, and the 31 fires dated in the last 30 days. Each sent as `application/rss+xml` and is JSON, which is read as JSON | The whole open list was 4.88 MB, sent uncompressed, 7,148 of it wildfires whose median last report was 738 days old: about 49 s at 0.8 Mbps. `days` would drop volcanoes, whose dates are eruption starts back to 2002, so wildfires are asked apart. The two asks were first derived from that list, then each fetched as written, and matched |
+| GDACS | `www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH`, unparameterised; its orange- and red-alert floods, droughts and cyclones still current are drawn from it on the phone | 124,555 B, uncompressed; 86 events, all orange or red, 3 current that day | Its `MAP` list refused a request without an event type; a narrower `SEARCH` is unmeasured, and so is one asking for green alerts too (§7) |
+
+About 196 kB a round in a quiet month for fires, about 1.96 s at the device floor, in the background; about
+1.17 MB an hour with it on and the map on screen. **That is October's.** EONET's wildfires swing with the
+seasons: at August 2024's count the 30 days would have held at least 1,340 fires, about 922 kB. Every answer
+is read no further than a cap of decoded bytes (512 KiB for EONET and GDACS each, 1 MiB for USGS), so a feed
+that grew without warning reads *not read: unknown* and never fills a prepaid phone, and **EONET's is held
+below that peak on purpose**: a round is then at most about 700 kB, about 7 s, and an answer that passed its
+cap is not asked again on that page, so a phone does not pay every 10 minutes for an answer it drops. The
+layers screen says both figures before the box is ticked. **Each of a feed's asks is read on its own**: the
+wildfires past their cap read *EONET just now, wildfires not read: unknown*, and EONET's volcanoes and storms
+are still drawn. No request carries a cookie or a
+referrer; each carries an `Origin: https://navcom.app` that no fetch option can remove, which is why the
+screen says each host learns the request came from navcom.app.
+
+**When it asks.** Every feed once when ticked; each again 10 minutes after it was last asked, whether that
+answered or not, and never sooner; never while the page is hidden, and on coming back into view only what
+is due. Turning it off and on inside 10 minutes asks nothing. The choice is never stored, so a reload asks
+nobody. Stopped, it keeps no timer and no listener and gives up what was on its way. The service worker
+passes requests to another origin straight through, so nothing it asks is cached by NavCom.
+
+**What it says** (invariant 7). The map's key gives each feed its own age, *Hazards · USGS and EONET 3
+min ago · GDACS not read: unknown · some events, never all*, feeds side by side that say the same said
+once, so the key stays short; a feed that failed, answered past its cap or in a shape it was not measured
+in reads *not read: unknown*, and what it held before is not drawn as if it were still the list. **So does a
+feed that listed entries and could read none of them** (2026-10-19): every quake given another way than a
+point, or GDACS's current flag sent as something other than `true` or `'true'` (it is a string today, and a
+boolean is read the same), is a feed not read, never one that listed nothing. A kind no reader here knows is
+counted as left out, and a feed's word is never taken as a key. When every feed read whole, listed nothing
+and left nothing out: *nothing listed by USGS, EONET or GDACS, read 3 min ago · not the same as safe*. Never
+*none*, never *0*. The layers screen has a row per feed: how many it listed, when, what it could not draw
+(EONET's events given only as an area, which a point would misplace, are counted and not drawn), how many
+it left out, and which of its asks did not answer; *nothing drawn* rather than *nothing listed* wherever
+anything was.
+
+**Drawn in the neutrals, by shape** (the rule above). A mark per event at the point its source published,
+in screen space so it is the same size at every zoom: a six-armed asterisk for an earthquake, a triangle
+for a wildfire and a hatched one for a volcano, a hexagon for a storm or cyclone (EONET's and GDACS's alike;
+the same storm in both is two marks, not merged, and a hover lists both), a diamond for a flood and a
+hatched one for a drought. No circle, square or disc, which the missions, the regions, the sun and the
+directory's ages already are. Ink over a halo of the ground; a feed's alert colour is quoted as its word,
+*PAGER alert: green*, *GDACS alert: Red*, and never drawn. Marks closer than 11 px share a cell, which
+draws one of them by a fixed order and *+n* beside it. A key under the map's names the kinds there are,
+sharing lines, *Storms · 2  Quakes · 3  Fires · 1*: a row a kind took five lines on a phone, and pushed the
+Earth under the sheet at half, where every screen the map opens comes up (§6).
+
+**Taps.** The one overlay that answers one, after the points and before a lit shape, within 10 px: a
+hover names the nearest mark in the source's own words, *M 4.8 - 56 km N of Ruteng, Indonesia · 4.8 mb ·
+origin 1 h ago · USGS · and 1 more*; a tap opens the marks in reach, nearest first, in Com, twelve at most
+so history holds them, and says *12 of 40 here · zoom in for the rest* when there were more; each with its
+source's title, measure and alert as given, its time as given and how old that is, when this phone read the
+list and the time the list gives itself, the source's credit, and its links, **only where they are https**
+(the Spheres rule). **A time is always named, never a bare age** (2026-10-19), since each source's is
+something else: USGS's is the quake's *origin*; EONET's the date of its *latest point*, which for a volcano
+is its one point and can be years old while it is open (Fuego's is 2002); GDACS's when it last *updated* its
+entry, beside its own From and To. The hover and the screen's key both say which. Quoted, never paraphrased; GDACS's HTML is never used. What a tap took stays lifted while its
+screen is open. Opened again from history with Hazards off, the screen says so and asks nothing.
+
+**The policy.** The root carries the site's first `Content-Security-Policy`, `connect-src` only (`vercel.json`):
+navcom.app, relays by scheme, since operators choose them, and exactly the four hosts in `outside.ts`; the
+inline Distress bootstrap and SvelteKit's start script are untouched. **It is the root's alone**:
+/terminal/who checks a proof on api.github.com or any Mastodon instance a card names, so a site-wide list
+would break it, and every link out of the root reloads, so its policy never rides into another page. A
+terminal page that links back to the root without a reload leaves the root unenforced for that visit:
+weaker, not broken. **None does, since 2026-10-19**: the terminal's links back reloaded already, and the two
+that did not, the error page's *Start over* and the public site's header on `/who/`, the one site page that
+runs the client router, reload now; `src/lib/outside.test.ts` holds every link to the root on a built page
+with the router, and the error page's source, which only the router draws. `e2e/landing.spec.ts` allows the
+three feeds by name only once Hazards is ticked, and records every policy violation, so a connection the
+policy silently stopped cannot pass for one never made.
+
+**Read as data, never vendored**, so nothing of it ships: USGS's is public domain, and EONET and GDACS are
+credited by name wherever a mark of theirs is shown (`LICENSING.md`). Nothing about the people being
+served is asked or drawn: these are natural events on public record (invariant 1).
+
+### Weather warnings on a mission
+
+**Built 2026-10-19.** A mission filed under a US state, DC or territory has, below the mission and apart
+from taking part, a control: *Check NWS warnings for California*. Before the tap it says what the tap tells
+api.weather.gov: this phone's address, which can place it roughly, often to a city, its browser, the time,
+that it asked from navcom.app, and which state. Only when tapped does it ask `alerts/active?area=CA`, once
+(a second tap inside a minute reuses the answer), and it shows the warnings the NWS issued, an event ending
+in *Warning*, and, since 2026-10-19, **the emergencies it relays that ask people to act now** though their
+names do not: *Evacuation Immediate*, *Civil Emergency Message*, *Local Area Emergency* and *911 Telephone
+Outage Emergency* (`EMERGENCIES` in `nws.ts`); each of status *Actual*, not a cancellation. *Child Abduction
+Emergency* is about a person, not a place, and is not shown. Watches, advisories and statements are not
+shown, it says so before the tap, and after it **how many other alerts were out and not shown**, so none
+shown never reads as nothing out. Each in the NWS's words, its event, its headline, **the area it names**
+(`areaDesc`, cut with a visible … where long: a statewide answer covers places far apart), who sent it, and
+when it ends, or *no end issued* beside when the message expires, exactly as issued, and how long ago it was
+sent. None issued reads *No warnings or emergencies issued for California as of 13:20 UTC. The NWS lists what
+it has issued; it does not say a place is safe.* A failure reads *NWS not read: unknown*. Filed for the whole country, it asks nothing, since the NWS is asked by state; outside the US it
+says no warning service is read for that place. Measured for California: 2,819 B on the wire, 13,941 B
+decoded, capped at 4 MiB for an outbreak.
+
+**It informs and never gates** (invariants 8 and 9). Starcom's own reader calls a mission off on a warning;
+NavCom's never does. Taking part reads nothing from it, and a test holds that the control is not in taking
+part's snippet and that taking part is the same before and after a read. Nothing pages, notifies or
+announces assertively, and nothing of it is near Distress, which Com never covers (`e2e/com-distress.spec.ts`
+reads the warnings at every height of the sheet). `web/src/lib/missions/nws.ts`; NavCom's own code, as
+Starcom's is AGPL-3.0-only.

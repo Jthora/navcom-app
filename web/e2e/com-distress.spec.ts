@@ -3,6 +3,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import { COM_ENTRIES } from '../scripts/lib/budget.mjs';
 import { chunkOf, open, seedDevice } from './device';
 import { mapReady, screenAt, tap, tapAt, zoomAt } from './map';
+import { serveHazards, serveNws } from './hazards';
 import { admit, resign, standInKey, type StandIn } from './registry';
 import { serveSpheres } from './spheres';
 import { serveZones } from './zsp';
@@ -120,6 +121,18 @@ const WAYS_IN: Record<string, WayIn[]> = {
       }
     },
     {
+      // Its weather warnings read, below it: what the tap shows must not reach Distress either.
+      name: 'an open mission, with its NWS warnings read',
+      go: async (page) => {
+        await serveNws(page);
+        await toMission(page);
+        const screen = page.locator(`[data-screen="mission"][data-mission="${HEAT_D}"]`);
+        await screen.locator('[data-nws-check]').click();
+        await expect(screen.locator('[data-nws-warnings] li')).toHaveCount(3);
+        return screen;
+      }
+    },
+    {
       // The mission somebody left to sign on, back on a phone with no signal: not yet known, not gone.
       name: 'one this phone cannot read yet',
       go: async (page) => {
@@ -206,6 +219,22 @@ const WAYS_IN: Record<string, WayIn[]> = {
         await expect(page.locator('[data-swatches]')).toBeVisible();
         return screen;
       }
+    },
+    {
+      // Hazards ticked: its disclosure and a row per feed, one of them failed, make the screen taller.
+      name: 'the map’s layers, with Hazards ticked and one feed failed',
+      go: async (page) => {
+        await serveHazards(page, { fail: ['gdacs'] });
+        await signedOnWithHeat(page);
+        await mapReady(page);
+        await page.getByRole('button', { name: 'Map layers' }).click();
+        const screen = page.locator('[data-screen="layers"]');
+        await screen.locator('[data-hazards]').check();
+        await expect(screen.locator('[data-hazards-feeds] [data-hazard-feed]')).toHaveCount(3);
+        await expect(screen.locator('[data-hazard-feed="gdacs"]')).toContainText('not read: unknown · the ask failed');
+        await expect(screen.locator('[data-hazard-feed="usgs"]')).toContainText('listed');
+        return screen;
+      }
     }
   ],
   zone: [
@@ -261,6 +290,25 @@ const WAYS_IN: Record<string, WayIn[]> = {
         const sphere = page.locator('[data-screen="sphere"][data-sphere="sphere:test-anglosphere"]');
         await expect(sphere.locator('[data-sphere-member]')).toHaveCount(8);
         return sphere;
+      }
+    }
+  ],
+  hazard: [
+    {
+      // The feeds by route, from recorded fixtures: no test asks the live services [./hazards.ts].
+      name: 'a hazard tapped on the map, with Hazards on',
+      go: async (page) => {
+        await serveHazards(page);
+        await signedOnWithHeat(page);
+        await mapReady(page);
+        await page.getByRole('button', { name: 'Map layers' }).click();
+        await page.locator('[data-screen="layers"] [data-hazards]').check();
+        await expect(page.locator('[data-legend]')).toContainText('GDACS just now');
+        await page.locator('[data-back]').click();
+        await tapAt(page, -71.378, -36.868, 'the Chillán volcano');
+        const screen = page.locator('[data-screen="hazard"]');
+        await expect(screen.locator('[data-hazard-title]').first()).toHaveText('Nevados del Chillan Volcano, Chile');
+        return screen;
       }
     }
   ],

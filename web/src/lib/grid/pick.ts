@@ -36,7 +36,12 @@ export type Hit =
   | { kind: 'shape'; layer: 'provinces' | 'world'; shape: Shape }
   /** An area of the chosen layer: one of Starcom's Terrae, Maria, Zones or Sectors, or a time zone [layer.svelte.ts]. */
   | { kind: 'area'; shape: Shape }
-  | { kind: 'point'; place: PlaceOfRecord };
+  | { kind: 'point'; place: PlaceOfRecord }
+  /**
+   * Hazards' own marks, found by its overlay and never by `pick`: every mark in reach, nearest first,
+   * by id, and what a hover says of them [layers/hazards.ts].
+   */
+  | { kind: 'mark'; ids: string; say: string; of: number };
 
 /** A screen point, in CSS px from the canvas's top left, as a point of the map's rectangle [topology.ts project]. */
 export function unitAt(v: View, [sx, sy]: readonly [number, number]): [number, number] {

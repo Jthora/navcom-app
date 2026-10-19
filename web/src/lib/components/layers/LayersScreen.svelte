@@ -9,13 +9,21 @@
    *
    * Every hue on these screens is a watch state, so the layers are drawn in neutral weights only.
    *
-   * Over whichever is chosen, two things somebody can tick: **day and night**, worked out on this phone
-   * from its own clock and drawn over any layer (Time zones always draws it), and over Nation States
-   * **the directory by when it was last checked**. Each has its own code, loaded when ticked.
+   * Over whichever is chosen, things somebody can tick: **day and night**, worked out on this phone
+   * from its own clock and drawn over any layer (Time zones always draws it); over Nation States **the
+   * directory by when it was last checked**; and over any layer **Hazards**, the one thing on the map
+   * that asks anybody outside navcom.app. Each has its own code, loaded when ticked.
+   *
+   * **Hazards says what it asks before it is ticked**, in plain words beside the box and not one layer
+   * down: which three hosts and what each lists; that each learns this phone's address, which can place
+   * it roughly, often to a city, its browser, the time and that it asked from navcom.app, not where you
+   * are looking on the map; and what each round costs now and in a fire season [$lib/outside]. The
+   * choice lasts the page's life and is never stored, so a reload asks nobody.
    */
   import { Panel, Readout, Slot, Why } from '$lib/components/panel';
   import type { Nav } from '$lib/com/screens';
   import { MAP_LAYERS, daylightDrawn, layerData, mapLayers, type MapLayer } from '$lib/grid/layer.svelte';
+  import { HAZARD_FEEDS, HAZARDS_PEAK_KB, HAZARDS_ROUND_KB, agoOf, type HazardFeedId } from '$lib/outside';
   import { forgetWork, workSector } from './work';
 
   let { nav }: { nav: Nav } = $props();
@@ -50,6 +58,33 @@
     if (id !== 'spheres') mapLayers.sphere = null;
   }
   const ageRows = $derived(agesKey && mapLayers.loaded >= 0 && mapLayers.agesFile === 'ready' ? agesKey.key() : []);
+
+  /** What Hazards has read, per feed, moving on each minute it is on and with every answer. */
+  const hazardsHeld = $derived(mapLayers.loaded >= 0 ? layerData.hazards : null);
+  const hazardsAt = $derived(mapLayers.loaded >= 0 ? Date.now() : 0);
+  const CAPPED = 'its answer passed its cap, so it is not asked again on this page';
+  /**
+   * One feed's row: how many it listed and when, or that it was not read, which is unknown and never
+   * none. *Nothing listed* only when nothing was left out either; an ask of it that did not answer by
+   * what it lists.
+   */
+  function feedRow(id: HazardFeedId): string {
+    const f = hazardsHeld?.feeds[id];
+    if (!f || f.state === 'unread') return 'not read: unknown';
+    if (f.state === 'loading') return 'asking';
+    if (f.state === 'failed') return `not read: unknown · ${f.malformed ? 'its answer was not in the shape it was measured in' : 'the ask failed'}`;
+    if (f.state === 'too-large') return `not read: unknown · ${CAPPED}`;
+    const extra = [
+      ...f.missing.map((m) => `${m.part} not read: unknown, ${m.why === 'too-large' ? CAPPED : 'the ask failed'}`),
+      f.notDrawn > 0 ? `${f.notDrawn} given only as an area, not drawn` : '',
+      f.dropped + f.capped > 0 ? `${f.dropped + f.capped} left out` : ''
+    ]
+      .filter(Boolean)
+      .map((x) => ` · ${x}`)
+      .join('');
+    const none = f.count + f.dropped + f.notDrawn + f.capped === 0 && f.missing.length === 0 ? 'nothing listed' : 'nothing drawn';
+    return `${f.count === 0 ? none : `${f.count.toLocaleString('en-US')} listed`} · read ${agoOf(f.readAt ?? hazardsAt, hazardsAt)}${extra}`;
+  }
 </script>
 
 <div data-screen="layers" data-layer={mapLayers.chosen}>
@@ -78,6 +113,39 @@
       {/if}
       <span><b>Day and night</b> <span class="nc-layer-what">{mapLayers.chosen === 'timezones' ? 'always drawn with Time zones' : 'where the sun is up, over any layer'}</span></span>
     </label>
+    <label class="nc-layer nc-check" data-hazards-option>
+      <input type="checkbox" data-hazards bind:checked={mapLayers.hazards} aria-describedby="nc-hazards-ask" />
+      <span><b>Hazards</b> <span class="nc-layer-what">fires, volcanoes, storms, floods, droughts and earthquakes, from three public feeds, over any layer</span></span>
+    </label>
+    <!-- What choosing it costs, said before it is chosen, in plain words and not one layer down. -->
+    <div class="nc-ask" id="nc-hazards-ask" data-hazards-ask>
+      <span>
+        Turning this on asks three services outside NavCom for their whole-world lists:
+        {#each HAZARD_FEEDS as f, i (f.id)}<b class="nc-host">{f.host}</b> ({f.name}: {f.lists}){i === HAZARD_FEEDS.length - 2 ? ' and ' : i < HAZARD_FEEDS.length - 1 ? ', ' : '.'}{/each}
+      </span>
+      <span>
+        Each learns this phone’s internet address, which can place it roughly, often to a city; its browser;
+        the time; and that it asked from navcom.app — not where you are looking on the map. It asks again
+        every 10 minutes while the map is on screen, never while the page is hidden: about
+        {HAZARDS_ROUND_KB} kB each time now, more in a fire season, up to about {HAZARDS_PEAK_KB} kB.
+      </span>
+      <span>These lists hold some events, never all: nothing drawn is not nothing happening.</span>
+    </div>
+    {#if mapLayers.hazards}
+      <Slot k="Hazards">
+        {#if mapLayers.hazardsCode === 'failed'}
+          <Readout value="Not loaded" tone="warn" sub="it needs one visit with a connection" />
+        {:else}
+          <ul class="nc-key" data-hazards-feeds>
+            {#each HAZARD_FEEDS as f (f.id)}
+              <li data-hazard-feed={f.id} data-state={hazardsHeld?.feeds[f.id].state ?? 'unread'}>
+                <span>{f.name}</span><span class="nc-key-n">{feedRow(f.id)}</span>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+      </Slot>
+    {/if}
     {#if daylightDrawn()}
       <Slot k="Sun">
         {#if mapLayers.sun === 'failed'}
@@ -213,6 +281,20 @@
       this phone’s clock, so they age on the map as they do on each place’s page; they say how old a
       check is, and each place’s own page says what that check still lets it show.
     </p>
+    <p>
+      Hazards are three public lists, read as they are given and never filtered by where you look: the
+      U.S. Geological Survey’s earthquakes of magnitude 4.5 and over in the past day, and its
+      significant ones; NASA EONET’s open volcanoes and severe storms, and wildfires reported in the
+      last 30 days; and GDACS’s orange- and red-alert floods, droughts and tropical cyclones that are
+      still current, since its list holds no green ones. Each mark is at the point its source
+      published, in its words; an alert level is quoted, never drawn as a colour, and a feed that did
+      not answer, or answered in a shape nothing of which could be read, reads as not read, never as
+      nothing there. Each source’s time means something else, and each is named: an earthquake’s
+      origin, the date of EONET’s latest point, which for a volcano can be years old, and when GDACS
+      last updated its entry. In a busy fire season EONET’s wildfires can pass what this phone will
+      read of them, and then read as not read while its volcanoes and storms are still drawn. They
+      are lists of some events: an empty map is not a safe one.
+    </p>
   </Why>
 </div>
 
@@ -264,6 +346,24 @@
   }
   .nc-check {
     margin-block: 0.6rem 0.2rem;
+  }
+  /* What Hazards asks, beside its box, before anybody ticks it. */
+  .nc-ask {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-block: 0.3rem 0.4rem;
+    padding-inline-start: 0.7rem;
+    border-inline-start: 2px solid var(--t-line-strong);
+    color: var(--t-muted);
+    font-size: 0.82rem;
+    line-height: 1.4;
+  }
+  .nc-host {
+    color: var(--t-ink);
+    font-family: var(--font-mono);
+    font-weight: 600;
+    overflow-wrap: anywhere;
   }
   .nc-key {
     display: flex;

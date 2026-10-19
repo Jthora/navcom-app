@@ -661,3 +661,64 @@ describe('the map draws only places of record', () => {
     expect(elsewhere).toEqual([]);
   });
 });
+
+/**
+ * What the landing page asks anybody outside navcom.app and the relays [$lib/outside]: Hazards' three
+ * feeds and the NWS, and nothing chosen by where somebody looks or where the phone is. Read from source,
+ * as the map's own rule above is: a URL built from a view or a position is a line of code, and the
+ * bundle keeps no record of what it was built from.
+ */
+describe('what is asked outside navcom.app', () => {
+  const OUTSIDE = 'web/src/lib/outside.ts';
+  const ASKERS = [
+    OUTSIDE,
+    'web/src/lib/grid/layers/hazards.ts',
+    'web/src/lib/missions/nws.ts',
+    'web/src/lib/components/missions/NwsWarnings.svelte',
+    'web/src/lib/components/layers/HazardScreen.svelte'
+  ];
+  const HOSTS = ['earthquake.usgs.gov', 'eonet.gsfc.nasa.gov', 'gdacs.org', 'api.weather.gov'];
+  const own = (path: string) => uncommented(readFileSync(join(REPO, path), 'utf8'));
+
+  it('names each outside host in one module, and builds no URL there from anything but a state’s two letters', () => {
+    const elsewhere: string[] = [];
+    for (const [path, text] of sourcesUnder(['web/src'])) {
+      if (path === OUTSIDE) continue;
+      const code = uncommented(text);
+      for (const host of HOSTS) if (code.includes(host)) elsewhere.push(`${path}: ${host}`);
+    }
+    expect(elsewhere, 'an outside host is named outside $lib/outside, where the policy and the page cannot see it').toEqual([]);
+    const built = [...own(OUTSIDE).matchAll(/`https:\/\/[^`]*`/g)].map((m) => m[0]);
+    expect(built).toEqual(['`https://api.weather.gov/alerts/active?area=${area}`']);
+    expect(own(OUTSIDE)).toMatch(/if \(!\/\^\[A-Z\]\{2\}\$\/\.test\(area\)\) throw/);
+  });
+
+  it('reads nothing of where the phone is or where the map is looking, and interrupts nobody', () => {
+    for (const path of ASKERS) {
+      const code = own(path);
+      // No position: not the phone's, not a fix, not the places of record.
+      expect(code, `${path} reads a position`).not.toMatch(/geolocation|getCurrentPosition|watchPosition|\bfix\b|grid\/places/);
+      // Nothing that demands attention, and nothing said over a screen reader's other speech.
+      expect(code, `${path} demands attention`).not.toMatch(/\bNotification\b|vibrate\(|setAppBadge|document\.title|role="alert"|aria-live="assertive"/);
+      // Starcom's readers are AGPL-3.0-only; these are NavCom's own.
+      expect(code, `${path} carries Starcom's licence`).not.toMatch(/AGPL|GNU Affero/i);
+    }
+    // Hazards asks from its constants alone: no fetch of its own, no URL of its own, nothing of a view in one.
+    const hazards = own('web/src/lib/grid/layers/hazards.ts');
+    expect(hazards).not.toMatch(/\bfetch\(/);
+    expect(hazards).not.toMatch(/https?:\/\//);
+    // Its constants, less only those whose answer passed its cap: never a URL of its own.
+    expect(hazards).toMatch(/const asked = feed\.urls\.filter\(\(url\) => !oversized\.has\(url\)\);\s*const answers = await Promise\.all\(asked\.map\(\(url\) => readOutside\(url,/);
+  });
+
+  it('leaves taking part reading nothing of the weather, so a warning informs and never gates', () => {
+    const takePart = own('web/src/lib/components/missions/TakePart.svelte');
+    expect(takePart).not.toMatch(/nws|NwsWarnings|weather/i);
+    const page = own('web/src/lib/components/missions/MissionPage.svelte');
+    // Its own panel, after the mission's, and never inside the snippet that holds taking part.
+    const action = /\{#snippet action\(\)\}([\s\S]*?)\{\/snippet\}/.exec(page)?.[1] ?? '';
+    expect(action).toContain('<TakePart');
+    expect(action).not.toContain('NwsWarnings');
+    expect(page.indexOf('<NwsWarnings')).toBeGreaterThan(page.lastIndexOf('</Panel>'));
+  });
+});

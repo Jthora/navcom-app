@@ -2,9 +2,10 @@
   /**
    * The grid: the map NavCom draws itself. [docs/design/map.md]
    *
-   * Outlines we own, on a canvas, with no third-party request of any kind — looking at the map
-   * tells nobody anything. Street-level detail is somebody else's app, reached by handing off a
-   * pin, never by loading their tiles here.
+   * Outlines we own, on a canvas, with no third-party request until somebody chooses Hazards, and
+   * then only three public feeds' whole-world lists [$lib/outside] — looking at the map tells nobody
+   * anything about where anybody looked. Street-level detail is somebody else's app, reached by
+   * handing off a pin, never by loading their tiles here.
    *
    * Sits inside `.terminal`, whose tokens it draws with — only `--t-ground` is global. It takes
    * the neutrals and never a hue, because every hue on these screens is a watch state.
@@ -23,9 +24,10 @@
    * or none. The choice is `$lib/grid/layer.svelte`, made in Com's layers screen, and each layer's
    * code and files arrive by `import()` only once it is chosen [budget.mjs MAP_LINES]. A layer's areas
    * answer a tap and a hover the way a country does under Nation States; points answer first in all.
-   * Over a layer, overlays that answer no tap of their own: day and night, worked out on the phone;
-   * the directory's regions by when they were last checked; open missions counted by Zone. Each is
-   * a module of its own, loaded the same way, and says in the key what it is and how old.
+   * Over a layer, overlays: day and night, worked out on the phone; the directory's regions by when
+   * they were last checked; open missions counted by Zone; and Hazards, three public feeds' events,
+   * the one overlay whose marks answer a tap, after the points and before a lit shape. Each is a
+   * module of its own, loaded the same way, and says in the key what it is and how old.
    *
    * Built for the device floor, a prepaid Android 8. Each layer becomes one `Path2D` in map units
    * when the file loads, and a pan or zoom only changes the canvas transform: one matrix and a
@@ -126,7 +128,9 @@
   let sun = $state.raw<Overlay | null>(null);
   let ages = $state.raw<Overlay | null>(null);
   let counts = $state.raw<Overlay | null>(null);
-  const overlays = (): Overlay[] => [sun, ages, counts].filter((o): o is Overlay => o !== null);
+  /** Hazards, over any layer, once somebody ticked it: three public feeds, asked whole-world [$lib/outside]. */
+  let hazards = $state.raw<Overlay | null>(null);
+  const overlays = (): Overlay[] => [sun, ages, counts, hazards].filter((o): o is Overlay => o !== null);
 
   function pathOf(rings: Shape['rings']): Path2D {
     const p = new Path2D();
@@ -164,7 +168,7 @@
    * showed a finger what it had taken, and a thumb-wide tap at the whole-Earth view can take a
    * neighbour [LIT_SLOP].
    */
-  let picked: { key: string; line: Path2D | null; place: PlaceOfRecord | null } | null = null;
+  let picked: { key: string; line: Path2D | null; place: PlaceOfRecord | null; marks: string | null } | null = null;
   let pickedOn = false;
 
   /** The directory's places, once fetched: its regions, and its records. */
@@ -400,7 +404,7 @@
     ctx.lineWidth = 2;
     ctx.strokeStyle = ink;
     ctx.stroke(circles);
-    for (const o of over) o.marks?.(ctx, v, tones);
+    for (const o of over) o.marks?.(ctx, v, tones, liftedMarks());
     ctx.lineWidth = 2;
     ctx.strokeStyle = ink;
     for (const lifted of [hovered?.kind === 'point' ? hovered.place : null, pickedOn ? picked?.place : null]) {
@@ -428,27 +432,49 @@
     }
   }
 
+  /**
+   * Hazards' marks that are lifted: under the pointer or the reticle, what the last tap took while its
+   * screen is open, and what the screen open in Com names however it was opened.
+   */
+  function liftedMarks(): Set<string> {
+    const ids = new Set<string>();
+    const add = (list: string | null | undefined) => list?.split(',').forEach((id) => ids.add(id));
+    if (hovered?.kind === 'mark') add(hovered.ids);
+    if (pickedOn) add(picked?.marks);
+    const top = current as { kind?: unknown; ids?: unknown } | null;
+    if (top && top.kind === 'hazard' && typeof top.ids === 'string') add(top.ids);
+    return ids;
+  }
+
   // ─── What is under a point, and what it says ──────────────────────────────────────────────
 
   /**
-   * What is under (sx, sy) in the layer chosen: points first in every layer, then a shape a mission
-   * fills, within the same slack it has under Nation States, then the layer's own areas. The missions
-   * light whichever layer is drawn, and a lit shape is a door in every one of them [map.md §6, §8]. A
-   * layer with nothing loaded answers as Nation States, so a tap is never dead.
+   * What is under (sx, sy) in the layer chosen: points first in every layer, then Hazards' marks, then a
+   * shape a mission fills, within the same slack it has under Nation States, then the layer's own areas.
+   * The missions light whichever layer is drawn, and a lit shape is a door in every one of them [map.md
+   * §6, §8]. A layer with nothing loaded answers as Nation States, so a tap is never dead.
    */
   function hitAt(sx: number, sy: number): Hit | null {
     if (status !== 'ready') return null;
     const v = view();
     const at: [number, number] = [sx, sy];
+    const none = new Set<string>();
+    // Given only the points, `pick` answers a point or nothing.
+    const point = pick(v, at, { provinces: [], countries: [], lit: none, points: shownPoints() });
+    if (point) return point;
+    for (const o of overlays()) {
+      const mark = o.hit?.(v, at);
+      if (mark) return { kind: 'mark', ...mark };
+    }
     const layer = drawn;
     if (layer) {
-      // Given only the lit shapes, `pick` answers a point, then a lit shape, then nothing.
-      const first = pick(v, at, { provinces: litProvinces, countries: litCountries, lit: litIds, points: shownPoints() });
+      // Given only the lit shapes, `pick` answers a lit shape, then nothing.
+      const first = pick(v, at, { provinces: litProvinces, countries: litCountries, lit: litIds });
       if (first) return first;
       const shape = layer.hit(v, at);
       if (shape !== undefined) return shape ? { kind: 'area', shape } : null;
     }
-    return pick(v, at, { provinces: provinceShapes, countries: countryShapes, lit: litIds, points: shownPoints() });
+    return pick(v, at, { provinces: provinceShapes, countries: countryShapes, lit: litIds });
   }
 
   /** `N open missions` or `Nothing open`, by the codes the missions are filed under. */
@@ -461,6 +487,7 @@
   const also = (said: string, more: (string | null | undefined)[]) => [said, ...more.filter(Boolean)].join(' · ');
 
   function sayOf(hit: Hit): string {
+    if (hit.kind === 'mark') return hit.say;
     if (hit.kind === 'shape') return `${hit.shape.name ?? 'Unnamed'} · ${openAt(hit.shape.id)}`;
     if (hit.kind === 'area') return also(drawn?.say(hit.shape) ?? hit.shape.name ?? 'Unnamed', overlays().map((o) => o.about?.(hit.shape)));
     const p = hit.place;
@@ -484,6 +511,7 @@
   function screenOf(hit: Hit, sx: number, sy: number): Screen {
     // An area is only ever found by a layer whose code is here; if it went since, its picker answers.
     if (hit.kind === 'area') return drawn ? drawn.open(hit.shape) : { kind: 'layers' };
+    if (hit.kind === 'mark') return { kind: 'hazard', ids: hit.ids, of: String(hit.of) };
     if (hit.kind === 'shape') {
       const [lon, lat] = unproject(...unitAt(view(), [sx, sy]));
       // A thumb's width in degrees at the equator, where one unit is 360°, and on the ground by area.
@@ -509,13 +537,17 @@
   function sameHit(a: Hit | null, b: Hit | null): boolean {
     if (!a || !b) return a === b;
     if (a.kind === 'point' || b.kind === 'point') return a.kind === 'point' && b.kind === 'point' && a.place === b.place;
+    if (a.kind === 'mark' || b.kind === 'mark') return a.kind === 'mark' && b.kind === 'mark' && a.ids === b.ids;
     return a.kind === b.kind && a.shape === b.shape;
   }
+
+  /** The outline a hit lifts, for a shape or an area; a point or a mark is lifted where it is drawn. */
+  const lineOf = (hit: Hit | null): Path2D | null => (hit && (hit.kind === 'shape' || hit.kind === 'area') ? pathOf(hit.shape.rings) : null);
 
   function show(hit: Hit | null, sx: number, sy: number) {
     if (!sameHit(hit, hovered)) {
       hovered = hit;
-      hoverLine = hit && hit.kind !== 'point' ? pathOf(hit.shape.rings) : null;
+      hoverLine = lineOf(hit);
       request();
     }
     chip = hit ? { text: sayOf(hit), x: sx, y: sy } : null;
@@ -570,8 +602,9 @@
     const screen = screenOf(hit, sx, sy);
     picked = {
       key: JSON.stringify(screen),
-      line: hit.kind !== 'point' ? pathOf(hit.shape.rings) : null,
-      place: hit.kind === 'point' ? hit.place : null
+      line: lineOf(hit),
+      place: hit.kind === 'point' ? hit.place : null,
+      marks: hit.kind === 'mark' ? hit.ids : null
     };
     pickedOn = true;
     request();
@@ -967,11 +1000,15 @@
   overlay(daylightDrawn, () => import('$lib/grid/layers/daylight'), (o) => (sun = o), () => (mapLayers.sun = 'failed'));
   overlay(() => agesOn, () => import('$lib/grid/layers/ages'), (o) => (ages = o), () => (mapLayers.agesFile = 'failed'));
   overlay(() => mapLayers.chosen === 'zones', () => import('$lib/grid/layers/zone-missions'), (o) => (counts = o), () => (mapLayers.counts = 'failed'));
+  // Hazards: off until ticked, never stored, so a reload asks nobody; its code asks the feeds [$lib/outside].
+  overlay(() => mapLayers.hazards, () => import('$lib/grid/layers/hazards'), (o) => (hazards = o), () => (mapLayers.hazardsCode = 'failed'));
 
   // What a layer has loaded is a new picture, and so is what it has open in Com, and the Sphere picked out.
   $effect(() => {
     void mapLayers.loaded;
     void mapLayers.sphere;
+    // A hazard's screen lifts its marks however it was opened, from a tap or from history.
+    void current;
     const shape = drawn?.lifted?.(current) ?? null;
     layerOpen = shape ? pathOf(shape.rings) : null;
     request();
@@ -992,7 +1029,8 @@
     for (const [on, o, state, name] of [
       [daylightDrawn(), sun, mapLayers.sun, 'Day and night'],
       [agesOn, ages, mapLayers.agesFile, 'Regions by last check'],
-      [chosen === 'zones', counts, mapLayers.counts, 'Missions by Zone']
+      [chosen === 'zones', counts, mapLayers.counts, 'Missions by Zone'],
+      [mapLayers.hazards, hazards, mapLayers.hazardsCode, 'Hazards']
     ] as const) {
       if (on) lines.push(state === 'failed' ? `${name} ${failedSay}` : (o?.legend() ?? ''));
     }
@@ -1009,6 +1047,20 @@
   let swatchAt = $state({ left: 12, top: 12 });
   /** Night's dots in a swatch, as day and night lays them: a 6 px grid, and its tiles' middles. */
   const NIGHT_DOTS = [[0, 0], [6, 0], [3, 3], [9, 3], [0, 6], [6, 6], [3, 9], [9, 9]].map(([x, y]) => `M${x! + 1} ${y! + 1}h1v1h-1z`).join('');
+  /**
+   * Hazards' shapes in a swatch, as its overlay draws them, outlines all; the hatched two with their
+   * 45° lines inside [layers/hazards.ts]. Outline first, hatching second.
+   */
+  const TRIANGLE = 'M6 1L11 10H1Z';
+  const DIAMOND = 'M6 .5L11.5 6L6 11.5L.5 6Z';
+  const HAZARD_SHAPES: Partial<Record<Swatch['mark'], [string, string]>> = {
+    asterisk: ['M1 6h10M3.5 1.67l5 8.66M8.5 1.67l-5 8.66', ''],
+    triangle: [TRIANGLE, ''],
+    'triangle-hatched': [TRIANGLE, 'M5.29 2.29L8.5 5.5M4.21 4.21L10 10M3.14 6.14L7 10M2.07 8.07L4 10'],
+    hexagon: ['M6 1L10.33 3.5V8.5L6 11L1.67 8.5V3.5Z', ''],
+    diamond: [DIAMOND, ''],
+    'diamond-hatched': [DIAMOND, 'M4.75 1.75L10.25 7.25M3.25 3.25L8.75 8.75M1.75 4.75L7.25 10.25']
+  };
 
   // New missions are a new picture, and only new ones are: the page hands over a new list every minute.
   $effect(() => {
@@ -1085,15 +1137,20 @@
     The overlays' own key: what each mark they draw means, drawn as the canvas draws it, under the
     page's key and clear of the Earth [covers]. Present only while something draws classes to name.
   -->
+  {#snippet swatch(s: Swatch)}
+    <li data-swatch={s.mark}>
+      <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" class={s.tone}>
+        {#if s.mark === 'square'}<rect x="2" y="2" width="8" height="8" />{:else if s.mark === 'dots'}<path d={NIGHT_DOTS} />{:else if HAZARD_SHAPES[s.mark]}<path d={HAZARD_SHAPES[s.mark]![0]} /><path class="hatch" d={HAZARD_SHAPES[s.mark]![1]} />{:else}<circle cx="6" cy="6" r={s.mark === 'dot' ? 3.5 : 4.5} />{/if}
+      </svg>{s.text}
+    </li>
+  {/snippet}
   {#if swatches.length > 0}
     <ul class="swatches" bind:this={swatchEl} data-swatches style:left="{swatchAt.left}px" style:top="{swatchAt.top}px">
-      {#each swatches as s (s.text)}
-        <li data-swatch={s.mark}>
-          <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" class={s.tone}>
-            {#if s.mark === 'square'}<rect x="2" y="2" width="8" height="8" />{:else if s.mark === 'dots'}<path d={NIGHT_DOTS} />{:else}<circle cx="6" cy="6" r={s.mark === 'dot' ? 3.5 : 4.5} />{/if}
-          </svg>{s.text}
-        </li>
-      {/each}
+      {#each swatches.filter((s) => !s.inline) as s (s.text)}{@render swatch(s)}{/each}
+      <!-- Hazards' kinds share lines, wrapping, so five kinds take two lines and not five. -->
+      {#if swatches.some((s) => s.inline)}
+        <li class="shared"><ul>{#each swatches.filter((s) => s.inline) as s (s.text)}{@render swatch(s)}{/each}</ul></li>
+      {/if}
     </ul>
   {/if}
   <div class="controls" bind:this={controlsEl}>
@@ -1175,6 +1232,15 @@
     align-items: center;
     gap: 0.4rem;
   }
+  /* Hazards' kinds, sharing lines rather than a row each, so the key stays short. */
+  .swatches .shared ul {
+    display: flex;
+    flex-flow: row wrap;
+    gap: 0.2rem 0.8rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
   .swatches svg {
     flex: none;
     stroke-width: 1.5;
@@ -1189,6 +1255,12 @@
   [data-swatch='square'] svg { fill: none; stroke: currentColor; }
   /* Night's dots, at the spacing the canvas lays them, and as faint. */
   [data-swatch='dots'] svg { fill: currentColor; stroke: none; opacity: 0.8; }
+  /* Hazards' shapes: outlines, never filled, and the hatching thinner than the edge. */
+  [data-swatch='asterisk'] svg,
+  [data-swatch^='triangle'] svg,
+  [data-swatch='hexagon'] svg,
+  [data-swatch^='diamond'] svg { fill: none; stroke: currentColor; stroke-linejoin: round; stroke-linecap: round; }
+  .swatches .hatch { stroke-width: 1; }
   .controls {
     position: absolute;
     inset-inline-end: 0.75rem;

@@ -24,6 +24,7 @@ import { describe, expect, it } from 'vitest';
 // `scripts/budget.mjs` itself: that one measures the real build and exits whenever it is loaded.
 import { closure, firstPaint, htmlRefs, isStale, readManifest, routeNodes } from '../../scripts/lib/closure.mjs';
 import { COM_ENTRIES, DEFERRED, LAYER_CODE, MAP_LINES, MOUNT, ROOT_MOUNT, SURFACES, lineCodes, measure } from '../../scripts/lib/budget.mjs';
+import { CAPS, HAZARD_FEEDS, HAZARDS_PEAK_KB, HAZARDS_ROUND_KB } from './outside';
 
 const A = '_app/immutable';
 const NODE = (n: string) => `.svelte-kit/generated/client-optimized/nodes/${n}.js`;
@@ -576,7 +577,7 @@ describe('the map’s layers, each a line of its own', () => {
   });
 
   it('declares each of the map’s new layers, with every ceiling ~20% over the measurement it came from', () => {
-    expect(Object.keys(MAP_LINES).sort()).toEqual(['ages', 'daylight', 'layers', 'spheres', 'timezones', 'zone-missions', 'zones', 'zones-container', 'zones-lookup']);
+    expect(Object.keys(MAP_LINES).sort()).toEqual(['ages', 'daylight', 'hazards', 'layers', 'spheres', 'timezones', 'zone-missions', 'zones', 'zones-container', 'zones-lookup']);
     for (const [name, line] of Object.entries(MAP_LINES)) {
       // A layer's own module, or a Com entry of the same name: the picker's screens are `layers`.
       if (line.code !== null) expect([`${LAYER_CODE}${name}.ts`, COM_ENTRIES[name]], name).toContain(line.code);
@@ -596,7 +597,7 @@ describe('the map’s layers, each a line of its own', () => {
     // Natural Earth's time zones, as D8 decided them, at the finer setting, with each region's own zone beside them.
     expect(MAP_LINES.timezones.data).toMatchObject({ measured: 53_698, limit: 63 * 1024, warn: 57 * 1024 });
     // Every line whose code is written has a ceiling for it; Zones' data waits on Stage 1, Spheres' on their lists.
-    for (const name of ['layers', 'zones', 'zones-lookup', 'timezones', 'spheres', 'daylight', 'ages', 'zone-missions'] as const) {
+    for (const name of ['layers', 'zones', 'zones-lookup', 'timezones', 'spheres', 'daylight', 'ages', 'zone-missions', 'hazards'] as const) {
       expect(MAP_LINES[name]!.js, name).not.toBeNull();
     }
     expect(MAP_LINES.zones.data).toBeNull();
@@ -604,12 +605,57 @@ describe('the map’s layers, each a line of its own', () => {
     // Day and night is worked out on the phone, and the Zones' counts from what it holds: neither fetches a file.
     expect(MAP_LINES.daylight!.files).toBeNull();
     expect(MAP_LINES['zone-missions']!.files).toBeNull();
+    // Hazards fetches nothing from navcom.app: what it reads is the feeds', on a line of its own [remote].
+    expect(MAP_LINES.hazards!.files).toBeNull();
+    expect(MAP_LINES.hazards!.data).toBeNull();
     // Each file the layers will fetch belongs to exactly one line, and a container's file is not an outline.
     for (const file of ['grid/zsp/outlines.json', 'grid/zsp/index.json', 'grid/zsp/terra-africana.json', 'grid/timezones.json', 'grid/spheres.json', 'grid/region-ages.json']) {
       expect(Object.entries(MAP_LINES).filter(([, l]) => l.files?.(file)).length, file).toBe(1);
     }
     expect(MAP_LINES['zones-container'].files!('grid/zsp/sectors/terra-africana.json')).toBe(false);
     expect(MAP_LINES['zones-container'].files!(MOUNT.geometry)).toBe(false);
+  });
+});
+
+describe('what a line asks of hosts outside navcom.app', () => {
+  it('measures what Hazards asks of the feeds, from the feeds, and caps each answer on the phone as outside.ts does', () => {
+    const remote = MAP_LINES.hazards!.remote!;
+    expect(remote, 'Hazards has no measurement of what it asks').toBeTruthy();
+    expect(remote.limit / remote.measured).toBeGreaterThanOrEqual(1.15);
+    expect(remote.limit / remote.measured).toBeLessThanOrEqual(1.25);
+    expect(remote.warn).toBeGreaterThan(remote.measured);
+    expect(remote.warn).toBeLessThan(remote.limit);
+    expect(remote.why).toContain(remote.measured.toLocaleString('en-US'));
+    // Every URL it asks, measured or derived from a measurement, and the round is their sum on the wire.
+    expect(remote.feeds.map((f) => f.url)).toEqual(HAZARD_FEEDS.flatMap((f) => f.urls));
+    expect(remote.feeds.reduce((n, f) => n + f.wire, 0)).toBe(remote.measured);
+    // Each as written, fetched once: a URL derived and never asked can hold a parameter its host ignores.
+    for (const f of remote.feeds) expect(f.how, f.url).toBe('measured: one GET');
+    // The phone enforces these, not the build: they must be the ones it enforces.
+    expect(remote.caps).toEqual(CAPS);
+    // And the cost the layers screen states before anybody turns it on is this one.
+    expect(Math.abs(HAZARDS_ROUND_KB * 1000 - remote.measured)).toBeLessThan(10_000);
+    // A measurement is one day's: the round when the answer that swings with the seasons passes its cap,
+    // everything else as measured, which the screen states beside it.
+    const peak = remote.peak!;
+    expect(peak, 'Hazards states no round for a busy season').toBeTruthy();
+    const swings = remote.feeds.find((f) => f.url === peak.swings)!;
+    const owner = HAZARD_FEEDS.find((f) => f.urls.includes(peak.swings))!;
+    expect(peak.bytes).toBe(remote.measured - swings.wire + CAPS[owner.id]);
+    expect(peak.why).toContain(peak.bytes.toLocaleString('en-US'));
+    expect(Math.abs(HAZARDS_PEAK_KB * 1000 - peak.bytes)).toBeLessThan(10_000);
+    expect(remote.why).toMatch(/quiet month/);
+    // Only Hazards asks anybody outside navcom.app from the map.
+    expect(Object.entries(MAP_LINES).filter(([, l]) => l.remote).map(([n]) => n)).toEqual(['hazards']);
+  });
+
+  it('prints what a line asks outside navcom.app beside its code, as measured from the feeds and not by the build', () => {
+    const f = fixture();
+    const remote = { measured: 1_000, limit: 1_200, warn: 1_080, why: 'a test, measured at 1,000 B', feeds: [], caps: {} };
+    const { out, report, failed } = run(f, { ...testLines(), hazards: { when: 'turning Hazards on', code: null, files: null, per: 'all', js: null, data: null, remote } });
+    expect(out).toMatch(/hazards remote +1\.0 kB \/ +1\.2 kB .*measured from the live feeds/);
+    expect(report.lines.hazards.remote).toEqual({ measured: 1_000, limit: 1_200 });
+    expect(failed).toBe(false);
   });
 });
 

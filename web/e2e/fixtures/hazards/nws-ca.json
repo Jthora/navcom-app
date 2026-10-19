@@ -1,0 +1,589 @@
+{
+ "@context": [
+  "https://geojson.org/geojson-ld/geojson-context.jsonld",
+  {
+   "@version": "1.1",
+   "wx": "https://api.weather.gov/ontology#",
+   "@vocab": "https://api.weather.gov/ontology#"
+  }
+ ],
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.fixture1",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.fixture1",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.fixture1",
+    "areaDesc": "Sacramento; Yolo",
+    "geocode": {
+     "SAME": [
+      "006073",
+      "006059"
+     ],
+     "UGC": [
+      "CAZ043",
+      "CAZ552"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/CAZ043",
+     "https://api.weather.gov/zones/forecast/CAZ552"
+    ],
+    "references": [],
+    "sent": "2026-10-06T12:55:00-07:00",
+    "effective": "2026-10-06T12:55:00-07:00",
+    "onset": "2026-10-06T12:55:00-07:00",
+    "expires": "2026-10-06T13:30:00-07:00",
+    "ends": "2026-10-06T13:30:00-07:00",
+    "status": "Actual",
+    "messageType": "Alert",
+    "category": "Met",
+    "severity": "Moderate",
+    "certainty": "Likely",
+    "urgency": "Expected",
+    "event": "Tornado Warning",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Sacramento CA",
+    "headline": "Tornado Warning issued October 6 at 12:55PM PDT until October 6 at 1:30PM PDT by NWS Sacramento CA",
+    "description": "Fixture.",
+    "instruction": null,
+    "response": "Avoid",
+    "note": null,
+    "parameters": {
+     "AWIPSidentifier": [
+      "CFWSGX"
+     ],
+     "WMOidentifier": [
+      "WHUS46 KSGX 190823"
+     ],
+     "NWSheadline": [
+      "BEACH HAZARDS STATEMENT REMAINS IN EFFECT THROUGH TUESDAY MORNING"
+     ],
+     "BLOCKCHANNEL": [
+      "EAS",
+      "NWEM",
+      "CMAS"
+     ],
+     "VTEC": [
+      "/O.CON.KSGX.BH.S.0015.000000T0000Z-261020T1600Z/"
+     ],
+     "eventEndingTime": [
+      "2026-10-20T09:00:00-07:00"
+     ],
+     "expiredReferences": [
+      "w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.f61bb7b44720ec71e157c4b92e5ad3665ce316b2.001.1,2026-10-18T08:33:00-07:00 w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.3bf19ea6e5d9d4da0341c33779e556b0d4637b79.001.1,2026-10-18T00:59:00-07:00"
+     ]
+    },
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "NWS"
+     ],
+     "NationalWeatherService": [
+      "BHS"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.fixture2",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.fixture2",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.fixture2",
+    "areaDesc": "Northern Sacramento Valley; Northern San Joaquin Valley",
+    "geocode": {
+     "SAME": [
+      "006073",
+      "006059"
+     ],
+     "UGC": [
+      "CAZ043",
+      "CAZ552"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/CAZ043",
+     "https://api.weather.gov/zones/forecast/CAZ552"
+    ],
+    "references": [],
+    "sent": "2026-10-06T03:10:00-07:00",
+    "effective": "2026-10-06T03:10:00-07:00",
+    "onset": "2026-10-06T03:10:00-07:00",
+    "expires": "2026-10-07T18:00:00-07:00",
+    "ends": null,
+    "status": "Actual",
+    "messageType": "Alert",
+    "category": "Met",
+    "severity": "Moderate",
+    "certainty": "Likely",
+    "urgency": "Expected",
+    "event": "Red Flag Warning",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Los Angeles/Oxnard CA",
+    "headline": "Red Flag Warning issued October 6 at 3:10AM PDT until October 7 at 6:00PM PDT by NWS Los Angeles/Oxnard CA",
+    "description": "Fixture.",
+    "instruction": null,
+    "response": "Avoid",
+    "note": null,
+    "parameters": {
+     "AWIPSidentifier": [
+      "CFWSGX"
+     ],
+     "WMOidentifier": [
+      "WHUS46 KSGX 190823"
+     ],
+     "NWSheadline": [
+      "BEACH HAZARDS STATEMENT REMAINS IN EFFECT THROUGH TUESDAY MORNING"
+     ],
+     "BLOCKCHANNEL": [
+      "EAS",
+      "NWEM",
+      "CMAS"
+     ],
+     "VTEC": [
+      "/O.CON.KSGX.BH.S.0015.000000T0000Z-261020T1600Z/"
+     ],
+     "eventEndingTime": [
+      "2026-10-20T09:00:00-07:00"
+     ],
+     "expiredReferences": [
+      "w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.f61bb7b44720ec71e157c4b92e5ad3665ce316b2.001.1,2026-10-18T08:33:00-07:00 w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.3bf19ea6e5d9d4da0341c33779e556b0d4637b79.001.1,2026-10-18T00:59:00-07:00"
+     ]
+    },
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "NWS"
+     ],
+     "NationalWeatherService": [
+      "BHS"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.fixture7",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.fixture7",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.fixture7",
+    "areaDesc": "Butte",
+    "geocode": {
+     "SAME": [
+      "006073",
+      "006059"
+     ],
+     "UGC": [
+      "CAZ043",
+      "CAZ552"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/CAZ043",
+     "https://api.weather.gov/zones/forecast/CAZ552"
+    ],
+    "references": [],
+    "sent": "2026-10-06T12:40:00-07:00",
+    "effective": "2026-10-06T12:40:00-07:00",
+    "onset": "2026-10-06T12:40:00-07:00",
+    "expires": "2026-10-06T18:40:00-07:00",
+    "ends": null,
+    "status": "Actual",
+    "messageType": "Alert",
+    "category": "Safety",
+    "severity": "Extreme",
+    "certainty": "Observed",
+    "urgency": "Immediate",
+    "event": "Evacuation Immediate",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Sacramento CA",
+    "headline": "Evacuation Immediate issued October 6 at 12:40PM PDT by NWS Sacramento CA",
+    "description": "Fixture.",
+    "instruction": null,
+    "response": "Evacuate",
+    "note": null,
+    "parameters": {
+     "AWIPSidentifier": [
+      "CFWSGX"
+     ],
+     "WMOidentifier": [
+      "WHUS46 KSGX 190823"
+     ],
+     "NWSheadline": [
+      "BEACH HAZARDS STATEMENT REMAINS IN EFFECT THROUGH TUESDAY MORNING"
+     ],
+     "BLOCKCHANNEL": [
+      "EAS",
+      "NWEM",
+      "CMAS"
+     ],
+     "VTEC": [
+      "/O.CON.KSGX.BH.S.0015.000000T0000Z-261020T1600Z/"
+     ],
+     "eventEndingTime": [
+      "2026-10-20T09:00:00-07:00"
+     ],
+     "expiredReferences": [
+      "w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.f61bb7b44720ec71e157c4b92e5ad3665ce316b2.001.1,2026-10-18T08:33:00-07:00 w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.3bf19ea6e5d9d4da0341c33779e556b0d4637b79.001.1,2026-10-18T00:59:00-07:00"
+     ]
+    },
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "EVI"
+     ],
+     "NationalWeatherService": [
+      "EVI"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.fixture3",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.fixture3",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.fixture3",
+    "areaDesc": "Fixture County",
+    "geocode": {
+     "SAME": [
+      "006073",
+      "006059"
+     ],
+     "UGC": [
+      "CAZ043",
+      "CAZ552"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/CAZ043",
+     "https://api.weather.gov/zones/forecast/CAZ552"
+    ],
+    "references": [],
+    "sent": "2026-10-06T11:00:00-07:00",
+    "effective": "2026-10-06T11:00:00-07:00",
+    "onset": "2026-10-06T11:00:00-07:00",
+    "expires": "2026-10-06T18:00:00-07:00",
+    "ends": "2026-10-06T18:00:00-07:00",
+    "status": "Actual",
+    "messageType": "Alert",
+    "category": "Met",
+    "severity": "Moderate",
+    "certainty": "Likely",
+    "urgency": "Expected",
+    "event": "Tornado Watch",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Sacramento CA",
+    "headline": "Tornado Watch issued October 6 at 11:00AM PDT until October 6 at 6:00PM PDT by NWS Sacramento CA",
+    "description": "Fixture.",
+    "instruction": null,
+    "response": "Avoid",
+    "note": null,
+    "parameters": {
+     "AWIPSidentifier": [
+      "CFWSGX"
+     ],
+     "WMOidentifier": [
+      "WHUS46 KSGX 190823"
+     ],
+     "NWSheadline": [
+      "BEACH HAZARDS STATEMENT REMAINS IN EFFECT THROUGH TUESDAY MORNING"
+     ],
+     "BLOCKCHANNEL": [
+      "EAS",
+      "NWEM",
+      "CMAS"
+     ],
+     "VTEC": [
+      "/O.CON.KSGX.BH.S.0015.000000T0000Z-261020T1600Z/"
+     ],
+     "eventEndingTime": [
+      "2026-10-20T09:00:00-07:00"
+     ],
+     "expiredReferences": [
+      "w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.f61bb7b44720ec71e157c4b92e5ad3665ce316b2.001.1,2026-10-18T08:33:00-07:00 w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.3bf19ea6e5d9d4da0341c33779e556b0d4637b79.001.1,2026-10-18T00:59:00-07:00"
+     ]
+    },
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "NWS"
+     ],
+     "NationalWeatherService": [
+      "BHS"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.fixture4",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.fixture4",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.fixture4",
+    "areaDesc": "Fixture County",
+    "geocode": {
+     "SAME": [
+      "006073",
+      "006059"
+     ],
+     "UGC": [
+      "CAZ043",
+      "CAZ552"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/CAZ043",
+     "https://api.weather.gov/zones/forecast/CAZ552"
+    ],
+    "references": [],
+    "sent": "2026-10-06T09:00:00-07:00",
+    "effective": "2026-10-06T09:00:00-07:00",
+    "onset": "2026-10-06T09:00:00-07:00",
+    "expires": "2026-10-06T21:00:00-07:00",
+    "ends": "2026-10-06T21:00:00-07:00",
+    "status": "Actual",
+    "messageType": "Alert",
+    "category": "Met",
+    "severity": "Moderate",
+    "certainty": "Likely",
+    "urgency": "Expected",
+    "event": "Wind Advisory",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS San Diego CA",
+    "headline": "Wind Advisory issued October 6 at 9:00AM PDT until October 6 at 9:00PM PDT by NWS San Diego CA",
+    "description": "Fixture.",
+    "instruction": null,
+    "response": "Avoid",
+    "note": null,
+    "parameters": {
+     "AWIPSidentifier": [
+      "CFWSGX"
+     ],
+     "WMOidentifier": [
+      "WHUS46 KSGX 190823"
+     ],
+     "NWSheadline": [
+      "BEACH HAZARDS STATEMENT REMAINS IN EFFECT THROUGH TUESDAY MORNING"
+     ],
+     "BLOCKCHANNEL": [
+      "EAS",
+      "NWEM",
+      "CMAS"
+     ],
+     "VTEC": [
+      "/O.CON.KSGX.BH.S.0015.000000T0000Z-261020T1600Z/"
+     ],
+     "eventEndingTime": [
+      "2026-10-20T09:00:00-07:00"
+     ],
+     "expiredReferences": [
+      "w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.f61bb7b44720ec71e157c4b92e5ad3665ce316b2.001.1,2026-10-18T08:33:00-07:00 w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.3bf19ea6e5d9d4da0341c33779e556b0d4637b79.001.1,2026-10-18T00:59:00-07:00"
+     ]
+    },
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "NWS"
+     ],
+     "NationalWeatherService": [
+      "BHS"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.fixture5",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.fixture5",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.fixture5",
+    "areaDesc": "Fixture County",
+    "geocode": {
+     "SAME": [
+      "006073",
+      "006059"
+     ],
+     "UGC": [
+      "CAZ043",
+      "CAZ552"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/CAZ043",
+     "https://api.weather.gov/zones/forecast/CAZ552"
+    ],
+    "references": [],
+    "sent": "2026-10-06T10:00:00-07:00",
+    "effective": "2026-10-06T10:00:00-07:00",
+    "onset": "2026-10-06T10:00:00-07:00",
+    "expires": "2026-10-06T12:00:00-07:00",
+    "ends": null,
+    "status": "Actual",
+    "messageType": "Cancel",
+    "category": "Met",
+    "severity": "Moderate",
+    "certainty": "Likely",
+    "urgency": "Expected",
+    "event": "Flood Warning",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Eureka CA",
+    "headline": "The Flood Warning has been cancelled.",
+    "description": "Fixture.",
+    "instruction": null,
+    "response": "Avoid",
+    "note": null,
+    "parameters": {
+     "AWIPSidentifier": [
+      "CFWSGX"
+     ],
+     "WMOidentifier": [
+      "WHUS46 KSGX 190823"
+     ],
+     "NWSheadline": [
+      "BEACH HAZARDS STATEMENT REMAINS IN EFFECT THROUGH TUESDAY MORNING"
+     ],
+     "BLOCKCHANNEL": [
+      "EAS",
+      "NWEM",
+      "CMAS"
+     ],
+     "VTEC": [
+      "/O.CON.KSGX.BH.S.0015.000000T0000Z-261020T1600Z/"
+     ],
+     "eventEndingTime": [
+      "2026-10-20T09:00:00-07:00"
+     ],
+     "expiredReferences": [
+      "w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.f61bb7b44720ec71e157c4b92e5ad3665ce316b2.001.1,2026-10-18T08:33:00-07:00 w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.3bf19ea6e5d9d4da0341c33779e556b0d4637b79.001.1,2026-10-18T00:59:00-07:00"
+     ]
+    },
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "NWS"
+     ],
+     "NationalWeatherService": [
+      "BHS"
+     ]
+    }
+   }
+  },
+  {
+   "id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.fixture6",
+   "type": "Feature",
+   "geometry": null,
+   "properties": {
+    "@id": "https://api.weather.gov/alerts/urn:oid:2.49.0.1.840.0.fixture6",
+    "@type": "wx:Alert",
+    "id": "urn:oid:2.49.0.1.840.0.fixture6",
+    "areaDesc": "Fixture County",
+    "geocode": {
+     "SAME": [
+      "006073",
+      "006059"
+     ],
+     "UGC": [
+      "CAZ043",
+      "CAZ552"
+     ]
+    },
+    "affectedZones": [
+     "https://api.weather.gov/zones/forecast/CAZ043",
+     "https://api.weather.gov/zones/forecast/CAZ552"
+    ],
+    "references": [],
+    "sent": "2026-10-06T12:00:00-07:00",
+    "effective": "2026-10-06T12:00:00-07:00",
+    "onset": "2026-10-06T12:00:00-07:00",
+    "expires": "2026-10-06T12:30:00-07:00",
+    "ends": null,
+    "status": "Test",
+    "messageType": "Alert",
+    "category": "Met",
+    "severity": "Moderate",
+    "certainty": "Likely",
+    "urgency": "Expected",
+    "event": "Tornado Warning",
+    "sender": "w-nws.webmaster@noaa.gov",
+    "senderName": "NWS Sacramento CA",
+    "headline": "This is a test.",
+    "description": "Fixture.",
+    "instruction": null,
+    "response": "Avoid",
+    "note": null,
+    "parameters": {
+     "AWIPSidentifier": [
+      "CFWSGX"
+     ],
+     "WMOidentifier": [
+      "WHUS46 KSGX 190823"
+     ],
+     "NWSheadline": [
+      "BEACH HAZARDS STATEMENT REMAINS IN EFFECT THROUGH TUESDAY MORNING"
+     ],
+     "BLOCKCHANNEL": [
+      "EAS",
+      "NWEM",
+      "CMAS"
+     ],
+     "VTEC": [
+      "/O.CON.KSGX.BH.S.0015.000000T0000Z-261020T1600Z/"
+     ],
+     "eventEndingTime": [
+      "2026-10-20T09:00:00-07:00"
+     ],
+     "expiredReferences": [
+      "w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.f61bb7b44720ec71e157c4b92e5ad3665ce316b2.001.1,2026-10-18T08:33:00-07:00 w-nws.webmaster@noaa.gov,urn:oid:2.49.0.1.840.0.3bf19ea6e5d9d4da0341c33779e556b0d4637b79.001.1,2026-10-18T00:59:00-07:00"
+     ]
+    },
+    "scope": "Public",
+    "code": "IPAWSv1.0",
+    "language": "en-US",
+    "web": "http://www.weather.gov",
+    "eventCode": {
+     "SAME": [
+      "NWS"
+     ],
+     "NationalWeatherService": [
+      "BHS"
+     ]
+    }
+   }
+  }
+ ],
+ "title": "Current watches, warnings, and advisories for California",
+ "updated": "2026-10-06T19:58:00+00:00"
+}

@@ -10,6 +10,15 @@
   ],
   "headers": [
     {
+      "source": "/",
+      "headers": [
+        {
+          "key": "content-security-policy",
+          "value": "connect-src 'self' wss: ws: https://earthquake.usgs.gov https://eonet.gsfc.nasa.gov https://www.gdacs.org https://api.weather.gov"
+        }
+      ]
+    },
+    {
       "source": "/version.json",
       "headers": [
         {

@@ -6,6 +6,7 @@ import { blankDevice, chunkOf, open, seedDevice } from './device';
 import { frame, inkNear, mapReady, pixelAt, screenAt, tap, tapAt, toneNear, zoomAt } from './map';
 import { METRES_PER_UNIT } from '../src/lib/grid/topology';
 import { admit, mission, resign, standInKey, type StandIn } from './registry';
+import { serveHazards } from './hazards';
 import { serveZones } from './zsp';
 
 /**
@@ -151,13 +152,31 @@ test.describe('the landing map draws, and tells nobody', () => {
     expect((await picture(page)).colours).toBeGreaterThan(3);
   });
 
-  test('it talks to nobody but navcom.app and the relays that hold the missions', async ({ page }) => {
+  test('it talks to nobody but navcom.app and the relays that hold the missions, until Hazards is chosen, and then to its three feeds alone', async ({ page }) => {
     // The property map.md is built around, as refined when missions moved onto the device: no
     // tile server, no font host, no analytics — and sockets only to The Record and its mirror,
     // because every device reads the missions itself rather than being handed a picture. Listed
     // here by name on purpose: a new host on this page should fail this test until somebody
     // decides it belongs [docs/design/grid.md].
     const RELAYS = ['wss://record.cosmiccodex.app', 'wss://blackpi.cosmiccodex.app'];
+    /*
+     * And once somebody chooses Hazards, its three feeds and nobody else, by name, never before the
+     * choice [map.md §8, Hazards; docs/product/what-leaves.md]. Written out here rather than imported
+     * from outside.ts, so the code cannot widen what this test allows by changing a constant.
+     */
+    const HAZARD_HOSTS = ['earthquake.usgs.gov', 'eonet.gsfc.nasa.gov', 'www.gdacs.org'];
+    /*
+     * The page's Content-Security-Policy stops a connection it does not allow before it is a request,
+     * so a request list alone would pass on a feature the policy broke. Every violation is recorded too,
+     * and there must be none.
+     */
+    await page.addInitScript(() => {
+      const g = globalThis as unknown as { __violations: string[] };
+      g.__violations = [];
+      document.addEventListener('securitypolicyviolation', (e) => g.__violations.push(`${e.violatedDirective} ${e.blockedURI}`));
+    });
+    const violations = () => page.evaluate(() => (globalThis as unknown as { __violations: string[] }).__violations);
+    await serveHazards(page);
     const requested: string[] = [];
     page.on('request', (r) => requested.push(r.url()));
     await ready(page);
@@ -170,6 +189,23 @@ test.describe('the landing map draws, and tells nobody', () => {
     expect(requested.filter((u) => new URL(u).origin !== home)).toEqual([]);
     await expect.poll(async () => new Set(await sockets()).size, { timeout: 10_000 }).toBe(RELAYS.length);
     expect(await sockets()).toEqual(expect.arrayContaining(RELAYS));
+    expect((await sockets()).filter((u) => !RELAYS.includes(u))).toEqual([]);
+
+    // Before the choice, the picker says who it would ask and what they learn, and nobody is asked.
+    await page.getByRole('button', { name: 'Map layers' }).click();
+    const ask = page.locator('[data-hazards-ask]');
+    await expect(ask).toBeVisible();
+    for (const host of HAZARD_HOSTS) await expect(ask).toContainText(host);
+    await expect(ask).toContainText('not where you are looking');
+    expect(await page.locator('[data-hazards]').isChecked()).toBe(false);
+    const away = () => requested.filter((u) => new URL(u).origin !== home);
+    expect(away(), 'asked somebody outside navcom.app before Hazards was chosen').toEqual([]);
+
+    await page.locator('[data-hazards]').check();
+    await expect.poll(() => new Set(away().map((u) => new URL(u).host)).size, { timeout: 10_000 }).toBe(HAZARD_HOSTS.length);
+    await expect(page.locator('[data-legend]')).toContainText('GDACS just now');
+    expect([...new Set(away().map((u) => new URL(u).host))].sort()).toEqual([...HAZARD_HOSTS].sort());
+    expect(await violations(), 'the page tried to reach somebody its policy does not allow').toEqual([]);
     expect((await sockets()).filter((u) => !RELAYS.includes(u))).toEqual([]);
   });
 

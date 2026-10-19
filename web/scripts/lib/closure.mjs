@@ -177,7 +177,8 @@ export function isStale(manifest, build) {
 
 /**
  * The stylesheets and scripts a page's HTML names, as build-root-relative paths. External URLs are
- * left out: the CSP blocks them anyway.
+ * left out, because no page here names one and this measures only what the build ships. No policy
+ * blocks them: the one Content-Security-Policy, the root's, governs connections alone (`vercel.json`).
  *
  * @param {string} html the page's markup
  * @param {string} page the page's own path, relative to the build root, e.g. `terminal/find/index.html`

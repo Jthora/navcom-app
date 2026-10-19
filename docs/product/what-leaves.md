@@ -145,12 +145,35 @@ Stated as capability rather than intent, because you do not get to choose who ru
 - Which mission a claim or report sealed to its poster is for, or that it is yours — except The
   Record and its mirror, as the line above says, for a sealed report you are waiting to see settled
 
+## What it asks anyone else, only when you choose
+
+Everything above goes to relays. On the landing page two things ask somebody else, each only once you
+choose it, and nothing else there does: the page's own `Content-Security-Policy` lets it connect to
+navcom.app, to relays, and to these four hosts and no others (`vercel.json`; `web/src/lib/outside.ts` is
+the one list of them, and a test holds the page, the policy and this table to each other). The policy
+arrives with the landing page itself, so it holds whenever that page is opened as a page: every link to
+it reloads, from the terminal, its error page and the public site's header, so it is never shown under
+another page's headers, which would carry no such policy (`web/src/lib/outside.test.ts` holds that
+against the built pages).
+
+| | Asks | When | What each learns |
+|---|---|---|---|
+| **Hazards**, on the map's layers screen | `earthquake.usgs.gov`, `eonet.gsfc.nasa.gov`, `www.gdacs.org` | When you tick it, and then each again every 10 minutes while the map is on screen; never while the page is hidden. An answer too large to read is not asked again on that page. The choice is never stored, so a reload asks nobody | This phone's internet address, which can place it roughly, often to a city; its browser; the time; and that it asked from navcom.app. Each is asked for its **whole-world list**, so **not where you are looking** on the map: nothing of the map, a tap or this phone's position is in any request. About 196 kB a round in a quiet month for fires, and up to about 700 kB in a busy one, said on the screen before you tick it |
+| **Weather warnings**, on a mission filed under a US state | `api.weather.gov` | When you tap *Check NWS warnings*, and never otherwise | The same, and **which state**: the one the mission is filed under, said on the screen before you tap. Not the mission, and nothing finer than the state |
+
+Neither carries a cookie or a referrer, and NavCom's service worker caches neither. What comes back is
+read on this phone and drawn from memory; nothing of it is stored, published or sent on. Outside the US
+no warning service is asked at all, and the mission's screen says so. A browser always sends `Origin:
+https://navcom.app` with a request like these, and no setting of the page's can take it off: that is
+why the screens say the host learns you asked from navcom.app.
+
 ## What never leaves at all
 
 | | Where it stays |
 |---|---|
 | Your secret keys | Never transmitted, never escrowed, never registered |
 | Field notes | Wipeable tier, this device. `notes.ts` — never published, never seen by a peer or a watch |
+| Where you are looking on the map | This phone. Nothing on the map is fetched by what is on screen: the map's own files come whole from navcom.app, and Hazards asks its three feeds for the whole world [`map.md`](../design/map.md) §8 |
 | Which Zone and Sector you are in, and the one you work in | This phone. The lookup runs here over an index everybody fetches whole, from a position asked for once and rounded to 500 m; opening a Sector it found, or the one you keep, fetches nothing. Opening that Sector's Zone or Terra is your own tap, and fetches its Terra's Sectors, so navcom.app's host learns which of seventeen Terrae and Maria, and the screen says so before you tap. The Sector you keep is Wipeable and never published [`map.md`](../design/map.md) §8 |
 | Your patrol record | This device, unless you deliberately export it |
 | Your emergency contact | This phone. The escalation ladder's contact rung is *device-initiated* — your phone reaches your person, so no number is stored anywhere else |

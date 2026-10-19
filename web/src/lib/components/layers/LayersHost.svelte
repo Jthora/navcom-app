@@ -6,6 +6,7 @@
    * of its own that nothing covers [com.md §4]; `e2e/com-distress.spec.ts` taps for it over each.
    */
   import type { HostProps } from '$lib/com/screens';
+  import HazardScreen from './HazardScreen.svelte';
   import LayersScreen from './LayersScreen.svelte';
   import LookupScreen from './LookupScreen.svelte';
   import SphereScreen from './SphereScreen.svelte';
@@ -25,4 +26,6 @@
   <TimeScreen offset={Number(screen.offset)} {now} />
 {:else if screen.kind === 'sphere'}
   <SphereScreen id={screen.id} code={screen.code} {nav} />
+{:else if screen.kind === 'hazard'}
+  <HazardScreen ids={screen.ids} of={Number(screen.of)} {now} {nav} />
 {/if}

@@ -541,7 +541,14 @@
 
 <svelte:window onkeydown={onKey} />
 
-<div class="terminal landing">
+<!--
+  Every link out of this page reloads [data-sveltekit-reload, on everything inside]. The root carries a
+  Content-Security-Policy of its own, which lets it ask the hosts Hazards and the weather warnings
+  read, and nobody else (`vercel.json`, `$lib/outside`); a page SvelteKit opened in place would carry it
+  on, and /terminal/who checks proofs wherever a card says they are. Com's screens are drawn in here
+  too, so their links reload as well.
+-->
+<div class="terminal landing" data-sveltekit-reload>
   <!--
     Distress, first in the document and outside both panes, so that no sheet, map or detail can
     ever cover it [com.md §4]. Prerendered hidden and shown only on a device with an operator:

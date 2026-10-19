@@ -9,7 +9,11 @@
 import { MISSION_PUBLISHERS, keyOf, type Settlement } from '@navcom/core';
 import { countryName, filedUnder } from '$lib/grid/topology';
 
-const US: Record<string, string> = {
+/**
+ * The US states, DC and the five inhabited territories, by the code a mission files them under after
+ * `us-`: also the NWS's own areas, upper-cased, which is what `missions/nws.ts` asks by.
+ */
+export const US: Readonly<Record<string, string>> = {
   al: 'Alabama', ak: 'Alaska', az: 'Arizona', ar: 'Arkansas', ca: 'California', co: 'Colorado',
   ct: 'Connecticut', de: 'Delaware', dc: 'Washington, DC', fl: 'Florida', ga: 'Georgia', hi: 'Hawaii',
   id: 'Idaho', il: 'Illinois', in: 'Indiana', ia: 'Iowa', ks: 'Kansas', ky: 'Kentucky', la: 'Louisiana',

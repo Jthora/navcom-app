@@ -5,7 +5,9 @@
  * One layer at a time, as Starcom's picker has it: Nation States, which is today's map; Starcom's
  * Zones; the Spheres; Time zones; or none. A pick leaves that layer on and the others off. The missions
  * light whichever is drawn, because they are not a way of dividing the Earth. Over a layer, overlays:
- * day and night, the directory by when it was last checked, and the open missions counted by Zone.
+ * day and night, the directory by when it was last checked, the open missions counted by Zone, and
+ * Hazards, the one overlay that asks anybody outside navcom.app, and only once somebody chooses it
+ * [$lib/outside].
  *
  * Only the choice and a few small flags live here, loaded with the map as it mounts. Each layer's own
  * code and data arrive when somebody chooses it, never before [scripts/lib/budget.mjs MAP_LINES]:
@@ -21,6 +23,7 @@ import type { Screen } from '$lib/com/screens';
 import type { View } from './pick';
 import type { PlaceOfRecord } from './places';
 import type { Shape } from './topology';
+import type { HazardsHeld } from './layers/hazards';
 import type { SpheresFile } from './layers/spheres';
 import type { ZonesOutlines } from './layers/zones';
 
@@ -81,9 +84,11 @@ export interface DrawnLayer {
 
 /**
  * Something drawn over whichever layer is chosen, rather than instead of it: day and night, the
- * directory by last check, open missions counted by Zone. Each is a module of its own under
+ * directory by last check, open missions counted by Zone, Hazards. Each is a module of its own under
  * `layers/`, loaded by `import()` when it is first wanted and charged to its own line
- * [budget.mjs MAP_LINES], and none of them answers a tap: the layer under it, and the points, do.
+ * [budget.mjs MAP_LINES]. **Hazards is the one that answers a tap**, with its own marks, after the
+ * places of record and before a lit shape [map.md §8]; the rest answer none, and the layer under them
+ * and the points do.
  */
 export interface Overlay {
   /** Starts it: its files, once, and any tick it keeps. */
@@ -100,8 +105,18 @@ export interface Overlay {
    * the regions whose places it holds back.
    */
   points?(ctx: CanvasRenderingContext2D, view: View, ink: Ink, points: readonly PlaceOfRecord[]): boolean;
-  /** In CSS px, over every point: a badge, the sun. Under only what a hover or a tap lifted, and the reticle. */
-  marks?(ctx: CanvasRenderingContext2D, view: View, ink: Ink): void;
+  /**
+   * In CSS px, over every point: a badge, the sun, a hazard's mark. Under only what a hover or a tap
+   * lifted, and the reticle. `lifted` are the ids of the marks a hover, a tap or the screen open in Com
+   * has taken, drawn heavier.
+   */
+  marks?(ctx: CanvasRenderingContext2D, view: View, ink: Ink, lifted: ReadonlySet<string>): void;
+  /**
+   * Its own marks under `at` (CSS px), nearest first, and what a hover says of them: only Hazards
+   * answers, and only with marks it drew. `ids` is what the screen a tap opens is given, and `of` how
+   * many marks were in reach, which `ids` may name fewer of.
+   */
+  hit?(view: View, at: readonly [number, number]): { ids: string; say: string; of: number } | null;
   /** Its line in the map's key: what it is, whose, and how old [invariant 7]. */
   legend(): string;
   /** What it adds to what a hover over an area says. */
@@ -114,10 +129,15 @@ export interface Overlay {
 
 /** One row of a key under the map's own: a mark drawn as the map draws it, and what it means. */
 export interface Swatch {
-  /** `dots`: a patch of night's dots, as day and night lays them over an area. */
-  mark: 'disc' | 'dot' | 'ring' | 'square' | 'dots';
+  /**
+   * `dots`: a patch of night's dots, as day and night lays them over an area. The rest are Hazards'
+   * shapes, all outlines, two of them hatched [layers/hazards.ts].
+   */
+  mark: 'disc' | 'dot' | 'ring' | 'square' | 'dots' | 'asterisk' | 'triangle' | 'triangle-hatched' | 'hexagon' | 'diamond' | 'diamond-hatched';
   tone: 'ink' | 'muted' | 'faint';
   text: string;
+  /** Shares a line with the next, wrapping, rather than a row of its own: Hazards' six kinds. */
+  inline?: boolean;
 }
 
 /**
@@ -167,6 +187,13 @@ export const mapLayers = $state({
   counts: 'off' as Loading,
   /** The Spheres' lists and their small members' label points, fetched when Spheres is chosen [D9]. */
   spheres: 'off' as Loading,
+  /**
+   * Hazards over any layer, from three public feeds outside navcom.app: off until somebody ticks it,
+   * and never stored, so a reload asks nobody [$lib/outside].
+   */
+  hazards: false,
+  /** Hazards' own code: what it reads arrives with its own states, per feed, in `layerData.hazards`. */
+  hazardsCode: 'off' as Loading,
   loaded: 0
 });
 
@@ -207,7 +234,12 @@ export const layerData = {
    */
   countries: null as Shape[] | null,
   /** The Spheres' lists, vendored, fetched whole when Spheres is chosen [layers/spheres.ts; D9]. */
-  spheres: null as SpheresFile | null
+  spheres: null as SpheresFile | null,
+  /**
+   * What Hazards has read, every mark and each feed's state and age, set by its own code so the screens
+   * that show it carry none of that code [layers/hazards.ts]. Null until it is first turned on.
+   */
+  hazards: null as HazardsHeld | null
 };
 
 /** Says that `layerData` changed. */

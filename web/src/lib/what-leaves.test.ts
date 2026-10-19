@@ -184,3 +184,27 @@ describe('the card row is derived from what a card actually emits', () => {
     expect(cardRow()).toMatch(/a card is public by definition/i);
   });
 });
+
+describe('what it asks anybody but a relay', () => {
+  /*
+   * Hazards and the weather warnings are the first things on the landing page that ask a host that is
+   * neither navcom.app nor a relay. The page says so in its own section, and keeps where you are looking
+   * among what never leaves, because the feeds are asked for the whole world and the NWS for a state.
+   * The hosts themselves are held to the code and the policy in outside.test.ts.
+   */
+  const section = () => page().split('## What it asks anyone else, only when you choose')[1]?.split('\n## ')[0] ?? '';
+  const never = () => page().split('## What never leaves at all')[1]?.split('\n## ')[0] ?? '';
+
+  it('says who is asked, when, and what each learns, before you choose', () => {
+    expect(section().length, 'no section on what it asks anybody else').toBeGreaterThan(200);
+    expect(section()).toMatch(/whole-world list/);
+    expect(section()).toMatch(/not where you are looking/);
+    expect(section()).toMatch(/which state/);
+    expect(section()).toMatch(/asked from navcom\.app/);
+    expect(section()).toMatch(/never while the page is hidden/);
+  });
+
+  it('keeps where you are looking on the map among what never leaves', () => {
+    expect(never()).toMatch(/^\| Where you are looking on the map \| This phone\./m);
+  });
+});

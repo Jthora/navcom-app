@@ -13,7 +13,8 @@
       the two here was inherited from an earlier draft and repeated forward rather than
       questioned; the name belongs alone.
     -->
-    <a class="brand" href="/">
+    <!-- Reloads: /who runs the client router, and the root's policy arrives only with its own page [+error.svelte]. -->
+    <a class="brand" href="/" data-sveltekit-reload>
       <span class="brand-mark">NAVCOM</span>
     </a>
     <nav>
