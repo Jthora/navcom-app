@@ -90,7 +90,8 @@ export const layer: DrawnLayer = {
   lines(ctx, scale, ink) {
     sync();
     if (!drawn.lines) return;
-    ctx.lineWidth = 0.8 / scale;
+    // Over the night's dots, a whole pixel: at 0.8 px the edges of +5:30 and +5:45 were lost in them at night.
+    ctx.lineWidth = 1 / scale;
     ctx.strokeStyle = ink.strong;
     ctx.stroke(drawn.lines);
   },
@@ -105,7 +106,8 @@ export const layer: DrawnLayer = {
     return `${labelOf(offset)} · ${clockAt(offset, Date.now())} now, standard time`;
   },
   open: (shape) => ({ kind: 'time', offset: String(shape.props.zone) }),
-  legend: () => 'Time zones · standard time as drawn in 2012, no daylight saving · Natural Earth',
+  legend: () => 'Time zones 2012 · no daylight saving',
+  credit: () => 'standard time as drawn in 2012, with no daylight saving · Natural Earth, public domain',
   region(slug) {
     const t = layerData.regionTime?.(slug);
     return t ? `${t.time}, ${t.zone.replace(/_/g, ' ')}` : null;

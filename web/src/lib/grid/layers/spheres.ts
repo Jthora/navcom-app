@@ -10,18 +10,18 @@
  * says so rather than drawing anything synthetic.
  *
  * A member is drawn over the world's own outline for its code; a small state with no outline at the
- * map's scale is a circle at Natural Earth's label point (D9). In the neutrals only, every hue being a
+ * map's scale is a mark at Natural Earth's label point (D9). In the neutrals only, every hue being a
  * watch state. **One Sphere at a time is shaded, the one somebody opened, and it is hatched**, so it is
  * never mistaken for a mission's solid lift, with a thin ink outline; the hatch is kept in screen space,
  * so it reads the same at every zoom. With none opened nothing is shaded, and the key says to open one:
  * Spheres overlap, and with the real lists nearly every country is in one, so a lift for "a member of
  * some Sphere" would be a faint wash over the whole world that tells nobody anything. A small state is a
- * dotted circle until its Sphere is opened, then a filled one: Places' rings are solid, so the two are
- * never taken for each other. The key names the Sphere hatched, after Back and across a pan, since the
+ * small filled diamond, muted, and larger and in ink once its Sphere is opened: the circle is a
+ * mission's, and Places' are squares. The key names the Sphere hatched, after Back and across a pan, since the
  * hatch outlives the screen that chose it.
  */
 
-import { areaAt, countryName, project, type Shape } from '../topology';
+import { areaAt, countryName, inside, project, type Shape } from '../topology';
 import { layerData, loaded, mapLayers, type DrawnLayer } from '../layer.svelte';
 
 /** `/grid/spheres.json`, as `scripts/spheres-vendor.mjs` writes it. */
@@ -190,6 +190,8 @@ export function readSaid(read: SpheresFile['navcom']['read']): string {
 /** A circle's reach for a thumb, in CSS px: a small state is a few pixels wide, a thumb is not. */
 const CIRCLE_SLOP = 12;
 const CIRCLE_PX = 5;
+/** A small state's diamond, from its middle to a corner, in CSS px: four, and five in the Sphere opened. */
+const DIAMOND_PX = 3;
 
 /** A small member as a shape a hover can lift and a tap can open: a ring the size it is drawn, at this zoom. */
 function circleShape(code: string, at: { x: number; y: number }, scale: number): Shape {
@@ -239,45 +241,42 @@ export const layer: DrawnLayer = {
     }
     if (drawn.circles.size === 0) return;
     /*
-     * The small states, a circle each, the same size at every zoom (D9): filled in the Sphere opened,
-     * and otherwise dotted, which nothing else on the map is, so it is never read as a region of Places.
+     * The small states, a small filled diamond each, the same size at every zoom (D9): ink and larger in
+     * the Sphere opened, muted otherwise. A circle was a mission's shape, and at 5 px Malta's covered
+     * Sicily to Tunisia while Barbados, Singapore and Mauritius read as missions (audit, 2026-10-19).
      */
-    const r = CIRCLE_PX / scale;
     const chosen = new Set(drawn.chosen?.circles.map((c) => c.code) ?? []);
-    const dotted = new Path2D();
-    for (const [code, c] of drawn.circles) {
-      if (!chosen.has(code)) {
-        dotted.moveTo(c.x + r, c.y);
-        dotted.arc(c.x, c.y, r, 0, Math.PI * 2);
-        continue;
+    for (const on of [false, true]) {
+      const r = (on ? DIAMOND_PX + 1 : DIAMOND_PX) / scale;
+      const p = new Path2D();
+      for (const [code, c] of drawn.circles) {
+        if (chosen.has(code) !== on) continue;
+        p.moveTo(c.x, c.y - r);
+        p.lineTo(c.x + r, c.y);
+        p.lineTo(c.x, c.y + r);
+        p.lineTo(c.x - r, c.y);
+        p.closePath();
       }
-      ctx.beginPath();
-      ctx.arc(c.x, c.y, r, 0, Math.PI * 2);
-      ctx.globalAlpha = 0.35;
-      ctx.fillStyle = ink.ink;
-      ctx.fill();
-      ctx.globalAlpha = 1;
-      ctx.lineWidth = 1.5 / scale;
-      ctx.strokeStyle = ink.ink;
-      ctx.stroke();
+      ctx.fillStyle = on ? ink.ink : ink.muted;
+      ctx.fill(p);
     }
-    // Eight dots to a circle, each about 1.75 px, nearly 4 px apart: plainly dotted, and still round.
-    ctx.save();
-    ctx.lineCap = 'round';
-    ctx.lineWidth = 1.75 / scale;
-    ctx.setLineDash([0.01 / scale, (Math.PI * 2 * CIRCLE_PX) / 8 / scale]);
-    ctx.strokeStyle = ink.muted;
-    ctx.stroke(dotted);
-    ctx.restore();
   },
   hit(v, at) {
     if (!layerData.spheres) return undefined;
     sync();
-    // A small state's circle first, within a thumb's reach, then any member's outline.
+    /*
+     * A small state's diamond first, within a thumb's reach, then any member's outline. **A country the
+     * finger is inside wins**, as it does for a point [GridMap.svelte hitAt]: there a diamond takes a tap
+     * only within its drawn size and 6 px of air, since a thumb's 12 px at the whole Earth is 13° of
+     * longitude, and a tap in southern Sicily opened Malta (audit, 2026-10-24).
+     */
+    const u: [number, number] = [v.cx + (at[0] - v.width / 2) / v.scale, v.cy + (at[1] - v.height / 2) / v.scale];
+    const ashore = (layerData.countries ?? []).some((s) => u[0] >= s.bbox[0] && u[0] <= s.bbox[2] && u[1] >= s.bbox[1] && u[1] <= s.bbox[3] && inside(s.rings, u));
+    const reach = ashore ? DIAMOND_PX + 1 + 6 : CIRCLE_SLOP;
     let best: { code: string; c: { x: number; y: number }; d: number } | null = null;
     for (const [code, c] of drawn.circles) {
       const d = Math.hypot((c.x - v.cx) * v.scale + v.width / 2 - at[0], (c.y - v.cy) * v.scale + v.height / 2 - at[1]);
-      if (d <= CIRCLE_SLOP && (!best || d < best.d)) best = { code, c, d };
+      if (d <= reach && (!best || d < best.d)) best = { code, c, d };
     }
     if (best) return circleShape(best.code, best.c, v.scale);
     // A country in no Sphere answers as Nation States would: a tap is never dead.
@@ -295,8 +294,16 @@ export const layer: DrawnLayer = {
     const n = file.navcom;
     // What is shaded first, since the hatch outlives the screen that chose it; then whose, and how old.
     const one = file.spheres.find((s) => s.id === mapLayers.sphere);
-    const licence = n.licence === 'CC-BY-4.0' ? 'CC BY 4.0' : (n.licence ?? '');
-    return `Spheres · ${one ? `${one.name} hatched` : 'open one to hatch it'} · ${n.draft ? 'draft lists' : 'lists'}, ${readSaid(n.read)} · ${n.credit}${licence ? `, ${licence}` : ''}`;
+    return `Spheres · ${one ? `${one.name} hatched` : 'open one to hatch it'} · ${n.draft ? 'draft lists' : 'lists'}, ${readSaid(n.read)}`;
+  },
+  credit() {
+    const n = layerData.spheres?.navcom;
+    const licence = n?.licence === 'CC-BY-4.0' ? 'CC BY 4.0' : (n?.licence ?? '');
+    return n ? `${n.credit}${licence ? `, ${licence}` : ''}` : '';
+  },
+  attribution() {
+    const said = layer.credit!();
+    return said && `Spheres: ${said}`;
   },
   lifted(current) {
     // A country opened from a list, lifted by its outline; a small state's circle is lifted by the tap that took it.

@@ -207,7 +207,7 @@ export interface Layer {
 }
 
 /** Arcs from delta-encoded integers to absolute longitude and latitude. */
-function absoluteArcs(topology: Topology): number[][][] {
+export function absoluteArcs(topology: Topology): number[][][] {
   const t = topology.transform;
   if (!t) return topology.arcs;
   const [sx, sy] = t.scale;
@@ -230,7 +230,7 @@ function absoluteArcs(topology: Topology): number[][][] {
  * shapes is stored once and used by both. Consecutive arcs share an endpoint, so every arc after
  * the first contributes all but its first point.
  */
-function stitch(indices: number[], arcs: number[][][], toPoint: ToPoint): Ring {
+export function stitch(indices: number[], arcs: number[][][], toPoint: ToPoint): Ring {
   const points: number[] = [];
   for (const index of indices) {
     const arc = index >= 0 ? arcs[index]! : [...arcs[~index]!].reverse();
@@ -282,6 +282,23 @@ export function areaAt(
     if (x >= b[0] && x <= b[2] && y >= b[1] && y <= b[3] && inside(s.rings, [x, y])) return s;
   }
   return null;
+}
+
+/**
+ * The coastline of one object: every arc only one of its shapes uses, projected, as open lines. An arc
+ * two shapes share is a border between them; one only a single shape uses is where it meets the sea
+ * (and, along ±180° and the poles, the Earth's own edge, which is drawn there anyway). So the coast is
+ * drawn under every layer from the file every visit already has, at no cost in bytes [map.md §3].
+ */
+export function coastOf(topology: Topology, object = 'world'): Ring[] {
+  const uses = new Map<number, number>();
+  const walk = (a: unknown): void => {
+    if (typeof a === 'number') uses.set(a < 0 ? ~a : a, (uses.get(a < 0 ? ~a : a) ?? 0) + 1);
+    else if (Array.isArray(a)) a.forEach(walk);
+  };
+  for (const g of topology.objects[object]?.geometries ?? []) if (g.type) walk(g.arcs);
+  const arcs = absoluteArcs(topology);
+  return [...uses].filter(([, n]) => n === 1).map(([i]) => Float32Array.from(arcs[i]!.flatMap(([lon, lat]) => project(lon!, lat!))));
 }
 
 /**

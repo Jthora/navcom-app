@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { blankDevice, open, seedDevice } from './device';
@@ -113,8 +114,13 @@ test.describe('the root console — search works with nothing set up', () => {
      * figure about how well maintained this directory is. Same false all-clear the cached
      * directory's copy age used to compute, and the clamp is what hid it.
      */
+    // Three days before the freshest check the built page carries. A fixed offset from today
+    // stopped failing the moment today was exactly that offset past the directory's newest
+    // check, and read "today" -- the test was dated, not the console.
+    const freshest = readFileSync('build/index.html', 'utf8').match(/freshest:"(\d{4}-\d{2}-\d{2})"/)?.[1];
+    expect(freshest, 'the built root page carries no freshest check').toBeTruthy();
     await blankDevice(page);
-    await page.clock.setFixedTime(new Date(Date.now() - 40 * 86_400_000));
+    await page.clock.setFixedTime(new Date(Date.parse(freshest + 'T12:00:00Z') - 3 * 86_400_000));
     await open(page, '/');
 
     await expect(page.getByText(/this clock is wrong/i)).toBeVisible({ timeout: 10_000 });

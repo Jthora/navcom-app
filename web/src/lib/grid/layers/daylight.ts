@@ -23,6 +23,7 @@
 import { project } from '../topology';
 import { TWILIGHT, nightRing, subsolar, terminator, type SunPoint } from '../sun';
 import { layerData, loaded, mapLayers, type Overlay } from '../layer.svelte';
+import type { View } from '../pick';
 
 /** The two steps: where the sun has set, and where civil twilight has ended too, which is night. */
 export const STEPS = [TWILIGHT[0], TWILIGHT[1]] as const;
@@ -113,6 +114,15 @@ function dotsOf(ctx: CanvasRenderingContext2D, ink: string, dpr: number): { patt
   return dots;
 }
 
+/** Where the sun is overhead on screen, in CSS px, or null when it is off it. */
+function sunAt(v: View): [number, number] | null {
+  if (!sun) return null;
+  const [ux, uy] = project(sun.lon, sun.lat);
+  const x = (ux - v.cx) * v.scale + v.width / 2;
+  const y = (uy - v.cy) * v.scale + v.height / 2;
+  return x < -12 || y < -12 || x > v.width + 12 || y > v.height + 12 ? null : [x, y];
+}
+
 /** `14:05` in UTC: the minute the night is drawn for. */
 const hhmm = (ms: number) => new Date(ms).toISOString().slice(11, 16);
 
@@ -145,7 +155,8 @@ export const overlay: Overlay = {
     // Then the dots, in screen space: the map's own transform undone, so they sit on device pixels.
     const t = ctx.getTransform();
     // The canvas's own pixels to a CSS px, as the map sizes it [GridMap.svelte dpr].
-    const { pattern, px } = dotsOf(ctx, ink.faint, Math.min(window.devicePixelRatio || 1, 2));
+    // In the strong line, not ink: brighter than the borders, they swamped the coast and every line at night.
+    const { pattern, px } = dotsOf(ctx, ink.strong, Math.min(window.devicePixelRatio || 1, 2));
     if (pattern && typeof pattern.setTransform === 'function') {
       ctx.globalAlpha = 0.6;
       ctx.fillStyle = pattern;
@@ -168,13 +179,17 @@ export const overlay: Overlay = {
     ctx.stroke(line);
     ctx.restore();
   },
+  // Where the sun is, so a count and a name keep off it: it is never moved, being where the sun is.
+  place(_ctx, v, taken) {
+    const at = sunAt(v);
+    if (at) taken.push({ l: at[0] - 10, t: at[1] - 10, r: at[0] + 10, b: at[1] + 10 });
+    return [];
+  },
   marks(ctx, v, ink) {
-    if (!sun) return;
+    const at = sunAt(v);
+    if (!at) return;
     // The point the sun is overhead: a ring and eight rays, in ink. A mark, not a place: nothing to tap.
-    const [ux, uy] = project(sun.lon, sun.lat);
-    const x = (ux - v.cx) * v.scale + v.width / 2;
-    const y = (uy - v.cy) * v.scale + v.height / 2;
-    if (x < -12 || y < -12 || x > v.width + 12 || y > v.height + 12) return;
+    const [x, y] = at;
     ctx.lineWidth = 1.25;
     ctx.strokeStyle = ink.ink;
     ctx.beginPath();
@@ -186,7 +201,8 @@ export const overlay: Overlay = {
     }
     ctx.stroke();
   },
-  legend: () => (minute ? `Day and night at ${hhmm(minute)} UTC · worked out on this phone, nothing fetched` : 'Day and night'),
+  legend: () => (minute ? `Day and night at ${hhmm(minute)} UTC` : 'Day and night'),
+  credit: () => 'worked out on this phone from its own clock, nothing fetched',
   // What the dots mean, under the key, drawn as the canvas draws them.
   swatches: () => (minute ? [{ mark: 'dots', tone: 'faint', text: 'Night · twilight has half the dots' }] : [])
 };

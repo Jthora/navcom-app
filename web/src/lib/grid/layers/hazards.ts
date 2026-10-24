@@ -41,7 +41,7 @@
 
 import { project } from '../topology';
 import type { View } from '../pick';
-import { layerData, loaded, mapLayers, type Overlay, type Swatch } from '../layer.svelte';
+import { layerData, loaded, mapLayers, overlaps, type Box, type Overlay, type Swatch } from '../layer.svelte';
 import {
   CAPS,
   HAZARD_FEEDS,
@@ -76,6 +76,11 @@ export interface Hazard {
   at: number | null;
   /** More the source said, as given: GDACS's countries and dates, EONET's description. */
   more: { k: string; v: string }[];
+  /**
+   * An event over an area, which GDACS gives as one point, a flood's or a drought's: drawn dashed and
+   * said to be the area's centre, since a mark at a point reads as a place [the audit, 2026-10-19].
+   */
+  area?: boolean;
   /** A link only where it is https; anything else is its label as text. */
   links: { label: string; url: string | null }[];
   lon: number;
@@ -373,7 +378,8 @@ export function gdacsOf(answers: readonly unknown[]): Parsed {
           more,
           links: typeof report === 'string' ? [{ label: 'GDACS report', url: linkable(report) ? report : null }] : [],
           lon: at[0],
-          lat: at[1]
+          lat: at[1],
+          area: kind === 'flood' || kind === 'drought'
         })
       );
     }
@@ -388,6 +394,9 @@ const FEED = Object.fromEntries(HAZARD_FEEDS.map((f) => [f.id, f])) as Record<Ha
 /** `USGS, EONET and GDACS`, or with `or`. */
 const listOf = (names: string[], and: 'and' | 'or') => (names.length < 2 ? names.join('') : `${names.slice(0, -1).join(', ')} ${and} ${names.at(-1)}`);
 
+/** What every line of the key says but *nothing listed*'s: the feeds' lists are not the world's. */
+const SOME = 'some events, never all';
+
 /** Nothing listed, read whole, and nothing in it left out: the one state that may say *nothing listed*. */
 export const listedNothing = (f: FeedState): boolean =>
   f.state === 'ready' && f.count + f.dropped + f.notDrawn + f.capped === 0 && f.missing.length === 0;
@@ -395,14 +404,16 @@ export const listedNothing = (f: FeedState): boolean =>
 /**
  * The map's key line: each feed's age, *not read: unknown* for a feed with no answer, and, when every
  * feed read and listed nothing, *not the same as safe*. Never *none*, never *0*. Feeds next to each other
- * that say the same are said once, *USGS and EONET 3 min ago*, since a longer key leaves less of the
- * Earth above the sheet.
+ * that say the same are said once, *USGS and EONET 3 min ago*, and all three alike as *3 feeds 3 min
+ * ago*, since a longer key leaves less of the Earth above the sheet; the layers screen names them. That
+ * these lists hold **some events, never all** stays on the map, whatever else is cut: it is what keeps a
+ * place with no mark from reading as a place with no fire.
  */
 export function legendOf(feeds: Readonly<Record<HazardFeedId, FeedState>>, now: number): string {
   const ids = HAZARD_FEEDS.map((f) => f.id);
   const states = ids.map((id) => feeds[id]);
   const names = ids.map((id) => NAME[id]);
-  if (states.every((s) => s.state === 'loading')) return `Hazards · asking ${listOf(names, 'and')} · some events, never all`;
+  if (states.every((s) => s.state === 'loading')) return `Hazards · asking ${ids.length} feeds · ${SOME}`;
   if (states.every(listedNothing)) {
     const oldest = Math.min(...states.map((s) => s.readAt ?? now));
     return `Hazards · nothing listed by ${listOf(names, 'or')}, read ${agoOf(oldest, now)} · not the same as safe`;
@@ -414,7 +425,7 @@ export function legendOf(feeds: Readonly<Record<HazardFeedId, FeedState>>, now: 
     if (last && last.said === said) last.names.push(NAME[id]);
     else groups.push({ said, names: [NAME[id]] });
   }
-  return `Hazards · ${groups.map((g) => `${listOf(g.names, 'and')} ${g.said}`).join(' · ')} · some events, never all`;
+  return `Hazards · ${groups.length === 1 ? `${ids.length} feeds ${groups[0]!.said}` : groups.map((g) => `${listOf(g.names, 'and')} ${g.said}`).join(' · ')} · ${SOME}`;
 }
 
 /** One feed's state, as the key and the layers screen say it: an ask of it that did not answer by what it lists. */
@@ -429,11 +440,17 @@ export function feedSaid(f: FeedState, now: number): string {
 
 /** How far apart two marks are kept before they share a cell, and how near a tap must be, in CSS px. */
 const GAP = 11;
+/**
+ * Below this many CSS px to the world's width, about 23 km a pixel and so the whole Earth to about ×4 on
+ * a phone, marks gather by kind into cells `WIDE_GAP` px wide, each one glyph and how many on a pill.
+ */
+const WIDE = 1500;
+const WIDE_GAP = 24;
 const HIT = 10;
 /** How many marks one tap's screen names: history holds it, so it stays small. */
 const MAX_IDS = 12;
 
-interface Cell {
+export interface Cell {
   x: number;
   y: number;
   lead: Hazard;
@@ -447,23 +464,27 @@ const screenOf = (m: Hazard, v: View): [number, number] => [(m.x - v.cx) * v.sca
  * a frame is one pass however many there are. A cell is led by its first mark in `KIND_ORDER`.
  */
 export function cellsOf(marks: readonly Hazard[], v: View): Cell[] {
+  // Further out, wider cells of one kind each: a fire season drew the US West as a carpet of triangles.
+  const wide = v.scale < WIDE;
+  const gap = wide ? WIDE_GAP : GAP;
   const shown: { m: Hazard; x: number; y: number }[] = [];
   for (const m of marks) {
     const [x, y] = screenOf(m, v);
-    if (x < -GAP || y < -GAP || x > v.width + GAP || y > v.height + GAP) continue;
+    if (x < -gap || y < -gap || x > v.width + gap || y > v.height + gap) continue;
     shown.push({ m, x, y });
   }
   shown.sort((a, b) => KIND_ORDER.indexOf(a.m.kind) - KIND_ORDER.indexOf(b.m.kind) || (a.m.id < b.m.id ? -1 : a.m.id > b.m.id ? 1 : 0));
   const cells: Cell[] = [];
   const grid = new Map<string, Cell[]>();
   for (const p of shown) {
-    const gx = Math.floor(p.x / GAP);
-    const gy = Math.floor(p.y / GAP);
+    const gx = Math.floor(p.x / gap);
+    const gy = Math.floor(p.y / gap);
+    const kind = wide ? p.m.kind : '';
     let home: Cell | null = null;
-    let best = GAP;
+    let best = gap;
     for (let dx = -1; dx <= 1; dx++) {
       for (let dy = -1; dy <= 1; dy++) {
-        for (const c of grid.get(`${gx + dx} ${gy + dy}`) ?? []) {
+        for (const c of grid.get(`${kind} ${gx + dx} ${gy + dy}`) ?? []) {
           const d = Math.hypot(c.x - p.x, c.y - p.y);
           if (d < best) {
             best = d;
@@ -478,7 +499,7 @@ export function cellsOf(marks: readonly Hazard[], v: View): Cell[] {
     }
     const cell = { x: p.x, y: p.y, lead: p.m, members: [p.m] };
     cells.push(cell);
-    const key = `${gx} ${gy}`;
+    const key = `${kind} ${gx} ${gy}`;
     const list = grid.get(key);
     if (list) list.push(cell);
     else grid.set(key, [cell]);
@@ -493,7 +514,7 @@ export function cellsOf(marks: readonly Hazard[], v: View): Cell[] {
  */
 export function chipOf(m: Hazard, now: number): string {
   const time = m.at === null ? 'time not given' : `${FEED[m.feed].time.chip} ${agoOf(m.at, now)}`;
-  return [m.title, m.alert ?? m.measure, time, NAME[m.feed]].filter(Boolean).join(' · ');
+  return [m.title, m.alert ?? m.measure, time, NAME[m.feed], m.area && 'an area event; this is its centre, as GDACS gives it'].filter(Boolean).join(' · ');
 }
 
 /**
@@ -504,9 +525,11 @@ export function hitOf(
   marks: readonly Hazard[],
   v: View,
   [sx, sy]: readonly [number, number],
-  now: number
+  now: number,
+  cells: readonly Cell[] = cellsOf(marks, v)
 ): { ids: string; say: string; of: number } | null {
-  const near = cellsOf(marks, v).filter((c) => Math.hypot(c.x - sx, c.y - sy) <= HIT);
+  // Where each cell's glyph is drawn, which a ring may have moved it to [place].
+  const near = cells.filter((c) => Math.hypot(c.x - sx, c.y - sy) <= HIT);
   if (near.length === 0) return null;
   const found = near
     .flatMap((c) => c.members)
@@ -554,11 +577,14 @@ function outline(ctx: CanvasRenderingContext2D, kind: HazardKind, x: number, y: 
   }
 }
 
-/** One mark: a halo of the ground, then the outline in ink, hatched inside for a volcano or a drought. */
-function drawMark(ctx: CanvasRenderingContext2D, kind: HazardKind, x: number, y: number, ink: { ink: string; ground: string }, heavy: boolean): void {
+/**
+ * One mark: a casing of the ground, then the outline in ink, hatched inside for a volcano or a drought,
+ * and dashed for an event over an area, which is its centre and not a place.
+ */
+function drawMark(ctx: CanvasRenderingContext2D, kind: HazardKind, x: number, y: number, ink: { ink: string; ground: string }, heavy: boolean, area = false): void {
   const width = heavy ? 2.5 : 1.5;
   outline(ctx, kind, x, y);
-  ctx.lineWidth = width + 2;
+  ctx.lineWidth = width + 3;
   ctx.strokeStyle = ink.ground;
   ctx.stroke();
   if (kind === 'volcano' || kind === 'drought') {
@@ -578,7 +604,73 @@ function drawMark(ctx: CanvasRenderingContext2D, kind: HazardKind, x: number, y:
   }
   ctx.lineWidth = width;
   ctx.strokeStyle = ink.ink;
+  if (area) ctx.setLineDash([2.5, 2]);
   ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+// ─── Placing ──────────────────────────────────────────────────────────────────────────────
+
+const FONT = '600 10px ui-monospace, monospace';
+/** How far a cell's glyph may be moved to clear what is drawn over it, in CSS px: about one wide cell. */
+const MOVE = 36;
+const viewKey = (v: View) => `${v.cx} ${v.cy} ${v.scale} ${v.width} ${v.height}`;
+const glyphBox = (x: number, y: number): Box => ({ l: x - 7.5, t: y - 7.5, r: x + 7.5, b: y + 7.5 });
+
+/** This frame's cells, where each glyph and count is drawn, and the view they were laid out for. */
+let laid: { at: string; cells: Cell[]; counts: { cell: Cell; box: Box; text: string }[] } | null = null;
+
+/**
+ * Where each cell's glyph and count are drawn at this view [Overlay place], the largest cell first. **A
+ * cell a mission's ring, a Zone's count or the sun would be drawn over, or whose count would have nowhere
+ * to go, is moved to the nearest spot where both are clear**, no further than `MOVE`: a cell further out is
+ * already 24 px of the Earth gathered at one of its marks, and a fire season's 420 fires in the US West
+ * were one cell, under three rings, its count left out (audit, 2026-10-24). A count sits beside its glyph,
+ * on whichever side overlaps nothing placed, no other glyph and no other count. Only where no spot within
+ * `MOVE` holds both is a cell left where it is, and then its count beside it clear of the rings at least.
+ */
+export function layout(marks: readonly Hazard[], v: View, taken: Box[], measure: (text: string) => number): NonNullable<typeof laid> {
+  const wide = v.scale < WIDE;
+  const before = taken.length;
+  const under = (b: Box) => taken.some((t, i) => i < before && overlaps(b, t, 1));
+  const cells = cellsOf(marks, v).sort((a, b) => b.members.length - a.members.length);
+  const glyphs: Box[] = [];
+  const counts: { cell: Cell; box: Box; text: string }[] = [];
+  const countBoxes: Box[] = [];
+  for (const cell of cells) {
+    // All of them further out, where a cell is one kind; how many more closer in.
+    const text = cell.members.length < 2 ? null : wide ? cell.members.length.toLocaleString('en-US') : `+${cell.members.length - 1}`;
+    const w = text === null ? 0 : measure(text) + 6;
+    const spots = (x: number, y: number): Box[] => {
+      const at = (dx: number, dy: number): Box => ({ l: x + dx, t: y + dy, r: x + dx + w, b: y + dy + 12 });
+      return [at(7, -13), at(7, 1), at(-7 - w, -13), at(-7 - w, 1), at(-w / 2, -21), at(-w / 2, 9), at(12, -6), at(-12 - w, -6)];
+    };
+    const fit = (x: number, y: number, moved: boolean): { g: Box; c: Box | null } | null => {
+      const g = glyphBox(x, y);
+      if (under(g) || countBoxes.some((o) => overlaps(g, o)) || (moved && glyphs.some((o) => overlaps(g, o)))) return null;
+      if (text === null) return { g, c: null };
+      const c = spots(x, y).find((b) => !under(b) && !countBoxes.some((o) => overlaps(b, o)) && !glyphs.some((o) => overlaps(b, o)));
+      return c ? { g, c } : null;
+    };
+    let found = fit(cell.x, cell.y, false);
+    find: for (let d = 4; !found && d <= MOVE; d += 4) {
+      for (let k = 0; k < 16; k++) {
+        const [x, y] = [cell.x + d * Math.cos((k * Math.PI) / 8), cell.y + d * Math.sin((k * Math.PI) / 8)];
+        const f = fit(x, y, true);
+        if (!f) continue;
+        [cell.x, cell.y, found] = [x, y, f];
+        break find;
+      }
+    }
+    glyphs.push(found?.g ?? glyphBox(cell.x, cell.y));
+    const c = found ? found.c : text === null ? null : (spots(cell.x, cell.y).find((b) => !under(b)) ?? null);
+    if (c && text !== null) {
+      countBoxes.push(c);
+      counts.push({ cell, box: c, text });
+    }
+  }
+  taken.push(...glyphs, ...countBoxes);
+  return { at: viewKey(v), cells, counts };
 }
 
 // ─── Asking ────────────────────────────────────────────────────────────────────────────────
@@ -703,29 +795,37 @@ export const overlay: Overlay = {
     asking.clear();
     publish();
   },
+  place(ctx, v, taken) {
+    ctx.save();
+    ctx.font = FONT;
+    laid = all.length === 0 ? null : layout(all, v, taken, (t) => ctx.measureText(t).width);
+    ctx.restore();
+    return laid?.counts.map((c) => ({ of: c.cell.lead.kind, n: c.cell.members.length, x: c.cell.x, y: c.cell.y, box: c.box })) ?? [];
+  },
   marks(ctx, v, ink, lifted) {
-    if (all.length === 0) return;
+    if (!laid || laid.at !== viewKey(v)) return;
     ctx.save();
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
-    ctx.font = '600 10px ui-monospace, monospace';
+    ctx.font = FONT;
     ctx.textBaseline = 'middle';
-    for (const cell of cellsOf(all, v)) {
-      const heavy = cell.members.some((m) => lifted.has(m.id));
-      drawMark(ctx, cell.lead.kind, cell.x, cell.y, ink, heavy);
-      if (cell.members.length > 1) {
-        const more = `+${cell.members.length - 1}`;
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = ink.ground;
-        ctx.strokeText(more, cell.x + 8, cell.y - 6);
-        ctx.fillStyle = ink.ink;
-        ctx.fillText(more, cell.x + 8, cell.y - 6);
-      }
+    for (const cell of laid.cells) drawMark(ctx, cell.lead.kind, cell.x, cell.y, ink, cell.members.some((m) => lifted.has(m.id)), cell.lead.area);
+    for (const { box: b, text } of laid.counts) {
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(b.l, b.t, b.r - b.l, b.b - b.t, 3);
+      else ctx.rect(b.l, b.t, b.r - b.l, b.b - b.t);
+      // Ground and no edge: an edged pill with a figure in it is a Zone's count [zone-missions.ts].
+      ctx.fillStyle = ink.ground;
+      ctx.fill();
+      ctx.fillStyle = ink.ink;
+      ctx.fillText(text, b.l + 3, (b.t + b.b) / 2 + 0.5);
     }
     ctx.restore();
   },
-  hit: (v, at) => hitOf(all, v, at, Date.now()),
+  // Where each cell is drawn, which a ring may have moved it to, when that is this view's.
+  hit: (v, at) => hitOf(all, v, at, Date.now(), laid?.at === viewKey(v) ? laid.cells : undefined),
   legend: () => legendOf(feeds, Date.now()),
+  credit: () => `${listOf(HAZARD_FEEDS.map((f) => f.name), 'and')}, their whole-world lists, asked every 10 minutes while the map is on screen; each answers on its own, and a feed that did not is named`,
   swatches() {
     const counts = new Map<HazardKind, number>();
     for (const m of all) counts.set(m.kind, (counts.get(m.kind) ?? 0) + 1);

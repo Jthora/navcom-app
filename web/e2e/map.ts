@@ -13,8 +13,21 @@ import { HEIGHT, project, unproject } from '../src/lib/grid/topology';
 
 const canvas = (page: Page) => page.locator('.grid canvas');
 
-/** One frame, so whatever changed has been drawn. */
-export const frame = (page: Page) => page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => r(null)))));
+/**
+ * One frame, so whatever changed has been drawn: and, while a gesture's picture is only being moved,
+ * until it is drawn again for where the gesture left it, as it is 160 ms after a wheel's last turn
+ * [GridMap.svelte moved]. A test that reads pixels reads what is drawn, not a picture stretched to fit.
+ */
+export const frame = (page: Page) =>
+  page.evaluate(
+    () =>
+      new Promise((r) => {
+        // Counted, not timed: a test may have fixed the page's clock.
+        let left = 60;
+        const next = () => requestAnimationFrame(() => requestAnimationFrame(() => (document.querySelector('.grid canvas[data-moving]') && left-- > 0 ? setTimeout(next, 40) : r(null))));
+        next();
+      })
+  );
 
 export async function mapReady(page: Page) {
   await expect(page.locator('[data-grid="ready"]')).toBeVisible({ timeout: 15_000 });
@@ -26,12 +39,19 @@ export async function screenAt(page: Page, lon: number, lat: number): Promise<{ 
   const [ux, uy] = project(lon, lat);
   return canvas(page).evaluate(
     (c: HTMLCanvasElement, [ux, uy]) => {
+      // The canvas topmost, and nothing over it that passes touches through: the key and the credit, which
+      // `elementFromPoint` sees through. GridMap opens nothing for a tap under the key.
+      const open = (x: number, y: number) =>
+        !['.nav-key', '[data-credit]'].some((sel) => {
+          const b = document.querySelector(sel)?.getBoundingClientRect();
+          return !!b && b.width > 0 && x >= b.left && x <= b.right && y >= b.top && y <= b.bottom;
+        }) && document.elementFromPoint(x, y) === c;
       const [cx, cy, scale] = (c.dataset.view ?? '').split(' ').map(Number) as [number, number, number];
       const r = c.getBoundingClientRect();
       const x = r.left + (ux - cx) * scale + r.width / 2;
       const y = r.top + (uy - cy) * scale + r.height / 2;
       const inside = x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
-      return { x, y, uncovered: inside && document.elementFromPoint(x, y) === c };
+      return { x, y, uncovered: inside && open(x, y) };
     },
     [ux, uy] as [number, number]
   );
@@ -62,13 +82,19 @@ export async function tapAt(page: Page, lon: number, lat: number, what = `${lat}
  */
 async function clearSpot(page: Page): Promise<{ x: number; y: number } | null> {
   return canvas(page).evaluate((c: HTMLCanvasElement) => {
+    // As `screenAt` asks it: the canvas topmost, and not under the key or the credit, which touches pass through.
+    const open = (x: number, y: number) =>
+      !['.nav-key', '[data-credit]'].some((sel) => {
+        const b = document.querySelector(sel)?.getBoundingClientRect();
+        return !!b && b.width > 0 && x >= b.left && x <= b.right && y >= b.top && y <= b.bottom;
+      }) && document.elementFromPoint(x, y) === c;
     const r = c.getBoundingClientRect();
     const clear: [number, number][] = [];
     for (let i = 1; i < 16; i++) {
       for (let j = 1; j < 16; j++) {
         const x = r.left + (r.width * i) / 16;
         const y = r.top + (r.height * j) / 16;
-        if (document.elementFromPoint(x, y) === c) clear.push([x, y]);
+        if (open(x, y)) clear.push([x, y]);
       }
     }
     if (clear.length === 0) return null;
@@ -188,7 +214,13 @@ export async function seen(locator: import('@playwright/test').Locator): Promise
     const x = r.left + r.width / 2;
     const y = r.top + r.height / 2;
     if (r.width === 0 || r.height === 0 || x < 0 || y < 0 || x > innerWidth || y > innerHeight) return false;
+    // What passes touches through to the map is still seen: the key and the credit take none. Asked as
+    // if it took them, so only what is painted over it counts.
+    const e = el as HTMLElement;
+    const was = e.style.pointerEvents;
+    e.style.pointerEvents = 'auto';
     const top = document.elementFromPoint(x, y);
+    e.style.pointerEvents = was;
     return top !== null && (top === el || el.contains(top));
   });
 }

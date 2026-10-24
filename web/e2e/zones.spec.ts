@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { open, seedDevice } from './device';
-import { frame, inkNear, mapReady, screenAt, seen, tapAt, toneNear } from './map';
+import { frame, inkNear, mapReady, screenAt, seen, tapAt, toneNear, zoomAt } from './map';
 import { admit, mission, standInKey, type StandIn } from './registry';
 import { serveZones } from './zsp';
 
@@ -69,14 +69,15 @@ test.describe('Starcom’s Zones on the map', () => {
     const asked = await serveZones(page);
     await landed(page);
     await chooseZones(page);
-    await expect(page.locator('[data-legend="zones"]')).toContainText('NavCom test fixture, never shipped, CC BY 4.0');
+    await expect(page.locator('[data-credit]')).toHaveText('Zones: NavCom test fixture, never shipped, CC BY 4.0');
     await frame(page);
     expect(asked).toEqual(['outlines.json']);
     const home = new URL(page.url()).origin;
     expect(all.filter((u) => new URL(u).origin !== home), 'asked somebody other than navcom.app').toEqual([]);
     // A container's edge is drawn heaviest, in the muted neutral; a line between two Zones of one container is not.
-    const container = await screenAt(page, -30, 30);
-    const zone = await screenAt(page, -90, 30);
+    // At 48°N, clear of Terra Laurentia's name, which is at its label point on the line between its Zones.
+    const container = await screenAt(page, -30, 48);
+    const zone = await screenAt(page, -90, 48);
     expect(await toneNear(page, container.x, container.y, 3, '--t-muted'), 'no container edge between Laurentia and Europaea').toBeGreaterThan(0);
     expect(await toneNear(page, zone.x, zone.y, 2, '--t-muted'), 'a Zone’s edge drawn as heavily as a container’s').toBe(0);
   });
@@ -119,7 +120,8 @@ test.describe('Starcom’s Zones on the map', () => {
     await serveZones(page, '2');
     await landed(page);
     const screen = await chooseZones(page);
-    await expect(page.locator('[data-legend="zones"]')).toContainText('draft, stage 2, view only');
+    await expect(page.locator('[data-legend="zones"]')).toContainText('Zones · draft 2, view only');
+    await expect(screen.locator('[data-key-full]')).toContainText('draft, stage 2, view only');
     // Seen, with the layers screen holding the sheet at half: the readout is in the map's key, at the top.
     await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'half');
     expect(await seen(page.locator('[data-legend="zones"]')), 'the draft label is under the sheet').toBe(true);
@@ -139,7 +141,7 @@ test.describe('Starcom’s Zones on the map', () => {
     const asked = await serveZones(page);
     await landed(page, {});
     const screen = await chooseZones(page);
-    await expect(page.locator('[data-legend="zones"]')).toContainText('CC BY 4.0');
+    await expect(page.locator('[data-credit]')).toContainText('CC BY 4.0');
     const before = all.length;
     await screen.locator('[data-lookup-here]').click();
     const lookup = page.locator('[data-screen="lookup"]');
@@ -245,7 +247,9 @@ test.describe('open missions counted by Zone', () => {
     await withMissions(page, { relayEvents: [placed(), filed()], __noStorage: true });
     await expect(page.locator('[data-missions="open"]')).toContainText('live');
     await chooseZones(page);
-    await expect(page.locator('[data-legend="zones"]')).toContainText('Missions by Zone · 1 placed, 1 by jurisdiction only · live');
+    // How many are in a Zone and how many are filed by jurisdiction alone; how old, in the key's missions line.
+    await expect(page.locator('[data-legend="zones"]')).toContainText('Missions in Zones: 1 · by jurisdiction: 1');
+    await expect(page.locator('[data-missions="open"]')).toContainText('Open missions · live');
     await frame(page);
     // Read where it is once the key has its lines: a taller key moves the opening view.
     const label = await screenAt(page, ...WEST_LABEL);
@@ -281,8 +285,10 @@ test.describe('open missions counted by Zone', () => {
     await withMissions(page, { relayEvents: [onTheEdge(), clearOfIt()], __noStorage: true });
     await expect(page.locator('[data-missions="open"]')).toContainText('live');
     await chooseZones(page);
-    await expect(page.locator('[data-legend="zones"]')).toContainText('2 placed');
-    await frame(page);
+    await expect(page.locator('[data-legend="zones"]')).toContainText('Missions in Zones: 2');
+    await page.locator('[data-back]').click();
+    // In to ×2, where neither count is moved off a mission's ring, which is drawn over everything.
+    await zoomAt(page, -90, 30, 2);
     const west = await screenAt(page, ...WEST_LABEL);
     const east = await screenAt(page, ...EAST_LABEL);
     expect(west.uncovered && east.uncovered, 'both labels in view').toBe(true);
@@ -292,7 +298,7 @@ test.describe('open missions counted by Zone', () => {
     expect(dashed, 'no count at Laurentia West').toBeGreaterThan(20);
     expect(dashed / solid, `west ${dashed} against east ${solid}: the near-edge count is not dashed`).toBeLessThan(0.85);
     // And its Zone's screen names it, and the neighbour it may be in instead.
-    const screen = page.locator('[data-screen="layers"]');
+    const screen = await chooseZones(page);
     await screen.locator('[data-zone-open="terra:laurentia"]').click();
     await page.locator('[data-zone-open="zone:laurentia-west"]').click();
     const zone = page.locator('[data-screen="zone"][data-zone="zone:laurentia-west"]');
@@ -325,7 +331,7 @@ test.describe('open missions counted by Zone, on a desktop', () => {
     await withMissions(page, { relayEvents: [placed(), filed()], __noStorage: true });
     await expect(page.locator('[data-missions="open"]')).toContainText('live');
     await chooseZones(page);
-    await expect(page.locator('[data-legend="zones"]')).toContainText('1 placed');
+    await expect(page.locator('[data-legend="zones"]')).toContainText('Missions in Zones: 1');
     const west = await screenAt(page, -125, 15);
     await page.mouse.move(west.x, west.y);
     await expect(page.locator('[data-chip]')).toHaveText('Laurentia West Zone · Terra Laurentia · 1 open mission');
@@ -339,7 +345,7 @@ test.describe('open missions counted by Zone, on a desktop', () => {
     await withMissions(page, { relayEvents: [onTheEdge()], __noStorage: true });
     await expect(page.locator('[data-missions="open"]')).toContainText('live');
     await chooseZones(page);
-    await expect(page.locator('[data-legend="zones"]')).toContainText('1 placed');
+    await expect(page.locator('[data-legend="zones"]')).toContainText('Missions in Zones: 1');
     const west = await screenAt(page, -125, 15);
     await page.mouse.move(west.x, west.y);
     await expect(page.locator('[data-chip]')).toHaveText('Laurentia West Zone · Terra Laurentia · 1 open mission · 1 near an edge');

@@ -31,7 +31,7 @@ async function landed(page: Page) {
 }
 
 /** The layers screen, Hazards ticked, and every feed's answer read and drawn. */
-async function hazardsOn(page: Page, settled = /GDACS (just now|not read)/) {
+async function hazardsOn(page: Page, settled = /(GDACS|3 feeds) (just now|not read)/) {
   // Every feed answered: the key says so, in one line or several.
   await page.getByRole('button', { name: 'Map layers' }).click();
   const screen = page.locator('[data-screen="layers"]');
@@ -71,7 +71,7 @@ test('asks the three feeds for their whole-world lists, only once chosen, and no
   await page.locator('[data-hazards]').check();
   await expect.poll(() => asked.length, { timeout: 10_000 }).toBe(URLS.length);
   expect([...asked].sort()).toEqual([...URLS].sort());
-  await expect(page.locator('[data-legend]')).toContainText('Hazards · USGS, EONET and GDACS just now · some events, never all');
+  await expect(page.locator('[data-legend]')).toContainText('Hazards · 3 feeds just now · some events, never all');
 
   // Moving the map asks nothing: nothing it asks is chosen by what is on screen.
   await page.locator('[data-back]').click();
@@ -84,7 +84,7 @@ test('asks the three feeds for their whole-world lists, only once chosen, and no
   await page.getByRole('button', { name: 'Map layers' }).click();
   await page.locator('[data-hazards]').uncheck();
   await page.locator('[data-hazards]').check();
-  await expect(page.locator('[data-legend]')).toContainText('and GDACS just now');
+  await expect(page.locator('[data-legend]')).toContainText('3 feeds just now');
   await page.waitForTimeout(500);
   expect(asked).toHaveLength(URLS.length);
 });
@@ -117,7 +117,7 @@ test('draws each event at the point its source gave, in the neutrals, with a key
 test('a feed that does not answer reads not read: unknown, on the map and on the screen, never none', async ({ page }) => {
   await serveHazards(page, { fail: ['gdacs'] });
   await landed(page);
-  const screen = await hazardsOn(page, /GDACS not read/);
+  const screen = await hazardsOn(page, /(GDACS|3 feeds) not read/);
   await expect(page.locator('[data-legend]')).toContainText('Hazards · USGS and EONET just now · GDACS not read: unknown · some events, never all');
   await expect(screen.locator('[data-hazard-feed="gdacs"]')).toContainText('not read: unknown · the ask failed');
   await expect(screen.locator('[data-hazard-feed="usgs"]')).toContainText('3 listed · read just now');
@@ -140,8 +140,8 @@ test('a feed that listed entries and could read none of them reads not read: unk
   const names = ['usgs-45', 'usgs-sig', 'eonet-open', 'eonet-fires', 'gdacs-search'];
   await serveHazards(page, { bodies: Object.fromEntries(URLS.map((url, i) => [url, unreadable(names[i]!)])) });
   await landed(page);
-  const screen = await hazardsOn(page, /GDACS not read/);
-  await expect(page.locator('[data-legend]')).toContainText('Hazards · USGS, EONET and GDACS not read: unknown · some events, never all');
+  const screen = await hazardsOn(page, /(GDACS|3 feeds) not read/);
+  await expect(page.locator('[data-legend]')).toContainText('Hazards · 3 feeds not read: unknown · some events, never all');
   await expect(page.locator('[data-legend]')).not.toContainText('nothing listed');
   for (const id of ['usgs', 'eonet', 'gdacs']) {
     await expect(screen.locator(`[data-hazard-feed="${id}"]`)).toContainText('not read: unknown · its answer was not in the shape it was measured in');
@@ -209,7 +209,7 @@ test('asks again at 10 minutes and not before, and not at all while the page is 
   await page.clock.runFor(9 * 60_000);
   expect(asked, 'asked again inside 10 minutes').toHaveLength(URLS.length);
   // The key's ages move on with the minutes, and nothing is asked for that.
-  await expect(page.locator('[data-legend]')).toContainText(/GDACS (8|9) min ago/);
+  await expect(page.locator('[data-legend]')).toContainText(/(GDACS|3 feeds) (8|9) min ago/);
   await page.clock.runFor(60_000 + 1_000);
   await expect.poll(() => asked.length).toBe(2 * URLS.length);
 

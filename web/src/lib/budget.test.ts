@@ -577,7 +577,7 @@ describe('the map’s layers, each a line of its own', () => {
   });
 
   it('declares each of the map’s new layers, with every ceiling ~20% over the measurement it came from', () => {
-    expect(Object.keys(MAP_LINES).sort()).toEqual(['ages', 'daylight', 'hazards', 'layers', 'spheres', 'timezones', 'zone-missions', 'zones', 'zones-container', 'zones-lookup']);
+    expect(Object.keys(MAP_LINES).sort()).toEqual(['ages', 'daylight', 'fine', 'hazards', 'labels', 'layers', 'spheres', 'timezones', 'zone-missions', 'zones', 'zones-container', 'zones-lookup']);
     for (const [name, line] of Object.entries(MAP_LINES)) {
       // A layer's own module, or a Com entry of the same name: the picker's screens are `layers`.
       if (line.code !== null) expect([`${LAYER_CODE}${name}.ts`, COM_ENTRIES[name]], name).toContain(line.code);
@@ -597,13 +597,14 @@ describe('the map’s layers, each a line of its own', () => {
     // Natural Earth's time zones, as D8 decided them, at the finer setting, with each region's own zone beside them.
     expect(MAP_LINES.timezones.data).toMatchObject({ measured: 53_698, limit: 63 * 1024, warn: 57 * 1024 });
     // Every line whose code is written has a ceiling for it; Zones' data waits on Stage 1, Spheres' on their lists.
-    for (const name of ['layers', 'zones', 'zones-lookup', 'timezones', 'spheres', 'daylight', 'ages', 'zone-missions', 'hazards'] as const) {
+    for (const name of ['layers', 'zones', 'zones-lookup', 'timezones', 'spheres', 'daylight', 'ages', 'zone-missions', 'hazards', 'labels', 'fine'] as const) {
       expect(MAP_LINES[name]!.js, name).not.toBeNull();
     }
     expect(MAP_LINES.zones.data).toBeNull();
     expect(MAP_LINES.spheres.data).toBeNull();
-    // Day and night is worked out on the phone, and the Zones' counts from what it holds: neither fetches a file.
+    // Day and night is worked out on the phone, and the Zones' counts from what it holds: neither fetches a file, and nor do the names.
     expect(MAP_LINES.daylight!.files).toBeNull();
+    expect(MAP_LINES.labels!.files).toBeNull();
     expect(MAP_LINES['zone-missions']!.files).toBeNull();
     // Hazards fetches nothing from navcom.app: what it reads is the feeds', on a line of its own [remote].
     expect(MAP_LINES.hazards!.files).toBeNull();

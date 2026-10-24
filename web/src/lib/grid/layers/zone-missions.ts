@@ -21,8 +21,9 @@
  * says how many are near an edge, and the area's screen names each and its neighbour.
  */
 
-import { METRES_PER_UNIT, project, unproject, type Shape } from '../topology';
-import { layerData, mapLayers, type Overlay } from '../layer.svelte';
+import { METRES_PER_UNIT, inside, project, unproject, type Shape } from '../topology';
+import { layerData, mapLayers, overlaps, type Box, type Overlay } from '../layer.svelte';
+import type { View } from '../pick';
 import type { ZonesOutlines } from './zones';
 
 /** What a count needs of a mission's ring: where it is drawn, how coarse it is, and what it opens. */
@@ -158,21 +159,19 @@ function sync(): Counted | null {
 }
 
 /**
- * A count on the map: a pill of the ground, ringed in ink, its figure in ink. Never a hue. **Dashed when
- * any mission it counts is near the area's edge**, where the drawn lines cannot say which side it is on.
+ * A count on the map: a rounded rectangle of the ground, ringed in ink, its figure in ink. Never a hue,
+ * and **never a circle, even for one digit**: that is a mission's, and a `1` in a round badge read as
+ * one. **Dashed when any mission it counts is near the area's edge**, where the drawn lines cannot say
+ * which side it is on.
  */
 function badge(ctx: CanvasRenderingContext2D, x: number, y: number, n: number, unsettled: boolean): void {
   const text = n > 99 ? '99+' : String(n);
-  const w = Math.max(18, ctx.measureText(text).width + 10);
-  const h = 18;
-  const [l, t, r] = [x - w / 2, y - h / 2, h / 2];
+  const w = Math.max(26, ctx.measureText(text).width + 14);
+  const h = 17;
+  const [l, t] = [x - w / 2, y - h / 2];
   ctx.beginPath();
-  ctx.moveTo(l + r, t);
-  ctx.lineTo(l + w - r, t);
-  ctx.arc(l + w - r, y, r, -Math.PI / 2, Math.PI / 2);
-  ctx.lineTo(l + r, t + h);
-  ctx.arc(l + r, y, r, Math.PI / 2, (3 * Math.PI) / 2);
-  ctx.closePath();
+  if (ctx.roundRect) ctx.roundRect(l, t, w, h, 4);
+  else ctx.rect(l, t, w, h);
   ctx.fill();
   if (unsettled) ctx.setLineDash([3, 2.5]);
   ctx.stroke();
@@ -183,7 +182,11 @@ function badge(ctx: CanvasRenderingContext2D, x: number, y: number, n: number, u
   ctx.restore();
 }
 
-/** Where an area's count hangs: its label point, from the vendoring; its box's middle in files without one. */
+/**
+ * Where an area's count hangs: its label point, from the vendoring, which is worked out on the area's own
+ * shape; its box's middle in files without one. The test fixture's Zones are rectangles, so Laurentia
+ * West's hangs in the Pacific; a real Zone's is inside it, and a Mare's at sea is where its sea is.
+ */
 function labelOf(s: Shape): [number, number] {
   const at = s.props.label;
   if (Array.isArray(at) && typeof at[0] === 'number' && typeof at[1] === 'number') return project(at[0], at[1]);
@@ -193,51 +196,108 @@ function labelOf(s: Shape): [number, number] {
 /** A Sector's count replaces its Zone's once the Sector is this wide on screen, in CSS px. */
 const SECTOR_PX = 48;
 
+/** One count as drawn: where, how many, whether any it counts is near an edge, and its box. */
+interface Badge {
+  id: string;
+  x: number;
+  y: number;
+  n: number;
+  unsettled: boolean;
+  box: Box;
+}
+
+/**
+ * Where each count is drawn at this view, in CSS px: once a frame, for drawing it and for keeping the
+ * names and Hazards' marks off it, each added to `taken` as it is placed.
+ */
+function badges(v: View, measure: (text: string) => number, taken: Box[]): Badge[] {
+  const c = sync();
+  const o = layerData.outlines;
+  // Unknown is not none: with the missions not read, no badge is drawn, and the key says why.
+  if (!c || !o || layerData.missions?.age == null) return [];
+  const shown: [Shape, number][] = [];
+  for (const container of o.containers) {
+    const zones = o.zones.filter((z) => z.props.parent === container.id);
+    if (zones.length === 0) {
+      const n = c.in.get(container.id ?? '')?.length ?? 0;
+      if (n > 0) shown.push([container, n]);
+      continue;
+    }
+    for (const zone of zones) {
+      const n = c.in.get(zone.id ?? '')?.length ?? 0;
+      if (n === 0) continue;
+      const sectors = (layerData.sectors[container.id ?? ''] ?? []).filter((s) => s.id?.startsWith(`${zone.id}/`) && (c.in.get(s.id)?.length ?? 0) > 0);
+      const wide = sectors.length > 0 && sectors.every((s) => (s.bbox[2] - s.bbox[0]) * v.scale >= SECTOR_PX);
+      if (wide) for (const s of sectors) shown.push([s, c.in.get(s.id ?? '')!.length]);
+      else shown.push([zone, n]);
+    }
+  }
+  /*
+   * Never under a mission's ring, which is drawn over everything, nor over another count or under the
+   * key: moved a step off what it would sit under, **and only ever to a spot inside its own area**. A
+   * count hung on the missions it counts sat squarely under their rings; moved 46 px, which at the
+   * whole Earth is about 5,000 km, one sat in the Zone next door (audit, 2026-10-24). Where no step
+   * stays inside, it stays at its label point, and the ring is drawn over it.
+   */
+  const at = (p: { x: number; y: number }): [number, number] => [(p.x - v.cx) * v.scale + v.width / 2, (p.y - v.cy) * v.scale + v.height / 2];
+  const covers = layerData.covers;
+  const out: Badge[] = [];
+  for (const [s, n] of shown) {
+    const [ux, uy] = labelOf(s);
+    const [x0, y0] = at({ x: ux, y: uy });
+    if (x0 < -20 || y0 < -20 || x0 > v.width + 20 || y0 > v.height + 20) continue;
+    const w = Math.max(26, measure(String(n)) + 14) / 2 + 2;
+    const boxAt = ([x, y]: number[]): Box => ({ l: x! - w, t: y! - 11, r: x! + w, b: y! + 11 });
+    const clear = (p: number[]) => {
+      const b = boxAt(p);
+      return !taken.some((t) => overlaps(b, t)) && !covers.some((t) => overlaps(b, t));
+    };
+    const ownArea = ([x, y]: number[]) => inside(s.rings, [v.cx + (x! - v.width / 2) / v.scale, v.cy + (y! - v.height / 2) / v.scale]);
+    const [x, y] =
+      [[0, 0], [0, 24], [0, -24], [w + 16, 0], [-w - 16, 0], [0, 46], [0, -46]]
+        .map(([dx, dy]) => [x0 + dx!, y0 + dy!])
+        .find((p, i) => clear(p) && (i === 0 || ownArea(p))) ?? [x0, y0];
+    const box = boxAt([x!, y!]);
+    taken.push(box);
+    out.push({ id: s.id ?? '', x: x!, y: y!, n, unsettled: (c.near.get(s.id ?? '')?.length ?? 0) > 0, box });
+  }
+  return out;
+}
+
+/** What `place` laid out for this frame, which `marks` draws. */
+let laid: Badge[] = [];
+
+const FONT = '600 11px ui-monospace, SFMono-Regular, Menlo, monospace';
+
 export const overlay: Overlay = {
   load: () => void (mapLayers.counts = 'ready'),
-  marks(ctx, v, ink) {
-    const c = sync();
-    const o = layerData.outlines;
-    // Unknown is not none: with the missions not read, no badge is drawn, and the key says why.
-    if (!c || !o || layerData.missions?.age == null) return;
-    const shown: [Shape, number][] = [];
-    for (const container of o.containers) {
-      const zones = o.zones.filter((z) => z.props.parent === container.id);
-      if (zones.length === 0) {
-        const n = c.in.get(container.id ?? '')?.length ?? 0;
-        if (n > 0) shown.push([container, n]);
-        continue;
-      }
-      for (const zone of zones) {
-        const n = c.in.get(zone.id ?? '')?.length ?? 0;
-        if (n === 0) continue;
-        const sectors = (layerData.sectors[container.id ?? ''] ?? []).filter((s) => s.id?.startsWith(`${zone.id}/`) && (c.in.get(s.id)?.length ?? 0) > 0);
-        const wide = sectors.length > 0 && sectors.every((s) => (s.bbox[2] - s.bbox[0]) * v.scale >= SECTOR_PX);
-        if (wide) for (const s of sectors) shown.push([s, c.in.get(s.id ?? '')!.length]);
-        else shown.push([zone, n]);
-      }
-    }
-    if (shown.length === 0) return;
-    ctx.font = '600 11px ui-monospace, SFMono-Regular, Menlo, monospace';
+  place(ctx, v, taken) {
+    ctx.save();
+    ctx.font = FONT;
+    laid = badges(v, (t) => ctx.measureText(t).width, taken);
+    ctx.restore();
+    return laid.map((b) => ({ of: b.id, n: b.n, x: b.x, y: b.y, box: b.box }));
+  },
+  marks(ctx, _v, ink) {
+    if (laid.length === 0) return;
+    ctx.font = FONT;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.lineWidth = 1.5;
     ctx.fillStyle = ink.ground;
     ctx.strokeStyle = ink.ink;
-    for (const [s, n] of shown) {
-      const [ux, uy] = labelOf(s);
-      const x = (ux - v.cx) * v.scale + v.width / 2;
-      const y = (uy - v.cy) * v.scale + v.height / 2;
-      if (x < -20 || y < -20 || x > v.width + 20 || y > v.height + 20) continue;
-      badge(ctx, x, y, n, (c.near.get(s.id ?? '')?.length ?? 0) > 0);
-    }
+    for (const b of laid) badge(ctx, b.x, b.y, b.n, b.unsettled);
   },
   legend() {
     const m = layerData.missions;
     if (!layerData.outlines) return '';
     if (!m || m.age === null) return 'Missions by Zone · not read yet';
-    const placed = sync()?.placed ?? 0;
-    return `Missions by Zone · ${placed} placed, ${m.unplaced} by jurisdiction only · ${m.age}`;
+    // The feed's age is the key's missions line; this says what of it is in a Zone, and what is not.
+    return `Missions in Zones: ${sync()?.placed ?? 0} · by jurisdiction: ${m.unplaced}`;
+  },
+  credit() {
+    const m = layerData.missions;
+    return m && m.age !== null ? `missions placed by where each package puts its subject; ${m.unplaced} filed by jurisdiction only, counted apart and in no Zone · ${m.age}` : '';
   },
   about(shape) {
     const c = sync();

@@ -33,16 +33,6 @@ async function chooseSpheres(page: Page) {
  * How many pixels in a box are as bright as a hatch line drawn over land: ink at half strength. The
  * land, the ocean and every border are far darker, so where the hatch is not, there are none.
  */
-/** Of `n` points round a circle, the share on which something muted is drawn: a solid ring is all of them. */
-async function ringLit(page: Page, x: number, y: number, r: number, n: number): Promise<number> {
-  let lit = 0;
-  for (let i = 0; i < n; i++) {
-    const a = (i * 2 * Math.PI) / n;
-    if ((await toneNear(page, x + r * Math.cos(a), y + r * Math.sin(a), 0.5, '--t-muted')) > 0) lit++;
-  }
-  return lit / n;
-}
-
 const hatched = (page: Page, x: number, y: number, half: number) =>
   page.locator('.grid canvas').evaluate(
     (c: HTMLCanvasElement, [x, y, half]) => {
@@ -50,7 +40,8 @@ const hatched = (page: Page, x: number, y: number, half: number) =>
       const k = c.width / r.width;
       const d = c.getContext('2d')!.getImageData(Math.round((x! - half! - r.left) * k), Math.round((y! - half! - r.top) * k), Math.round(2 * half! * k), Math.round(2 * half! * k)).data;
       let n = 0;
-      for (let i = 0; i < d.length; i += 4) if (d[i]! + d[i + 1]! + d[i + 2]! > 300) n++;
+      // Brighter than any line the map draws (its strongest is 308 on the three channels): the hatch is ink.
+      for (let i = 0; i < d.length; i += 4) if (d[i]! + d[i + 1]! + d[i + 2]! > 400) n++;
       return n;
     },
     [x, y, half] as [number, number, number]
@@ -71,9 +62,9 @@ test('choosing Spheres fetches the lists once, from navcom.app only, labelled a 
   expect(asked, 'fetched before it was chosen').toEqual([]);
   const screen = await chooseSpheres(page);
   // What is hatched first, then the lists' age by the oldest read as well as the newest, and whose.
-  await expect(page.locator('[data-legend="spheres"]')).toHaveText(
-    'Spheres · open one to hatch it · draft lists, read 3 Aug–19 Oct · NavCom test fixture, never shipped, CC BY 4.0'
-  );
+  await expect(page.locator('[data-legend="spheres"]')).toHaveText('Spheres · open one to hatch it · draft lists, read 3 Aug–19 Oct');
+  // Whose, as their licence asks, on the map itself, over its foot [GridMap credit].
+  await expect(page.locator('[data-credit]')).toHaveText('Spheres: NavCom test fixture, never shipped, CC BY 4.0');
   await expect(screen.locator('[data-slot="spheres"]')).toContainText('Draft lists');
   await expect(screen.locator('[data-slot="credit"]')).toContainText('NavCom test fixture, never shipped');
   await screen.getByRole('radio', { name: /^Nation States/ }).check();
@@ -84,20 +75,21 @@ test('choosing Spheres fetches the lists once, from navcom.app only, labelled a 
   expect(all.filter((u) => new URL(u).origin !== home), 'asked somebody other than navcom.app').toEqual([]);
 });
 
-test('a small state the world’s outlines leave out is a circle at its label point, and a tap on it names its Spheres', async ({ page }) => {
+test('a small state the world’s outlines leave out is a small diamond at its label point, and a tap on it names its Spheres', async ({ page }) => {
   await serveSpheres(page);
   await landed(page);
   await chooseSpheres(page);
   await expect(page.locator('[data-legend="spheres"]')).toContainText('draft lists');
   await page.locator('[data-back]').click();
   await frame(page);
-  // Malta, at Natural Earth's label point: a muted circle where no outline is drawn (D9), dotted, so it
-  // is never read as a region of Places, whose rings are solid.
+  // Malta, at Natural Earth's label point: a small filled muted diamond where no outline is drawn (D9).
+  // Never a circle, which is a mission's, nor a square, which is the directory's, and no bigger than a
+  // few pixels: a 5 px circle covered Sicily to Tunisia.
   const malta = await screenAt(page, 14.43, 35.89);
-  expect(await toneNear(page, malta.x + 5, malta.y, 1.5, '--t-muted'), 'no circle for Malta').toBeGreaterThan(0);
-  const round = await ringLit(page, malta.x, malta.y, 5, 48);
-  expect(round, 'Malta’s circle is solid, as a region’s ring is').toBeLessThan(0.75);
-  expect(round, 'Malta’s circle is not there').toBeGreaterThan(0.15);
+  expect(await toneNear(page, malta.x, malta.y, 0.75, '--t-muted'), 'no mark for Malta').toBeGreaterThan(0);
+  expect(await toneNear(page, malta.x + 2, malta.y, 0.5, '--t-muted'), 'Malta’s diamond is not out to its corner').toBeGreaterThan(0);
+  expect(await toneNear(page, malta.x + 2.6, malta.y + 2.6, 0.5, '--t-muted'), 'Malta’s mark is round or square, not a diamond').toBe(0);
+  expect(await toneNear(page, malta.x + 5, malta.y, 1, '--t-muted'), 'Malta’s mark is wider than a few pixels').toBe(0);
   await tapAt(page, 14.43, 35.89, 'Malta');
   const there = page.locator('[data-screen="sphere"][data-code="mt"]');
   await expect(there).toBeVisible();

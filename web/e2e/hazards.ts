@@ -77,3 +77,41 @@ export async function serveNws(page: Page, o: { fail?: boolean; empty?: boolean 
   });
   return asked;
 }
+
+/**
+ * A fire season, for the tests of what the map does under one: **synthetic, made here, never served to
+ * anybody but a test**, in the shapes the recorded answers have. 420 wildfires across the US West in
+ * the last 20 days, below the 1,340 that map.md cites for the 30 days to 15 August 2024, and 70
+ * earthquakes round the Pacific. Deterministic, so a failure is the same failure on every run.
+ * Answers EONET's wildfires and USGS's past day; pass it as `bodies` to `serveHazards`.
+ */
+export function busySeason(now = Date.now()): Record<string, string> {
+  let seed = 7;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const fires = Array.from({ length: 420 }, (_, i) => ({
+    id: `EONET_F${i}`,
+    title: `Fixture fire ${i}, synthetic`,
+    description: null,
+    link: `https://eonet.gsfc.nasa.gov/api/v3/events/EONET_F${i}`,
+    closed: null,
+    categories: [{ id: 'wildfires', title: 'Wildfires' }],
+    sources: [{ id: 'IRWIN', url: 'https://irwin.doi.gov/observer/incidents/fixture' }],
+    geometry: [{ magnitudeValue: 100 + i, magnitudeUnit: 'acres', date: new Date(now - rnd() * 20 * 86_400_000).toISOString(), type: 'Point', coordinates: [-124 + rnd() * 20, 32 + rnd() * 16] }]
+  }));
+  const quakes = Array.from({ length: 70 }, (_, i) => {
+    const east = rnd() < 0.5;
+    const lon = east ? 120 + rnd() * 30 : -180 + rnd() * 110;
+    const lat = east ? -10 + rnd() * 50 : -40 + rnd() * 100;
+    const mag = Math.round((4.5 + rnd() * 2) * 10) / 10;
+    return {
+      type: 'Feature',
+      properties: { mag, place: `synthetic ${i}`, time: now - rnd() * 86_400_000, updated: now, url: 'https://earthquake.usgs.gov/earthquakes/eventpage/fixture', alert: null, title: `M ${mag} - synthetic quake ${i}`, magType: 'mb', type: 'earthquake' },
+      geometry: { type: 'Point', coordinates: [lon, lat, 10] },
+      id: `synth${i}`
+    };
+  });
+  return {
+    [HAZARD_FEEDS[1]!.urls[1]!]: JSON.stringify({ title: 'EONET Events', description: 'Natural events from EONET.', link: 'https://eonet.gsfc.nasa.gov/api/v3/events', events: fires }),
+    [HAZARD_FEEDS[0]!.urls[0]!]: JSON.stringify({ type: 'FeatureCollection', metadata: { generated: now, title: 'USGS Magnitude 4.5+ Earthquakes, Past Day', status: 200, count: quakes.length }, features: quakes })
+  };
+}

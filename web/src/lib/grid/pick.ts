@@ -90,14 +90,14 @@ function edgeDistance(rings: Shape['rings'], x: number, y: number): number {
  * record before a region's circle. A mission is what the map opens on; a record is finer than the
  * region it sits in.
  */
-function nearestPoint(v: View, sx: number, sy: number, points: readonly PlaceOfRecord[]): PlaceOfRecord | null {
+function nearestPoint(v: View, sx: number, sy: number, points: readonly PlaceOfRecord[], reachOf: (p: PlaceOfRecord) => number): PlaceOfRecord | null {
   const rank = { mission: 0, record: 1, region: 2 } as const;
   let best: PlaceOfRecord | null = null;
   let bestKey = Infinity;
   for (const p of points) {
     const [px, py] = screenAt(v, [p.x, p.y]);
     const d = Math.hypot(px - sx, py - sy);
-    if (d > p.reach) continue;
+    if (d > reachOf(p)) continue;
     // Kind first, then distance: a ring 20 px away still beats a circle under the finger.
     const key = rank[p.kind] * 1e6 + d;
     if (key < bestKey) {
@@ -114,7 +114,9 @@ function nearestPoint(v: View, sx: number, sy: number, points: readonly PlaceOfR
  * `lit` holds the codes of the shapes a mission **fills**, provinces and countries alike — `fill`
  * from `lightsOf`, never its national outlines, which would answer for every province inside them
  * [topology.ts]. `points` are only ever places of record [places.ts]: nothing else can be handed to
- * the map to find.
+ * the map to find. `reachOf` is how far from each a tap still takes it, its own `reach` unless given: the
+ * map gives a tap inside a shape less, its drawn size and a little air, so a shape the finger is inside
+ * is not lost to a point a thumb away [GridMap.svelte hitAt].
  */
 export function pick(
   v: View,
@@ -124,10 +126,11 @@ export function pick(
     countries: readonly Shape[];
     lit: ReadonlySet<string>;
     points?: readonly PlaceOfRecord[];
+    reachOf?: (p: PlaceOfRecord) => number;
   }
 ): Hit | null {
   if (v.scale <= 0) return null;
-  const point = layers.points?.length ? nearestPoint(v, sx, sy, layers.points) : null;
+  const point = layers.points?.length ? nearestPoint(v, sx, sy, layers.points, layers.reachOf ?? ((p) => p.reach)) : null;
   if (point) return { kind: 'point', place: point };
 
   const [x, y] = unitAt(v, [sx, sy]);

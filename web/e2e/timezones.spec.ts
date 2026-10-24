@@ -44,9 +44,9 @@ test.describe('the time zones layer', () => {
     expect(asked.filter((u) => /timezones|region-times/.test(u)), 'fetched before it was chosen').toEqual([]);
     await chooseTimes(page);
     // And under it day and night, which Time zones always draws, worked out here [daylight.spec.ts].
-    await expect(page.locator('[data-legend="timezones"]')).toHaveText(
-      'Time zones · standard time as drawn in 2012, no daylight saving · Natural Earth Day and night at 11:05 UTC · worked out on this phone, nothing fetched'
-    );
+    await expect(page.locator('[data-legend="timezones"] .line')).toHaveText(['Time zones 2012 · no daylight saving', 'Day and night at 11:05 UTC']);
+    // Whose, and the rest of its words, in the whole key on the layers screen.
+    await expect(page.locator('[data-key-full]')).toContainText('standard time as drawn in 2012, with no daylight saving · Natural Earth, public domain');
     // Seen, with the layers screen open over the map at half, not merely present under the sheet [invariant 7].
     await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'half');
     expect(await seen(page.locator('[data-legend="timezones"]')), 'how old the lines are is under the sheet').toBe(true);

@@ -155,7 +155,14 @@ attribution required. **Measured 2026-10-06, and the measurement changed the pla
 - **Detail follows the regions, not the world.** All 4,596 provinces worldwide plateau near
   180 KB gzipped however hard they are simplified, because the cost is per-feature rather than
   per-vertex. Provinces are drawn only for countries that have a region (today the US, the UK
-  and Australia); everywhere else is a country outline at 1:110m.
+  and Australia); everywhere else is a country outline at 1:110m. **From ×2 in, those countries'
+  land and coast are their provinces' too** (2026-10-24): with the land lifted far enough off the sea
+  to read, a 1:110m US under 1:10m states put records in the sea of Delaware Bay, put Atlantic City
+  offshore and filled in the Chesapeake, and drew Galveston Bay's coast twice. Their 1:110m outlines
+  are left out, their provinces filled instead, and the coast drawn from the provinces' outer edge where
+  it meets the sea; where it meets a neighbour without provinces, Canada, Mexico, Ireland, the
+  neighbour's 1:110m line is the one border drawn (`fineOf`, worked out the first time somebody zooms
+  that far, never at mount, and from the file every visit already has).
 - **Provinces simplified to 20%**, quantised: **55.8 KB gzipped for the whole world** with no
   properties, both layers verified present in the file — an earlier measurement that came out
   smaller had silently dropped one. At 1% it is 40.6 KB, but 372 records' positions fall
@@ -202,11 +209,12 @@ reprojected.
 **How far in** (2026-10-18). Down to about 20 m a pixel on a phone at 52°N, so a street's records
 separate. The outlines are 1:10m at best and look it there; what is worth drawing that close is the
 records, at the precision their positions earned (§5), and the doorstep is still the handoff's (§1).
-A region's ring gives way to its records at about 2 km a pixel, where a region is still many pixels
+A region's square gives way to its records at about 2 km a pixel, where a region is still many pixels
 across (about 2.7 km under Equal Earth, which keeps that figure by area at every latitude): its centre is a statistic of its records, not a place, and
 drawn closer in it would sit on one block and read as one. It was 500 m until a review found exactly
 that (2026-10-18). For the same
-reason a region is a hollow ring and a record a dot.
+reason a region is a hollow square and a record a small filled one: **the circle is a mission's alone**
+(2026-10-24).
 
 **Canvas 2D, not SVG.** Three thousand county paths as DOM nodes is the thing that kills a
 prepaid Android 8 with 400 MB free — the device floor is in [`delivery.md`](../delivery.md)
@@ -217,11 +225,43 @@ is not a fill: it holds every state inside it, and answering first it opened the
 tap on Texas (review, 2026-10-18). There is no quadtree: an earlier version of this page said there
 was, and at 471 shapes a box test is enough. A filled shape answers within 12 px of its edge, because
 at the whole-world zoom on a phone California is about 10 px across and a thumb is several times that.
-The 12 px is the finger's, so it stays 12 px however narrow the world is drawn (§6).
+The 12 px is the finger's, so it stays 12 px however narrow the world is drawn (§6). **A shape the
+finger is inside wins over a point a thumb away** (2026-10-24): further out than where records are drawn,
+a point on land takes a tap only within its drawn size and 6 px of air, since a thumb's 24 px at the
+whole-Earth view is about 3,000 km, and a tap in the middle of a lit California opened a mission in
+Houston; at sea a point keeps its whole reach. **Closer in, where a thumb is a street, a point keeps its
+reach**, a record its 12 px and a region its 24, and a mission's ring too unless the tap is inside a shape
+a mission lights: the rule at every zoom made a record at ×40 answer only within 8 px. Spheres' small
+states keep to the same rule, a diamond on land answering within its size and 6 px, so a tap in southern
+Sicily opens Italy and not Malta. And a hazard's mark under the finger wins over a ring that is only a
+thumb away.
+Under any layer but Nation States, a lit shape the tap is only near gives way to the layer's own area,
+which is what the person chose (a tap on Oregon under Zones opened California), and a lit shape's
+readout adds what the layer says of it, under Spheres *Canada · 1 open mission · Test Francophonie,
+Test Atlantic community, Test Anglosphere*.
+
+**A gesture moves a picture rather than drawing one** (2026-10-24). Rasterising the whole canvas was 135
+to 350 ms a step of a whole-Earth pan under a CPU six times slower, nearly all of it the canvas's own
+raster and not NavCom's code. So what is drawn in map units, the land, the layer, the lights and the
+lines, is kept on a canvas of its own, and the names on another: a pan or a pinch moves both and draws only
+the points between them, and the picture is drawn again when the gesture ends, 160 ms after a wheel's
+last turn, or sooner when it has moved too far to stand for the view; **the names a frame after it**, so the
+frame a gesture ends on is two tasks and not one of about 110 ms (audit, 2026-10-24); and of the finer land
+only the rings and countries in view, each a path of its own, since one path of the whole world is walked
+edge by edge wherever the view is. The provinces are drawn only from ×2 in. `e2e/map-legible.spec.ts` pans
+the whole Earth under that throttling and fails on any long task over 50 ms, and pans at ×4 with Places, a
+fire season and day and night on, through the frames it ends on, and fails on any over 100 ms (it was 120;
+measured after, 80 to 97).
 
 **Both themes are ours**, which is the quiet advantage of drawing it: there is no white tile
 to dim and no third-party style to fight. Colours come from `panel.md`'s tokens, so dark is
-the default rather than a filter over somebody else's daylight.
+the default rather than a filter over somebody else's daylight. **The land, its lines and its coast have
+neutrals of their own** (`--map-land`, `--map-line`, `--map-strong`, 2026-10-24): the panel's put the land
+at 1.10:1 on the sea, provinces at 1.23:1 and borders at 1.73:1 on the land, which a cheap screen's glare
+in daylight takes to 1.03, 1.07 and 1.21, no map at all at noon. They are 1.43, 1.55 and 2.31:1, and
+1.34, 1.55 and 2.30:1 in Low signature, the default for anyone with a callsign; no hue is spent on any
+of them. **The coast is drawn under every layer**, from the arcs only one country uses, so it costs no
+bytes: under Zones, Spheres and None the continents were a fill and nothing more.
 
 ---
 
@@ -306,8 +346,7 @@ is kept** (2026-10-19): at 317 px it spans about 13.6° of longitude at the equa
 slack is a thumb's, which does not shrink with the world, and a California 5 to 10 px across needs
 all of it; capping it by ground instead would take the slack away where the shapes are smallest.
 What a tap took stays lifted while its screen is open, so a finger sees which it got, and one step
-of zoom parts the two. The browser tests' Texas sits past the 12 px for that reason. The key and the sheet's two heights are measured, not
-assumed (`--map-inset`, `--map-reach`, and the key's own box), so a change to either moves the view
+of zoom parts the two. The browser tests' Texas sits past the 12 px for that reason. The key and the sheet's heights are measured, not assumed (`--map-inset`, `--map-reach`, `--map-sheet` for its height now, and the key's own box), so a change to either moves the view
 with it. Province detail still follows the regions, because that is
 what the data holds; every country lights and answers anyway.
 
@@ -315,7 +354,7 @@ what the data holds; every country lights and answers anyway.
 mouse or a pen, lifts the outline under the pointer and says what it is and what is open there —
 *California · 1 open mission*, *Kenya · Nothing open*. A tap opens it in Com: a province or a country
 as a place, listing what is filed under it and the directory regions near the tap; a mission's ring
-as that mission; a region's ring or a record's point as that place. **What a tap took stays lifted**
+as that mission; a region's square or a record's point as that place. **What a tap took stays lifted**
 while its screen is the one open, because a finger has no hover and a thumb-wide tap at the
 whole-Earth view can take a neighbour. **A tap is measured no more finely than a thumb resolves**:
 at the whole-Earth view on a phone a thumb is the better part of a thousand kilometres, so the place
@@ -331,7 +370,11 @@ Open and claimed missions, and public reports, and with Places on, **the directo
 points**. *Repealed 2026-10-18:* this said "Not the 9,623 directory records", on the ground that ten
 thousand pins is a heat map of where somebody once ran a scraper. The owner's answer is that places on
 public record may be points, and the map now draws them — further out than about 2 km a pixel as
-each region's ring, which says how many places it holds, and closer in as each record's point, at four
+each region's hollow square, which says how many places it holds, **thinned where squares would run
+into each other** to the region with the most places, at its own position, which says how many it stands
+for (2026-10-24: 1,889 rings at the whole-Earth view were one solid mass the missions were lost in), and
+thinned again further apart where the squares kept still tile, since at ×4 the US was a lattice that read
+as graph paper and hid a lit California; and closer in as each record's point, at four
 places (about 11 m). The points come from one file, `/grid/places.json`, fetched whole the first time
 Places is switched on and never by what is on screen (§2), in the order of each region's own index, so
 a tap reads the record from the same file a search does. **The places people sleep stay off the map
@@ -339,10 +382,11 @@ a tap reads the record from the same file a search does. **The places people sle
 they are published facilities, and some providers may still read a map of where they cluster as
 locating the people they shelter. They stay in the directory and on their own pages at five places.
 Every type is decided on or off in one table (`ON_THE_MAP`), so a type added later is a decision before
-it is a point. **Where records are drawn, a region with places held back keeps a dashed ring** that
+it is a point. **Where records are drawn, a region with places held back keeps a dashed square** that
 says how many are not on the map, and its place says so too, so Baltimore, whose records are all
 shelters, reads as that and not as nothing (invariant 7). A mission's ring is drawn where a package
-locates its subject on public record, in ink rather than a hue, never smaller on screen than its
+locates its subject on public record, in ink rather than a hue, a thick ring with its centre on a casing
+of the ground and drawn last, so nothing on the map covers one, never smaller on screen than its
 precision covers — **and no finer than about a kilometre, at the point it rounds to, while Q19 is
 open**: a package carries no type, so the hold on the directory's shelters has to hold
 for a package's address too. A mission filed only under a jurisdiction keeps its shading, because a
@@ -353,6 +397,62 @@ arrived, the switch is disabled, and where the map would be the page links to th
 works with neither. When Places' own files do not arrive, the key says *Places not loaded*, and the
 next time it is switched on asks again.
 
+**Read as a person reads it, on a cheap phone in sunlight** (an audit of the built map, 2026-10-19,
+fixed 2026-10-24; `web/e2e/map-legible.spec.ts` holds each by its pixels, boxes, frames or words).
+
+- **The key is one panel**, the ground at 92% with an edge, so no mark runs through its words, the age
+  lines invariant 7 rests on among them; and **gestures over it reach the map**: only its buttons take a
+  touch, so a pinch that starts on it no longer zooms the page. The missions' line carries their mark, a
+  ring, and a lit province a row of its own, *Missions filed under a place*. Each thing drawn has **one
+  short line**, **what ages fastest first**, Hazards' feeds, then the layer, the missions by Zone
+  (*Missions in Zones: 5 · by jurisdiction: 3*), the directory's checks and the sun; on a phone it is cut
+  to whole lines, three at most and as many as leave the Earth 120 px above the sheet at half, **and never
+  shorter than the first line whole**, so the feeds' age and *some events, never all* stay whatever else
+  is cut, and says so with an ellipsis. On the device floor's 360 px, where the feeds' line is two rows,
+  that leaves the Earth about 110 px rather than 120, and the Earth gives way rather than the age. There
+  the name rides on the key's edge as a caption, the missions and Places share a row, and the map's
+  controls are the floor's 48 px, so the key is 70 px rather than 137 and every control is above the sheet
+  at half (2026-10-24). Under the lines, a row of the marks drawn, as the canvas draws them. **The whole key
+  is on the layers screen**: every line, that row whole, and one layer down the rest of each line's words
+  and every kind of mark the map draws, with what a filled country means, *somewhere in it, not all of
+  it*. **A credit a licence asks for is over the map's foot**, above the sheet at peek and at half, on one
+  line cut short of the controls with every word on the layers screen, and not at full height, where the
+  map is a strip the key covers.
+- **The Earth can be brought out from under anything**: the view is held to what nothing covers, so its
+  top comes down to the key's foot and its bottom up to the sheet; at ×3 to ×6 nothing north of about
+  30°N could be panned out from under the key.
+- **Each kind of mark has a shape nothing else has**: the circle is a mission's; the directory's places
+  are squares, and the ages a family of them; a Zone's count is an edged rounded rectangle, never round;
+  a small state of a Sphere is a small diamond; Hazards' counts sit on the ground with no edge. Tone only
+  adds to shape (§8). **A mission's ring is a 6 px symbol at the whole Earth**, on a 1.5 px casing, growing
+  to 9 px on 3.25 by ×2: at 9 on 6.5 three rings covered most of the contiguous US. **It has a centre only
+  at that least size**, where it is a symbol, on one disc of the ground so no seam shows; drawn at the size
+  its precision covers it has none, since a dot in a circle reads as *here*, and at a street's zoom it sat
+  on one block, as a region's centre would (2026-10-24).
+- **Marks are laid out once a frame, in one list**: the missions' rings, the sun, which is where the sun
+  is, the Zones' counts, then Hazards' marks and counts, each clear of what was placed before it, and the
+  names clear of all of them. **A hazard's cell a ring would be drawn over is moved to the nearest clear
+  spot**, no further than a wide cell, since further out a cell is already 24 px of the Earth gathered at
+  one mark: a fire season's 420 fires were one cell under three rings, count and all. **A Zone's count
+  moves only within its own area**, or stays at its label point under the ring: moved 46 px, which at the
+  whole Earth is about 5,000 km, one sat in the Zone next door.
+- **Names are on the map**: countries from ×2, provinces from ×6, Terrae, Maria and Zones with Zones,
+  and each time zone's offset, in the muted and faint neutrals on a halo of the ground, greedy, largest
+  first, never over each other, the key, a ring, a count or a hazard, and over the directory's squares.
+  They fetch nothing (`MAP_LINES.labels`). From ×4 in the map says that outside the US, the UK and
+  Australia land, coast and borders are 1:110m and islands may be missing, rather than load 1:50m, shorter
+  where the whole note would run under the controls.
+- **What the map says is said where it can be read, and to a screen reader**: a readout under the
+  pointer is placed clear of the key, the controls, the sheet now and the point it names, no wider than
+  what is left of the controls, and if nowhere near is clear, under the key's foot, left of them; the canvas's name says which layer and what is over it; a layer chosen is said once,
+  politely; the key's lines are sentences; the keyboard's reticle sits in the middle of what nothing
+  covers and always says something, *Open water, about 30°N 40°W* over the sea; a mission's readout
+  names where it is filed; and a mouse's sweep is said once it rests, not thirteen times.
+- **Declined**: the opening view leaves about 160 px of empty map below the Earth at peek, which is the
+  price of keeping it above the sheet at half (asked again 2026-10-24, and still the price: an Earth sized
+  for peek is under the sheet the moment a tap opens anything); and a list in Com to choose between things
+  a tap could mean (the containment rule above settles the cases the audits found).
+
 Budgets, all of them targets to measure rather than claims:
 
 | | Target |
@@ -360,7 +460,7 @@ Budgets, all of them targets to measure rather than claims:
 | Grid geometry, world outlines + provinces where regions are | ≤ 250 KB gzipped — **measured 59.1 KB** (2026-10-18, with codes and names) |
 | Places, every record the map draws | ≤ 80 KB gzipped, **only when Places is switched on** — never at mount, never in the install precache |
 | Mount, every visit: the map's code, the mission feed, Com's registry and the geometry | ≤ 129 kB gzipped, **enforced** since 2026-10-18 (`MOUNT` in `web/scripts/lib/budget.mjs`) — measured 110.1 kB on 2026-10-19, 51.4 kB of script and 58.7 kB of geometry at the build's gzip level. It was 107.6 kB the day before; the layers and Equal Earth added the projection, the hooks each layer draws through, and an opening view that keeps the Earth uncovered, and the deferred line, which counts mount too, was re-derived for them, to 69 kB |
-| The layers somebody chooses, and what is drawn over them: Zones' outlines, one Terra or Mare's Sectors, the Sector lookup and its index, Time zones, Spheres, day and night, the directory by last check, missions counted by Zone | **A line each**, `MAP_LINES` in `web/scripts/lib/budget.mjs`, enforced since 2026-10-18. Each line has a ceiling for its code and one for its data, and a line's code is never charged to the shared deferred line, which had 1.6 kB left that day. A line whose code or data reaches the build before its ceiling is derived fails the build, and so does one whose code loads at first paint or mount. Measured 2026-10-19: the layers' screens 6.1 kB of code, of a 6.8 kB ceiling derived at 5.6 kB, the Sector screen that fetches nothing and the time screen that says when its code did not arrive adding 0.4 kB; Zones 1.4 kB; the Sector lookup 1.3 kB; Time zones 1.3 kB, and 52.4 kB of data (the bands, 43.3 kB, and each region's IANA zone, 9.2 kB), ceiling 63 kB. Zones' files have no ceiling until Stage 1 is vendored, and the vendoring change derives it. **Measured again that evening**, with the four slices of §8 in: the layers' screens 10.1 kB, re-derived to 12.1 kB for the boxes, the full key of the ages, a Zone's missions and a fifth screen, a Sphere's; day and night 1.5 kB of code and no data, ever; the directory by last check 1.9 kB and 10.8 kB of data (`/grid/region-ages.json`, which grows with the directory); missions by Zone 2.0 kB and no data; Spheres 2.0 kB of code, their data without a ceiling until the lists are vendored. Mount grew 1.8 kB, to 111.9 kB, for the overlays' hooks, the key under the key and the redraw on Low signature, and first paint 16 B, to 60,871 B of 61,440 |
+| The layers somebody chooses, and what is drawn over them: Zones' outlines, one Terra or Mare's Sectors, the Sector lookup and its index, Time zones, Spheres, day and night, the directory by last check, missions counted by Zone | **A line each**, `MAP_LINES` in `web/scripts/lib/budget.mjs`, enforced since 2026-10-18. Each line has a ceiling for its code and one for its data, and a line's code is never charged to the shared deferred line, which had 1.6 kB left that day. A line whose code or data reaches the build before its ceiling is derived fails the build, and so does one whose code loads at first paint or mount. Measured 2026-10-19: the layers' screens 6.1 kB of code, of a 6.8 kB ceiling derived at 5.6 kB, the Sector screen that fetches nothing and the time screen that says when its code did not arrive adding 0.4 kB; Zones 1.4 kB; the Sector lookup 1.3 kB; Time zones 1.3 kB, and 52.4 kB of data (the bands, 43.3 kB, and each region's IANA zone, 9.2 kB), ceiling 63 kB. Zones' files have no ceiling until Stage 1 is vendored, and the vendoring change derives it. **Measured again that evening**, with the four slices of §8 in: the layers' screens 10.1 kB, re-derived to 12.1 kB for the boxes, the full key of the ages, a Zone's missions and a fifth screen, a Sphere's; day and night 1.5 kB of code and no data, ever; the directory by last check 1.9 kB and 10.8 kB of data (`/grid/region-ages.json`, which grows with the directory); missions by Zone 2.0 kB and no data; Spheres 2.0 kB of code, their data without a ceiling until the lists are vendored. Mount grew 1.8 kB, to 111.9 kB, for the overlays' hooks, the key under the key and the redraw on Low signature, and first paint 16 B, to 60,871 B of 61,440. **Measured 2026-10-24**, with the map made legible (§6): the layers' screens 17.1 kB, re-derived to a 20.1 kB ceiling for the whole key; Zones 1.5 kB; Spheres 2.2 kB; the directory by last check 2.7 kB; missions by Zone 2.5 kB; Hazards 6.8 kB; and a line of its own for the names, 1.7 kB of code and no data, loaded from ×2 or with Zones or Time zones. Mount 118,176 B, 58,066 B of it script; first paint 60,812 B of 61,440. **Measured again after the second audit, the same day**: mount 119,519 B, 59,409 B of it script, for the marks laid out once a frame, the readout and the credit held clear of the controls, and the key's cap worked out again as its lines change; Deferred, which counts mount, 70,596 B of 70,656, so **the next addition to mount is a decision**; and a line of its own for the finer land, `fine`, 1,354 B of code and no data, loaded from ×2, so mount carries none of it and no longer builds the provinces' lines at all |
 | Hazards, a round: what it asks of the feeds, each answer capped on the phone | **A line of its own**, `MAP_LINES.hazards` (2026-10-19): 6.2 kB of code, ceiling 7.4 kB, re-derived the same day from 5.7 kB for the review's fixes, with `outside.ts` in it; and `remote`, one GET of each URL asked, 195,831 B on the wire a round in a quiet month for fires, about 1.96 s at 0.8 Mbps in the background, and `remote.peak`, 698,788 B, about 7 s, when the wildfires pass their cap in a busy season; printed by the build and enforced on the phone by decoded caps per answer (`CAPS` in `web/src/lib/outside.ts`). The layers' screens re-derived the same day to 17.4 kB for its box, its disclosure, its feed rows and a sixth screen |
 | Requests at first paint to anyone but navcom.app | **None** — the mission subscriptions open after first paint, to The Record and its mirror only. None to anybody else until Hazards is chosen or a mission's weather warnings are asked for |
 | Repeat visit, no new deploy | Zero network for the grid — service worker now covers the whole origin |
@@ -453,8 +553,8 @@ fetches nothing from navcom.app, and what it asks of its feeds is never cached. 
 moment a layer costs somebody something is a line of its own in the budget, `MAP_LINES` in
 `web/scripts/lib/budget.mjs`, with a ceiling for its code and one for its data (§6).
 
-**Every layer says on the map what it is, whose, and how old** (invariant 7), in the map's key at the
-top, where the sheet never reaches: a readout of it at the canvas's foot was behind the sheet whenever
+**Every layer says on the map what it is, whose, and how old** (invariant 7), in one short line of the
+map's key at the top, the rest of its words on the layers screen (§6), where the sheet never reaches: a readout of it at the canvas's foot was behind the sheet whenever
 a layer's screen was open, and present to every test (2026-10-19). The key says so too when a layer's
 code or files did not arrive.
 
@@ -518,8 +618,9 @@ where somebody works. Opening one tells navcom.app's host which container was op
 search does; looking at the map tells it nothing (§2). The lookup's index, whole, the first time
 somebody asks.
 
-**Drawing, in three weights.** A Terra's or Mare's edge heaviest, a Zone's lighter, and a Sector's faint
-and thin, drawn only for a container that is open, because a whole-Earth partition puts lines
+**Drawing, in three weights.** A Terra's or Mare's edge heaviest, a Zone's lighter, and a Sector's thin
+and dashed in the strong line from about ×4 in (2026-10-24: in the faintest line it was not there at ×9),
+drawn only for a container that is open, because a whole-Earth partition puts lines
 everywhere at once. Country borders are not drawn while Zones is.
 
 **A tap opens what it lands on**: a Sector of an open container, else its Zone, else its Terra or
@@ -542,8 +643,10 @@ panic wipe takes it. Never published, never sent, never in a backup. **Only from
 a draft's ids may change before Starcom's swap (D6), and a Sector kept under an id that went would be a
 place that is no longer anywhere. It is kept with the manifest digest it was chosen from.
 
-**Credit.** The partition is CC BY 4.0, so the layers screen and the map's readout carry the
-attribution the vendored manifest gives, from the first stage vendored.
+**Credit.** The partition is CC BY 4.0, so the layers screen and the map itself carry the attribution the
+vendored manifest gives, from the first stage vendored: over the map's foot, above the sheet at whatever
+height it is, *Zones: …, CC BY 4.0* (2026-10-24; the key keeps the draft's stage, *Zones · draft 2, view
+only*, on a line short enough for a phone).
 
 ### Time zones
 
@@ -551,7 +654,9 @@ attribution the vendored manifest gives, from the first stage vendored.
 outlines (`web/scripts/grid-geometry.mjs`): dissolved by standard offset into forty bands, simplified
 to 10% on the sphere, `web/static/grid/timezones.json`. Each band keeps only its offset; its label
 (*UTC+5:45*) is written on the phone, because the file's own `utc_format` disagrees with its `zone` on
-two polygons. Drawn as alternating lifts. **They are standard offsets as Natural Earth drew them in
+two polygons. Drawn as alternating lifts of the land, never the sea, which a lift brought up to the land
+(2026-10-24), each band's edge a whole pixel in the strong line over the night, and its offset, *+5:30*,
+printed on it. **They are standard offsets as Natural Earth drew them in
 2012, with no daylight saving, and the map says exactly that.** A tap on a band opens it: its offset,
 the time at that offset by this phone's clock, and its age.
 
@@ -578,7 +683,8 @@ of the daytime ocean, about 1.10:1 against day, with each step 1.03:1: on a chea
 night side at all. Tone cannot fix it: the land is #141920, and WCAG's contrast, with its 0.05 for
 flare, puts even pure black against it at 1.19:1. So there are two steps, each darkening by 35%: twilight,
 from sunset (−0.833°, the sun's upper limb with refraction) to the end of civil twilight (−6°), and night
-after it. And each lays a sparse grid of dots in faint ink, kept in screen space and on device pixels so
+after it. And each lays a sparse grid of dots in the strong line (faint ink until 2026-10-24, brighter than the
+borders, swamped the coast and every line at night), kept in screen space and on device pixels so
 it is crisp and the same at every zoom: one every 6 px in twilight, and at night a second at each tile's
 middle, so night is twice as dotted and never a heavier dot. Dots read on any screen, in either
 signature, and nothing else on the map is dotted over an area; a swatch under the key says *Night ·
@@ -597,8 +703,8 @@ the map used to redraw every minute for nothing, because the page's clock handed
 in a new list; it redraws now only when what is open changes. `e2e/daylight.spec.ts` counts the redraws.
 
 Time zones always draws it; over any other layer, a box on the layers screen does. The key says *Day and
-night at 14:05 UTC · worked out on this phone, nothing fetched*, and the layers screen says where the sun
-is overhead. What it cannot know is a wrong clock: the page says when this phone's clock is behind what
+night at 14:05 UTC*, its whole line on the layers screen adds *worked out on this phone from its own
+clock, nothing fetched*, and the layers screen says where the sun is overhead. What it cannot know is a wrong clock: the page says when this phone's clock is behind what
 the relays report, and nothing can say when it is ahead, so the layers screen says plainly that day and
 night is only as right as the phone's clock.
 Whether Time zones should always draw it is the owner's to say (`daylightDrawn`, one line).
@@ -619,8 +725,10 @@ no hours: 9,630 of 9,633 show hours as unknown, and every one shows intake rules
 page says *Unknown* for a blank field before it says anything about age. So the map claimed a call-first
 state on 1,911 regions whose pages showed no hours at all. The file knows when a record was checked and
 nothing of its fields, its flag or its method, so the classes are the windows a page turns at and
-nothing more: **0–13 days ago**, a solid ink disc; **14–89 days ago**, a smaller solid muted disc; **90+
-days ago**, a hollow ring; **Unknown · no check date**, a hollow square, because unknown is not old. The
+nothing more, **a family of squares** since the circle is a mission's (2026-10-24; rings made a lattice the
+missions were lost in): **0–13 days ago**, a solid ink square; **14–89 days ago**, a smaller solid muted
+one; **90+ days ago**, a hollow one; **Unknown · no check date**, hollow and crossed, because unknown is not
+old. The
 full key says once what the windows mean, *Hours, where a place has them, read call first after 14
 days*, and that each place's own page says what its check still lets it show. `readingOf` (core) is held
 to `displayField`'s and `confidenceForField`'s windows on every day of a year, for a record that has the
@@ -636,7 +744,8 @@ every frame. A swatch row under the map's key names only the classes there are, 
 the layers screen gives all four; a hover says how long ago a region's oldest check was, and a place's
 *Checked* slot says its oldest and newest, or a record's own date, and leaves what that shows to the
 record's page. The key's own line says whether a person confirmed any of it, by phone, in person or at
-the place, rather than a website or a second hand: today, none. On 19 October 2026 every region reads
+the place, rather than a website or a second hand: today, *Directory by last check · none by a person*; the row
+under it names each class short, *90+ days · 1,847*, so every class there is fits a phone's key. On 19 October 2026 every region reads
 *14–89 days ago*; see §7 for 2 December.
 
 Regions, not provinces: a state shaded by its regions' checks would claim coverage for the counties no
@@ -645,12 +754,13 @@ region reaches. The owner may have meant provinces; it is a question for them.
 ### Missions on Zones
 
 **Open missions counted by Zone and by Sector, missions and never people** (2026-10-19), from the
-missions already on the phone, with the feed's own age: *Missions by Zone · 1 placed, 4 by jurisdiction
-only · live*. Each is placed by the ring the map draws for it, where its package locates its subject, at
+missions already on the phone: *Missions in Zones: 1 · by jurisdiction: 4*, with the feed's own age on the key's
+missions line above it. Each is placed by the ring the map draws for it, where its package locates its subject, at
 about a kilometre or coarser; **a mission filed only by jurisdiction names no Zone, and is counted apart
 rather than put in one**. Counted at the deepest level the phone holds: an open container's Sectors,
-else its Zones, else the Terra or Mare. A badge, a pill of the ground ringed in ink with its figure in
-ink, hangs at each area's label point, a point inside its full-resolution outline that the vendoring
+else its Zones, else the Terra or Mare. A badge, a rounded rectangle of the ground ringed in ink with its figure in
+ink, never round, which is a mission's, hangs at each area's label point, moved a step, within its own area, off a mission's ring
+or the key where it would sit under one, a point inside its full-resolution outline that the vendoring
 stamps (`labelPoint`, core); a Sector's replaces its Zone's once the Sector is 48 px wide. Nothing open
 draws no badge; missions not read draw none either, and the key says so, because unknown is not none.
 
@@ -684,8 +794,8 @@ https link is a link, and anything else is the source's name as plain text. It w
 newest day a list was read and how many do not say; `--dir`, for the fixture, is refused there whatever
 path names it. Until then the map says *Spheres · not in this build yet*.
 
-**Drawn over the world's own outlines by code.** A small state with no outline at 1:110m is a circle at
-Natural Earth's label point (D9): `web/scripts/label-points.mjs`, from the same pinned commit as the
+**Drawn over the world's own outlines by code.** A small state with no outline at 1:110m is a small diamond
+at Natural Earth's label point (D9): `web/scripts/label-points.mjs`, from the same pinned commit as the
 outlines (`web/scripts/lib/natural-earth.mjs`), writes the 64 such points to the unserved
 `web/scripts/data/label-points.json`, and the vendoring copies in only those of members a Sphere names.
 
@@ -695,8 +805,9 @@ states filled. **With none opened, nothing is shaded**, and the key says *open o
 member of any Sphere was a lift of 6% (about 1.16:1, invisible in sunlight), and Spheres overlap, so with
 the real lists nearly every country is in one and that lift would be a faint wash over the whole world.
 A count of Spheres per country was considered and not built: it would measure how many lists cover a
-place, not anything about the place. A small state is a **dotted** circle until its Sphere is opened:
-Places' region rings are solid, and the two were the same muted ring. **The key names the Sphere
+place, not anything about the place. A small state is a small muted diamond, larger and in ink once its Sphere is opened
+(2026-10-24): as a 5 px circle Malta's covered Sicily to Tunisia, and Barbados, Singapore and Mauritius
+read as missions. **The key names the Sphere
 hatched**, *Spheres · Test Anglosphere hatched · …*, after Back and across a pan, since the hatch outlives
 the screen that chose it; choosing another layer lets it go. Then the lists' age, **by the oldest read as
 well as the newest**, *read 3 Aug–19 Oct*, never the freshest list's date alone. A hover names every
@@ -743,7 +854,8 @@ passes requests to another origin straight through, so nothing it asks is cached
 
 **What it says** (invariant 7). The map's key gives each feed its own age, *Hazards · USGS and EONET 3
 min ago · GDACS not read: unknown · some events, never all*, feeds side by side that say the same said
-once, so the key stays short; a feed that failed, answered past its cap or in a shape it was not measured
+once, and all three alike as *3 feeds 3 min ago*, so the key stays short, and *some events, never all*
+on every line but *nothing listed*'s, whatever else a phone's key cuts; a feed that failed, answered past its cap or in a shape it was not measured
 in reads *not read: unknown*, and what it held before is not drawn as if it were still the list. **So does a
 feed that listed entries and could read none of them** (2026-10-19): every quake given another way than a
 point, or GDACS's current flag sent as something other than `true` or `'true'` (it is a string today, and a
@@ -762,7 +874,14 @@ the same storm in both is two marks, not merged, and a hover lists both), a diam
 hatched one for a drought. No circle, square or disc, which the missions, the regions, the sun and the
 directory's ages already are. Ink over a halo of the ground; a feed's alert colour is quoted as its word,
 *PAGER alert: green*, *GDACS alert: Red*, and never drawn. Marks closer than 11 px share a cell, which
-draws one of them by a fixed order and *+n* beside it. A key under the map's names the kinds there are,
+draws one of them by a fixed order and *+n* beside it; **further out than about ×4 on a phone, cells are
+24 px and one kind each**, with how many on a pill of the ground (2026-10-24: a fire season drew the US
+West as a carpet of triangles), on whichever side of its glyph is clear of every other mark and count, the
+largest first. Every mark sits on a casing of the ground, under the missions' rings, and **a cell a ring,
+a Zone's count or the sun would be drawn over is moved to the nearest clear spot** (§6), so the fire
+season's count is on the map and not under Houston's ring. **GDACS's floods and droughts are events
+over an area given as one point**: drawn dashed, and a hover says *an area event; this is its centre, as
+GDACS gives it*. A key under the map's names the kinds there are,
 sharing lines, *Storms · 2  Quakes · 3  Fires · 1*: a row a kind took five lines on a phone, and pushed the
 Earth under the sheet at half, where every screen the map opens comes up (§6).
 

@@ -186,9 +186,10 @@ describe('the panel stylesheet against the device floor', () => {
     ''
   );
 
-  it('gives every modern colour function a plain fallback first', () => {
+  /** Every `color-mix` in a stylesheet whose property is not set plainly earlier in the same rule. */
+  const unfallen = (sheet: string): string[] => {
     const missing: string[] = [];
-    for (const rule of css.split('}')) {
+    for (const rule of sheet.split('}')) {
       for (const line of rule.split(';')) {
         if (!line.includes('color-mix')) continue;
         const prop = line.split(':')[0].trim();
@@ -200,7 +201,22 @@ describe('the panel stylesheet against the device floor', () => {
         if (!has) missing.push(`${prop} in "${rule.split('{')[0].trim().slice(0, 40)}"`);
       }
     }
+    return missing;
+  };
+
+  it('gives every modern colour function a plain fallback first', () => {
+    const missing = unfallen(css);
     expect(missing, `no fallback before: ${missing.join(', ')}`).toEqual([]);
+  });
+
+  it('and so does the map, whose key is a panel on the ground and must not lose its backing', () => {
+    // Without one, an older browser drew the key's words straight over the map's marks again.
+    for (const file of ['../components/grid/GridMap.svelte', '../components/layers/MapKey.svelte', '../../routes/+page.svelte']) {
+      const source = readFileSync(new URL(file, import.meta.url), 'utf8');
+      const style = (/<style>([\s\S]*?)<\/style>/.exec(source)?.[1] ?? '').replace(/\/\*[\s\S]*?\*\//g, '');
+      const missing = unfallen(style);
+      expect(missing, `${file}: no fallback before ${missing.join(', ')}`).toEqual([]);
+    }
   });
 });
 

@@ -303,10 +303,13 @@ export const MAP_LINES = {
     files: null,
     per: 'all',
     js: {
-      limit: 17_854,
-      warn: 16_068,
-      measured: 14_878,
+      limit: 20_577,
+      warn: 18_520,
+      measured: 17_148,
       why:
+        'Re-derived 2026-10-24 at 17,148 B, from 14,878 B: the map’s whole key, every line it says with the ' +
+        'rest of its words, the row of marks under it whole, and every kind of mark the map draws, drawn as ' +
+        'it draws them, which the map’s own key cuts short on a phone. ' +
         'Re-derived 2026-10-19 at 14,878 B, from 10,689 B measured that afternoon against a 10,364 B ' +
         'derivation, for Hazards: its box and, beside it, in plain words before it is ticked, which three ' +
         'hosts it asks and what each learns; a row per feed once it is on, each with its age or not read; ' +
@@ -333,10 +336,12 @@ export const MAP_LINES = {
     files: (f) => f === `${ZSP}outlines.json`,
     per: 'all',
     js: {
-      limit: 1_676,
-      warn: 1_509,
-      measured: 1_397,
+      limit: 1_792,
+      warn: 1_614,
+      measured: 1_494,
       why:
+        'Re-derived 2026-10-24 at 1,494 B, from 1,397 B: the key’s one short line with the draft’s stage, the ' +
+        'credit CC BY asks for over the map’s foot, and a Sector’s edge dashed in the strong line from ×4 in. ' +
         'Measured 2026-10-19 at 1,397 B: reading the outlines and a container’s Sectors, drawing them in ' +
         'three weights, and answering a tap. The data has no ceiling until Stage 1 is vendored (23 Oct): ' +
         'the change that vendors it derives one from what it measures.'
@@ -421,10 +426,12 @@ export const MAP_LINES = {
     files: (f) => f === 'grid/spheres.json',
     per: 'all',
     js: {
-      limit: 2_604,
-      warn: 2_344,
-      measured: 2_170,
+      limit: 2_612,
+      warn: 2_351,
+      measured: 2_177,
       why:
+        'Re-derived 2026-10-24 at 2,177 B, from 2,170 B: a small state a small filled diamond rather than a ' +
+        'dotted circle, a mission’s shape, and the lists’ credit over the map’s foot. ' +
         'Re-derived 2026-10-19 at 2,170 B, from 2,014 B the same day: reading the vendored lists, the ' +
         'Sphere opened hatched in screen space and nothing shaded until one is, a small state as a dotted ' +
         'circle at its label point and a filled one in the Sphere opened, the key naming what is hatched ' +
@@ -469,10 +476,12 @@ export const MAP_LINES = {
     files: (f) => f === 'grid/region-ages.json',
     per: 'all',
     js: {
-      limit: 3_163,
-      warn: 2_847,
-      measured: 2_636,
+      limit: 3_274,
+      warn: 2_947,
+      measured: 2_729,
       why:
+        'Re-derived 2026-10-24 at 2,729 B, from 2,636 B: the four classes a family of squares, since the ' +
+        'circle is a mission’s, and the key’s short words, so every class there is fits a phone’s key. ' +
         'Re-derived 2026-10-19 at 2,636 B, from 1,983 B the same day: reading the dates as runs and ' +
         'laying them out once, every region’s and record’s reading worked out once a day so a frame ' +
         'only looks them up, a region by its oldest, four shapes rather than four tones at the size ' +
@@ -504,14 +513,64 @@ export const MAP_LINES = {
     files: null,
     per: 'all',
     js: {
-      limit: 2_555,
-      warn: 2_299,
-      measured: 2_129,
+      limit: 3_061,
+      warn: 2_755,
+      measured: 2_551,
       why:
+        'Re-derived 2026-10-24 at 2,551 B, from 2,129 B: a count never round, which a mission is, moved a step ' +
+        'off a mission’s ring or the key where it would sit under one, and where it is said once for ' +
+        'drawing it and for keeping the map’s names off it. ' +
         'Re-derived 2026-10-19 at 2,129 B, from 2,004 B the same day: placing each mission’s drawn point ' +
         'in its Terra or Mare, Zone and open Sector; saying, at every level it is counted in and by that ' +
         'file’s own drift, which are near an edge the simplified lines cannot settle; and a count drawn at ' +
         'each label point, dashed where it holds one of those, a Sector’s once it is wide enough on screen.'
+    },
+    data: null
+  },
+  /*
+   * Names on the map: countries from ×2, provinces from ×6, Starcom's Terrae, Maria and Zones with
+   * Zones, and each time zone's offset with Time zones. Loaded the first time somebody zooms in to ×2 or
+   * chooses Zones or Time zones; it fetches nothing, since every name is in a file the map already has
+   * or in the phone's own tables.
+   */
+  labels: {
+    when: 'zooming in to ×2, or choosing Zones or Time zones, which names what is drawn',
+    code: `${LAYER_CODE}labels.ts`,
+    files: null,
+    per: 'all',
+    js: {
+      limit: 1_987,
+      warn: 1_788,
+      measured: 1_656,
+      why:
+        'Measured 2026-10-24 at 1,656 B: which names each zoom and layer wants, each at its file’s label ' +
+        'point or a point well inside it, worked out once; laid out greedily, largest first, on a halo of ' +
+        'the ground, clear of each other, the key, the sheet, the rings, the counts and the hazards; an ' +
+        'offset written from its number; and, from ×4 in, that outlines outside the countries with regions ' +
+        'are 1:110m. It fetches nothing.'
+    },
+    data: null
+  },
+  /*
+   * The land at the world file's finer scale, from ×2 in: the countries with provinces filled from them,
+   * and the coast and borders to match. Loaded the first time somebody zooms in that far; it fetches
+   * nothing, since it is worked out from the file every visit already has.
+   */
+  fine: {
+    when: 'zooming in to ×2, where the countries with provinces are drawn from them',
+    code: `${LAYER_CODE}fine.ts`,
+    files: null,
+    per: 'all',
+    js: {
+      limit: 1_625,
+      warn: 1_462,
+      measured: 1_354,
+      why:
+        'Measured 2026-10-24 at 1,354 B: which countries have provinces; the world file’s land borders between ' +
+        'one of them and a country without, in a 1° grid; each province’s outer edge less the stretches along ' +
+        'such a border; the provinces’ union, chained from the arcs only one of them uses, and the lines between ' +
+        'them; the other countries’ 1:110m rings; each with its box, so a country out of view is left out whole. ' +
+        'A line of its own so mount, which every visit pays, carries none of it, and it fetches nothing.'
     },
     data: null
   },
@@ -527,10 +586,14 @@ export const MAP_LINES = {
     files: null,
     per: 'all',
     js: {
-      limit: 7_609,
-      warn: 6_848,
-      measured: 6_341,
+      limit: 8_152,
+      warn: 7_338,
+      measured: 6_794,
       why:
+        'Re-derived 2026-10-24 at 6,794 B, from 6,341 B: further out, cells one kind each and 24 px wide, a ' +
+        'count on a pill of the ground left out where it would overlap, a floods’ and droughts’ point dashed and ' +
+        'said to be an area’s centre, all three feeds alike said once, and where its marks are, so no name ' +
+        'is put over one. ' +
         'Re-derived 2026-10-19 at 6,341 B, from 5,827 B the same day: reading three feeds’ answers in the ' +
         'shapes measured that day, each source’s words kept as given and only https links made links; ' +
         'asking at most every 10 minutes, never while the page is hidden, and nothing left running once it ' +

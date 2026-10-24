@@ -41,7 +41,7 @@ async function agesOn(page: Page) {
   const arrived = page.waitForResponse((r) => r.url().endsWith('/grid/region-ages.json'));
   await screen.locator('[data-ages]').check();
   await arrived;
-  await expect(page.locator('[data-legend="nations"]')).toContainText('Regions by last check');
+  await expect(page.locator('[data-legend="nations"]')).toContainText('Directory by last check ·');
   await frame(page);
   return screen;
 }
@@ -75,7 +75,8 @@ test('fetched once, only when ticked, and never by Places or by what is on scree
   // The regions alone: Places' own file is Places', and nobody asked for it.
   expect(asked.filter((p) => p === '/grid/places.json')).toEqual([]);
   // The key says what it is, and that no person has confirmed any of the directory, by phone or in person.
-  await expect(page.locator('[data-legend="nations"]')).toHaveText('Regions by last check · none confirmed by a person');
+  await expect(page.locator('[data-legend="nations"]')).toHaveText('Directory by last check · none by a person');
+  await expect(screen.locator('[data-key-full]')).toContainText('by a person is a check confirmed by phone, in person or at the place');
   // And the full key, every class by how long ago, with how many regions each holds today.
   await expect(screen.locator('[data-age-row="hours"]')).toContainText('14–89 days ago');
   await expect(screen.locator('[data-age-row="current"]')).toContainText(/0–13 days ago\s*0/);
@@ -88,7 +89,7 @@ test('fetched once, only when ticked, and never by Places or by what is on scree
   await expect(screen.locator('[data-ages-note]')).toContainText('Where marks would crowd, the oldest is drawn');
 });
 
-test('in October a region’s mark is a solid muted dot, 14–89 days ago; in December the same is a hollow ring, 90+', async ({ page }) => {
+test('in October a region’s mark is a small solid muted square, 14–89 days ago; in December the same is a hollow one, 90+', async ({ page }) => {
   await landed(page, OCTOBER);
   const region = await loneRegion(page);
   await agesOn(page);
@@ -96,10 +97,10 @@ test('in October a region’s mark is a solid muted dot, 14–89 days ago; in De
   await peek(page);
   await zoomAt(page, region.lon, region.lat, 4);
   const at = await screenAt(page, region.lon, region.lat);
-  expect(await toneNear(page, at.x, at.y, 1, '--t-muted'), `${region.name}: no solid muted dot at its centre`).toBeGreaterThan(0);
+  expect(await toneNear(page, at.x, at.y, 1, '--t-muted'), `${region.name}: no solid muted square at its centre`).toBeGreaterThan(0);
   // The swatch row under the key names only the class there is, and how many regions are in it.
-  await expect(page.locator('[data-swatches] [data-swatch="dot"]')).toHaveCount(1);
-  await expect(page.locator('[data-swatches]')).toContainText(/14–89 days ago · [\d,]+/);
+  await expect(page.locator('[data-swatches] [data-swatch="square-small"]')).toHaveCount(1);
+  await expect(page.locator('[data-swatches]')).toContainText(/14–89 days · [\d,]+/);
   await expect(page.locator('[data-swatches]')).not.toContainText('0–13 days');
 
   const later = await page.context().newPage();
@@ -112,9 +113,9 @@ test('in October a region’s mark is a solid muted dot, 14–89 days ago; in De
   await peek(later);
   await zoomAt(later, region.lon, region.lat, 4);
   const there = await screenAt(later, region.lon, region.lat);
-  expect(await toneNear(later, there.x, there.y, 1, '--t-muted'), 'December: still a solid dot at its centre').toBe(0);
-  expect(await toneNear(later, there.x + 4.5, there.y, 1.5, '--t-muted'), 'December: no hollow ring round it').toBeGreaterThan(0);
-  await expect(later.locator('[data-swatches]')).toContainText(/90\+ days ago · [\d,]+/);
+  expect(await toneNear(later, there.x, there.y, 1, '--t-muted'), 'December: still a solid square at its centre').toBe(0);
+  expect(await toneNear(later, there.x + 4.5, there.y, 1.5, '--t-muted'), 'December: no hollow square round it').toBeGreaterThan(0);
+  await expect(later.locator('[data-swatches]')).toContainText(/90\+ days · [\d,]+/);
 });
 
 test('at the whole-Earth view each mark is drawn at the size its key draws it, and where they would crowd the oldest is drawn', async ({ page }) => {
@@ -130,13 +131,13 @@ test('at the whole-Earth view each mark is drawn at the size its key draws it, a
   // Not zoomed: the view the map opens on, where the key is read. Far from any other region, so its own.
   const at = await bring(page, region.lon, region.lat);
   expect(at.uncovered, `${region.name} in view`).toBe(true);
-  // A hollow ring of radius 4.5, as the key's swatch is drawn, not half that.
-  expect(await toneNear(page, at.x + 4.5, at.y, 1, '--t-muted'), `${region.name}: no ring at the key’s size`).toBeGreaterThan(0);
-  expect(await toneNear(page, at.x, at.y, 1.5, '--t-muted'), `${region.name}: filled, where a ring is hollow`).toBe(0);
-  const swatch = await page.locator('[data-swatches] [data-swatch="ring"] circle').getAttribute('r');
-  expect(Number(swatch)).toBe(4.5);
+  // A hollow square 9 px across, as the key's swatch is drawn, not half that.
+  expect(await toneNear(page, at.x + 4.5, at.y, 1, '--t-muted'), `${region.name}: no square at the key’s size`).toBeGreaterThan(0);
+  expect(await toneNear(page, at.x, at.y, 1.5, '--t-muted'), `${region.name}: filled, where a square is hollow`).toBe(0);
+  const swatch = await page.locator('[data-swatches] [data-swatch="square-ring"] path').first().getAttribute('d');
+  expect(swatch).toBe('M1.5 1.5h9v9h-9z');
   // Over the United States, nearly two thousand regions: thinned to marks that do not run into each
-  // other, so a ring's hollow is still there to see, rather than one blob of overlapping rings.
+  // other, so a square's hollow is still there to see, rather than one blob of overlapping marks.
   const us = await screenAt(page, -98, 39);
   const hollow = await page.locator('.grid canvas').evaluate((c: HTMLCanvasElement, [x, y]) => {
     const r = c.getBoundingClientRect();
@@ -151,7 +152,7 @@ test('at the whole-Earth view each mark is drawn at the size its key draws it, a
   expect(hollow, 'nothing drawn over the United States').toBeGreaterThan(0.02);
 });
 
-test('a region none of whose places carries a date is unknown, and drawn as a square, not as old', async ({ page }) => {
+test('a region none of whose places carries a date is unknown, and drawn crossed, not as old', async ({ page }) => {
   await landed(page, OCTOBER);
   const region = await loneRegion(page);
   await page.route('**/grid/region-ages.json', async (route) => {
@@ -165,9 +166,11 @@ test('a region none of whose places carries a date is unknown, and drawn as a sq
   await peek(page);
   await zoomAt(page, region.lon, region.lat, 4);
   const at = await screenAt(page, region.lon, region.lat);
-  expect(await toneNear(page, at.x, at.y, 1, '--t-faint'), 'filled, as if it were a reading').toBe(0);
+  // Hollow, with a cross from corner to corner: nothing between the cross's arms, as a filled reading would be.
+  expect(await toneNear(page, at.x + 2.5, at.y, 0.5, '--t-faint'), 'filled, as if it were a reading').toBe(0);
   expect(await toneNear(page, at.x + 4, at.y + 4, 1.5, '--t-faint'), 'no square’s corner').toBeGreaterThan(0);
-  await expect(page.locator('[data-swatches]')).toContainText(/Unknown · no check date · \d+/);
+  expect(await toneNear(page, at.x + 2, at.y + 2, 0.75, '--t-faint'), 'no cross').toBeGreaterThan(0);
+  await expect(page.locator('[data-swatches]')).toContainText(/no date · \d+/);
   // A tap says so, in words: unknown, never a date it does not have.
   await tap(page, at.x, at.y);
   const place = page.locator(`[data-screen="place"][data-place="${region.region}"]`);

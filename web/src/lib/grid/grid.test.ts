@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import { HEIGHT, METRES_PER_UNIT, decode, inside, project, unproject, type Ring, type Topology } from './topology';
+import { fineOf } from './layers/fine';
 
 const ROOT = fileURLToPath(new URL('../../../../', import.meta.url));
 const FILE = fileURLToPath(new URL('../../../static/grid/world.json', import.meta.url));
@@ -189,5 +190,46 @@ describe('detail follows the regions', () => {
     const covered = new Set((topology.navcom?.regionCountries as string[] | undefined) ?? []);
     const missing = [...filed].filter((c) => !covered.has(c));
     expect(missing, `regions exist in ${missing.join(', ')} but the grid has no provinces there — run node scripts/grid-geometry.mjs`).toEqual([]);
+  });
+});
+
+describe('the land at the finer scale, where the file has it [map.md §3]', () => {
+  const fine = fineOf(topology);
+  /** How near any point of some lines comes to (lon, lat), in degrees of longitude at the equator, the map's unit being 360 of them. */
+  const nearest = (lines: readonly Ring[], lon: number, lat: number) => {
+    const [x, y] = project(lon, lat);
+    let best = Infinity;
+    for (const r of lines) for (let i = 0; i < r.length; i += 2) best = Math.min(best, Math.hypot(r[i]! - x, r[i + 1]! - y));
+    return best * 360;
+  };
+
+  it('is the provinces’ for the countries that have them, and the 1:110m outlines for the rest', () => {
+    expect([...fine.fine].sort()).toEqual(['au', 'gb', 'us']);
+    // None of the three's 1:110m outlines is among the others, which every other country is.
+    const others = layers['world']!.shapes.filter((s) => !fine.fine.has(String(s.props.iso_a2)));
+    expect(fine.others.length).toBe(others.reduce((n, s) => n + s.rings.length, 0));
+    const rings = (g: { rings: Ring[] }[]) => g.flatMap((x) => x.rings);
+    // Atlantic City is on the land, and the Chesapeake is water, as they are at 1:10m and not at 1:110m.
+    const provinces = layers['provinces']!.rings;
+    expect(inside(provinces, project(-74.45, 39.37)), 'Atlantic City').toBe(true);
+    expect(inside(provinces, project(-76.2, 38.3)), 'the Chesapeake').toBe(false);
+    // And the union the map fills is the same land, drawn from the provinces' outer edge alone.
+    expect(inside(rings(fine.outline), project(-74.45, 39.37)), 'Atlantic City, in the union').toBe(true);
+    expect(inside(rings(fine.outline), project(-76.2, 38.3)), 'the Chesapeake, in the union').toBe(false);
+    expect(inside(rings(fine.outline), project(-98, 39)), 'Kansas, in the union').toBe(true);
+    expect(inside(rings(fine.outline), project(-0.13, 51.5)), 'London, in the union').toBe(true);
+    const us = layers['world']!.shapes.find((s) => s.id === 'us')!;
+    expect(inside(us.rings, project(-74.45, 39.37)), 'the 1:110m US took Atlantic City for the sea').toBe(false);
+  });
+
+  it('draws the provinces’ coast where they meet the sea, and leaves their land borders to the neighbour’s one line', () => {
+    // The coast: Atlantic City, Galveston Bay, the Bristol Channel, Sydney.
+    for (const [lon, lat, where] of [[-74.42, 39.36, 'Atlantic City'], [-94.8, 29.3, 'Galveston'], [-3.2, 51.4, 'the Bristol Channel'], [151.27, -33.86, 'Sydney']] as const) {
+      expect(nearest(fine.own.flatMap((g) => g.rings), lon, lat), `no coast at ${where}`).toBeLessThan(0.3);
+    }
+    // The 49th parallel in Minnesota and North Dakota, and the Rio Grande at Laredo, are not coast.
+    for (const [lon, lat, where] of [[-97.5, 49, 'Minnesota'], [-104, 49, 'North Dakota'], [-99.5, 27.5, 'Laredo']] as const) {
+      expect(nearest(fine.own.flatMap((g) => g.rings), lon, lat), `a land border drawn as coast in ${where}`).toBeGreaterThan(0.3);
+    }
   });
 });

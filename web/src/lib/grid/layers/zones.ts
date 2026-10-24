@@ -174,16 +174,23 @@ export const layer: DrawnLayer = {
   load: () => void loadOutlines(),
   lines(ctx, scale, ink) {
     sync();
-    // Three weights and no hue: a container's edge heaviest, a Zone's lighter, a Sector's faint.
+    /*
+     * Three weights and no hue, over the coast: a container's edge heaviest; a Zone's lighter; a
+     * Sector's thin and dashed, once the world is 1,500 px wide (about ×4 on a phone), about 23 km a
+     * pixel, where a Sector of 50,000 km² or more is ten pixels or more across. A Sector's edge in the
+     * faintest line was not there at ×9. Never in ink, which is what a hover or a tap lifts.
+     */
     for (const [path, width, colour] of [
-      [drawn.sectors, 0.6, ink.line],
+      [scale >= 1500 ? drawn.sectors : null, 0.8, ink.strong],
       [drawn.zones, 1, ink.strong],
-      [drawn.containers, 1.75, ink.muted]
+      [drawn.containers, 1.5, ink.muted]
     ] as const) {
       if (!path) continue;
       ctx.lineWidth = width / scale;
       ctx.strokeStyle = colour;
+      if (path === drawn.sectors) ctx.setLineDash([4 / scale, 3 / scale]);
       ctx.stroke(path);
+      ctx.setLineDash([]);
     }
   },
   hit(v, at) {
@@ -200,11 +207,20 @@ export const layer: DrawnLayer = {
     return shape.name ?? 'Unnamed';
   },
   open: (shape) => ({ kind: 'zone', id: shape.id ?? '' }),
+  // One short line in the key, the draft's stage in it (D6); the credit CC BY asks for is over the map's foot.
   legend() {
     const n = layerData.outlines?.navcom;
     if (mapLayers.zones === 'absent') return 'Zones · not in this build yet';
     if (!n) return 'Zones · loading';
-    return n.draft ? `Zones · draft, stage ${n.stage}, view only · ${n.credit}, CC BY 4.0` : `Zones · ${n.credit}, CC BY 4.0`;
+    return n.draft ? `Zones · draft ${n.stage}, view only` : 'Zones';
+  },
+  credit() {
+    const n = layerData.outlines?.navcom;
+    return n ? `${n.draft ? `draft, stage ${n.stage}, view only · ` : ''}${n.credit}, CC BY 4.0` : '';
+  },
+  attribution() {
+    const n = layerData.outlines?.navcom;
+    return n ? `Zones: ${n.credit}, CC BY 4.0` : '';
   },
   lifted(current) {
     const top = current as { kind?: unknown; id?: unknown } | null;

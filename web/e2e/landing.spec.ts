@@ -60,7 +60,12 @@ async function picture(page: Page): Promise<{ colours: number; hash: number }> {
 async function uncovered(locator: Locator): Promise<boolean> {
   return locator.evaluate((el) => {
     const r = el.getBoundingClientRect();
+    // The key passes touches through to the map, and is still seen: asked as if it took them.
+    const e = el as HTMLElement;
+    const was = e.style.pointerEvents;
+    e.style.pointerEvents = 'auto';
     const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    e.style.pointerEvents = was;
     return hit === el || el.contains(hit);
   });
 }
@@ -203,7 +208,7 @@ test.describe('the landing map draws, and tells nobody', () => {
 
     await page.locator('[data-hazards]').check();
     await expect.poll(() => new Set(away().map((u) => new URL(u).host)).size, { timeout: 10_000 }).toBe(HAZARD_HOSTS.length);
-    await expect(page.locator('[data-legend]')).toContainText('GDACS just now');
+    await expect(page.locator('[data-legend]')).toContainText('3 feeds just now');
     expect([...new Set(away().map((u) => new URL(u).host))].sort()).toEqual([...HAZARD_HOSTS].sort());
     expect(await violations(), 'the page tried to reach somebody its policy does not allow').toEqual([]);
     expect((await sockets()).filter((u) => !RELAYS.includes(u))).toEqual([]);
@@ -213,6 +218,8 @@ test.describe('the landing map draws, and tells nobody', () => {
     await ready(page);
     const before = await picture(page);
     await page.getByRole('button', { name: 'Zoom in' }).click();
+    // The map draws on the next frame: read before it, the picture is the one before the click.
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))));
     const zoomed = await picture(page);
     expect(zoomed.hash).not.toBe(before.hash);
 
@@ -1492,7 +1499,7 @@ test.describe('the landing map: every shape and point is a door [map.md §6]', (
     await withMissions(page, [HEAT_PACKAGE]);
     await page.getByRole('button', { name: 'Map layers' }).click();
     await page.locator('[data-screen="layers"]').getByRole('radio', { name: /^Zones/ }).check();
-    await expect(page.locator('[data-legend="zones"]')).toContainText('CC BY 4.0');
+    await expect(page.locator('[data-credit]')).toContainText('CC BY 4.0');
     await page.locator('[data-back]').click();
     await frame(page);
     await tapAt(page, -119.4, 36.8, 'California');
@@ -1589,10 +1596,11 @@ test.describe('the landing map: every shape and point is a door [map.md §6]', (
       if (Math.abs(dx) > step / 2) await page.keyboard.press(dx < 0 ? 'ArrowLeft' : 'ArrowRight');
       else await page.keyboard.press(dy < 0 ? 'ArrowUp' : 'ArrowDown');
     }
-    // The reticle's readout is a polite live region: what is under it, as the keys move it.
-    const chip = page.locator('[data-chip]');
-    await expect(chip).toHaveAttribute('role', 'status');
-    await expect(chip).toHaveText('California · 1 open mission');
+    // The reticle's readout, seen, and told politely to a screen reader: what is under it, as the keys move it.
+    await expect(page.locator('[data-chip]')).toHaveText('California · 1 open mission');
+    const said = page.locator('[data-said]');
+    await expect(said).toHaveAttribute('role', 'status');
+    await expect(said).toHaveText('California · 1 open mission');
     await page.keyboard.press('Enter');
     const place = page.locator('[data-screen="place"][data-place="us-ca"]');
     await expect(place).toBeVisible();
@@ -1624,8 +1632,8 @@ test.describe('the landing map: every shape and point is a door [map.md §6]', (
      */
     await withMissions(page, [HEAT_PACKAGE, library()]);
     await zoomAt(page, ...LIBRARY, 2048);
-    // The wheel's pointer is a mouse, whose hover rings the mission: off the map, so only the ring is drawn.
-    await page.locator('.nav-key h1').hover();
+    // The wheel's pointer is a mouse, whose hover rings the mission: off the map, onto Com, so only the ring is drawn.
+    await page.locator('[data-com]').hover({ position: { x: 20, y: 20 } });
     await frame(page);
     const [lon, lat] = [Math.round(LIBRARY[0] * 100) / 100, Math.round(LIBRARY[1] * 100) / 100];
     const exact = await screenAt(page, ...LIBRARY);
@@ -1634,7 +1642,13 @@ test.describe('the landing map: every shape and point is a door [map.md §6]', (
     // Equal Earth keeps areas, so a kilometre's circle is drawn with a kilometre's area anywhere [topology.ts].
     const r = (1_113 * scale) / METRES_PER_UNIT;
     expect(r, 'the ring a kilometre covers is wider than the smallest ring').toBeGreaterThan(20);
-    expect(await inkNear(page, exact.x, exact.y, 8), 'a ring drawn round the address itself').toBe(0);
+    // No ring of the smallest size round the address itself, and no centre mark: a ring drawn at the size
+    // its precision covers is the ground it might be anywhere on, and a dot in it would sit on one block.
+    let round = 0;
+    for (let i = 0; i < 12; i++) round += await inkNear(page, exact.x + 10 * Math.cos((i * Math.PI) / 6), exact.y + 10 * Math.sin((i * Math.PI) / 6), 0.75);
+    expect(round, 'a ring drawn round the address itself').toBe(0);
+    expect(await inkNear(page, centre.x, centre.y, 4), 'a centre mark at the point it rounds to, as if it were there').toBe(0);
+    expect(await inkNear(page, exact.x, exact.y, 4), 'a centre mark at the address').toBe(0);
     expect(await inkNear(page, centre.x + r, centre.y, 4), 'no kilometre ring round the point it rounds to').toBeGreaterThan(0);
   });
 
@@ -1679,7 +1693,7 @@ test.describe('the landing map: every shape and point is a door [map.md §6]', (
     await expect(failed).toHaveCount(0);
   });
 
-  test('with Places on, regions are rings Earth-wide, hollow so no centre reads as a place; a finger on Birmingham’s opens it', async ({ page }) => {
+  test('with Places on, regions are squares Earth-wide, hollow so no centre reads as a place; a finger on Birmingham’s opens it', async ({ page }) => {
     await withMissions(page, [HEAT_PACKAGE]);
     const melbourne = await regionOf(page, 'melbourne');
     const london = await regionOf(page, 'london');
@@ -1689,12 +1703,12 @@ test.describe('the landing map: every shape and point is a door [map.md §6]', (
     };
     const before = [await muted(melbourne.lon, melbourne.lat), await muted(london.lon, london.lat)];
     await placesOn(page);
-    // A ring is drawn in the muted neutral, which nothing else on the map is drawn in.
-    expect(await muted(melbourne.lon, melbourne.lat), 'no ring at Melbourne').toBeGreaterThan(before[0]! + 10);
-    expect(await muted(london.lon, london.lat), 'no ring at London').toBeGreaterThan(before[1]! + 10);
+    // A square is drawn in the muted neutral, which no line of the map is drawn in.
+    expect(await muted(melbourne.lon, melbourne.lat), 'no square at Melbourne').toBeGreaterThan(before[0]! + 10);
+    expect(await muted(london.lon, london.lat), 'no square at London').toBeGreaterThan(before[1]! + 10);
 
     const birmingham = await regionOf(page, 'birmingham-uk');
-    // In close enough that Birmingham's ring is its own and not its neighbours'.
+    // In close enough that Birmingham's square is its own and not its neighbours'.
     await zoomAt(page, birmingham.lon, birmingham.lat, 16);
     const at = await screenAt(page, birmingham.lon, birmingham.lat);
     const button = page.getByRole('button', { name: 'Places' });
@@ -1705,7 +1719,7 @@ test.describe('the landing map: every shape and point is a door [map.md §6]', (
     await frame(page);
     // A region's centre is a statistic of its records, not a place: never a dot like a record's.
     expect(await pixelAt(page, at.x, at.y), 'Birmingham’s centre is drawn as a dot').toEqual(bare);
-    expect(await toneNear(page, at.x, at.y, 7, '--t-muted'), 'no ring round Birmingham').toBeGreaterThan(10);
+    expect(await toneNear(page, at.x, at.y, 7, '--t-muted'), 'no square round Birmingham').toBeGreaterThan(10);
     await tap(page, at.x, at.y);
     const place = page.locator('[data-screen="place"][data-place="birmingham-uk"]');
     await expect(place).toContainText(`${birmingham.records} places`);

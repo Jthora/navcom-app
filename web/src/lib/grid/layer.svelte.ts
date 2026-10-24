@@ -56,8 +56,10 @@ export interface Ink {
   strong: string;
   /** The deepest neutral: night's shade, under everything else. */
   sunk: string;
-  /** The canvas's own ground: a badge's fill. */
+  /** The canvas's own ground: a badge's fill, and the casing every mark sits on. */
   ground: string;
+  /** The land, lifted off the sea far enough to read in sunlight [GridMap.svelte --map-land]. */
+  land: string;
 }
 
 /**
@@ -74,8 +76,12 @@ export interface DrawnLayer {
   hit(v: View, at: readonly [number, number]): Shape | null | undefined;
   say(shape: Shape): string;
   open(shape: Shape): Screen;
-  /** What the map's legend says while it is drawn: what it is, whose, and how old. */
+  /** What the map's legend says while it is drawn, in one short line: what it is, whose, and how old. */
   legend(): string;
+  /** The rest of whose it is and how it was made, for the full key on the layers screen. */
+  credit?(): string;
+  /** Whose it is, as its licence asks, shown over the map's foot while it is drawn: `''` for none. */
+  attribution?(): string;
   /** What is open in Com, lifted on the map while it is, however it was opened. */
   lifted?(current: unknown): Shape | null;
   /** What a directory region's ring adds to what it says: its own clocks, with Time zones drawn. */
@@ -117,8 +123,17 @@ export interface Overlay {
    * many marks were in reach, which `ids` may name fewer of.
    */
   hit?(view: View, at: readonly [number, number]): { ids: string; say: string; of: number } | null;
-  /** Its line in the map's key: what it is, whose, and how old [invariant 7]. */
+  /** Its line in the map's key, one short line: what it is, whose, and how old [invariant 7]. */
   legend(): string;
+  /** The rest of whose it is and how it was made, for the full key on the layers screen. */
+  credit?(): string;
+  /**
+   * Where its marks and their counts go at this view, once a frame and before `marks` draws them: clear
+   * of `taken`, which holds what was placed before it (the missions' rings first, then each overlay in
+   * turn), and to which it adds its own, so the names keep off them too [layers/labels.ts]. Returns the
+   * counts it drew, which the canvas carries for a browser test to find [GridMap.svelte data-counts].
+   */
+  place?(ctx: CanvasRenderingContext2D, view: View, taken: Box[]): Counted[];
   /** What it adds to what a hover over an area says. */
   about?(shape: Shape): string | null;
   /** What it adds to what a directory region's ring, or one of its records, says. */
@@ -127,13 +142,36 @@ export interface Overlay {
   swatches?(): readonly Swatch[];
 }
 
+/** A box on the canvas, in CSS px from its top left. */
+export interface Box {
+  l: number;
+  t: number;
+  r: number;
+  b: number;
+}
+
+/** A count an overlay drew: what it counts (`zone:…`, `wildfire`), how many, its glyph's or area's point, and the count's own box. */
+export interface Counted {
+  of: string;
+  n: number;
+  x: number;
+  y: number;
+  box: Box;
+}
+
+/** Whether two boxes overlap, with `pad` CSS px of air between them. */
+export const overlaps = (a: Box, b: Box, pad = 0): boolean => a.l < b.r + pad && a.r > b.l - pad && a.t < b.b + pad && a.b > b.t - pad;
+
 /** One row of a key under the map's own: a mark drawn as the map draws it, and what it means. */
 export interface Swatch {
   /**
-   * `dots`: a patch of night's dots, as day and night lays them over an area. The rest are Hazards'
-   * shapes, all outlines, two of them hatched [layers/hazards.ts].
+   * The directory's ages, a family of squares, since the circle is the missions' alone: `square` filled,
+   * `square-small` a smaller one filled, `square-ring` hollow, `square-cross` hollow and crossed
+   * [layers/ages.ts]. `dots`: a patch of night's dots, as day and night lays them over an area. The rest
+   * are Hazards' shapes, all outlines, two of them hatched [layers/hazards.ts]. `lit`: a patch of the lift
+   * a mission filed under a place gives it, as the map lights a province or a country [GridMap.svelte].
    */
-  mark: 'disc' | 'dot' | 'ring' | 'square' | 'dots' | 'asterisk' | 'triangle' | 'triangle-hatched' | 'hexagon' | 'diamond' | 'diamond-hatched';
+  mark: 'square' | 'square-small' | 'square-ring' | 'square-cross' | 'dots' | 'asterisk' | 'triangle' | 'triangle-hatched' | 'hexagon' | 'diamond' | 'diamond-hatched' | 'lit';
   tone: 'ink' | 'muted' | 'faint';
   text: string;
   /** Shares a line with the next, wrapping, rather than a row of its own: Hazards' six kinds. */
@@ -233,6 +271,10 @@ export const layerData = {
    * members. Set by the map when its geometry arrives.
    */
   countries: null as Shape[] | null,
+  /** What lies over the canvas, the key and the controls, in CSS px: a count is never hung under them [GridMap covers]. */
+  covers: [] as Box[],
+  /** The provinces the world's file carries, for the names drawn on them closer in [layers/labels.ts]. */
+  provinces: null as Shape[] | null,
   /** The Spheres' lists, vendored, fetched whole when Spheres is chosen [layers/spheres.ts; D9]. */
   spheres: null as SpheresFile | null,
   /**
@@ -241,6 +283,12 @@ export const layerData = {
    */
   hazards: null as HazardsHeld | null
 };
+
+/**
+ * What the map's key says, as the map last drew it: each thing drawn, its one short line on the map and
+ * the rest of its words, so the layers screen gives the whole of it and the map keeps one line each.
+ */
+export const mapKey = $state({ lines: [] as { line: string; credit: string }[], swatches: [] as readonly Swatch[] });
 
 /** Says that `layerData` changed. */
 export const loaded = (): void => void (mapLayers.loaded += 1);

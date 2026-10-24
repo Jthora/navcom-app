@@ -25,6 +25,7 @@
   import { MAP_LAYERS, daylightDrawn, layerData, mapLayers, type MapLayer } from '$lib/grid/layer.svelte';
   import { HAZARD_FEEDS, HAZARDS_PEAK_KB, HAZARDS_ROUND_KB, agoOf, type HazardFeedId } from '$lib/outside';
   import { forgetWork, workSector } from './work';
+  import MapKey from './MapKey.svelte';
 
   let { nav }: { nav: Nav } = $props();
 
@@ -170,7 +171,7 @@
             {#each ageRows as row (row.reading)}
               <li data-age-row={row.reading}>
                 <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" class="nc-mark nc-{row.mark}">
-                  {#if row.mark === 'square'}<rect x="2" y="2" width="8" height="8" />{:else}<circle cx="6" cy="6" r={row.mark === 'dot' ? 3.5 : 4.5} />{/if}
+                  <path d={row.mark === 'square-small' ? 'M3 3h6v6H3z' : 'M1.5 1.5h9v9h-9z'} />{#if row.mark === 'square-cross'}<path d="M1.5 1.5l9 9M10.5 1.5l-9 9" />{/if}
                 </svg>
                 <span>{row.text}</span><span class="nc-key-n">{row.regions.toLocaleString('en-US')}</span>
               </li>
@@ -226,6 +227,9 @@
     {/if}
   </Panel>
 
+  <!-- The map's whole key: every line its key says, with the rest of its words, and every mark drawn as it is drawn. -->
+  <MapKey />
+
   {#if mapLayers.chosen === 'zones' && mapLayers.zones === 'ready' && outlines && navcom}
     <Panel label="Zones" post="{outlines.containers.length} Terrae and Maria">
       <ul class="nc-areas">
@@ -271,7 +275,7 @@
       Starcom’s partition of the whole Earth, licensed CC BY 4.0, which NavCom copies into its own
       build at each stage and checks first: nothing is fetched from Starcom, and nothing about where
       you look is sent anywhere. The Spheres are cited lists of countries, copied the same way; a
-      small state too small for the world’s outlines is a circle at Natural Earth’s label point.
+      small state too small for the world’s outlines is a small diamond at Natural Earth’s label point.
     </p>
     <p>
       Day and night is worked out on this phone from its own clock, and nothing is fetched for it: the
@@ -389,10 +393,10 @@
     flex: none;
     stroke-width: 1.5;
   }
-  .nc-disc { fill: var(--t-ink); }
-  .nc-dot { fill: var(--t-muted); }
-  .nc-ring { fill: none; stroke: var(--t-muted); }
-  .nc-square { fill: none; stroke: var(--t-faint); }
+  .nc-square { fill: var(--t-ink); }
+  .nc-square-small { fill: var(--t-muted); }
+  .nc-square-ring { fill: none; stroke: var(--t-muted); }
+  .nc-square-cross { fill: none; stroke: var(--t-faint); }
   .nc-areas {
     display: flex;
     flex-wrap: wrap;

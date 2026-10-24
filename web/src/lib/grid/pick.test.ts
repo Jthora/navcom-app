@@ -12,6 +12,8 @@ import { HEIGHT, areaAt, decode, inside, lightsOf, project, type Topology } from
 import { LIT_SLOP, pick, unitAt, type View } from './pick';
 import { outlinesOf, sectorsOf } from './layers/zones';
 import { bandsOf } from './layers/timezones';
+import { placesOfMissions } from './places';
+import type { Mission } from '@navcom/core';
 
 const FILE = fileURLToPath(new URL('../../../static/grid/world.json', import.meta.url));
 const layers = decode(JSON.parse(readFileSync(FILE, 'utf8')) as Topology);
@@ -104,6 +106,18 @@ describe('what is under a point on the map', () => {
     const offshore: [number, number] = [sx + 4, sy];
     expect(pick(WORLD, offshore, { provinces, countries, lit: none })).toBeNull();
     expect(pick(WORLD, offshore, { provinces, countries, lit: new Set(['ke']) })).toMatchObject({ shape: { id: 'ke' } });
+  });
+
+  it('gives a tap inside a shape to the shape when the map asks a point to be within its drawn size: Houston’s ring does not take California', () => {
+    // A mission's ring in Houston, about 21 px from the middle of California at the whole-Earth view: in a thumb's reach.
+    const houston = placesOfMissions([
+      { address: '30079:k:houston', title: 'Cooling centre staffing', placement: { jurisdiction: 'us-tx', point: { kind: 'subject_location', lon: -95.37, lat: 29.76, precision: 'city' } } } as unknown as Mission
+    ]);
+    const tapped = screenOf(WORLD, -119.5, 37.2);
+    const lit = new Set(['us-ca']);
+    expect(pick(WORLD, tapped, { provinces, countries, lit, points: houston }), 'a thumb’s reach, as a point has at sea').toMatchObject({ kind: 'point' });
+    // Inside California the map gives a point its drawn ring and 6 px of air [GridMap.svelte hitAt].
+    expect(pick(WORLD, tapped, { provinces, countries, lit, points: houston, reachOf: () => 9 + 6 })).toMatchObject({ kind: 'shape', shape: { id: 'us-ca' } });
   });
 
   it('asks for no slack once zoomed in, where 12 px is a few hundred metres and not a state', () => {

@@ -97,9 +97,10 @@
    */
   let mapStatus = $state<'loading' | 'ready' | 'failed'>('loading');
   let placesStatus = $state<'off' | 'loading' | 'ready' | 'failed'>('off');
-  /** What the chosen map layer is, whose and how old, in the map's own words [GridMap legend]. */
-  let mapLegend = $state<{ layer: string; text: string } | null>(null);
-  /** The key, which the map's opening view keeps the Earth out from under [GridMap cover]. */
+  /**
+   * The key, which the map's opening view keeps the Earth out from under, and which the map puts its
+   * own lines in, what the chosen layer is, whose and how old [GridMap cover].
+   */
   let keyEl = $state<HTMLElement>();
 
   /** Missions, read live by this device from The Record [$lib/missions/live]. */
@@ -581,7 +582,6 @@
           current={top}
           bind:status={mapStatus}
           bind:placesStatus
-          bind:legend={mapLegend}
           missionsAge={missionAge || null}
           cover={keyEl}
           label="Map of the Earth, with open missions lit{coverage ? ', and the directory’s places' : ''}"
@@ -622,15 +622,14 @@
             data-missions="open"
             data-feed={feed.status}
             onclick={() => open({ kind: 'missions', province: null }, true)}
-          ><b class="lit" aria-hidden="true"></b>{active.length > 0 ? 'Open missions' : 'No open missions'} · {missionAge}{#if refused.length > 0}<span data-refused-count> · {refused.length} not read</span>{/if}</button>
+          ><b class="ring" aria-hidden="true"></b>{active.length > 0 ? 'Open missions' : 'No open missions'} · {missionAge}{#if refused.length > 0}<span data-refused-count> · {refused.length} not read</span>{/if}</button>
         {/if}
         {#if clockBehind}<strong data-clock-behind>This phone's clock is behind — check it before taking part</strong>{/if}
         <button type="button" class="layer" aria-pressed={coverage} disabled={mapStatus !== 'ready'} onclick={() => (coverage = !coverage)}>
           Places
         </button>
         {#if placesStatus === 'failed'}<strong data-places="failed">Places not loaded — they need one visit with a connection</strong>{/if}
-        <!-- The chosen layer's own readout: what is drawn, whose, how old [invariant 7]. At the top, where the sheet never reaches. -->
-        {#if mapLegend}<strong data-legend={mapLegend.layer}>{mapLegend.text}</strong>{/if}
+        <!-- The map puts its own lines here, as it mounts: what is drawn, whose, how old [invariant 7]. At the top, where the sheet never reaches. -->
       </div>
     </section>
 
@@ -972,12 +971,24 @@
     position: absolute;
     inset: 0 0 var(--distress-h) 0;
   }
-  /* How much of the map's foot the sheet covers at peek: the map centres its opening view above it. */
+  /*
+   * How much of the map's foot the sheet covers at peek, where the map centres its opening view; at
+   * half, which it keeps the Earth above; and now, which its readout and reticle stay above. A layer of
+   * its own, so the map's readout can sit over the key and never over the sheet.
+   */
   .nav {
     position: absolute;
     inset: 0;
+    z-index: 0;
     --map-inset: var(--peek);
     --map-reach: var(--half);
+    --map-sheet: var(--peek);
+  }
+  .bridge:has(> .com[data-detent='half']) > .nav {
+    --map-sheet: var(--half);
+  }
+  .bridge:has(> .com[data-detent='full']) > .nav {
+    --map-sheet: calc(100% - 4rem);
   }
   .nav-loading {
     position: absolute;
@@ -1004,47 +1015,90 @@
     min-height: 3rem;
     color: var(--t-ink);
   }
+  /*
+   * The key: one panel on the ground, so nothing the map draws runs through its words, the age lines
+   * invariant 7 rests on among them. The name on a line of its own, the missions and Places side by
+   * side, then whatever the map puts here [GridMap cover], so the key is as short as it can be and the
+   * Earth keeps its room above the sheet. Gestures over it reach the map; only its controls take a touch.
+   */
   .nav-key {
     position: absolute;
-    inset-inline-start: calc(0.75rem + env(safe-area-inset-left, 0px));
-    inset-block-start: calc(0.75rem + env(safe-area-inset-top, 0px));
+    inset-inline-start: calc(0.5rem + env(safe-area-inset-left, 0px));
+    inset-block-start: calc(0.5rem + env(safe-area-inset-top, 0px));
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.4rem;
+    flex-flow: row wrap;
+    align-items: center;
+    gap: 0.3rem 0.5rem;
+    padding: 0.35rem 0.5rem;
+    border: 1px solid var(--t-line-strong);
+    /* Plain first: a browser without color-mix drops the second and keeps the ground [panel.css]. */
+    background: var(--t-ground);
+    background: color-mix(in srgb, var(--t-ground) 92%, transparent);
     font-family: var(--font-mono, ui-monospace, monospace);
     font-size: 0.75rem;
     color: var(--t-muted);
-    max-width: calc(100% - 6rem);
+    max-width: calc(100% - 5.5rem);
+    pointer-events: none;
+  }
+  .nav-key :is(button, a) {
+    pointer-events: auto;
   }
   .nav-key h1 {
+    flex-basis: 100%;
+    margin: 0;
     font-size: 1rem;
+    line-height: 1.15;
     letter-spacing: 0.08em;
   }
   .nav-key strong {
     font-weight: 400;
   }
-  /* A layer's line, then one for each thing drawn over it [GridMap legend]. */
-  .nav-key [data-legend] {
-    white-space: pre-line;
+  .nav-key [data-clock-behind],
+  .nav-key [data-places] {
+    flex-basis: 100%;
+    order: 3;
   }
-  .nav-key .lit {
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    background: color-mix(in srgb, var(--t-ink) 16%, var(--t-raised));
-    border: 1px solid var(--t-muted);
-    margin-inline-end: 0.45rem;
-    vertical-align: middle;
+  /*
+   * The missions' own mark, as the map draws one at its smallest: a ring with its centre. It was a lit
+   * square, which the directory's places are now (audit, 2026-10-24); a lit province has its own row.
+   */
+  .nav-key .ring {
+    flex: none;
+    box-sizing: border-box;
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--t-ink);
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--t-ink) 1.5px, transparent 2px);
   }
   /* A layer switch, at the terminal's thumb floor rather than its full action height. */
   .nav-key .layer {
     min-height: 3rem;
-    padding: 0 0.9rem;
+    padding: 0 0.7rem;
     font-size: 0.85rem;
   }
   .nav-key .layer[aria-pressed='true'] {
     border-color: var(--t-ink);
+  }
+  /*
+   * On a 360 px phone the name rides on the key's edge, a panel's caption, and the missions and Places
+   * share a row beside the map's controls, which are the floor's 48 px there: the name on a line of its
+   * own and Places wrapping under it made the key 137 px tall, and left the Earth 50 px above the sheet at
+   * half (audit, 2026-10-24).
+   */
+  @media (max-width: 380px) {
+    .nav-key {
+      max-width: calc(100% - 4.75rem);
+    }
+    .nav-key h1 {
+      position: absolute;
+      inset-block-start: -0.55em;
+      inset-inline-start: 0.35rem;
+      padding: 0 0.25rem;
+      font-size: 0.6875rem;
+      line-height: 1;
+      background: var(--t-ground);
+    }
   }
 
   /* Com on a phone: a sheet at one of three heights, over the map. */
@@ -1138,11 +1192,13 @@
       box-shadow: none;
       transition: none;
     }
-    .nav {
+    .nav,
+    .bridge:has(> .com[data-detent]) > .nav {
       inset-block: 0;
       inset-inline: 0 min(28rem, 42%);
       --map-inset: 0px;
       --map-reach: 0px;
+      --map-sheet: 0px;
     }
     .grab {
       display: none;
@@ -1220,8 +1276,8 @@
     align-items: center;
     gap: 0.4rem;
     min-height: 3rem;
-    padding: 0 0.6rem;
-    margin-inline-start: -0.6rem;
+    padding: 0 0.5rem;
+    margin-inline-start: -0.5rem;
     border: 1px solid transparent;
     background: transparent;
     color: inherit;

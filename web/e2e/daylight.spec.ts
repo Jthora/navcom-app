@@ -17,9 +17,10 @@ import { subsolar, terminator } from '../src/lib/grid/sun';
  */
 
 const AT = new Date('2026-10-19T14:05:30Z');
-const AUSTRALIA = [132, -20] as const;
-/** Guyana, in the late morning, and far enough from where the sun is overhead that its mark is not in the patch. */
-const GUYANA = [-60, 5] as const;
+/** Australia's middle, at night, and more than the patch from any coast, which every layer draws. */
+const AUSTRALIA = [134, -24] as const;
+/** Mato Grosso, in the late morning: far from any coast, and from where the sun is overhead, so its mark is not in the patch. */
+const BRAZIL = [-55, -10] as const;
 
 test.use({ serviceWorkers: 'block' });
 
@@ -73,7 +74,9 @@ test('ticked over None, it says what it is, worked out here, and fetches nothing
   const screen = await layers(page, /^None/);
   const before = asked.length;
   await screen.locator('[data-daylight]').check();
-  await expect(page.locator('[data-legend]')).toHaveText('Day and night at 14:05 UTC · worked out on this phone, nothing fetched');
+  await expect(page.locator('[data-legend]')).toHaveText('Day and night at 14:05 UTC');
+  // The rest of its words in the whole key, on the layers screen: the map's keeps one short line.
+  await expect(screen.locator('[data-key-full]')).toContainText('worked out on this phone from its own clock, nothing fetched');
   // The sun's own position, as the map's code works it out, and as the screen says it.
   const sun = subsolar(Date.parse('2026-10-19T14:05:00Z'));
   const deg = (v: number, p: string, n: string) => `${Math.abs(Math.round(v))}°${v >= 0 ? p : n}`;
@@ -84,12 +87,12 @@ test('ticked over None, it says what it is, worked out here, and fetches nothing
   expect(asked.slice(before), 'fetched something for day and night beyond its own code').toEqual([own]);
 });
 
-/** Australia's middle and Guyana, where nothing else is drawn, in view: a patch of each, read whole. */
+/** Australia's middle and Brazil's, where nothing else is drawn, in view: a patch of each, read whole. */
 async function nightAndDay(page: Page) {
   const night = await screenAt(page, ...AUSTRALIA);
-  const day = await screenAt(page, ...GUYANA);
-  expect(night.uncovered && day.uncovered, 'Australia and Guyana both in view').toBe(true);
-  return { night: await patch(page, night.x, night.y, 8), day: await patch(page, day.x, day.y, 8) };
+  const day = await screenAt(page, ...BRAZIL);
+  expect(night.uncovered && day.uncovered, 'Australia and Brazil both in view').toBe(true);
+  return { night: await patch(page, night.x, night.y, 5), day: await patch(page, day.x, day.y, 5) };
 }
 
 /*
@@ -117,7 +120,7 @@ for (const signature of ['document', 'low'] as const) {
     await page.locator('[data-back]').click();
     await frame(page);
     const on = await nightAndDay(page);
-    // Dots, on a 6 px grid twice over at night: in a 16 px box, a dozen or more, wherever it falls.
+    // Dots, on a 6 px grid twice over at night: in a 10 px box, a dozen pixels or more, wherever it falls.
     expect(on.night.dots, `${signature}: night over Australia is not dotted`).toBeGreaterThan(10);
     // Out to the Earth's own edge, which Equal Earth bulges: the night once stopped a third of the way in.
     const edge = await screenAt(page, 172, 50);
@@ -198,11 +201,9 @@ test('draws the line where the sun is rising and setting, where the sun’s own 
 test('is always drawn with Time zones, and says so in the key and on its box', async ({ page }) => {
   await landed(page);
   const screen = await layers(page, /^Time zones/);
-  await expect(page.locator('[data-legend="timezones"]')).toHaveText(
-    'Time zones · standard time as drawn in 2012, no daylight saving · Natural Earth Day and night at 14:05 UTC · worked out on this phone, nothing fetched'
-  );
+  await expect(page.locator('[data-legend="timezones"]')).toHaveText('Time zones 2012 · no daylight saving. Day and night at 14:05 UTC');
   // One line each, so neither is read as the other's.
-  expect(await page.locator('[data-legend="timezones"]').evaluate((e) => e.textContent?.split('\n').length)).toBe(2);
+  await expect(page.locator('[data-legend="timezones"] .line')).toHaveText(['Time zones 2012 · no daylight saving', 'Day and night at 14:05 UTC']);
   await expect(screen.locator('[data-daylight]')).toBeChecked();
   await expect(screen.locator('[data-daylight]')).toBeDisabled();
 });

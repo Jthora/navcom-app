@@ -19,8 +19,10 @@
  * same as old, and is drawn as a different shape rather than a dimmer one.
  *
  * Four classes, each carried by **shape, fill and size, never by tone alone**: in Low signature the
- * three text tones differ by less than the eye separates at a glance. 0–13 days is a solid ink disc;
- * 14–89, a smaller solid muted disc; 90+, a hollow ring; no date, a hollow square. Drawn at the size
+ * three text tones differ by less than the eye separates at a glance. **A family of squares**, since the
+ * circle is a mission's alone and the ages' rings made a lattice the missions were lost in: 0–13 days
+ * is a solid ink square; 14–89, a smaller solid muted one; 90+, a hollow one; no date, a hollow one with
+ * a cross, because unknown is not old. Drawn at the size
  * the key draws them at every zoom, and **where they would crowd, the most cautious is drawn** and the
  * rest left out, rather than shrunk into one shape nobody can read: two thousand regions at the whole-
  * Earth view were a blob, and rings over discs read as fill.
@@ -105,14 +107,15 @@ export function agesOf(file: RegionAgesFile): Ages {
 }
 
 /**
- * Each class's words, by the age of the check alone: short enough for one line of the key on a phone,
- * since a taller key leaves less room for the Earth under it.
+ * Each class's words, by the age of the check alone: in the full key, and shorter in the map's own row,
+ * under *By last check*, where every class there is has to share one line or two on a phone: the 90+
+ * row, which nearly every region is in by December, was cut from a key three lines tall.
  */
-const WORDS: Record<Reading, { mark: Swatch['mark']; tone: Swatch['tone']; text: string }> = {
-  current: { mark: 'disc', tone: 'ink', text: '0–13 days ago' },
-  hours: { mark: 'dot', tone: 'muted', text: '14–89 days ago' },
-  stale: { mark: 'ring', tone: 'muted', text: '90+ days ago' },
-  unknown: { mark: 'square', tone: 'faint', text: 'Unknown · no check date' }
+const WORDS: Record<Reading, { mark: Swatch['mark']; tone: Swatch['tone']; text: string; short: string }> = {
+  current: { mark: 'square', tone: 'ink', text: '0–13 days ago', short: '0–13 days' },
+  hours: { mark: 'square-small', tone: 'muted', text: '14–89 days ago', short: '14–89 days' },
+  stale: { mark: 'square-ring', tone: 'muted', text: '90+ days ago', short: '90+ days' },
+  unknown: { mark: 'square-cross', tone: 'faint', text: 'Unknown · no check date', short: 'no date' }
 };
 /** Least cautious first: where marks crowd, the later one is the one drawn. */
 const ORDER: readonly Reading[] = ['current', 'hours', 'stale', 'unknown'];
@@ -243,15 +246,15 @@ export function daysAgo(date: string, now = Date.now()): string {
   return days < 0 ? 'in this phone’s future' : days === 0 ? 'today' : days === 1 ? 'yesterday' : `${days} days ago`;
 }
 
-/** Each kind of mark, at the size the key draws it: a region's, or, smaller, a record's point. */
+/** Each kind of mark, a square at the size the key draws it: a region's, or, smaller, a record's point; unknown crossed. */
 function mark(path: Path2D, reading: Reading, x: number, y: number, small: boolean): void {
-  const r = reading === 'hours' ? (small ? 2 : 3.5) : small ? 2.5 : 4.5;
-  if (reading === 'unknown') {
-    path.rect(x - r + 0.5, y - r + 0.5, 2 * r - 1, 2 * r - 1);
-    return;
-  }
-  path.moveTo(x + r, y);
-  path.arc(x, y, r, 0, Math.PI * 2);
+  const r = reading === 'hours' ? (small ? 2 : 3) : small ? 2.5 : 4.5;
+  path.rect(x - r, y - r, 2 * r, 2 * r);
+  if (reading !== 'unknown') return;
+  path.moveTo(x - r, y - r);
+  path.lineTo(x + r, y + r);
+  path.moveTo(x + r, y - r);
+  path.lineTo(x - r, y + r);
 }
 
 /** How far apart two regions' marks are kept, in CSS px: a ring's width and a little air. */
@@ -291,13 +294,14 @@ export const overlay: Overlay = {
     return true;
   },
   legend() {
-    if (mapLayers.agesFile === 'failed') return 'Regions by last check not loaded — it needs one visit with a connection';
-    if (!ages) return 'Regions by last check · loading';
+    if (mapLayers.agesFile === 'failed') return 'Directory by last check not loaded — it needs one visit with a connection';
+    if (!ages) return 'Directory by last check · loading';
     // Whether a person confirmed any of it, by phone, in person or at the place, rather than a website or
     // a second hand: none yet, today.
     const n = ages.confirmed;
-    return `Regions by last check · ${n === 0 ? 'none confirmed by a person' : `${n.toLocaleString('en-US')} confirmed by a person`}`;
+    return `Directory by last check · ${n === 0 ? 'none' : n.toLocaleString('en-US')} by a person`;
   },
+  credit: () => 'each region of the directory by its oldest check, read on this phone’s clock; by a person is a check confirmed by phone, in person or at the place, not by a website or a second hand',
   region(slug, record) {
     const age = ageOf(slug, record);
     if (!age) return null;
@@ -311,7 +315,7 @@ export const overlay: Overlay = {
     return ORDER.filter((r) => today.counts[r] > 0).map((r) => ({
       mark: WORDS[r].mark,
       tone: WORDS[r].tone,
-      text: `${WORDS[r].text} · ${today.counts[r].toLocaleString('en-US')}`
+      text: `${WORDS[r].short} · ${today.counts[r].toLocaleString('en-US')}`
     }));
   }
 };

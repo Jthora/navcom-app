@@ -274,7 +274,7 @@ describe('when it asks', () => {
     await settle();
     expect(calls).toHaveLength(5);
     expect(layerData.hazards!.marks).toHaveLength(8);
-    expect(legendOf(layerData.hazards!.feeds, Date.now())).toContain('USGS, EONET and GDACS 4 min ago');
+    expect(legendOf(layerData.hazards!.feeds, Date.now())).toContain('3 feeds 4 min ago');
     await vi.advanceTimersByTimeAsync(6 * 60_000 + 100);
     expect(calls).toHaveLength(10);
     overlay.stop!();
@@ -341,7 +341,7 @@ describe('when it asks', () => {
     const { feeds } = layerData.hazards!;
     expect([feeds.usgs.state, feeds.eonet.state, feeds.gdacs.state]).toEqual(['failed', 'failed', 'failed']);
     const said = legendOf(feeds, Date.now());
-    expect(said).toBe('Hazards · USGS, EONET and GDACS not read: unknown · some events, never all');
+    expect(said).toBe('Hazards · 3 feeds not read: unknown · some events, never all');
     expect(said).not.toContain('nothing listed');
     overlay.stop!();
   });
@@ -390,6 +390,10 @@ describe('what the key says', () => {
       'Hazards · USGS 3 min ago · EONET 12 min ago · GDACS 3 min ago · some events, never all'
     );
     expect(said).not.toMatch(/\bnone\b|\b0\b/);
+    // All three alike, said once and short, since the key's every line costs the Earth room above the sheet.
+    expect(legendOf({ usgs: ready(NOW - 3 * 60_000, 1), eonet: ready(NOW - 3 * 60_000, 1), gdacs: ready(NOW - 3 * 60_000, 1) }, NOW)).toBe(
+      'Hazards · 3 feeds 3 min ago · some events, never all'
+    );
   });
 
   it('says an empty map is not the same as safe', async () => {
@@ -416,7 +420,7 @@ describe('what the key says', () => {
   it('says it is asking while the first answers are on their way', async () => {
     const { legendOf } = await fresh();
     const asking = { ...unread, state: 'loading' as const };
-    expect(legendOf({ usgs: asking, eonet: asking, gdacs: asking }, NOW)).toBe('Hazards · asking USGS, EONET and GDACS · some events, never all');
+    expect(legendOf({ usgs: asking, eonet: asking, gdacs: asking }, NOW)).toBe('Hazards · asking 3 feeds · some events, never all');
   });
 });
 
@@ -464,5 +468,54 @@ describe('what a hover or a tap lands on', () => {
     expect(hit.ids.split(',')).toHaveLength(12);
     expect(hit.of).toBe(40);
     expect(hit.say).toContain('and 39 more');
+  });
+});
+
+describe('where they crowd', () => {
+  /** A mark of a kind at (dx, dy) CSS px from the view's middle, as `cellsOf` reads one. */
+  const at = (id: string, kind: string, dx: number, dy: number, v: { cx: number; cy: number; scale: number }) =>
+    ({ id, kind, x: v.cx + dx / v.scale, y: v.cy + dy / v.scale }) as never;
+
+  it('gathers marks of one kind into wide cells further out, and never two kinds into one', async () => {
+    const { cellsOf } = await fresh();
+    // The whole Earth on a phone, where a fire season's triangles were a carpet over the US West.
+    const v = { cx: 0.2, cy: 0.2, scale: 317, width: 393, height: 600 };
+    const fires = [at('f1', 'wildfire', 0, 0, v), at('f2', 'wildfire', 15, 0, v), at('f3', 'wildfire', 0, 16, v)];
+    expect(cellsOf(fires, v).map((c) => c.members.length)).toEqual([3]);
+    // A quake beside a fire is its own mark, so the cell's glyph says what every one in it is.
+    const mixed = cellsOf([at('f1', 'wildfire', 0, 0, v), at('q1', 'earthquake', 5, 0, v)], v);
+    expect(mixed).toHaveLength(2);
+    // Closer in, the 11 px a thumb parts: the same fires 15 px apart are marks of their own.
+    const near = { ...v, scale: 317 * 8 };
+    expect(cellsOf([at('f1', 'wildfire', 0, 0, near), at('f2', 'wildfire', 15, 0, near)], near)).toHaveLength(2);
+  });
+
+  it('moves a cell from under a ring to the nearest clear spot, and puts its count clear of the ring too', async () => {
+    const { layout } = await fresh();
+    const v = { cx: 0.2, cy: 0.2, scale: 317, width: 393, height: 600 };
+    // 120 fires in one cell, at the view's middle, under a mission's ring there, as the US West was.
+    const fires = Array.from({ length: 120 }, (_, i) => at(`f${i}`, 'wildfire', (i % 10) - 5, Math.floor(i / 10) - 5, v));
+    const ring = { l: 393 / 2 - 9, t: 300 - 9, r: 393 / 2 + 9, b: 300 + 9 };
+    const taken = [ring];
+    const laid = layout(fires, v, taken, (t: string) => t.length * 6);
+    expect(laid.cells).toHaveLength(1);
+    const cell = laid.cells[0]!;
+    const over = (a: typeof ring, b: typeof ring) => a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t;
+    expect(over({ l: cell.x - 7, t: cell.y - 7, r: cell.x + 7, b: cell.y + 7 }, ring), 'the glyph is still under the ring').toBe(false);
+    expect(Math.hypot(cell.x - 393 / 2, cell.y - 300), 'moved further than the nearest clear spot').toBeLessThan(24);
+    // How many, beside it, clear of the ring, and every one of them.
+    expect(laid.counts).toHaveLength(1);
+    expect(laid.counts[0]!.text).toBe('120');
+    expect(over(laid.counts[0]!.box, ring), 'the count is under the ring').toBe(false);
+    // And both are what comes after it, for the names and anything placed later to keep off.
+    expect(taken.length).toBe(3);
+  });
+
+  it('leaves a cell where its marks are when nothing is drawn over it', async () => {
+    const { layout } = await fresh();
+    const v = { cx: 0.2, cy: 0.2, scale: 317, width: 393, height: 600 };
+    const laid = layout([at('q1', 'earthquake', 40, 40, v)], v, [{ l: 0, t: 0, r: 20, b: 20 }], () => 6);
+    expect([laid.cells[0]!.x, laid.cells[0]!.y]).toEqual([393 / 2 + 40, 300 + 40]);
+    expect(laid.counts).toEqual([]);
   });
 });

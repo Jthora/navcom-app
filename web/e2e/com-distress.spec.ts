@@ -247,7 +247,7 @@ const WAYS_IN: Record<string, WayIn[]> = {
         await mapReady(page);
         await page.getByRole('button', { name: 'Map layers' }).click();
         await page.locator('[data-screen="layers"]').getByRole('radio', { name: /^Zones/ }).check();
-        await expect(page.locator('[data-legend="zones"]')).toContainText('CC BY 4.0');
+        await expect(page.locator('[data-credit]')).toContainText('CC BY 4.0');
         await page.locator('[data-back]').click();
         // Clear of lit California's 12 px, which answers first in every layer [map.md §8].
         await tapAt(page, -100, 55, 'Laurentia West');
@@ -303,7 +303,7 @@ const WAYS_IN: Record<string, WayIn[]> = {
         await mapReady(page);
         await page.getByRole('button', { name: 'Map layers' }).click();
         await page.locator('[data-screen="layers"] [data-hazards]').check();
-        await expect(page.locator('[data-legend]')).toContainText('GDACS just now');
+        await expect(page.locator('[data-legend]')).toContainText('3 feeds just now');
         await page.locator('[data-back]').click();
         await tapAt(page, -71.378, -36.868, 'the Chillán volcano');
         const screen = page.locator('[data-screen="hazard"]');
