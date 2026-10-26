@@ -8,7 +8,7 @@
  * committed under `static/grid/zsp/`, which until Stage 1 lands (23 Oct) is nothing at all.
  */
 
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -26,7 +26,20 @@ const E2E_FIXTURE = join(WEB, 'e2e/fixtures/zsp');
 const STATIC = join(WEB, 'static/grid/zsp');
 const SCRIPT = join(WEB, 'scripts/zsp-vendor.mjs');
 
-const vendor = (...args: string[]) => spawnSync(process.execPath, [SCRIPT, ...args], { cwd: WEB, encoding: 'utf8' });
+/**
+ * The script, run for real, without blocking this worker: run with `spawnSync`, each run held the event
+ * loop for 9 s here and longer on Vercel's builder, Vitest's `onTaskUpdate` went unanswered, and a deploy
+ * failed over a suite that had passed whole (26 Oct, as e947f5bc found for the corpus scans).
+ */
+const vendor = (...args: string[]) =>
+  new Promise<{ status: number | null; stdout: string; stderr: string }>((done) => {
+    const child = spawn(process.execPath, [SCRIPT, ...args], { cwd: WEB });
+    let stdout = '';
+    let stderr = '';
+    child.stdout.on('data', (b) => (stdout += b));
+    child.stderr.on('data', (b) => (stderr += b));
+    child.on('close', (status) => done({ status, stdout, stderr }));
+  });
 const sha = (b: Buffer | string) => createHash('sha256').update(b).digest('hex');
 const json = <T>(path: string) => JSON.parse(readFileSync(path, 'utf8')) as T;
 
@@ -51,15 +64,15 @@ describe('the vendoring script', () => {
   /** Somewhere to write that is named as `--out` must be, and is nowhere the map reads from. */
   const outDir = () => join(mkdtempSync(join(tmpdir(), 'navcom-zsp-out-')), 'zsp');
 
-  it('makes the e2e fixture out of the core fixture, byte for byte', () => {
+  it('makes the e2e fixture out of the core fixture, byte for byte', async () => {
     const out = outDir();
-    const ran = vendor('--dir', CORE_FIXTURE, '--stage', 'final', '--out', out);
+    const ran = await vendor('--dir', CORE_FIXTURE, '--stage', 'final', '--out', out);
     expect(ran.status, ran.stderr).toBe(0);
     expect(readdirSync(out).sort()).toEqual(readdirSync(E2E_FIXTURE).sort());
     for (const f of readdirSync(out)) expect(readFileSync(join(out, f), 'utf8'), f).toBe(readFileSync(join(E2E_FIXTURE, f), 'utf8'));
   }, 120_000);
 
-  it('refuses a partition with a gap in it, says where, and writes nothing', () => {
+  it('refuses a partition with a gap in it, says where, and writes nothing', async () => {
     const dir = copyOfFixture((d) => {
       const file = join(d, 'terra-europaea.zsp.geojson');
       const doc = json<{ features: { properties: { id: string } }[] }>(file);
@@ -67,30 +80,30 @@ describe('the vendoring script', () => {
       writeFileSync(file, JSON.stringify(doc));
     });
     const out = join(mkdtempSync(join(tmpdir(), 'navcom-zsp-out-')), 'zsp');
-    const ran = vendor('--dir', dir, '--stage', 'final', '--out', out);
+    const ran = await vendor('--dir', dir, '--stage', 'final', '--out', out);
     expect(ran.status).toBe(1);
     expect(ran.stderr).toMatch(/nothing written/);
     expect(ran.stderr).toMatch(/in no Sector/);
     expect(existsSync(out), 'a refused partition wrote its files').toBe(false);
   });
 
-  it('refuses a manifest that is not the one whose digest it was given', () => {
+  it('refuses a manifest that is not the one whose digest it was given', async () => {
     const out = join(mkdtempSync(join(tmpdir(), 'navcom-zsp-out-')), 'zsp');
-    const ran = vendor('--dir', CORE_FIXTURE, '--stage', 'final', '--out', out, '--manifest-sha256', '0'.repeat(64));
+    const ran = await vendor('--dir', CORE_FIXTURE, '--stage', 'final', '--out', out, '--manifest-sha256', '0'.repeat(64));
     expect(ran.status).toBe(1);
     expect(ran.stderr).toMatch(/not the manifest that was reviewed/);
     expect(existsSync(out)).toBe(false);
   });
 
-  it('never ships the fixture: it will not write it where the map reads from', () => {
+  it('never ships the fixture: it will not write it where the map reads from', async () => {
     const before = existsSync(STATIC) ? readdirSync(STATIC).sort() : null;
-    const ran = vendor('--dir', CORE_FIXTURE, '--stage', 'final');
+    const ran = await vendor('--dir', CORE_FIXTURE, '--stage', 'final');
     expect(ran.status).toBe(1);
     expect(ran.stderr).toMatch(/never ships/);
     expect(existsSync(STATIC) ? readdirSync(STATIC).sort() : null).toEqual(before);
   });
 
-  it('will not write a working tree where the map reads from, whatever its manifest calls its maker', () => {
+  it('will not write a working tree where the map reads from, whatever its manifest calls its maker', async () => {
     // The fixture under another generator's name: --dir is refused for static/grid/zsp/ by what it is, not what it says.
     const dir = copyOfFixture((d) => {
       const m = json<Record<string, unknown>>(join(d, 'manifest.json'));
@@ -98,35 +111,35 @@ describe('the vendoring script', () => {
       writeFileSync(join(d, 'manifest.json'), JSON.stringify(m));
     });
     const before = existsSync(STATIC) ? readdirSync(STATIC).sort() : null;
-    const ran = vendor('--dir', dir, '--stage', 'final', '--credit', 'a test');
+    const ran = await vendor('--dir', dir, '--stage', 'final', '--credit', 'a test');
     expect(ran.status).toBe(1);
     expect(ran.stderr).toMatch(/a working tree never ships/);
     expect(existsSync(STATIC) ? readdirSync(STATIC).sort() : null, 'a working tree was written where the map reads from').toEqual(before);
   });
 
-  it('writes only to a directory named zsp, so a mistyped --out is refused before anything is read', () => {
+  it('writes only to a directory named zsp, so a mistyped --out is refused before anything is read', async () => {
     const grid = mkdtempSync(join(tmpdir(), 'navcom-zsp-grid-'));
     writeFileSync(join(grid, 'world.json'), '{"navcom": {"source": "the world"}}');
-    const ran = vendor('--dir', CORE_FIXTURE, '--stage', 'final', '--out', grid);
+    const ran = await vendor('--dir', CORE_FIXTURE, '--stage', 'final', '--out', grid);
     expect(ran.status).toBe(1);
     expect(ran.stderr).toMatch(/--out must be a directory named zsp/);
     expect(readdirSync(grid)).toEqual(['world.json']);
   });
 
-  it('replaces what an earlier vendoring wrote, and nothing else beside it', () => {
+  it('replaces what an earlier vendoring wrote, and nothing else beside it', async () => {
     const out = outDir();
     mkdirSync(out, { recursive: true });
     // A container a stage dropped, which must not linger, and a file no vendoring wrote, which must not go.
     writeFileSync(join(out, 'terra-gone.json'), JSON.stringify({ navcom: { manifest_sha256: '0'.repeat(64) } }));
     writeFileSync(join(out, 'world.json'), JSON.stringify({ navcom: { source: 'the world' } }));
-    const ran = vendor('--dir', CORE_FIXTURE, '--stage', 'final', '--out', out);
+    const ran = await vendor('--dir', CORE_FIXTURE, '--stage', 'final', '--out', out);
     expect(ran.status, ran.stderr).toBe(0);
     expect(existsSync(join(out, 'terra-gone.json')), 'an earlier stage’s container lingered').toBe(false);
     expect(existsSync(join(out, 'world.json')), 'a file no vendoring wrote was deleted').toBe(true);
     expect(existsSync(join(out, 'outlines.json'))).toBe(true);
   }, 120_000);
 
-  it('takes a repository’s files at the commit it is given, by digest, and never from its working tree', () => {
+  it('takes a repository’s files at the commit it is given, by digest, and never from its working tree', async () => {
     // A stand-in for starcom-app: the fixture committed where the export lands, then changed and not committed.
     const repo = mkdtempSync(join(tmpdir(), 'navcom-zsp-repo-'));
     const zones = join(repo, 'public/geopolitical/zones');
@@ -141,18 +154,18 @@ describe('the vendoring script', () => {
     const digest = sha(readFileSync(join(CORE_FIXTURE, 'manifest.json')));
 
     const out = outDir();
-    const ran = vendor('--repo', repo, '--commit', commit, '--manifest-sha256', digest, '--stage', 'final', '--out', out, '--credit', 'a test');
+    const ran = await vendor('--repo', repo, '--commit', commit, '--manifest-sha256', digest, '--stage', 'final', '--out', out, '--credit', 'a test');
     expect(ran.status, ran.stderr).toBe(0);
     const outlines = json<Topology & { navcom: { source: string; manifest_sha256: string } }>(join(out, 'outlines.json'));
     expect(outlines.navcom.source).toBe('navcom-test-fixture');
     expect(outlines.navcom.manifest_sha256).toBe(digest);
     // Without the digest it does not run at all: vendor what was reviewed.
-    const blind = vendor('--repo', repo, '--commit', commit, '--stage', 'final', '--out', out);
+    const blind = await vendor('--repo', repo, '--commit', commit, '--stage', 'final', '--out', out);
     expect(blind.status).toBe(1);
     expect(blind.stderr).toMatch(/--manifest-sha256 is required/);
   }, 120_000);
 
-  it('reads Starcom’s drafts folder with --folder zones-draft, and never as the final set', () => {
+  it('reads Starcom’s drafts folder with --folder zones-draft, and never as the final set', async () => {
     // Starcom keeps a draft in public/geopolitical/zones-draft/ until its swap moves it (26 Oct).
     const repo = mkdtempSync(join(tmpdir(), 'navcom-zsp-repo-'));
     const drafts = join(repo, 'public/geopolitical/zones-draft');
@@ -166,12 +179,12 @@ describe('the vendoring script', () => {
     const digest = sha(readFileSync(join(CORE_FIXTURE, 'manifest.json')));
     const at = ['--repo', repo, '--commit', commit, '--manifest-sha256', digest, '--credit', 'a test'];
 
-    const final = vendor(...at, '--folder', 'zones-draft', '--stage', 'final', '--out', outDir());
+    const final = await vendor(...at, '--folder', 'zones-draft', '--stage', 'final', '--out', outDir());
     expect(final.status).toBe(1);
     expect(final.stderr).toMatch(/holds drafts/);
-    expect(vendor(...at, '--stage', '3', '--out', outDir()).status, 'read zones/, where nothing is').toBe(1);
+    expect((await vendor(...at, '--stage', '3', '--out', outDir())).status, 'read zones/, where nothing is').toBe(1);
     const out = outDir();
-    const ran = vendor(...at, '--folder', 'zones-draft', '--stage', '3', '--out', out);
+    const ran = await vendor(...at, '--folder', 'zones-draft', '--stage', '3', '--out', out);
     expect(ran.status, ran.stderr).toBe(0);
     expect(json<{ navcom: { draft: boolean; stage: string } }>(join(out, 'outlines.json')).navcom).toMatchObject({ draft: true, stage: '3' });
   }, 120_000);
