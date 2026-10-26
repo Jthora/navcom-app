@@ -336,10 +336,14 @@ export const MAP_LINES = {
     files: (f) => f === `${ZSP}outlines.json`,
     per: 'all',
     js: {
-      limit: 1_792,
-      warn: 1_614,
-      measured: 1_494,
+      limit: 2_065,
+      warn: 1_859,
+      measured: 1_721,
       why:
+        'Re-derived 2026-10-26 at 1,721 B, from 1,494 B: each edge stroked once, from the file’s arcs, in ' +
+        'place of each ring that has it, which under Starcom’s whole draft took opening Mare Pacificum from ' +
+        'tasks of 164 ms to 87 at a sixth of the speed; here and not in the topology module, whose growth ' +
+        'mount would carry. ' +
         'Re-derived 2026-10-24 at 1,494 B, from 1,397 B: the key’s one short line with the draft’s stage, the ' +
         'credit CC BY asks for over the map’s foot, and a Sector’s edge dashed in the strong line from ×4 in. ' +
         'Measured 2026-10-19 at 1,397 B: reading the outlines and a container’s Sectors, drawing them in ' +

@@ -475,9 +475,11 @@ Budgets, all of them targets to measure rather than claims:
   map (§0): all 9,623 published coordinates.
 - **Satellite is declined**, per [`declined.md`](../declined.md)'s rule that a gap may be
   closed rather than carried.
-- **Zones from Stage 1 (23 Oct), and every stage after it**: run `web/scripts/zsp-vendor.mjs` on
-  the stage as it lands in starcom-app, with the manifest's digest as reviewed and the attribution
-  the licence asks for, then derive the Zones lines' ceilings from what the build measures (§8).
+- **Zones, from the first draft NavCom's reader takes**: run `web/scripts/zsp-vendor.mjs` on it where
+  it lands in starcom-app (`--folder zones-draft --stage 3` while it is in Starcom's drafts folder), with
+  the manifest's digest as reviewed and the attribution the licence asks for, then derive the Zones
+  lines' ceilings from what the build measures (§8). Starcom's draft of 26 Oct waits on the three fixes
+  under Zones, Stages.
 - **Spheres** (§8) wait on Mecha Jono's Part 2 lists, due 26 Oct. When they land, run
   `web/scripts/spheres-vendor.mjs` on them where they land in starcom-app, with the manifest's digest as
   reviewed and the attribution the licence asks for, `--final` only if their author says they are, then
@@ -603,6 +605,18 @@ commit, the manifest's digest, the stage and the credit.
 
 **Stages.** Stage 1 is the seventeen outlines (23 Oct), Stage 2 Terra Africana with its Zones and
 Sectors (30 Oct), Stage 3 the rest (9 Nov), and the set Starcom swaps to on 12 November is `final`.
+**What came instead** (26 Oct): Starcom drafted the whole of it at once, its twelve Terrae and Mecha
+Jono's five Maria, 251 Zones and 2,632 Sectors, on its `zsp-2.0` branch (797b8575), in
+`public/geopolitical/zones-draft/` until its swap, which waits on the owner's review rather than a date.
+The script reads that folder with `--folder zones-draft`, at stage 3 and never `final`. NavCom's reader
+refused the draft for three things Starcom's checks do not look at, each now Starcom's to fix: every
+file's `bytes` counts characters, not bytes; twenty Zones of the Maria name a system ZR6 does not have
+(*chain*, *transform*, *fan*, *strait*); and Terra Antarctica's outline cuts the corner at (−180°, −90°),
+leaving about 0.04 km² at the pole in no container. With the three put right in a copy that never
+shipped, everything else passed, and what it would weigh is 31.6 kB compressed for the outlines, 3 to
+29 kB for one container's Sectors, and 231.5 kB for the lookup's index (1.27 MB unpacked), which on that
+phone took 0.8 s to answer Nairobi with *Northern Acacia-Commiphora bushlands and thickets, south*, in
+the East African Rift Zone.
 **Every stage before it is a draft, and is labelled as one, view only**, on the map and on every screen
 that shows it. **Until Stage 1 the build carries no Zones at all**, and the map says so (*Zones · not
 in this build yet*) rather than drawing nothing. Nothing synthetic ships. The tests use NavCom's own
@@ -621,7 +635,14 @@ somebody asks.
 **Drawing, in three weights.** A Terra's or Mare's edge heaviest, a Zone's lighter, and a Sector's thin
 and dashed in the strong line from about ×4 in (2026-10-24: in the faintest line it was not there at ×9),
 drawn only for a container that is open, because a whole-Earth partition puts lines
-everywhere at once. Country borders are not drawn while Zones is.
+everywhere at once. Country borders are not drawn while Zones is. **Each edge is stroked once**
+(2026-10-26), from the file's arcs: a Terra's or Mare's edges in its weight, then only the Zones' edges
+that are not also one, then an open container's Sectors' edges, once each. Stroked ring by ring, an
+edge between two Zones was drawn twice and one between two Terrae four times. Under Starcom's whole
+draft at a CPU six times slower, that made opening Mare Pacificum three tasks of 125 to 164 ms and the
+last frame of a whole-Earth pan 103 to 164 ms; stroked once, 83 to 87 ms and 81 to 110, which is where
+the same pan under Nation States already is (73 to 106). `e2e/zones.spec.ts` holds the first, against
+whatever Zones the build ships, from the first stage vendored.
 
 **A tap opens what it lands on**: a Sector of an open container, else its Zone, else its Terra or
 Mare. Com shows where it sits, *Terra › Zone › Sector*, each a way up; a Zone's system; a Sector's

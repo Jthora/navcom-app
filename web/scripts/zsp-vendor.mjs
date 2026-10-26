@@ -39,6 +39,10 @@
  * by their own amount. Within that of an edge, which side a point is on is not something the drawn
  * lines can say, and the map says so rather than count it on one side.
  *
+ * `--folder zones-draft` reads Starcom's drafts, which sit in `public/geopolitical/zones-draft/` until its
+ * swap moves them to `zones/` (Starcom, 26 Oct), and only at a stage before `final`: what is in the
+ * drafts folder is not the set Starcom swaps to, whatever stage it is called.
+ *
  * `--dir` reads a partition from a directory instead, for NavCom's own test fixture and nothing else.
  * **A working tree never ships**: `static/grid/zsp/` takes only `--repo` at a full commit with
  * `--manifest-sha256`, whatever a manifest read with `--dir` calls its maker, and the fixture is refused
@@ -65,7 +69,8 @@ const INDEX = { quantization: 100000 };
 /** What the fixture's manifest calls its maker, which nothing vendored may be. */
 const FIXTURE = 'navcom-test-fixture';
 const STATIC = fileURLToPath(new URL('../static/grid/zsp/', import.meta.url));
-const IN_REPO = 'public/geopolitical/zones';
+/** Where starcom-app keeps the set, by `--folder`: the swapped set, or the drafts beside it. */
+const FOLDERS = { zones: 'public/geopolitical/zones', 'zones-draft': 'public/geopolitical/zones-draft' };
 
 /** @param {string[]} argv */
 function args(argv) {
@@ -102,6 +107,10 @@ const opts = (() => {
 })();
 const stage = opts.stage;
 if (!stage) refuse('--stage is required: 1, 2, 3 or final (D6)');
+const folder = opts.folder ?? 'zones';
+if (!Object.hasOwn(FOLDERS, folder)) refuse(`--folder must be zones or zones-draft, not "${folder}"`);
+if (folder === 'zones-draft' && stage === 'final') refuse('--folder zones-draft holds drafts: vendor it at stage 1, 2 or 3, never final (D6)');
+const IN_REPO = FOLDERS[/** @type {keyof typeof FOLDERS} */ (folder)];
 if (!opts.repo === !opts.dir) refuse('give exactly one of --repo (with --commit) or --dir');
 const out = resolve(opts.out ?? STATIC);
 // A directory named for what it holds, so a mistyped --out (`static/grid`) is refused before anything is read.

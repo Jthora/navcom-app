@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { open, seedDevice } from './device';
 import { frame, inkNear, mapReady, screenAt, seen, tapAt, toneNear, zoomAt } from './map';
@@ -352,3 +353,77 @@ test.describe('open missions counted by Zone, on a desktop', () => {
   });
 });
 
+
+/** The Zones this build ships, if a stage has been vendored: none is synthetic, so until then there are none. */
+const SHIPPED = (() => {
+  try {
+    return JSON.parse(readFileSync('build/grid/zsp/outlines.json', 'utf8')) as {
+      navcom: { containers: { id: string; sectors: number }[] };
+      objects: { containers: { geometries: { properties: { id: string; label: [number, number] } }[] } };
+    };
+  } catch {
+    return null;
+  }
+})();
+
+test.describe('the Zones this build ships, on a phone six times slower', () => {
+  test.skip(!SHIPPED, 'no stage of Zones is vendored in this build, and the fixture is too small to measure');
+
+  test('opening the container with the most Sectors and panning over it at ×4: no frame a pan ends on over 100 ms', async ({ page }) => {
+    /*
+     * Starcom's whole draft (797b8575, measured 26 Oct) was 2,632 Sectors: opening Mare Pacificum's 658
+     * was three tasks of 125 to 164 ms, and its edges were stroked once for each ring that had them. Each
+     * edge stroked once took that to 87 ms, and a ×4 pan's end to 66.
+     */
+    const biggest = [...SHIPPED!.navcom.containers].sort((a, b) => b.sectors - a.sectors)[0]!;
+    await page.addInitScript(() => {
+      const w = window as unknown as { __long: number[]; __rec: boolean };
+      w.__long = [];
+      w.__rec = false;
+      new PerformanceObserver((l) => {
+        for (const e of l.getEntries()) if (w.__rec) w.__long.push(e.duration);
+      }).observe({ type: 'longtask', buffered: false });
+    });
+    const record = (on: boolean) =>
+      page.evaluate((on) => {
+        const w = window as unknown as { __long: number[]; __rec: boolean };
+        if (on) w.__long = [];
+        w.__rec = on;
+        return w.__long;
+      }, on);
+    await landed(page);
+    await chooseZones(page);
+    await page.locator('[data-back]').click();
+    const [lon, lat] = SHIPPED!.objects.containers.geometries.find((g) => g.properties.id === biggest.id)!.properties.label;
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 6 });
+    await page.waitForTimeout(500);
+    const file = page.waitForResponse((r) => /\/grid\/zsp\/[a-z-]+\.json$/.test(r.url()) && !r.url().endsWith('outlines.json'));
+    await record(true);
+    await tapAt(page, lon, lat, biggest.id);
+    await file;
+    await frame(page);
+    const opening = await record(false);
+    await page.locator('[data-back]').click();
+    await zoomAt(page, lon, lat, 4);
+    await page.waitForTimeout(400);
+    await frame(page);
+    const box = (await page.locator('.grid canvas').boundingBox())!;
+    const keyFoot = (await page.locator('.nav-key').boundingBox())!;
+    const sheet = (await page.locator('[data-com]').boundingBox())!;
+    const [x, y] = [box.x + box.width / 2 - 60, (keyFoot.y + keyFoot.height + sheet.y) / 2];
+    await record(true);
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1 }] });
+    for (let i = 1; i <= 20; i++) {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + 10 * i, y: y - 2 * i, id: 1 }] });
+      await page.waitForTimeout(16);
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(() => r(null))))));
+    await page.waitForTimeout(200);
+    const panned = await record(false);
+    await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+    const all = [...opening, ...panned];
+    expect(Math.max(0, ...all), `long tasks opening ${biggest.id}: ${opening.map(Math.round).join(', ')} | the pan and its end: ${panned.map(Math.round).join(', ')} ms`).toBeLessThanOrEqual(100);
+  });
+});

@@ -16,7 +16,7 @@
  * (`scripts/zsp-vendor.mjs`), and while a stage is a draft the map says so and keeps nothing (D6).
  */
 
-import { areaAt, decode, type Shape, type Topology } from '../topology';
+import { absoluteArcs, areaAt, decode, project, type Ring, type Shape, type Topology } from '../topology';
 import { ZSP_DIR, layerData, loaded, mapLayers, type DrawnLayer, type Loading } from '../layer.svelte';
 
 /** What the vendoring script records in every file it writes. */
@@ -44,6 +44,31 @@ export interface ZonesOutlines {
   navcom: ZspProvenance;
   containers: Shape[];
   zones: Shape[];
+  /** What the map strokes, each edge once: a Terra's or Mare's, and a Zone's that is not also one. */
+  edges: { containers: Ring[]; zones: Ring[] };
+}
+
+/**
+ * Every edge of one object's shapes, once, projected, as open lines: what stroking each shape's rings
+ * draws, without stroking an edge two shapes share twice. Leaves out the arcs `over` uses, for a
+ * coarser object whose own lines are drawn over these: the Zones' lines skip the edges their Terrae
+ * and Maria draw. Stroked ring by ring, an edge between two Zones was drawn twice and one between two
+ * Terrae four times, which under Starcom's whole draft was 40 ms of a pan's last frame at a sixth of
+ * the speed [map.md, Zones]. Here and not beside `coastOf`, whose module every visit loads.
+ */
+export function edgesOf(topology: Topology, object: string, over?: string): Ring[] {
+  const arcs = absoluteArcs(topology);
+  const uses = (name: string) => {
+    const seen = new Set<number>();
+    const walk = (a: unknown): void => {
+      if (typeof a === 'number') seen.add(a < 0 ? ~a : a);
+      else if (Array.isArray(a)) a.forEach(walk);
+    };
+    for (const g of topology.objects[name]?.geometries ?? []) if (g.type) walk(g.arcs);
+    return seen;
+  };
+  const drawn = over ? uses(over) : null;
+  return [...uses(object)].filter((i) => !drawn?.has(i)).map((i) => Float32Array.from(arcs[i]!.flatMap(([lon, lat]) => project(lon!, lat!))));
 }
 
 /** The outlines file, decoded and projected for drawing. */
@@ -52,7 +77,8 @@ export function outlinesOf(topology: Topology): ZonesOutlines {
   return {
     navcom: topology.navcom as unknown as ZspProvenance,
     containers: layers['containers']?.shapes ?? [],
-    zones: layers['zones']?.shapes ?? []
+    zones: layers['zones']?.shapes ?? [],
+    edges: { containers: edgesOf(topology, 'containers'), zones: edgesOf(topology, 'zones', 'containers') }
   };
 }
 
@@ -131,6 +157,7 @@ export function openContainer(id: string): Promise<void> {
     try {
       const topology = await json(await fetch(`${ZSP_DIR}${entry.file}`));
       const shapes = sectorsOf(topology);
+      sectorEdges[id] = edgesOf(topology, 'sectors');
       // Its own drift, before its Sectors, so whatever counts them never reads one without the other.
       layerData.sectorDrift = { ...layerData.sectorDrift, [id]: (topology.navcom as { simplified_m?: number } | undefined)?.simplified_m };
       layerData.sectors = { ...layerData.sectors, [id]: shapes };
@@ -146,15 +173,15 @@ export function openContainer(id: string): Promise<void> {
 
 // ─── On the map ───────────────────────────────────────────────────────────────────────────────
 
-function pathOf(shapes: readonly Shape[]): Path2D | null {
-  if (shapes.length === 0) return null;
+/** An opened container's Sector edges, each once, beside its shapes in `layerData.sectors`. */
+const sectorEdges: Record<string, Ring[]> = {};
+
+function pathOf(lines: readonly Ring[]): Path2D | null {
+  if (lines.length === 0) return null;
   const p = new Path2D();
-  for (const s of shapes) {
-    for (const r of s.rings) {
-      p.moveTo(r[0]!, r[1]!);
-      for (let i = 2; i < r.length; i += 2) p.lineTo(r[i]!, r[i + 1]!);
-      p.closePath();
-    }
+  for (const r of lines) {
+    p.moveTo(r[0]!, r[1]!);
+    for (let i = 2; i < r.length; i += 2) p.lineTo(r[i]!, r[i + 1]!);
   }
   return p;
 }
@@ -166,7 +193,12 @@ function sync() {
   const { outlines, sectors } = layerData;
   if (outlines === drawnFrom.outlines && sectors === drawnFrom.sectors) return;
   const opened = Object.values(sectors).flat();
-  drawn = { containers: pathOf(outlines?.containers ?? []), zones: pathOf(outlines?.zones ?? []), sectors: pathOf(opened), opened };
+  drawn = {
+    containers: pathOf(outlines?.edges.containers ?? []),
+    zones: pathOf(outlines?.edges.zones ?? []),
+    sectors: pathOf(Object.keys(sectors).flatMap((id) => sectorEdges[id] ?? [])),
+    opened
+  };
   drawnFrom = { outlines, sectors };
 }
 

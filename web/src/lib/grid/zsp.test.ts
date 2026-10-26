@@ -17,7 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { checkPartition, holds, placeAt, zspIndex } from '@navcom/core/zones';
 import { decode, lonLat, type Topology } from './topology';
-import { chainOf, outlinesOf, sectorsOf, type ZonesOutlines } from './layers/zones';
+import { chainOf, edgesOf, outlinesOf, sectorsOf, type ZonesOutlines } from './layers/zones';
 import { indexOf } from './layers/zones-lookup';
 
 const WEB = fileURLToPath(new URL('../../../', import.meta.url));
@@ -151,6 +151,30 @@ describe('the vendoring script', () => {
     expect(blind.status).toBe(1);
     expect(blind.stderr).toMatch(/--manifest-sha256 is required/);
   }, 120_000);
+
+  it('reads Starcom’s drafts folder with --folder zones-draft, and never as the final set', () => {
+    // Starcom keeps a draft in public/geopolitical/zones-draft/ until its swap moves it (26 Oct).
+    const repo = mkdtempSync(join(tmpdir(), 'navcom-zsp-repo-'));
+    const drafts = join(repo, 'public/geopolitical/zones-draft');
+    mkdirSync(drafts, { recursive: true });
+    cpSync(CORE_FIXTURE, drafts, { recursive: true });
+    const git = (...a: string[]) => spawnSync('git', ['-C', repo, ...a], { encoding: 'utf8' });
+    git('init', '-q');
+    git('-c', 'user.name=t', '-c', 'user.email=t@t', 'add', '.');
+    git('-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-qm', 'draft');
+    const commit = git('rev-parse', 'HEAD').stdout.trim();
+    const digest = sha(readFileSync(join(CORE_FIXTURE, 'manifest.json')));
+    const at = ['--repo', repo, '--commit', commit, '--manifest-sha256', digest, '--credit', 'a test'];
+
+    const final = vendor(...at, '--folder', 'zones-draft', '--stage', 'final', '--out', outDir());
+    expect(final.status).toBe(1);
+    expect(final.stderr).toMatch(/holds drafts/);
+    expect(vendor(...at, '--stage', '3', '--out', outDir()).status, 'read zones/, where nothing is').toBe(1);
+    const out = outDir();
+    const ran = vendor(...at, '--folder', 'zones-draft', '--stage', '3', '--out', out);
+    expect(ran.status, ran.stderr).toBe(0);
+    expect(json<{ navcom: { draft: boolean; stage: string } }>(join(out, 'outlines.json')).navcom).toMatchObject({ draft: true, stage: '3' });
+  }, 120_000);
 });
 
 /** Every directory of vendored files a build could carry: the e2e fixture always, and `static/` once a stage lands. */
@@ -227,6 +251,22 @@ describe('reading them on the phone', () => {
     expect(outlines.containers.map((c) => c.id)).toEqual(expect.arrayContaining(['terra:sahulica', 'terra:laurentia', 'terra:amazonia', 'terra:europaea', 'mare:pacificum']));
     expect(outlines.zones).toHaveLength(18);
     expect(outlines.navcom.stage).toBe('final');
+  });
+
+  it('strokes every edge once: a Zone’s edge that is also its container’s is the container’s alone', () => {
+    const topology = json<Topology>(join(E2E_FIXTURE, 'outlines.json'));
+    const key = (r: Float32Array) => {
+      const ends = [`${r[0]},${r[1]}`, `${r[r.length - 2]},${r[r.length - 1]}`].sort();
+      return `${ends.join('|')}|${r.length}`;
+    };
+    const { containers, zones } = outlines.edges;
+    const seen = [...containers, ...zones].map(key);
+    expect(new Set(seen).size, 'an edge stroked twice').toBe(seen.length);
+    expect(edgesOf(topology, 'zones').length, 'the Zones’ own edges, with their containers’').toBe(zones.length + containers.length);
+    // Every point a ring draws is on some edge, and no edge is drawn for each ring that has it.
+    const ringPoints = [...outlines.containers, ...outlines.zones].reduce((n, s) => n + s.rings.reduce((m, r) => m + r.length, 0), 0);
+    const edgePoints = [...containers, ...zones].reduce((n, r) => n + r.length, 0);
+    expect(edgePoints).toBeLessThan(ringPoints / 2);
   });
 
   it('names a Sector’s Zone and container, from what is loaded', () => {
