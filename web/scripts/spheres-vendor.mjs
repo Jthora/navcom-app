@@ -26,6 +26,13 @@
  * **Draft until said otherwise**: the map labels the lists a draft unless `--final` is given, by
  * whoever has been told by the lists' author that they are.
  *
+ * **And the Organisations**, Mecha Jono's other Part 2 lists, from the folder beside the Spheres'
+ * (`public/geopolitical/organisations/`), with `--organisations-sha256 <hex>` and by that digest, checked
+ * by NavCom's own reader [@navcom/core/organisations], into the same file and onto the same layer: a
+ * member is drawn, and every other standing, a candidate, a partner, an observer, one suspended, is
+ * listed with it and never shaded. Without that digest the file carries none. `--dir` reads the
+ * fixture's own `organisations/` beside it, where there is one.
+ *
  * `--dir` reads a directory instead, for NavCom's own test fixture and nothing else: it is refused for
  * `static/grid/spheres.json` whatever path names it, and so is a manifest whose maker is the fixture.
  * `--out` must be a file named `spheres.json`, and replaces only what an earlier vendoring wrote, known
@@ -37,12 +44,14 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { checkOrganisations } from '@navcom/core/organisations';
 import { checkSpheres } from '@navcom/core/spheres';
 
 const STATIC = fileURLToPath(new URL('../static/grid/spheres.json', import.meta.url));
 const WORLD = fileURLToPath(new URL('../static/grid/world.json', import.meta.url));
 const LABELS = fileURLToPath(new URL('./data/label-points.json', import.meta.url));
 const IN_REPO = 'public/geopolitical/spheres';
+const ORGANISATIONS_IN_REPO = 'public/geopolitical/organisations';
 /** What the fixture's manifest calls its maker, which nothing vendored may be. */
 const FIXTURE = 'navcom-test-fixture';
 
@@ -106,6 +115,23 @@ if (str('repo')) {
   source = `dir:${resolve(/** @type {string} */ (str('dir')))}`;
 }
 
+/** @type {Buffer | null} */
+let orgBytes = null;
+if (str('repo') && str('organisations-sha256')) {
+  try {
+    orgBytes = execFileSync('git', ['-C', resolve(/** @type {string} */ (str('repo'))), 'show', `${str('commit')}:${ORGANISATIONS_IN_REPO}/manifest.json`], { maxBuffer: 16 * 1024 * 1024 });
+  } catch {
+    refuse(`${ORGANISATIONS_IN_REPO}/manifest.json is not in that repository at ${str('commit')}`);
+  }
+} else if (str('dir')) {
+  const beside = resolve(/** @type {string} */ (str('dir')), '../organisations/manifest.json');
+  if (existsSync(beside)) orgBytes = readFileSync(beside);
+}
+const orgDigest = orgBytes ? createHash('sha256').update(orgBytes).digest('hex') : null;
+if (str('organisations-sha256') && str('organisations-sha256') !== orgDigest) {
+  refuse(`organisations/manifest.json is sha256 ${orgDigest}, and --organisations-sha256 says ${str('organisations-sha256')}: not the lists that were reviewed`);
+}
+
 const digest = createHash('sha256').update(bytes).digest('hex');
 if (str('manifest-sha256') && str('manifest-sha256') !== digest) {
   refuse(`manifest.json is sha256 ${digest}, and --manifest-sha256 says ${str('manifest-sha256')}: not the manifest that was reviewed`);
@@ -118,6 +144,14 @@ if (fixture) source = FIXTURE;
 
 const { lists, problems } = checkSpheres(manifest);
 if (!lists || problems.length > 0) refuse(`${problems.length} problem(s); nothing written.\n  ${problems.join('\n  ')}`);
+const orgs = orgBytes ? checkOrganisations(JSON.parse(orgBytes.toString('utf8'))) : null;
+if (orgs && (!orgs.lists || orgs.problems.length > 0)) refuse(`organisations: ${orgs.problems.length} problem(s); nothing written.\n  ${orgs.problems.join('\n  ')}`);
+const organisations = orgs?.lists?.organisations ?? [];
+/** Every code a list draws: a Sphere's drawn members, and an organisation's members. */
+const drawnCodes = [
+  ...lists.spheres.flatMap((s) => s.members.filter((m) => m.drawn).map((m) => m.code)),
+  ...organisations.flatMap((o) => o.members.filter((m) => m.status === 'member').map((m) => m.code))
+];
 const credit = str('credit') ?? lists.attribution ?? (fixture ? 'NavCom test fixture, never shipped' : null);
 if (!credit) refuse('--credit is required: the licence asks for an attribution, and the lists give none');
 
@@ -127,18 +161,18 @@ const world = JSON.parse(readFileSync(WORLD, 'utf8'));
 const outlined = new Set(world.objects.world.geometries.map((/** @type {any} */ g) => g.properties?.iso_a2).filter(Boolean));
 /** @type {Record<string, [number, number]>} */
 const labels = JSON.parse(readFileSync(LABELS, 'utf8')).points;
-const nowhere = [...new Set(lists.spheres.flatMap((s) => s.members.filter((m) => m.drawn).map((m) => m.code)))].filter((c) => !outlined.has(c) && !labels[c]).sort();
+const nowhere = [...new Set(drawnCodes)].filter((c) => !outlined.has(c) && !labels[c]).sort();
 if (nowhere.length > 0) {
   refuse(`nowhere to draw ${nowhere.join(', ')}: no outline in static/grid/world.json and no label point in scripts/data/label-points.json`);
 }
 
 /** @type {Record<string, [number, number]>} */
 const points = {};
-for (const s of lists.spheres) for (const m of s.members) if (m.drawn && !outlined.has(m.code)) points[m.code] = labels[m.code];
+for (const code of drawnCodes) if (!outlined.has(code)) points[code] = labels[code];
 
 // When the lists were read: the oldest and the newest, and how many say nothing, so the map gives the
 // cautious date and not only the freshest one.
-const reads = lists.spheres.map((s) => s.read).filter((d) => d !== null).sort();
+const reads = [...lists.spheres, ...organisations].map((s) => s.read).filter((d) => d !== null).sort();
 const file = {
   navcom: {
     source,
@@ -146,7 +180,8 @@ const file = {
     generated: typeof manifest.generated === 'string' ? manifest.generated : null,
     lists: lists.lists,
     /** The oldest and the newest day any of the lists was read, as they say, and how many do not say. */
-    read: reads.length > 0 ? { oldest: reads[0], newest: reads.at(-1), unsaid: lists.spheres.length - reads.length } : null,
+    read: reads.length > 0 ? { oldest: reads[0], newest: reads.at(-1), unsaid: lists.spheres.length + organisations.length - reads.length } : null,
+    organisations_sha256: orgDigest,
     draft: opts.final !== true,
     licence: lists.licence,
     credit,
@@ -161,6 +196,21 @@ const file = {
     sources: s.sources.map((x) => Object.fromEntries(Object.entries(x).filter(([, v]) => v !== null))),
     read: s.read,
     ...(s.note ? { note: s.note } : {})
+  })),
+  organisations: organisations.map((o) => ({
+    id: o.id,
+    name: o.name,
+    kind: o.kind,
+    ...(o.founded ? { founded: o.founded } : {}),
+    members: o.members.map((m) => ({
+      code: m.code,
+      ...(m.since ? { since: m.since } : {}),
+      ...(m.source ? { source: m.source } : {}),
+      ...(m.status === 'member' ? {} : { status: m.status, drawn: false })
+    })),
+    sources: o.sources.map((x) => Object.fromEntries(Object.entries(x).filter(([, v]) => v !== null))),
+    read: o.read,
+    ...(o.note ? { note: o.note } : {})
   })),
   points: Object.fromEntries(Object.entries(points).sort(([a], [b]) => a.localeCompare(b)))
 };
@@ -178,6 +228,6 @@ if (existsSync(out)) {
 }
 writeFileSync(out, JSON.stringify(file) + '\n');
 console.log(
-  `spheres: ${file.spheres.length} Spheres${file.navcom.draft ? ' (draft)' : ''} from ${source}, manifest ${digest.slice(0, 12)}, ` +
+  `spheres: ${file.spheres.length} Spheres and ${file.organisations.length} organisations${file.navcom.draft ? ' (draft)' : ''} from ${source}, manifest ${digest.slice(0, 12)}, ` +
     `${Object.keys(points).length} small members as circles → ${out}`
 );

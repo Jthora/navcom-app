@@ -32,7 +32,7 @@
   const NAMES: Record<MapLayer, { name: string; what: string }> = {
     nations: { name: 'Nation States', what: 'countries, and provinces where the directory has regions' },
     zones: { name: 'Zones', what: 'Starcom’s Terrae and Maria, their Zones and Sectors' },
-    spheres: { name: 'Spheres', what: 'cited lists of the countries in each, overlapping' },
+    spheres: { name: 'Spheres', what: 'cited lists of countries, Spheres and organisations of states, overlapping' },
     timezones: { name: 'Time zones', what: 'standard offsets from UTC, with day and night' },
     none: { name: 'None', what: 'the land, and the missions' }
   };
@@ -257,6 +257,16 @@
       </ul>
       <Slot k="Credit"><Readout value={spheresFile.navcom.licence === 'CC-BY-4.0' ? 'CC BY 4.0' : (spheresFile.navcom.licence ?? 'Not said')} tone="neutral" sub={spheresFile.navcom.credit} /></Slot>
     </Panel>
+    {#if spheresFile.organisations?.length}
+      <!-- Organisations of states, on the same layer: only a member is shaded when one is opened. -->
+      <Panel label="Organisations" post="{spheresFile.organisations.length} of states">
+        <ul class="nc-areas">
+          {#each spheresFile.organisations as o (o.id)}
+            <li><button type="button" data-sphere-open={o.id} aria-pressed={mapLayers.sphere === o.id} onclick={() => openSphere(o.id)}>{o.name}</button></li>
+          {/each}
+        </ul>
+      </Panel>
+    {/if}
   {/if}
 
   {#if work}

@@ -48,6 +48,15 @@ describe('the vendoring script', () => {
     expect(json<SpheresFile>(out).navcom).toMatchObject({ draft: true, source: 'navcom-test-fixture', credit: 'NavCom test fixture, never shipped', unread: 0 });
   });
 
+  it('carries the organisations from the folder beside, each standing kept, and only a member drawn', () => {
+    const file = json<SpheresFile>(E2E_FIXTURE);
+    expect(file.organisations!.map((o) => [o.id, o.kind])).toEqual([['union:test-alliance', 'alliance'], ['union:test-islands', 'forum']]);
+    const alliance = file.organisations![0]!;
+    expect(alliance.members.filter((m) => m.drawn === false).map((m) => [m.code, m.status])).toEqual([['ua', 'candidate'], ['ie', 'partner']]);
+    expect(alliance.members.find((m) => m.code === 'gb')).toEqual({ code: 'gb', since: '1949', source: "the fixture's own list" });
+    expect(file.navcom.organisations_sha256).toBe(sha(readFileSync(join(CORE_FIXTURE, '../organisations/manifest.json'))));
+  });
+
   it('writes a point for each small member only: the four with no outline at the world’s scale', () => {
     const file = json<SpheresFile>(E2E_FIXTURE);
     expect(Object.keys(file.points).sort()).toEqual(['bb', 'mt', 'mu', 'sg']);
@@ -90,6 +99,8 @@ describe('the vendoring script', () => {
     const lists = join(repo, 'public/geopolitical/spheres');
     mkdirSync(lists, { recursive: true });
     cpSync(join(CORE_FIXTURE, 'manifest.json'), join(lists, 'manifest.json'));
+    mkdirSync(join(repo, 'public/geopolitical/organisations'), { recursive: true });
+    cpSync(join(CORE_FIXTURE, '../organisations/manifest.json'), join(repo, 'public/geopolitical/organisations/manifest.json'));
     const git = (...a: string[]) => spawnSync('git', ['-C', repo, ...a], { encoding: 'utf8' });
     git('init', '-q');
     git('-c', 'user.name=t', '-c', 'user.email=t@t', 'add', '.');
@@ -104,6 +115,15 @@ describe('the vendoring script', () => {
     const blind = vendor('--repo', repo, '--commit', commit, '--out', outFile());
     expect(blind.status).toBe(1);
     expect(blind.stderr).toMatch(/--manifest-sha256 is required/);
+    // The organisations only by their own digest: none without it, and nothing written with a wrong one.
+    expect(json<SpheresFile>(out).organisations).toEqual([]);
+    const orgDigest = sha(readFileSync(join(CORE_FIXTURE, '../organisations/manifest.json')));
+    const both = outFile();
+    expect(vendor('--repo', repo, '--commit', commit, '--manifest-sha256', digest, '--organisations-sha256', orgDigest, '--out', both, '--credit', 'a test').status).toBe(0);
+    expect(json<SpheresFile>(both).organisations).toHaveLength(2);
+    const wrong = vendor('--repo', repo, '--commit', commit, '--manifest-sha256', digest, '--organisations-sha256', '0'.repeat(64), '--out', outFile(), '--credit', 'a test');
+    expect(wrong.status).toBe(1);
+    expect(wrong.stderr).toMatch(/not the lists that were reviewed/);
   });
 });
 
@@ -122,6 +142,11 @@ describe('the file the map reads', () => {
     const franco = spheres.find((s) => s.id === 'sphere:test-francophonie')!;
     expect(franco.shapes.map((s) => s.id).sort()).toEqual(['ca', 'fr']);
     expect(franco.circles.map((c) => c.code)).toEqual(['mu']);
+    // An organisation alike, its members only: not Ukraine, a candidate, nor Ireland, a partner.
+    const alliance = spheres.find((s) => s.id === 'union:test-alliance')!;
+    expect(alliance.shapes.map((s) => s.id).sort()).toEqual(['ca', 'fr', 'gb', 'us']);
+    const islands = spheres.find((s) => s.id === 'union:test-islands')!;
+    expect(islands.circles.map((c) => c.code).sort()).toEqual(['mt', 'mu', 'sg']);
   });
 });
 

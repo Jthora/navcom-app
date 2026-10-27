@@ -447,8 +447,8 @@ export const MAP_LINES = {
     }
   },
   /*
-   * The Spheres' lists, vendored 26 Oct, with the label points D9 draws their small member states at, as
-   * circles, written into the same file by `scripts/spheres-vendor.mjs`.
+   * The Spheres' lists, vendored 26 Oct, and the organisations' beside them from 27 Oct, with the label
+   * points D9 draws their small member states at, written into the same file by `scripts/spheres-vendor.mjs`.
    */
   spheres: {
     when: 'choosing Spheres',
@@ -456,10 +456,13 @@ export const MAP_LINES = {
     files: (f) => f === 'grid/spheres.json',
     per: 'all',
     js: {
-      limit: 2_612,
-      warn: 2_351,
-      measured: 2_177,
+      limit: 2_852,
+      warn: 2_567,
+      measured: 2_377,
       why:
+        'Re-derived 2026-10-27 at 2,377 B, from 2,177 B: the organisations of states on the same layer, ' +
+        'their members shaded and every other standing listed, and a Sphere’s or organisation’s ' +
+        'members a list counts and does not draw left unshaded and unnamed by a tap. ' +
         'Re-derived 2026-10-24 at 2,177 B, from 2,170 B: a small state a small filled diamond rather than a ' +
         'dotted circle, a mission’s shape, and the lists’ credit over the map’s foot. ' +
         'Re-derived 2026-10-19 at 2,170 B, from 2,014 B the same day: reading the vendored lists, the ' +
@@ -470,11 +473,14 @@ export const MAP_LINES = {
         'estimated at 6 to 12 kB, which is not a measurement: the change that vendors them derives one.'
     },
     data: {
-      limit: 5_117,
-      warn: 4_605,
-      measured: 4_264,
+      limit: 13_543,
+      warn: 12_189,
+      measured: 11_286,
       why:
-        'Derived 2026-10-26 at 4,264 B: Mecha Jono’s thirteen Spheres (lists 1.0, 221 memberships, 68 of ' +
+        'Re-derived 2026-10-27 at 11,286 B, from 4,264 B: Mecha Jono’s fifteen organisations of states ' +
+        '(lists 1.0, 364 memberships, 55 of them a standing other than member) vendored beside the ' +
+        'Spheres from ec6714b9, each membership with its year and source, and 34 small members as ' +
+        'circles where there were 16. Derived 2026-10-26 at 4,264 B: Mecha Jono’s thirteen Spheres (lists 1.0, 221 memberships, 68 of ' +
         'them listed and not drawn) as vendored from starcom-app ec6714b9, with each list’s note and the ' +
         'sixteen small members D9 draws as circles. First measured that day at 3,633 B without the notes ' +
         'or the flags, and so hatching the Francophonie over its observers. Under the 6 to 12 kB estimated, ' +

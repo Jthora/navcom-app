@@ -38,6 +38,8 @@ export interface SpheresFile {
     licence: string | null;
     credit: string;
     unread: number;
+    /** The digest of the organisations' lists vendored beside the Spheres', or null when there are none. */
+    organisations_sha256?: string | null;
   };
   spheres: {
     id: string;
@@ -49,6 +51,20 @@ export interface SpheresFile {
     sources: { name: string; url?: string; licence?: string }[];
     read: string | null;
     /** What the list says it holds. */
+    note?: string;
+  }[];
+  /**
+   * The organisations of states, Mecha Jono's other Part 2 lists, on the same layer: a member drawn, and
+   * a candidate, a partner, an observer or one suspended listed with its standing, `drawn: false`.
+   */
+  organisations?: {
+    id: string;
+    name: string;
+    kind: string;
+    founded?: string;
+    members: { code: string; source?: string; since?: string; status?: string; drawn?: false }[];
+    sources: { name: string; url?: string; licence?: string }[];
+    read: string | null;
     note?: string;
   }[];
   /** Label points, `[lon, lat]`, for the members with no outline at the world's scale. */
@@ -64,13 +80,19 @@ export interface DrawnSphere {
   circles: { code: string; x: number; y: number }[];
 }
 
-/** The members a Sphere draws: all but those its list counts and does not draw. */
-export const drawnIn = (s: SpheresFile['spheres'][number]) => s.members.filter((m) => m.drawn !== false);
+/** A Sphere or an organisation: a cited list of countries, opened, hatched and answered for alike. */
+export type MemberList = SpheresFile['spheres'][number] | NonNullable<SpheresFile['organisations']>[number];
+
+/** Every list on the layer, the Spheres first. */
+export const listsOf = (file: SpheresFile): MemberList[] => [...file.spheres, ...(file.organisations ?? [])];
+
+/** The members a list draws: all but those it counts and does not draw. */
+export const drawnIn = (s: MemberList) => s.members.filter((m) => m.drawn !== false);
 
 /** Each Sphere's members on the map: an outline by its code where the world has one, else a circle. */
 export function spheresOf(file: SpheresFile, countries: readonly Shape[]): DrawnSphere[] {
   const byCode = new Map(countries.flatMap((c) => (c.id ? [[c.id, c] as const] : [])));
-  return file.spheres.map((s) => ({
+  return listsOf(file).map((s) => ({
     id: s.id,
     name: s.name,
     members: drawnIn(s).length,
@@ -109,13 +131,16 @@ export function loadSpheres(): Promise<void> {
 }
 
 /**
- * The Spheres that draw a country, the most specific first: the one drawing the fewest. One that only
- * lists it, as an observer, is not named here: a tap answers for what is shaded there.
+ * The Spheres that draw a country, then the organisations, each the most specific first: the one
+ * drawing the fewest. One that only lists it, as an observer or a candidate, is not named here: a tap
+ * answers for what is shaded there.
  */
-export function spheresAt(code: string): SpheresFile['spheres'] {
+export function spheresAt(code: string): MemberList[] {
   const file = layerData.spheres;
   if (!file) return [];
-  return file.spheres.filter((s) => drawnIn(s).some((m) => m.code === code)).sort((a, b) => drawnIn(a).length - drawnIn(b).length);
+  const drawing = (lists: readonly MemberList[]) =>
+    lists.filter((s) => drawnIn(s).some((m) => m.code === code)).sort((a, b) => drawnIn(a).length - drawnIn(b).length);
+  return [...drawing(file.spheres), ...drawing(file.organisations ?? [])];
 }
 
 // ─── On the map ───────────────────────────────────────────────────────────────────────────────
@@ -292,8 +317,10 @@ export const layer: DrawnLayer = {
     return areaAt(v, at, [...new Set(drawn.all.flatMap((s) => s.shapes))]) ?? undefined;
   },
   say(shape) {
+    // Its Spheres, then its organisations: Canada · Anglosphere, Francophonie · NATO, the Commonwealth.
     const there = spheresAt(shape.id ?? '');
-    return `${shape.name ?? shape.id ?? 'Unnamed'} · ${there.length === 0 ? 'in no Sphere' : there.map((s) => s.name).join(', ')}`;
+    const said = [there.filter((s) => s.id.startsWith('sphere:')), there.filter((s) => !s.id.startsWith('sphere:'))].filter((g) => g.length > 0);
+    return `${shape.name ?? shape.id ?? 'Unnamed'} · ${said.length === 0 ? 'in no Sphere' : said.map((g) => g.map((s) => s.name).join(', ')).join(' · ')}`;
   },
   open: (shape) => ({ kind: 'sphere', id: null, code: shape.id }),
   legend() {
@@ -302,7 +329,7 @@ export const layer: DrawnLayer = {
     if (!file) return 'Spheres · loading';
     const n = file.navcom;
     // What is shaded first, since the hatch outlives the screen that chose it; then whose, and how old.
-    const one = file.spheres.find((s) => s.id === mapLayers.sphere);
+    const one = listsOf(file).find((s) => s.id === mapLayers.sphere);
     return `Spheres · ${one ? `${one.name} hatched` : 'open one to hatch it'} · ${n.draft ? 'draft lists' : 'lists'}, ${readSaid(n.read)}`;
   },
   credit() {

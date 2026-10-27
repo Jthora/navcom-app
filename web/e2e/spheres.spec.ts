@@ -82,7 +82,7 @@ test('choosing Spheres fetches the lists once, from navcom.app only, labelled a 
   expect(asked, 'fetched before it was chosen').toEqual([]);
   const screen = await chooseSpheres(page);
   // What is hatched first, then the lists' age by the oldest read as well as the newest, and whose.
-  await expect(page.locator('[data-legend="spheres"]')).toHaveText('Spheres · open one to hatch it · draft lists, read 3 Aug–19 Oct');
+  await expect(page.locator('[data-legend="spheres"]')).toHaveText('Spheres · open one to hatch it · draft lists, read 3 Aug–27 Oct, 1 not said');
   // Whose, as their licence asks, on the map itself, over its foot [GridMap credit].
   await expect(page.locator('[data-credit]')).toHaveText('Spheres: NavCom test fixture, never shipped, CC BY 4.0');
   await expect(screen.locator('[data-slot="spheres"]')).toContainText('Draft lists');
@@ -113,7 +113,7 @@ test('a small state the world’s outlines leave out is a small diamond at its l
   await tapAt(page, 14.43, 35.89, 'Malta');
   const there = page.locator('[data-screen="sphere"][data-code="mt"]');
   await expect(there).toBeVisible();
-  await expect(there.locator('[data-sphere-open]')).toHaveText(['Test Anglosphere']);
+  await expect(there.locator('[data-sphere-open]')).toHaveText(['Test Anglosphere', 'Test Island Forum']);
   await expect(there).toContainText('Draft');
 });
 
@@ -163,6 +163,32 @@ test('a member a list counts and does not draw is listed apart, and never hatche
   const france = await screenAt(page, 2.5, 46.5);
   expect(await hatched(page, france.x, france.y, 6), 'France, which it draws, is not hatched').toBeGreaterThan(20);
   expect(await hatched(page, ireland.x, ireland.y, 6), 'Ireland, which it only lists, is hatched').toBe(0);
+});
+
+test('an organisation is opened as a Sphere is, its members hatched and every other standing listed apart', async ({ page }) => {
+  await serveSpheres(page);
+  await landed(page);
+  const screen = await chooseSpheres(page);
+  await expect(page.locator('[data-legend="spheres"]')).toContainText('draft lists');
+  await zoomAt(page, -4, 52, 4);
+  await page.mouse.move(1, 1);
+  await frame(page);
+  // Before: a country's name is as bright as a hatch, so what opening adds is what is measured.
+  const ukraineAt = await screenAt(page, 31, 49);
+  const before = await hatched(page, ukraineAt.x, ukraineAt.y, 6);
+  await screen.locator('[data-sphere-open="union:test-alliance"]').click();
+  const body = page.locator('[data-screen="sphere"][data-sphere="union:test-alliance"]');
+  await expect(body.locator('[data-slot="kind"]')).toContainText('An alliance');
+  await expect(body.locator('[data-slot="kind"]')).toContainText('founded 1949');
+  await expect(body.locator('[data-sphere-member]')).toHaveText(['United Kingdom', 'United States', 'Canada', 'France']);
+  await expect(body.locator('[data-sphere-member-listed]')).toHaveText(['Ukraine, candidate', 'Ireland, partner']);
+  await frame(page);
+  // Ukraine, a candidate, with no member beside it: Ireland, a partner, is too near Britain to tell apart.
+  const [britain, ukraine] = [await screenAt(page, -1.5, 52.5), await screenAt(page, 31, 49)];
+  expect(await hatched(page, britain.x, britain.y, 6), 'a member, Britain, is not hatched').toBeGreaterThan(20);
+  expect(ukraine, 'the map moved when the organisation was opened').toEqual(ukraineAt);
+  expect(await hatched(page, ukraine.x, ukraine.y, 6), 'a candidate, Ukraine, is hatched').toBeLessThanOrEqual(before);
+  await expect(page.locator('[data-legend="spheres"]')).toContainText('Test Atlantic Alliance hatched');
 });
 
 test('the key names the Sphere hatched after Back, and leaving Spheres lets it go', async ({ page }) => {
@@ -216,7 +242,8 @@ test.describe('the Spheres on a desktop', () => {
     await expect(page.locator('[data-legend="spheres"]')).toContainText('draft lists');
     const canada = await screenAt(page, -100, 58);
     await page.mouse.move(canada.x, canada.y);
-    await expect(page.locator('[data-chip]')).toHaveText('Canada · Test Francophonie, Test Atlantic community, Test Anglosphere');
+    // Its Spheres, then its organisations.
+    await expect(page.locator('[data-chip]')).toHaveText('Canada · Test Francophonie, Test Atlantic community, Test Anglosphere · Test Atlantic Alliance');
     // Ireland is in Test Francophonie only as an observer, listed and not drawn: not named over it.
     const ireland = await screenAt(page, -8, 53.2);
     await page.mouse.move(ireland.x, ireland.y);

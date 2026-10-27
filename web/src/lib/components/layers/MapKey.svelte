@@ -38,7 +38,7 @@
     }
     if (chosen === 'spheres') {
       out.push(
-        { id: 'hatch', line: 'M2 3h12v10H2z', fill: 'M2 9l6-6M2 13l10-10M6 13l8-8M10 13l4-4', text: 'The Sphere opened, hatched' },
+        { id: 'hatch', line: 'M2 3h12v10H2z', fill: 'M2 9l6-6M2 13l10-10M6 13l8-8M10 13l4-4', text: 'The Sphere or organisation opened, hatched' },
         { id: 'small', fill: 'M8 4l4 4l-4 4l-4-4z', text: 'A small state, too small for the world’s outlines, at Natural Earth’s label point' }
       );
     }

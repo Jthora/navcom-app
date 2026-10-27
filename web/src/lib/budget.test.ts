@@ -604,7 +604,7 @@ describe('the map’s layers, each a line of its own', () => {
     expect(MAP_LINES.zones.data).toMatchObject({ measured: 70_466 });
     expect(MAP_LINES['zones-container']!.data).toMatchObject({ measured: 36_234 });
     expect(MAP_LINES['zones-lookup']!.data).toMatchObject({ measured: 239_360 });
-    expect(MAP_LINES.spheres.data).toMatchObject({ measured: 4_264, limit: 5_117, warn: 4_605 });
+    expect(MAP_LINES.spheres.data).toMatchObject({ measured: 11_286, limit: 13_543, warn: 12_189 });
     // Day and night is worked out on the phone, and the Zones' counts from what it holds: neither fetches a file, and nor do the names.
     expect(MAP_LINES.daylight!.files).toBeNull();
     expect(MAP_LINES.labels!.files).toBeNull();

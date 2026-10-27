@@ -124,7 +124,7 @@ set, or any source a Sector's lines were drawn from, that is share-alike or non-
 is AGPL-3.0-only, which would bind an Apache-2.0 codebase, so none of it is copied, and a test fails if
 anything under `packages/core/src/zones/` carries its licence.
 
-**The Spheres' membership lists** (`web/static/grid/spheres.json`) are Mecha Jono's Part 2, lists 1.0,
+**The Spheres' and the organisations' membership lists** (`web/static/grid/spheres.json`) are Mecha Jono's Part 2, lists 1.0,
 **CC BY 4.0**, vendored on 26 October 2026 from starcom-app `ec6714b9` by `web/scripts/spheres-vendor.mjs`,
 which refuses lists, or any cited source, that are share-alike or non-commercial. The map's foot and the
 layers screen carry the credit, *Spheres: Mecha Jono, ZSP 2.0 Part 2, CC BY 4.0*, and the lists are

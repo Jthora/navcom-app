@@ -24,6 +24,10 @@
       "types": "./dist/spheres/index.d.ts",
       "default": "./dist/spheres/index.js"
     },
+    "./organisations": {
+      "types": "./dist/organisations/index.d.ts",
+      "default": "./dist/organisations/index.js"
+    },
     "./src/*": "./src/*"
   },
   "scripts": {

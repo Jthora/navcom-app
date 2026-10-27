@@ -485,8 +485,8 @@ Budgets, all of them targets to measure rather than claims:
       node scripts/spheres-vendor.mjs --repo ../../starcom-app --commit <sha> \
         --manifest-sha256 <hex> --credit "Mecha Jono, ZSP 2.0 Part 2"
 
-  **For the owner**: whether Organisations (`union:*`, fifteen bodies in
-  `public/geopolitical/organisations/`) are drawn too.
+  Re-vendor the organisations with them, `--organisations-sha256 <hex>`, the digest of
+  `public/geopolitical/organisations/manifest.json` at the same commit.
 - **A Zone in the interchange.** NavCom's packages carry no Zone, so a mission filed only by
   jurisdiction cannot be counted in one without inventing a place (§8, Missions on Zones). Counting them
   honestly needs a `["zone", id]` or `["zone_sector", id]` tag from the publisher: a rev 9 ask to
@@ -824,7 +824,20 @@ draft lists until Mecha Jono says they are final. **68 of the memberships are li
 observers, a language official only in one region. NavCom's reader first dropped the flag, which would
 have hatched the Francophonie over Japan and Argentina; it now keeps it, a Sphere is shaded over and a
 tap names it for only the members it draws, and its screen lists the rest apart, *Listed, not drawn*,
-with the list's own note. Eight of them cite Unicode CLDR or the Unihan database,
+with the list's own note.
+
+**And the organisations of states** (2026-10-27): Mecha Jono's other Part 2 lists, fifteen bodies (the
+European Union, NATO, BRICS, the African Union, ASEAN, OPEC, the Commonwealth and the rest), 364
+memberships each with its standing and year, vendored from the folder beside the Spheres' by their own
+digest (`--organisations-sha256`) and read by NavCom's own reader (`packages/core/src/organisations`).
+They are on the Spheres layer rather than a layer of their own: the same kind of thing, a cited list of
+countries opened one at a time and hatched, and a layer of their own would have grown the map every
+visit loads, which has no room. **Only a member is drawn**; a candidate, a partner, an observer and one
+suspended are listed on its screen with their standing, and never shaded or named by a tap, as the lists
+say of themselves (*27 members are drawn; the 10 candidates are listed, not drawn*). A standing is any
+one lower-case word, since the lists never closed the five they use. A tap names a country's Spheres,
+then its organisations: *Canada · Francophonie, Anglosphere · NATO, the Commonwealth, …*. The file is
+11.3 kB compressed with both. Eight of them cite Unicode CLDR or the Unihan database,
 under Unicode-3.0, which the reader refused until the owner took it as attribution only that day
 (`LICENSING.md` carries its notice). Cited membership lists of countries, by ISO code, overlapping, in the shape
 Starcom's Spheres mode reads (edition 1.0: a Sphere's id, name and family, its members, groups and cited
