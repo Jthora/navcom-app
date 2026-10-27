@@ -679,7 +679,9 @@ opens the same way. The index's edges are quantised
 to about 400 m, so within 1.5 km of one both Sectors are offered and the person chooses.
 
 **Where I work (D7)**: one Sector, kept on this phone only, in the Wipeable tier (`work_sector`), so a
-panic wipe takes it. Never published, never sent, never in a backup. **Only from a final partition**:
+panic wipe takes it. Never published, never sent, never in a backup. **The card screen offers it**
+(2026-10-27): its Sector, its Zone or its Terra, and only the one the operator chooses there, on
+publishing, leaves the phone, as a place on their card ([`../product/profiles.md`](../product/profiles.md) §3a). **Only from a final partition**:
 a draft's ids may change before Starcom's swap (D6), and a Sector kept under an id that went would be a
 place that is no longer anywhere. It is kept with the manifest digest it was chosen from.
 

@@ -26,6 +26,7 @@ import {
   publicKeyOf,
   secretFromHex,
   secretToHex,
+  type CardArea,
   type CardLink,
   type SecretKey,
   type Visibility
@@ -38,8 +39,16 @@ const LISTED = 'card_listed';
 const SENT = 'card_sent';
 
 export interface MyCard {
-  /** A directory region slug. The same coarse unit the public directory uses. */
+  /**
+   * A directory region slug, the same coarse unit the public directory uses, when the card names a
+   * city; `earth` when it names none [core: events/area.ts].
+   */
   region: string;
+  /**
+   * Where the card says its holder is, at the level they chose: one place on each ladder, or none,
+   * which is Earth. Absent on a card saved before 2026-10-27, whose region was its city.
+   */
+  areas?: CardArea[];
   /** One line, optional, in the operator's own words. */
   doing?: string;
   /**

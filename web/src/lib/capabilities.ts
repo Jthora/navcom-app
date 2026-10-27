@@ -358,7 +358,9 @@ export const CAPABILITIES: Capability[] = [
       // implies otherwise is a false promise this community would notice.
       'Publishing cannot be undone'
     ],
-    control: '#region',
+    // Where its holder says they are, Earth until they choose: the first thing on the form since
+    // 2026-10-27, and the metro's list appears only once a city is the level chosen.
+    control: '[data-card-where] input[name="where"]',
     requires: ['identity']
   },
   {

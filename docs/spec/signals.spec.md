@@ -359,7 +359,13 @@ exactly that, and a card signed by the operational key would hand all of it back
 rather than ignoring the extra — refusing is what makes the absence of a position field
 enforceable against a client written to a looser idea of this type.
 
-- `region` is a directory region slug: a metro, and there is nothing finer it can name
+- `region` is a directory region slug: a metro, and there is nothing finer it can name. Or
+  **`earth`** (2026-10-27): the card names no city, and no `d` tag is published with it
+- **`["area", level, id, name]`** tags, beside the content, say where the holder says they are, at most
+  one on each ladder: `nation` (ISO 3166-1, `us`), `province` (ISO 3166-2, `us-mo`) or `city` (the
+  card's own `region`); and `terra`, `mare`, `zone` or `sector` (Starcom's ZSP 2.0 ids). A reader drops a
+  tag it cannot read and keeps the card. None is Earth, and a card with none whose region is not `earth`
+  names that region as its city ([`../product/profiles.md`](../product/profiles.md) §3a)
 - Replaceable, so an operator has one card and not a history of cards
 - **Withdrawal is discarding the contact key.** The card survives on whatever relays kept
   it. Nothing can unpublish it and no wording anywhere may imply otherwise

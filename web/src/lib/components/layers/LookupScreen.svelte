@@ -92,7 +92,8 @@
   function keep(f: Found) {
     const c = outlines && chainOf ? chainOf(outlines, f.id, {}) : null;
     if (!c?.zone || !outlines || draft) return;
-    if (keepWork({ id: f.id, name: f.name, zone: c.zone.id!, container: c.container.id!, manifest: outlines.navcom.manifest_sha256 })) kept = f.id;
+    const names = { ...(c.zone.name ? { zoneName: c.zone.name } : {}), ...(c.container.name ? { containerName: c.container.name } : {}) };
+    if (keepWork({ id: f.id, name: f.name, zone: c.zone.id!, container: c.container.id!, ...names, manifest: outlines.navcom.manifest_sha256 })) kept = f.id;
   }
 </script>
 

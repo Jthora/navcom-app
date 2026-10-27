@@ -87,7 +87,15 @@
 
   function keep() {
     if (!isSector || !named || !chain?.zone || !outlines || draft) return;
-    const ok = keepWork({ id, name: named, zone: chain.zone.id!, container: chain.container.id!, manifest: outlines.navcom.manifest_sha256 });
+    const ok = keepWork({
+      id,
+      name: named,
+      zone: chain.zone.id!,
+      ...(chain.zone.name ? { zoneName: chain.zone.name } : {}),
+      container: chain.container.id!,
+      ...(chain.container.name ? { containerName: chain.container.name } : {}),
+      manifest: outlines.navcom.manifest_sha256
+    });
     if (ok) kept = id;
   }
 </script>

@@ -4,6 +4,7 @@ import type { SecretKey } from '../crypto/keys.js';
 import { KIND_CARD, KIND_PUBLIC_PRESENCE } from './kinds.js';
 import { CALLSIGN_MAX, withinLimit } from '../limits.js';
 import { linkTags, readLinks, type CardLink } from './links.js';
+import { EARTH, areaTags, type CardArea } from './area.js';
 import {
   DEFAULT_VISIBILITY,
   doesTags,
@@ -128,6 +129,11 @@ export interface CardOptions {
   visibility?: Visibility;
   /** What they say they do. A closed vocabulary; unknown terms are dropped. */
   does?: readonly string[];
+  /**
+   * Where they say they are, at the level they chose, one place on each ladder [area.ts]. None is
+   * Earth, the default: a card naming no place is complete.
+   */
+  areas?: readonly CardArea[];
 }
 
 export function buildCard(
@@ -141,6 +147,15 @@ export function buildCard(
     throw new CardError(`A card needs a callsign of ${CALLSIGN_MAX} characters or fewer.`);
   }
   if (!/^[a-z0-9-]+$/.test(card.region)) throw new CardError('A card needs a region.');
+  const visibility = options.visibility ?? DEFAULT_VISIBILITY;
+  // A board is a city's. A card that names none is on no board, and never on one called Earth.
+  if (visibility === 'board' && card.region === EARTH) throw new CardError('A board is a city’s: name one to be on its board.');
+  let areas: string[][];
+  try {
+    areas = areaTags(options.areas ?? [], card.region);
+  } catch (e) {
+    throw new CardError(e instanceof Error ? e.message : String(e));
+  }
 
   const doing = card.doing?.trim();
   if (doing && doing.length > DOING_MAX) {
@@ -170,10 +185,11 @@ export function buildCard(
       tags: [
         // Public and board both carry the region tag -- public *adds* a place you appear
         // rather than moving you. Only `address` omits it, which is what keeps it off boards.
-        ...((options.visibility ?? DEFAULT_VISIBILITY) !== 'address' ? [['d', card.region]] : []),
-        ...visibilityTags(options.visibility ?? DEFAULT_VISIBILITY),
+        ...(visibility !== 'address' && card.region !== EARTH ? [['d', card.region]] : []),
+        ...visibilityTags(visibility),
         ...linkTags(options.links ?? []),
-        ...doesTags(options.does ?? [])
+        ...doesTags(options.does ?? []),
+        ...areas
       ],
       content: JSON.stringify(content)
     },
@@ -273,6 +289,8 @@ export function buildPublicPresence(
   region: string,
   createdAt: number
 ): Event {
+  // Said on a city's board. A card that names no city is on none, and there is no board called Earth.
+  if (region === EARTH) throw new CardError('Out tonight is said on a city’s board, and Earth has none.');
   return finalizeEvent(
     {
       kind: KIND_PUBLIC_PRESENCE,

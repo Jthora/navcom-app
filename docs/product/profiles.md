@@ -23,6 +23,7 @@ be as plain about that as the directory is about its 9,635 unvisited records.
 |---|---|---|
 | callsign, region, `doing`, `lightning` | `content` | `CARD_FIELDS`, refuse-not-trim |
 | where else to find them | `i` tags | dropped individually, never fatal |
+| where they say they are | `area` tags | one place on each ladder, dropped individually, never fatal (§3a) |
 | what they do | `t` tags | closed vocabulary, dropped if unknown |
 | who can find it | presence of the `d` tag | the relay's own filter |
 
@@ -103,6 +104,39 @@ somebody re-dates or removes it. Procedure, including telling the author:
 [`notices.md`](notices.md).
 
 Empty is the expected state.
+
+## 3a. Where an operator says they are
+
+**Earth, unless they choose. Decided by the owner on 2026-10-27**: an operator shows whatever level
+of place they want on their card, and Earth is everybody's default. A card that names no place is
+complete, and nothing may present it as a card waiting for its region.
+
+There are two ladders, and a card names at most one place on each, at the level its holder chose:
+
+| Ladder | Levels | From |
+|---|---|---|
+| Political | Nation, state or province, city or town | ISO 3166-1 and 3166-2 codes; a directory region, which is a metro and never smaller |
+| Zones | Terra or Mare, Zone, Sector | Starcom's ZSP 2.0 ids, offered from where the operator works on the map ([`../design/map.md`](../design/map.md), D7) |
+
+**Nothing finer is derived from what is named.** A card naming Missouri does not name St. Louis, and
+one naming a Sector names no city. States and provinces are offered for the countries the directory
+has regions in, whose names this app holds; elsewhere a card names its nation.
+
+They ride as `["area", level, id, name]` tags beside the content, as links do, so a build that
+predates them ignores them and keeps the card. The content's `region` stays, because every reader
+requires one: the city's slug when the card names a city, and **`earth`** when it does not, which an
+older build shows as the word it is. A card from before the tags named a metro, and still reads as
+naming it as its city.
+
+**A board is a city's.** The board is a filter on `#d`, and only a card naming a city carries one: a
+card at Earth, a nation, a state or a Zone is on no board, which the card screen says, and *out
+tonight* is said on a city's board, so it is offered only with one. *Anyone, anywhere* still lists a
+card on navcom.app by its label, at any level. Boards for a Zone, a state or a nation are not built:
+they would need the board screen to choose among them, and somebody to want one.
+
+**Where somebody works is not published by choosing it.** The Sector kept on the map stays on the
+phone (Wipeable). The card screen offers its Sector, its Zone and its Terra, and only the one chosen
+there, and only on publishing, leaves the phone.
 
 ## 4. The names, and why not the other names
 

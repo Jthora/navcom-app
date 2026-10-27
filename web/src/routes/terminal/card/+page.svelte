@@ -19,9 +19,13 @@
     PLATFORMS,
     platform as platformOf,
     VISIBILITY_CHOICES,
+    EARTH,
+    PARTITION,
+    type CardArea,
     type CardLink,
     type Visibility
   } from '@navcom/core';
+  import { workSector, type WorkSector } from '$lib/components/layers/work';
   import {
     cardSent,
     contactPubkey,
@@ -49,6 +53,29 @@
   let confirming = $state(false);
 
   let visibility = $state<Visibility>('board');
+
+  /**
+   * Where you say you are: **Earth unless you choose**, for everyone [owner, 2026-10-27], and then one
+   * place on each ladder at the level chosen. Nothing finer is derived from what you name.
+   */
+  type Where = 'earth' | 'nation' | 'province' | 'city';
+  const WHERE: readonly { value: Where; label: string; says: string }[] = [
+    { value: 'earth', label: 'Earth', says: 'Your card names no place.' },
+    { value: 'nation', label: 'Nation', says: 'A country.' },
+    { value: 'province', label: 'State or province', says: 'Within a country.' },
+    { value: 'city', label: 'City or town', says: 'A metro, from the directory.' }
+  ];
+  const LEVEL: Record<string, string> = { terra: 'Its Terra', mare: 'Its Mare', zone: 'Its Zone', sector: 'Its Sector' };
+  let where = $state<Where>('earth');
+  let nation = $state('');
+  let province = $state('');
+  /** The Zone ladder's choice, by the area's id, or Earth. */
+  let zoneLadder = $state(EARTH);
+  /** What the card named on that ladder when it was published, kept as a choice if where you work has moved since. */
+  let keptZone = $state<CardArea | null>(null);
+  let work = $state<WorkSector | null>(null);
+  /** Set once what is on the phone has been read, so nothing below acts on the defaults first. */
+  let ready = $state(false);
   let does = $state<string[]>([]);
   let links = $state<CardLink[]>([]);
   let newPlatform = $state('');
@@ -64,23 +91,69 @@
     contact = contactPubkey();
     callsign = loadIdentity()?.callsign ?? null;
     showListed = listed();
+    work = workSector();
     if (published) {
-      region = published.region;
+      const areas = published.areas ?? [];
+      const said = areas.find((a) => a.level === 'nation' || a.level === 'province' || a.level === 'city');
+      // A card from before places were chosen named its region, and its region was its city.
+      where = said ? (said.level as Where) : published.region !== EARTH ? 'city' : 'earth';
+      if (said?.level === 'nation') nation = said.id;
+      if (said?.level === 'province') province = said.id;
+      keptZone = areas.find((a) => PARTITION.includes(a.level)) ?? null;
+      zoneLadder = keptZone?.id ?? EARTH;
+      region = published.region === EARTH ? '' : published.region;
       doing = published.doing ?? '';
       visibility = published.visibility ?? 'board';
       does = [...(published.does ?? [])];
       links = [...(published.links ?? [])];
     }
+    ready = true;
+  });
+
+  /** The Zone ladder's places: the one published, then where you work, at each of its levels. */
+  const zones = $derived.by(() => {
+    const out: CardArea[] = keptZone ? [keptZone] : [];
+    if (work) {
+      const container: CardArea = { level: work.container.startsWith('mare:') ? 'mare' : 'terra', id: work.container, name: work.containerName ?? null };
+      const zone: CardArea = { level: 'zone', id: work.zone, name: work.zoneName ?? null };
+      const sector: CardArea = { level: 'sector', id: work.id, name: work.name };
+      for (const a of [container, zone, sector]) if (!out.some((o) => o.id === a.id)) out.push(a);
+    }
+    return out;
+  });
+  const named = $derived.by((): CardArea | null => {
+    if (where === 'nation') {
+      const n = data.nations.find((x) => x.code === nation);
+      return n ? { level: 'nation', id: n.code, name: n.name } : null;
+    }
+    if (where === 'province') {
+      const p = data.provinces.find((x) => x.code === province);
+      return p ? { level: 'province', id: p.code, name: p.name } : null;
+    }
+    if (where === 'city') {
+      const r = data.regions.find((x) => x.slug === region);
+      return r ? { level: 'city', id: r.slug, name: r.name } : null;
+    }
+    return null;
+  });
+  /** A level chosen and no place at it yet is nothing to publish; Earth always is. */
+  const placed = $derived(where === 'earth' || named !== null);
+  const city = $derived(named?.level === 'city');
+  // A board is a city's. Naming none takes the card off boards, and the choice moves where it is seen.
+  $effect(() => {
+    if (ready && !city && visibility === 'board') visibility = 'address';
   });
 
   const left = $derived(DOING_MAX - doing.length);
 
   async function publish() {
-    if (!region || busy) return;
+    if (!placed || busy) return;
     busy = true;
     try {
+      const zone = zones.find((a) => a.id === zoneLadder) ?? null;
       await publishCard({
-        region,
+        region: city ? region : EARTH,
+        areas: [named, zone].filter((a): a is CardArea => a !== null),
         doing: doing.trim() || undefined,
         visibility,
         does: [...does],
@@ -102,6 +175,11 @@
     showListed = false;
     confirming = false;
     region = '';
+    where = 'earth';
+    nation = '';
+    province = '';
+    zoneLadder = EARTH;
+    keptZone = null;
     doing = '';
     withdrawExtras();
   }
@@ -181,8 +259,8 @@
       -->
       A card is signed by a <strong>separate key</strong> that is used for nothing else. Nothing
       in it connects it to your patrols, your peers or your watch — publishing one tells the
-      network your callsign and your metro, and nothing about how you work. A relay carrying
-      both from this phone can still see they come from one phone.
+      network your callsign and whatever place you choose to name, and nothing about how you
+      work. A relay carrying both from this phone can still see they come from one phone.
     </p>
     <p>
       <strong>A card carries no position.</strong> Not your address, not your neighbourhood,
@@ -214,14 +292,58 @@
   <section class="act">
     <h2>{published ? 'Your card' : 'Publish a card'}</h2>
 
-    <label for="region">Where you work</label>
-    <select id="region" bind:value={region}>
-      <option value="">Choose an area</option>
-      {#each data.regions as r (r.slug)}
-        <option value={r.slug}>{r.name} · {r.country}</option>
+    <fieldset class="pick" data-card-where>
+      <legend>Where you say you are</legend>
+      {#each WHERE as w (w.value)}
+        <label class="opt">
+          <input type="radio" name="where" value={w.value} bind:group={where} />
+          <span><strong>{w.label}</strong> <em>{w.says}</em></span>
+        </label>
       {/each}
-    </select>
-    <p class="cost">A metro, and never anything smaller.</p>
+      {#if where === 'nation'}
+        <label class="sr" for="nation">Nation</label>
+        <select id="nation" bind:value={nation}>
+          <option value="">Choose a nation</option>
+          {#each data.nations as n (n.code)}<option value={n.code}>{n.name}</option>{/each}
+        </select>
+      {:else if where === 'province'}
+        <label class="sr" for="province">State or province</label>
+        <select id="province" bind:value={province}>
+          <option value="">Choose a state or province</option>
+          {#each data.provinces as p (p.code)}<option value={p.code}>{p.name} · {p.country}</option>{/each}
+        </select>
+        <Why summary="Why only these">
+          <p>Those of the countries the directory covers, which this app has names for. Elsewhere, name your nation.</p>
+        </Why>
+      {:else if where === 'city'}
+        <label class="sr" for="region">City or town</label>
+        <select id="region" bind:value={region}>
+          <option value="">Choose a city or town</option>
+          {#each data.regions as r (r.slug)}
+            <option value={r.slug}>{r.name} · {r.country}</option>
+          {/each}
+        </select>
+      {/if}
+    </fieldset>
+
+    <fieldset class="pick" data-card-zone>
+      <legend>Zone and Sector</legend>
+      <label class="opt">
+        <input type="radio" name="zone" value={EARTH} bind:group={zoneLadder} />
+        <span><strong>Earth</strong> <em>No Zone or Sector on your card.</em></span>
+      </label>
+      {#each zones as a (a.id)}
+        <label class="opt">
+          <input type="radio" name="zone" value={a.id} bind:group={zoneLadder} />
+          <span><strong>{a.name ?? a.id}</strong> <em>{a.id === keptZone?.id ? 'On your card now' : LEVEL[a.level]}</em></span>
+        </label>
+      {/each}
+      {#if !work}
+        <Why summary="To name a Zone or Sector">
+          <p>Set where you work on the map’s Zones layer. Its Sector, its Zone and its Terra are then offered here, and nothing is sent until you publish.</p>
+        </Why>
+      {/if}
+    </fieldset>
 
     <label for="doing">What you do</label>
     <textarea id="doing" bind:value={doing} rows="2" maxlength={DOING_MAX}
@@ -238,7 +360,7 @@
       <legend>Who can find you</legend>
       {#each VISIBILITY_CHOICES as choice (choice.value)}
         <label class="opt">
-          <input type="radio" name="visibility" value={choice.value} bind:group={visibility} />
+          <input type="radio" name="visibility" value={choice.value} bind:group={visibility} disabled={choice.value === 'board' && !city} />
           <span>
             <strong>{choice.label}</strong>
             <!--
@@ -251,6 +373,11 @@
           </span>
         </label>
       {/each}
+      {#if !city}
+        <Why summary="Why not on a board">
+          <p>Boards are by city. A card that names none is on no board, and anybody you give your address to still finds it.</p>
+        </Why>
+      {/if}
     </fieldset>
 
     <fieldset class="pick">
@@ -330,7 +457,7 @@
       {/if}
     </fieldset>
 
-    <button onclick={publish} disabled={!region || busy}>
+    <button onclick={publish} disabled={!placed || busy}>
       {published ? 'Replace your card' : 'Publish your card'}
     </button>
 
@@ -362,8 +489,8 @@
       {/if}
       <Why summary="Who can see it">
         <p>
-          Anybody browsing that area can see it and ask to pair. You decide who to accept, and
-          ignoring somebody sends them nothing.
+          Anybody who finds it, on your city's board if you chose one or by your address, can ask
+          to pair. You decide who to accept, and ignoring somebody sends them nothing.
         </p>
       </Why>
       <!--
@@ -391,6 +518,8 @@
   </section>
 
   {#if published}
+    <!-- Said on a city's board, so only for a card that names one. -->
+    {#if published.region !== EARTH}
     <section class="act">
       <h2>Out tonight</h2>
       <Why summary="What gets published">
@@ -413,6 +542,7 @@
         />
       </Slot>
     </section>
+    {/if}
 
     <section class="act">
       <h2>Withdraw</h2>

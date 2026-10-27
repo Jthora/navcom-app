@@ -42,8 +42,15 @@ test('the visibility choice is operable and holds', async ({ page }) => {
   await seedDevice(page, OUT);
   await open(page, '/terminal/card/');
 
+  // Earth by default (2026-10-27), and a board is a city's: a first card is off boards until it names one.
+  const board = page.getByRole('radio', { name: /on the board/i });
   const addressOnly = page.getByRole('radio', { name: /address only/i });
-  await expect(page.getByRole('radio', { name: /on the board/i })).toBeChecked();
+  await expect(addressOnly).toBeChecked();
+  await expect(board).toBeDisabled();
+  await page.locator('[data-card-where] input[value="city"]').check();
+  await page.locator('#region').selectOption('st-louis');
+  await board.check();
+  await expect(board).toBeChecked();
   await addressOnly.check();
   await expect(addressOnly).toBeChecked();
 });

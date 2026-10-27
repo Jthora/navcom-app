@@ -16,7 +16,10 @@ export interface WorkSector {
   id: string;
   name: string;
   zone: string;
+  /** Its Zone's and its Terra or Mare's names, for the card to offer them by: absent on one kept before 2026-10-27. */
+  zoneName?: string;
   container: string;
+  containerName?: string;
   /** The manifest's sha256 the Sector was chosen from. */
   manifest: string;
 }

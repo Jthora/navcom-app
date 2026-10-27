@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { readDevice, seedDevice, serviceWorkerReady, open, TEST_SECRET , holdUntil } from './device';
 
 /**
@@ -438,12 +438,21 @@ test.describe('watching for somebody', () => {
   });
 });
 
+/** A card that names its city: the level chosen first, then the metro, as a person does it. */
+async function nameCity(page: Page) {
+  await page.locator('[data-card-where] input[value="city"]').check();
+  await page.locator('#region').selectOption('st-louis');
+}
+
 test.describe('your card', () => {
-  test('publishing needs an area chosen deliberately', async ({ page }) => {
+  test('publishing at Earth needs nothing more, and a level chosen needs its place', async ({ page }) => {
+    // Earth is everybody's default (2026-10-27), and a card naming no place is complete.
     await seedDevice(page, OUT);
     await open(page, '/terminal/card/');
 
     const publish = page.getByRole('button', { name: /publish your card/i });
+    await expect(publish).toBeEnabled();
+    await page.locator('[data-card-where] input[value="city"]').check();
     await expect(publish).toBeDisabled();
     await page.locator('#region').selectOption('st-louis');
     await expect(publish).toBeEnabled();
@@ -463,7 +472,7 @@ test.describe('your card', () => {
     await seedDevice(page, OUT);
     await open(page, '/terminal/card/');
 
-    await page.locator('#region').selectOption('st-louis');
+    await nameCity(page);
     await page.getByRole('button', { name: /publish your card/i }).click();
 
     // Stored on this device even though no relay could be reached -- the card is the
@@ -488,7 +497,7 @@ test.describe('your card', () => {
      */
     await seedDevice(page, OUT);
     await open(page, '/terminal/card/');
-    await page.locator('#region').selectOption('st-louis');
+    await nameCity(page);
     await page.getByRole('button', { name: /publish your card/i }).click();
     await expect(page.getByRole('button', { name: /replace your card/i })).toBeVisible();
 
@@ -505,7 +514,7 @@ test.describe('your card', () => {
   test('withdrawing discards the key rather than claiming to unpublish', async ({ page }) => {
     await seedDevice(page, OUT);
     await open(page, '/terminal/card/');
-    await page.locator('#region').selectOption('st-louis');
+    await nameCity(page);
     await page.getByRole('button', { name: /publish your card/i }).click();
 
     const before = await readDevice(page);

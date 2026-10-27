@@ -129,7 +129,8 @@ describe('the card row is derived from what a card actually emits', () => {
   const TAG_MEANS: Record<string, string> = {
     d: 'Region',
     t: 'what you do',
-    i: 'where else to find you'
+    i: 'where else to find you',
+    area: 'where you say you are'
   };
 
   const cardRow = () => page().split('\n').find((l) => l.startsWith('| Your card |'))!;
@@ -145,6 +146,10 @@ describe('the card row is derived from what a card actually emits', () => {
       1_755_300_000,
       {
         visibility: 'board',
+        areas: [
+          { level: 'city', id: 'st-louis', name: 'St. Louis metro' },
+          { level: 'sector', id: 'zone:laurentia-west/sector:north', name: 'Laurentia west, north' }
+        ],
         does: DOES.map((d) => d.id),
         links: PLATFORMS.map((p) => ({
           platform: p.id,

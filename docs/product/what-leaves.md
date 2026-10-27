@@ -48,7 +48,7 @@ clear** — that is how a relay routes anything at all.
 | `Distress` | `20911` | Watchtower pubkey | Everything else. **No type tag**, so a subscriber filtering types cannot miss one | Operational |
 | Peer presence | `20913` | **The recipient's pubkey** | Callsign, area, position, until | Throwaway |
 | Invite | `1910` | The recipient's pubkey | Everything else | Throwaway |
-| Your card | `10911` | Region, **what you do**, **where else to find you** | *Nothing* — a card is public by definition | Contact |
+| Your card | `10911` | Region, **where you say you are** (Earth unless you choose a nation, state, city, Zone or Sector), **what you do**, **where else to find you** | *Nothing* — a card is public by definition | Contact |
 | Public presence | `20914` | Region | Nothing; the content is deliberately **empty** | Contact |
 | An observation | `1911` | **All of it** — what you saw, when, how you know, your callsign or `anonymous`, and a ±20 km area | Nothing — an observation is evidence, and evidence nobody can read is not evidence | Contact |
 | Its refinement | `1911` | The same, with **exact coordinates**, published 48 hours later | Nothing | Contact |

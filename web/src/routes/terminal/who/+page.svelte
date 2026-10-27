@@ -214,7 +214,7 @@
       <Readout
         value={profile.out ? 'Out tonight' : 'Not listed'}
         tone={profile.out ? 'good' : 'neutral'}
-        sub={card.card.region}
+        sub={profile.areas.length > 0 ? profile.areas.map((a) => a.name ?? a.id).join(' · ') : 'Earth'}
       />
     </Slot>
 

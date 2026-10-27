@@ -8,6 +8,7 @@ export * from './events/kinds.js';
 export * from './events/watch-state.js';
 export * from './events/signal.js';
 export * from './events/presence.js';
+export * from './events/area.js';
 export * from './events/public.js';
 export * from './events/links.js';
 export * from './events/proofs.js';

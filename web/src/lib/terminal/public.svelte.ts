@@ -29,6 +29,7 @@ import {
   type CardLink,
   type PublishedCard
 } from '@navcom/core';
+import { EARTH, readAreas, type CardArea } from '@navcom/core';
 import { contactKey, ensureContactKey, listed, myCard, saveCard, setCardSent, type MyCard } from './card';
 import { loadIdentity } from './identity';
 import { relays } from './relays';
@@ -216,6 +217,8 @@ export const board = {
  * Nothing here is derived, inferred or aggregated. It is one card, rendered.
  */
 let one = $state<PublishedCard | null>(null);
+/** Where that card says its holder is: read beside it, so a page showing only the region pays nothing for it [core: area.ts]. */
+let oneAreas = $state<CardArea[]>([]);
 let oneOut = $state(false);
 let oneLoading = $state(false);
 /** No relay answered the question about this address [audit: relay paths, F20]. */
@@ -225,6 +228,10 @@ let oneCloser: { close(): void } | null = null;
 export const profile = {
   get card(): PublishedCard | null {
     return one;
+  },
+  /** Where its holder says they are, at the level they chose; none is Earth. Their claim, never checked. */
+  get areas(): CardArea[] {
+    return oneAreas;
   },
   /** Whether they are publishing *"out tonight"* right now. */
   get out(): boolean {
@@ -244,6 +251,7 @@ export const profile = {
 
     oneCloser?.close();
     one = null;
+    oneAreas = [];
     oneOut = false;
     oneLoading = true;
     oneUnanswered = false;
@@ -263,6 +271,7 @@ export const profile = {
             // A relay may serve an older replaceable event after a newer one.
             if (one && one.at >= read.at) return;
             one = read;
+            oneAreas = readAreas(event.tags, read.card.region);
             return;
           }
           // Presence is `d`-tagged with the region, which we only know once the card lands.
@@ -314,7 +323,7 @@ export async function publishCard(card: MyCard): Promise<{ took: number; of: num
     Math.floor(Date.now() / 1000),
     // Beside the content rather than inside it -- see `events/links.ts` for why that is the
     // difference between an addition and every older client dropping this operator.
-    { visibility: card.visibility, does: card.does, links: card.links }
+    { visibility: card.visibility, does: card.does, links: card.links, areas: card.areas ?? [] }
   );
   // Saved first, so a draft survives no signal; then sent, and the outcome kept beside it.
   saveCard(card);
@@ -336,7 +345,8 @@ export async function announceListed(): Promise<void> {
   const secret = contactKey();
   const card = myCard();
   const urls = relays();
-  if (!secret || !card || urls.length === 0) return;
+  // Said on a city's board: a card that names none is on no board, so there is nowhere to say it.
+  if (!secret || !card || card.region === EARTH || urls.length === 0) return;
 
   const event = buildPublicPresence(secret, card.region, Math.floor(Date.now() / 1000));
   await Promise.allSettled(pool().publish(urls, event));
