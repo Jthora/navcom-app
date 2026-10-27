@@ -173,7 +173,9 @@ host that draws all of its screens; *missions* is the only entry so far, and its
 out of the page into `MissionsHost.svelte` (six since 2026-10-18, with the place a tap on the map
 opens). Since 2026-10-19 *layers* is the second: the map's layer picker, a Zone or Sector, the
 Sector this phone is in, and a time zone, in `web/src/lib/components/layers/`, and also a line of its
-own in the budget's `MAP_LINES` rather than Deferred's. The page imports no entry. A new screen is a line in the
+own in the budget's `MAP_LINES` rather than Deferred's. *Missions* joined it there on 2026-10-27, its
+ceiling derived at 39,338 B, when Deferred had 63 B left and the screens were 27.9 kB of it; Deferred
+was derived again downward, to 49 kB from 41,967 B, so the move freed no room by itself. The page imports no entry. A new screen is a line in the
 registry, a new entry is a line there and one in `COM_ENTRIES` (`web/scripts/lib/budget.mjs`), and
 neither changes first paint: `budget.test.ts` fails on the build if an entry is imported by first paint
 again, and `boundaries.test.ts` if the component that draws the screens joins it.

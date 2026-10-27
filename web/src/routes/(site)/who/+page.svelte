@@ -19,7 +19,7 @@
    * **Not vetted.** Nobody has checked any of it, exactly as with the 9,635 directory records.
    */
   import { onMount } from 'svelte';
-  import { does, keyPrint, platform as platformOf } from '@navcom/core';
+  import { does, keyPrint, platform as platformOf } from '@navcom/core/card';
   import { publicRoster } from '$lib/public-roster.svelte';
 
   onMount(() => {

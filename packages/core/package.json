@@ -28,6 +28,14 @@
       "types": "./dist/organisations/index.d.ts",
       "default": "./dist/organisations/index.js"
     },
+    "./card": {
+      "types": "./dist/card.d.ts",
+      "default": "./dist/card.js"
+    },
+    "./relays": {
+      "types": "./dist/relays.d.ts",
+      "default": "./dist/relays.js"
+    },
     "./src/*": "./src/*"
   },
   "scripts": {

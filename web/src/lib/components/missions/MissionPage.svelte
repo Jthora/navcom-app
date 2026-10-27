@@ -17,7 +17,7 @@
   import type { Mission } from '@navcom/core';
   import { Panel, Readout, Slot, Why } from '$lib/components/panel';
   import { retiringOf } from '$lib/missions/claims';
-  import { effort, endsIn, endsSoon, placeName, stampUtc } from './format';
+  import { areaName, effort, endsIn, endsSoon, placeName, stampUtc } from './format';
   import NwsWarnings from './NwsWarnings.svelte';
   import TakePart from './TakePart.svelte';
 
@@ -74,9 +74,26 @@
         </span>
       </Slot>
     {/if}
+    <!-- Where it is filed, and the finer places its package names, each as its poster wrote it [interchange spec §4.2, rev 9]. -->
     <Slot k="Where">
-      <Readout value={placeName(m.placement.jurisdiction)} />
+      {#if m.placement.city}
+        <Readout value={m.placement.city.name} verbatim sub={placeName(m.placement.jurisdiction ?? m.placement.city.in)} />
+      {:else}
+        <Readout value={placeName(m.placement.jurisdiction)} />
+      {/if}
     </Slot>
+    {#if m.placement.poi}
+      <Slot k="Place"><Readout value={m.placement.poi} verbatim sub="as its poster names it" /></Slot>
+    {/if}
+    {#if m.placement.zone}
+      <Slot k={m.placement.sector ? 'Sector' : 'Zone'}>
+        <Readout
+          value={areaName(m.placement.sector ?? m.placement.zone)}
+          verbatim
+          sub={m.placement.sector ? `in ${areaName(m.placement.zone)}, as its poster names them` : 'as its poster names it'}
+        />
+      </Slot>
+    {/if}
     <Slot k="Ends">
       <Readout
         value={endsIn(m.validUntil, now)}

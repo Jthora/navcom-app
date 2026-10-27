@@ -59,6 +59,32 @@ describe('counting', () => {
   });
 });
 
+describe('a mission with no ring, placed by the Zone its package names [interchange rev 9]', () => {
+  const named = (d: string, zone: string, sector: string | null = null) => ({ address: `30079:k:${d}`, title: d, zone, sector });
+
+  it('is counted in that Zone and its Terra, and in the Sector it names, near no edge', () => {
+    const c = countsOf(outlines, { 'terra:laurentia': laurentia }, [], {}, [named('drive', 'zone:laurentia-west', 'zone:laurentia-west/sector:north')]);
+    expect(c.placed).toBe(1);
+    expect(c.named).toBe(1);
+    expect(c.in.get('terra:laurentia')?.map((m) => m.title)).toEqual(['drive']);
+    expect(c.in.get('zone:laurentia-west')?.map((m) => m.title)).toEqual(['drive']);
+    expect(c.in.get('zone:laurentia-west/sector:north')?.map((m) => m.title)).toEqual(['drive']);
+    expect(c.near.size).toBe(0);
+  });
+
+  it('is counted beside the missions placed by their rings, in no Sector when it names none', () => {
+    const c = countsOf(outlines, { 'terra:laurentia': laurentia }, [at(-100, 55, 'depot')], {}, [named('drive', 'zone:laurentia-west')]);
+    expect(c.in.get('zone:laurentia-west')?.map((m) => m.title)).toEqual(['depot', 'drive']);
+    expect(c.in.get('zone:laurentia-west/sector:north')?.map((m) => m.title)).toEqual(['depot']);
+    expect([c.placed, c.named]).toEqual([2, 1]);
+  });
+
+  it('is placed nowhere when the Zone it names is not in these outlines, and stays with those filed by jurisdiction', () => {
+    const c = countsOf(outlines, {}, [], {}, [named('elsewhere', 'zone:not-in-these')]);
+    expect([c.placed, c.named, c.in.size]).toEqual([0, 0, 0]);
+  });
+});
+
 describe('near an edge, at every level it is counted in', () => {
   const sectorDrift = { 'terra:laurentia': json<Topology>('terra-laurentia.json').navcom?.simplified_m as number };
 

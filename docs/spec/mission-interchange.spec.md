@@ -1,6 +1,6 @@
 # Mission interchange — NavCom ⇄ Starcom / Mecha Jono
 
-**NavCom's side of the boundary, rev 8 — 2026-10-18.** Checked against Starcom rev 15 (`8ecd1045`)
+**NavCom's side of the boundary, rev 9 — 2026-10-27.** Checked against Starcom rev 15 (`8ecd1045`)
 and Mecha Jono Interchange 3.20 (manifest, 2026-10-16); Starcom's revs 16 to 19 read on 2026-10-27
 (`ec6714b9`), and what NavCom's reader does with them is under §4.3. Starcom's side is
 [`starcom.app/spec/starcom-navcom-interchange.spec.md`](https://starcom.app/spec/starcom-navcom-interchange.spec.md).
@@ -78,6 +78,20 @@ it waits for the owner's OK, as rev 7 does.
   no finer than `1km` while Q19 is open; one with only a jurisdiction shades it, and a
   subdivision NavCom has no outline for lights its country, so `ke-30` lights Kenya (§4.2)
 
+**Rev 9** (2026-10-27), **ASKED**: name the place. The owner asks every publisher to say which Zone and
+Sector a field mission is in, with Starcom's own tags, and, where it helps, the city and a place of
+interest. **Each is optional, and nothing warns about one that is missing**: missions differ, and a
+desk mission has no place to name. A boots-on-the-ground mission with no place, though, leaves an
+operator asking where. NavCom reads all of them from today (§4.2, *Naming the place*):
+
+- **`["zone", id, name]` and `["zone_sector", id, name]`**, exactly as Interchange 3.8 puts them on
+  Mecha Jono's notes, by ZSP 2.0 ids, final since Starcom's swap of 26 October. A mission with no
+  point that names its Zone is counted in that Zone on NavCom's map, where until now it was counted
+  apart as *by jurisdiction*
+- **`["city", name, code]`**, a city or town by name with the code of the country or province it is
+  in, and **`["poi", name]`**, a place of interest on public record: a park, a library, a trailhead
+- **State, province and nation stay `jurisdiction`**, as today: `us-ca`, `gb-sct`, `ke`
+
 **For Starcom:** a client that takes the newest kind `10050` by date is redirected by a list the
 exposed key signs dated ahead; and a reader that keeps the newest version across both keys lets the
 old key override the new one by dating later. Both are answered in §3 and §5.0.
@@ -124,6 +138,7 @@ from whether a builder exists, and this document follows the same discipline.
 | `geo_precision: address` (§4.2) | PROPOSED, rev 8 — NavCom's reader keeps it, and its map draws it no finer than `1km` while Q19 is open; Q19 asks whether you will send it |
 | Kind `1911` observation (raw intel) | BUILT — builder and contract exist; published at `/.well-known/navcom-intel.json` |
 | Kind `1912` report | LIVE — operators on navcom.app send them, open or sealed (§5.2); the contract says `emitted: true` |
+| Naming the place: `zone`, `zone_sector`, `city`, `poi` (§4.2, rev 9) | ASKED of every publisher, all optional. LIVE in NavCom's reader from 2026-10-27: a mission's screen names them, and one with no point is counted in the Zone it names |
 | Starcom's revs 18 and 19 in NavCom's reader (§4.3) | LIVE from 2026-10-27: a package over 131,072 bytes or with a list over 1,000 entries is refused as Starcom's reader refuses it, and what a package made in Starcom asks to count, at `metadata.format.effect`, is read after Mecha Jono's field |
 | Claims (§5.1) | LIVE — operators on navcom.app send them, open and sealed; three rules PROPOSED (§10, Q11–Q13) |
 | Settlement, challenge, witness (§5.3) | LIVE on NavCom's side: each operator sees how their reports settled, and any operator can read a mission's reports, witness one (if their device took part) or challenge one, by name |
@@ -280,6 +295,29 @@ country (2026-10-18).
   whatever it declares, and does not draw it as a place: the jurisdiction is shaded instead
 - NavCom never decides which country a point is in from a drawn border. At any public basemap's
   resolution, El Paso's own shelters plot inside Mexico. Placement is by region and jurisdiction
+
+**Naming the place — ASKED, rev 9.** Asked of every publisher by NavCom's owner on 2026-10-27, and read
+by NavCom from that day. **Every one is optional, and no reader warns about one that is absent.** Put
+each on a package where it is true:
+
+| Tag | Value | NavCom does |
+|---|---|---|
+| `zone` | `["zone", "zone:east-african-rift", "East African Rift Zone"]`: a ZSP 2.0 Zone's id and its name, as Interchange 3.8 writes it on notes | Names it on the mission's screen. **A mission with no point is counted in that Zone** on the map, near no edge, since you said which |
+| `zone_sector` | `["zone_sector", "zone:east-african-rift/sector:afar", "Afar Sector"]`. Never `sector`, which Hero Watch's relief notes use for something else | The same, a level down. A Sector alone names its Zone |
+| `jurisdiction` | Unchanged: the nation (`ke`) or the state or province (`us-ca`, `gb-sct`), the most specific winning | Files the mission there, as today |
+| `city` | `["city", "Gatineau", "ca-qc"]`: a city or town by name, with the code of the country or province it is in | Shows it as where the mission is, over its province |
+| `poi` | `["poi", "Gatineau river launch"]`: a place of interest **on public record** — a park, a library, a courthouse, a trailhead | Shows it as the mission's place. Its point, if it has one, is `geo` with `geo_kind: subject_location`, as above |
+
+- **Invariant 1 binds every one.** A `poi` is never a person, a home, an encampment, an informal
+  sleeping site or a place people sleep, and no name may say where somebody is
+- **Two that disagree name nothing**, as two jurisdictions file nowhere: two Zones, or a Sector outside
+  the Zone beside it. The same one twice is one
+- **A name is one line of at most 80 characters.** Control and direction characters are removed, and a
+  longer one is dropped rather than cut
+- **A point wins on NavCom's map.** A mission with a `subject_location` is counted where its ring is
+  drawn, whatever Zone it names; the names are still shown on its screen
+- **Under a key whose missions show at their jurisdiction only** (§3), none of these is shown either:
+  a named place is where a planted lure would send somebody, as a point is
 
 ### 4.3 Objectives — what an operator sees
 
@@ -730,6 +768,15 @@ Answered by Starcom on 2026-10-06; all eight accepted. Three are Mecha Jono's to
 then Mecha Jono records each claim against its package, and no claim on a campaign moves its
 `mission_state`.
 
+### New in rev 9 — name the place (ASKED)
+
+Not a question with a default: an ask, from NavCom's owner, of Mecha Jono and of everyone who publishes
+through Starcom. Nothing changes for a package that does not answer it.
+
+| | Ask | What NavCom does meanwhile |
+|---|---|---|
+| A1 | Put `zone` and `zone_sector` on each field mission whose place you know, by the ids of ZSP 2.0 as Starcom's swap of 26 October fixed them; and `city` and `poi` where they help somebody find it (§4.2, *Naming the place*) | Reads them all from 2026-10-27. A field mission naming none is counted apart on the Zones map as *by jurisdiction*, as it is today |
+
 ### New in rev 8 — where a package may put its point (PROPOSED)
 
 | | Question | NavCom's default if unanswered |
@@ -897,7 +944,8 @@ to read without their address reaching anybody, Cloudflare included.
 
 ## Appendix — a field mission, as NavCom would like to receive it
 
-Your live heat-relief package, with the three AGREED additions and the §7.1 fix:
+Your live heat-relief package, with the three AGREED additions and the §7.1 fix. It names no Zone
+(rev 9): a campaign across a whole state spans several, and a package names one Zone or none:
 
 ```json
 { "kind": 30079, "pubkey": "6301c4d0…9692", "tags": [

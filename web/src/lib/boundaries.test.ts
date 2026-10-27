@@ -114,11 +114,18 @@ const INVISIBLE: { measured: string; modules: Record<string, RegExp | null> } = 
  * fingerprint can see them. Recognised now by their markers [INVISIBLE]. Without them here, step 24
  * taking `package.ts` out would have emptied this list and read as terminal pages free of core
  * missions while two of its modules were still on every one.
+ *
+ * 2026-10-27: the roster is free of all three. It read core through the index, so every module core
+ * has was in its dependencies and it loaded their shared chunk; it reads `@navcom/core/card` now.
+ * The terminal still carries them, and is step 24's.
  */
 const BASELINE = {
   measured: '2026-10-10',
   terminal: ['packages/core/src/missions/package.ts', 'packages/core/src/missions/claim.ts', 'packages/core/src/missions/seal.ts'],
-  roster: ['packages/core/src/missions/package.ts', 'packages/core/src/missions/claim.ts', 'packages/core/src/missions/seal.ts']
+  // Emptied 2026-10-27: the roster imports core by `@navcom/core/card` and `/relays`, which reach no
+  // mission module, and the relay list moved out of the reader [core: mission-relays.ts]. 95.4 kB of
+  // script to 78.6 kB.
+  roster: [] as string[]
 };
 
 // ─── Recognising a module in a built chunk ────────────────────────────────────────────────────

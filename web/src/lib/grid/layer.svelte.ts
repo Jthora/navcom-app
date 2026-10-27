@@ -26,6 +26,7 @@ import type { Shape } from './topology';
 import type { HazardsHeld } from './layers/hazards';
 import type { SpheresFile } from './layers/spheres';
 import type { ZonesOutlines } from './layers/zones';
+import type { Named } from './layers/zone-missions';
 
 export type MapLayer = 'nations' | 'zones' | 'spheres' | 'timezones' | 'none';
 export const MAP_LAYERS: readonly MapLayer[] = ['nations', 'zones', 'spheres', 'timezones', 'none'];
@@ -261,11 +262,16 @@ export const layerData = {
   regionAges: null as ((region: string, record?: number) => RegionAge | null) | null,
   /**
    * The open missions the map draws, as the map has them: the rings of those whose package locates
-   * their subject, how many are filed by jurisdiction only, and the feed's age, null while the missions
-   * have not been read, which is unknown and not none. Set by the map and read by the Zones' counts, so
-   * no layer's code reads the mission feed itself.
+   * their subject; of the rest, those whose package names its Zone, and how many have no ring at all;
+   * and the feed's age, null while the missions have not been read, which is unknown and not none. Set
+   * by the map and read by the Zones' counts, so no layer's code reads the mission feed itself.
    */
-  missions: null as { rings: readonly PlaceOfRecord[]; unplaced: number; age: string | null } | null,
+  missions: null as {
+    rings: readonly PlaceOfRecord[];
+    named: readonly Named[];
+    unplaced: number;
+    age: string | null;
+  } | null,
   /**
    * The world's countries as the map decoded them, for a layer that draws over them by code: Spheres'
    * members. Set by the map when its geometry arrives.

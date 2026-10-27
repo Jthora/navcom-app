@@ -9,8 +9,8 @@
  */
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('../src/missions/package.js', async (importOriginal) => {
-  const real = await importOriginal<typeof import('../src/missions/package.js')>();
+vi.mock('../src/mission-relays.js', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../src/mission-relays.js')>();
   return {
     ...real,
     MISSION_RELAYS: ['wss://mirror two.example', 'wss://dotted.example.', 'WSS://Upper.Example:7777', 42, ''] as unknown as string[]

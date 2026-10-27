@@ -49,11 +49,13 @@
   import { onMount, tick } from 'svelte';
   import type { Mission } from '@navcom/core';
   import type { Screen } from '$lib/com/screens';
+  import type { Named } from '$lib/grid/layers/zone-missions';
   import { HEIGHT, METRES_PER_UNIT, coastOf, countryName, decode, edgeOfEarth, filedUnder, inside, lightsOf, unproject, type Ring, type Shape, type Topology } from '$lib/grid/topology';
   import { LIT_SLOP, pick, screenAt, unitAt, type Hit, type View } from '$lib/grid/pick';
   import { daylightDrawn, layerData, loaded, mapKey, mapLayers, type Counted, type DrawnLayer, type Ink, type Overlay, type Swatch } from '$lib/grid/layer.svelte';
   import { FILLED, SWATCH_PATHS } from '$lib/grid/swatches';
   import {
+    namedOfMissions,
     placesOfDirectory,
     placesOfMissions,
     type PlaceOfRecord,
@@ -253,6 +255,8 @@
    * minute on a phone left open on the map.
    */
   let rings: PlaceOfRecord[] = [];
+  /** Those with no ring whose package names their Zone, which the Zones' counts place by that name. */
+  let byName: Named[] = [];
   let ringsOf = '';
   /** Regions with places the map does not draw: their squares stay where the records take over. */
   const held = $derived(directory?.regions.filter((r) => r.kind === 'region' && (r.unmapped ?? 0) > 0) ?? []);
@@ -1575,12 +1579,13 @@
   $effect(() => {
     const now = active.map((m) => {
       const p = m.placement.point;
-      return `${m.address} ${m.title} ${m.placement.jurisdiction} ${p ? `${p.kind} ${p.lon} ${p.lat} ${p.precision}` : ''}`;
+      return `${m.address} ${m.title} ${m.placement.jurisdiction} ${p ? `${p.kind} ${p.lon} ${p.lat} ${p.precision}` : ''} ${m.placement.sector?.id ?? m.placement.zone?.id}`;
     });
     const key = now.join('\n');
     if (key !== ringsOf) {
       ringsOf = key;
       rings = placesOfMissions(active);
+      byName = namedOfMissions(active);
       relight();
       request();
     }
@@ -1588,7 +1593,7 @@
     const unplaced = active.length - rings.length;
     const had = layerData.missions;
     if (!had || had.rings !== rings || had.unplaced !== unplaced || had.age !== missionsAge) {
-      layerData.missions = { rings, unplaced, age: missionsAge };
+      layerData.missions = { rings, named: byName, unplaced, age: missionsAge };
       loaded();
     }
   });

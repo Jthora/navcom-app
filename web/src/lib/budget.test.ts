@@ -157,7 +157,13 @@ type Lines = NonNullable<Parameters<typeof measure>[0]['lines']>;
 /** The fixture's own Com registry: one entry, as the landing page had before the map's layers. */
 const FIXTURE_ENTRIES = { missions: MISSIONS };
 
-function run(f: ReturnType<typeof fixture>, lines?: Lines) {
+/**
+ * The real lines, less the mission screens': the fixture's missions entry stands for a Com entry that
+ * is reported and charged to Deferred, which every test of the tiers is about. That the real one is a
+ * line of its own is held below, with the line it is.
+ */
+const REPORTED: Lines = Object.fromEntries(Object.entries(MAP_LINES).filter(([name]) => name !== 'missions'));
+function run(f: ReturnType<typeof fixture>, lines: Lines = REPORTED) {
   const out: string[] = [];
   const { report, failed } = measure({ build: f.build, manifestPath: f.manifestPath, log: (l: string) => out.push(l), lines, comEntries: FIXTURE_ENTRIES });
   return { report, failed, out: out.join('\n') };
@@ -385,7 +391,8 @@ describe('the budget, run on a build whose answers are known', () => {
       // component renders.
       css: f.sum(`${A}/assets/map.css`, `${A}/assets/missions.css`, `${A}/assets/lazy.css`)
     });
-    expect(DEFERRED).toEqual({ limit: 69 * 1024, warn: 62 * 1024 });
+    // Derived down on 2026-10-27, when the mission screens left it for a line of their own.
+    expect(DEFERRED).toEqual({ limit: 49 * 1024, warn: 44 * 1024 });
   });
 
   it('still fails the build when what loads later outgrows the ceiling', () => {
@@ -578,7 +585,7 @@ describe('the map’s layers, each a line of its own', () => {
   });
 
   it('declares each of the map’s new layers, with every ceiling ~20% over the measurement it came from', () => {
-    expect(Object.keys(MAP_LINES).sort()).toEqual(['ages', 'daylight', 'fine', 'hazards', 'labels', 'layers', 'spheres', 'timezones', 'zone-missions', 'zones', 'zones-container', 'zones-lookup']);
+    expect(Object.keys(MAP_LINES).sort()).toEqual(['ages', 'daylight', 'fine', 'hazards', 'labels', 'layers', 'missions', 'spheres', 'timezones', 'zone-missions', 'zones', 'zones-container', 'zones-lookup']);
     for (const [name, line] of Object.entries(MAP_LINES)) {
       // A layer's own module, or a Com entry of the same name: the picker's screens are `layers`.
       if (line.code !== null) expect([`${LAYER_CODE}${name}.ts`, COM_ENTRIES[name]], name).toContain(line.code);
@@ -595,6 +602,9 @@ describe('the map’s layers, each a line of its own', () => {
     // The picker and the screens a layer opens are Com's entry and this line's at once, so Deferred never holds them.
     expect(MAP_LINES.layers!.code).toBe(COM_ENTRIES.layers);
     expect(MAP_LINES.layers!.files).toBeNull();
+    // So are the mission screens, since 2026-10-27: a line with a ceiling, and nothing of theirs in Deferred.
+    expect(MAP_LINES.missions!.code).toBe(COM_ENTRIES.missions);
+    expect(MAP_LINES.missions!.js).toMatchObject({ measured: 39_338, limit: 47_205, warn: 42_485 });
     // Natural Earth's time zones, as D8 decided them, at the finer setting, with each region's own zone beside them.
     expect(MAP_LINES.timezones.data).toMatchObject({ measured: 53_698, limit: 63 * 1024, warn: 57 * 1024 });
     // Every line whose code is written has a ceiling for it, and every file the layers fetch has one too.

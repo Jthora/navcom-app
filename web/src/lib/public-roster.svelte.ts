@@ -27,7 +27,8 @@
  */
 
 import type { Event } from 'nostr-tools/core';
-import { KIND_CARD, PUBLIC_LABEL, readCard, type PublishedCard } from '@navcom/core';
+// By its own path, not the index: through the index this page loaded the whole mission reader [core: card.ts].
+import { KIND_CARD, PUBLIC_LABEL, readCard, type PublishedCard } from '@navcom/core/card';
 import { relays } from './terminal/relays';
 import { subscribeLive } from './terminal/subscribe';
 import { isHidden } from './hidden';

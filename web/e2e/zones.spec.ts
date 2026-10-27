@@ -244,6 +244,15 @@ const clearOfIt = () =>
     extra: [['geo', 'lat:50,lon:-45'], ['geo_kind', 'subject_location'], ['geo_precision', 'address']]
   });
 
+/** No point, and its package names its Sector in Laurentia East [interchange rev 9]: placed by that name. */
+const NAMED_D = 'test-zone-named';
+const named = () =>
+  mission(DESK_KEY, NAMED_D, {
+    title: 'Sandbags along the river',
+    jurisdiction: 'ca-qc',
+    extra: [['zone_sector', 'zone:laurentia-east/sector:north', 'Laurentia east, north'], ['city', 'Gatineau', 'ca-qc'], ['poi', 'Gatineau river launch']]
+  });
+
 async function withMissions(page: Page, seed: Parameters<typeof seedDevice>[1]) {
   await page.clock.setFixedTime(DURING);
   await seedDevice(page, seed);
@@ -290,6 +299,29 @@ test.describe('open missions counted by Zone', () => {
     await page.locator('[data-back]').click();
     await page.locator('[data-zone-open="zone:laurentia-east"]').click();
     await expect(page.locator('[data-screen="zone"][data-zone="zone:laurentia-east"] [data-slot="open-missions"]')).toContainText('Nothing open');
+  });
+
+  test('a mission with no point is counted in the Zone its package names, listed there, and its screen names its places', async ({ page }) => {
+    await serveZones(page);
+    await withMissions(page, { relayEvents: [named(), filed()], __noStorage: true });
+    await expect(page.locator('[data-missions="open"]')).toContainText('live');
+    const screen = await chooseZones(page);
+    // Placed by its name, so it is in a Zone; the national one is still by jurisdiction alone.
+    await expect(page.locator('[data-legend="zones"]')).toContainText('Missions in Zones: 1 · by jurisdiction: 1');
+    await frame(page);
+    const east = await screenAt(page, ...EAST_LABEL);
+    expect(east.uncovered, 'Laurentia East’s label should be in view').toBe(true);
+    expect(await inkNear(page, east.x, east.y, 8), 'no count at Laurentia East’s label').toBeGreaterThan(20);
+    await screen.locator('[data-zone-open="terra:laurentia"]').click();
+    await page.locator('[data-zone-open="zone:laurentia-east"]').click();
+    const zone = page.locator('[data-screen="zone"][data-zone="zone:laurentia-east"]');
+    await expect(zone.locator('[data-slot="open-missions"]')).toContainText('1 open mission');
+    await expect(zone.locator('[data-slot="not-placed"]')).toContainText('1 by jurisdiction only');
+    await zone.locator(`[data-zone-mission$="${NAMED_D}"]`).click();
+    const page_ = page.locator(`[data-screen="mission"][data-mission="${NAMED_D}"]`);
+    await expect(page_.locator('[data-slot="where"]')).toContainText('Gatineau');
+    await expect(page_.locator('[data-slot="place"]')).toContainText('Gatineau river launch');
+    await expect(page_.locator('[data-slot="sector"]')).toContainText('Laurentia east, north');
   });
 
   test('a count with a mission near its edge is dashed, where one clear of any edge is solid', async ({ page }) => {

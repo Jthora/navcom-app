@@ -14,7 +14,7 @@
  * be explainable to somebody pointing a proxy at it.
  */
 
-import { DEFAULT_RELAYS } from '@navcom/core';
+import { DEFAULT_RELAYS } from '@navcom/core/relays';
 import { get, set } from './storage';
 import { watchRelayList } from './watch-relays';
 import { refusedOf, usable, type Refused } from './relay-url';

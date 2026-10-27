@@ -1,6 +1,6 @@
 import { normalizeURL } from 'nostr-tools/utils';
 
-import { MISSION_RELAYS, THE_RECORD } from './missions/package.js';
+import { MISSION_RELAYS, THE_RECORD } from './mission-relays.js';
 
 /**
  * Where an operator starts.

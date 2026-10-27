@@ -39,6 +39,9 @@ export function placeName(jurisdiction: string | null): string {
   return jurisdiction.toUpperCase();
 }
 
+/** A Zone or Sector a package names, by the name it gives, or by its id's last word where it gives none. */
+export const areaName = (a: { id: string; name: string | null }): string => a.name ?? a.id.slice(a.id.lastIndexOf(':') + 1);
+
 /** Whether a mission filed under a jurisdiction belongs to a place: the map's test too, so it lives there. */
 export { filedUnder };
 

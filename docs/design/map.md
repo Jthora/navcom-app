@@ -487,10 +487,10 @@ Budgets, all of them targets to measure rather than claims:
 
   Re-vendor the organisations with them, `--organisations-sha256 <hex>`, the digest of
   `public/geopolitical/organisations/manifest.json` at the same commit.
-- **A Zone in the interchange.** NavCom's packages carry no Zone, so a mission filed only by
-  jurisdiction cannot be counted in one without inventing a place (§8, Missions on Zones). Counting them
-  honestly needs a `["zone", id]` or `["zone_sector", id]` tag from the publisher: a rev 9 ask to
-  partners, which is the owner's to make. Starcom's ids are final since its swap of 26 October.
+- **A Zone in the interchange.** Asked of partners in rev 9 (the owner, 2026-10-27), and read since: a
+  mission with no point that names its Zone or Sector is counted there (§8, Missions on Zones), and its
+  screen names its city, a place of interest and its Sector as its poster wrote them. Until packages carry
+  them, a mission filed only by jurisdiction is still counted apart.
 - **Hazards' open choices, the owner's** (§8). GDACS's `SEARCH` is asked unparameterised, 124,555 B,
   64% of a round; `?eventlist=FL;DR;TC` would roughly halve it but is unmeasured and its syntax
   unverified, and a wrong parameter is a feed that reads *not read: unknown* for ever, so it waits for one
@@ -797,7 +797,13 @@ region reaches. The owner may have meant provinces; it is a question for them.
 missions already on the phone: *Missions in Zones: 1 · by jurisdiction: 4*, with the feed's own age on the key's
 missions line above it. Each is placed by the ring the map draws for it, where its package locates its subject, at
 about a kilometre or coarser; **a mission filed only by jurisdiction names no Zone, and is counted apart
-rather than put in one**. Counted at the deepest level the phone holds: an open container's Sectors,
+rather than put in one**. **With no ring, a mission whose package names its Zone or Sector is counted there**
+(2026-10-27, interchange rev 9): Starcom's `["zone", id, name]` and `["zone_sector", id, name]`, which the owner
+asked partners to carry, both optional and never warned about. Its publisher said which, so it is near no edge;
+a Zone these outlines do not hold places it nowhere, and it stays with those by jurisdiction. A ring wins over a
+name, since the count is of what the map draws, and a Zone's badge gives way to its Sectors' only when their
+counts hold all of the Zone's, so one that names its Zone and no Sector is never dropped from view at a closer
+zoom. Counted at the deepest level the phone holds: an open container's Sectors,
 else its Zones, else the Terra or Mare. A badge, a rounded rectangle of the ground ringed in ink with its figure in
 ink, never round, which is a mission's, hangs at each area's label point, moved a step, within its own area, off a mission's ring
 or the key where it would sit under one, a point inside its full-resolution outline that the vendoring

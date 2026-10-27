@@ -23,6 +23,7 @@ import type { ConsoleCentroid, ConsoleRegionFigures } from '$lib/console/types';
 import type { GeoPrecision, Mission, ResourceRecord, ResourceType } from '@navcom/core';
 import { atPrecision, isConfidential, locatingLeaks } from '@navcom/core';
 import { project } from './topology';
+import type { Named } from './layers/zone-missions';
 
 declare const OF_RECORD: unique symbol;
 
@@ -149,6 +150,18 @@ export function placesOfMissions(missions: readonly Mission[]): PlaceOfRecord[] 
     out.push(at('mission', lon, lat, { address: m.address, title: m.title, metres: METRES[drawn] }));
   }
   return out;
+}
+
+/**
+ * Of the missions with no ring, those whose package names their Zone [interchange spec §4.2, rev 9]:
+ * what the Zones' counts place by that name, since nothing is drawn to place them by.
+ */
+export function namedOfMissions(missions: readonly Mission[]): Named[] {
+  return missions.flatMap((m) => {
+    const zone = m.placement.zone?.id;
+    const ringed = m.placement.point?.kind === 'subject_location';
+    return zone && !ringed ? [{ address: m.address, title: m.title, zone, sector: m.placement.sector?.id ?? null }] : [];
+  });
 }
 
 /**

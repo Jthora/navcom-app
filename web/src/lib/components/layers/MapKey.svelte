@@ -32,7 +32,7 @@
     ];
     if (chosen === 'zones') {
       out.push(
-        { id: 'count', line: 'M1 4.5h14v7H1z', text: 'Open missions counted in a Zone or Sector, where each package puts its subject' },
+        { id: 'count', line: 'M1 4.5h14v7H1z', text: 'Open missions counted in a Zone or Sector, where each package puts its subject or the Zone it names' },
         { id: 'count-near', line: 'M1 4.5h14v7H1z', dash: true, text: 'The same, with one near an edge the drawn lines cannot settle' }
       );
     }

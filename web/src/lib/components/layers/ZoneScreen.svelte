@@ -16,15 +16,16 @@
    * on this phone only [D7].
    *
    * And what is open there: **missions, counted, never people**, from the missions already on this
-   * phone, placed by the point each package gives its subject and never by its jurisdiction, which
-   * names no Zone. Those are counted apart and said to be [map.md, Missions on Zones].
+   * phone, placed by the point each package gives its subject, or with none by the Zone it names, and
+   * never by its jurisdiction, which names no Zone. Those are counted apart and said to be [map.md,
+   * Missions on Zones].
    */
   import type { Mission } from '@navcom/core';
   import { Panel, Readout, Slot } from '$lib/components/panel';
   import type { Nav } from '$lib/com/screens';
   import type { Feed } from '$lib/missions/live';
   import { layerData, mapLayers } from '$lib/grid/layer.svelte';
-  import { placesOfMissions } from '$lib/grid/places';
+  import { namedOfMissions, placesOfMissions } from '$lib/grid/places';
   import { keepWork, workSector } from './work';
 
   let { id, nav, active = [], feed }: { id: string; nav: Nav; active?: readonly Mission[]; feed?: Feed } = $props();
@@ -40,6 +41,7 @@
     return `as of ${t.toISOString().slice(0, 16).replace('T', ' ')} UTC, offline`;
   });
   const rings = $derived(placesOfMissions(active).flatMap((p) => (p.kind === 'mission' ? [p] : [])));
+  const byName = $derived(namedOfMissions(active));
 
   /** The Zones' own code, which reads them: loaded by `import()`, as the map loads it [budget.mjs MAP_LINES]. */
   let zones = $state.raw<typeof import('$lib/grid/layers/zones') | null>(null);
@@ -79,7 +81,7 @@
   const gone = $derived(isSector && chain !== null && containerHere && chain.sector === null);
   const containerWord = $derived(chain?.container.props.level === 'mare' ? 'Mare' : 'Terra');
   const openMission = (address: string) => nav.open({ kind: 'mission', address });
-  const counted = $derived(counting && outlines ? counting.countsOf(outlines, data.sectors, rings, data.sectorDrift) : null);
+  const counted = $derived(counting && outlines ? counting.countsOf(outlines, data.sectors, rings, data.sectorDrift, byName) : null);
   const openHere = $derived(counted?.in.get(id) ?? []);
   const nearHere = $derived(counted?.near.get(id) ?? []);
 
@@ -164,7 +166,7 @@
           <Readout
             value={counting!.openSaid(openHere.length)}
             tone="neutral"
-            sub="{age}; placed by where each package puts its subject"
+            sub="{age}; placed by where each package puts its subject, or the Zone it names"
           />
         {/if}
       </Slot>
@@ -179,9 +181,9 @@
         <!-- The drawn lines are quantised; which side of one a point that close is on, they cannot say. -->
         <Slot k="Near an edge"><Readout value="Near its edge" tone="cold" sub="{n.mission.title}: may be in {n.with.join(', ')} instead" /></Slot>
       {/each}
-      {#if age !== null && active.length > rings.length}
+      {#if age !== null && counted && active.length > rings.length + counted.named}
         <Slot k="Not placed">
-          <Readout value="{active.length - rings.length} by jurisdiction only" tone="cold" sub="filed under a country or province, and placed in no Zone" />
+          <Readout value="{active.length - rings.length - counted.named} by jurisdiction only" tone="cold" sub="filed under a country or province, and placed in no Zone" />
         </Slot>
       {/if}
       <Slot k="Source">

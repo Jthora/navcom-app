@@ -133,6 +133,12 @@ export const SURFACES = {
    *
    * The floor here is signature verification. An unverified card on a public page is a
    * forgery anybody can publish, so the crypto is not the part to trim.
+   *
+   * **It crept to 97,720 B by 2026-10-27, over the ceiling, and none of it was the roster's.** The
+   * page read core through its index, so every module core has was among its dependencies, and the
+   * bundler handed it their shared chunk: the mission reader rode in, and grew with every rule added
+   * to it. It reads `@navcom/core/card` and `/relays` now, which reach no mission module, and measured
+   * 78.6 kB, its derivation's own figure. The ceiling is unchanged.
    */
   roster: {
     label: 'public roster',
@@ -687,6 +693,31 @@ export const MAP_LINES = {
           '[outside.ts CAPS].'
       }
     }
+  },
+  /*
+   * Com's mission screens: the list, a mission, taking part, a report, settling and witnessing. Not a
+   * layer, a Com entry, named here so its code is charged to a line of its own and not to Deferred, as
+   * the layers' screens are [COM_ENTRIES]. Until 2026-10-27 they were most of Deferred, which held
+   * them, the mount tier and everything else at once, at 68.9 kB of 69 kB.
+   */
+  missions: {
+    when: 'opening a mission, or the list of them',
+    code: 'src/lib/components/missions/index.ts',
+    files: null,
+    per: 'all',
+    js: {
+      limit: 47_205,
+      warn: 42_485,
+      measured: 39_338,
+      why:
+        'Derived 2026-10-27 at 39,338 B, at 77536253, when the mission screens left Deferred for a line ' +
+        'of their own: Deferred was at 68.9 kB of 69 kB, with 63 B left, and the screens were 27.9 kB of ' +
+        'it that nothing else loads. Taken out, Deferred measured 41,967 B and was derived again from ' +
+        'that, downward, so nothing grew room by the move. This line counts every chunk the screens ' +
+        'reach beyond first paint and mount, the 10.5 kB they share with other screens included, which ' +
+        'Deferred also counts, once.'
+    },
+    data: null
   }
 };
 
@@ -733,8 +764,16 @@ export const MAP_LINES = {
  * 112.7 kB of 129 kB. The rest is the place screen reading a region's own clock. The same ~20% headroom,
  * and the warning 7% above the measurement: 62 kB, the whole kilobyte nearest the usual 8% without
  * passing it.
+ *
+ * **Re-derived 2026-10-27, downward, at 41.0 kB measured** (41,967 B at 77536253, from 70,593 B).
+ * Com's mission screens were 27.9 kB of it that nothing else loads, and they are a line of their own
+ * now [MAP_LINES, `missions`], as the layers' screens have been since 2026-10-18; what they share
+ * with anything else stays here. It had 63 B left, so the next change to mount, the live feed's
+ * reader included, would have failed it whatever it was. Derived down rather than kept at 69 kB, so
+ * the move frees no room by itself: 49 kB, the whole kilobyte nearest ~20% without passing it, and
+ * the warning at 44 kB, the nearest to 8% without passing it.
  */
-export const DEFERRED = { limit: 69 * 1024, warn: 62 * 1024 };
+export const DEFERRED = { limit: 49 * 1024, warn: 44 * 1024 };
 
 /*
  * What every visit to the root fetches as it mounts, beyond first paint: the mount tier's script —

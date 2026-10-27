@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Settlement } from '@navcom/core';
-import { alreadyReported, effort, endsIn, endsSoon, filedUnder, kmBetween, placeName, releaseReadout, stampUtc, standingOf } from './format';
+import { alreadyReported, areaName, effort, endsIn, endsSoon, filedUnder, kmBetween, placeName, releaseReadout, stampUtc, standingOf } from './format';
 
 const NOW = Date.UTC(2026, 9, 6, 20, 0, 0);
 const at = (hoursFromNow: number) => Math.floor(NOW / 1000) + hoursFromNow * 3600;
@@ -13,6 +13,12 @@ describe('how a mission’s place and end read', () => {
     // Not a guess: a code it does not know reads as that code.
     expect(placeName('gb-eng')).toBe('GB-ENG');
     expect(placeName(null)).toBe('—');
+  });
+
+  it('names a Zone or Sector by the name its package gives, or by its id’s last word', () => {
+    expect(areaName({ id: 'zone:east-african-rift', name: 'East African Rift Zone' })).toBe('East African Rift Zone');
+    expect(areaName({ id: 'zone:east-african-rift', name: null })).toBe('east-african-rift');
+    expect(areaName({ id: 'zone:east-african-rift/sector:afar', name: null })).toBe('afar');
   });
 
   it('names a country from its own code, from the phone’s tables, and a subdivision it cannot name as its code', () => {

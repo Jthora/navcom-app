@@ -7,10 +7,12 @@
  * and fetching nothing. It reads what the map already holds, `layerData.missions` and the outlines,
  * so no layer's code reads the mission feed itself.
  *
- * **Only a mission whose package locates its subject can be placed in a Zone**, by the ring the map
- * draws for it, at about a kilometre or coarser [places.ts MISSION_FINEST]. A mission filed only by
- * jurisdiction says which country or province, and no Zone: putting it in one would invent a place,
- * so it is counted apart and said to be. NavCom's packages carry no Zone of their own.
+ * **A mission is placed in a Zone by its ring, or by the Zone its package names.** By the ring the map
+ * draws where its package locates its subject, at about a kilometre or coarser [places.ts
+ * MISSION_FINEST]; with no ring, by Starcom's `zone` and `zone_sector` tags, which a package may carry
+ * since interchange rev 9 [mission-interchange.spec.md §4.2]. A mission with neither, filed only by
+ * jurisdiction, says which country or province and no Zone: putting it in one would invent a place, so
+ * it is counted apart and said to be. A ring wins over a name: the count is of what the map draws.
  *
  * A point is counted in every area whose outline as drawn holds it: its Terra or Mare, its Zone, and
  * an open container's Sector. The outlines are quantised for the phone, so a mission closer to an
@@ -37,12 +39,22 @@ export interface Placed {
   title: string;
 }
 
+/** A mission with no ring whose package names its Zone, and perhaps its Sector, by their ids. */
+export interface Named {
+  address: string;
+  title: string;
+  zone: string;
+  sector: string | null;
+}
+
 export interface Counted {
-  /** By area id, at every level it is in: the missions whose drawn point that area's outline holds. */
-  in: Map<string, Placed[]>;
+  /** By area id, at every level it is in: the missions whose drawn point that area's outline holds, or that name it. */
+  in: Map<string, { address: string; title: string }[]>;
   /** By area id, at every level it was counted in: a mission near that area's edge, and the neighbours across it. */
   near: Map<string, { mission: Placed; with: string[] }[]>;
   placed: number;
+  /** Of `placed`, those counted by the Zone their package names rather than by a ring. */
+  named: number;
 }
 
 const inBox = (s: Shape, x: number, y: number, pad = 0) => x >= s.bbox[0] - pad && x <= s.bbox[2] + pad && y >= s.bbox[1] - pad && y <= s.bbox[3] + pad;
@@ -107,10 +119,11 @@ export function countsOf(
   outlines: ZonesOutlines,
   sectors: Readonly<Record<string, readonly Shape[]>>,
   missions: readonly Placed[],
-  sectorDrift: Readonly<Record<string, number | undefined>> = {}
+  sectorDrift: Readonly<Record<string, number | undefined>> = {},
+  named: readonly Named[] = []
 ): Counted {
-  const counted: Counted = { in: new Map(), near: new Map(), placed: 0 };
-  const add = (id: string, m: Placed) => counted.in.set(id, [...(counted.in.get(id) ?? []), m]);
+  const counted: Counted = { in: new Map(), near: new Map(), placed: 0, named: 0 };
+  const add = (id: string, m: { address: string; title: string }) => counted.in.set(id, [...(counted.in.get(id) ?? []), m]);
   const drift = outlines.navcom.simplified_m ?? 0;
   /** Near its edge: within what that level's drawn lines drift, plus the mission's own precision. */
   const nearAt = (area: Shape, level: readonly Shape[], m: Placed, metres: number) => {
@@ -138,6 +151,21 @@ export function countsOf(
     add(sector.id, m);
     nearAt(sector, level, m, sectorDrift[container.id] ?? drift);
   }
+  /*
+   * By the name its package gives: in that Zone and its Terra or Mare, and in the Sector it names, near
+   * no edge, since its publisher said which. A Zone these outlines do not hold places it nowhere, and
+   * it stays with those filed by jurisdiction.
+   */
+  for (const m of named) {
+    const zone = outlines.zones.find((z) => z.id === m.zone);
+    const container = zone?.props.parent;
+    if (!zone || typeof container !== 'string') continue;
+    counted.placed += 1;
+    counted.named += 1;
+    add(container, m);
+    add(m.zone, m);
+    if (m.sector?.startsWith(`${m.zone}/`)) add(m.sector, m);
+  }
   return counted;
 }
 
@@ -152,7 +180,7 @@ function sync(): Counted | null {
   const { outlines, sectors, missions, sectorDrift } = layerData;
   if (!outlines || !missions) return null;
   if (outlines !== from.outlines || sectors !== from.sectors || missions.rings !== from.missions) {
-    counted = countsOf(outlines, sectors, missions.rings.flatMap((p) => (p.kind === 'mission' ? [p] : [])), sectorDrift);
+    counted = countsOf(outlines, sectors, missions.rings.flatMap((p) => (p.kind === 'mission' ? [p] : [])), sectorDrift, missions.named);
     from = { outlines, sectors, missions: missions.rings };
   }
   return counted;
@@ -227,7 +255,9 @@ function badges(v: View, measure: (text: string) => number, taken: Box[]): Badge
       const n = c.in.get(zone.id ?? '')?.length ?? 0;
       if (n === 0) continue;
       const sectors = (layerData.sectors[container.id ?? ''] ?? []).filter((s) => s.id?.startsWith(`${zone.id}/`) && (c.in.get(s.id)?.length ?? 0) > 0);
-      const wide = sectors.length > 0 && sectors.every((s) => (s.bbox[2] - s.bbox[0]) * v.scale >= SECTOR_PX);
+      // Only when its Sectors' counts hold all of the Zone's: one that names its Zone and no Sector is in none of them.
+      const held = sectors.reduce((k, s) => k + c.in.get(s.id!)!.length, 0) === n;
+      const wide = held && sectors.length > 0 && sectors.every((s) => (s.bbox[2] - s.bbox[0]) * v.scale >= SECTOR_PX);
       if (wide) for (const s of sectors) shown.push([s, c.in.get(s.id ?? '')!.length]);
       else shown.push([zone, n]);
     }
@@ -297,11 +327,13 @@ export const overlay: Overlay = {
     if (!layerData.outlines) return '';
     if (!m || m.age === null) return 'Missions by Zone · not read yet';
     // The feed's age is the key's missions line; this says what of it is in a Zone, and what is not.
-    return `Missions in Zones: ${sync()?.placed ?? 0} · by jurisdiction: ${m.unplaced}`;
+    const c = sync();
+    return `Missions in Zones: ${c?.placed ?? 0} · by jurisdiction: ${m.unplaced - (c?.named ?? 0)}`;
   },
   credit() {
     const m = layerData.missions;
-    return m && m.age !== null ? `missions placed by where each package puts its subject; ${m.unplaced} filed by jurisdiction only, counted apart and in no Zone · ${m.age}` : '';
+    const by = m ? m.unplaced - (sync()?.named ?? 0) : 0;
+    return m && m.age !== null ? `missions placed by where each package puts its subject, or the Zone it names; ${by} filed by jurisdiction only, counted apart and in no Zone · ${m.age}` : '';
   },
   about(shape) {
     const c = sync();

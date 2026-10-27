@@ -41,28 +41,23 @@
  * - **A coordinate of a kind it does not know** is dropped. Only `subject_location` and
  *   `jurisdiction` are understood; anything else might be a person's location, and a mission
  *   without a point is still a mission.
+ * - **A place it names that cannot be read is dropped** (rev 9, §4.2): a Zone or Sector that is not a
+ *   ZSP 2.0 id, two that disagree, a Sector outside the Zone named beside it, a name over 80
+ *   characters. Each is optional, so a mission naming none of them is not missing anything.
  * - **A count of people** in what the package says it measures is omitted — count things, never
  *   people (§7.1). Starcom accepted the rule; until every package follows it, the reader enforces it.
  */
 
 import { verifyEvent } from 'nostr-tools/pure';
 import type { Event } from 'nostr-tools/core';
+import { isZspId, zoneOfSector } from '../zones/ids.js';
 
 /** Starcom's kind. NavCom reads it and never publishes one. */
 export const MISSION_PACKAGE_KIND = 30079;
 
-/** Where packages are published. Authoritative per Starcom's answer to Q8. */
-export const THE_RECORD = 'wss://record.cosmiccodex.app';
-
-/**
- * Where a device reads packages: The Record, and the mirrors that copy it [docs/design/grid.md].
- *
- * Read all at once, and the newest signed copy of each package wins, so a mirror can fall behind but
- * cannot forge one. The Record stays authoritative (Q8); a mirror is what still answers when it
- * cannot. A list written here until relay lists ship [build order G3], when the publisher's own
- * list says where its packages live.
- */
-export const MISSION_RELAYS: readonly string[] = [THE_RECORD, 'wss://blackpi.cosmiccodex.app'];
+// Where packages are published and read, in a module of their own [../mission-relays.ts]: the relay
+// picker needs them on every page, and the reader below only on those that read a mission.
+export { MISSION_RELAYS, THE_RECORD } from '../mission-relays.js';
 
 /**
  * One signing key of a publisher, as NavCom's release pins it [interchange spec §3, rev 7].
@@ -241,6 +236,24 @@ export interface MissionPlacement {
    * never finer than a city and is not drawn as a place [docs/design/map.md §5].
    */
   point: { lat: number; lon: number; precision: GeoPrecision; kind: 'subject_location' | 'jurisdiction'; coarsened: boolean } | null;
+  /**
+   * The Zone and the Sector the package names, by Starcom's ZSP 2.0 ids, each with the name it gives
+   * [interchange spec §4.2, rev 9]: what its publisher says, whether or not it has a point. Null where
+   * it names none, or two, or a Sector outside the Zone it names; a Sector alone names its Zone. Absent
+   * on a mission kept by a build before 2026-10-27.
+   */
+  zone?: NamedArea | null;
+  sector?: NamedArea | null;
+  /** A city or town it names, as written, with the country or province it says it is in. */
+  city?: { name: string; in: string | null } | null;
+  /** A place of interest on public record it names, as written: a park, a library, a courthouse. */
+  poi?: string | null;
+}
+
+/** An area a package names: its id, and the name the package gives it, if any. */
+export interface NamedArea {
+  id: string;
+  name: string | null;
 }
 
 export interface Mission {
@@ -371,16 +384,56 @@ function jurisdictionOf(e: Event): string | null {
   return subdivisions[0] ?? codes[0]!;
 }
 
+/** The most a package's name for a place may be. A longer one names nothing rather than being cut. */
+const NAME_MAX = 80;
+
+/** A place's name as a package writes it: one line, without control or format characters, or null. */
+function nameOf(v: string | undefined): string | null {
+  const s = v?.replace(/[\p{Cc}\p{Cf}]/gu, ' ').replace(/\s+/g, ' ').trim();
+  return s && s.length <= NAME_MAX ? s : null;
+}
+
+/**
+ * The one value a package gives under `name`, as `read` reads each tag, or null. Two that disagree
+ * give none, as two jurisdictions do: a place is never guessed between two.
+ */
+function oneOf<T>(e: Event, name: string, read: (t: string[]) => T | null, same: (t: T) => string): T | null {
+  const found = e.tags.filter((t) => t[0] === name).map(read).filter((x): x is T => x !== null);
+  return new Set(found.map(same)).size === 1 ? found[0]! : null;
+}
+
+/**
+ * The Zone and Sector a package names [interchange spec §4.2, rev 9]: Starcom's `["zone", id, name]`
+ * and `["zone_sector", id, name]`, never `sector`, which another feed uses for something else.
+ */
+function zspOf(e: Event): { zone: NamedArea | null; sector: NamedArea | null } {
+  const named = (level: 'zone' | 'sector') => (t: string[]) => (isZspId(t[1], level) ? { id: t[1]!, name: nameOf(t[2]) } : null);
+  const sector = oneOf(e, 'zone_sector', named('sector'), (x) => x.id);
+  const zone = oneOf(e, 'zone', named('zone'), (x) => x.id);
+  const of = sector ? zoneOfSector(sector.id)! : null;
+  if (zone && of && zone.id !== of) return { zone: null, sector: null };
+  return { zone: zone ?? (of ? { id: of, name: null } : null), sector };
+}
+
 /** Decimal places kept for each precision. */
 const PLACES: Record<GeoPrecision, number> = { address: 5, '1km': 2, city: 1 };
 
 function placementOf(e: Event): MissionPlacement {
   const jurisdiction = jurisdictionOf(e);
+  const named = {
+    ...zspOf(e),
+    city: oneOf(e, 'city', (t) => {
+      const name = nameOf(t[1]);
+      const at = t[2]?.toLowerCase();
+      return name ? { name, in: at && JURISDICTION.test(at) ? at : null } : null;
+    }, (x) => `${x.name.toLowerCase()} ${x.in}`),
+    poi: oneOf(e, 'poi', (t) => nameOf(t[1]), (x) => x.toLowerCase())
+  };
 
   const geo = tag(e, 'geo');
   const kind = tag(e, 'geo_kind');
   const m = geo ? /^lat:(-?\d+(?:\.\d+)?),lon:(-?\d+(?:\.\d+)?)$/.exec(geo) : null;
-  if (!m || (kind !== 'subject_location' && kind !== 'jurisdiction')) return { jurisdiction, point: null };
+  if (!m || (kind !== 'subject_location' && kind !== 'jurisdiction')) return { jurisdiction, point: null, ...named };
 
   const declared = tag(e, 'geo_precision');
   const known = declared === 'address' || declared === '1km' || declared === 'city';
@@ -390,7 +443,7 @@ function placementOf(e: Event): MissionPlacement {
   const lat = round(m[1]!);
   const lon = round(m[2]!);
   const coarsened = declared !== precision || lat !== Number(m[1]) || lon !== Number(m[2]);
-  return { jurisdiction, point: { lat, lon, precision, kind, coarsened } };
+  return { jurisdiction, point: { lat, lon, precision, kind, coarsened }, ...named };
 }
 
 function objectivesOf(manifest: Record<string, unknown>): MissionObjective[] {

@@ -166,12 +166,12 @@ describe('what it repairs instead, and records', () => {
 
   it('drops a coordinate of a kind it does not understand, and keeps the mission', () => {
     const m = ok(pkg([['geo', 'lat:39.37,lon:-104.86'], ['geo_precision', '1km'], ['geo_kind', 'home']]), TEST);
-    expect(m.placement).toEqual({ jurisdiction: 'us-ca', point: null });
+    expect(m.placement).toEqual({ jurisdiction: 'us-ca', point: null, zone: null, sector: null, city: null, poi: null });
   });
 
   it('keeps a mission with nowhere to draw it — a campaign across many places is still real', () => {
     const m = ok(pkg([], { drop: ['jurisdiction'] }), TEST);
-    expect(m.placement).toEqual({ jurisdiction: null, point: null });
+    expect(m.placement).toEqual({ jurisdiction: null, point: null, zone: null, sector: null, city: null, poi: null });
   });
 
   it('counts things and drops lines that count people', () => {
@@ -404,6 +404,58 @@ describe('what the second audit of Milestone 11 found', () => {
   });
 });
 
+describe('the places a package names beside its jurisdiction [interchange spec §4.2, rev 9]', () => {
+  const at = (extra: string[][]) => ok(pkg(extra), TEST).placement;
+  const RIFT = 'zone:east-african-rift';
+  const AFAR = 'zone:east-african-rift/sector:afar';
+
+  it('reads the Zone and the Sector by Starcom’s tags, each with the name it gives', () => {
+    const p = at([['zone', RIFT, 'East African Rift Zone'], ['zone_sector', AFAR, 'Afar Sector']]);
+    expect(p.zone).toEqual({ id: RIFT, name: 'East African Rift Zone' });
+    expect(p.sector).toEqual({ id: AFAR, name: 'Afar Sector' });
+  });
+
+  it('takes a Sector alone as naming its Zone, and a Zone alone as naming no Sector', () => {
+    expect(at([['zone_sector', AFAR, 'Afar Sector']]).zone).toEqual({ id: RIFT, name: null });
+    expect(at([['zone', RIFT]]).sector).toBeNull();
+  });
+
+  it('names no place rather than guess: two Zones, a Sector outside its Zone, an id that is not one', () => {
+    expect(at([['zone', RIFT], ['zone', 'zone:pacific-ring-of-fire']]).zone).toBeNull();
+    const outside = at([['zone', 'zone:pacific-ring-of-fire'], ['zone_sector', AFAR]]);
+    expect([outside.zone, outside.sector]).toEqual([null, null]);
+    expect(at([['zone', 'East African Rift']]).zone).toBeNull();
+    // `sector` is another feed's word for something else, and never a ZSP Sector.
+    expect(at([['sector', AFAR]]).sector).toBeNull();
+    // The same Zone twice is one Zone.
+    expect(at([['zone', RIFT, 'A'], ['zone', RIFT, 'B']]).zone?.id).toBe(RIFT);
+  });
+
+  it('reads a city with the code of the place it is in, and a place of interest, as written', () => {
+    const p = at([['city', 'Fresno', 'us-ca'], ['poi', 'Fresno County Public Library']]);
+    expect(p.city).toEqual({ name: 'Fresno', in: 'us-ca' });
+    expect(p.poi).toBe('Fresno County Public Library');
+    expect(at([['city', 'Fresno', 'California']]).city).toEqual({ name: 'Fresno', in: null });
+  });
+
+  it('keeps a name to one line without control or direction characters, and drops one too long to be a name', () => {
+    expect(at([['poi', 'The\u202e Library\n\tsteps']]).poi).toBe('The Library steps');
+    expect(at([['poi', 'x'.repeat(81)]]).poi).toBeNull();
+    expect(at([['city', '   ']]).city).toBeNull();
+  });
+
+  it('names none of them when the package gives none, which is not missing anything', () => {
+    const p = at([]);
+    expect([p.zone, p.sector, p.city, p.poi]).toEqual([null, null, null, null]);
+  });
+
+  it('keeps them beside a point, which is still drawn where the package puts it', () => {
+    const p = at([['geo', 'lat:36.74,lon:-119.79'], ['geo_precision', '1km'], ['geo_kind', 'subject_location'], ['zone', RIFT]]);
+    expect(p.point).toMatchObject({ lat: 36.74, lon: -119.79 });
+    expect(p.zone?.id).toBe(RIFT);
+  });
+});
+
 describe('who NavCom reads packages from', () => {
   /*
    * The registry is the trust root for every mission on the map: a key here is believed to be its
@@ -450,9 +502,11 @@ describe('who NavCom reads packages from', () => {
       oneKey(getPublicKey(secret), 'Test publisher', false, {
         keys: [{ pubkey: getPublicKey(secret), generation: 1, notBefore: '2020-01-01T00:00:00Z', notAfter: '2100-01-01T00:00:00Z', exposed: '2026-09-28', frozen: { sha256: 'x', confirmed } }]
       });
-    const placed = pkg([['geo', 'lat:36.77,lon:-119.41'], ['geo_kind', 'subject_location'], ['geo_precision', '1km']]);
+    const placed = pkg([['geo', 'lat:36.77,lon:-119.41'], ['geo_kind', 'subject_location'], ['geo_precision', '1km'], ['poi', 'Fresno County Public Library'], ['zone_sector', 'zone:a/sector:b']]);
+    // Where it is filed and no finer: a place it names is where a planted lure would send somebody too.
     expect(ok(placed, frozen(false)).placement).toEqual({ jurisdiction: 'us-ca', point: null });
     expect(ok(placed, frozen(true)).placement.point).toMatchObject({ lat: 36.77, lon: -119.41 });
+    expect(ok(placed, frozen(true)).placement).toMatchObject({ poi: 'Fresno County Public Library', sector: { id: 'zone:a/sector:b' } });
     expect(ok(placed, frozen(true)).retiring).toBe('confirmed');
     expect(ok(placed, TEST).retiring).toBeNull();
   });
