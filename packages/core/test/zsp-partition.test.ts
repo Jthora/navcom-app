@@ -139,6 +139,7 @@ describe('what the checks refuse', () => {
     expect(licenceAllowed('CC-BY-4.0')).toBe(true);
     expect(licenceAllowed('CC0-1.0')).toBe(true);
     expect(licenceAllowed('ODC-BY-1.0')).toBe(true);
+    expect(licenceAllowed('Unicode-3.0')).toBe(true);
     for (const l of ['CC-BY-SA-4.0', 'CC-BY-NC-4.0', 'ODbL-1.0', 'GPL-3.0', 'AGPL-3.0-only', '', undefined]) expect(licenceAllowed(l), String(l)).toBe(false);
   });
 
@@ -251,6 +252,16 @@ describe('what the checks refuse', () => {
       /crosses itself/
     );
     refuses('off the Earth', broken((docs) => void (sector(docs, 'zone:amazonia-west/sector:south').geometry = { type: 'Polygon', coordinates: [[[-150, -60], [-90, -60], [-90, -95], [-150, -60]]] })), /off the Earth|position/);
+  });
+
+  it('a Zone whose system is not one lower-case word, and takes any word that is, as ZR6 gives examples', () => {
+    for (const system of ['Chain Zone', '', 'chain\u202e', 42, undefined]) {
+      refuses(`system ${JSON.stringify(system)}`, broken((docs) => void (sector(docs, 'zone:laurentia-east').properties.system = system)), /system/);
+    }
+    for (const system of ['chain', 'transform', 'fan', 'strait']) {
+      const { problems } = check(broken((docs) => void (sector(docs, 'zone:laurentia-east').properties.system = system)));
+      expect(problems, system).toEqual([]);
+    }
   });
 
   it('a Sector outside 50,000 to 500,000 km² with no reason given, and a landform not in the IAU’s words', () => {

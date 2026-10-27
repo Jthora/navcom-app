@@ -4,8 +4,8 @@ import type { Page } from '@playwright/test';
 /**
  * The Spheres for a browser test: NavCom's own fixture lists, exactly as `scripts/spheres-vendor.mjs`
  * writes them from the core fixture (`spheres.test.ts` holds the copy here to that), served by route.
- * No real lists exist before Mecha Jono's Part 2 is vendored, and nothing synthetic ships, so the
- * build itself has none [map.md, Spheres].
+ * The build ships Mecha Jono's Part 2 lists, which a test cannot hold still, so every test of how the
+ * map draws Spheres serves these instead; nothing synthetic ships [map.md, Spheres].
  *
  * Returns the paths the page asked for, in order. `edit` changes the file first, for a test of what the
  * map does with one the vendoring would refuse.

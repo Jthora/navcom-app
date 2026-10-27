@@ -6,8 +6,8 @@
  * The map line `spheres` in `scripts/lib/budget.mjs`: loaded by `import()` when somebody chooses
  * Spheres, with its one file, `/grid/spheres.json`, fetched whole then and never by what is on screen,
  * and not in the service worker's install precache. **Vendored by digest, never fetched from Starcom**
- * [scripts/spheres-vendor.mjs]; until Mecha Jono's lists are vendored the build has none, and the map
- * says so rather than drawing anything synthetic.
+ * [scripts/spheres-vendor.mjs]; a build without lists says so rather than drawing anything synthetic.
+ * A member a list counts and does not draw (`drawn: false`) is listed on its screen and never shaded.
  *
  * A member is drawn over the world's own outline for its code; a small state with no outline at the
  * map's scale is a mark at Natural Earth's label point (D9). In the neutrals only, every hue being a
@@ -43,10 +43,13 @@ export interface SpheresFile {
     id: string;
     name: string;
     family: 'language' | 'civilisation' | 'political';
-    members: { code: string; source?: string }[];
+    /** `drawn: false`: a membership the list counts and does not draw, listed on its screen and never shaded. */
+    members: { code: string; source?: string; drawn?: false }[];
     groups: { id: string; name: string; members: string[] }[];
     sources: { name: string; url?: string; licence?: string }[];
     read: string | null;
+    /** What the list says it holds. */
+    note?: string;
   }[];
   /** Label points, `[lon, lat]`, for the members with no outline at the world's scale. */
   points: Record<string, [number, number]>;
@@ -61,15 +64,18 @@ export interface DrawnSphere {
   circles: { code: string; x: number; y: number }[];
 }
 
+/** The members a Sphere draws: all but those its list counts and does not draw. */
+export const drawnIn = (s: SpheresFile['spheres'][number]) => s.members.filter((m) => m.drawn !== false);
+
 /** Each Sphere's members on the map: an outline by its code where the world has one, else a circle. */
 export function spheresOf(file: SpheresFile, countries: readonly Shape[]): DrawnSphere[] {
   const byCode = new Map(countries.flatMap((c) => (c.id ? [[c.id, c] as const] : [])));
   return file.spheres.map((s) => ({
     id: s.id,
     name: s.name,
-    members: s.members.length,
-    shapes: s.members.flatMap((m) => (byCode.has(m.code) ? [byCode.get(m.code)!] : [])),
-    circles: s.members.flatMap((m) => {
+    members: drawnIn(s).length,
+    shapes: drawnIn(s).flatMap((m) => (byCode.has(m.code) ? [byCode.get(m.code)!] : [])),
+    circles: drawnIn(s).flatMap((m) => {
       const at = byCode.has(m.code) ? null : file.points[m.code];
       if (!at) return [];
       const [x, y] = project(at[0], at[1]);
@@ -102,11 +108,14 @@ export function loadSpheres(): Promise<void> {
   return asked;
 }
 
-/** The Spheres a country is in, the most specific first: the one with the fewest members. */
+/**
+ * The Spheres that draw a country, the most specific first: the one drawing the fewest. One that only
+ * lists it, as an observer, is not named here: a tap answers for what is shaded there.
+ */
 export function spheresAt(code: string): SpheresFile['spheres'] {
   const file = layerData.spheres;
   if (!file) return [];
-  return file.spheres.filter((s) => s.members.some((m) => m.code === code)).sort((a, b) => a.members.length - b.members.length);
+  return file.spheres.filter((s) => drawnIn(s).some((m) => m.code === code)).sort((a, b) => drawnIn(a).length - drawnIn(b).length);
 }
 
 // ─── On the map ───────────────────────────────────────────────────────────────────────────────

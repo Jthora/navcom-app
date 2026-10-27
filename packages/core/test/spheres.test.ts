@@ -2,8 +2,8 @@
  * The Spheres' membership lists, read by NavCom's own code [docs/design/map.md, Spheres; D9].
  *
  * Cited lists of countries, by ISO code, with no geometry of their own: the map draws each member over
- * the world's own outlines. Mecha Jono's Part 2 lists land on 26 Oct; until then this reads NavCom's
- * own fixture, in the shape Starcom's Spheres mode expects, and the vendoring refuses to ship it.
+ * the world's own outlines. This reads NavCom's own fixture, in the shape Mecha Jono's Part 2 lists
+ * take, and the vendoring refuses to ship it.
  */
 
 import { readFileSync, readdirSync } from 'node:fs';
@@ -87,6 +87,21 @@ describe('reading the lists', () => {
     delete m.spheres[0].sources[0].url;
     expect(checkSpheres(m).problems).toEqual([]);
     expect(isHttps('HTTPS://EXAMPLE.ORG/')).toBe(true);
+  });
+
+  it('keeps a member the list counts and does not draw, and what the list says it holds', () => {
+    const { lists } = checkSpheres(fixture());
+    const franco = lists!.spheres[1]!;
+    expect(franco.members.map((m) => [m.code, m.drawn])).toEqual([['fr', true], ['ca', true], ['mu', true], ['ie', false]]);
+    expect(franco.note).toMatch(/Ireland, an observer here, is listed and not drawn/);
+    expect(lists!.spheres[0]!.note).toBeNull();
+    // Only true or false, and a Sphere draws one member at least.
+    const odd = fixture();
+    odd.spheres[1].members[3].drawn = 'no';
+    expect(checkSpheres(odd).problems.join()).toMatch(/ie: drawn is true or false/);
+    const none = fixture();
+    for (const m of none.spheres[1].members) m.drawn = false;
+    expect(checkSpheres(none).problems.join()).toMatch(/test-francophonie: draws none of its members/);
   });
 
   it('keeps a group to the Sphere’s own members', () => {

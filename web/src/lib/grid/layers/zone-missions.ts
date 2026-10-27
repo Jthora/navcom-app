@@ -13,10 +13,10 @@
  * so it is counted apart and said to be. NavCom's packages carry no Zone of their own.
  *
  * A point is counted in every area whose outline as drawn holds it: its Terra or Mare, its Zone, and
- * an open container's Sector. The outlines are simplified for the world view, so a mission closer to an
+ * an open container's Sector. The outlines are quantised for the phone, so a mission closer to an
  * area's edge than the vendoring measured that file drifts, plus its own precision, is **near that
  * edge**, at that level, with the neighbour across it: the Zones' by `outlines.json`'s drift, a Sector's
- * by its own container file's, which is simplified apart. It is still counted where its drawn point
+ * by its own container file's, which is quantised apart. It is still counted where its drawn point
  * falls, since a count has to fall somewhere, and **the count says so**: its badge is dashed, a hover
  * says how many are near an edge, and the area's screen names each and its neighbour.
  */
@@ -234,10 +234,12 @@ function badges(v: View, measure: (text: string) => number, taken: Box[]): Badge
   }
   /*
    * Never under a mission's ring, which is drawn over everything, nor over another count or under the
-   * key: moved a step off what it would sit under, **and only ever to a spot inside its own area**. A
-   * count hung on the missions it counts sat squarely under their rings; moved 46 px, which at the
-   * whole Earth is about 5,000 km, one sat in the Zone next door (audit, 2026-10-24). Where no step
-   * stays inside, it stays at its label point, and the ring is drawn over it.
+   * key: moved the nearest step off what it would sit under, of a few each way and across, **and only
+   * ever to a spot inside its own area**. A count hung on the missions it counts sat squarely under their
+   * rings; moved 46 px, which at the whole Earth is about 5,000 km, one sat in the Zone next door (audit,
+   * 2026-10-24). Straight up, down or across only, a Zone half a count wide between a ring and the sun
+   * had nowhere to go (26 Oct); a step down and a little across had room. Where no step stays inside, it
+   * stays at its label point, and the ring is drawn over it.
    */
   const at = (p: { x: number; y: number }): [number, number] => [(p.x - v.cx) * v.scale + v.width / 2, (p.y - v.cy) * v.scale + v.height / 2];
   const covers = layerData.covers;
@@ -254,7 +256,9 @@ function badges(v: View, measure: (text: string) => number, taken: Box[]): Badge
     };
     const ownArea = ([x, y]: number[]) => inside(s.rings, [v.cx + (x! - v.width / 2) / v.scale, v.cy + (y! - v.height / 2) / v.scale]);
     const [x, y] =
-      [[0, 0], [0, 24], [0, -24], [w + 16, 0], [-w - 16, 0], [0, 46], [0, -46]]
+      [0, 12, -12, 24, -24, w + 16, -w - 16]
+        .flatMap((dx) => [0, 24, -24, 46, -46].map((dy) => [dx, dy]))
+        .sort((a, b) => Math.hypot(a[0]!, a[1]!) - Math.hypot(b[0]!, b[1]!))
         .map(([dx, dy]) => [x0 + dx!, y0 + dy!])
         .find((p, i) => clear(p) && (i === 0 || ownArea(p))) ?? [x0, y0];
     const box = boxAt([x!, y!]);

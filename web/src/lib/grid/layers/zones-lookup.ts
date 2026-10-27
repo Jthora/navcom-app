@@ -47,7 +47,7 @@ let index: Promise<{ index: ZspIndex; names: Map<string, string>; digest: string
 
 /**
  * The Sector holding (lon, lat), and any within about a kilometre and a half of it, nearest first:
- * edges are simplified to about a kilometre, so near one the person chooses. `digest` is the
+ * the index's edges are quantised to about 400 m, so near one the person chooses. `digest` is the
  * manifest the outlines on the page came from, so an index of another stage is not mixed with them.
  */
 export async function lookUp(lon: number, lat: number, digest: string): Promise<Answer> {

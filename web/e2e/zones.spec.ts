@@ -9,9 +9,9 @@ import { serveZones } from './zsp';
  * Starcom's Zones on the landing map [docs/design/map.md, Layers and Zones; the owner's map decisions
  * D6, D7 and D10], against the build that deploys, on the phone.
  *
- * **No real Zones exist before Stage 1 lands (23 Oct)**, and nothing synthetic ships, so this build
- * has none: the one test that asks without a route sees the map say so. Every other test serves
- * NavCom's own fixture partition by route [./zsp.ts], with its stage set per test.
+ * **The build ships Starcom's final partition** (vendored 26 Oct): one test asks without a route and
+ * reads what the build carries, and one more says what a build without Zones shows. Every other test
+ * serves NavCom's own fixture partition by route [./zsp.ts], with its stage set per test.
  *
  * What a person can reach is what is tested: the control, the choice, a tap that opens a Zone, the
  * lookup that answers which Sector the phone is in, and that none of it asks anybody but navcom.app,
@@ -58,7 +58,18 @@ test.describe('Starcom’s Zones on the map', () => {
     expect(all.filter((u) => /\/grid\/(zsp\/|timezones|region-times)/.test(u)), 'a layer fetched before it was chosen').toEqual([]);
   });
 
-  test('in this build there are none yet, and the map says so rather than drawing nothing', async ({ page }) => {
+  test('the Zones this build ships, final, from navcom.app, with their credit', async ({ page }) => {
+    test.skip(!SHIPPED, 'this build carries no Zones');
+    await landed(page);
+    await chooseZones(page);
+    // Final: no stage and no "view only" in the key, beside what it counts of the missions.
+    await expect(page.locator('[data-legend="zones"]')).toHaveText(/^Zones\. Missions in Zones: \d+/);
+    await expect(page.locator('[data-legend="zones"]')).not.toContainText('draft');
+    await expect(page.locator('[data-credit]')).toContainText('Zones: Starcom ZSP 2.0, CC BY 4.0');
+  });
+
+  test('a build with no Zones says so rather than drawing nothing', async ({ page }) => {
+    await page.route('**/grid/zsp/outlines.json', (route) => route.fulfill({ status: 404, body: '' }));
     await landed(page);
     const screen = await chooseZones(page);
     await expect(page.locator('[data-legend="zones"]')).toHaveText('Zones · not in this build yet');

@@ -232,10 +232,9 @@ export const COM_ENTRIES = /** @type {Record<string, string>} */ ({
  * screens, Zones, the lookup and Time zones are written, and their code was measured on 2026-10-19, as
  * Time zones' two files were, so those ceilings are derived; so were the four slices drawn over a layer
  * that evening, day and night, the directory by last check with its file, missions by Zone, and the
- * Spheres' code. The rest stay `null` until what they measure exists: the Zones outlines' data and one
- * container's Sectors, none before Stage 1 lands (23 Oct), the fixture they are built against until then
- * never shipping; the lookup's index, none before a stage with Sectors in it; and the Spheres' lists,
- * none until they are vendored (26 Oct, D9), their fixture never shipping either. A container's Sectors
+ * Spheres' code. The data came later, each derived the day it was vendored: the Zones' outlines, the
+ * largest container's Sectors and the lookup's index from Starcom's final partition, and the Spheres'
+ * lists (both 26 Oct, D6 and D9), their fixtures never shipping. A container's Sectors
  * have no code of their own, which arrives with the Zones line. The change that lands each part derives
  * its ceiling from what it measured; the failure prints the numbers to write.
  *
@@ -336,10 +335,14 @@ export const MAP_LINES = {
     files: (f) => f === `${ZSP}outlines.json`,
     per: 'all',
     js: {
-      limit: 2_065,
-      warn: 1_859,
-      measured: 1_721,
+      limit: 3_165,
+      warn: 2_849,
+      measured: 2_638,
       why:
+        'Re-derived 2026-10-27 at 2,638 B, from 1,721 B: with every point of Starcom’s final set kept, ' +
+        'each edge thinned for drawing once for each doubling of zoom, only the edges on the canvas ' +
+        'stroked, and the lines kept as a picture between frames that have not moved, which took opening ' +
+        'Mare Pacificum at a sixth of the speed from three frames of 200 to 230 ms to two of 51 to 72. ' +
         'Re-derived 2026-10-26 at 1,721 B, from 1,494 B: each edge stroked once, from the file’s arcs, in ' +
         'place of each ring that has it, which under Starcom’s whole draft took opening Mare Pacificum from ' +
         'tasks of 164 ms to 87 at a sixth of the speed; here and not in the topology module, whose growth ' +
@@ -350,7 +353,16 @@ export const MAP_LINES = {
         'three weights, and answering a tap. The data has no ceiling until Stage 1 is vendored (23 Oct): ' +
         'the change that vendors it derives one from what it measures.'
     },
-    data: null
+    data: {
+      limit: 84_559,
+      warn: 76_103,
+      measured: 70_466,
+      why:
+        'Derived 2026-10-26 at 70,466 B: Starcom’s final partition (ec6714b9), its 17 Terrae and Maria and ' +
+        '251 Zones at every point the format gives, 16,303 of them, quantised to 10,000, drifting 2.3 km at ' +
+        'most. Simplified to a tenth of its points it was 31,956 B and lost islands and the ends of thin ' +
+        'Zones, 100 km off at the median; a cap on distance kept nearly every point, at 69,576 B.'
+    }
   },
   /*
    * D10: a container's Sectors, one file, when somebody opens that Terra or Mare. Its code is the
@@ -363,12 +375,19 @@ export const MAP_LINES = {
       f.startsWith(ZSP) && f.endsWith('.json') && !f.slice(ZSP.length).includes('/') && f !== `${ZSP}outlines.json` && f !== `${ZSP}index.json`,
     per: 'each',
     js: null,
-    data: null
+    data: {
+      limit: 43_481,
+      warn: 39_133,
+      measured: 36_234,
+      why:
+        'Derived 2026-10-26 at 36,234 B, the largest: Mare Pacificum’s 658 Sectors from Starcom’s final ' +
+        'partition (ec6714b9), at every point, drifting 2.1 km at most. The smallest is Mare Arcticum’s, ' +
+        '4,347 B.'
+    }
   },
   /*
    * D7 and D10: the whole-Earth index, fetched the first time somebody asks which Sector a place is in,
-   * and the lookup that answers it on the phone. Nothing is sent. Estimated at 0.4 to 0.55 MB of
-   * index, which is not a measurement.
+   * and the lookup that answers it on the phone. Nothing is sent.
    */
   'zones-lookup': {
     when: 'the first lookup of which Sector a place is in',
@@ -384,7 +403,15 @@ export const MAP_LINES = {
         'prefilter and the edge test that offers both Sectors within 1.5 km. Its index has no ceiling ' +
         'until a stage with Sectors is vendored.'
     },
-    data: null
+    data: {
+      limit: 287_232,
+      warn: 258_509,
+      measured: 239_360,
+      why:
+        'Derived 2026-10-26 at 239,360 B, 1.27 MB unpacked: all 2,632 Sectors of Starcom’s final partition ' +
+        '(ec6714b9) at lookup precision, quantised to 100,000. Estimated at 0.4 to 0.55 MB before, which was ' +
+        'not a measurement; at a sixth of the speed it answered Nairobi in 0.8 s (the draft, 26 Oct).'
+    }
   },
   /*
    * D8: Natural Earth's 1:10m time zones, standard offsets, loaded when chosen. The code and both its
@@ -420,9 +447,8 @@ export const MAP_LINES = {
     }
   },
   /*
-   * The Spheres' lists, due 26 Oct, with the label points D9 draws their small member states at, as
-   * circles, written into the same file by `scripts/spheres-vendor.mjs`. The code is written and
-   * measured; the data has no ceiling until the lists are vendored, and nothing synthetic ships.
+   * The Spheres' lists, vendored 26 Oct, with the label points D9 draws their small member states at, as
+   * circles, written into the same file by `scripts/spheres-vendor.mjs`.
    */
   spheres: {
     when: 'choosing Spheres',
@@ -443,7 +469,17 @@ export const MAP_LINES = {
         'country is in. Its data has no ceiling until Mecha Jono’s lists are vendored (due 26 Oct), ' +
         'estimated at 6 to 12 kB, which is not a measurement: the change that vendors them derives one.'
     },
-    data: null
+    data: {
+      limit: 5_117,
+      warn: 4_605,
+      measured: 4_264,
+      why:
+        'Derived 2026-10-26 at 4,264 B: Mecha Jono’s thirteen Spheres (lists 1.0, 221 memberships, 68 of ' +
+        'them listed and not drawn) as vendored from starcom-app ec6714b9, with each list’s note and the ' +
+        'sixteen small members D9 draws as circles. First measured that day at 3,633 B without the notes ' +
+        'or the flags, and so hatching the Francophonie over its observers. Under the 6 to 12 kB estimated, ' +
+        'because a list is two-letter codes and its sources.'
+    }
   },
   /*
    * Day and night: drawn whenever Time zones is chosen and over any other layer while its box is
@@ -742,6 +778,14 @@ const NAMED = [
     path: 'sitemap.xml',
     max: 2 * 1024 * 1024,
     why: 'One line per record. Grows with the directory and is fetched once per crawl.'
+  },
+  {
+    path: 'grid/zsp/index.json',
+    max: 1536 * 1024,
+    why:
+      'Every Sector on Earth at lookup precision, 1.24 MB unpacked and 239 kB compressed, its own map line ' +
+      '(zones-lookup). Fetched whole the first time somebody asks which Sector a place is in, so the ' +
+      'answer is worked out on the phone and the place is never sent (D7, D10); no page links it.'
   }
 ];
 

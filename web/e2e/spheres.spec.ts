@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { open, seedDevice } from './device';
 import { frame, mapReady, screenAt, tapAt, toneNear, zoomAt } from './map';
@@ -7,10 +8,10 @@ import { serveSpheres } from './spheres';
  * The Spheres on the map [docs/design/map.md, Spheres; the owner's map decision D9], against the build
  * that deploys, on the phone.
  *
- * **No real lists exist until Mecha Jono's Part 2 is vendored (due 26 Oct)**, and nothing synthetic
- * ships, so this build has none: the one test that asks without a route sees the map say so. Every
- * other test serves NavCom's own fixture lists by route [./spheres.ts]: three overlapping Spheres, with
- * four small states (Malta, Singapore, Barbados, Mauritius) that the world's outlines do not draw.
+ * **The build ships Mecha Jono's Part 2 lists** (vendored 26 Oct): the one test that asks without a
+ * route reads what the build carries, and one more says what a build without lists shows. Every other
+ * test serves NavCom's own fixture lists by route [./spheres.ts]: three overlapping Spheres, with four
+ * small states (Malta, Singapore, Barbados, Mauritius) that the world's outlines do not draw.
  */
 
 test.use({ serviceWorkers: 'block' });
@@ -47,7 +48,26 @@ const hatched = (page: Page, x: number, y: number, half: number) =>
     [x, y, half] as [number, number, number]
   );
 
-test('in this build there are none yet, and the map says so rather than drawing anything', async ({ page }) => {
+const SHIPPED = (() => {
+  try {
+    return JSON.parse(readFileSync('build/grid/spheres.json', 'utf8')) as { navcom: { draft: boolean; credit: string } };
+  } catch {
+    return null;
+  }
+})();
+
+test('the lists this build ships, from navcom.app, with their stage and credit', async ({ page }) => {
+  test.skip(!SHIPPED, 'this build carries no Spheres');
+  await landed(page);
+  await chooseSpheres(page);
+  await expect(page.locator('[data-legend="spheres"]')).toHaveText(
+    new RegExp(`^Spheres · open one to hatch it · ${SHIPPED!.navcom.draft ? 'draft lists' : 'lists'}, read `)
+  );
+  await expect(page.locator('[data-credit]')).toHaveText(`Spheres: ${SHIPPED!.navcom.credit}, CC BY 4.0`);
+});
+
+test('a build with no lists says so rather than drawing anything', async ({ page }) => {
+  await page.route('**/grid/spheres.json', (route) => route.fulfill({ status: 404, body: '' }));
   await landed(page);
   const screen = await chooseSpheres(page);
   await expect(page.locator('[data-legend="spheres"]')).toHaveText('Spheres · not in this build yet');
@@ -123,6 +143,28 @@ test('opening a Sphere picks it out, hatched; every Sphere alike leaves none pic
   expect(await hatched(page, london.x, london.y, 6), 'still hatched with every Sphere alike').toBe(0);
 });
 
+test('a member a list counts and does not draw is listed apart, and never hatched', async ({ page }) => {
+  // Test Francophonie draws France, Canada and Mauritius, and lists Ireland as an observer: as the real
+  // Francophonie lists 33 observers and associates, Japan and Argentina among them.
+  await serveSpheres(page);
+  await landed(page);
+  const screen = await chooseSpheres(page);
+  await expect(page.locator('[data-legend="spheres"]')).toContainText('draft lists');
+  await zoomAt(page, -4, 52, 4);
+  await page.mouse.move(1, 1);
+  await frame(page);
+  await screen.locator('[data-sphere-open="sphere:test-francophonie"]').click();
+  const sphere = page.locator('[data-screen="sphere"][data-sphere="sphere:test-francophonie"]');
+  await expect(sphere.locator('[data-sphere-member]')).toHaveText(['France', 'Canada', 'Mauritius']);
+  await expect(sphere.locator('[data-sphere-member-listed]')).toHaveText(['Ireland']);
+  await expect(sphere.locator('[data-slot="note"]')).toContainText('Ireland, an observer here, is listed and not drawn');
+  await frame(page);
+  const ireland = await screenAt(page, -8, 53.2);
+  const france = await screenAt(page, 2.5, 46.5);
+  expect(await hatched(page, france.x, france.y, 6), 'France, which it draws, is not hatched').toBeGreaterThan(20);
+  expect(await hatched(page, ireland.x, ireland.y, 6), 'Ireland, which it only lists, is hatched').toBe(0);
+});
+
 test('the key names the Sphere hatched after Back, and leaving Spheres lets it go', async ({ page }) => {
   await serveSpheres(page);
   await landed(page);
@@ -175,6 +217,10 @@ test.describe('the Spheres on a desktop', () => {
     const canada = await screenAt(page, -100, 58);
     await page.mouse.move(canada.x, canada.y);
     await expect(page.locator('[data-chip]')).toHaveText('Canada · Test Francophonie, Test Atlantic community, Test Anglosphere');
+    // Ireland is in Test Francophonie only as an observer, listed and not drawn: not named over it.
+    const ireland = await screenAt(page, -8, 53.2);
+    await page.mouse.move(ireland.x, ireland.y);
+    await expect(page.locator('[data-chip]')).toHaveText('Ireland · Test Atlantic community, Test Anglosphere');
     const kenya = await screenAt(page, 37.9, 0.5);
     await page.mouse.move(kenya.x, kenya.y);
     // In no Sphere: it answers as Nation States would, so a tap there is never dead.

@@ -45,6 +45,15 @@ describe('a label point', () => {
     expect(holds(holed, ...p)).toBe(true);
   });
 
+  it('is never on an edge that runs along a meridian, as Starcom’s 0.1° grid draws them', () => {
+    // A step up: the long stretch along its foot is 0 to 10, whose middle meridian, 5, runs up the step's
+    // edge from 2 to 10. Scored by the stretches' lengths, (5, 5) won, on that edge.
+    const step = [ring([0, 0], [10, 0], [10, 10], [5, 10], [5, 2], [0, 2])];
+    const [lon, lat] = labelPoint(step);
+    expect(holds(step, lon, lat)).toBe(true);
+    expect(edgeMetres(step, lon, lat)).toBeGreaterThan(2 * 110_000);
+  });
+
   it('is given to two places, as a map key is', () => {
     const [lon, lat] = labelPoint([ring([0.123, 0.456], [3.789, 0.456], [3.789, 2.987], [0.123, 2.987])]);
     expect(lon).toBe(Math.round(lon * 100) / 100);

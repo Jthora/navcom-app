@@ -121,19 +121,20 @@ if (!lists || problems.length > 0) refuse(`${problems.length} problem(s); nothin
 const credit = str('credit') ?? lists.attribution ?? (fixture ? 'NavCom test fixture, never shipped' : null);
 if (!credit) refuse('--credit is required: the licence asks for an attribution, and the lists give none');
 
-// Somewhere to draw every member: an outline at the world's scale, or a label point (D9).
+// Somewhere to draw every member a list draws: an outline at the world's scale, or a label point (D9).
+// One it lists and does not draw is never drawn, and needs nowhere.
 const world = JSON.parse(readFileSync(WORLD, 'utf8'));
 const outlined = new Set(world.objects.world.geometries.map((/** @type {any} */ g) => g.properties?.iso_a2).filter(Boolean));
 /** @type {Record<string, [number, number]>} */
 const labels = JSON.parse(readFileSync(LABELS, 'utf8')).points;
-const nowhere = [...new Set(lists.spheres.flatMap((s) => s.members.map((m) => m.code)))].filter((c) => !outlined.has(c) && !labels[c]).sort();
+const nowhere = [...new Set(lists.spheres.flatMap((s) => s.members.filter((m) => m.drawn).map((m) => m.code)))].filter((c) => !outlined.has(c) && !labels[c]).sort();
 if (nowhere.length > 0) {
   refuse(`nowhere to draw ${nowhere.join(', ')}: no outline in static/grid/world.json and no label point in scripts/data/label-points.json`);
 }
 
 /** @type {Record<string, [number, number]>} */
 const points = {};
-for (const s of lists.spheres) for (const m of s.members) if (!outlined.has(m.code)) points[m.code] = labels[m.code];
+for (const s of lists.spheres) for (const m of s.members) if (m.drawn && !outlined.has(m.code)) points[m.code] = labels[m.code];
 
 // When the lists were read: the oldest and the newest, and how many say nothing, so the map gives the
 // cautious date and not only the freshest one.
@@ -155,10 +156,11 @@ const file = {
     id: s.id,
     name: s.name,
     family: s.family,
-    members: s.members.map((m) => (m.source ? { code: m.code, source: m.source } : { code: m.code })),
+    members: s.members.map((m) => ({ code: m.code, ...(m.source ? { source: m.source } : {}), ...(m.drawn ? {} : { drawn: false }) })),
     groups: s.groups,
     sources: s.sources.map((x) => Object.fromEntries(Object.entries(x).filter(([, v]) => v !== null))),
-    read: s.read
+    read: s.read,
+    ...(s.note ? { note: s.note } : {})
   })),
   points: Object.fromEntries(Object.entries(points).sort(([a], [b]) => a.localeCompare(b)))
 };

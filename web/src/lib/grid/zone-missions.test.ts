@@ -1,8 +1,8 @@
 /**
  * Open missions counted by Zone and Sector [docs/design/map.md, Missions on Zones]: missions, never
  * people, placed by the point a package gives its subject, at every level the phone holds, and said to
- * be near an edge, at each level, rather than counted silently on one side of a line the world view
- * simplified.
+ * be near an edge, at each level, rather than counted silently on one side of a line the phone draws
+ * only so precisely.
  */
 
 import { readFileSync, readdirSync } from 'node:fs';
@@ -72,7 +72,7 @@ describe('near an edge, at every level it is counted in', () => {
   });
 
   it('holds a Sector to its own file’s drift, which the vendoring measured apart from the Zones’', () => {
-    // Each file says its own: the Sectors are simplified apart, and here drift less than the Zones.
+    // Each file says its own: the Sectors are quantised apart, and here drift less than the Zones.
     expect(sectorDrift['terra:laurentia']).toBeGreaterThan(0);
     expect(sectorDrift['terra:laurentia']).toBeLessThan(outlines.navcom.simplified_m!);
     for (const f of readdirSync(FIXTURE).filter((f) => f !== 'outlines.json' && f !== 'index.json')) {

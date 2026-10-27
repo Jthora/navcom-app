@@ -12,7 +12,7 @@
    * either; Back and a reload ask again. A place on the map is answered by the map: a tap names its
    * Zone, and once that Zone's container is open, its Sector.
    *
-   * Edges are simplified to about a kilometre, so near one both Sectors are offered and the person
+   * The index's edges are quantised to about 400 m, so near one both Sectors are offered and the person
    * chooses. Nothing is kept from a draft (D6).
    */
   import { Panel, Readout, Slot } from '$lib/components/panel';

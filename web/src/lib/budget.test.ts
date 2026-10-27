@@ -491,28 +491,29 @@ describe('the map’s layers, each a line of its own', () => {
 
   it('fails the build when a layer arrives before its ceiling is derived, and prints what to derive', () => {
     /*
-     * The real declaration, with one layer more whose code is written and not yet measured: the
-     * change that writes a layer is the one that has to derive its ceiling, and here it arrives, as a
-     * chunk the map imports. Zones' data has none until Stage 1 is vendored, nor Spheres' until their
-     * lists are. Time zones' were measured, so they have.
+     * The real declaration, with one layer more whose code and data are written and not yet measured:
+     * the change that writes a layer is the one that has to derive its ceilings, and here both arrive,
+     * a chunk the map imports and a file it fetches. Time zones', Zones' and Spheres' were measured,
+     * so they have.
      */
     const HEAT = `${LAYER_CODE}heat.ts`;
-    const lines = { ...MAP_LINES, heat: { when: 'choosing heat', code: HEAT, files: null, per: 'all' as const, js: null, data: null } };
+    const lines = { ...MAP_LINES, heat: { when: 'choosing heat', code: HEAT, files: (f: string) => f === 'grid/heat.json', per: 'all' as const, js: null, data: null } };
     const m = manifest();
     m[MAP].dynamicImports = [HEAT];
     m[HEAT] = { file: `${A}/chunks/heat.js`, isDynamicEntry: true, src: HEAT, imports: ['_shared.js'] };
     const f = fixture({
       manifest: m,
-      chunks: { [`${A}/chunks/heat.js`]: noise(400), 'grid/zsp/outlines.json': noise(500), 'grid/timezones.json': noise(600), 'grid/spheres.json': noise(700) }
+      chunks: { [`${A}/chunks/heat.js`]: noise(400), 'grid/heat.json': noise(700), 'grid/zsp/outlines.json': noise(500), 'grid/timezones.json': noise(600), 'grid/spheres.json': noise(700) }
     });
     const { report, failed, out } = run(f, lines);
     expect(failed).toBe(true);
     expect(out).toMatch(/FAIL {2}heat code +\S+ kB arrived with no ceiling/);
-    expect(out).toMatch(/FAIL {2}spheres data +\S+ kB arrived with no ceiling/);
+    expect(out).toMatch(/FAIL {2}heat data +\S+ kB arrived with no ceiling/);
     const js = report.lines.heat.js as number;
     expect(js).toBeGreaterThan(0);
     expect(out).toContain(`measured ${js} B, so a limit near ${Math.floor(js * 1.2)} B and a warning\n        near ${Math.round(js * 1.08)} B.`);
-    expect(out).toMatch(/FAIL {2}zones data +\S+ kB arrived with no ceiling/);
+    expect(out).toMatch(/PASS {2}zones data/);
+    expect(out).toMatch(/PASS {2}spheres data/);
     expect(report.lines.timezones).toEqual({
       js: null,
       js_limit: MAP_LINES.timezones.js!.limit,
@@ -596,12 +597,14 @@ describe('the map’s layers, each a line of its own', () => {
     expect(MAP_LINES.layers!.files).toBeNull();
     // Natural Earth's time zones, as D8 decided them, at the finer setting, with each region's own zone beside them.
     expect(MAP_LINES.timezones.data).toMatchObject({ measured: 53_698, limit: 63 * 1024, warn: 57 * 1024 });
-    // Every line whose code is written has a ceiling for it; Zones' data waits on Stage 1, Spheres' on their lists.
+    // Every line whose code is written has a ceiling for it, and every file the layers fetch has one too.
     for (const name of ['layers', 'zones', 'zones-lookup', 'timezones', 'spheres', 'daylight', 'ages', 'zone-missions', 'hazards', 'labels', 'fine'] as const) {
       expect(MAP_LINES[name]!.js, name).not.toBeNull();
     }
-    expect(MAP_LINES.zones.data).toBeNull();
-    expect(MAP_LINES.spheres.data).toBeNull();
+    expect(MAP_LINES.zones.data).toMatchObject({ measured: 70_466 });
+    expect(MAP_LINES['zones-container']!.data).toMatchObject({ measured: 36_234 });
+    expect(MAP_LINES['zones-lookup']!.data).toMatchObject({ measured: 239_360 });
+    expect(MAP_LINES.spheres.data).toMatchObject({ measured: 4_264, limit: 5_117, warn: 4_605 });
     // Day and night is worked out on the phone, and the Zones' counts from what it holds: neither fetches a file, and nor do the names.
     expect(MAP_LINES.daylight!.files).toBeNull();
     expect(MAP_LINES.labels!.files).toBeNull();

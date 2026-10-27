@@ -8,8 +8,8 @@
  * map's scale as a circle at Natural Earth's label point (D9).
  *
  * Written against the published shape of the lists (edition 1.0), which Starcom's Spheres mode also
- * reads: `{ lists, licence, spheres: [{ id: 'sphere:<slug>', name, family, members: [{ code, source? }],
- * groups?, sources: [{ name, url?, licence? }], read? }] }`. Starcom's reader is under another licence,
+ * reads: `{ lists, licence, spheres: [{ id: 'sphere:<slug>', name, family, members: [{ code, source?,
+ * drawn? }], groups?, sources: [{ name, url?, licence? }], read?, note? }] }`. Starcom's reader is under another licence,
  * and none of it is here; `spheres.test.ts` fails if anything under this directory names it.
  *
  * Lenient where a phone reads it and strict where a build vendors it: a Sphere this cannot read is left
@@ -34,13 +34,21 @@ export interface Sphere {
   id: string;
   name: string;
   family: SphereFamily;
-  /** Each member by its ISO 3166-1 alpha-2 code, lower-cased as a mission files a country, and where the list says so. */
-  members: { code: string; source: string | null }[];
+  /**
+   * Each member by its ISO 3166-1 alpha-2 code, lower-cased as a mission files a country, and where the
+   * list says so. `drawn` is false for a membership the list counts and does not draw, an observer, an
+   * associate, a language official only in one region: listed, never shaded, and never what a tap on that
+   * country names. Read since 26 Oct; before it, the Francophonie would have been hatched over its 33
+   * observers and associates, Japan and Argentina among them.
+   */
+  members: { code: string; source: string | null; drawn: boolean }[];
   /** Where the source divides the Sphere further, each group by its members' codes, all of them the Sphere's own. */
   groups: { id: string; name: string; members: string[] }[];
   sources: SphereSource[];
   /** When the lists were read, YYYY-MM-DD, or null where they do not say. */
   read: string | null;
+  /** What the list says it holds, as it says it, or null. */
+  note: string | null;
 }
 
 export interface SphereLists {
@@ -83,12 +91,15 @@ function sphereOf(raw: unknown, taken: ReadonlySet<string>): { sphere: Sphere | 
   const members: Sphere['members'] = [];
   const bad: string[] = [];
   for (const m of Array.isArray(r.members) ? r.members : []) {
-    const code = text((m as Record<string, unknown>)?.code)?.toLowerCase() ?? '';
+    const o = (m ?? {}) as Record<string, unknown>;
+    const code = text(o.code)?.toLowerCase() ?? '';
+    if (o.drawn !== undefined && typeof o.drawn !== 'boolean') say(`${code || 'a member'}: drawn is true or false, not ${String(o.drawn)}`);
     if (!/^[a-z]{2}$/.test(code)) bad.push(code || '(none)');
-    else if (!members.some((x) => x.code === code)) members.push({ code, source: text((m as Record<string, unknown>).source) });
+    else if (!members.some((x) => x.code === code)) members.push({ code, source: text(o.source), drawn: o.drawn !== false });
   }
   if (bad.length > 0) say(`not ISO 3166-1 alpha-2 codes: ${bad.join(', ')}`);
   if (members.length === 0) say('no members');
+  else if (!members.some((m) => m.drawn)) say('draws none of its members');
   const sources: SphereSource[] = [];
   for (const s of Array.isArray(r.sources) ? r.sources : []) {
     const o = (s ?? {}) as Record<string, unknown>;
@@ -116,7 +127,7 @@ function sphereOf(raw: unknown, taken: ReadonlySet<string>): { sphere: Sphere | 
   const read = text(r.read);
   if (read !== null && !isDay(read)) say(`a read date is YYYY-MM-DD, not ${read}`);
   if (problems.length > 0) return { sphere: null, problems };
-  return { sphere: { id, name: name!, family: family as SphereFamily, members, groups, sources, read }, problems };
+  return { sphere: { id, name: name!, family: family as SphereFamily, members, groups, sources, read, note: text(r.note) }, problems };
 }
 
 /**

@@ -226,6 +226,27 @@ describe('what a report will be held to, checked when the package is read', () =
     expect(m.effect).toEqual(['Water: a count']);
   });
 
+  it('reads what a package made in Starcom asks to count, after Mecha Jono’s field [interchange rev 18]', () => {
+    const starcom = JSON.stringify({ name: 'x', objectives: [{ id: 'a', ask: 'x' }], metadata: { format: { effect: ['Meals served: a count'] } } });
+    expect(ok(pkg([], { content: starcom }), TEST).effect).toEqual(['Meals served: a count']);
+    const both = JSON.stringify({
+      name: 'x', objectives: [{ id: 'a', ask: 'x' }],
+      metadata: { mechaJono: { format: { effect: ['Water: a count'] } }, format: { effect: ['Meals served: a count', 'Water: a count'] } }
+    });
+    expect(ok(pkg([], { content: both }), TEST).effect).toEqual(['Water: a count', 'Meals served: a count']);
+  });
+
+  it('refuses content over 131,072 bytes, or a list over 1,000 entries, as Starcom’s reader does [interchange rev 19]', () => {
+    // Bytes, not characters: a dash is three.
+    const near = (n: number) => JSON.stringify({ name: '–'.repeat(n), objectives: [{ id: 'a', ask: 'x' }] });
+    expect(refused(pkg([], { content: near(43_600) }))).toBeNull();
+    expect(refused(pkg([], { content: near(43_700) }))).toMatch(/larger than any reader takes/);
+    const many = Array.from({ length: 1_001 }, (_, i) => ({ id: `o${i}`, ask: 'x' }));
+    expect(refused(pkg([], { content: content(many) }))).toMatch(/longer than any reader takes/);
+    expect(refused(pkg([], { content: JSON.stringify({ name: 'x', objectives: [{ id: 'a', ask: 'x' }], reports: Array(1_001).fill('r') }) }))).toMatch(/longer than any reader/);
+    expect(refused(pkg([], { content: content(many.slice(0, 1_000)) }))).toBeNull();
+  });
+
   it('refuses an end no calendar can draw', () => {
     expect(refused(pkg([['valid_until', '1000000000000000']], { drop: ['valid_until'] }))).toMatch(/not a date/);
   });

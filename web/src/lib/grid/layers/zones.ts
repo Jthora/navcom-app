@@ -17,7 +17,7 @@
  */
 
 import { absoluteArcs, areaAt, decode, project, type Ring, type Shape, type Topology } from '../topology';
-import { ZSP_DIR, layerData, loaded, mapLayers, type DrawnLayer, type Loading } from '../layer.svelte';
+import { ZSP_DIR, layerData, loaded, mapLayers, type DrawnLayer, type Ink, type Loading } from '../layer.svelte';
 
 /** What the vendoring script records in every file it writes. */
 export interface ZspProvenance {
@@ -31,7 +31,7 @@ export interface ZspProvenance {
   /** The attribution CC BY 4.0 asks for. */
   credit: string;
   /**
-   * How far the simplified outlines drift from the source at worst, in metres, as the vendoring measured
+   * How far the drawn outlines drift from the source at worst, in metres, as the vendoring measured
    * it: within this of a drawn edge, which side a point is on is not something the drawn lines can say.
    * Absent from files vendored before it was measured.
    */
@@ -113,8 +113,8 @@ const json = (r: Response) => (r.ok ? (r.json() as Promise<Topology>) : Promise.
 let outlinesAsked: Promise<void> | null = null;
 
 /**
- * The outlines, once: `absent` when this build carries no Zones yet, which until Stage 1 is vendored
- * is every build, and `failed` when they did not arrive, in which case the next choice asks again.
+ * The outlines, once: `absent` when a build carries no Zones, as every build did until Starcom's final
+ * set was vendored (26 Oct), and `failed` when they did not arrive, in which case the next choice asks again.
  */
 export function loadOutlines(): Promise<void> {
   outlinesAsked ??= (async () => {
@@ -143,8 +143,10 @@ export function openContainer(id: string): Promise<void> {
   const known = asked.get(id);
   if (known) return known;
   const set = (state: Loading) => {
+    const was = layerData.opening[id];
     layerData.opening = { ...layerData.opening, [id]: state };
-    loaded();
+    // A first opening reads as loading with nothing set, and saying so again only drew the map once more.
+    if (state !== 'loading' || was !== undefined) loaded();
   };
   const run = (async () => {
     await loadOutlines();
@@ -176,54 +178,161 @@ export function openContainer(id: string): Promise<void> {
 /** An opened container's Sector edges, each once, beside its shapes in `layerData.sectors`. */
 const sectorEdges: Record<string, Ring[]> = {};
 
-function pathOf(lines: readonly Ring[]): Path2D | null {
-  if (lines.length === 0) return null;
+/**
+ * One edge with the points it can lose at this zoom gone, Douglas–Peucker, in the map's projected units:
+ * none moves more than `tol`, and both ends stay, so two areas' shared edge, thinned once, still meets
+ * at their corners. For drawing only. Starcom's points are 8 km apart and a pixel at the whole Earth is
+ * about 100 km, so stroked whole, a dozen points a pixel: opening Mare Pacificum at a sixth of the speed
+ * was three tasks of 200 ms, nearly all of it rastering lines nobody could see (26 Oct). What a tap,
+ * the lookup and a count read are the shapes themselves, every point.
+ */
+function thin(line: Ring, tol: number): Ring {
+  const n = line.length / 2;
+  if (n <= 2) return line;
+  const keep = new Uint8Array(n);
+  keep[0] = keep[n - 1] = 1;
+  const stack = [0, n - 1];
+  while (stack.length > 0) {
+    const b = stack.pop()!, a = stack.pop()!;
+    const ax = line[2 * a]!, ay = line[2 * a + 1]!, dx = line[2 * b]! - ax, dy = line[2 * b + 1]! - ay, len = dx * dx + dy * dy;
+    let far = -1, worst = tol * tol;
+    for (let i = a + 1; i < b; i++) {
+      const px = line[2 * i]! - ax, py = line[2 * i + 1]! - ay;
+      const t = len === 0 ? 0 : Math.max(0, Math.min(1, (px * dx + py * dy) / len));
+      const d = (px - t * dx) ** 2 + (py - t * dy) ** 2;
+      if (d > worst) [worst, far] = [d, i];
+    }
+    if (far > 0) {
+      keep[far] = 1;
+      stack.push(a, far, far, b);
+    }
+  }
+  return Float32Array.from(Array.from({ length: n }, (_, i) => i).filter((i) => keep[i]).flatMap((i) => [line[2 * i]!, line[2 * i + 1]!]));
+}
+
+/** A set of edges, each with its box, west, north, east, south, in projected units, and thinned once for each doubling of zoom. */
+interface Edges {
+  lines: readonly Ring[];
+  boxes: Float32Array;
+  thinned: Map<number, Ring[]>;
+}
+const edgesFor = (lines: readonly Ring[]): Edges => {
+  const boxes = new Float32Array(lines.length * 4);
+  lines.forEach((r, k) => {
+    let [w, n, e, s] = [Infinity, Infinity, -Infinity, -Infinity];
+    for (let i = 0; i < r.length; i += 2) [w, e, n, s] = [Math.min(w, r[i]!), Math.max(e, r[i]!), Math.min(n, r[i + 1]!), Math.max(s, r[i + 1]!)];
+    boxes.set([w, n, e, s], k * 4);
+  });
+  return { lines, boxes, thinned: new Map() };
+};
+
+/**
+ * One set's path for the canvas as it is: at this zoom, no point moved more than a pixel, and only the
+ * edges whose box is on the canvas, read back from its own transform. At ×4 most of a whole-Earth
+ * partition is off the canvas, and its edges were the stroke that cost most of a frame (26 Oct). Half a
+ * pixel kept 5,700 points at the whole Earth, where the draft that drew in time kept 4,100; a pixel keeps
+ * 4,700, and a line a pixel wide moved by at most its own width.
+ */
+function pathOf(set: Edges, ctx: CanvasRenderingContext2D, scale: number): Path2D | null {
+  if (set.lines.length === 0) return null;
+  const level = Math.floor(Math.log2(scale));
+  let lines = set.thinned.get(level);
+  if (!lines) set.thinned.set(level, (lines = set.lines.map((l) => thin(l, 1 / 2 ** (level + 1)))));
+  const m = ctx.getTransform().inverse();
+  const [a, b] = [m.transformPoint({ x: 0, y: 0 }), m.transformPoint({ x: ctx.canvas.width, y: ctx.canvas.height })];
   const p = new Path2D();
-  for (const r of lines) {
+  lines.forEach((r, k) => {
+    const [w, n, e, s] = set.boxes.subarray(k * 4, k * 4 + 4);
+    if (w! > Math.max(a.x, b.x) || e! < Math.min(a.x, b.x) || n! > Math.max(a.y, b.y) || s! < Math.min(a.y, b.y)) return;
     p.moveTo(r[0]!, r[1]!);
     for (let i = 2; i < r.length; i += 2) p.lineTo(r[i]!, r[i + 1]!);
-  }
+  });
   return p;
 }
 
-/** Each set of lines, rebuilt only when what it is drawn from changes. */
+/** Each set of edges, rebuilt only when what it is drawn from changes, and how many times each has been. */
 let drawnFrom: { outlines: ZonesOutlines | null; sectors: Record<string, Shape[]> } = { outlines: null, sectors: {} };
-let drawn: { containers: Path2D | null; zones: Path2D | null; sectors: Path2D | null; opened: Shape[] } = { containers: null, zones: null, sectors: null, opened: [] };
+const stamps = { outlines: 0, sectors: 0 };
+let drawn: { containers: Edges; zones: Edges; sectors: Edges; opened: Shape[] } = {
+  containers: edgesFor([]),
+  zones: edgesFor([]),
+  sectors: edgesFor([]),
+  opened: []
+};
 function sync() {
   const { outlines, sectors } = layerData;
   if (outlines === drawnFrom.outlines && sectors === drawnFrom.sectors) return;
-  const opened = Object.values(sectors).flat();
+  if (outlines !== drawnFrom.outlines) stamps.outlines++;
+  if (sectors !== drawnFrom.sectors) stamps.sectors++;
   drawn = {
-    containers: pathOf(outlines?.edges.containers ?? []),
-    zones: pathOf(outlines?.edges.zones ?? []),
-    sectors: pathOf(Object.keys(sectors).flatMap((id) => sectorEdges[id] ?? [])),
-    opened
+    containers: outlines === drawnFrom.outlines ? drawn.containers : edgesFor(outlines?.edges.containers ?? []),
+    zones: outlines === drawnFrom.outlines ? drawn.zones : edgesFor(outlines?.edges.zones ?? []),
+    sectors: edgesFor(Object.keys(sectors).flatMap((id) => sectorEdges[id] ?? [])),
+    opened: Object.values(sectors).flat()
   };
   drawnFrom = { outlines, sectors };
 }
+
+/** The lines themselves, in three weights. */
+function strokes(ctx: CanvasRenderingContext2D, scale: number, ink: Ink) {
+  const at = {
+    sectors: scale >= 1500 ? pathOf(drawn.sectors, ctx, scale) : null,
+    zones: pathOf(drawn.zones, ctx, scale),
+    containers: pathOf(drawn.containers, ctx, scale)
+  };
+  /*
+   * Three weights and no hue, over the coast: a container's edge heaviest; a Zone's lighter; a
+   * Sector's thin and dashed, once the world is 1,500 px wide (about ×4 on a phone), about 23 km a
+   * pixel, where a Sector of 50,000 km² or more is ten pixels or more across. A Sector's edge in the
+   * faintest line was not there at ×9. Never in ink, which is what a hover or a tap lifts.
+   */
+  for (const [path, width, colour] of [
+    [at.sectors, 0.8, ink.strong],
+    [at.zones, 1, ink.strong],
+    [at.containers, 1.5, ink.muted]
+  ] as const) {
+    if (!path) continue;
+    ctx.lineWidth = width / scale;
+    ctx.strokeStyle = colour;
+    if (path === at.sectors) ctx.setLineDash([4 / scale, 3 / scale]);
+    ctx.stroke(path);
+    ctx.setLineDash([]);
+  }
+}
+
+/** The lines as last drawn, kept on a canvas of their own, and when to let them go. */
+let kept: { key: string; canvas: HTMLCanvasElement } | null = null;
+let letGo: ReturnType<typeof setTimeout> | undefined;
 
 export const layer: DrawnLayer = {
   load: () => void loadOutlines(),
   lines(ctx, scale, ink) {
     sync();
     /*
-     * Three weights and no hue, over the coast: a container's edge heaviest; a Zone's lighter; a
-     * Sector's thin and dashed, once the world is 1,500 px wide (about ×4 on a phone), about 23 km a
-     * pixel, where a Sector of 50,000 km² or more is ten pixels or more across. A Sector's edge in the
-     * faintest line was not there at ×9. Never in ink, which is what a hover or a tap lifts.
+     * Kept as a picture of their own, and drawn again only when the canvas has moved, what they are drawn
+     * from has changed, or the inks have: the map draws its picture again for anything a layer loads,
+     * and opening a Terra or Mare at the whole Earth drew it twice with every line where it was. Let go
+     * after half a minute without a frame, so a layer chosen and left holds no canvas.
      */
-    for (const [path, width, colour] of [
-      [scale >= 1500 ? drawn.sectors : null, 0.8, ink.strong],
-      [drawn.zones, 1, ink.strong],
-      [drawn.containers, 1.5, ink.muted]
-    ] as const) {
-      if (!path) continue;
-      ctx.lineWidth = width / scale;
-      ctx.strokeStyle = colour;
-      if (path === drawn.sectors) ctx.setLineDash([4 / scale, 3 / scale]);
-      ctx.stroke(path);
-      ctx.setLineDash([]);
+    const m = ctx.getTransform();
+    const key = [m.a, m.b, m.c, m.d, m.e, m.f, ctx.canvas.width, ctx.canvas.height, ink.strong, ink.muted, stamps.outlines, scale >= 1500 ? stamps.sectors : -1].join();
+    clearTimeout(letGo);
+    letGo = setTimeout(() => (kept = null), 30_000);
+    if (kept?.key !== key) {
+      const canvas = kept?.canvas ?? document.createElement('canvas');
+      if (canvas.width !== ctx.canvas.width || canvas.height !== ctx.canvas.height) [canvas.width, canvas.height] = [ctx.canvas.width, ctx.canvas.height];
+      const c = canvas.getContext('2d')!;
+      c.setTransform(1, 0, 0, 1, 0, 0);
+      c.clearRect(0, 0, canvas.width, canvas.height);
+      c.setTransform(m);
+      c.lineJoin = ctx.lineJoin;
+      strokes(c, scale, ink);
+      kept = { key, canvas };
     }
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(kept.canvas, 0, 0);
+    ctx.restore();
   },
   hit(v, at) {
     const o = layerData.outlines;

@@ -36,6 +36,9 @@
 
   const file = $derived(mapLayers.loaded >= 0 ? layerData.spheres : null);
   const one = $derived(id && file ? (file.spheres.find((s) => s.id === id) ?? null) : null);
+  // What it draws, and what its list counts without drawing: an observer, an associate, a language official in one region.
+  const drawn = $derived(one ? one.members.filter((m) => m.drawn !== false) : []);
+  const listed = $derived(one ? one.members.filter((m) => m.drawn === false) : []);
   const at = $derived(code && spheres && file ? spheres.spheresAt(code) : []);
   const nameOf = (c: string) => countryName(c) ?? c.toUpperCase();
   const FAMILY = { language: 'A language’s', civilisation: 'A civilisation’s', political: 'A political community’s' } as const;
@@ -61,12 +64,23 @@
     {#if one}
       <Panel label="Sphere" post={one.name}>
         <Slot k="Family"><Readout value={FAMILY[one.family]} tone="neutral" sub="a domain of influence; Spheres overlap" /></Slot>
-        <Slot k="Members"><Readout value="{one.members.length} countries" tone="neutral" sub="each by its ISO code, from the list" /></Slot>
+        <Slot k="Members"><Readout value="{drawn.length} countries" tone="neutral" sub="each by its ISO code, from the list" /></Slot>
         <ul class="nc-areas" data-sphere-members>
-          {#each one.members as m (m.code)}
+          {#each drawn as m (m.code)}
             <li><button type="button" data-sphere-member={m.code} onclick={() => nav.open(place(m.code))}>{nameOf(m.code)}</button></li>
           {/each}
         </ul>
+        {#if listed.length > 0}
+          <Slot k="Listed, not drawn"><Readout value="{listed.length} countries" tone="neutral" sub="counted by the list, and not shaded" /></Slot>
+          <ul class="nc-areas" data-sphere-listed>
+            {#each listed as m (m.code)}
+              <li><button type="button" data-sphere-member-listed={m.code} onclick={() => nav.open(place(m.code))}>{nameOf(m.code)}</button></li>
+            {/each}
+          </ul>
+        {/if}
+        {#if one.note}
+          <Slot k="Note"><Readout value="The list’s own" tone="neutral" sub={one.note} /></Slot>
+        {/if}
         {#each one.groups as g (g.id)}
           <Slot k={g.name}><Readout value="{g.members.length} countries" tone="neutral" sub="a group within it: {g.members.map(nameOf).join(', ')}" /></Slot>
         {/each}

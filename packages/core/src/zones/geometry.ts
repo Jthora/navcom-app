@@ -109,29 +109,34 @@ function crossings(rings: readonly LonLatRing[], at: number, across: boolean): n
  * A point inside a shape to hang a label on, to two places: as far in from its edges as a search along
  * 32 parallels finds. On each parallel, each stretch inside the shape (even-odd, so a hole is outside
  * and both halves of a shape split at the antimeridian count); at each stretch's middle, the stretch
- * inside along that meridian; the point is the middle of the latter, from the stretch whose shorter
- * side, east-west on the ground or north-south, is longest. A box's centre, or the mean of the vertices,
- * can fall outside a coastline; a cap that runs along a pole is labelled halfway to it, not on it.
+ * inside along that meridian. Each middle is a candidate, and the one farthest from every edge, on the
+ * ground, is the point. A box's centre, or the mean of the vertices, can fall outside a coastline; a cap
+ * that runs along a pole is labelled halfway to it, not on it. Scored by the two stretches' lengths
+ * until 26 Oct, a shape whose edge ran along a meridian (Starcom's are drawn on a 0.1° grid) put its
+ * point on that edge: the Black Sea's Sector was labelled 0 m from its own line.
  */
 export function labelPoint(rings: readonly LonLatRing[]): [number, number] {
   const [w, s, e, n] = boxOf(rings);
   let best: [number, number] = [(w + e) / 2, (s + n) / 2];
   let score = -Infinity;
   const steps = 32;
+  const consider = (lon: number, lat: number) => {
+    const clear = edgeMetres(rings, lon, lat);
+    if (clear > score && holds(rings, lon, lat)) {
+      score = clear;
+      best = [lon, lat];
+    }
+  };
   for (let k = 0; k < steps; k++) {
     const lat = s + ((n - s) * (k + 0.5)) / steps + 1e-9;
     const xs = crossings(rings, lat, true);
     for (let i = 0; i + 1 < xs.length; i += 2) {
       const lon = (xs[i]! + xs[i + 1]!) / 2;
-      const wide = (xs[i + 1]! - xs[i]!) * Math.cos(lat * RAD);
+      consider(lon, lat);
       const ys = crossings(rings, lon, false);
       for (let j = 0; j + 1 < ys.length; j += 2) {
         if (ys[j]! > lat || ys[j + 1]! < lat) continue;
-        const tall = ys[j + 1]! - ys[j]!;
-        if (Math.min(wide, tall) > score) {
-          score = Math.min(wide, tall);
-          best = [lon, (ys[j]! + ys[j + 1]!) / 2];
-        }
+        consider(lon, (ys[j]! + ys[j + 1]!) / 2);
       }
     }
   }

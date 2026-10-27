@@ -475,27 +475,22 @@ Budgets, all of them targets to measure rather than claims:
   map (§0): all 9,623 published coordinates.
 - **Satellite is declined**, per [`declined.md`](../declined.md)'s rule that a gap may be
   closed rather than carried.
-- **Zones, from the first draft NavCom's reader takes**: run `web/scripts/zsp-vendor.mjs` on it where
-  it lands in starcom-app (`--folder zones-draft --stage 3` while it is in Starcom's drafts folder), with
-  the manifest's digest as reviewed and the attribution the licence asks for, then derive the Zones
-  lines' ceilings from what the build measures (§8). Starcom's draft of 26 Oct waits on the three fixes
-  under Zones, Stages.
-- **Spheres** (§8) wait on Mecha Jono's Part 2 lists, due 26 Oct. When they land, run
-  `web/scripts/spheres-vendor.mjs` on them where they land in starcom-app, with the manifest's digest as
-  reviewed and the attribution the licence asks for, `--final` only if their author says they are, then
-  derive the Spheres line's data ceiling from what the build measures, and record the licence in
-  `LICENSING.md`:
+- **Zones shipped final 2026-10-26**, from starcom-app ec6714b9 (§8, Zones, Stages). When Starcom changes
+  the partition, re-run `web/scripts/zsp-vendor.mjs` at its commit with `--stage final`, the manifest's
+  digest as reviewed and `--credit "Starcom ZSP 2.0"`, and re-derive the Zones lines' data ceilings.
+- **Spheres** (§8) shipped 2026-10-26 as draft lists. Re-run `web/scripts/spheres-vendor.mjs` with
+  `--final` once Mecha Jono says the lists are, or at a later commit when they change, with the
+  manifest's digest as reviewed, and re-derive the Spheres line's data ceiling:
 
       node scripts/spheres-vendor.mjs --repo ../../starcom-app --commit <sha> \
-        --manifest-sha256 <hex> --credit "<the attribution the licence asks for>"
+        --manifest-sha256 <hex> --credit "Mecha Jono, ZSP 2.0 Part 2"
 
-  It assumes `public/geopolitical/spheres/manifest.json`, the path Starcom's Spheres mode reads. **For
-  the owner**: which repository, path and commit the lists land at; their licence and exact credit;
-  whether they are draft or final; and whether Organisations (`union:*`) are drawn too.
+  **For the owner**: whether Organisations (`union:*`, fifteen bodies in
+  `public/geopolitical/organisations/`) are drawn too.
 - **A Zone in the interchange.** NavCom's packages carry no Zone, so a mission filed only by
   jurisdiction cannot be counted in one without inventing a place (§8, Missions on Zones). Counting them
   honestly needs a `["zone", id]` or `["zone_sector", id]` tag from the publisher: a rev 9 ask to
-  partners, which is the owner's to make. The ids change at Starcom's 12 November swap.
+  partners, which is the owner's to make. Starcom's ids are final since its swap of 26 October.
 - **Hazards' open choices, the owner's** (§8). GDACS's `SEARCH` is asked unparameterised, 124,555 B,
   64% of a round; `?eventlist=FL;DR;TC` would roughly halve it but is unmeasured and its syntax
   unverified, and a wrong parameter is a feed that reads *not read: unknown* for ever, so it waits for one
@@ -568,9 +563,8 @@ Sectors that tile each Zone, every point of the Earth in exactly one Sector. Ids
 
 **Vendored by digest, never fetched from starcom.app (D6).** A fetch from Starcom would hand its host
 every visitor's address and timing, would not work offline, is refused by CORS today, and fails the
-landing page's "talks to nobody" test by design. And starcom.app serves ZSP 1.0 until its own checks
-pass the whole partition on 12 November, so it would give NavCom nothing until then. So each stage is
-taken from starcom-app's repository at a pinned commit, by hand:
+landing page's "talks to nobody" test by design. So each stage is taken from starcom-app's repository
+at a pinned commit, by hand:
 
     node scripts/zsp-vendor.mjs --repo ../../starcom-app --commit <sha> \
       --manifest-sha256 <hex> --stage 1 --credit "<the attribution the licence asks for>"
@@ -599,7 +593,7 @@ partition with any problem writes nothing. **The reader is NavCom's own**: Starc
 test fails if anything under `packages/core/src/zones` carries Starcom's licence.
 
 What it writes to `web/static/grid/zsp/` is quantised TopoJSON, each shared edge stored once:
-`outlines.json`, every Terra, Mare and Zone simplified for the world view; one file per Terra or Mare
+`outlines.json`, every Terra, Mare and Zone at every point the format gives; one file per Terra or Mare
 holding its Sectors; and `index.json`, every Sector at lookup precision. Each records the source and
 commit, the manifest's digest, the stage and the credit.
 
@@ -617,9 +611,26 @@ shipped, everything else passed, and what it would weigh is 31.6 kB compressed f
 29 kB for one container's Sectors, and 231.5 kB for the lookup's index (1.27 MB unpacked), which on that
 phone took 0.8 s to answer Nairobi with *Northern Acacia-Commiphora bushlands and thickets, south*, in
 the East African Rift Zone.
-**Every stage before it is a draft, and is labelled as one, view only**, on the map and on every screen
-that shows it. **Until Stage 1 the build carries no Zones at all**, and the map says so (*Zones · not
-in this build yet*) rather than drawing nothing. Nothing synthetic ships. The tests use NavCom's own
+**Final, the same day** (26 Oct). Starcom swapped to the whole set (b248325c), serving it from
+`public/geopolitical/zones/` with the drafts folder gone, and fixed two of the three findings five hours
+later (ec6714b9, its ZR29): `bytes` is the file's bytes, and every corner of the map is pinned through its
+simplification. **The third was NavCom's**: ZR6 names its systems as examples, *a rift, belt, basin, …*,
+and NavCom's reader had held them as a closed list, with *orogen* from Starcom's code beside them. A
+Zone's system is now any one lower-case word. NavCom vendors ec6714b9 as `final`, with nothing in it
+changed. **And the vendoring had thinned it wrong**, which the draft's figures showed and nobody read:
+kept to a tenth of their points, the outlines lost every piece of an area but its largest (New Zealand's
+Zone the Chatham Islands) and the thin end of a long one (Walvis Ridge's western 650 km), and drew the
+median Zone's edge 100 km from where it is; the file said so, `simplified_m` 27,800 km. Half the points
+still lost pieces. Starcom's edges are already about 8 km apart (ZR24), so a cap on distance kept nearly
+all of them, and the script now keeps them all and quantises, drifting 2.3 km at most for the outlines
+and 0.3 to 2.1 km for a container's Sectors, and **refuses a file that drifts more than 5 km**. That is
+70.5 kB compressed for the outlines (16,303 points, from 32.0), 4.3 to 36.2 kB for one container's
+Sectors, and 239.4 kB for the lookup's index. Its labels moved too: `labelPoint` scored a candidate by
+the lengths of the stretches through it, and on Starcom's 0.1° grid an edge that runs along a meridian
+put the Black Sea's Sector's label on its own line; it now takes the candidate farthest from every edge.
+**Every stage before `final` is a draft, and is labelled as one, view only**, on the map and on every
+screen that shows it. **A build with no Zones says so** (*Zones · not in this build yet*) rather than
+drawing nothing, as every build did until 26 Oct. Nothing synthetic ships. The tests use NavCom's own
 fixture partition, in the format exactly: nine containers (the four renamed on 2026-10-18 among them),
 eighteen Zones and thirty-eight Sectors, pole to pole, with both polar caps and one Sector split across
 the antimeridian (`packages/core/test/fixtures/zsp/`); the browser tests serve what the script makes of
@@ -642,7 +653,15 @@ edge between two Zones was drawn twice and one between two Terrae four times. Un
 draft at a CPU six times slower, that made opening Mare Pacificum three tasks of 125 to 164 ms and the
 last frame of a whole-Earth pan 103 to 164 ms; stroked once, 83 to 87 ms and 81 to 110, which is where
 the same pan under Nation States already is (73 to 106). `e2e/zones.spec.ts` holds the first, against
-whatever Zones the build ships, from the first stage vendored.
+whatever Zones the build ships, from the first stage vendored. **Drawn at the zoom, kept between
+frames** (26 Oct): with every point of Starcom's final set kept, opening Mare Pacificum was three frames
+of 200 to 230 ms, nearly all of it rastering lines a dozen points to the pixel. Each edge is now thinned
+for drawing, once for each doubling of zoom, so no point moves more than a pixel (Douglas–Peucker, both
+ends kept, so shared edges still meet); only the edges whose box is on the canvas are stroked; and the
+lines are kept as a picture of their own, drawn again only when the canvas moves or what they show
+changes, since the map draws its picture again for anything a layer loads. A tap, the lookup and a
+count read every point. Opening Mare Pacificum is now two frames of 51 to 72 ms, and a ×4 pan's end
+50 to 105, Nation States' own range.
 
 **A tap opens what it lands on**: a Sector of an open container, else its Zone, else its Terra or
 Mare. Com shows where it sits, *Terra › Zone › Sector*, each a way up; a Zone's system; a Sector's
@@ -656,8 +675,8 @@ phone is is fetched, not even its container, and the fix is never put in history
 it found fetches nothing either** (2026-10-19; one tap there used to fetch the container the phone is
 in): the Sector is named from the index and its Zone and Terra from the outlines, and its screen says
 that opening its Zone would fetch its Terra's Sectors and tell navcom.app which Terra. *Where you work*
-opens the same way. Edges are simplified
-to about a kilometre, so within 1.5 km of one both Sectors are offered and the person chooses.
+opens the same way. The index's edges are quantised
+to about 400 m, so within 1.5 km of one both Sectors are offered and the person chooses.
 
 **Where I work (D7)**: one Sector, kept on this phone only, in the Wipeable tier (`work_sector`), so a
 panic wipe takes it. Never published, never sent, never in a backup. **Only from a final partition**:
@@ -785,10 +804,10 @@ or the key where it would sit under one, a point inside its full-resolution outl
 stamps (`labelPoint`, core); a Sector's replaces its Zone's once the Sector is 48 px wide. Nothing open
 draws no badge; missions not read draw none either, and the key says so, because unknown is not none.
 
-The outlines are simplified for the world view, and the vendoring measures by how much, at every source
-vertex, **for each file of them**: `outlines.json` for the Terrae, Maria and Zones (1.5 km on the
-fixture), and each container's file for its own Sectors, which are simplified apart and drift by their
-own amount (0.6 to 1.7 km on the fixture). A mission within a level's drift, plus its own precision, of
+The outlines are quantised for the phone, and the vendoring measures by how much they drift, at every
+source vertex, **for each file of them**: `outlines.json` for the Terrae, Maria and Zones (2.3 km on
+Starcom's final set, 1.5 km on the fixture), and each container's file for its own Sectors, which are
+quantised apart and drift by their own amount (0.3 to 2.1 km; 0.6 to 1.7 km on the fixture). A mission within a level's drift, plus its own precision, of
 that level's drawn edge is near that edge, at that level, with the neighbour across it: **at every level
 it is counted in**, so a Zone whose container is open still says it, since the Zone's badge counts it
 too. It is still counted where its drawn point falls, and the count says so rather than settle it
@@ -798,8 +817,16 @@ layer's code reads the mission feed: the map hands the counts their missions, an
 
 ### Spheres
 
-**Built against NavCom's fixture, 2026-10-19; nothing ships until Mecha Jono's Part 2 lists are
-vendored** (due 26 Oct; D9). Cited membership lists of countries, by ISO code, overlapping, in the shape
+**Built against NavCom's fixture, 2026-10-19; Mecha Jono's Part 2 lists shipped 2026-10-26** (D9):
+thirteen Spheres and 221 memberships, lists 1.0, from starcom-app `ec6714b9`, 4.3 kB compressed, labelled
+draft lists until Mecha Jono says they are final. **68 of the memberships are listed and not drawn**
+(`drawn: false`): the Francophonie's 5 associates and 28 observers, the Lusosphere's associate
+observers, a language official only in one region. NavCom's reader first dropped the flag, which would
+have hatched the Francophonie over Japan and Argentina; it now keeps it, a Sphere is shaded over and a
+tap names it for only the members it draws, and its screen lists the rest apart, *Listed, not drawn*,
+with the list's own note. Eight of them cite Unicode CLDR or the Unihan database,
+under Unicode-3.0, which the reader refused until the owner took it as attribution only that day
+(`LICENSING.md` carries its notice). Cited membership lists of countries, by ISO code, overlapping, in the shape
 Starcom's Spheres mode reads (edition 1.0: a Sphere's id, name and family, its members, groups and cited
 sources, and when it was read). **The reader is NavCom's own** (`packages/core/src/spheres`): Starcom's is
 AGPL-3.0-only, and a test fails if anything there carries its licence.
@@ -813,7 +840,7 @@ come from a partner's repository. The Sphere's screen holds the same line whatev
 https link is a link, and anything else is the source's name as plain text. It writes
 `web/static/grid/spheres.json`, labelled a draft unless `--final` is given, with the oldest and the
 newest day a list was read and how many do not say; `--dir`, for the fixture, is refused there whatever
-path names it. Until then the map says *Spheres · not in this build yet*.
+path names it. A build without them says *Spheres · not in this build yet*.
 
 **Drawn over the world's own outlines by code.** A small state with no outline at 1:110m is a small diamond
 at Natural Earth's label point (D9): `web/scripts/label-points.mjs`, from the same pinned commit as the

@@ -1,7 +1,8 @@
 # Mission interchange — NavCom ⇄ Starcom / Mecha Jono
 
 **NavCom's side of the boundary, rev 8 — 2026-10-18.** Checked against Starcom rev 15 (`8ecd1045`)
-and Mecha Jono Interchange 3.20 (manifest, 2026-10-16). Starcom's side is
+and Mecha Jono Interchange 3.20 (manifest, 2026-10-16); Starcom's revs 16 to 19 read on 2026-10-27
+(`ec6714b9`), and what NavCom's reader does with them is under §4.3. Starcom's side is
 [`starcom.app/spec/starcom-navcom-interchange.spec.md`](https://starcom.app/spec/starcom-navcom-interchange.spec.md).
 Each spec owns its own side; neither restates the other's. The keys NavCom reads, their dates and
 the inbox it seals to are published as
@@ -123,6 +124,7 @@ from whether a builder exists, and this document follows the same discipline.
 | `geo_precision: address` (§4.2) | PROPOSED, rev 8 — NavCom's reader keeps it, and its map draws it no finer than `1km` while Q19 is open; Q19 asks whether you will send it |
 | Kind `1911` observation (raw intel) | BUILT — builder and contract exist; published at `/.well-known/navcom-intel.json` |
 | Kind `1912` report | LIVE — operators on navcom.app send them, open or sealed (§5.2); the contract says `emitted: true` |
+| Starcom's revs 18 and 19 in NavCom's reader (§4.3) | LIVE from 2026-10-27: a package over 131,072 bytes or with a list over 1,000 entries is refused as Starcom's reader refuses it, and what a package made in Starcom asks to count, at `metadata.format.effect`, is read after Mecha Jono's field |
 | Claims (§5.1) | LIVE — operators on navcom.app send them, open and sealed; three rules PROPOSED (§10, Q11–Q13) |
 | Settlement, challenge, witness (§5.3) | LIVE on NavCom's side: each operator sees how their reports settled, and any operator can read a mission's reports, witness one (if their device took part) or challenge one, by name |
 | Standing, Writs, bounties (§8) | DESIGNED |
@@ -295,7 +297,13 @@ country (2026-10-18).
 than shows, a field package an operator could take part in but never report: one with no
 `objectives`; two objectives sharing an `id`; an `id` that is empty or contains whitespace; a `d`
 tag that is empty or contains whitespace; an `effect` line longer than 200 characters; or a
-`valid_until` past 2100. A repeated or blank `effect` line is read once or not at all. Each refusal
+`valid_until` past 2100. A repeated or blank `effect` line is read once or not at all. **From your
+rev 19** (read 2026-10-27), as your reader does and for the same reason: content over 131,072 bytes
+of UTF-8, refused before its signature is checked, and an `objectives`, `reports`, `intel` or
+`assets` list over 1,000 entries. **From your rev 18**: what to count is read from
+`metadata.mechaJono.format.effect` and then from `metadata.format.effect`, a line in both read once.
+A `toward` link to a Cause or Initiative is ignored, as your rev 18 expects of a reader that does
+not know it; NavCom shows no roster item yet. Each refusal
 is shown on NavCom's map with its reason, so a package that crosses one of these lines is seen, not
 silently missing. A newer version you sign that NavCom refuses still replaces the older one: the
 map never keeps showing a version you have superseded.

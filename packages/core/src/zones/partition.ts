@@ -29,8 +29,13 @@ import { isContainerLevel, zoneOfSector, zspLevelOf, type ZspContainerLevel, typ
 export type ZspStage = '1' | '2' | '3' | 'final';
 export const ZSP_STAGES: readonly ZspStage[] = ['1', '2', '3', 'final'];
 
-/** The systems a Zone is bound by [ZR6]. A word not here is a word nobody has defined yet. */
-export const ZSP_SYSTEMS: ReadonlySet<string> = new Set(['rift', 'belt', 'orogen', 'basin', 'shield', 'plateau', 'delta', 'arc', 'ridge', 'gyre']);
+/**
+ * The system a Zone is bound by, in one lower-case word [ZR6]. ZR6 gives examples (a rift, belt, basin,
+ * shield, plateau, delta, arc, ridge or gyre), not a closed list: the Maria add *chain*, *transform*, *fan*
+ * and *strait*. NavCom's reader held the examples closed until 26 Oct and refused Starcom's final set for
+ * it, which was NavCom's reading and not the format (Starcom ZR29). Any word, then, and only a word.
+ */
+export const ZSP_SYSTEM = /^[a-z]+(?:-[a-z]+)*$/;
 
 /**
  * The IAU's descriptor terms for planetary surface features, singular and plural, the only words a
@@ -53,12 +58,14 @@ export const SECTOR_KM2 = { min: 50_000, max: 500_000 } as const;
 /**
  * A licence NavCom may vendor, for the set or for a source a Sector's lines were drawn from: public
  * domain, CC0, or attribution only. Share-alike would bind what NavCom derives from it, and
- * non-commercial would bind who may use it; neither may draw a line here.
+ * non-commercial would bind who may use it; neither may draw a line here. Unicode-3.0, which CLDR and
+ * Unihan are under and eight of the Spheres cite, asks only that its notice go with copies: attribution
+ * only, and `LICENSING.md` carries the notice (the owner, 2026-10-26).
  */
 export function licenceAllowed(licence: unknown): boolean {
   if (typeof licence !== 'string' || licence.trim() === '') return false;
   if (/(-SA\b|-NC\b|ShareAlike|NonCommercial|-ND\b)/i.test(licence)) return false;
-  return /^(CC0(-1\.0)?|CC-BY(-[34]\.0)?|ODC-BY(-1\.0)?|PDDL(-1\.0)?|OGL-UK-3\.0|NLOD(-2\.0)?|public domain)$/i.test(licence.trim());
+  return /^(CC0(-1\.0)?|CC-BY(-[34]\.0)?|ODC-BY(-1\.0)?|PDDL(-1\.0)?|OGL-UK-3\.0|NLOD(-2\.0)?|Unicode-3\.0|public domain)$/i.test(licence.trim());
 }
 
 export interface ZspManifestEntry {
@@ -259,7 +266,7 @@ export function checkPartition(input: {
         if (parent !== null) featureProblems.push(`${label}: a container has no parent`);
       } else if (level === 'zone') {
         if (parent !== entry.id) featureProblems.push(`${label}: parent "${String(p.parent)}", not its file's container ${entry.id}`);
-        if (!ZSP_SYSTEMS.has(String(p.system))) featureProblems.push(`${label}: system "${String(p.system)}" is not one of ${[...ZSP_SYSTEMS].join(', ')}`);
+        if (typeof p.system !== 'string' || p.system.length > 32 || !ZSP_SYSTEM.test(p.system)) featureProblems.push(`${label}: system "${String(p.system)}" is not one lower-case word`);
       } else {
         if (parent !== zoneOfSector(id as string)) featureProblems.push(`${label}: parent "${String(p.parent)}", and its id names ${zoneOfSector(id as string)}`);
         if (p.descriptor !== undefined && !IAU_DESCRIPTORS.has(String(p.descriptor))) {

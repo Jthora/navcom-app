@@ -4,8 +4,8 @@
  * The vendoring script first, run for real: it refuses what its checks refuse and writes nothing, it
  * takes a repository's lists at a commit and by the manifest's digest, it refuses a member it has
  * nowhere to draw, and it will not ship NavCom's own fixture. Then what it writes, read the way the map
- * reads it. **Nothing synthetic ships**: until Mecha Jono's Part 2 lists are vendored (due 26 Oct), the
- * build carries no `static/grid/spheres.json`, and the browser tests serve the fixture by route.
+ * reads it. **Nothing synthetic ships**: `static/grid/spheres.json` is Mecha Jono's Part 2 lists, vendored
+ * 26 Oct, and the browser tests serve the fixture by route.
  */
 
 import { spawnSync } from 'node:child_process';

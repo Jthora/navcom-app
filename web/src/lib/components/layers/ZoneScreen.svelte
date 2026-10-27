@@ -176,7 +176,7 @@
         </ul>
       {/if}
       {#each nearHere as n (n.mission.address)}
-        <!-- The drawn lines are simplified; which side of one a point that close is on, they cannot say. -->
+        <!-- The drawn lines are quantised; which side of one a point that close is on, they cannot say. -->
         <Slot k="Near an edge"><Readout value="Near its edge" tone="cold" sub="{n.mission.title}: may be in {n.with.join(', ')} instead" /></Slot>
       {/each}
       {#if age !== null && active.length > rings.length}

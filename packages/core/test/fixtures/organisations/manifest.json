@@ -1,0 +1,38 @@
+{
+  "lists": "1.0",
+  "generator": "navcom-test-fixture",
+  "generated": "2026-10-27T00:00:00Z",
+  "licence": "CC-BY-4.0",
+  "attribution": "NavCom test fixture, never shipped",
+  "organisations": [
+    {
+      "id": "union:test-alliance",
+      "name": "Test Atlantic Alliance",
+      "kind": "alliance",
+      "founded": "1949",
+      "members": [
+        { "code": "GB", "status": "member", "since": "1949", "source": "the fixture's own list" },
+        { "code": "us", "status": "member", "since": "1949" },
+        { "code": "ca", "status": "member", "since": "1949" },
+        { "code": "fr", "status": "member", "since": "1949" },
+        { "code": "ua", "status": "candidate" },
+        { "code": "ie", "status": "partner" }
+      ],
+      "sources": [{ "name": "NavCom test fixture", "url": "https://navcom.app/docs/design/map/", "licence": "CC-BY-4.0" }],
+      "read": "2026-10-27",
+      "note": "4 members are drawn; Ukraine, a candidate, and Ireland, a partner, are listed, not drawn."
+    },
+    {
+      "id": "union:test-islands",
+      "name": "Test Island Forum",
+      "kind": "forum",
+      "members": [
+        { "code": "mt", "status": "member" },
+        { "code": "sg", "status": "member" },
+        { "code": "mu", "status": "member" },
+        { "code": "bb", "status": "suspended", "since": "2026" }
+      ],
+      "sources": [{ "name": "NavCom test fixture" }]
+    }
+  ]
+}

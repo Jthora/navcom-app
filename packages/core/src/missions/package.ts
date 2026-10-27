@@ -318,6 +318,14 @@ export const EFFECT_LINE_MAX = 200;
 export const OBJECTIVE_ID = /^\S{1,200}$/;
 /** How long a package's `d` may be, for the same reason: a claim and a report name the package by it. */
 export const D_TAG_MAX = 256;
+/**
+ * The most content a package may carry, in bytes of UTF-8, and the most entries in any of its lists,
+ * as Starcom's reader refuses them before reading a manifest (interchange rev 19, 23 Oct): The Record's
+ * own message limit, and far above the one entry any published package has held. Some public relays
+ * take 1 MB events, and anyone may post one. Read the same way here so both apps show the same set.
+ */
+export const PACKAGE_CONTENT_MAX = 131_072;
+export const PACKAGE_LIST_MAX = 1_000;
 
 const tag = (e: Event, name: string) => e.tags.find((t) => t[0] === name)?.[1];
 const tags = (e: Event, name: string) => e.tags.filter((t) => t[0] === name).map((t) => t[1] ?? '');
@@ -422,6 +430,10 @@ export function readMissionPackage(input: unknown, publishers: MissionPublishers
   ) {
     return { ok: false, kind: 'not-a-package', because: 'Not a kind-30079 event.' };
   }
+  // Before the signature is hashed: a string's length never exceeds its UTF-8 bytes, so only a near one is encoded.
+  if (raw.content.length > PACKAGE_CONTENT_MAX || (raw.content.length * 3 > PACKAGE_CONTENT_MAX && new TextEncoder().encode(raw.content).length > PACKAGE_CONTENT_MAX)) {
+    return { ok: false, kind: 'refused', because: 'Its content is larger than any reader takes.' };
+  }
   /*
    * Every tag a list of strings, checked before any tag is read [11.R]. One `null` among the tags
    * threw in the flag scan below — before the signature check, so from anybody — and the live feed
@@ -493,6 +505,9 @@ export function readMissionPackage(input: unknown, publishers: MissionPublishers
     return no('refused', 'Its content is not a package manifest.');
   }
   if (!manifest || typeof manifest !== 'object') return no('refused', 'Its content is not a package manifest.');
+  if (['objectives', 'reports', 'intel', 'assets'].some((k) => Array.isArray(manifest[k]) && (manifest[k] as unknown[]).length > PACKAGE_LIST_MAX)) {
+    return no('refused', 'One of its lists is longer than any reader takes.');
+  }
 
   /*
    * What a report will be held to, checked now rather than after the work [11.X]. A package an
@@ -504,10 +519,16 @@ export function readMissionPackage(input: unknown, publishers: MissionPublishers
   if (!objectives.every((o) => OBJECTIVE_ID.test(o.id))) return no('refused', 'An objective id is not one a report could name.');
   if (new Set(objectives.map((o) => o.id)).size !== objectives.length) return no('refused', 'Two of its objectives share an id.');
 
-  const mechaJono = ((manifest['metadata'] as Record<string, unknown> | undefined)?.['mechaJono'] ?? {}) as Record<string, unknown>;
-  const format = (mechaJono['format'] ?? {}) as Record<string, unknown>;
-  // The same line twice is one line, and a blank one says nothing to count.
-  const effectAll = [...new Set(strings(format['effect']).map((l) => l.trim()).filter(Boolean))];
+  /*
+   * What to count: Mecha Jono's packages ask at `metadata.mechaJono.format.effect`, and one made in
+   * Starcom at `metadata.format.effect` (interchange rev 18), read after it. The same line twice is one
+   * line, and a blank one says nothing to count.
+   */
+  const metadata = (manifest['metadata'] ?? {}) as Record<string, unknown>;
+  const formats = [(metadata['mechaJono'] as Record<string, unknown> | undefined)?.['format'], metadata['format']]
+    .map((f) => (f ?? {}) as Record<string, unknown>);
+  const asked = formats.flatMap((f) => strings(f['effect']));
+  const effectAll = [...new Set(asked.map((l) => l.trim()).filter(Boolean))];
   if (effectAll.some((l) => l.length > EFFECT_LINE_MAX)) return no('refused', 'An effect line is longer than a count could answer.');
   const effect = effectAll.filter((line) => !PEOPLE.test(line));
   const priority = Number(tag(e, 'priority'));
@@ -542,7 +563,7 @@ export function readMissionPackage(input: unknown, publishers: MissionPublishers
       citizenSafe: flag(e, 'citizen_safe'),
       priority: Number.isFinite(priority) ? priority : null,
       objectives,
-      clock: strings(format['clock']),
+      clock: [...new Set(formats.flatMap((f) => strings(f['clock'])))],
       effect,
       omittedPeopleCounts: effectAll.length - effect.length,
       takingPart: takingPartOf(e),

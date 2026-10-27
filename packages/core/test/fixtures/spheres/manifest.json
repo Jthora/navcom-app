@@ -27,9 +27,10 @@
       "id": "sphere:test-francophonie",
       "name": "Test Francophonie",
       "family": "language",
-      "members": [{ "code": "fr" }, { "code": "ca" }, { "code": "mu" }],
+      "members": [{ "code": "fr" }, { "code": "ca" }, { "code": "mu" }, { "code": "ie", "drawn": false }],
       "sources": [{ "name": "NavCom test fixture" }],
-      "read": "2026-08-03"
+      "read": "2026-08-03",
+      "note": "France, Canada and Mauritius are drawn; Ireland, an observer here, is listed and not drawn."
     },
     {
       "id": "sphere:test-atlantic",

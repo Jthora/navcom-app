@@ -21,7 +21,7 @@
  *
  * What it writes, quantised TopoJSON with each shared edge stored once, as `world.json` is:
  *
- * - `outlines.json`: every Terra, Mare and Zone, simplified for the world view, fetched whole when
+ * - `outlines.json`: every Terra, Mare and Zone, at every point the format gives, fetched whole when
  *   somebody chooses Zones (D10)
  * - `<terra-or-mare>.json`: one container's Sectors, fetched when somebody opens that container (D10)
  * - `index.json`: every Sector on Earth at lookup precision, fetched whole the first time somebody
@@ -33,10 +33,11 @@
  *
  * Every Terra, Mare, Zone and Sector carries a `label`, `[lon, lat]` to two places: a point inside its
  * full-resolution outline, as far from its edges as `labelPoint` finds, where the map hangs a count of
- * the missions open in it. And every file of outlines says how far its simplified lines drift from the
- * source, `simplified_m`, measured here at every source vertex: `outlines.json` for the Terrae, Maria and
- * Zones, and each container's file for its own Sectors, which are simplified apart from them and drift
- * by their own amount. Within that of an edge, which side a point is on is not something the drawn
+ * the missions open in it. And every file of outlines says how far its lines drift from the source,
+ * `simplified_m`, measured here at every source vertex: `outlines.json` for the Terrae, Maria and Zones,
+ * and each container's file for its own Sectors, which are quantised apart from them and drift by their
+ * own amount. **A file that drifts more than 5 km writes nothing**: a reading that far off is not a
+ * picture of the partition. Within that of an edge, which side a point is on is not something the drawn
  * lines can say, and the map says so rather than count it on one side.
  *
  * `--folder zones-draft` reads Starcom's drafts, which sit in `public/geopolitical/zones-draft/` until its
@@ -60,10 +61,18 @@ import { fileURLToPath } from 'node:url';
 import { checkPartition, edgeMetres, labelPoint, zspStem } from '@navcom/core/zones';
 
 const MAPSHAPER = 'mapshaper@0.7.78';
-/** The world view: a Sector line there is a pixel or two, so the outlines keep a tenth of their points. */
-const OUTLINES = { simplify: '10%', quantization: 10000 };
-/** One container's Sectors, drawn when it is opened and zoomed toward: a quarter of their points. */
-const SECTORS = { simplify: '25%', quantization: 10000 };
+/*
+ * Every point the format gives, quantised and not simplified: Starcom's edges are already about 8 km
+ * apart (ZR24), and about 2 km of rounding to the grid is all the drift left. Simplified to a tenth of
+ * their points for the outlines and a quarter for the Sectors until 26 Oct, every area in more than one
+ * piece lost all but its largest (New Zealand's Zone the Chatham Islands), a long thin one lost its end
+ * (Walvis Ridge's western 650 km), and the median Zone's edge was drawn 100 km from where it is. Keeping
+ * half the points still lost pieces. A cap on distance kept them, and kept nearly every point.
+ */
+const OUTLINES = { quantization: 10000 };
+const SECTORS = { quantization: 10000 };
+/** The most a file's lines may drift from the source, in metres, before the vendoring refuses it. */
+const MAX_DRIFT_M = 5_000;
 /** The lookup: every point the format gives, about 400 m apart at the most once quantised over the Earth. */
 const INDEX = { quantization: 100000 };
 /** What the fixture's manifest calls its maker, which nothing vendored may be. */
@@ -190,7 +199,7 @@ const ringsOf = (/** @type {any} */ geometry) =>
 /** Where each area is labelled, by its id, from its full-resolution outline. */
 /** @type {Map<string, [number, number]>} */
 const labels = new Map();
-/** Each Terra's, Mare's and Zone's source rings, by id, to measure the simplified outlines against. */
+/** Each Terra's, Mare's and Zone's source rings, by id, to measure the outlines against. */
 /** @type {Map<string, Float64Array[]>} */
 const sources = new Map();
 /** Each container's Sectors' source rings, by container and then by id, for its own file's drift. */
@@ -265,10 +274,10 @@ const inputs = [geojson('containers', features.containers), ...(features.zones.l
  * Planar, in longitude and latitude, as the map draws them. Simplified on the sphere, a polar ring lost
  * its edge along the pole, where every point is one point, and was drawn as a diagonal across the cap.
  */
-mapshaper(inputs, ['-simplify', 'planar', OUTLINES.simplify, 'keep-shapes'], `quantization=${OUTLINES.quantization} ${join(written, 'outlines.json')}`);
+mapshaper(inputs, [], `quantization=${OUTLINES.quantization} ${join(written, 'outlines.json')}`);
 for (const [id, list] of Object.entries(sectorsOf)) {
   const stem = zspStem(id);
-  mapshaper([geojson(`sectors-${stem}`, list)], ['-simplify', 'planar', SECTORS.simplify, 'keep-shapes', '-rename-layers', 'sectors'], `quantization=${SECTORS.quantization} ${join(written, `${stem}.json`)}`);
+  mapshaper([geojson(`sectors-${stem}`, list)], ['-rename-layers', 'sectors'], `quantization=${SECTORS.quantization} ${join(written, `${stem}.json`)}`);
 }
 const everySector = Object.values(sectorsOf).flat().map((f) => ({ ...f, properties: { id: f.properties.id, name: f.properties.name } }));
 if (everySector.length > 0) {
@@ -309,7 +318,7 @@ function decoded(topology) {
 }
 
 /**
- * The farthest any source vertex lies from the simplified outline of its own area, in metres, rounded
+ * The farthest any source vertex lies from the drawn outline of its own area, in metres, rounded
  * up to the next hundred. Segments are bucketed by quarter-degree cell, so a stage of tens of thousands
  * of points is measured in seconds; a vertex with no segment near it is measured against them all.
  *
@@ -365,6 +374,9 @@ function stamp(file, block) {
   }
   if (file === 'outlines.json') block = { ...block, simplified_m: drift(decoded(topology), sources) };
   if (typeof block.container === 'string') block = { ...block, simplified_m: drift(decoded(topology), sectorSources.get(block.container) ?? new Map()) };
+  if (typeof block.simplified_m === 'number' && block.simplified_m > MAX_DRIFT_M) {
+    refuse(`${file} drifts ${block.simplified_m} m from the source, past ${MAX_DRIFT_M} m: nothing written`);
+  }
   topology.navcom = block;
   writeFileSync(path, JSON.stringify(topology));
 }
