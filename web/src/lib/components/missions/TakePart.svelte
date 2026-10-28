@@ -157,6 +157,11 @@
       {/if}
       <button type="button" data-letgo disabled={sending} onclick={release}>Let it go</button>
     </div>
+    <!-- Where the work is told: nothing on this screen said, and a report opens only the next day,
+         so somebody back from the work looked here for it and found Still on it [journey, 2026-10-28]. -->
+    <Slot k="Report">
+      <span data-report-where><Readout value="Your missions" tone="neutral" sub="once the day is over" /></span>
+    </Slot>
     {#if mine.visibility === 'sealed' && sealedOff}
       <!-- Renewing or sending it again would seal it once more: off, and why [rev 7]. -->
       <Readout value="Sealed sending paused" tone="cold" sub={`${sealedOff} The claim you hold ends by itself.`} />

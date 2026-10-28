@@ -13,9 +13,12 @@
    * somebody went out believing something false.
    */
   import { onMount } from 'svelte';
+  import encodeQR from '@paulmillr/qr';
   import { declineIsValid, RESPONSE_WINDOW } from '@navcom/core';
   import { board, type Waiting } from '$lib/terminal/board.svelte';
-  import { createWatch, foundedHere, joinWatch, leaveWatch, watchPubkey, watchSecretHex, WatchKeyError } from '$lib/terminal/watch-key';
+  import { createWatch, foundedHere, joinWatch, leaveWatch, watchKey, watchPubkey, watchSecretHex, WatchKeyError } from '$lib/terminal/watch-key';
+  import { watchCode } from '$lib/terminal/watch-code';
+  import { watchRelays } from '$lib/terminal/relays';
   import { endorsersFor } from '$lib/terminal/standing';
   import { Panel, Slot, Readout, Why, Heartbeat, Action, Board, Window, Elapsed } from '$lib/components/panel';
   import PickACallsign from '$lib/components/PickACallsign.svelte';
@@ -137,6 +140,44 @@
 
   const blocks = $derived(address ? (address.match(/.{1,8}/g) ?? []) : []);
   const configured = $derived(loadConfig() !== null);
+
+  /*
+   * The watch, handed to operators whole [core: events/watch-code.ts].
+   *
+   * This screen gave operators the address alone, and a watch held on phones cannot be reached by
+   * it: an operator seals what they send to the holders, each holder's own key, and with none named
+   * it went sealed to the address, which no phone reads the board with. Every sign-on timed out and
+   * no question or `Distress` reached the board [journey, 2026-10-28]. The code names this phone as a
+   * holder, any other holder's key added here, and the relays this board listens on, signed by the
+   * watch key, so Setup fills all of it from one scan and refuses a code anybody else made.
+   */
+  /** This phone's own key: the one it reads the board with, so the one operators seal to. */
+  const holderKey = $derived(address ? (loadIdentity()?.pubkey ?? null) : null);
+  const holderBlocks = $derived(holderKey ? (holderKey.match(/.{1,8}/g) ?? []) : []);
+  let others = $state('');
+  const otherHolders = $derived(
+    [...new Set((others.toLowerCase().match(/[0-9a-f]{64}/g) ?? []).filter((k) => k !== holderKey))]
+  );
+  const code = $derived.by(() => {
+    const secret = address ? watchKey() : null;
+    if (!secret || !address || !holderKey) return null;
+    try {
+      return watchCode({ pubkey: address, relays: watchRelays(), holders: [holderKey, ...otherHolders] }, secret);
+    } catch {
+      return null;
+    }
+  });
+  const codeQr = $derived(code ? encodeQR(code, 'svg', { ecc: 'medium', border: 2 }) : '');
+  let codeCopied = $state(false);
+  async function copyCode() {
+    if (!code) return;
+    try {
+      await navigator.clipboard.writeText(code);
+      codeCopied = true;
+    } catch {
+      codeCopied = false;
+    }
+  }
 </script>
 
 <svelte:head>
@@ -460,13 +501,46 @@
     </Slot>
   </Panel>
 
-  <section class="act">
-    <h2>The address</h2>
-    <p class="blocks">{#each blocks as b, i (i)}<span>{b}</span>{/each}</p>
-    <Why summary="What this is for">
+  <section class="act" data-watch-code>
+    <h2>For operators: this watch's code</h2>
+    {#if code}
+      <!-- Held up to their camera, as a peer's code is: the in-person path, through nobody's server. -->
+      <div class="qr" data-code-qr>{@html codeQr}</div>
+      <button onclick={copyCode}>{codeCopied ? 'Copied' : 'Copy the code'}</button>
+      <p class="cost">Handed over in person: an operator's Setup fills in from it.</p>
+      <Why summary="Why a code, not the address">
+        <p class="cost">
+          It names this watch's address, the relays this board listens on, and who holds it, and
+          nothing here publishes it.
+        </p>
+        <p class="cost">
+          What an operator sends is sealed to the people holding the watch, each with their own key.
+          The address alone names none of them, so a phone holding the watch could not read it:
+          their sign-on, their questions and their <code>Distress</code> would reach nobody. The
+          code names this phone, and the watch key signs it, so nobody else can make one that
+          points their phone somewhere else.
+        </p>
+      </Why>
+      <Why summary="Others hold this watch on their phones too">
+        <p class="cost">
+          Add each one's holder key, which their own watch screen shows, and give operators the
+          code again: anybody it does not name cannot read what operators send.
+        </p>
+        <label for="other-holders">Their holder keys</label>
+        <textarea id="other-holders" bind:value={others} rows="2" placeholder="64 hex characters each"></textarea>
+        {#if otherHolders.length > 0}
+          <Readout value={`${otherHolders.length + 1} holders`} tone="neutral" sub="in the code above" />
+        {/if}
+      </Why>
+      <Why summary="This phone's holder key">
+        <p class="blocks" data-holder-key>{#each holderBlocks as b, i (i)}<span>{b}</span>{/each}</p>
+      </Why>
+    {/if}
+    <Why summary="The address alone">
+      <p class="blocks" data-watch-address>{#each blocks as b, i (i)}<span>{b}</span>{/each}</p>
       <p class="cost">
-        What operators put in their own setup, along with your relays. Handed over by a
-        person; nothing here publishes it.
+        Enough for a watch on a box, which reads with its own key. For a watch on phones, give the
+        code.
       </p>
     </Why>
     {#if !configured}
@@ -776,6 +850,11 @@
 
 <style>
   .act { gap: .6rem; }
+  .qr {
+    background: #fff; padding: .7rem; align-self: flex-start; line-height: 0;
+    /* White ground regardless of theme: a scanner needs the contrast the format assumes. */
+  }
+  .qr :global(svg) { width: min(62vw, 15rem); height: auto; display: block; }
   textarea { width: 100%; }
   .blocks {
     display: flex; flex-wrap: wrap; gap: .35rem .6rem; margin: 0;

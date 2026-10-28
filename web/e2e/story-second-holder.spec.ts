@@ -43,8 +43,10 @@ test.describe('a squad grows by one', () => {
     // Same watch, so the same address — that is what makes it one watch and not two.
     const address = (t: string) => t.replace(/\s+/g, '');
     await expect
-      .poll(async () => address(await ash.locator('p.blocks').innerText()))
-      .toBe(address(await wren.locator('p.blocks').innerText()));
+      .poll(async () => address((await ash.locator('[data-watch-address]').textContent()) ?? ''))
+      .toBe(address((await wren.locator('[data-watch-address]').textContent()) ?? ''));
+    // Not two empty strings agreeing: the address is folded away under the code now.
+    expect(address((await wren.locator('[data-watch-address]').textContent()) ?? '')).toMatch(/^[0-9a-f]{64}$/);
 
     await wren.close();
     await ash.close();
@@ -156,7 +158,7 @@ test.describe('a squad grows by one', () => {
     await expect(ash.locator('[data-ungated]')).toBeVisible({ timeout: 10_000 });
     await expect(ash.getByRole('button', { name: /take the watch/i })).toHaveCount(0);
     // She still holds the key, and can still answer. Only the board is closed to her.
-    await expect(ash.locator('p.blocks')).toBeVisible();
+    await expect(ash.locator('[data-watch-code]')).toBeVisible();
 
     await wren.close();
     await ash.close();

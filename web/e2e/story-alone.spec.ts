@@ -34,7 +34,7 @@ test.describe('arriving with nothing', () => {
     await page.getByRole('link', { name: /choose a callsign/i }).click();
 
     await page.locator('#callsign').fill('Newcomer');
-    await page.getByRole('button', { name: /generate keypair/i }).click();
+    await page.getByRole('button', { name: /make my callsign/i }).click();
 
     // Confirmed where she is standing — the setup screen shows the name and the key it made.
     // (Status deliberately does not repeat it; it is her own device and her own name.)
@@ -64,7 +64,7 @@ test.describe('arriving with nothing', () => {
     await open(page, '/terminal/');
     await page.getByRole('link', { name: /choose a callsign/i }).click();
     await page.locator('#callsign').fill('Newcomer');
-    await page.getByRole('button', { name: /generate keypair/i }).click();
+    await page.getByRole('button', { name: /make my callsign/i }).click();
     await open(page, '/terminal/');
 
     await expect(page.getByRole('heading', { name: /normal way to work/i })).toBeVisible();
@@ -78,7 +78,7 @@ test.describe('arriving with nothing', () => {
     await open(page, '/terminal/');
     await page.getByRole('link', { name: /choose a callsign/i }).click();
     await page.locator('#callsign').fill('Newcomer');
-    await page.getByRole('button', { name: /generate keypair/i }).click();
+    await page.getByRole('button', { name: /make my callsign/i }).click();
 
     await open(page, '/terminal/directory/');
     const area = page.getByRole('link', { name: /st\.? louis/i }).first();
@@ -98,7 +98,7 @@ test.describe('arriving with nothing', () => {
     await open(page, '/terminal/');
     await page.getByRole('link', { name: /choose a callsign/i }).click();
     await page.locator('#callsign').fill('Newcomer');
-    await page.getByRole('button', { name: /generate keypair/i }).click();
+    await page.getByRole('button', { name: /make my callsign/i }).click();
 
     await page.locator('#clabel').fill('Sam');
     await page.locator('#cnumber').fill('+1 555 0100');

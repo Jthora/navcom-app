@@ -53,7 +53,7 @@ test.describe('answering somebody from the board', () => {
     const before = await publishedCount(page);
 
     await page.getByRole('button', { name: /^answer$/i }).click();
-    await page.locator('textarea').fill('the shelter on 8th takes dogs');
+    await page.locator('textarea[id^="a-"]').fill('the shelter on 8th takes dogs');
     await page.getByRole('button', { name: /^send$/i }).click();
 
     // Something actually left the phone.
@@ -80,7 +80,7 @@ test.describe('answering somebody from the board', () => {
     await expect(page.getByRole('heading', { name: 'Distress' })).toBeVisible({ timeout: 10_000 });
 
     await page.getByRole('button', { name: /tell them you are awake/i }).click();
-    await page.locator('textarea').fill('awake, on my way');
+    await page.locator('textarea[id^="a-"]').fill('awake, on my way');
     await page.getByRole('button', { name: /^send$/i }).click();
     await page.waitForTimeout(500);
 

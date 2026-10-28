@@ -33,7 +33,7 @@ test.describe('with nothing at all', () => {
     await open(page, '/terminal/setup/');
 
     await page.locator('#callsign').fill('Wren');
-    await page.getByRole('button', { name: /generate keypair/i }).click();
+    await page.getByRole('button', { name: /make my callsign/i }).click();
 
     await expect(page.getByText('Wren')).toBeVisible();
     // And now the app is ready. Nothing below is required.

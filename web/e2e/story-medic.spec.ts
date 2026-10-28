@@ -17,7 +17,7 @@ async function anIdentity(page: import('@playwright/test').Page, name = 'Medic')
   await open(page, '/terminal/');
   await page.getByRole('link', { name: /choose a callsign/i }).click();
   await page.locator('#callsign').fill(name);
-  await page.getByRole('button', { name: /generate keypair/i }).click();
+  await page.getByRole('button', { name: /make my callsign/i }).click();
   await open(page, '/terminal/');
 }
 

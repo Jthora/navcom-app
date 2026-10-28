@@ -161,7 +161,7 @@ test.describe('what it does before anybody has chosen', () => {
     await seedDevice(page);
     await open(page, '/terminal/setup/');
     await page.locator('#callsign').fill('Newcomer');
-    await page.getByRole('button', { name: /generate keypair/i }).click();
+    await page.getByRole('button', { name: /make my callsign/i }).click();
 
     const said = page.locator('[data-signature-explained]');
     await expect(said).toBeVisible();

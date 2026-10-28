@@ -80,7 +80,7 @@ test.describe('a watch with nobody to send', () => {
 
     // Raven has nobody to send, and says so with the control built for exactly that.
     await watch.getByRole('button', { name: /^answer$/i }).click();
-    await watch.locator('textarea').fill('everyone is committed tonight');
+    await watch.locator('textarea[id^="a-"]').fill('everyone is committed tonight');
     await watch.getByRole('button', { name: /nobody can come/i }).click();
 
     const answered = await deliver(watch, operator);

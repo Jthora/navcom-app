@@ -117,7 +117,7 @@ async function signOn(page: Page, callsign: string) {
   await open(page, '/terminal/');
   await page.getByRole('link', { name: /choose a callsign/i }).click();
   await page.locator('#callsign').fill(callsign);
-  await page.getByRole('button', { name: /generate keypair/i }).click();
+  await page.getByRole('button', { name: /make my callsign/i }).click();
   await expect(page.locator('#rename')).toBeVisible();
 }
 

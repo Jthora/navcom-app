@@ -25,9 +25,12 @@ export default defineConfig({
    * close the one gap `verification.md` says nothing covers. It is slower than everything
    * else here and it is a *check* rather than a test — `npm run test:relay`.
    *
-   * Excluded by name rather than by directory so it still lives beside what it is about.
+   * The journeys are not either, for the same reasons: whole flows over a relay on this machine,
+   * two phones at a time, minutes rather than seconds — `npm run test:journeys`.
+   *
+   * Excluded by name rather than by directory so they still live beside what they are about.
    */
-  testIgnore: ['**/real-relay.spec.ts'],
+  testIgnore: ['**/real-relay.spec.ts', '**/journey.spec.ts'],
 
   /**
    * **No retries, anywhere.**

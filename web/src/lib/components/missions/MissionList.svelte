@@ -14,6 +14,12 @@
   import { Panel, Readout, Slot } from '$lib/components/panel';
   import { endsIn, endsSoon, filedUnder, placeName } from './format';
 
+  /** Where a row says it is: the city its package names, in its state, or the state alone. */
+  const whereOf = (m: Mission) => {
+    const city = m.placement.city;
+    return city ? `${city.name}, ${placeName(city.in ?? m.placement.jurisdiction)}` : placeName(m.placement.jurisdiction);
+  };
+
   let {
     missions,
     province,
@@ -59,7 +65,7 @@
             <button type="button" data-mission={m.d} onclick={() => onopen(m.address)}>
               <span class="nc-missions-title">{m.title}</span>
               <span class="nc-missions-meta">
-                {placeName(m.placement.jurisdiction)} ·
+                {whereOf(m)} ·
                 <span class:nc-soon={endsSoon(m.validUntil, now)}>ends in {endsIn(m.validUntil, now)}</span>
                 {#if m.publisher.agent} · <span data-agent>posted by an agent</span>{/if}
               </span>

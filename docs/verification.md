@@ -617,6 +617,39 @@ no server, and it sets no cookies. **Expect `npm audit` to stay red at three low
 somebody has already read and understood is different from one nobody has, and the difference
 is written here so the next person does not start from zero.
 
+## Journeys — whole flows, walked on a phone, 2026-10-28
+
+Every test above holds one screen to one rule. **None asked whether a person can get from one end
+of a flow to the other**, and the first walk through them found four defects that every screen's
+own tests passed:
+
+- **A watch held on phones could not be reached by following its own screen.** It handed operators
+  the address. An operator seals what they send to the watch's holders, and with none named it went
+  sealed to the address, which no phone reads the board with — so the sign-on, the questions and the
+  `Distress` of anybody who followed the instructions reached nobody. Every test of the board had
+  seeded the holders straight into storage. The screen now gives a signed watch code, as a QR and a
+  link, naming the holders and the relays the board listens on
+- **Every patrol under a working phone-held watch began with a red "Failed"**: signing on, checking
+  in and standing down waited for an answer only a box sends. A failure shown when nothing failed is
+  how people learn to ignore the one that is real
+- **Status called a `Distress` addressed to the person on station "No addressee"**, because the line
+  counted only who would be paged after them
+- **Finding somebody to pair with was two words of a paragraph**, and the person who asked had to
+  accept the other's reply to finish pairing while the screen said they would "appear"
+
+`e2e/journey.spec.ts` keeps them, one test per flow: from navcom.app to a callsign, a card and a
+mission taken, reported and settled; a watch held on one phone and joined from another by its code,
+a question and a `Distress` answered across it; two strangers pairing from a city's board and seeing
+each other go out; Distress with no watch; a backup restored on a new phone; panic wipe and burn;
+the directory with a place added from the field. **Nothing in the page is faked**: it keeps its own
+`WebSocket`, and every socket it opens, to any address, is carried to a relay on this machine, so it
+speaks real NIP-01 and nothing it signs reaches a public relay. `npm run test:journeys`, outside the
+deploy gate for the reasons `test:relay` is; `JOURNEY_OUT=<dir>` screenshots every step.
+
+**The lesson is the same one as the filters' and one level up.** A rule can hold on every screen
+and the flow still not go through, because what joins two screens — an address typed on one phone
+for another, a reply that needs a second tap — belongs to neither.
+
 ## The part that is not architectural
 
 Several of the nine came from editing files by string replacement against text written from

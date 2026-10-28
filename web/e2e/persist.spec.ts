@@ -44,7 +44,7 @@ test('is asked when a callsign is created', async ({ page }) => {
   expect(await calls(page), 'asked before the operator did anything').toBe(0);
 
   await page.locator('#callsign').fill('Wren');
-  await page.getByRole('button', { name: /generate keypair/i }).click();
+  await page.getByRole('button', { name: /make my callsign/i }).click();
   await expect(page.getByText(/wren/i).first()).toBeVisible({ timeout: 10_000 });
 
   expect(await calls(page), 'never asked, so eviction protection was never requested').toBe(1);

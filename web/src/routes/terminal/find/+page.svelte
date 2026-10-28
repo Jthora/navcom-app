@@ -206,7 +206,12 @@
             {#if e.contact === mine}
               <p class="cost">This is your card.</p>
             {:else if sent.includes(e.contact)}
-              <p class="cost">Sent. If they want to pair, they will appear on Peers.</p>
+              <!-- Their acceptance arrives as an invite back, which needs this phone's accept too: the
+                   screen said they "will appear", and a newcomer waited for a pairing that was one tap
+                   short [journey, 2026-10-28]. -->
+              <p class="cost" data-asked>
+                Sent. Their answer waits on <a href="/terminal/peers/">Peers</a>: accept it there.
+              </p>
             {:else if failed === e.contact}
               <!--
                 It said "Sent." whatever happened, so an operator with no signal watched it

@@ -458,6 +458,16 @@
   </div>
 </section>
 
+<!--
+  Somebody not met yet, from their card on a city's board. It was two words of a paragraph above,
+  "their card", and a newcomer reading the screen for a way to find people found none
+  [journey, 2026-10-28].
+-->
+<section class="act">
+  <h2>Somebody you have not met</h2>
+  <a class="find" href="/terminal/find/" data-find-link>Find somebody on a city's board</a>
+</section>
+
 {#if mine.length > 0}
   <section>
     <h2>Paired</h2>
@@ -499,6 +509,10 @@
   }
   .qr :global(svg) { width: min(62vw, 15rem); height: auto; display: block; }
   .camera { width: 100%; max-height: 0; border-radius: 2px; background: var(--t-sunk); }
+  .find {
+    display: flex; align-items: center; justify-content: center; min-height: 3rem; padding: 0 .9rem;
+    border: 1px solid var(--t-line); background: var(--t-sunk); color: var(--t-ink); text-decoration: none;
+  }
   .camera.live { max-height: 16rem; object-fit: cover; margin-top: .5rem; }
 
   details summary { color: var(--t-faint); font-size: .88rem; min-height: 2.4rem; cursor: pointer; }

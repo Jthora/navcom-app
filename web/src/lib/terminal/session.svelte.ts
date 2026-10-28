@@ -153,6 +153,23 @@ async function send(type: SignalType, payload: SignalPayload, timeoutMs = 10_000
   return waitForResponse(pool(), relays, identity.secretKey, identity.pubkey, address, sent, timeoutMs);
 }
 
+/**
+ * Signing on, checking in and standing down: the signals a watch is told rather than asked.
+ *
+ * A box answers each of them on its own, so a wait that hears nothing means the box did not hear
+ * it. A squad's phones answer nothing on their own — only a person answers there, and only a
+ * Query, an Assist or a `Distress` — so under a watch with holders the wait could only ever time
+ * out, and every patrol under a working watch began with a red "No response from Watchtower"
+ * [journey, 2026-10-28]. There, a relay taking it is all there is to know, and `'posted'` says so:
+ * `signal` has already thrown if none did.
+ */
+async function tell(type: 'on-station' | 'routine' | 'stood-down', payload: SignalPayload): Promise<ResponsePayload | 'posted'> {
+  const { config, identity } = ctx();
+  if (config.holders.length === 0) return send(type, payload);
+  await signal(targets(), identity.secretKey, watchAddress(config), type, payload);
+  return 'posted';
+}
+
 /** Attaches the declared area, which is coarse by construction — it came from a sign-on. */
 /*
  * Overloaded so the two callers that always have text are typed as having it.
@@ -334,11 +351,11 @@ export const operator = {
         share_position: position.current !== null,
         position: position.current
       };
-      const response = await run(() => send('on-station', payload));
+      const response = await run(() => tell('on-station', payload));
       // A watch that did not answer does not stop the patrol. It is reported, and the
       // operator decides what that means -- the alternative is an app that refuses to let
       // somebody go out because a relay was slow.
-      if (response) lastResponse = response;
+      if (response && response !== 'posted') lastResponse = response;
     }
 
     session = {
@@ -376,7 +393,7 @@ export const operator = {
     // somebody believing they are being watched by a person who cannot see them.
     whenWatchChangesHands(() => {
       if (!session) return;
-      void run(() => send('on-station', onStationPayload()));
+      void run(() => tell('on-station', onStationPayload()));
     });
   },
 
@@ -515,9 +532,9 @@ export const operator = {
   },
 
   async routine() {
-    const r = await ask(() => send('routine', {}));
+    const r = await ask(() => tell('routine', {}));
     if (r) {
-      lastResponse = r;
+      if (r !== 'posted') lastResponse = r;
       // This is one of the two things that answer the watch's *"you are past the time you
       // gave"* -- and it clears the overdue on the board too, so the screen and the board
       // stop disagreeing. Only cleared on a send that actually landed.
@@ -593,8 +610,8 @@ export const operator = {
     let closedBy: string | undefined;
 
     if (operator.hasWatch) {
-      const r = await ask(() => send('stood-down', {}));
-      if (r) {
+      const r = await ask(() => tell('stood-down', {}));
+      if (r && r !== 'posted') {
         lastResponse = r;
         if (r.responder?.kind === 'human') closedBy = r.responder.callsign;
       }

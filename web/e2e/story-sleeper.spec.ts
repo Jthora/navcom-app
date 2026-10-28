@@ -55,7 +55,7 @@ test.describe('woken at 3am', () => {
 
     // One tap to open the reply, and the button says what it does.
     await page.getByRole('button', { name: /tell them you are awake/i }).click();
-    await expect(page.locator('textarea')).toBeVisible();
+    await expect(page.locator('textarea[id^="a-"]')).toBeVisible();
   });
 
   test('and she is never offered a way to decline a Distress', async ({ page }) => {

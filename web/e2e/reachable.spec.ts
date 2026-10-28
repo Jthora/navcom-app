@@ -25,7 +25,7 @@ test.describe('setup', () => {
     // refuses an empty one with an error. Disabled removes a tap whose only outcome is that
     // error, and makes the form inert before hydration, where a native submit used to reload
     // the page and throw away what was typed.
-    const generate = page.getByRole('button', { name: /generate keypair/i });
+    const generate = page.getByRole('button', { name: /make my callsign/i });
     await expect(generate).toBeDisabled();
     await page.locator('#callsign').fill('Wren');
     await expect(generate).toBeEnabled();

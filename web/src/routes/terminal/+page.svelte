@@ -542,7 +542,12 @@
         <Readout value={watchRead.value} tone={watchRead.tone} sub={watchRead.sub} />
       </Slot>
       <Slot k="Distress">
-        {#if reachable.length === 0}
+        {#if reachable.length === 0 && configured && s.state === 'station'}
+          <!-- A person on station is who a Distress reaches; what nobody does is page anyone after
+               them. "No addressee" said the first was false while a holder read the board
+               [journey, 2026-10-28]. -->
+          <Readout value="To the watch" tone="warn" sub="nobody else is paged" />
+        {:else if reachable.length === 0}
           <Readout value="No addressee" tone="warn" sub="pages nobody, and says so" />
         {:else}
           <Readout value="Pages on-call" tone="neutral" />
@@ -594,12 +599,6 @@
         {#if configured}
           <HeardWhy heard={heardNow} />
         {/if}
-        <!--
-          What was sealed to a publisher key whose secret leaked, said to every phone [decision 2,
-          2026-10-18]: the rows in your own mission history say it of what this phone sent.
-        -->
-        {#if leaked.length > 0}<p data-sealed-exposed>{leaked.join(' ')}</p>{/if}
-
         {#if !identity}
           <h2>Start here</h2>
           <p>
@@ -617,7 +616,20 @@
             <a href="/terminal/directory/">cached directory</a> needs no callsign and nothing sent
             anywhere.
           </p>
+          <p>
+            <!-- Restoring was reachable only through "Make a backup", inside the form that makes a
+                 new callsign: somebody on a new phone was steered into a second persona. -->
+            A callsign on another phone already? <a href="/terminal/backup/" data-restore-link>Restore it
+            from your backup</a> instead of making a new one.
+          </p>
         {/if}
+
+        <!--
+          What was sealed to a publisher key whose secret leaked, said to every phone [decision 2,
+          2026-10-18]: the rows in your own mission history say it of what this phone sent. After
+          "Start here", so a visitor's first words are what to do, not a publisher's leak.
+        -->
+        {#if leaked.length > 0}<p data-sealed-exposed>{leaked.join(' ')}</p>{/if}
 
         {#if s.state === 'dark' && configured}
           <!-- "Not a failure to connect" went: with no relay answering, or a reading gone stale

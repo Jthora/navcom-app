@@ -102,7 +102,9 @@
       <Readout value={watchRead.value} tone={watchRead.tone} sub={watchRead.sub} />
     </Slot>
     <Slot k="Distress">
-      {#if reachable.length === 0}
+      {#if reachable.length === 0 && configured && !stranded && watch.state.state === 'station'}
+        <Readout value="To the watch" tone="warn" sub="nobody else is paged" />
+      {:else if reachable.length === 0}
         <Readout value="No addressee" tone="warn" sub="pages nobody, and says so" />
       {:else}
         <Readout value="Pages on-call" tone="neutral" />

@@ -176,7 +176,7 @@ export const CAPABILITIES: Capability[] = [
       // Who can read what you send is the one thing an operator must know before
       // configuring a squad-held watch, and it is stated before the field.
       'whoever is on this list can read everything',
-      'Usually empty'
+      'Empty for a watch on a box'
     ],
     control: '#holders',
     requires: []

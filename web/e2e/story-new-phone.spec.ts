@@ -91,7 +91,9 @@ test.describe('starting again on a phone somebody just bought', () => {
     await wren.getByRole('button', { name: /start a watch on this phone/i }).click();
     await wren.getByRole('button', { name: /show the watch key/i }).click();
     const key = (await wren.locator('[data-watch-key]').innerText()).trim();
-    const address = (await wren.locator('p.blocks').innerText()).replace(/\s+/g, '');
+    // textContent: the address is folded under the watch's code, and innerText reads a closed fold as empty.
+    const address = ((await wren.locator('[data-watch-address]').textContent()) ?? '').replace(/\s+/g, '');
+    expect(address).toMatch(/^[0-9a-f]{64}$/);
 
     const blob = await backUp(wren, 'correct horse battery');
     // Said before the phone is lost, beside the backup itself.
@@ -111,7 +113,7 @@ test.describe('starting again on a phone somebody just bought', () => {
     await page.locator('#key').fill(key);
     await page.getByRole('button', { name: /^join$/i }).click();
     await expect
-      .poll(async () => (await page.locator('p.blocks').innerText()).replace(/\s+/g, ''))
+      .poll(async () => ((await page.locator('[data-watch-address]').textContent()) ?? '').replace(/\s+/g, ''))
       .toBe(address);
 
     await context.close();

@@ -28,7 +28,7 @@ test('an acknowledgement from the board carries the member’s own signature on 
   await open(page, '/terminal/watch/');
   await expect(page.getByRole('heading', { name: 'Distress' })).toBeVisible({ timeout: 10_000 });
   await page.getByRole('button', { name: /tell them you are awake/i }).click();
-  await page.locator('textarea').fill('awake, on my way');
+  await page.locator('textarea[id^="a-"]').fill('awake, on my way');
   await page.getByRole('button', { name: /^send$/i }).click();
 
   const response = await page.waitForFunction(

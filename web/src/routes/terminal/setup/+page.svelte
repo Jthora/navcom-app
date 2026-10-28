@@ -29,6 +29,8 @@
   let identity = $state<ReturnType<typeof loadIdentity>>(null);
   /** The mission somebody came here from to take part, so this screen can take them back [finding 47]. */
   let leftMission = $state<PendingMission | null>(null);
+  /** The callsign was made on this visit: the screen says what is next, since nothing else on it is. */
+  let justMade = $state(false);
   let configured = $state(false);
   /** Lines of the watch as saved that this page will not dial, each with why. */
   let refused = $state<Refused[]>([]);
@@ -207,6 +209,7 @@
       return;
     }
     identity = createIdentity(name);
+    justMade = true;
     /*
      * The one moment this is asked. Deliberate, unhurried, and chosen by the operator — the
      * only kind of moment a browser permission prompt is acceptable in a field tool. Fired
@@ -313,9 +316,16 @@
       <a class="nc-act" data-act data-back-to-mission href="/" data-sveltekit-reload>
         <span class="nc-act-label">{backTo(leftMission)}</span>
       </a>
+    {:else if justMade}
+      <!-- Made, and the screen offered nothing to do next: "← Status" was the only way on, at the top
+           of a page already scrolled past it [journey, 2026-10-28]. -->
+      <a class="nc-act" data-act data-setup-done href="/terminal/">
+        <span class="nc-act-label">Done — to Status</span>
+      </a>
     {/if}
     <p class="note">
-      <strong>There is no recovery.</strong> Lose this device and you lose this identity.
+      <strong>There is no recovery</strong> without a <a href="/terminal/backup/">backup</a>: lose this
+      device and you lose this identity.
     </p>
     <form onsubmit={rename}>
       <label for="rename">Change your callsign</label>
@@ -425,7 +435,7 @@
     the default button disabled, Enter on the phone keyboard does not submit either. Query,
     Resupply and Sign-on already render this way.
   -->
-  <button type="submit" disabled={!callsign.trim()}>Generate keypair</button>
+  <button type="submit" disabled={!callsign.trim()}>Make my callsign</button>
     </form>
   {/if}
 </section>
@@ -542,14 +552,14 @@
       must know before filling this in, so it never goes behind a tap.
     -->
     <p class="note">
-      <strong>Usually empty</strong> — <strong>whoever is on this list can read everything you
-      send</strong>, on watch or off.
+      <strong>Empty for a watch on a box</strong> — <strong>whoever is on this list can read everything
+      you send</strong>, on watch or off.
     </p>
     <Why summary="When it is not empty">
       <p class="note">
         A watch running on a box holds its own key, and that is what most people are given. A
         squad with no box holds the watch on their phones instead, and lists one key per phone
-        here. It comes from the same person who gave you the pubkey; nothing discovers it.
+        here: its watch code fills them in, handed over by whoever holds it; nothing discovers it.
       </p>
     </Why>
     {#if changes.length > 0}
