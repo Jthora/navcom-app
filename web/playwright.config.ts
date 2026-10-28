@@ -30,7 +30,7 @@ export default defineConfig({
    *
    * Excluded by name rather than by directory so they still live beside what they are about.
    */
-  testIgnore: ['**/real-relay.spec.ts', '**/journey.spec.ts'],
+  testIgnore: ['**/real-relay.spec.ts', '**/journey.spec.ts', '**/live-*.spec.ts'],
 
   /**
    * **No retries, anywhere.**

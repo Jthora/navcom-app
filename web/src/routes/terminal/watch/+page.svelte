@@ -139,6 +139,8 @@
   const heardWaiting = $derived(board.distress.length + board.waiting.length + board.restock.length);
 
   const blocks = $derived(address ? (address.match(/.{1,8}/g) ?? []) : []);
+  /** `21:04`, on this phone's clock: when operators stop reading a stale claim as somebody here. */
+  const clockOf = (s: number) => new Date(s * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const configured = $derived(loadConfig() !== null);
 
   /*
@@ -361,13 +363,22 @@
         </Why>
       {:else}
         <Slot k="Published">
-          {#if board.stillAdvertised}
+          {#if board.stillAdvertised || board.orphaned}
             <Readout value="Still advertised" tone="alarm" sub="operators read you as here" />
           {:else}
             <Readout value="Nobody" tone="cold" sub="operators signing on read Dark" />
           {/if}
         </Slot>
-        {#if board.stillAdvertised}
+        {#if board.orphaned}
+          <!--
+            Holding lives in this page, so a reload or a discarded tab ends it with nothing said,
+            and the last claim stays on the relays until it goes stale [live check, 2026-10-28].
+          -->
+          <div class="orphaned" data-orphaned>
+            <Readout value="Not holding" tone="alarm" sub={`this page reloaded · named until ${clockOf(board.orphaned.until)}`} />
+            <Action label="Stand down" tone="warn" onfire={() => board.standDown()} />
+          </div>
+        {:else if board.stillAdvertised}
           <!--
             The worse direction, and the one standDown exists to prevent: watch state is
             replaceable, so a Dark that never landed leaves the previous state on the relay and
@@ -514,6 +525,11 @@
           nothing here publishes it.
         </p>
         <p class="cost">
+          <!-- iOS keeps a home-screen web app's storage apart from Safari's, and a camera opens Safari. -->
+          On an iPhone with NavCom on the home screen, the camera opens the code in Safari, which
+          keeps its own copy of NavCom: send the link instead, and they paste it into Setup there.
+        </p>
+        <p class="cost">
           What an operator sends is sealed to the people holding the watch, each with their own key.
           The address alone names none of them, so a phone holding the watch could not read it:
           their sign-on, their questions and their <code>Distress</code> would reach nobody. The
@@ -620,10 +636,17 @@
               itself, and a Distress that appears to resolve itself is the silent failure
               invariant 2 forbids. It climbs instead, against an end it cannot reach.
             -->
+            {#if w.before !== undefined}
+              <!-- Kept by a relay and handed to this screen when it opened: not new [live check, 2026-10-28]. -->
+              <span data-earlier><Readout value="Earlier" tone="cold" sub="sent before you opened this" /></span>
+            {/if}
+            {#if w.answered}
+              <span data-distress-answered><Readout value="Answered" tone="good" sub="from this watch" /></span>
+            {/if}
             {#if w.type === 'distress'}
-              <Elapsed since={w.at} label="Raised" />
+              <Elapsed since={w.before ?? w.at} label="Raised" />
             {:else if RESPONSE_WINDOW[w.type] !== null}
-              <Window sentAt={w.at} seconds={RESPONSE_WINDOW[w.type] ?? 60} label={w.type} />
+              <Window sentAt={w.before ?? w.at} seconds={RESPONSE_WINDOW[w.type] ?? 60} label={w.type} />
             {/if}
             {#if answering === w.id}
               <label for="a-{w.id}">Your answer</label>
@@ -850,6 +873,7 @@
 
 <style>
   .act { gap: .6rem; }
+  .orphaned { display: flex; flex-direction: column; gap: .5rem; }
   .qr {
     background: #fff; padding: .7rem; align-self: flex-start; line-height: 0;
     /* White ground regardless of theme: a scanner needs the contrast the format assumes. */

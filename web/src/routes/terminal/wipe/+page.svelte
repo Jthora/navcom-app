@@ -212,7 +212,7 @@
   .danger {
     position: relative; overflow: hidden; width: 100%;
     border-color: var(--t-dark); color: var(--t-dark); background: var(--t-sunk);
-    touch-action: none; user-select: none;
+    touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
   }
   .danger::before {
     content: ''; position: absolute; inset: 0 auto 0 0; width: var(--fill, 0%);

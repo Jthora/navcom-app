@@ -1,8 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { finalizeEvent, getPublicKey } from 'nostr-tools/pure';
-import { startRelay, type LocalRelay } from './relay-server';
-import { hermetic, publish, shots } from './journey-harness';
+import { hermetic, publish, RelayNet, shots } from './journey-harness';
 import { admit, mission, resign, standInKey, type StandIn } from './registry';
 
 /**
@@ -65,14 +64,33 @@ function library() {
   });
 }
 
-// Each journey on a relay of its own: one journey's card on a city's board is not another's stranger.
-let relay: LocalRelay;
-test.beforeEach(async () => {
-  relay = await startRelay();
+/*
+ * Each journey on relays of its own, one per address, as separate as the real ones: a phone that
+ * publishes to one relay while the other reads another fails here as it would out there. One
+ * journey's card on a city's board is not another's stranger.
+ */
+let net: RelayNet;
+test.beforeEach(() => {
+  net = new RelayNet();
 });
 test.afterEach(async () => {
-  await relay?.close();
+  await net?.close();
 });
+
+/** Where Mecha Jono publishes packages and settles reports: The Record, and the mirror that copies it. */
+const RECORD = ['wss://record.cosmiccodex.app', 'wss://blackpi.cosmiccodex.app'];
+async function onRecord(event: { id: string }) {
+  for (const url of RECORD) await publish(await net.of(url), event);
+}
+
+/** What the relays hold now, to tell what arrived after. */
+async function mark(): Promise<Set<string>> {
+  return new Set((await net.received()).map((r) => `${r.host} ${r.event.id}`));
+}
+/** What arrived since `before`, on which host. */
+async function since(before: Set<string>) {
+  return (await net.received()).filter((r) => !before.has(`${r.host} ${r.event.id}`));
+}
 
 /** What a person can read and press on the screen now, printed when walking by eye. */
 async function screen(page: Page, label: string) {
@@ -153,16 +171,16 @@ async function boardCard(page: Page, city: RegExp, doing: string) {
   await expect(page.locator('[data-card-sent]')).toContainText(/published/i, { timeout: 15_000 });
 }
 
-const kinds = (since: number) => relay.received.slice(since).map((e) => e.kind);
+const kinds = async (before: Set<string>) => (await since(before)).map((r) => r.event.kind);
 
 test('a newcomer: from navcom.app to a callsign, a card, and a mission taken, reported and settled', async ({ browser }) => {
   test.setTimeout(180_000);
   const step = steps('newcomer');
-  const { page, dialled, context } = await hermetic(browser, relay, { serviceWorkers: 'block', timezoneId: 'America/New_York' });
+  const { page, dialled, context } = await hermetic(browser, net, { serviceWorkers: 'block', timezoneId: 'America/New_York' });
   await page.clock.install({ time: new Date() });
   const splice = await admit(context, [DESK]);
-  await publish(relay, heat());
-  await publish(relay, library());
+  await onRecord(heat());
+  await onRecord(library());
 
   // The landing page, and the one way from it into the Field Terminal.
   await go(page, '/');
@@ -193,9 +211,9 @@ test('a newcomer: from navcom.app to a callsign, a card, and a mission taken, re
   // A card on Philadelphia's board.
   await follow(page, page.getByRole('link', { name: /^your card$/i }), '/terminal/card/');
   await step(page, 'card');
-  const sent = relay.received.length;
+  const sent = await mark();
   await boardCard(page, /philadelphia/, 'Water and socks, Thursdays.');
-  expect(kinds(sent)).toContain(10911);
+  expect(await kinds(sent)).toContain(10911);
   await step(page, 'card-published');
 
   // The missions on the map, and the one in Philadelphia.
@@ -216,11 +234,11 @@ test('a newcomer: from navcom.app to a callsign, a card, and a mission taken, re
   await page.getByRole('button', { name: /^take part$/i }).click();
   // A tap in the first 400 ms after the choice appears is a bounce, and ignored: a person reads first.
   await page.waitForTimeout(600);
-  const claimed = relay.received.length;
+  const claimed = await mark();
   await page.locator('[data-visibility="open"]').click();
   await expect(page.locator('[data-takepart]')).toContainText(/taking part/i, { timeout: 15_000 });
   await expect(page.locator('[data-report-where]')).toContainText(/your missions/i);
-  expect(kinds(claimed)).toContain(1985);
+  expect(await kinds(claimed)).toContain(1985);
   await step(page, 'taking-part');
 
   // The next morning in Philadelphia: a report tells of a day that is over.
@@ -237,16 +255,17 @@ test('a newcomer: from navcom.app to a callsign, a card, and a mission taken, re
   await step(page, 'report');
   await page.getByRole('button', { name: /send report/i }).click();
   await page.waitForTimeout(600);
-  const reported = relay.received.length;
+  const reported = await mark();
   await page.locator('[data-visibility="open"]').click();
   await expect.poll(() => kinds(reported), { timeout: 15_000 }).toContain(1912);
+  // Where the report went: the relays the desk reads operators' work on.
+  console.log('report went to: ' + (await since(reported)).filter((r) => r.event.kind === 1912).map((r) => r.host).join(', '));
   await step(page, 'reported');
 
   // The desk reads it and settles it, as Mecha Jono's reader does.
-  const report = relay.received.find((e) => e.kind === 1912)!;
-  const address = report.tags.find((t) => t[0] === 'a')![1];
-  await publish(
-    relay,
+  const report = (await net.received()).find((r) => r.event.kind === 1912)!.event;
+  const address = report.tags.find((t) => t[0] === 'a')![1]!;
+  await onRecord(
     finalizeEvent(
       { kind: 1985, created_at: Math.floor(Date.now() / 1000) + 30 * 3600, content: '', tags: [['L', 'navcom.mission'], ['l', 'settled', 'navcom.mission'], ['e', report.id], ['a', address]] },
       deskKey.secret
@@ -266,8 +285,8 @@ test('a newcomer: from navcom.app to a callsign, a card, and a mission taken, re
 test('a watch held on one phone, joined from another by its code, answering a question and a Distress', async ({ browser }) => {
   test.setTimeout(240_000);
   const step = steps('watch');
-  const a = await hermetic(browser, relay, { timezoneId: 'America/New_York' });
-  const b = await hermetic(browser, relay, { timezoneId: 'America/New_York' });
+  const a = await hermetic(browser, net, { timezoneId: 'America/New_York' });
+  const b = await hermetic(browser, net, { timezoneId: 'America/New_York' });
   const A = a.page;
   const B = b.page;
 
@@ -279,13 +298,27 @@ test('a watch held on one phone, joined from another by its code, answering a qu
   await expect(A.getByRole('button', { name: /^stand down$/i })).toBeVisible();
   await step(A, 'holding');
 
-  // The code her screen gives operators, copied as a person copies it.
-  await a.context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  // The code her screen gives operators, copied as a person copies it. What the button wrote is kept
+  // beside the clipboard, since WebKit under test grants no clipboard permission and a phone needs none.
+  await A.evaluate(() => {
+    const write = navigator.clipboard?.writeText?.bind(navigator.clipboard);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        ...navigator.clipboard,
+        writeText: async (text: string) => {
+          (window as unknown as { __copied?: string }).__copied = text;
+          return write ? write(text).catch(() => undefined) : undefined;
+        }
+      }
+    });
+  });
   await A.locator('[data-watch-code]').scrollIntoViewIfNeeded();
   await expect(A.locator('[data-code-qr] svg')).toBeVisible();
   await step(A, 'code');
   await A.getByRole('button', { name: /copy the code/i }).click();
-  const code = await A.evaluate(() => navigator.clipboard.readText());
+  await expect(A.getByRole('button', { name: /^copied$/i })).toBeVisible();
+  const code = await A.evaluate(() => (window as unknown as { __copied: string }).__copied);
   const holder = await A.evaluate(() => JSON.parse(localStorage.getItem('navcom.accruing') ?? '{}').secret as string);
   const holderKey = getPublicKey(Uint8Array.from((holder.match(/../g) ?? []).map((x) => parseInt(x, 16))));
   expect(code).toContain(`h=${holderKey}`);
@@ -335,6 +368,23 @@ test('a watch held on one phone, joined from another by its code, answering a qu
   await expect(B.locator('body')).toContainText(/lighthouse has it/i, { timeout: 20_000 });
   await step(B, 'distress-answered');
 
+  // Her phone reloads, as phones do. Relays like damus keep ephemeral events five minutes and hand
+  // them to the new board [live check, 2026-10-28]: what she answered must not come back as waiting.
+  await A.reload();
+  await A.waitForSelector('html[data-hydrated="true"]');
+  await expect(A.locator('[data-distress-answered]')).toBeVisible({ timeout: 20_000 });
+  // And said to be from before she opened this, not raised a moment ago.
+  await expect(A.locator('[data-earlier]').first()).toBeVisible();
+  await expect(A.getByRole('button', { name: /^answer$/i })).toHaveCount(0);
+  await step(A, 'reloaded');
+  // She is off watch now, and the relays still name her: said, with a way to make it true.
+  await expect(A.locator('[data-orphaned]')).toBeVisible({ timeout: 20_000 });
+  await A.locator('[data-orphaned] button').click();
+  await expect(A.locator('[data-orphaned]')).toHaveCount(0, { timeout: 20_000 });
+  await go(B, '/terminal/');
+  await expect(B.locator('[data-capability]')).toContainText(/dark/i, { timeout: 20_000 });
+  await step(B, 'reads-dark');
+
   await a.context.close();
   await b.context.close();
 });
@@ -342,8 +392,8 @@ test('a watch held on one phone, joined from another by its code, answering a qu
 test('two strangers in one city find each other on its board, pair, and see each other go out', async ({ browser }) => {
   test.setTimeout(240_000);
   const step = steps('peers');
-  const w = await hermetic(browser, relay, { timezoneId: 'America/New_York' });
-  const r = await hermetic(browser, relay, { timezoneId: 'America/New_York' });
+  const w = await hermetic(browser, net, { timezoneId: 'America/New_York' });
+  const r = await hermetic(browser, net, { timezoneId: 'America/New_York' });
   const Wren = w.page;
   const Raven = r.page;
 
@@ -395,7 +445,7 @@ test('two strangers in one city find each other on its board, pair, and see each
 test('alone: somebody to call, and a Distress that says there is no watch to send it to', async ({ browser }) => {
   test.setTimeout(120_000);
   const step = steps('alone');
-  const { page, context } = await hermetic(browser, relay, { timezoneId: 'America/New_York' });
+  const { page, context } = await hermetic(browser, net, { timezoneId: 'America/New_York' });
   await newcomer(page, 'Heron');
   await page.locator('#clabel').fill('Sam');
   await page.locator('#cnumber').fill('+1 555 0100');
@@ -411,7 +461,7 @@ test('alone: somebody to call, and a Distress that says there is no watch to sen
 test('a backup made on one phone, restored on a new one from its first screen', async ({ browser }) => {
   test.setTimeout(120_000);
   const step = steps('backup');
-  const one = await hermetic(browser, relay, { timezoneId: 'America/New_York' });
+  const one = await hermetic(browser, net, { timezoneId: 'America/New_York' });
   await newcomer(one.page, 'Ibis');
   await go(one.page, '/terminal/backup/');
   await one.page.locator('#pass').fill('lantern harbour copper mist');
@@ -420,7 +470,7 @@ test('a backup made on one phone, restored on a new one from its first screen', 
   await step(one.page, 'made');
   await one.context.close();
 
-  const two = await hermetic(browser, relay, { timezoneId: 'America/New_York' });
+  const two = await hermetic(browser, net, { timezoneId: 'America/New_York' });
   await go(two.page, '/terminal/');
   await follow(two.page, two.page.locator('[data-restore-link]'), '/terminal/backup/');
   await two.page.locator('#rblob').fill(blob);
@@ -436,7 +486,7 @@ test('a backup made on one phone, restored on a new one from its first screen', 
 test('panic wipe keeps the callsign; burn takes it, and the phone starts over', async ({ browser }) => {
   test.setTimeout(120_000);
   const step = steps('wipe');
-  const { page, context } = await hermetic(browser, relay, { timezoneId: 'America/New_York' });
+  const { page, context } = await hermetic(browser, net, { timezoneId: 'America/New_York' });
   await newcomer(page, 'Jay');
   await go(page, '/terminal/sign-on/');
   await page.locator('#area').fill('Fishtown');
@@ -458,7 +508,7 @@ test('panic wipe keeps the callsign; burn takes it, and the phone starts over', 
 test('the directory with no callsign: a region carried, narrowed, and a place added from the field', async ({ browser }) => {
   test.setTimeout(120_000);
   const step = steps('directory');
-  const { page, context } = await hermetic(browser, relay, { timezoneId: 'America/New_York' });
+  const { page, context } = await hermetic(browser, net, { timezoneId: 'America/New_York' });
   await go(page, '/terminal/directory/');
   const philly = page.locator('a.area', { hasText: /philadelphia/i }).first();
   await philly.scrollIntoViewIfNeeded();
@@ -467,7 +517,7 @@ test('the directory with no callsign: a region carried, narrowed, and a place ad
   await page.locator('#narrow').fill('shelter');
   await step(page, 'narrowed');
   await page.locator('#narrow').fill('');
-  const added = relay.received.length;
+  const added = await mark();
   await page.locator('[data-add-place]').scrollIntoViewIfNeeded();
   await page.locator('[data-add-place]').click();
   await page.locator('#pl-name').fill('St. Malachy Community Pantry');

@@ -7,7 +7,7 @@ const served = playwrightServer();
 /** Pass 0: the same suite, on WebKit, once. Not added to the default run. */
 export default defineConfig({
   testDir: 'e2e',
-  testIgnore: ['**/real-relay.spec.ts'],
+  testIgnore: ['**/real-relay.spec.ts', '**/live-*.spec.ts'],
   fullyParallel: true,
   retries: 0,
   reporter: [['list']],

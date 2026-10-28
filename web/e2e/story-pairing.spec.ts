@@ -123,3 +123,28 @@ test.describe('pairing, standing next to each other', () => {
     await raven.context().close();
   });
 });
+
+test('a link sent through a messaging app, pasted whole, pairs too', async ({ browser }) => {
+  // "Copy your link" makes one, and the box asks for "their code or link": the link alone was
+  // refused as not a NavCom code [live check, 2026-10-28].
+  const context = await browser.newContext();
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  const wren = await context.newPage();
+  await seedDevice(wren, { callsign: 'Wren', relayEvents: [] });
+  await open(wren, '/terminal/peers/');
+  await wren.getByRole('button', { name: /copy your link/i }).click();
+  const link = await wren.evaluate(() => navigator.clipboard.readText());
+  expect(link).toMatch(/^https:\/\/navcom\.app\/terminal\/peers\/#[0-9a-f]{64}$/);
+
+  // Another phone: its own context, so its own storage.
+  const other = await browser.newContext();
+  const raven = await other.newPage();
+  await seedDevice(raven, { callsign: 'Raven', secret: 'b'.repeat(63) + '2', relayEvents: [] } as Parameters<typeof seedDevice>[1]);
+  await open(raven, '/terminal/peers/');
+  await raven.locator('#code').fill(`here's mine: ${link}`);
+  await raven.locator('#name').fill('Wren');
+  await raven.getByRole('button', { name: /^pair$/i }).click();
+  await expect(raven.locator('ul.paired')).toContainText('Wren');
+  await context.close();
+  await other.close();
+});

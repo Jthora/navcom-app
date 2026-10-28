@@ -191,7 +191,9 @@
   function accept() {
     error = null;
     try {
-      pair(code, callsign);
+      // A link pasted whole is a code too: "Copy your link" makes one, the box asks for "their
+      // code or link", and the link alone was refused as not a NavCom code [live check, 2026-10-28].
+      pair(pubkeyFrom(code) ?? code, callsign);
       mine = peers();
       code = '';
       callsign = '';

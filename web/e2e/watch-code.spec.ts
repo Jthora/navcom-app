@@ -42,14 +42,16 @@ test('the code names this phone as a holder, is signed by the watch, and fills S
   expect(read.holders).toEqual([TEST_SECRET_PUBKEY()]);
   expect(read.relays.length).toBeGreaterThan(0);
 
-  // Pasted on another phone, Setup fills in all of it.
-  const operator = await context.newPage();
+  // Pasted on another phone — its own context, so its own storage — Setup fills in all of it.
+  const phone = await browser.newContext();
+  const operator = await phone.newPage();
   await seedDevice(operator, { callsign: 'Kestrel', secret: 'b'.repeat(63) + '2', relayEvents: [] } as Parameters<typeof seedDevice>[1]);
   await open(operator, '/terminal/setup/');
   await operator.locator('#code').fill(code);
   await operator.getByRole('button', { name: /fill in from the code/i }).click();
   await expect(operator.locator('#pubkey')).toHaveValue(address);
   await expect(operator.locator('#holders')).toHaveValue(new RegExp(TEST_SECRET_PUBKEY()));
+  await phone.close();
   await context.close();
 });
 
@@ -65,4 +67,27 @@ test('another holder’s key, added on the screen, goes into the code beside thi
   const { parseWatchCode } = await import('@navcom/core');
   const read = parseWatchCode(await page.evaluate(() => navigator.clipboard.readText()));
   expect([...read.holders].sort()).toEqual([TEST_SECRET_PUBKEY(), otherKey].sort());
+});
+
+test('opened from a camera, the code’s link fills Setup — with a callsign or before one', async ({ browser }) => {
+  // A phone's camera opens the QR as a link; nothing is pasted. The fragment is all Setup gets.
+  const context = await browser.newContext();
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  const page = await context.newPage();
+  await holder(page, 'Lighthouse');
+  await page.getByRole('button', { name: /copy the code/i }).click();
+  const code = await page.evaluate(() => navigator.clipboard.readText());
+  const fragment = new URL(code).hash;
+
+  for (const callsign of ['Kestrel', null]) {
+    // Another phone: its own context, so its own storage.
+    const phone = await browser.newContext();
+    const operator = await phone.newPage();
+    await seedDevice(operator, (callsign ? { callsign, secret: 'b'.repeat(63) + '2', relayEvents: [] } : { __noStorage: true }) as Parameters<typeof seedDevice>[1]);
+    await open(operator, `/terminal/setup/${fragment}`);
+    await expect(operator.locator('#pubkey'), callsign ?? 'before a callsign').toHaveValue(/^[0-9a-f]{64}$/);
+    await expect(operator.locator('#holders')).toHaveValue(new RegExp(TEST_SECRET_PUBKEY()));
+    await phone.close();
+  }
+  await context.close();
 });

@@ -49,6 +49,7 @@ import type { Event } from 'nostr-tools/core';
 import {
   CLOCK_TOLERANCE_SECONDS,
   KIND_DISTRESS,
+  KIND_RESPONSE,
   KIND_SIGNAL,
   KIND_WATCH_STATE,
   STALE_AFTER_SECONDS,
@@ -115,6 +116,15 @@ export interface Waiting {
    * can reach them, whatever this watch's own relays have become since [review: relay paths].
    */
   heardOn: string[];
+  /**
+   * When its sender says they sent it, for one handed over as history: a relay keeping ephemeral
+   * events, as strfry does for five minutes, gives a board that has just opened what was sent
+   * before it was listening. Shown as earlier rather than as new, and aged by it [live check,
+   * 2026-10-28]. Undefined for one heard live.
+   */
+  before?: number;
+  /** A `Distress` this watch has already answered — here, or before this screen opened. */
+  answered?: true;
 }
 
 type Advertised = { state: string; holder: string | null };
@@ -214,8 +224,28 @@ let heardBack = $state(false);
 /** Hearing nothing at the last look, so the next answer is announced at once. */
 let wasDeaf = false;
 /** When the advertised state was published, and which event it was: only a newer one replaces it. */
-let advertisedAt = 0;
+let advertisedAt = $state(0);
 let advertisedId = '';
+/**
+ * The signals this watch has answered, heard from its own responses on the relays.
+ *
+ * A board is not persisted, so it forgot what it answered whenever the page reloaded — and a relay
+ * keeping ephemeral events handed the reloaded board those signals again, as unanswered [live
+ * check, 2026-10-28]. The responses are kept just as long, so reading them back says which were
+ * dealt with: here, before the reload, or by another holder of the same watch. Bounded, oldest out.
+ */
+let answeredHere = new Set<string>();
+/** Stood down on this page: a Station still on the relays is that stand-down's Dark not yet back. */
+let releasedHere = $state(false);
+const ANSWERED_HELD = 500;
+function answeredBy(id: string): void {
+  answeredHere.add(id);
+  if (answeredHere.size > ANSWERED_HELD) answeredHere = new Set([...answeredHere].slice(-ANSWERED_HELD));
+  // Dealt with: off the board, except a Distress, which stays and says it was answered.
+  waiting = waiting
+    .filter((w) => w.type === 'distress' || w.id !== id)
+    .map((w) => (w.id === id && !w.answered ? { ...w, answered: true as const } : w));
+}
 let beat: ReturnType<typeof setInterval> | null = null;
 /**
  * Where this holding has sent its Station, and when it last did, in this phone's seconds: every
@@ -309,6 +339,22 @@ export const board = {
     return stillAdvertised;
   },
 
+  /**
+   * Off watch on this phone, and the relays still naming this holder as on station.
+   *
+   * Holding lives in the page: a reload, or a phone that discarded the tab, ends it with nothing
+   * said, and the last claim stays on the relays until it goes stale — up to five minutes of
+   * operators reading a person here who is not. The screen said "Nobody" all the while [live
+   * check, 2026-10-28]. Read from this watch's own state, which the board already listens to.
+   */
+  get orphaned(): { until: number } | null {
+    if (onStation || releasedHere || stillAdvertised || advertised?.state !== 'station') return null;
+    const callsign = loadIdentity()?.callsign;
+    if (!callsign || advertised.holder !== callsign) return null;
+    const until = advertisedAt + STALE_AFTER_SECONDS;
+    return until > Math.floor(Date.now() / 1000) ? { until } : null;
+  },
+
   /** Whether routine traffic is arriving faster than the board will hold. */
   get routineDropped(): boolean {
     return routineDropped;
@@ -369,6 +415,7 @@ export const board = {
     if (!secret || !identity?.callsign || urls.length === 0) return;
 
     const mine = ++generation;
+    releasedHere = false;
     // A new holding: nothing claimed by an earlier one is this one's to retract.
     claimed = new Map();
     // Holding a watch is hearing it: the listener is opened here if no screen opened it. Before this
@@ -433,6 +480,7 @@ export const board = {
     const urls = usable(watchRelays());
     const mine = ++generation;
     onStation = false;
+    releasedHere = true;
     // The holding is over; its Dark below goes where it always went, and a later one claims afresh.
     claimed = new Map();
     unannounced = false;
@@ -628,6 +676,7 @@ export const board = {
   forget(): void {
     // Anything still on its way back — a stand-down's read, a Dark — now stops where it is.
     generation++;
+    answeredHere = new Set();
     unlisten();
     if (beat) clearInterval(beat);
     beat = null;
@@ -746,10 +795,12 @@ function follow(): boolean {
       { kinds: [KIND_SIGNAL, KIND_DISTRESS], '#p': [address] },
       // This watch's own published state, so a holder can tell whether they are still the
       // one the world is being told about.
-      { kinds: [KIND_WATCH_STATE], authors: [address] }
+      { kinds: [KIND_WATCH_STATE], authors: [address] },
+      // And its own answers: which signals were dealt with, whoever of its holders answered.
+      { kinds: [KIND_RESPONSE], authors: [address] }
     ],
     {
-      onevent: (event: Event, url: string) => {
+      onevent: (event: Event, url: string, how: { stored: boolean }) => {
         if (listenToken !== token) return;
         if (event.kind === KIND_WATCH_STATE) {
           // Newest wins, whichever relay answers last [audit: relay paths, F11]: the stand-down
@@ -764,13 +815,19 @@ function follow(): boolean {
           }
           return;
         }
+        if (event.kind === KIND_RESPONSE) {
+          const to = readTag(event.tags, 'e');
+          if (to) answeredBy(to);
+          return;
+        }
         const read = readSignal(event);
         if (!read) return;
         const type = (event.kind === KIND_DISTRESS
           ? 'distress'
           : readTag(event.tags, 't')) as Waiting['type'] | undefined;
         if (!type) return;
-        apply(type, read.from, read.payload, event, url);
+        // Sent before its relay said end-of-stored-events: kept, so sent before this listened.
+        apply(type, read.from, read.payload, event, url, how.stored);
       },
       // The same signal from another relay: one more place an answer can reach them.
       onrepeat: (event: Event, url: string) => {
@@ -1004,7 +1061,8 @@ function apply(
   from: string,
   payload: Record<string, unknown>,
   event: Event,
-  url: string
+  url: string,
+  history = false
 ): void {
   const callsign = typeof payload.callsign === 'string' ? payload.callsign : from.slice(0, 8);
   const now = event.created_at;
@@ -1051,6 +1109,10 @@ function apply(
 
   // Already waiting, heard again: where it came from is added, and how long we have had it stands.
   if (waiting.some((w) => w.id === event.id)) return heardAlsoOn(event.id, url);
+
+  // Already answered from this watch: not waiting on anybody, unless it is a Distress.
+  const answered = answeredHere.has(event.id);
+  if (answered && type !== 'distress') return;
 
   // Query, Assist and Distress are all things a person is waiting on.
   const without = waiting.filter((w) => w.id !== event.id);
@@ -1099,7 +1161,10 @@ function apply(
        * had this" and the one nobody else can set.
        */
       at: Math.floor(Date.now() / 1000),
-      heardOn: [url]
+      heardOn: [url],
+      // Never later than it arrived: a sender's clock ahead of ours does not make it newer.
+      ...(history ? { before: Math.min(event.created_at, Math.floor(Date.now() / 1000)) } : {}),
+      ...(answered ? { answered: true as const } : {})
     }
   ];
 }

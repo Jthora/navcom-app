@@ -417,6 +417,7 @@
   <button
     class="raise"
     style="--fill: {progress * 100}%"
+    oncontextmenu={(e) => e.preventDefault()}
     onpointerdown={press}
     onpointerup={() => release()}
     onpointerleave={() => release()}
@@ -580,7 +581,8 @@
     position: relative; overflow: hidden;
     min-height: 6rem; font-size: 1.3rem; letter-spacing: .04em;
     border-color: var(--t-dark); color: var(--t-dark); background: var(--t-sunk);
-    text-transform: uppercase; touch-action: none; user-select: none;
+    text-transform: uppercase; touch-action: none; -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none;
   }
   .raise.small { min-height: 3.5rem; font-size: 1.05rem; }
   /* Fills as the hold completes, so the operator can see how much longer to press. */

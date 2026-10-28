@@ -33,6 +33,9 @@
     "test:pin": "node scripts/verify-pin.mjs",
     "test:relay": "playwright test real-relay.spec.ts --config playwright.relay.config.ts",
     "test:journeys": "playwright test journey.spec.ts --config playwright.relay.config.ts",
+    "test:journeys:iphone": "JOURNEY_DEVICE='iPhone 13' playwright test journey.spec.ts --config playwright.webkit.config.ts --workers=1",
+    "check:live-relays": "LIVE_RELAYS=1 playwright test live-relays.spec.ts --config playwright.relay.config.ts",
+    "check:live-site": "LIVE_SITE=1 playwright test live-site.spec.ts --config playwright.relay.config.ts",
     "test:webkit": "playwright test --config playwright.webkit.config.ts",
     "prune": "node scripts/prune-data.mjs && node scripts/slim-html.mjs"
   },

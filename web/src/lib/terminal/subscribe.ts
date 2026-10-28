@@ -52,8 +52,13 @@ import { pool } from './pool';
 import { usable } from './relay-url';
 
 export interface LiveParams {
-  /** Each event once, with the relay it first arrived from. */
-  onevent: (event: Event, url: string) => void;
+  /**
+   * Each event once, with the relay it first arrived from — and whether that relay had kept it:
+   * `stored` is true for one sent before the relay said end-of-stored-events. An ephemeral event
+   * can be stored too, for a while (strfry keeps them five minutes), so a screen that has just
+   * opened is handed what was sent before it was listening [live check, 2026-10-28].
+   */
+  onevent: (event: Event, url: string, how: { stored: boolean }) => void;
   /** An event already delivered, arriving from a relay again: where else it was heard. */
   onrepeat?: (event: Event, url: string) => void;
   /**
@@ -135,6 +140,8 @@ interface Attempt {
   answered: boolean;
   answeredAt: number;
   silence: ReturnType<typeof setTimeout> | null;
+  /** The relay said end-of-stored-events: what it sends now is new. */
+  eosed: boolean;
 }
 
 interface Slot {
@@ -159,7 +166,7 @@ export function subscribeLive(urls: readonly string[], filters: Filter | Filter[
   let stopped = false;
 
   const seen = new Set<string>();
-  const deliver = (event: Event, url: string) => {
+  const deliver = (event: Event, url: string, stored: boolean) => {
     if (stopped) return;
     if (seen.has(event.id)) {
       params.onrepeat?.(event, url);
@@ -167,7 +174,7 @@ export function subscribeLive(urls: readonly string[], filters: Filter | Filter[
     }
     seen.add(event.id);
     if (seen.size > SEEN_MAX) seen.delete(seen.values().next().value!);
-    params.onevent(event, url);
+    params.onevent(event, url, { stored });
   };
 
   /*
@@ -215,7 +222,7 @@ export function subscribeLive(urls: readonly string[], filters: Filter | Filter[
     if (stopped || live.get(slot.url) !== slot) return;
     if (burned()) return end();
 
-    const attempt: Attempt = { sub: null, closed: false, answered: false, answeredAt: 0, silence: null };
+    const attempt: Attempt = { sub: null, closed: false, answered: false, answeredAt: 0, silence: null, eosed: false };
     const previous = slot.current;
     slot.current = attempt;
     const current = () => !stopped && slot.current === attempt && !attempt.closed;
@@ -256,11 +263,14 @@ export function subscribeLive(urls: readonly string[], filters: Filter | Filter[
         if (stopped) return;
         // An event on the subscription is the relay answering it, whether or not EOSE follows.
         if (!attempt.answered) answer();
-        deliver(event, slot.url);
+        deliver(event, slot.url, !attempt.eosed);
       },
       // The pool reports a failed connection as an end-of-answer and a close in the same moment,
       // and a relay that answered with only the first. So this waits a microtask to see which.
-      oneose: () => queueMicrotask(answer),
+      oneose: () => {
+        attempt.eosed = true;
+        queueMicrotask(answer);
+      },
       // Any reason at all, including none: what a relay puts in a CLOSED is not checked here.
       // Whether the connection was still up is: nostr-tools marks one that went down as gone
       // before it closes what was on it, so a close over a live connection is the relay's own.

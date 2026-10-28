@@ -213,6 +213,18 @@
 
 .terminal .nc-panel-act { border-top: 1px solid var(--t-line); }
 .terminal a.nc-act { text-decoration: none; }
+/*
+ * A hold is a finger kept still, and a phone has its own plans for one: past half a second Android
+ * Chrome and iOS Safari start selecting text, raise a callout or a context menu, and cancel the
+ * pointer — so the hold ends before it fires. The Distress button had half of this and no prefix
+ * Safari reads; the shared control had none [live check, 2026-10-28].
+ */
+.terminal .nc-act[data-hold] {
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
 .terminal .nc-act {
   width: 100%;
   display: flex;

@@ -126,8 +126,10 @@
     data-act
     data-tone={tone}
     data-holding={holding ? 'true' : undefined}
+    data-hold={hold ? '' : undefined}
     {disabled}
     style="--fill: {fill}"
+    oncontextmenu={(e) => hold && e.preventDefault()}
     onpointerdown={press}
     onclick={() => !hold && !disabled && onfire?.()}
     onpointerup={() => hold && release()}

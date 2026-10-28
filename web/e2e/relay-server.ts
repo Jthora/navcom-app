@@ -118,12 +118,33 @@ export interface RelayOptions {
    * path the caller handles rather than one it discovers in a build log.
    */
   refuse?: string;
+  /**
+   * Keep only the newest version of a replaceable or addressable event, and honour `limit`, newest
+   * first — as real relays do. Off by default, because the specs written against this relay rely
+   * on every version being kept; the journeys turn it on, since a client that depends on an old
+   * version surviving, or on more than it asked for, works here and nowhere else.
+   *
+   * Realistic also keeps ephemeral events for five minutes and hands them to a later subscription,
+   * as strfry — `relay.damus.io` among them — does. The live check found it: a watch phone that
+   * reloaded was handed the questions and the `Distress` it had already answered, as new
+   * [live check, 2026-10-28].
+   */
+  realistic?: boolean;
 }
+
+/** NIP-01: kinds 0, 3 and 10000–19999 are replaced per author; 30000–39999 per author and `d`. */
+const replaceable = (kind: number) => kind === 0 || kind === 3 || (kind >= 10000 && kind < 20000);
+const addressable = (kind: number) => kind >= 30000 && kind < 40000;
+const slot = (e: Event) =>
+  replaceable(e.kind) ? `${e.kind}:${e.pubkey}` : addressable(e.kind) ? `${e.kind}:${e.pubkey}:${e.tags.find((t) => t[0] === 'd')?.[1] ?? ''}` : null;
 
 export async function startRelay(options: RelayOptions = {}): Promise<LocalRelay> {
   const wss = new WebSocketServer({ port: 0, host: '127.0.0.1' });
   const stored: Event[] = [];
   const received: Event[] = [];
+  /** Ephemeral events, kept five minutes when realistic, each with when it arrived. */
+  const recent: { event: Event; at: number }[] = [];
+  const KEEP_EPHEMERAL_MS = 5 * 60_000;
   /** Open subscriptions, so a later event reaches a subscriber that asked before it existed. */
   const subs = new Map<WebSocket, Map<string, Filter[]>>();
 
@@ -150,7 +171,19 @@ export async function startRelay(options: RelayOptions = {}): Promise<LocalRelay
         }
 
         received.push(event);
-        if (!ephemeral(event.kind)) stored.push(event);
+        const key = options.realistic ? slot(event) : null;
+        if (key !== null) {
+          const at = stored.findIndex((e) => slot(e) === key);
+          const kept = at === -1 ? null : stored[at]!;
+          if (kept && (kept.created_at > event.created_at || (kept.created_at === event.created_at && kept.id < event.id))) {
+            // An older version: accepted and dropped, as a relay holding a newer one does.
+            socket.send(JSON.stringify(['OK', event.id, true, 'duplicate: have a newer version']));
+            return;
+          }
+          if (at !== -1) stored.splice(at, 1);
+          stored.push(event);
+        } else if (!ephemeral(event.kind)) stored.push(event);
+        else if (options.realistic) recent.push({ event, at: Date.now() });
         // Acknowledged, because a client that awaits its own publish hangs without this —
         // the same omission the stubbed socket was fixed for.
         socket.send(JSON.stringify(['OK', event.id, true, '']));
@@ -170,9 +203,24 @@ export async function startRelay(options: RelayOptions = {}): Promise<LocalRelay
         const id = msg[1] as string;
         const filters = msg.slice(2) as Filter[];
         subs.get(socket)?.set(id, filters);
-        for (const event of stored) {
-          if (filters.some((f) => matches(f, event))) {
-            socket.send(JSON.stringify(['EVENT', id, event]));
+        if (!options.realistic) {
+          for (const event of stored) {
+            if (filters.some((f) => matches(f, event))) {
+              socket.send(JSON.stringify(['EVENT', id, event]));
+            }
+          }
+        } else {
+          const sent = new Set<string>();
+          const now = Date.now();
+          const replayable = [...stored, ...recent.filter((r) => now - r.at < KEEP_EPHEMERAL_MS).map((r) => r.event)];
+          for (const filter of filters) {
+            let found = replayable.filter((event) => matches(filter, event));
+            if (typeof filter.limit === 'number') found = [...found].sort((x, y) => y.created_at - x.created_at).slice(0, filter.limit);
+            for (const event of found) {
+              if (sent.has(event.id)) continue;
+              sent.add(event.id);
+              socket.send(JSON.stringify(['EVENT', id, event]));
+            }
           }
         }
         socket.send(JSON.stringify(['EOSE', id]));

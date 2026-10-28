@@ -650,6 +650,42 @@ deploy gate for the reasons `test:relay` is; `JOURNEY_OUT=<dir>` screenshots eve
 and the flow still not go through, because what joins two screens — an address typed on one phone
 for another, a reply that needs a second tap — belongs to neither.
 
+### And then live, the same day
+
+The owner asked what the journeys had not tested live enough. Each way they differed from a phone
+on a public relay was then taken away in turn:
+
+- **One relay for every address** became one per address, keeping only the newest replaceable event
+  and honouring `limit` as real relays do (`RelayNet`, `realistic`). A phone publishing to one relay
+  while another reads a different one now fails. Nothing did; packages and the poster's settlement
+  are read from The Record, where Mecha Jono puts them
+- **The public relays themselves**, `relay.damus.io` and `nos.lol`, with throwaway keys and only
+  ephemeral, sealed traffic and a watch state stood down after (`npm run check:live-relays`, by
+  hand). Every step of the watch arrived in under two seconds. It found what no local relay could:
+  **strfry keeps ephemeral events five minutes**, so a holder whose page reloaded was handed the
+  question and the `Distress` she had already answered, as new and "Raised · 0s". The board now
+  reads the watch's own answers back, and marks what a relay kept as earlier; the subscription tells
+  each event whether its relay had stored it. The realistic local relay keeps them five minutes too
+- **Holding the watch lives in the page**, so a reload ends it, and the claim stays on the relays
+  until it is stale — five minutes of operators reading a person who is not there, while her screen
+  said "Nobody". It now says she is still named, until when, and offers Stand down
+- **Chromium only**: all seven journeys run as an iPhone under WebKit (`test:journeys:iphone`). The
+  clipboard needs no permission there and Playwright cannot grant one, so what Copy wrote is read
+  from the page
+- **A mouse, not a finger**: the three holds are pressed through Chromium's touch input with a
+  wobble (`touch-hold.spec.ts`). Chromium fires them with or without a guard; the shared control
+  had none, and the Distress button had no prefix Safari reads, so all three now refuse selection,
+  the callout and the context menu while held. A phone in a hand is still the only full test
+- **A fast network**: the journeys pass at about 400 kbps and 400 ms round trips (`JOURNEY_THROTTLE=1`)
+- **Not the deployment**: navcom.app read once with no callsign (`npm run check:live-site`). The
+  layers, the directory, the service worker and offline Distress all worked. It found two things
+  that are not the app's: Mecha Jono's mirror, `blackpi`, refuses connections (HTTP 530), and **the
+  map has no missions**, because every package The Record holds that is still open was signed after
+  the leak by the key frozen for it, and so is refused until the cut-over
+
+Pairing found one of its own on the way: "Copy your link" makes a link, the box asks for "their code
+or link", and a link pasted whole was refused as not a NavCom code.
+
 ## The part that is not architectural
 
 Several of the nine came from editing files by string replacement against text written from
