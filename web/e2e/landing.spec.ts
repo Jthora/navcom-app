@@ -524,8 +524,10 @@ test.describe('the landing page: Com over the map', () => {
     });
     expect(clear).toBe(true);
     await expect(page.locator('.distress-layer')).toBeHidden();
-    // And joining is right there beneath it, for the person who came to help.
-    await expect(page.getByRole('link', { name: /open the field terminal/i })).toHaveCount(1);
+    // And joining is right there in the sheet's head, at its lowest, for the person who came to help.
+    const join = page.getByRole('link', { name: /open the field terminal/i });
+    await expect(join).toHaveCount(1);
+    await expect(join).toBeInViewport({ ratio: 1 });
   });
 
   test('typing lifts the sheet so the results can be seen', async ({ page }) => {

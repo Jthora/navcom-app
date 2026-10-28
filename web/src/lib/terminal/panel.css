@@ -436,3 +436,12 @@
   background: transparent;
   border: 1px solid var(--t-line);
 }
+/* The first places to go: two to a row, taller and in ink, ahead of the rest. */
+.terminal .nc-rail > a.nc-lead {
+  flex: 1 1 40%;
+  min-height: 3rem;
+  font-size: 0.68rem;
+  color: var(--t-ink);
+  border-color: var(--t-line-strong, var(--t-line));
+  background: var(--t-sunk, transparent);
+}

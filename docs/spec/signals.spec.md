@@ -402,6 +402,14 @@ not that it was read, not that it was refused, not that the key is live. Somebod
 refusal is somebody who accepts to avoid an awkward one — the same rule as unpairing, which
 also tells nobody. It also means there is no pending state to expire or nag about.
 
+**An accept SHOULD carry the invite it answers** (2026-10-28), whole, as `answers` in its
+payload: A's own signed `1910`, which only the holder of the card it was sealed to could open.
+A's phone, finding its own signature on a valid `1910` there, pairs on arrival — asking was A's
+consent, and a second accept to finish a pairing A started was a step a newcomer did not know to
+take. Nothing is kept on A's phone to match it against, so the rule above stands. A reader MUST
+treat anything in `answers` that is not a valid signed `1910`, or is over 4,096 bytes, as absent,
+and an accept from a build without the field is an ordinary invite, accepted as before.
+
 ## `20914` — Public presence
 
 A name, and nothing else. It exists so the network has a pulse — so somebody opening the app

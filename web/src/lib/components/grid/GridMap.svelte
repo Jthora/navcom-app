@@ -795,7 +795,7 @@
     ctx.fillStyle = ink;
     ctx.fill(dot);
     ctx.lineWidth = 2;
-    for (const lifted of [hovered?.kind === 'point' ? hovered.place : null, pickedOn ? picked?.place : null]) {
+    for (const lifted of [hovered?.kind === 'point' ? hovered.place : null, pickedOn ? picked?.place : null, shownRing()]) {
       if (!lifted) continue;
       const [x, y] = screenAt(v, [lifted.x, lifted.y]);
       const r = drawnOf(lifted) + (lifted.kind === 'mission' ? 4.5 : 3.5);
@@ -1099,6 +1099,70 @@
 
   /** Set once a person moves the map. After that, nothing moves it for them. */
   let touched = false;
+
+  /*
+   * The mission open in Com, brought into view [journey, 2026-10-28].
+   *
+   * Opened from the list, a mission's ring sat unmarked somewhere on a whole-Earth map, and opened
+   * from a tap it was marked but stayed a speck: the screen named Philadelphia and the map showed the
+   * planet. Opening a mission is a person moving their attention, so the map follows it once — and
+   * only as far as the person has left it: while it is still the opening view it comes close enough to
+   * see where the mission is, its ring at a region's scale or its province whole; once the person has
+   * moved the map, it is panned only if the mission is out of sight, at their zoom. Nothing moves it
+   * again for the same mission.
+   */
+  let broughtFor: string | null = null;
+  /** The ring of the mission open in Com, to mark it however it was opened. */
+  function shownRing(): PlaceOfRecord | null {
+    const top = current as { kind?: unknown; address?: unknown } | null;
+    if (top?.kind !== 'mission' || typeof top.address !== 'string') return null;
+    return rings.find((r) => r.kind === 'mission' && r.address === top.address) ?? null;
+  }
+  /** Where the open mission is, as a box in the map's units: its ring, or the shape its filing lights. */
+  function shownBox(address: string): [number, number, number, number] | null {
+    const ring = rings.find((r) => r.kind === 'mission' && r.address === address);
+    if (ring) return [ring.x, ring.y, ring.x, ring.y];
+    const j = active.find((m) => m.address === address)?.placement.jurisdiction;
+    if (!j) return null;
+    const shape = provinceShapes.find((x) => x.id === j) ?? countryShapes.find((x) => x.id === j.split('-')[0]);
+    return shape?.bbox ?? null;
+  }
+  function bring([x0, y0, x1, y1]: [number, number, number, number]) {
+    const right = controlsBox?.l ?? width;
+    const top = keyFoot();
+    const floor = height - Math.max(inset, reach, sheet);
+    if (right <= 2 * GAP || floor - top <= 2 * GAP) return;
+    const [ux, uy] = [(x0 + x1) / 2, (y0 + y1) / 2];
+    if (touched) {
+      const px = width / 2 + (ux - cx) * scale;
+      const py = height / 2 + (uy - cy) * scale;
+      if (px >= GAP && px <= right - GAP && py >= top + GAP && py <= floor - GAP) return;
+    } else {
+      const w = (x1 - x0) * 1.3;
+      const h = (y1 - y0) * 1.3;
+      const fits = w > 0 && h > 0 ? Math.min((right - 2 * GAP) / w, (floor - top - 2 * GAP) / h) : fit() * 16;
+      scale = Math.min(Math.max(fits, fit()), fit() * 24);
+      clamp();
+    }
+    touched = true;
+    cx = ux - (right / 2 - width / 2) / scale;
+    cy = uy - ((top + floor) / 2 - height / 2) / scale;
+    clamp();
+    request();
+  }
+  $effect(() => {
+    const top = current as { kind?: unknown; address?: unknown } | null;
+    const address = top?.kind === 'mission' && typeof top.address === 'string' ? top.address : null;
+    if (address === null) {
+      broughtFor = null;
+      return;
+    }
+    if (address === broughtFor || width === 0) return;
+    const box = shownBox(address);
+    if (!box) return;
+    broughtFor = address;
+    bring(box);
+  });
 
   /** Whether anything over the canvas covers some of the Earth itself, its outline rather than its box. */
   function earthCovered(): boolean {

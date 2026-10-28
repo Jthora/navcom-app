@@ -93,7 +93,7 @@ let unanswered = $state(false);
 /** Whether more cards are being published to this region than the board will show. */
 let partial = $state(false);
 let closer: { close(): void } | null = null;
-let beat: ReturnType<typeof setInterval> | null = null;
+let beat: ReturnType<typeof setTimeout> | null = null;
 
 export const board = {
   /**
@@ -336,7 +336,7 @@ export async function publishCard(card: MyCard): Promise<{ took: number; of: num
 /**
  * Publishes *"out tonight"*, if the operator asked to be listed and has a card.
  *
- * Called on sign-on and on a slow beat. Silently does nothing otherwise, which is the
+ * Called on its own clock while out [`beatListed`]. Silently does nothing otherwise, which is the
  * correct behaviour for a switch that is off — there is nothing to report about not
  * publishing something.
  */
@@ -362,11 +362,24 @@ export async function announceListed(): Promise<void> {
  * evidence for it.
  */
 export function beatListed(): void {
-  if (beat) clearInterval(beat);
-  beat = setInterval(() => void announceListed(), LISTED_BEAT_SECONDS * 1000);
+  stopListed();
+  /*
+   * On its own clock [relay-lists.md §9, *Fixed alongside*]. It went out in the same second as the
+   * peer wraps at sign-on, and its five-minute beat landed on every fifth peer beat all night, so
+   * anyone reading the relays could tie a card to an operational key by timestamp. The first goes a
+   * random two to ten minutes after sign-on, and each after it five minutes on, give or take one: a
+   * listed operator appears on the board a few minutes later than before, and nothing lines up.
+   */
+  const next = (from: number, spread: number) => {
+    beat = setTimeout(() => {
+      void announceListed();
+      next(LISTED_BEAT_SECONDS - 60, 120);
+    }, (from + Math.random() * spread) * 1000);
+  };
+  next(120, 480);
 }
 
 export function stopListed(): void {
-  if (beat) clearInterval(beat);
+  if (beat) clearTimeout(beat);
   beat = null;
 }

@@ -206,11 +206,10 @@
             {#if e.contact === mine}
               <p class="cost">This is your card.</p>
             {:else if sent.includes(e.contact)}
-              <!-- Their acceptance arrives as an invite back, which needs this phone's accept too: the
-                   screen said they "will appear", and a newcomer waited for a pairing that was one tap
-                   short [journey, 2026-10-28]. -->
+              <!-- Their acceptance carries this request back, and pairs on arrival; from an older
+                   build it waits on Peers for an accept [journey, 2026-10-28]. -->
               <p class="cost" data-asked>
-                Sent. Their answer waits on <a href="/terminal/peers/">Peers</a>: accept it there.
+                Sent. If they accept, they appear on <a href="/terminal/peers/">Peers</a>.
               </p>
             {:else if failed === e.contact}
               <!--

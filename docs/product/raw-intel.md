@@ -14,14 +14,18 @@ obligations on a consumer, and the list of things that will never appear. Its vo
 its status are *derived* — read out of this file and out of `kinds.ts` rather than retyped —
 because a declaration maintained by hand is a declaration that drifts.
 
-**Nothing emits kind `1911` yet**, and the declaration says so in those words until something
-does. A published contract claiming a capability that does not exist is the failure this
-project has already had once, on the status page.
+**Operators file kind `1911` from a directory region** (*Log what you saw*), and the declaration
+says what is implemented rather than what is hoped for: a published contract claiming a
+capability that does not exist is the failure this project has already had once, on the status
+page. *(Status corrected 2026-10-28; it read "Nothing emits kind `1911` yet" after that stopped
+being true.)*
 
 **Normative for the object.** Deliberately *not* in [`docs/spec/`](../spec/README.md): that
 set is scoped to the MVP loop plus the safety-critical ladder, and its README is right that
 "specs written before the loop is proven are guesses in a more confident format." This
-specifies a shape, not a schedule. Nothing here is built.
+specifies a shape, not a schedule. The observation is built and reachable, and read back on the
+region it is about; the precise publication (§4), the anchor rule (§5) and the vocabulary (§7,
+which needs human authorship) are not.
 
 Sibling of [`directory-schema.md`](directory-schema.md), which is the normative source for
 records and corrections. Read that first; this reuses its machinery rather than inventing

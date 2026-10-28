@@ -148,3 +148,34 @@ describe('what an invite refuses', () => {
     expect(readInvite(ravenContact, junk)).toBeNull();
   });
 });
+
+describe('an accept that carries the request it answers', () => {
+  /*
+   * Asking was the asker's consent, so their phone pairs on the answer: but only on an answer that
+   * proves it answers *their* request to *that* card. The answer carries the request back, signed by
+   * the asker, and only the card's holder could have opened it [journey, 2026-10-28].
+   */
+  it('names who asked: the asker reads their own signature', () => {
+    const asked = readInvite(ravenContact, overRelay(buildInvite(wren, ravenContactPub, from({ note: 'Thursdays' }), T)))!;
+    expect(asked.answering).toBeNull();
+    const answer = buildInvite(raven, getPublicKey(wren), { callsign: 'Raven', answers: asked.inner }, T + 60);
+    const read = readInvite(wren, overRelay(answer))!;
+    expect(read.from).toBe(getPublicKey(raven));
+    expect(read.answering).toBe(getPublicKey(wren));
+  });
+
+  it('names nobody for something that is not a signed invite, and still reads the invite', () => {
+    const asked = readInvite(ravenContact, overRelay(buildInvite(wren, ravenContactPub, from(), T)))!;
+    const forged = { ...asked.inner, content: JSON.stringify({ callsign: 'Somebody else' }) };
+    const read = readInvite(wren, overRelay(buildInvite(raven, getPublicKey(wren), { callsign: 'Raven', answers: forged as Event }, T)))!;
+    expect(read.answering).toBeNull();
+    expect(read.payload.callsign).toBe('Raven');
+    const wrongKind = readInvite(wren, overRelay(buildInvite(raven, getPublicKey(wren), { callsign: 'Raven', answers: { ...asked.inner, kind: 1 } as Event }, T)))!;
+    expect(wrongKind.answering).toBeNull();
+  });
+
+  it('an answer from a build that does not carry it is an ordinary invite', () => {
+    const read = readInvite(wren, overRelay(buildInvite(raven, getPublicKey(wren), { callsign: 'Raven' }, T)))!;
+    expect(read.answering).toBeNull();
+  });
+});

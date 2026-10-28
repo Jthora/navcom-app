@@ -6,7 +6,9 @@ under a higher unit. Units team up from the bottom into higher units. The defaul
 Alliance, which is a published text that units sign. This page is the design as the owner decided
 it. The wire, the profile, chat and search are in groups.md and are not repeated here.
 
-Status: **decided 2026-10-09. Nothing here is built.** The owner took eight decisions that day
+Status: **decided 2026-10-09. Nothing here is reachable from a screen.** The pure logic for charters,
+governance, the envelope, statements and the chain is in `packages/core/src/units/`, reviewed twice
+and deliberately unexported until the gates below are met (corrected 2026-10-28). The owner took eight decisions that day
 (§0) against stated criteria: fairness, optionality, the best experience, what the technology can
 do, and game theory. Each decision can be reversed.
 

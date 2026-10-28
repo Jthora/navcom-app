@@ -160,7 +160,7 @@ list can be checked.
 
 ---
 
-## Move 3 — A deploy stamp
+## Move 3 — A deploy stamp — **done**
 
 The build writes `version.json` into its output: the commit it came from and when it was
 built. A post-build script, taking the SHA from `VERCEL_GIT_COMMIT_SHA` where it exists and

@@ -26,7 +26,7 @@ capabilities still gate nothing. This page adds no exception.
 |---|---|---|---|
 | Activity tag | *carries a kit* | nothing — not a qualification | Built (`events/profile.ts`) |
 | Peer credential | *I vouch for the holder as a medic* | a signature, offline, naming nobody | Built (`events/endorsement.ts`) |
-| Handle proof | *this persona controls that account* | fetching a public post | Half-built — `i` tags carry a proof field almost nothing fills |
+| Handle proof | *this persona controls that account* | fetching a public post | Built for GitHub and Mastodon (build order 7.8), the only platforms that serve a public post to a browser; elsewhere a handle is a claim |
 | **Verified capability** | *an issuer says this key holds this, checked this way, until this date* | a signature, plus the method on its face | **This page** |
 
 The third rung is the cheapest and answers the bot question better than the fourth does. Build

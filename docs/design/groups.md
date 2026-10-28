@@ -14,7 +14,8 @@ it is a padded, sealed event from a throwaway key, under a tag that changes ever
 a member list, and no relay can read or enforce one.
 
 Status: **decided 2026-10-09 where the owner decided, proposed everywhere else. Nothing on this page
-is built.**
+is reachable from a screen**; the units logic it shares sits unexported in `packages/core/src/units/`
+until phase 2's gates are met (corrected 2026-10-28).
 
 **Decided by the owner, 2026-10-09:**
 

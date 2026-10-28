@@ -642,6 +642,14 @@
         {#if stack.length > 0}
           <!-- Escape does the same, anywhere in Com. -->
           <button type="button" class="back" data-back onclick={back}>Back</button>
+        {:else}
+          <!--
+            The one way into the Field Terminal, in the head where every height of the sheet shows
+            it. It sat at the foot of Com, below Find and the network, where a phone opening at peek
+            never showed it and a newcomer looking for where to begin did not find it [journey,
+            2026-10-28]. Back takes this place once a screen opens.
+          -->
+          <a class="back" href="/terminal/" data-sveltekit-reload data-terminal-link aria-label="Open the Field Terminal">Field Terminal</a>
         {/if}
       <button
         type="button"
@@ -904,9 +912,6 @@
     </Panel>
   </div>
 
-  <a class="nc-act" data-act data-tone="warn" href="/terminal/" data-sveltekit-reload>
-    <span class="nc-act-label">Open the Field Terminal</span>
-  </a>
         {/if}
 
       </div>
@@ -1231,6 +1236,11 @@
   .com-head .signature {
     position: static;
     min-height: 3rem;
+  }
+  a.back {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
   }
   .com-head .back {
     flex: none;

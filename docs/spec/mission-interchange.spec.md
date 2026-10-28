@@ -136,7 +136,7 @@ from whether a builder exists, and this document follows the same discipline.
 | The publisher registry (§3) | LIVE from rev 7's deploy — keys with windows, a frozen key, generations, and the file at `/.well-known/navcom-publishers.json` |
 | The grid (the map missions appear on) | LIVE as the landing page at [`navcom.app`](https://navcom.app/), lighting each mission's province, or its country where NavCom draws no province for it. BUILT, 2026-10-18: a `subject_location` drawn as a ring at its point, at the precision it declares and no finer than `1km` until Q19 is answered |
 | `geo_precision: address` (§4.2) | PROPOSED, rev 8 — NavCom's reader keeps it, and its map draws it no finer than `1km` while Q19 is open; Q19 asks whether you will send it |
-| Kind `1911` observation (raw intel) | BUILT — builder and contract exist; published at `/.well-known/navcom-intel.json` |
+| Kind `1911` observation (raw intel) | LIVE — operators file one from a directory region (*Log what you saw*); contract at `/.well-known/navcom-intel.json` |
 | Kind `1912` report | LIVE — operators on navcom.app send them, open or sealed (§5.2); the contract says `emitted: true` |
 | Naming the place: `zone`, `zone_sector`, `city`, `poi` (§4.2, rev 9) | ASKED of every publisher, all optional. LIVE in NavCom's reader from 2026-10-27: a mission's screen names them, and one with no point is counted in the Zone it names |
 | Starcom's revs 18 and 19 in NavCom's reader (§4.3) | LIVE from 2026-10-27: a package over 131,072 bytes or with a list over 1,000 entries is refused as Starcom's reader refuses it, and what a package made in Starcom asks to count, at `metadata.format.effect`, is read after Mecha Jono's field |
@@ -532,8 +532,8 @@ things anyone can guess (a card's key and callsign, a day, the objectives, a sec
 `settled` label), and a reader holding the public cards found the author of a sealed report in a
 tenth of a second. With it, your label names the report to you and to nobody else.
 
-**Reports will arrive late, on purpose** (DESIGNED). The client is to refuse same-day publication
-by default and warn before a second report in one region inside a short window. That is a privacy control: a report
+**Reports will arrive late, on purpose** (LIVE). The client refuses same-day publication
+by default and warns before a second report in one region inside a short window. That is a privacy control: a report
 must not reveal where somebody is tonight. **So a report can land after `valid_until`.** A report
 MUST be accepted if its claim predates `valid_until`; please do not reject late reports.
 
@@ -591,7 +591,7 @@ agent to rate an operator. Standing is derived by NavCom from these events alone
 
 ## 6. Raw intel
 
-### 6.1 What NavCom sends — kind `1911`, BUILT
+### 6.1 What NavCom sends — kind `1911`, LIVE
 
 Signed by the operator's **contact** key, regular kind, immutable, superseded never edited.
 Contract: [`/.well-known/navcom-intel.json`](https://navcom.app/.well-known/navcom-intel.json).

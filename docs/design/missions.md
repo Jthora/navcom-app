@@ -1,12 +1,13 @@
 # Missions, Standing and the Grid
 
-**A proposal, not a build.** It exists because the maintainer reversed invariant 6 on 2026-10-05:
+**Accepted, and partly built.** It exists because the maintainer reversed invariant 6 on 2026-10-05:
 *nothing tasks anyone* has been holding the product back from being a product, and a directory with
 no reason to return is a bulletin board. Missions are the reason to return — something to do, and a
 record of having done it.
 
-Nothing here is implemented. Nothing in `CLAUDE.md` has been changed. §7 proposes what the invariant
-list becomes, and that is the maintainer's to accept, line by line, before any of it is true.
+*Corrected 2026-10-28:* §7's invariants are in `CLAUDE.md`, revised 2026-10-05, and reading, taking
+part, reporting and settling are built and live (build order 11.1 to 11.4). Writs, standing,
+bounties and operators posting missions of their own are not (11.5, 11.6, 11.8).
 
 ## 1. What is actually changing
 

@@ -57,6 +57,11 @@ export interface Waiting extends Invite {
 const MAX_WAITING = 50;
 
 let waiting = $state<Record<string, Waiting>>({});
+/**
+ * Who answered this phone's own request and is paired by it, newest last: said on Peers, since the
+ * pairing happened with nothing pressed here [`InvitePayload.answers`].
+ */
+let answeredUs = $state<string[]>([]);
 let flooded = $state(false);
 let closer: { close(): void } | null = null;
 
@@ -84,6 +89,11 @@ export const invites = {
    */
   get flooded(): boolean {
     return flooded;
+  },
+
+  /** Who accepted a request this phone sent, and is paired by it, this visit. */
+  get answeredUs(): string[] {
+    return answeredUs;
   },
 
   /**
@@ -123,6 +133,19 @@ export const invites = {
       if (!read) return;
       if (read.from === identity.pubkey) return;
       if (event.id in waiting) return;
+
+      /*
+       * The answer to a request this phone sent: it carries that request, signed here, which only the
+       * card's holder could have opened. Asking was the operator's consent, so the pairing completes
+       * without a second accept [journey, 2026-10-28]. From anyone else, it is an invite like any other.
+       */
+      if (read.answering === identity.pubkey) {
+        if (!peerPubkeys().includes(read.from)) {
+          pair(read.from, read.payload.callsign);
+          answeredUs = [...answeredUs, read.payload.callsign];
+        }
+        return;
+      }
 
       /*
        * Full: the ones already here are kept and this one is refused.
@@ -165,7 +188,8 @@ export const invites = {
     const back = buildInvite(
       identity.secretKey,
       invite.from,
-      { callsign: identity.callsign },
+      // Their request, carried back: their phone pairs on it, with no second accept to find.
+      { callsign: identity.callsign, answers: invite.inner },
       Math.floor(Date.now() / 1000),
       kemKeys()[invite.from]
     );

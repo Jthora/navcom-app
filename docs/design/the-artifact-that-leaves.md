@@ -157,6 +157,10 @@ naming:
 
 Smaller, same shape: `dialable`, `noteFor`, `watchCover`, `clearStorageError`.
 
+*All three have since been reached (checked 2026-10-28):* Setup's *Change your callsign* calls
+`setCallsign`, Peers' relay list calls `setRelays`, and the wipe screen shows what each tier holds
+through `tierSizes`.
+
 ## 6. Declined up front, so they stop being proposed
 
 A weekly cadence prompt or a streak (C5). Auto-publishing or scheduling — `propagation.md` says

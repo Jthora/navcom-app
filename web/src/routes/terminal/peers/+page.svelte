@@ -29,6 +29,10 @@
   import { invites, type Waiting } from '$lib/terminal/invites.svelte';
 
   let mine = $state<Peer[]>([]);
+  // An answer to this phone's own request pairs on arrival, with nothing pressed here: the list follows.
+  $effect(() => {
+    if (invites.answeredUs.length > 0) mine = peers();
+  });
   let myPubkey = $state<string | null>(null);
   let code = $state('');
   let callsign = $state('');
@@ -473,6 +477,11 @@
 {#if mine.length > 0}
   <section>
     <h2>Paired</h2>
+    {#if invites.answeredUs.length > 0}
+      <span data-answered-us>
+        <Readout value="Accepted" tone="good" sub={`${invites.answeredUs.join(', ')} accepted your request`} />
+      </span>
+    {/if}
     <ul class="paired">
       {#each mine as p (p.pubkey)}
         <li class:watching={p.buddy}>

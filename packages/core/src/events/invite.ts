@@ -54,9 +54,23 @@ export interface InvitePayload {
    * enforced on free text, so the screen guides rather than pretends.
    */
   note?: string;
+  /**
+   * The invite this one answers, whole: the asker's own signed event, which only the holder of the
+   * card it was sealed to could open.
+   *
+   * An accept is an invite in the other direction, so the asker had to accept the answer too, and a
+   * newcomer told "they will appear on Peers" waited on a pairing one tap short [journey,
+   * 2026-10-28]. Carrying the request back proves, with no pending state on the asker's phone, that
+   * this answers *their* request to *that* card: the asker checks their own signature, and nobody but
+   * the card's holder could have read what they signed. A build that does not know this field reads
+   * an ordinary invite, and the asker accepts it as before.
+   */
+  answers?: Event;
 }
 
 export const NOTE_MAX = 280;
+/** More than any invite this builds, with its note: an answer carries one whole. */
+const ANSWERS_MAX = 4096;
 
 export class InviteError extends Error {}
 
@@ -84,6 +98,7 @@ export function buildInvite(
 
   const content: InvitePayload = { callsign };
   if (note) content.note = note;
+  if (payload.answers) content.answers = payload.answers;
 
   // The real message, signed by the operational key. Never published as-is: the whole
   // point of an invite is to hand over that key, and the outside of the envelope is the
@@ -115,6 +130,26 @@ export interface Invite {
   from: string;
   payload: InvitePayload;
   at: number;
+  /** The signed invite itself, for an accept to carry back [`InvitePayload.answers`]. */
+  inner: Event;
+  /**
+   * Who asked, where this answers an invite: the pubkey that signed the request it carries, checked.
+   * Null for an invite that answers nothing, or carries something that is not a signed invite.
+   */
+  answering: string | null;
+}
+
+/** Who signed the invite an answer carries, if it is one: a signed invite, and small. */
+function answered(request: unknown): string | null {
+  if (request === undefined || request === null || typeof request !== 'object') return null;
+  const event = request as Event;
+  try {
+    if (JSON.stringify(event).length > ANSWERS_MAX) return null;
+    if (event.kind !== KIND_INVITE || !verifyEvent(event)) return null;
+  } catch {
+    return null;
+  }
+  return event.pubkey;
 }
 
 /**
@@ -147,7 +182,7 @@ export function readInvite(secret: SecretKey, wrap: Event): Invite | null {
     if (payload.note !== undefined) {
       if (typeof payload.note !== 'string' || payload.note.length > NOTE_MAX) return null;
     }
-    return { from: inner.pubkey, payload, at: inner.created_at };
+    return { from: inner.pubkey, payload, at: inner.created_at, inner, answering: answered(payload.answers) };
   } catch {
     return null;
   }

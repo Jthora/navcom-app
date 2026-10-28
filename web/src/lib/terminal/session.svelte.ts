@@ -37,7 +37,7 @@ import { recordPatrol } from './patrol';
 import { coverOf, watchtowerAt, type Cover, type WatchtowerAddress } from '@navcom/core';
 import { presence } from './presence.svelte';
 import { kemKeys } from './pq.svelte';
-import { announceListed, beatListed, stopListed } from './public.svelte';
+import { beatListed, stopListed } from './public.svelte';
 import { position } from './position.svelte';
 import { overdue } from './overdue.svelte';
 import { pool } from './pool';
@@ -380,7 +380,7 @@ export const operator = {
     // asked for it and has a card. That coupling is what bounds the mistake: somebody who
     // forgets this is on broadcasts a callsign and a metro while out, and nothing at all
     // the rest of the time.
-    void announceListed();
+    // On its own clock, never in the same second as the peers' presence [relay-lists.md §9].
     beatListed();
 
     // A watch that changes hands inherits nothing: the incoming holder's board is empty

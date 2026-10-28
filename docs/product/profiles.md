@@ -301,7 +301,9 @@ Samaritan protection. None of that moves the recommendation. The demand test is 
   still waits for that person.
 - **A global roster.** Cards are only ever subscribed one region at a time
   (`{kinds: [10911], '#d': [region]}`). There is no "everyone on NavCom" view and no way to
-  ask for one, which is a deliberate absence to re-decide rather than a gap to fill.
+  ask for one, which is a deliberate absence to re-decide rather than a gap to fill. *Since
+  re-decided, in part (checked 2026-10-28):* `/who/` lists everyone, but only the cards whose
+  holders chose to be listed publicly (`#l navcom:public`); a city's board is still one region.
 - **Institutional credentials.** §6. Written down, not built, and reversible the day a
   credentialed professional actually asks — the test `declined.md` set for crew federation and
   which that entry passed on 2026-09-03. The design and its research now sit in

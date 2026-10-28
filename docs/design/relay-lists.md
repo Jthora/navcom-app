@@ -316,11 +316,11 @@ leaves every phone with the release that retires it.
 
 **Fixed alongside**, because timing and order tie keys together where relays do not:
 
-- **Public presence leaves on its own clock.** Today it goes out in the same second as the peer
-  wraps at sign-on, seconds after the on-station signal, and its five-minute beat lands on every
-  fifth peer beat all night, so anyone reading the relays can tie a card to an operational key by
-  timestamp. It moves to a random two to ten minutes after sign-on, then every five minutes, give or
-  take one. A listed operator appears up to ten minutes later than today
+- **Public presence leaves on its own clock.** **Built 2026-10-28.** It went out in the same second
+  as the peer wraps at sign-on, seconds after the on-station signal, and its five-minute beat landed
+  on every fifth peer beat all night, so anyone reading the relays could tie a card to an operational
+  key by timestamp. It now goes a random two to ten minutes after sign-on, then every five minutes,
+  give or take one. A listed operator appears up to ten minutes later than before
 - **A sealed claim or report goes first to the poster's inbox relays that carry nothing else from
   this phone**, `relay.primal.net` before `nos.lol` today, and the screen says when only a relay that
   also carries the card took it. If that one relay drops it, the poster never counts it. The
@@ -413,8 +413,9 @@ the least now.
 | 5 | **Per-member keys, with vouching**, and the box's recovery key. Every squad re-forms once, in person | Not built |
 | 6 | **Squads follow lists.** §3 and §4 for holders' keys | Not built. Waits on phase 5 |
 
-Beside the order, waiting on nothing: §9's first two timing fixes. The third, the inbox read that
-waited on Q16, is superseded: the inbox is pinned in the release (2026-10-17).
+Beside the order, waiting on nothing: §9's first two timing fixes. The first, public presence on
+its own clock, is built (2026-10-28); the second waits on sealed sending resuming. The third, the
+inbox read that waited on Q16, is superseded: the inbox is pinned in the release (2026-10-17).
 
 **Tests** run on `web/e2e/relay-server.ts` and `packages/watchtower/test/helpers/local-relay.ts`,
 and each runs first against the code before it, and fails there. The ones that carry the weight:

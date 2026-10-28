@@ -1138,22 +1138,27 @@
      enough to hit while putting the phone in a pocket. The map comes first and is prerendered,
      callsign or none: missions are what the app is for, and an installed app has no address bar
      to find it with [finding 35]. -->
+<!--
+  Where to go, the four a newcomer goes to first, ahead of the rest: fifteen tiles of one weight
+  said nothing about what comes next after a callsign [journey, 2026-10-28]. The rest keep their
+  places, in the order an operator reaches for them.
+-->
 <nav class="nc-rail" data-rail="all">
-  <a href="/" data-sveltekit-reload data-map-link>Missions and the map</a>
+  <a class="nc-lead" href="/" data-sveltekit-reload data-map-link>Missions and the map</a>
   {#if identity}
-    <a href="/terminal/watch/">Watch</a>
-    <a href="/terminal/resupply/">Resupply</a>
-    <a href="/terminal/peers/">Peers</a>
-    <a href="/terminal/card/">Your card</a>
-    <a href="/terminal/directory/">Cached directory</a>
+    <a class="nc-lead" href="/terminal/card/">Your card</a>
+    <a class="nc-lead" href="/terminal/peers/">Peers</a>
+    <a class="nc-lead" href="/terminal/directory/">Cached directory</a>
     <a href="/terminal/patrols/">Your patrols</a>
-    <a href="/terminal/log/">What the watch wrote</a>
-    <a href="/terminal/backup/">Backup</a>
-    <a href="/terminal/wipe/">Wipe this device</a>
+    <a href="/terminal/watch/">Watch</a>
     <a href="/terminal/standing/">Standing</a>
-    <a href="/terminal/funding/">Support</a>
-    <a href="/terminal/on-call/">On call</a>
+    <a href="/terminal/backup/">Backup</a>
     <a href="/terminal/setup/">Setup</a>
+    <a href="/terminal/on-call/">On call</a>
+    <a href="/terminal/log/">What the watch wrote</a>
+    <a href="/terminal/resupply/">Resupply</a>
+    <a href="/terminal/funding/">Support</a>
+    <a href="/terminal/wipe/">Wipe this device</a>
   {/if}
 </nav>
 

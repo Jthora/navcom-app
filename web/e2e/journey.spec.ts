@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { finalizeEvent, getPublicKey } from 'nostr-tools/pure';
 import { hermetic, publish, RelayNet, shots } from './journey-harness';
 import { admit, mission, resign, standInKey, type StandIn } from './registry';
+import { screenAt } from './map';
 
 /**
  * Journeys: what a person does from a first visit, walked on a phone's screen, end to end.
@@ -226,8 +227,13 @@ test('a newcomer: from navcom.app to a callsign, a card, and a mission taken, re
   const row = page.locator(`[data-mission="${LIBRARY}"]`);
   await expect(row).toContainText('Philadelphia, Pennsylvania');
   await step(page, 'missions');
+  const canvas = page.locator('.grid canvas');
+  const wholeEarth = Number(((await canvas.getAttribute('data-view')) ?? '').split(' ')[2]);
   await row.click();
   await expect(page.locator('[data-screen="mission"]')).toContainText('Parkway Central Library');
+  // The map comes to it: closer than the whole Earth, and its ring in view above the sheet.
+  await expect.poll(async () => Number(((await canvas.getAttribute('data-view')) ?? '').split(' ')[2])).toBeGreaterThan(wholeEarth * 4);
+  expect((await screenAt(page, -75.1712, 39.9596)).uncovered, 'the mission’s ring is on screen and uncovered').toBe(true);
   await step(page, 'mission');
 
   // Taking part, in the open.
@@ -413,7 +419,7 @@ test('two strangers in one city find each other on its board, pair, and see each
   await card.getByRole('button', { name: /ask to pair/i }).click();
   await card.locator('#note').fill('Raven here — I do Thursdays near Fairmount.');
   await card.getByRole('button', { name: /^send$/i }).click();
-  await expect(card.locator('[data-asked]')).toContainText(/accept it there/i, { timeout: 15_000 });
+  await expect(card.locator('[data-asked]')).toContainText(/appear on peers/i, { timeout: 15_000 });
   await step(Raven, 'asked');
 
   // Wren accepts on Peers.
@@ -422,10 +428,11 @@ test('two strangers in one city find each other on its board, pair, and see each
   await expect(Wren.locator('ul.paired')).toContainText('Raven', { timeout: 15_000 });
   await step(Wren, 'accepted');
 
-  // Her acceptance waits on Raven's Peers, as the board said it would.
+  // Her acceptance carries Raven's own request back, so Raven's phone pairs on it: no second accept.
   await go(Raven, '/terminal/peers/');
-  await Raven.getByRole('button', { name: /^accept$/i }).first().click({ timeout: 20_000 });
-  await expect(Raven.locator('ul.paired')).toContainText('Wren', { timeout: 15_000 });
+  await expect(Raven.locator('ul.paired')).toContainText('Wren', { timeout: 20_000 });
+  await expect(Raven.locator('[data-answered-us]')).toContainText(/wren accepted your request/i);
+  await expect(Raven.getByRole('button', { name: /^accept$/i })).toHaveCount(0);
   await step(Raven, 'paired');
 
   // Wren goes out; Raven, on Status, sees it from what Wren's phone sent her.
