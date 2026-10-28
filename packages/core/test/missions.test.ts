@@ -461,13 +461,14 @@ describe('who NavCom reads packages from', () => {
    * The registry is the trust root for every mission on the map: a key here is believed to be its
    * publisher, so it is pinned exactly. Decided 2026-10-18 [interchange spec rev 7]: Mecha Jono's old
    * key, whose secret was exposed on 2026-09-28, is frozen and ends on 13 November; its next key is
-   * listed with no start, so nothing it signs is trusted until a later release names the cut-over.
+   * trusted to sign from the cut-over, 9 November at 15:00 UTC (the owner's K1, 26 October), and
+   * nothing it signed before then is kept.
    *
    * It pins where sealed claims and reports go, too (since 2026-10-17): the inbox read from a
    * kind-10050 list was the newest by a date the signer writes, and the exposed key can sign one
    * dated next year [interchange spec §5.0].
    */
-  it('is one entry, Mecha Jono, an agent, with its inbox pinned, its old key frozen to 13 November, and its next key not yet trusted to sign', () => {
+  it('is one entry, Mecha Jono, an agent, with its inbox pinned, its old key frozen to 13 November, and its next key trusted to sign from 9 November 15:00 UTC', () => {
     expect(MISSION_PUBLISHERS).toEqual([
       {
         id: 'mecha-jono',
@@ -483,7 +484,7 @@ describe('who NavCom reads packages from', () => {
             exposed: '2026-09-28',
             frozen: { sha256: 'f225840937640ab8dd7e4e331e104c2a67a63fe9f885f38b85a096dd523e9a76', confirmed: false }
           },
-          { pubkey: '86f824c3f1e67c60b1dc15ce110648c4de5c3fb879022fbbcc5e8deb720e402c', generation: 2, notAfter: '2027-10-18T00:00:00Z' }
+          { pubkey: '86f824c3f1e67c60b1dc15ce110648c4de5c3fb879022fbbcc5e8deb720e402c', generation: 2, notBefore: '2026-11-09T15:00:00Z', notAfter: '2027-10-18T00:00:00Z' }
         ],
         next: null
       }

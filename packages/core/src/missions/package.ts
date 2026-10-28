@@ -173,11 +173,13 @@ export const MISSION_PUBLISHERS: MissionPublishers = [
       },
       // Mecha Jono's next key, confirmed by Jono. **Not trusted to sign until the cut-over**
       // (decided 2026-10-18): Mecha Jono signs nothing with it before then, so anything under it
-      // before its start is a thief's, and is dropped. A later release gives it its start once
-      // Mecha Jono names the day.
+      // before its start is a thief's, and is dropped. The cut-over is Monday 9 November from 15:00
+      // UTC (the owner's K1, 26 October), four days before the old key ends, so Mecha Jono's
+      // missions republished at the same `d` replace the frozen ones with no day empty between.
       {
         pubkey: '86f824c3f1e67c60b1dc15ce110648c4de5c3fb879022fbbcc5e8deb720e402c',
         generation: 2,
+        notBefore: '2026-11-09T15:00:00Z',
         notAfter: '2027-10-18T00:00:00Z'
       }
     ],

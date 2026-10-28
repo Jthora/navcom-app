@@ -124,7 +124,7 @@ describe('a phone that ran an earlier bundle: the missions it took part in, kept
   const seed = (m: Mission) => set('wipeable', 'mission_history', [{ mission: m, since: AT - 3 * 86_400 }]);
   const draft = { date: localDay(AT - 86_400), asks: ['handout:water'], counts: [] };
 
-  it('does not offer, or send, a report on a mission under the key with no start', async () => {
+  it('does not offer, or send, a report on a mission under the next key dated before its start', async () => {
     const m = kept(MECHA_NEXT, 'planted-under-the-next-key');
     seed(m);
     const t = tookPart(AT).find((x) => x.mission.address === m.address);

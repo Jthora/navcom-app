@@ -33,6 +33,7 @@ const MECHA_OLD = '6301c4d09a014909e5a48b7d0c9aa859eec18804c2fc87eab4e414aa5a319
 const MECHA_NEXT = '86f824c3f1e67c60b1dc15ce110648c4de5c3fb879022fbbcc5e8deb720e402c';
 const secs = (iso: string) => Date.parse(iso) / 1000;
 const OCT_18 = secs('2026-10-18T12:00:00Z');
+const CUT_OVER = secs('2026-11-09T15:00:00Z');
 
 const one = generateSecretKey();
 const two = generateSecretKey();
@@ -90,9 +91,13 @@ describe('the registry gate, asked before anything is kept', () => {
     expect(gate(before, ended, trustClock(Date.parse('2026-10-01T12:00:00Z'), '2026-10-18T00:00:00Z'))).toBe('window');
   });
 
-  it('drops anything under Mecha Jono’s next key today: it has no start', () => {
+  it('drops anything under Mecha Jono’s next key before the cut-over, 9 November 15:00 UTC, and anything dated before it after', () => {
     const forged = { ...pkg(one, 'starcom_mission_package_field-heat_relief-CA-2026-10-02', OCT_18), pubkey: MECHA_NEXT };
-    expect(gate(forged, MISSION_PUBLISHERS, OCT_18)).toBe('untrusted');
+    expect(gate(forged, MISSION_PUBLISHERS, OCT_18)).toBe('early');
+    expect(gate(forged, MISSION_PUBLISHERS, CUT_OVER + 86_400)).toBe('early');
+    const republished = { ...pkg(one, 'starcom_mission_package_field-heat_relief-CA-2026-10-02', CUT_OVER + 60), pubkey: MECHA_NEXT };
+    expect(gate(republished, MISSION_PUBLISHERS, CUT_OVER - 1)).toBe('window');
+    expect(gate(republished, MISSION_PUBLISHERS, CUT_OVER + 86_400)).toBeNull();
   });
 
   describe('a frozen key', () => {
@@ -187,9 +192,20 @@ describe('whose settled label counts', () => {
 });
 
 describe('where something sealed goes', () => {
-  it('nowhere for Mecha Jono today: its only key trusted to sign is exposed, so sealed sending is paused', () => {
+  it('nowhere for Mecha Jono before the cut-over: its only key trusted to sign is exposed, so sealed sending is paused', () => {
     expect(sealTargetOf(MECHA_OLD, MISSION_PUBLISHERS, OCT_18)).toMatchObject({ ok: false, why: 'paused' });
     expect(sealTargetOf(MECHA_NEXT, MISSION_PUBLISHERS, OCT_18)).toMatchObject({ ok: false, why: 'paused' });
+    expect(sealTargetOf(MECHA_OLD, MISSION_PUBLISHERS, CUT_OVER - 1)).toMatchObject({ ok: false, why: 'paused', resumes: CUT_OVER });
+  });
+
+  it('to Mecha Jono’s next key from the cut-over, at the inbox NavCom pins, for its missions under either key (Q17)', () => {
+    for (const poster of [MECHA_OLD, MECHA_NEXT])
+      expect(sealTargetOf(poster, MISSION_PUBLISHERS, CUT_OVER)).toMatchObject({
+        ok: true,
+        key: MECHA_NEXT,
+        inbox: ['wss://nos.lol', 'wss://relay.primal.net'],
+        since: CUT_OVER
+      });
   });
 
   it('to the newest key trusted and not exposed, from its start, even for a mission the old key posted', () => {

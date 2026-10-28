@@ -78,7 +78,7 @@ test.describe('a phone that ran an earlier bundle', () => {
   const t = Math.floor(AT.getTime() / 1000);
 
   for (const [who, key, d] of [
-    ['the key with no start', MECHA_NEXT, 'planted-under-the-next-key'],
+    ['the next key, dated before its start', MECHA_NEXT, 'planted-under-the-next-key'],
     ['the old key, at a d not on its frozen list', MECHA_OLD, 'planted-under-the-old-key']
   ] as const) {
     test(`is not asked to report on a mission it took part in under ${who}`, async ({ page }) => {

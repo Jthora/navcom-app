@@ -58,7 +58,12 @@ describe('what the build refuses', () => {
       expect(registryProblems([entry({ keys: [trusted(A, { notAfter: new Date((OCT_18 + 60 * 86_400) * 1000).toISOString() })] })], OCT_18)).toEqual([]);
     });
 
-    it('not while its only key trusted to sign is exposed and its next has no start — today’s registry, a day before the old key ends', () => {
+    it('not while its only key trusted to sign is exposed and its next has no start', () => {
+      const noStart = [{ ...MECHA, keys: [MECHA.keys[0]!, { pubkey: MECHA.keys[1]!.pubkey, generation: 2, notAfter: '2027-10-18T00:00:00Z' }] }];
+      expect(registryProblems(noStart, secs('2026-11-12T00:00:00Z'))).toEqual([]);
+    });
+
+    it('today’s registry, the day before the old key ends: the next key, started on 9 November, runs to 18 October 2027', () => {
       expect(registryProblems(MISSION_PUBLISHERS, secs('2026-11-12T00:00:00Z'))).toEqual([]);
     });
 
@@ -109,7 +114,7 @@ describe('the file a publisher checks', () => {
     expect(mecha).toMatchObject({ id: 'mecha-jono', name: 'Mecha Jono', agent: true, inbox: ['wss://nos.lol', 'wss://relay.primal.net'], next: null });
     expect(mecha.keys.map((k) => [k.pubkey.slice(0, 8), k.generation, k.notBefore, k.notAfter, k.exposed])).toEqual([
       ['6301c4d0', 1, '2025-01-01T00:00:00Z', '2026-11-13T00:00:00Z', '2026-09-28'],
-      ['86f824c3', 2, null, '2027-10-18T00:00:00Z', null]
+      ['86f824c3', 2, '2026-11-09T15:00:00Z', '2027-10-18T00:00:00Z', null]
     ]);
     const frozen = mecha.keys[0]!.frozen!;
     // Anybody can recompute the pin from the file alone.

@@ -276,8 +276,9 @@ test.describe('what this phone already sealed to Mecha Jono’s old key', () => 
     await seedDevice(page, { __noStorage: true } as Parameters<typeof seedDevice>[1]);
     await open(page, '/terminal/');
     await expect(page.locator('[data-sealed-exposed]')).toContainText(
-      'Sealed claims and reports sent to Mecha Jono from 6 October can be opened by whoever holds its old key’s leaked secret'
+      'Sealed claims and reports sent to Mecha Jono from 6 October until 9 November can be opened by whoever holds its old key’s leaked secret'
     );
+    await expect(page.locator('[data-sealed-exposed]')).toContainText('from 9 November sealed messages go to its new key');
   });
 });
 
@@ -293,7 +294,7 @@ test('the registry NavCom pins is published as a file, with its digest in the in
   expect(mecha.inbox).toEqual(INBOX);
   expect(mecha.keys.map((k: { pubkey: string; notBefore: string | null }) => [k.pubkey, k.notBefore])).toEqual([
     [MECHA_OLD, '2025-01-01T00:00:00Z'],
-    [MECHA_NEXT, null]
+    [MECHA_NEXT, '2026-11-09T15:00:00Z']
   ]);
   expect(mecha.keys[0].notAfter).toBe('2026-11-13T00:00:00Z');
 });

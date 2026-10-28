@@ -214,7 +214,8 @@ export function keptMissionTrusted(m: KeptMission, registry: MissionPublishers, 
  * - `paused` — no key it could be, **because the one NavCom trusts to sign now is exposed**.
  *   Nothing is sealed to an exposed key: whoever holds its secret can fetch the wraps addressed to it
  *   and open them, and prove which card sent each. Nothing is held on the phone to send later either
- *   [the-artifact-that-leaves.md P5]
+ *   [the-artifact-that-leaves.md P5]. `resumes` is the start of the publisher's next key that was not
+ *   exposed, when this release names one, so a phone can say when sealed sending comes back
  * - `lapsed` — no key it could be, and no exposure is why: none is trusted to sign now, because one
  *   ended unrenewed, or a bundle is running past its keys' ends. Said apart from `paused`, so a
  *   phone never tells somebody a secret leaked when none did
@@ -226,7 +227,8 @@ export function keptMissionTrusted(m: KeptMission, registry: MissionPublishers, 
  */
 export type SealTarget =
   | { ok: true; entry: MissionPublisher; key: string; inbox: readonly string[]; since: number }
-  | { ok: false; why: 'paused' | 'lapsed' | 'no-inbox'; entry: MissionPublisher }
+  | { ok: false; why: 'paused'; entry: MissionPublisher; resumes: number | null }
+  | { ok: false; why: 'lapsed' | 'no-inbox'; entry: MissionPublisher }
   | { ok: false; why: 'unknown' };
 
 export function sealTargetOf(poster: string, registry: MissionPublishers, at: number): SealTarget {
@@ -235,7 +237,14 @@ export function sealTargetOf(poster: string, registry: MissionPublishers, at: nu
   const { entry } = found;
   const live = entry.keys.filter((k) => trustedToSign(k, at));
   const key = live.filter((k) => speaks(k, at)).sort((a, b) => b.generation - a.generation)[0];
-  if (!key) return { ok: false, why: live.some((k) => k.exposed !== undefined || k.frozen) ? 'paused' : 'lapsed', entry };
+  if (!key) {
+    if (!live.some((k) => k.exposed !== undefined || k.frozen)) return { ok: false, why: 'lapsed', entry };
+    const starts = entry.keys
+      .filter((k) => k.exposed === undefined && !k.frozen)
+      .map((k) => registryTime(k.notBefore))
+      .filter((start) => start > at);
+    return { ok: false, why: 'paused', entry, resumes: starts.length > 0 ? Math.min(...starts) : null };
+  }
   const inbox = (entry.inbox ?? []).filter((u) => u.startsWith('wss://'));
   if (inbox.length === 0) return { ok: false, why: 'no-inbox', entry };
   return { ok: true, entry, key: key.pubkey, inbox, since: registryTime(key.notBefore) };

@@ -34,6 +34,7 @@ import { contactPubkey, ensureContactKey } from '$lib/terminal/card';
 import { missionRelays, usable } from '$lib/terminal/relays';
 import { pool } from '$lib/terminal/pool';
 import { floorNow } from './floor';
+import { stampUtc } from '$lib/components/missions/format';
 
 export type Visibility = 'open' | 'sealed';
 
@@ -409,8 +410,10 @@ export const posterOfAddress = (address: string) => address.split(':')[1] ?? '';
  * Why sealed sending to `name` is off, in words: said on the choice itself, before anything can be
  * sent, and wherever something sealed would have gone [decided 2026-10-18].
  */
-export const pausedWords = (name: string) =>
-  `Sealed sending to ${name} is paused: its key's secret leaked, so whoever holds it could open anything sealed to it. Nothing is kept on this phone; come back once ${name} reads under a new key.`;
+export const pausedWords = (name: string, resumes: number | null = null) =>
+  `Sealed sending to ${name} is paused: its key's secret leaked, so whoever holds it could open anything sealed to it. Nothing is kept on this phone; ${
+    resumes === null ? `come back once ${name} reads under a new key` : `it resumes ${stampUtc(resumes)}, when ${name} reads under its new key`
+  }.`;
 
 /**
  * The same pause where no secret leaked: no key of `name`'s is current in this version of NavCom —
@@ -422,7 +425,7 @@ export const lapsedWords = (name: string) =>
 
 /** Why nothing goes sealed now, for a target that is not one. No relay was asked, so none is blamed. */
 export function nowhereFor(t: Exclude<SealTarget, { ok: true }>, name: string): string {
-  if (t.why === 'paused') return pausedWords(name);
+  if (t.why === 'paused') return pausedWords(name, t.resumes);
   if (t.why === 'lapsed') return lapsedWords(name);
   if (t.why === 'no-inbox') return `NavCom has no inbox for ${name}, so there is nowhere to send it sealed.`;
   return `NavCom no longer reads the key ${name} posted this with, so there is nowhere to send it sealed.`;

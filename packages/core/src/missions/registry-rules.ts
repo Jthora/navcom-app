@@ -100,10 +100,10 @@ const DAY = /^\d{4}-\d{2}-\d{2}$/;
  *
  * **The 60-day rule, stated exactly:** an entry is refused when it has at least one key that is
  * not exposed and has a `notBefore`, and none of those keys has a `notAfter` at least 60 days after
- * `at`. An entry whose only keys trusted to sign are exposed is not held to it — Mecha Jono's,
- * until the release that gives `86f824c3…` its start — because it has nothing to renew: its exposed
- * key ends on its own date, held by `EXPOSED_LATEST`. From that release on, the new key must run 60
- * days past every build, so it is renewed before it lapses.
+ * `at`. An entry whose only keys trusted to sign are exposed is not held to it — Mecha Jono's was
+ * not, until rev 10's release (2026-10-28) gave `86f824c3…` its start — because it has nothing to
+ * renew: its exposed key ends on its own date, held by `EXPOSED_LATEST`. From that release on, the
+ * new key must run 60 days past every build, so it is renewed before it lapses.
  */
 export function registryProblems(registry: MissionPublishers, at: number, sets: readonly FrozenSet[] = FROZEN_SETS): string[] {
   const problems: string[] = [];

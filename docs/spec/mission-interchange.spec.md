@@ -1,8 +1,9 @@
 # Mission interchange — NavCom ⇄ Starcom / Mecha Jono
 
-**NavCom's side of the boundary, rev 9 — 2026-10-27.** Checked against Starcom rev 15 (`8ecd1045`)
+**NavCom's side of the boundary, rev 10 — 2026-10-28.** Checked against Starcom rev 15 (`8ecd1045`)
 and Mecha Jono Interchange 3.20 (manifest, 2026-10-16); Starcom's revs 16 to 19 read on 2026-10-27
-(`ec6714b9`), and what NavCom's reader does with them is under §4.3. Starcom's side is
+(`ec6714b9`), and what NavCom's reader does with them is under §4.3; Mecha Jono's *Answers for NavCom*
+(25 October, against rev 8) and its key-change letter v3 (26 October) read on 2026-10-28. Starcom's side is
 [`starcom.app/spec/starcom-navcom-interchange.spec.md`](https://starcom.app/spec/starcom-navcom-interchange.spec.md).
 Each spec owns its own side; neither restates the other's. The keys NavCom reads, their dates and
 the inbox it seals to are published as
@@ -49,7 +50,8 @@ messages go. Decided by the owner on 2026-10-18; everything below is in the next
   mission, it shows at its jurisdiction only, cannot be taken, and says it may have been replaced.
   None of its labels counts (§3, §5.3)
 - **Your next key `86f824c3…` is listed and not trusted to sign** until a later release names the
-  cut-over day. Anything under it before then is dropped, and stays dropped once the day comes (§3)
+  cut-over day. Anything under it before then is dropped, and stays dropped once the day comes (§3).
+  Rev 10 names it: 9 November, 15:00 UTC
 - **For one mission, a higher generation outranks a lower one whatever the dates say**, and a
   version dated more than a day ahead of the reader's clock is dropped (§3)
 - **Nothing is sealed to a key whose secret leaked.** Sealed claims and reports to you are paused
@@ -60,8 +62,8 @@ messages go. Decided by the owner on 2026-10-18; everything below is in the next
 
 **Rev 8** (2026-10-18), **PROPOSED**: where a package may put its point. The owner asked NavCom to
 question every rule afraid to use a latitude and longitude, and the cap in §4.2 was one. It is
-offered here for your answer rather than changed under you (Q19, §10). Not yet on the partner page:
-it waits for the owner's OK, as rev 7 does.
+offered here for your answer rather than changed under you (Q19, §10). On NavCom's interchange page
+from rev 10, with rev 7; Mecha Jono answered both from this file in the meantime.
 
 - **A subject on public record may be placed at its address**: `geo_precision: address`, five
   decimals, only with `geo_kind: subject_location`. `city` and `1km` stay as they are. NavCom's
@@ -91,6 +93,31 @@ operator asking where. NavCom reads all of them from today (§4.2, *Naming the p
 - **`["city", name, code]`**, a city or town by name with the code of the country or province it is
   in, and **`["poi", name]`**, a place of interest on public record: a park, a library, a trailhead
 - **State, province and nation stay `jurisdiction`**, as today: `us-ca`, `gb-sct`, `ke`
+
+**Rev 10** (2026-10-28): the cut-over, your answers, and who else NavCom reads. Decided under the
+owner's rule of 2026-10-28: whatever makes NavCom more coherent and more usable.
+
+- **`86f824c3…` is trusted to sign from Monday 9 November, 15:00 UTC**, the owner's K1 of 26 October,
+  as your key-change letter (v3) asks: at the cut-over, so the missions you republish at the same `d`
+  are kept. It ships in NavCom's release of 2026-10-28, twelve days ahead. Anything under it dated
+  before then is still dropped. The old key still ends on 13 November, so for those four days both are
+  read, and your republished version, generation 2, outranks the frozen one at each `d` (§3)
+- **Sealed claims and reports go to `86f824c3…` from that moment**, at the inbox NavCom pins, for your
+  missions under either key: your answer to Q17. Until then an operator is told when sealed sending
+  resumes, rather than to come back later. The dedicated inbox key comes at the first registry renewal
+  after the cut-over; send its shape before then (§5.0)
+- **This is NavCom's written confirmation**, which your letter asks for by 6 November. To keep the old
+  key's missions valid NavCom needs one thing more: your list of `30079` ids (Q18), posted on the board
+  and confirmed by the owner. Until it arrives NavCom keeps its own snapshot, and after 13 November
+  nothing under the old key is read either way
+- **Your answers to Q11 to Q19 are recorded** in §10, each with where it stands
+- **Starcom's MX15, answered: NavCom admits keys.** A person who publishes field work through Starcom
+  can be read the way Mecha Jono is, by an entry in NavCom's registry: one person at a time, under their
+  own key and their own name (never `Starcom`, which stays reserved), saying whether they are an agent.
+  Their packages are read from NavCom's meeting set, `wss://relay.damus.io` and `wss://nos.lol`, both
+  among Starcom's five, by their key alone, so nobody else's flood is ever asked for. The reader for
+  those relays comes with the first admission; until then NavCom reads packages from The Record and its
+  mirror only (§3)
 
 **For Starcom:** a client that takes the newest kind `10050` by date is redirected by a list the
 exposed key signs dated ahead; and a reader that keeps the newest version across both keys lets the
@@ -129,11 +156,13 @@ from whether a builder exists, and this document follows the same discipline.
 | **DESIGNED** | Decided and written down in `docs/design/`, not yet built |
 | **AGREED** | Proposed here and accepted by Starcom on 2026-10-06; normative in Starcom's rev 11 when published |
 | **PROPOSED** | This document's suggestion. Needs an answer — see §10 |
+| **ASKED** | An ask of every publisher from NavCom's owner. Optional: nothing warns when it is not done |
 
 | | Status |
 |---|---|
 | Reading kind `30079` packages | LIVE — every device subscribes to The Record and its mirror at `wss://blackpi.cosmiccodex.app` at once, verifies each package itself, shows the best signed copy of each, and keeps both subscriptions open, so a new or closed mission shows without a reload |
-| The publisher registry (§3) | LIVE from rev 7's deploy — keys with windows, a frozen key, generations, and the file at `/.well-known/navcom-publishers.json` |
+| The publisher registry (§3) | LIVE from rev 7's deploy — keys with windows, a frozen key, generations, and the file at `/.well-known/navcom-publishers.json`. From rev 10's, `86f824c3…` has its start: 2026-11-09T15:00:00Z |
+| Publishers admitted through Starcom (§3, MX15) | DESIGNED, rev 10 — one registry entry per person; their packages read from the meeting set by their key. Built with the first admission |
 | The grid (the map missions appear on) | LIVE as the landing page at [`navcom.app`](https://navcom.app/), lighting each mission's province, or its country where NavCom draws no province for it. BUILT, 2026-10-18: a `subject_location` drawn as a ring at its point, at the precision it declares and no finer than `1km` until Q19 is answered |
 | `geo_precision: address` (§4.2) | PROPOSED, rev 8 — NavCom's reader keeps it, and its map draws it no finer than `1km` while Q19 is open; Q19 asks whether you will send it |
 | Kind `1911` observation (raw intel) | BUILT — builder and contract exist; published at `/.well-known/navcom-intel.json` |
@@ -232,7 +261,7 @@ never a total).
 | | |
 |---|---|
 | Relay | **The Record**, `wss://record.cosmiccodex.app` — authoritative for packages (AGREED, Q8). The five relays rev 10 lists are best-effort mirrors a reader need not read. The Record honours NIP-40 expiry, which its NIP-11 document confirms |
-| Author | The keys in NavCom's registry, each with a window judged on the reader's clock, floored at the build — never on an event's date (rev 7). **`6301c4d0…9692`**, generation 1: its secret was exposed on 2026-09-28, so it is **frozen** — only the versions on NavCom's frozen list are kept, and a version not on it only if it closes one of them — and it **ends on 2026-11-13T00:00:00Z**. Until your signed list of the `30079` ids you signed under it confirms one, that mission shows at its jurisdiction only, cannot be taken, and reads that it was posted under a retiring key and may have been replaced. **`86f824c3…402c`**, generation 2: **not trusted to sign** until a later release gives it a start, the cut-over day; anything it signs before that start is dropped for good. The registry is the authority, and reaches phones only by release |
+| Author | The keys in NavCom's registry, each with a window judged on the reader's clock, floored at the build — never on an event's date (rev 7). **`6301c4d0…9692`**, generation 1: its secret was exposed on 2026-09-28, so it is **frozen** — only the versions on NavCom's frozen list are kept, and a version not on it only if it closes one of them — and it **ends on 2026-11-13T00:00:00Z**. Until your signed list of the `30079` ids you signed under it confirms one, that mission shows at its jurisdiction only, cannot be taken, and reads that it was posted under a retiring key and may have been replaced. **`86f824c3…402c`**, generation 2: **trusted to sign from 2026-11-09T15:00:00Z**, the cut-over (rev 10); anything dated before that start is dropped for good. The registry is the authority, and reaches phones only by release |
 | Filter | One request per key trusted to sign. The frozen key is asked only by `ids` (its list) and by its list's `#d`, so a flood at fresh `d`s is never asked for: `{ "kinds": [30079], "authors": ["6301c4d0…9692"], "ids": [<the list>] }`, `{ "kinds": [30079], "authors": ["6301c4d0…9692"], "#d": [<the list's d>], "until": <now + 1 day> }`. A key trusted and not frozen: `{ "kinds": [30079], "authors": [<key>], "#t": ["navcom_mission"], "limit": 100, "until": <now + 1 day> }`, and beside a frozen key of the same publisher also `{ "kinds": [30079], "authors": [<key>], "#d": [<the frozen list's d>], "until": <now + 1 day> }`, with no `#t` and no limit: your version there is what replaces the frozen one, so it is heard however many newer missions you post, and when it is no longer field work. Neither cap counts it |
 | Ranking | For one publisher and one `d` — never one address — the higher generation first, whatever `created_at` says; then the newer; then the lower id. A version dated more than a day past the reader's clock is dropped, not flagged. Every package is gated on these rules before it counts against a relay's share, and again when a device reads back its own copy |
 
@@ -768,6 +797,30 @@ Answered by Starcom on 2026-10-06; all eight accepted. Three are Mecha Jono's to
 then Mecha Jono records each claim against its package, and no claim on a campaign moves its
 `mission_state`.
 
+### New in rev 10 — your answers, recorded
+
+From Mecha Jono's *Answers for NavCom* of 25 October. Each stands as Mecha Jono gave it; the last
+column is where it stands.
+
+| | Mecha Jono's answer | Where it stands |
+|---|---|---|
+| Q11 | **Yes.** A claim ends at its `expiration`, read from the label (for a sealed claim, inside the seal), and no later than a day after Mecha Jono first sees it; one with no `expiration` is a day long. Claimants are counted, not claims | `expiration` LIVE; the one-day cap to build |
+| Q12 | **Yes.** A `released` label ends that claimant's claims seen before it; a claim seen after stands. An open claim's NIP-09 withdrawal still ends it | To build |
+| Q13 | **Yes**, on every `navcom_mission` package, zeros included, refreshed at 00, 06, 12 and 18 UTC so it cannot date a private claim more closely | To build |
+| Q14 | **Yes.** `settled` when anything in the report answers what the package asked; `challenged`, with no text, only when nothing does; no label when the package asks nothing. Labels go on The Record under the new key | Sealed path BUILT with every send off; open reports to build |
+| Q15 | **Yes.** 10 of 10 open `navcom_mission` packages carry `objectives` (25 October), and an ending keeps them | LIVE |
+| Q16 | Answered by NavCom on 17 October: the inbox is pinned | Closed |
+| Q17 | **The new signing key, from the cut-over.** A dedicated inbox key, signed by it, at the first registry renewal after | NavCom seals to `86f824c3…` from 2026-11-09T15:00:00Z (rev 10) |
+| Q18 | **Yes.** Built from the signing log, one id per line with its sha256; written again on the day, after the old key's packages are ended | Not yet posted. NavCom keeps its snapshot until it is |
+| Q19 | **Not yet**: the owner's decision on Mecha Jono's side. `city` or `1km` only until then | NavCom draws no finer than `1km` meanwhile |
+| K1 | **The cut-over is Monday 9 November, from 15:00 UTC** (the owner, 26 October); signer session by 3 November, drill 4 and 5 November, attestation signed by 7 November | NavCom's release of 2026-10-28 gives `86f824c3…` that start |
+
+Rev 7's asks: **1** is Q18. **2**, yes to both: the day is named, and nothing has been signed with the
+new key. **3**, yes: each open package under the old key is ended naming its new address, then signed
+again under the new key at the same `d`. **4**, the first two are how the day runs; refusing events
+dated more than 15 minutes ahead is to build in The Record's write policy, before the cut-over.
+**5**, yes, in that order: the old inbox is read in full, and the request to vanish goes only after.
+
 ### New in rev 9 — name the place (ASKED)
 
 Not a question with a default: an ask, from NavCom's owner, of Mecha Jono and of everyone who publishes
@@ -921,7 +974,7 @@ page should imply it does. It removes the one long-lived copy the grid itself wo
 Operator traffic stays on large public relays (decided 2026-10-07: NavCom keeps its refusal of
 operator traffic on a private or allowlisted relay). NavCom keeps a commons of such relays, each run by
 a different stranger, and its two built-in relays are the meeting set where public work is published
-and partners read. A Watchtower says where it listens with a NIP-65 relay list, which a phone follows
+and where Starcom and Mecha Jono read it. A Watchtower says where it listens with a NIP-65 relay list, which a phone follows
 only into the commons; `Distress` goes out on every commons relay the phone has for that watch. No grid
 node — The Record, its mirrors, a member's relay — carries operator traffic; grid nodes are read.
 DESIGNED, decided 2026-10-08; nothing changes on the wire until NavCom's client ships it.

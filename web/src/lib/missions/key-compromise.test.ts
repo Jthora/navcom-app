@@ -4,7 +4,9 @@ import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure
 import type { Event } from 'nostr-tools/core';
 import {
   FROZEN_SETS,
+  MISSION_PUBLISHERS,
   buildReportLabel,
+  sealTargetOf,
   frozenDigest,
   readMissionPackage,
   type FrozenSet,
@@ -14,7 +16,7 @@ import {
 } from '@navcom/core';
 import { set } from '$lib/terminal/storage';
 import { collect } from './collect';
-import { refusal, retiringOf, takePart, tookPart, type Wire } from './claims';
+import { nowhereFor, refusal, retiringOf, takePart, tookPart, type Wire } from './claims';
 import { REPORT_DAYS, STRETCH_DAYS, fileReport, localDay, reportAgain, reportableDays, sent, settlements } from './reports';
 import { trustedKey } from './registry-fixture';
 import { leakedSentences } from './leaked';
@@ -288,10 +290,20 @@ describe('what this device says of what it sealed to a key that leaked', () => {
     expect(secondUtc(secs('2026-10-08T03:14:15Z'))).toBe('8 Oct, 03:14:15 UTC');
   });
 
-  it('says it once, generally, on Status, from the registry: from the day sealing began, for Mecha Jono', () => {
+  it('says it once, generally, on Status, from the registry: from the day sealing began until the cut-over, for Mecha Jono', () => {
     expect(leakedSentences()).toEqual([
-      'Sealed claims and reports sent to Mecha Jono from 6 October can be opened by whoever holds its old key’s leaked secret, and shown to come from the card that sent them. Nothing is sealed to that key now.'
+      'Sealed claims and reports sent to Mecha Jono from 6 October until 9 November can be opened by whoever holds its old key’s leaked secret, and shown to come from the card that sent them. Nothing is sealed to that key now, and from 9 November sealed messages go to its new key.'
     ]);
     expect(leakedSentences(desk([trustedKey(pk(old))]))).toEqual([]);
+  });
+});
+
+describe('when sealed sending comes back', () => {
+  it('says the moment the release names, the cut-over, while Mecha Jono’s old key is the one trusted', () => {
+    const t = sealTargetOf('6301c4d09a014909e5a48b7d0c9aa859eec18804c2fc87eab4e414aa5a319692', MISSION_PUBLISHERS, Date.parse('2026-10-28T12:00:00Z') / 1000);
+    if (t.ok) throw new Error('sealing to an exposed key');
+    expect(nowhereFor(t, 'Mecha Jono')).toBe(
+      "Sealed sending to Mecha Jono is paused: its key's secret leaked, so whoever holds it could open anything sealed to it. Nothing is kept on this phone; it resumes 9 Nov, 15:00 UTC, when Mecha Jono reads under its new key."
+    );
   });
 });
