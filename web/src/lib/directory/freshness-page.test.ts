@@ -31,12 +31,22 @@ function text(): string | null {
     .trim();
 }
 
+/**
+ * The day the page was built, as its own `<time datetime>` says: the page measured the directory on
+ * that day, so this does too. Measured on the day the test ran, a build that crossed midnight UTC
+ * failed its own deploy — the page said 44 days, the test expected 45 [deploy of 796c50e].
+ */
+function builtOn(): string {
+  const html = existsSync(PAGE) ? readFileSync(PAGE, 'utf8') : '';
+  return /<time datetime="(\d{4}-\d{2}-\d{2})T/.exec(html)?.[1] ?? new Date().toISOString().slice(0, 10);
+}
+
 const measured = () =>
   freshness(
     loadDirectory()
       .map((r) => r.last_verified ?? '')
       .filter(Boolean),
-    new Date().toISOString().slice(0, 10)
+    builtOn()
   );
 
 describe('the status page and the directory agree about its age', () => {

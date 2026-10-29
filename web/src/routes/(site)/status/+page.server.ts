@@ -62,9 +62,11 @@ export function load() {
    * Derived at build time from the same function the data check uses, for the reason this file
    * already learned about its own build date: a number written by hand is a number that drifts.
    */
+  // Measured on the day the page says it was built, not whichever day the clock reads next: a build
+  // that crossed midnight UTC printed one age and its own test measured the next [deploy of 796c50e].
   const fresh = freshness(
     records.map((r) => r.last_verified ?? '').filter(Boolean),
-    new Date().toISOString().slice(0, 10)
+    VERSION.builtAt.slice(0, 10)
   );
 
   return {
