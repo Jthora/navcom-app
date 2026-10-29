@@ -23,6 +23,8 @@
   import { readClock, type ClockRead } from '$lib/terminal/clock';
   import { heard } from '$lib/terminal/heard.svelte';
   import { HeardSlot, HeardWhy } from '$lib/components/heard';
+  import { refusingNow } from '$lib/terminal/refusing.svelte';
+  import { hostOf } from '$lib/terminal/heard-copy';
 
   const s = $derived(watch.state);
   /**
@@ -563,6 +565,32 @@
         </Slot>
       {:else}
         <Slot k="On call" />
+      {/if}
+      {#each refusingNow(nowMs) as r (r.url)}
+        <!-- A relay refusing this phone for volume [refusing]: the beats hold off it, a Distress does not. -->
+        <Slot k="Relay">
+          <span data-refusing={r.url}>
+            <Readout
+              value={hostOf(r.url)}
+              verbatim
+              tone="warn"
+              sub={`${r.why === 'banned' ? 'banned this address' : 'rate-limited'} · routine updates held off until ${new Date(r.until).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}`}
+            />
+          </span>
+        </Slot>
+      {/each}
+      {#if refusingNow(nowMs).length > 0}
+        <Why summary="A relay refusing this phone">
+          <p>
+            It said this phone sends too much. Your presence to peers, the watch’s Station and
+            <em>out tonight</em> stay off it until then, and every other relay gets them as before. A
+            <code>Distress</code> still goes to it and to every other relay.
+          </p>
+          <p>
+            A relay limits by internet address, so anyone on the same Wi-Fi or mobile network shares
+            the limit. Switching between Wi-Fi and mobile data gives this phone a new address.
+          </p>
+        </Why>
       {/if}
       {#if configured && closure && !closure.attributed}
         <Slot k="Escalation key">

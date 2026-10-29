@@ -69,7 +69,7 @@ import { loadIdentity } from './identity';
 import { loadConfig } from './config';
 import { watchRelays } from './relays';
 import { usable } from './relay-url';
-import { pool } from './pool';
+import { routineTo, sendEach } from './refusing.svelte';
 import { subscribeLive, type LiveSubscription } from './subscribe';
 import { watchKey, watchPubkey } from './watch-key';
 
@@ -957,16 +957,8 @@ function newestState(author: string, urls: string[]): Promise<{ state: Advertise
  * throw for all of them [audit: relay paths, F01], and so the caller can tell which took it.
  */
 async function publishEach(urls: string[], event: Event): Promise<string[]> {
-  const results = await Promise.allSettled(
-    urls.map((url) => {
-      try {
-        return pool().publish([url], event)[0] ?? Promise.reject(new Error('nothing to publish to'));
-      } catch (e) {
-        return Promise.reject(e);
-      }
-    })
-  );
-  return urls.filter((_, i) => results[i]?.status === 'fulfilled');
+  // Each relay's answer noted, so one refusing this phone for volume is said on Status [refusing].
+  return sendEach(urls, event);
 }
 
 /** The watch's Dark state, signed now and stamped later than anything this phone has signed. */
@@ -1022,8 +1014,13 @@ function stillReadable(url: string): boolean {
 /**
  * Publishes Station to these relays, reporting whether any took it, and records every relay it was
  * sent to — taken, refused or unanswered — as claimed by this holding now.
+ *
+ * Station is routine: a relay that refused this phone for volume is left alone until it cools down
+ * [refusing], and its copy ages to Dark there while every other relay is renewed. Dark itself is not
+ * routine, and goes everywhere.
  */
-async function publishState(secret: Uint8Array, callsign: string, at: number, urls: string[]): Promise<boolean> {
+async function publishState(secret: Uint8Array, callsign: string, at: number, all: string[]): Promise<boolean> {
+  const urls = routineTo(all);
   const event = finalizeEvent(
     buildWatchStateEvent(
       {

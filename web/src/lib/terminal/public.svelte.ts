@@ -35,6 +35,7 @@ import { loadIdentity } from './identity';
 import { relays } from './relays';
 import { address } from './funding';
 import { pool } from './pool';
+import { sendRoutine } from './refusing.svelte';
 import { subscribeLive } from './subscribe';
 import { isHidden } from '../hidden';
 
@@ -366,7 +367,8 @@ export async function announceListed(): Promise<void> {
   if (!secret || !card || card.region === EARTH || urls.length === 0) return;
 
   const event = buildPublicPresence(secret, card.region, Math.floor(Date.now() / 1000));
-  await Promise.allSettled(pool().publish(urls, event));
+  // Routine: a relay refusing this phone for volume is left alone until it cools down [refusing].
+  await sendRoutine(urls, event);
 }
 
 /**

@@ -187,6 +187,18 @@ backup says.** Built: `listable()` refuses every spelling of them. They refuse i
 G1 The Record logs every attempt with its address, key and kind, so a `Distress` sent there would be
 a permanent line that reaches nobody. Both may be read, and Setup says why nothing is sent.
 
+**A relay that refuses this phone for volume is left alone by the routine beats** (built
+2026-10-29, `web/src/lib/terminal/refusing.svelte.ts`). A relay limits by internet address: past its
+limit it answers `rate-limited:`, and sending on drew a ban on the whole address, reads and all, from
+relay.damus.io that day ([`groups.md`](groups.md) §7). So at the first `rate-limited:` or ban, presence,
+a watch's Station and *out tonight* stay off that relay for ten minutes, an hour after a ban, and go
+on to every other relay. A `Distress`, a Dark and anything a person taps still go everywhere on their
+own slow retries, and what they are told counts too. Status names each relay refusing this phone, and
+says that anyone on the same Wi-Fi or mobile network shares the limit and that switching between them
+changes the address. A handshake refused outright (an HTTP 503) cannot be told from an outage, so it
+holds nothing off. **The floor of three commons relays is the real answer** (§1): with two, a ban on
+one leaves a single relay carrying everything.
+
 **A relay only the watch names never carries the contact key.** It sees what a handed-over relay
 sees of watch traffic and nothing the card signs, so it cannot tie the two keys together: the key
 split, kept on that relay without a second socket.

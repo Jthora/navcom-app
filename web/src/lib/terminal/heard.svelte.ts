@@ -35,6 +35,7 @@ import {
 import { loadConfig } from './config';
 import { relayLine, type HeardState } from './heard-copy';
 import { reachableRelay } from './relay-url';
+import { heardFrom, tookFrom } from './refusing.svelte';
 import { subscribeLive } from './subscribe';
 import { watchTargets, watchWithheld } from './watch-targets';
 
@@ -326,6 +327,9 @@ export const heard = {
       const now = Date.now();
       for (const a of result.answers ?? []) {
         entry(a.url).refused = !a.ok && a.failure === 'refused' ? { reason: a.reason, atMs: now } : null;
+        // Noted for Status too: a relay refusing a signal for volume holds off the routine beats.
+        if (a.ok) tookFrom(a.url);
+        else if (a.failure === 'refused') heardFrom(a.url, a.reason, now);
       }
       changed();
     } catch {
@@ -340,6 +344,9 @@ export const heard = {
       const now = Date.now();
       for (const url of p.took) entry(url).refused = null;
       for (const r of p.refused) entry(r.url).refused = { reason: r.reason, atMs: now };
+      // The Distress itself keeps going everywhere; what it was told is noted for Status [refusing].
+      for (const url of p.took) tookFrom(url);
+      for (const r of p.refused) heardFrom(r.url, r.reason, now);
       for (const r of [...p.unconfirmed, ...p.unreached]) entry(r.url).refused = null;
       changed();
     } catch {

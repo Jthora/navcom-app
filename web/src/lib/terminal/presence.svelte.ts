@@ -21,7 +21,7 @@ import {
 import { loadIdentity } from './identity';
 import { buddies, peerPubkeys, peers } from './peers';
 import { relays } from './relays';
-import { pool } from './pool';
+import { sendRoutine } from './refusing.svelte';
 import { subscribeLive } from './subscribe';
 import { kemKeys } from './pq.svelte';
 
@@ -173,8 +173,9 @@ export const presence = {
       Math.floor(Date.now() / 1000),
       kemKeys()
     );
-    // Settled, not raced: one peer's relay failing must not stop the others being told.
-    await Promise.allSettled(events.flatMap((e) => pool().publish(urls, e)));
+    // Settled, not raced: one peer's relay failing must not stop the others being told. Routine, so
+    // a relay refusing this phone for volume is left alone until it cools down [refusing].
+    await Promise.allSettled(events.map((e) => sendRoutine(urls, e)));
   },
 
   /** Republishes on a heartbeat, because relays store none of this. */

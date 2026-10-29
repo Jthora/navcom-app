@@ -3,6 +3,7 @@
  * What the meeting pair does with crew events: groups.md phase 0's measurement, by hand.
  *
  *   node scripts/measure-crew-relays.mjs [wss://relay ...]
+ *   node scripts/measure-crew-relays.mjs --burst wss://relay ...
  *
  * groups.md §7 lists what was not known before crews could ship: the largest event each relay keeps,
  * whether it stores and serves throwaway-signed `1913` events without proof of work, how long it keeps
@@ -20,13 +21,23 @@ import WebSocket from 'ws';
 
 const ARGS = process.argv.slice(2);
 /**
- * `--gentle`: one event every ten seconds, the sizes that matter and no burst. relay.damus.io rate
- * limits by volume — six events of up to 60 kB in a few seconds drew *"you are noting too much"*, and
- * going on drew a ban on this machine's address (measured 2026-10-29) — so a re-measure there has to
- * stay under what it is measuring.
+ * Gentle unless told otherwise: one event every ten seconds, the sizes that matter and no burst.
+ * relay.damus.io rate limits by volume — six events of up to 60 kB in a few seconds drew *"you are
+ * noting too much"*, and going on drew a ban on this machine's address, and so on everything behind
+ * the same router, for hours (measured 2026-10-29). These relays are strangers' servers, and a
+ * measurement has to stay under what it is measuring.
+ *
+ * `--burst` sends every size at once and then twelve events as fast as the socket takes them. It runs
+ * only against relays named on the command line, never the defaults, so it is always a choice.
  */
-const GENTLE = ARGS.includes('--gentle');
-const RELAYS = ARGS.filter((a) => a.startsWith('wss://')).length > 0 ? ARGS.filter((a) => a.startsWith('wss://')) : ['wss://relay.damus.io', 'wss://nos.lol'];
+const BURST = ARGS.includes('--burst');
+const GENTLE = !BURST;
+const NAMED = ARGS.filter((a) => a.startsWith('wss://'));
+if (BURST && NAMED.length === 0) {
+  console.error('--burst runs only against relays named here: it can get this address banned. Name each one.');
+  process.exit(2);
+}
+const RELAYS = NAMED.length > 0 ? NAMED : ['wss://relay.damus.io', 'wss://nos.lol'];
 const pause = (/** @type {number} */ ms) => new Promise((r) => setTimeout(r, ms));
 const now = () => Math.floor(Date.now() / 1000);
 const tagOf = () => randomBytes(16).toString('hex');

@@ -103,6 +103,8 @@ interface Seed {
    * which half of this app's "it worked" messages were being printed.
    */
   refusePublish?: boolean;
+  /** What a refusing relay says, where the words matter: `rate-limited: …` is not `blocked: …`. */
+  refuseWith?: string;
 }
 
 /**
@@ -218,7 +220,7 @@ export async function seedDevice(page: Page, seed: Seed = {}): Promise<void> {
 
           const accepted = !s.refusePublish;
           this.deliver(
-            JSON.stringify(['OK', event.id ?? '', accepted, accepted ? '' : 'blocked: no'])
+            JSON.stringify(['OK', event.id ?? '', accepted, accepted ? '' : (s.refuseWith ?? 'blocked: no')])
           );
           return;
         }

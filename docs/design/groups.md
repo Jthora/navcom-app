@@ -542,7 +542,9 @@ largest single change:
     client posts padded states no faster than relay.damus.io takes them, stops posting to a relay that
     answers *rate-limited* until it has backed off, never retries into a refusal, and Status says when
     a relay has refused this phone. A phone behind a carrier's shared address shares that relay's
-    patience with strangers, which nothing on the phone controls
+    patience with strangers, which nothing on the phone controls. **The backing off and the Status
+    line are built for the routine beats** (2026-10-29, [`relay-lists.md`](relay-lists.md) §5): crew
+    posting goes through the same gate, and adds the pacing
 
 ### Relays: a list the release ships, not a name a code supplies
 
