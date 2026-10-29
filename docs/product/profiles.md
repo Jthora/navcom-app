@@ -312,4 +312,7 @@ Samaritan protection. None of that moves the recommendation. The demand test is 
   reversal would be built from.
 - **Handle proofs.** `i` tags carry a NIP-39 proof field and almost nothing fills it, because
   verifying one means fetching it and most platforms refuse unauthenticated reads. Until then
-  a handle is a claim, and is rendered as one.
+  a handle is a claim, and is rendered as one. *Since built, in part (checked 2026-10-29):*
+  `/terminal/who/?k=` checks a GitHub or Mastodon proof on a tap, one link at a time
+  (`packages/core/src/events/proofs.ts`), because those two answer a browser without a key. Every
+  other platform's handle is still a claim, and a profile in Com links there rather than checking.

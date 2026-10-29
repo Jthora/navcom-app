@@ -483,7 +483,7 @@ test.describe('your card', () => {
     await expect(page.getByRole('button', { name: /^not listed$/i })).toBeVisible();
 
     await page.getByRole('button', { name: /withdraw my card/i }).click();
-    await expect(page.getByRole('button', { name: /throw the key away/i })).toBeVisible();
+    await expect(page.locator('[data-confirm-withdraw]')).toBeVisible();
     await page.getByRole('button', { name: /keep my card/i }).click();
     await expect(page.getByRole('button', { name: /replace your card/i })).toBeVisible();
   });
@@ -511,23 +511,61 @@ test.describe('your card', () => {
     await expect(page.locator('body')).not.toContainText(print(device.accruing['secret']));
   });
 
-  test('withdrawing discards the key rather than claiming to unpublish', async ({ page }) => {
+  /*
+   * Withdraw and retire are two acts since 2026-10-29 [groups.md §3, *The two honest fixes*].
+   * Withdrawing asks relays to drop the card and keeps the key, so what it signed can still be
+   * released; retiring throws the key away, and is refused while that would strand something.
+   * Both say, before the tap, that nothing already out can be unshared [visibility.md].
+   */
+  test('withdrawing drops the card and keeps the key that signed it', async ({ page }) => {
     await seedDevice(page, OUT);
     await open(page, '/terminal/card/');
     await nameCity(page);
     await page.getByRole('button', { name: /publish your card/i }).click();
+    await expect(page.locator('[data-withdraw-card]')).toContainText(/can.t unshare what.s already out/i);
 
     const before = await readDevice(page);
     expect(before.accruing['contact_secret'], 'a card has a key of its own').toBeTruthy();
     expect(before.accruing['contact_secret']).not.toBe(before.accruing['secret']);
 
     await page.getByRole('button', { name: /withdraw my card/i }).click();
-    await page.getByRole('button', { name: /throw the key away/i }).click();
+    await page.locator('[data-confirm-withdraw]').click();
+    // No relay answers this phone, and the readout says so rather than claiming the card is gone.
+    await expect(page.locator('[data-card-withdrawn]')).toContainText(/withdrawn/i);
+
+    const after = await readDevice(page);
+    expect(after.accruing['card']).toBeUndefined();
+    expect(after.accruing['contact_secret']).toBe(before.accruing['contact_secret']);
+    // The operational identity is untouched. Withdrawing a card is not leaving.
+    expect(after.accruing['secret']).toBe(before.accruing['secret']);
+  });
+
+  test('retiring the print throws the key away, and is refused while it holds a claim', async ({ page }) => {
+    const now = Math.floor(Date.now() / 1000);
+    // A claim kept before claims recorded their signer: the card's key is assumed to hold it.
+    await seedDevice(page, { ...OUT, wipeable: { mission_claims: [{ title: 'Heat check, Kensington', ends: now + 3600 }] } });
+    await open(page, '/terminal/card/');
+    await nameCity(page);
+    await page.getByRole('button', { name: /publish your card/i }).click();
+    const before = await readDevice(page);
+
+    await page.locator('[data-retire]').click();
+    await expect(page.locator('[data-retire-refused]')).toContainText('Heat check, Kensington');
+    await expect(page.locator('[data-confirm-retire]')).toHaveCount(0);
+    await page.locator('[data-withdraw-card]').getByRole('button', { name: /^back$/i }).click();
+
+    // The claim let go, retiring goes through.
+    await page.evaluate(() => {
+      const w = JSON.parse(localStorage.getItem('navcom.wipeable') ?? '{}');
+      w.mission_claims = [];
+      localStorage.setItem('navcom.wipeable', JSON.stringify(w));
+    });
+    await page.locator('[data-retire]').click();
+    await page.locator('[data-confirm-retire]').click();
 
     const after = await readDevice(page);
     expect(after.accruing['contact_secret']).toBeUndefined();
     expect(after.accruing['card']).toBeUndefined();
-    // The operational identity is untouched. Withdrawing a card is not leaving.
     expect(after.accruing['secret']).toBe(before.accruing['secret']);
   });
 });

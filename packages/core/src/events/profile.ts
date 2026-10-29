@@ -74,6 +74,17 @@ export const VISIBILITIES: readonly Visibility[] = ['public', 'board', 'address'
  */
 export const PUBLIC_LABEL = 'navcom:public';
 
+/**
+ * The mark a card carries when an agent holds it [docs/design/groups.md §3]: a tag beside the
+ * content, because every older cached app would refuse a card with a content field it does not know.
+ * Every agent NavCom ships that publishes a card carries it; none does yet. It can only add the mark:
+ * a card without it reads *nobody has checked this card*, never *human* [invariant 4].
+ */
+export const AGENT_LABEL = 'navcom:agent';
+
+/** Whether a card's tags say an agent holds it. */
+export const isAgentCard = (tags: readonly (readonly string[])[]): boolean => tags.some((t) => t[0] === 'l' && t[1] === AGENT_LABEL);
+
 /** The default. Publishing a card at all is the deliberate act; being findable is the point. */
 export const DEFAULT_VISIBILITY: Visibility = 'board';
 

@@ -39,7 +39,6 @@ import {
   buildReport,
   buildReportLabel,
   buildSealedReport,
-  readCard,
   readReport,
   keptMissionTrusted,
   keyOf,
@@ -71,6 +70,7 @@ import {
   type Wire
 } from './claims';
 import { floorNow } from './floor';
+import { remember } from '$lib/people/cache.svelte';
 
 const SENT = 'mission_reports';
 /** The window inside which a second report in one place is warned about. */
@@ -520,8 +520,9 @@ async function namesOf(keys: string[], known: Names, w: Wire): Promise<Names> {
   }
   const newest = new Map<string, { at: number; callsign: string }>();
   for (const e of cards) {
-    const c = readCard(e);
-    if (!c || isHidden(c.contact)) continue;
+    // Kept for the session's profiles too, in memory only [people/cache.svelte.ts].
+    const c = remember(e);
+    if (!c) continue;
     const was = newest.get(c.contact);
     if (!was || c.at > was.at) newest.set(c.contact, { at: c.at, callsign: c.card.callsign });
   }

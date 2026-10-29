@@ -12,7 +12,7 @@
  * its own cryptography on a boundary protecting people at risk.
  */
 
-import { nip44 } from 'nostr-tools';
+import * as nip44 from 'nostr-tools/nip44';
 import type { SecretKey } from './keys.js';
 import { hybridOpen, hybridSeal, kemPublicFromHex } from './pq.js';
 

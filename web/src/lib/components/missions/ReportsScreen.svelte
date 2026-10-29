@@ -24,7 +24,12 @@
   import { isMine, labelReport, reportsOn, type MissionReports, type OnMission } from '$lib/missions/reports';
   import { placeName, standingOf } from './format';
 
-  let { address, missions, now }: { address: string; missions: Mission[]; now: number } = $props();
+  let {
+    address,
+    missions,
+    now,
+    onprofile
+  }: { address: string; missions: Mission[]; now: number; onprofile?: (contact: string) => void } = $props();
 
   const t = $derived(Math.floor(now / 1000));
   /** Open on the map, or remembered because this device took part after it left the map. */
@@ -146,7 +151,12 @@
           <!-- Filed from here under a card withdrawn since is still hers: never a witness of her own work [audit 11, second grid]. -->
           {@const mine = isMine(r)}
           <li data-report={r.id}>
-            <span class="nc-reports-who">{r.report.callsign}</span>
+            {#if onprofile}
+              <!-- Their card, if this phone has it or fetches it: a profile, opened by a handle [groups.md §3]. -->
+              <button type="button" class="nc-reports-who nc-reports-open" data-open-profile onclick={() => onprofile(r.author)}>{r.report.callsign}</button>
+            {:else}
+              <span class="nc-reports-who">{r.report.callsign}</span>
+            {/if}
             <span class="nc-reports-meta">{r.report.date}{mine ? ' · yours' : ''}</span>
             <ul class="nc-reports-did">
               <!-- By position, not by content: anything a stranger signed must not be able to break the list [11.X]. -->
@@ -213,6 +223,17 @@
   .nc-reports-who {
     font-weight: 600;
     color: var(--t-ink);
+  }
+  .nc-reports-open {
+    min-height: 2.75rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-weight: 600;
+    text-align: start;
+    text-decoration: underline;
+    cursor: pointer;
   }
   .nc-reports-meta,
   .nc-reports-line {

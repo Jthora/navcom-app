@@ -226,6 +226,9 @@ export async function seedDevice(page: Page, seed: Seed = {}): Promise<void> {
         const subId = message[1] as string;
         this.subs.add(subId);
         const filters = message.slice(2) as Record<string, unknown>[];
+        // Recorded like publishes, so a test can say what the app asked for, and what it never did.
+        const asked = globalThis as unknown as { __navcomAsked: unknown[] };
+        (asked.__navcomAsked ??= []).push(filters);
 
         /*
          * Every single-letter tag filter, not just `#p`.

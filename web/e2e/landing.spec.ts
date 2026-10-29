@@ -1162,7 +1162,9 @@ test.describe('the landing page: missions you can open', () => {
     await page.locator('[data-reports]').click();
     const item = page.locator(`[data-screen="reports"] [data-report="${theirs.id}"]`);
     await expect(item).toContainText('Wren');
-    await expect(item.locator('button')).toHaveCount(0);
+    // Her name opens her profile, which anybody may read [groups.md §2]; nothing else is there to tap.
+    await expect(item.locator('[data-open-profile]')).toHaveCount(1);
+    await expect(item.locator('button:not([data-open-profile])')).toHaveCount(0);
   });
 
   test('an operator’s Distress bar is legible, and a landmark, in both signatures', async ({ page }) => {

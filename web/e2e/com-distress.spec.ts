@@ -345,6 +345,43 @@ const WAYS_IN: Record<string, WayIn[]> = {
         return page.locator(`[data-screen="report"][data-mission="${HEAT_D}"]`);
       }
     }
+  ],
+  you: [
+    {
+      name: 'what others see of you',
+      go: async (page) => {
+        await signedOnWithHeat(page);
+        await page.locator('[data-yours]').click();
+        await page.locator('[data-open-you]').click();
+        return page.locator('[data-screen="you"]');
+      }
+    }
+  ],
+  find: [
+    {
+      name: 'Find, typed into',
+      go: async (page) => {
+        await signedOnWithHeat(page);
+        await page.locator('[data-yours]').click();
+        await page.locator('[data-open-find]').click();
+        // Typing is where a phone's keyboard comes up, and Distress must still be there under it.
+        await page.locator('#people-q').fill('wren');
+        return page.locator('[data-screen="find"]');
+      }
+    }
+  ],
+  profile: [
+    {
+      name: 'a profile opened from a pasted key',
+      go: async (page) => {
+        await signedOnWithHeat(page);
+        await page.locator('[data-yours]').click();
+        await page.locator('[data-open-find]').click();
+        await page.locator('#people-q').fill('a'.repeat(64));
+        await page.locator('[data-open-pasted]').click();
+        return page.locator('[data-screen="profile"]');
+      }
+    }
   ]
 };
 
@@ -363,6 +400,12 @@ const OPEN_ONE_OF: Record<string, (page: Page) => Promise<void>> = {
     await signedOnWithHeat(page);
     await mapReady(page);
     await page.getByRole('button', { name: 'Map layers' }).click();
+  },
+  // Yours is the missions entry's; *Find people* on it is the first tap that needs the people entry.
+  people: async (page) => {
+    await signedOnWithHeat(page);
+    await page.locator('[data-yours]').click();
+    await page.locator('[data-open-find]').click();
   }
 };
 
@@ -416,7 +459,7 @@ const NOT_A_SCREEN: WayIn[] = [
       await expect(page.locator('[data-screen="missions"]')).toBeVisible();
       // What a newer build would have pushed here, written into the entry the way SvelteKit keeps it.
       await page.evaluate(() =>
-        history.replaceState({ ...history.state, 'sveltekit:states': { com: [{ kind: 'profile', handle: 'h1' }] } }, '')
+        history.replaceState({ ...history.state, 'sveltekit:states': { com: [{ kind: 'crew', handle: 'h1' }] } }, '')
       );
       await page.locator(`[data-mission="${HEAT_D}"]`).click();
       await expect(page.locator('[data-screen="mission"]')).toBeVisible();

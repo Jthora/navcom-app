@@ -97,6 +97,27 @@ export function unpair(pubkey: string): void {
   set('accruing', FIELD, peers().filter((p) => p.pubkey !== pubkey));
 }
 
+const CARDS = 'peer_cards';
+
+/**
+ * Notes which card a peer was reached through: called only when they answered a request this phone
+ * wrote to that card, which is the one moment this phone learns it [invites.svelte.ts].
+ *
+ * A card's contact key and the key its holder pairs with are separate so that nothing public links
+ * them, and this links them. So it is Wipeable rather than kept with the peers: a wipe takes it,
+ * no backup carries it, and the peer stays.
+ */
+export function noteCard(contact: string, pubkey: string): void {
+  const kept = get<Record<string, string>>('wipeable', CARDS) ?? {};
+  set('wipeable', CARDS, { ...kept, [contact]: pubkey });
+}
+
+/** The peer whose card this is, if this phone paired with them by writing to it and has not wiped since. */
+export function peerByCard(contact: string): Peer | null {
+  const pubkey = get<Record<string, string>>('wipeable', CARDS)?.[contact];
+  return pubkey ? (peers().find((p) => p.pubkey === pubkey) ?? null) : null;
+}
+
 export function peerPubkeys(): string[] {
   return peers().map((p) => p.pubkey);
 }

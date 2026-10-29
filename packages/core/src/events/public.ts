@@ -1,4 +1,4 @@
-import { finalizeEvent, verifyEvent } from 'nostr-tools/pure';
+import { finalizeEvent, getPublicKey, verifyEvent } from 'nostr-tools/pure';
 import type { Event } from 'nostr-tools/core';
 import type { SecretKey } from '../crypto/keys.js';
 import { KIND_CARD, KIND_PUBLIC_PRESENCE } from './kinds.js';
@@ -312,4 +312,28 @@ export function readPublicPresence(event: Event, region: string): string | null 
   if (event.tags.find((t) => t[0] === 'd')?.[1] !== region) return null;
   if (!verifyEvent(event)) return null;
   return event.pubkey;
+}
+
+/**
+ * A NIP-09 request that relays drop this contact key's card [docs/design/groups.md §3, *The two
+ * honest fixes*]: by its address, since a card is replaceable, and signed by the key that signed it.
+ *
+ * Withdrawing a card is now this, keeping the key, so whatever the key signed — a claim, a report —
+ * can still be released by it. Relays may not honour it, and nothing can unpublish a copy already
+ * taken: *"This changes what you share from now on. It can't unshare what's already out."*
+ */
+export function buildCardDeletion(contactSecret: SecretKey, createdAt: number): Event {
+  const contact = getPublicKey(contactSecret);
+  return finalizeEvent(
+    {
+      kind: 5,
+      created_at: createdAt,
+      content: '',
+      tags: [
+        ['a', `${KIND_CARD}:${contact}:`],
+        ['k', String(KIND_CARD)]
+      ]
+    },
+    contactSecret
+  );
 }

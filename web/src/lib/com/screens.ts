@@ -23,7 +23,9 @@ import { entryLoader } from './entries.svelte';
 
 /**
  * Every screen Com can show. History holds these, so each is plain data, and history survives
- * panic wipe and burn [declined.md]: nothing here may name a person.
+ * panic wipe and burn [declined.md]: nothing here may name a person. A profile names one by a
+ * handle that means something only in this page's memory, never by a key [people/cache; groups.md
+ * §3]. No comment inside the union: e2e/com-distress.spec.ts reads its kinds from this source.
  */
 export type Screen =
   | { kind: 'missions'; province: string | null }
@@ -46,7 +48,10 @@ export type Screen =
   | { kind: 'lookup' }
   | { kind: 'time'; offset: string }
   | { kind: 'sphere'; id: string | null; code: string | null }
-  | { kind: 'hazard'; ids: string; of: string };
+  | { kind: 'hazard'; ids: string; of: string }
+  | { kind: 'profile'; h: string }
+  | { kind: 'you' }
+  | { kind: 'find' };
 /**
  * A place opened from the map [map.md §6: every shape is a door]. `code` is the jurisdiction a
  * tapped province or country is filed under (`us-ca`, `ke`), so the screen lists what is filed
@@ -101,7 +106,9 @@ export interface HostProps {
 export const ENTRIES = {
   missions: () => import('$lib/components/missions'),
   // The map's layers: each layer's own code and data arrive later still, when it is chosen [budget.mjs MAP_LINES].
-  layers: () => import('$lib/components/layers')
+  layers: () => import('$lib/components/layers'),
+  // People: profiles, your own, and Find. Opening a mission never loads them [groups.md §13].
+  people: () => import('$lib/components/people')
 } satisfies Record<string, () => Promise<{ Host: Component<HostProps> }>>;
 export type Entry = keyof typeof ENTRIES;
 
@@ -141,7 +148,10 @@ export const SCREENS: { [K in Kind]: { entry: Entry; height: Height; fields: Fie
   lookup: { entry: 'layers', height: 'half', fields: {} },
   time: { entry: 'layers', height: 'half', fields: { offset: 'string' } },
   sphere: { entry: 'layers', height: 'half', fields: { id: 'string|null', code: 'string|null' } },
-  hazard: { entry: 'layers', height: 'half', fields: { ids: 'string', of: 'string' } }
+  hazard: { entry: 'layers', height: 'half', fields: { ids: 'string', of: 'string' } },
+  profile: { entry: 'people', height: 'full', fields: { h: 'string' } },
+  you: { entry: 'people', height: 'full', fields: {} },
+  find: { entry: 'people', height: 'half', fields: {} }
 };
 
 /**

@@ -854,6 +854,259 @@ same way, because each needs a trusted closer or clock.
 **Cost:** a unit whose members do not read cannot elect or recall anyone. Its remedies are leaving,
 removing the keys of people known to have left, and re-forming, which needs any two members.
 
+## Crews
+
+Shapes [`design/groups.md`](design/groups.md) §14 considered and did not take, decided with that design on
+2026-10-09 and written here in its phase 0 (2026-10-29). NIP-29 relay-enforced groups are under *Units*, above. Nothing in crews is built.
+
+### Crews in Accruing, or a choice of tier per crew
+
+A crew a member values would survive a wipe, a lost phone or a move to a new one if its keys were kept with the identity and carried in backups.
+
+**Declined, decided 2026-10-09.** Crew keys and rosters are Wipeable and never in a backup [`design/groups.md`](design/groups.md) §8: a wipe is the operator's way out, and a crew that outlived it would be a list of other people's callsigns that outlived it too.
+
+**Cost:** a wipe or a lost phone ends every membership, and the member is admitted again in person.
+
+### A lifetime chosen by the founder
+
+Some crews want their lines and rosters kept longer than seven and thirty days; others want less.
+
+**Declined, decided 2026-10-09.** The expiry rides in clear on every crew event, so a lifetime chosen per crew would sort crews into classes anyone could follow, which undoes the padding (§7, *the two clocks*).
+
+**Cost:** no crew can keep posts longer than the two clocks.
+
+### Room raised after founding, or by standing, writs or tenure
+
+A crew that grows would like more seats without starting again, and long service seems to earn them.
+
+**Declined, decided 2026-10-09.** Room fixes the padded length every member's phone sends, and the published refusal `no-credential-gate` covers raising it by standing or tenure.
+
+**Cost:** a crew that outgrows its room splits or teams up.
+
+### Flat groups above fifteen
+
+Larger groups exist, and sender keys, split delivery, MLS or Marmot could carry them.
+
+**Declined, decided 2026-10-09.** A padded state for room fifteen is already near the 65,536-byte event limit the meeting pair enforces (measured 2026-10-29), and every scheme past it either publishes membership or gives up the sealed, room-sized envelope.
+
+**Cost:** no single sealed room larger than fifteen.
+
+### NIP-72 communities, NIP-51 lists and NIP-58 awards as membership
+
+Each is an existing Nostr way to say who belongs to what, which other clients already read.
+
+**Declined, decided 2026-10-09.** Each publishes a roster.
+
+**Cost:** none beyond interoperability.
+
+### NIP-17 direct messages, and `1059` wraps, for crew traffic
+
+Direct messages are the standard way to talk privately on Nostr, and a crew of two is a conversation.
+
+**Declined, decided 2026-10-09.** They need a published kind `10050` under a member key, which [`design/relay-lists.md`](design/relay-lists.md) §10 declines, and the NIP's own advice stops at ten members.
+
+**Cost:** other clients cannot message a NavCom crew.
+
+### Marmot and MLS
+
+They are the serious protocols for group messaging, with forward secrecy inside an epoch.
+
+**Declined, decided 2026-10-09.** The mandatory suite is classical only, which would walk back ML-KEM; key packages are published under the account key; the wire format is pre-1.0; and stateful epochs break when a pull-only member misses a commit.
+
+**Cost:** no forward secrecy within an epoch.
+
+### Sealing every line to every member
+
+A line sealed to each member separately needs no shared epoch key.
+
+**Declined, decided 2026-10-09.** It costs about 25 kB a line at ten members, and shows the relay the crew's size on every line.
+
+**Cost:** lines are sealed under the epoch key, and a member removed mid-epoch reads to its end.
+
+### A shared key for a crew
+
+One key everyone holds is the simplest group there is.
+
+**Declined, decided 2026-10-09.** A removed holder keeps signing as the crew; `group.ts` already says *sharing a secret is not a membership model*.
+
+**Cost:** every member holds a crew key of their own.
+
+### Agent crew keys, and a person or agent field on a roster
+
+An agent in a crew could answer questions and keep its records.
+
+**Declined, decided 2026-10-09.** An agent holding keys in many crews becomes a hub across them, and could read before any person does.
+
+**Cost:** no agent sits in a crew, until an agent design that cannot become a hub and never reads first.
+
+### Stored links between a crew key and a contact key
+
+A roster row that opened the member's public card would be convenient.
+
+**Declined, decided 2026-10-09.** Kept anywhere, the link ties a sealed membership to a public card.
+
+**Cost:** roster rows never lead to a public profile.
+
+### Exact sizes on the wire, and dummy wraps without body padding
+
+Sending only what a change needs is smaller.
+
+**Declined, decided 2026-10-09.** Exact sizes tell the relay what changed and how big the room is.
+
+**Cost:** every crew sends room-sized states.
+
+### A plaintext log cache, and a memory-only one
+
+Plaintext is faster to read back; memory-only leaves nothing behind.
+
+**Declined, decided 2026-10-09.** Plaintext is readable on a searched phone; memory-only refetches everything on every open over prepaid data.
+
+**Cost:** the log is cached sealed, in Wipeable, and opening it costs a decryption.
+
+### Earlier lines for new members
+
+A joiner would understand the crew faster with its history.
+
+**Declined, decided 2026-10-09.** Nothing earlier is sealed again to a joiner: a new epoch starts on every admission, so a joiner reads nothing said before they arrived. units.md's checkpoint gives a signed summary of terms instead.
+
+**Cost:** a joiner starts from the Agreed line and the terms, not the conversation.
+
+### Membership lapsing from silence
+
+Members who stop reading clutter the roster and hold keys for nothing.
+
+**Declined, decided 2026-10-09.** Silence is never read as anything (invariant 3).
+
+**Cost:** a roster keeps people who stopped opening the app until the charter removes them.
+
+### Changing a charter in place
+
+A crew that wants different rules would rather amend them than start again.
+
+**Declined, decided 2026-10-09.** Re-forming with lineage is the path, so nobody is bound by rules they did not join under; only *Higher* changes under a founding term (units.md).
+
+**Cost:** changing the rules means re-forming and re-admitting.
+
+### Replies, threads, reactions, mentions, edits, pins, polls, RSVPs and verbs that assign work
+
+They are what group chat looks like everywhere else.
+
+**Declined, decided 2026-10-09.** The log is flat and pull-only, and a verb that assigns work tasks somebody who did not ask (invariant 8). units.md's endorsements and petitions are governance statements, not log features.
+
+**Cost:** crews coordinate in plain lines and on the Agreed line.
+
+### Read receipts, typing indicators, online status, last seen, unread counts, badges, push, sound, vibration and background sync
+
+They make chat feel live.
+
+**Declined, decided 2026-10-09.** Each one is either a surveillance signal about a member or an interruption, and the field terminal is silent.
+
+**Cost:** a crew is read when a member opens it, and only then.
+
+### Images, files, voice notes, link previews, attachments and any location in a line
+
+Groups share pictures and places all the time.
+
+**Declined, decided 2026-10-09.** Media leaks metadata and identities, a fetched preview tells a stranger's server who read the line, and a location in a line is a person's position (invariant 1 for anyone mentioned).
+
+**Cost:** crews share those elsewhere.
+
+### A crew-wide alert, or page the crew
+
+When something happens, a crew wants everyone told at once.
+
+**Declined, decided 2026-10-09.** `Distress` and on-call registration already exist, and are already consented to; a second alarm channel would borrow theirs (invariant 2).
+
+**Cost:** a crew learns of trouble through `Distress`, not through the crew.
+
+### Any public crew object beyond the one-member crew card
+
+A member list, a member count, or crews findable by relay would help people find a crew.
+
+**Declined, decided 2026-10-09.** Each is a public roster, or a way to build one.
+
+**Cost:** a crew is found only through the card one member chooses to hold.
+
+### A meeting place, time or schedule on a crew card, and a knock carrying the operational key
+
+A crew card that said where and when to meet would bring people to it.
+
+**Declined, decided 2026-10-09.** A published place and time is a list of where operators will be; a knock carrying the operational key hands it to a stranger before anyone has met.
+
+**Cost:** a stranger knocks once, with a one-use key, and admission is in person.
+
+### Search sent anywhere, search by activity, capability or standing, and people search for signed-out visitors
+
+Search across the network finds people faster, and *find a medic* sounds useful.
+
+**Declined, decided 2026-10-09.** A query built from typed text tells a relay what was looked for; searching by what people do is a target list. Search narrows what the phone already holds.
+
+**Cost:** finding somebody new means loading a board, on a tap.
+
+### Keeping other people's cards on the device
+
+Mutuals and *people you may know* help people connect.
+
+**Declined, decided 2026-10-09.** A stored cache is a list of whom this phone looked at.
+
+**Cost:** the card cache lives in memory for the session.
+
+### Crews, units, offices, endorsements, watch membership, standing or visibility presets on a profile others see, and out tonight on a profile
+
+A profile would say more if it showed what a person belongs to and has done.
+
+**Declined, decided 2026-10-09.** Each ties the contact key to something on the operational key, or publishes a membership.
+
+**Cost:** a profile shows the card, and nothing derived.
+
+### Contact keys or operational keys in a roster
+
+A roster that named members' keys would let members find each other's cards.
+
+**Declined, decided 2026-10-09.** It ties the crew to their public and working identities.
+
+**Cost:** members know each other by the callsigns they gave the crew.
+
+### NavCom moderating sealed crew traffic
+
+A platform is expected to moderate what is said on it.
+
+**Declined, decided 2026-10-09.** NavCom cannot read crew traffic, and building a way to would end what makes it sealed; `hidden.ts` reaches crew cards only.
+
+**Cost:** what a crew says is its members' to answer for.
+
+### A crew post carrying a watch code, or merging crews with squads
+
+A crew often is the squad that holds a watch.
+
+**Declined, decided 2026-10-09.** A watch code in a crew post spreads a watch's escalation key through a channel the watch did not sign for.
+
+**Cost:** a watch is handed over in person, as before.
+
+### Fetching every crew event on a relay to hide which crew is read
+
+Reading everything would hide which tags a phone cares about.
+
+**Declined, decided 2026-10-09.** The download would be unbounded on the device floor.
+
+**Cost:** the relay sees which tags a connection asks for.
+
+### Cover traffic, and padding lines to a fixed size
+
+Both hide when and how much a crew talks.
+
+**Declined, decided 2026-10-09.** Both cost prepaid data on every phone, every day.
+
+**Cost:** a relay sees when lines are posted and their size within NIP-44's padding.
+
+### A writ cost for founding a private crew
+
+Founding could be paid for, like posting a mission.
+
+**Declined, decided 2026-10-09.** A private crew posts nothing in its own name.
+
+**Cost:** none.
+
 ## What is **not** declined, so nobody mistakes this page for a licence
 
 Everything in [`build-order.md`](build-order.md) is deferred, not declined — endorsements,

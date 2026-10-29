@@ -14,6 +14,7 @@
   import ReportScreen from './ReportScreen.svelte';
   import ReportsScreen from './ReportsScreen.svelte';
   import YoursScreen from './YoursScreen.svelte';
+  import { handleFor } from '$lib/people/cache.svelte';
 
   let { screen, nav, now, feed, active, feedUnloaded }: HostProps = $props();
 
@@ -54,11 +55,13 @@
     onopen={(address) => nav.open({ kind: 'mission', address })}
     onreport={(address) => nav.open({ kind: 'report', address })}
     onreports={(address) => nav.open({ kind: 'reports', address })}
+    onyou={() => nav.open({ kind: 'you' })}
+    onfind={() => nav.open({ kind: 'find' })}
   />
 {:else if screen.kind === 'report'}
   <ReportScreen address={screen.address} {now} ondone={() => nav.back()} />
 {:else if screen.kind === 'reports'}
-  <ReportsScreen address={screen.address} missions={active} {now} />
+  <ReportsScreen address={screen.address} missions={active} {now} onprofile={(contact) => nav.open({ kind: 'profile', h: handleFor(contact) })} />
 {:else if screen.kind === 'mission'}
   {@const address = screen.address}
   {@const m = active.find((x) => x.address === address)}

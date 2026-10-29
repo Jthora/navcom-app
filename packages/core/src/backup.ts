@@ -1,4 +1,4 @@
-import { nip44 } from 'nostr-tools';
+import * as nip44 from 'nostr-tools/nip44';
 import { scrypt } from '@noble/hashes/scrypt';
 import { bytesToHex, hexToBytes, randomBytes } from '@noble/hashes/utils';
 

@@ -9,6 +9,7 @@
  */
 export { KIND_CARD } from './events/kinds.js';
 export { readCard, type Card, type PublishedCard } from './events/public.js';
-export { PUBLIC_LABEL, does } from './events/profile.js';
+export { AGENT_LABEL, PUBLIC_LABEL, does, isAgentCard } from './events/profile.js';
+export { EARTH, readAreas, type CardArea } from './events/area.js';
 export { platform } from './events/links.js';
 export { keyPrint } from './crypto/keys.js';

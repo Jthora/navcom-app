@@ -29,8 +29,8 @@ import {
   type CardLink,
   type PublishedCard
 } from '@navcom/core';
-import { EARTH, readAreas, type CardArea } from '@navcom/core';
-import { contactKey, ensureContactKey, listed, myCard, saveCard, setCardSent, type MyCard } from './card';
+import { EARTH, buildCardDeletion, readAreas, type CardArea } from '@navcom/core';
+import { contactKey, ensureContactKey, listed, myCard, saveCard, setCardSent, unpublishCard, type MyCard } from './card';
 import { loadIdentity } from './identity';
 import { relays } from './relays';
 import { address } from './funding';
@@ -331,6 +331,23 @@ export async function publishCard(card: MyCard): Promise<{ took: number; of: num
   const took = results.filter((r) => r.status === 'fulfilled').length;
   setCardSent(took === 0 ? 'none' : took < urls.length ? 'some' : 'all');
   return { took, of: urls.length };
+}
+
+/**
+ * *Withdraw card*: asks relays to drop it, and keeps the key [groups.md §3, *The two honest fixes*].
+ *
+ * The card leaves this phone whether or not a relay takes the request, because the operator asked
+ * for it gone; how many took it is returned for the screen to say. Relays may not honour a deletion,
+ * and nothing reaches a copy already taken.
+ */
+export async function withdrawPublished(): Promise<{ took: number; of: number }> {
+  const secret = contactKey();
+  const urls = relays();
+  stopListed();
+  unpublishCard();
+  if (!secret || urls.length === 0) return { took: 0, of: urls.length };
+  const results = await Promise.allSettled(pool().publish(urls, buildCardDeletion(secret, Math.floor(Date.now() / 1000))));
+  return { took: results.filter((r) => r.status === 'fulfilled').length, of: urls.length };
 }
 
 /**

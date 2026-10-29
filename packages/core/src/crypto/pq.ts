@@ -2,7 +2,7 @@ import { ml_kem768 } from '@noble/post-quantum/ml-kem.js';
 import { hkdf } from '@noble/hashes/hkdf';
 import { sha256 } from '@noble/hashes/sha256';
 import { bytesToHex, concatBytes, hexToBytes } from '@noble/hashes/utils';
-import { nip44 } from 'nostr-tools';
+import * as nip44 from 'nostr-tools/nip44';
 import type { SecretKey } from './keys.js';
 
 /**

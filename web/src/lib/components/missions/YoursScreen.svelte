@@ -45,7 +45,9 @@
     unread,
     onopen,
     onreport,
-    onreports
+    onreports,
+    onyou,
+    onfind
   }: {
     now: number;
     /**
@@ -60,6 +62,9 @@
     onreport: (address: string) => void;
     /** Other operators' reports on a mission this device took part in. */
     onreports: (address: string) => void;
+    /** What others can see about you, and Find: the people entry [groups.md §3, §4]. */
+    onyou?: () => void;
+    onfind?: () => void;
   } = $props();
 
   /** Bumped after a withdrawal or a send, so the lists are read again. */
@@ -192,6 +197,13 @@
 </script>
 
 <div class="nc-yours" data-screen="yours">
+  {#if onyou || onfind}
+    <!-- People open from here, and only on a signed-on phone [groups.md §3, §4]. -->
+    <div class="nc-yours-people">
+      {#if onyou}<button type="button" data-open-you onclick={onyou}>What others see of you</button>{/if}
+      {#if onfind}<button type="button" data-open-find onclick={onfind}>Find people</button>{/if}
+    </div>
+  {/if}
   <Panel label="Taking part" post={counted > 0 ? `${counted} of 3` : null}>
     {#if holding.length === 0 && loose.length === 0}
       <Slot k="Claims"><Readout value="Nothing claimed" tone="cold" /></Slot>
@@ -353,6 +365,20 @@
     margin-block-start: 0.25rem;
     border: 1px solid var(--t-line);
     background: transparent;
+    cursor: pointer;
+  }
+  .nc-yours-people {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+  .nc-yours-people button {
+    min-height: 3rem;
+    padding: 0 0.6rem;
+    border: 1px solid var(--t-line);
+    background: var(--t-sunk);
+    color: var(--t-ink);
+    font: inherit;
     cursor: pointer;
   }
 </style>

@@ -134,7 +134,7 @@ The fixed slots, with `—` where there is nothing:
 | **Does** | Up to three terms. An unknown term is dropped |
 | **Links** | Listed as text. Checking them happens on `/terminal/who/?k=` |
 | **Checked** | Always *Nobody has checked this card* |
-| **With you** *(only on this phone)* | *paired since 3 Oct, you call them Wren* · *not paired* |
+| **With you** *(only on this phone)* | *paired since 3 Oct, you call them Wren* · *not known*. Never *not paired*: a card's key is not the key its holder pairs with, so this phone knows which peer a card is only when it paired by writing to that card. That link is kept Wipeable (`peer_cards`), since nothing public links the two keys; a pairing by code, or one from before a wipe, reads *not known*. *Write to them* is gone once it reads *paired* (built 2026-10-29) |
 
 **There is no lit action, because a profile is a readout.** The rail has three controls:
 
@@ -524,10 +524,25 @@ largest single change:
 - **Time.** On a Mac, sealing a 14-wrap state takes about 33 ms and opening one up to about 39 ms,
   because `hybridOpen` re-derives the KEM keypair for every wrap it tries; computing that once brings
   it to about 9 ms. The device floor is unmeasured, plausibly 10 to 30 times slower.
-- **Not yet known:** whether relay.damus.io and nos.lol keep strfry's 65,536-byte default, whether
-  they store and serve `1913` events from throwaway keys without proof of work, how long they keep
-  events that carry an expiration, whether they index the routing tag, and their per-IP limits.
-  Phase 0 measures each. A relay that cannot take the room-15 padded length cannot carry crews.
+- **Measured 2026-10-29** (`web/scripts/measure-crew-relays.mjs`, by hand, with throwaway keys and
+  events expiring within ten minutes). A relay that cannot take the room-15 padded length cannot carry
+  crews.
+  - **nos.lol** (strfry 1.1.3) took every size to 65,000 bytes and refused 70,000 as *"event too
+    large"*: strfry's 65,536 default, so every padded length above fits. It stored and served `1913`
+    events from throwaway keys with no proof of work, served all of them back by `#y`, refused one
+    already expired, dropped one at its expiry, and took a burst of twelve.
+  - **relay.damus.io** (strfry 1.1.0) took `1913` events from throwaway keys to 60,000 bytes with no
+    proof of work. **It limits by volume:** after six events, about 200 kB, in a few seconds it
+    answered *"rate-limited: you are noting too much"*, and going on drew *"banned: too many rate-limit
+    violations"* — **a ban on the address that stops reads as well as writes**, still in force half
+    an hour later. Its size limit, tag index and expiry could not be measured past the ban.
+  - **So crew traffic is paced, and this is a gate for phase 2, not a tuning detail.** A ban on
+    relay.damus.io would take a phone's `Distress`, its watch board and its peers' presence on that
+    relay with it, because they share the address and, before the commons, the connection. Phase 2's
+    client posts padded states no faster than relay.damus.io takes them, stops posting to a relay that
+    answers *rate-limited* until it has backed off, never retries into a refusal, and Status says when
+    a relay has refused this phone. A phone behind a carrier's shared address shares that relay's
+    patience with strangers, which nothing on the phone controls
 
 ### Relays: a list the release ships, not a name a code supplies
 
@@ -932,6 +947,16 @@ ceiling from its measurement plus headroom, because a person waits for the one e
 the total of every screen they might. **That derivation comes before phase 1's first screen merges**,
 because the deferred line has 793 B left and no people entry fits in it.
 
+**People, measured 2026-10-29** on its first build, before its first screen merged: 38,203 B beyond
+first paint and mount, against the estimate's 3 to 8 kB. Its own code is about 6.7 kB; the rest is
+shared code neither tier before it loads. Its ceiling is derived from that, 45,844 B with a warning at
+41,259 (`budget.mjs`, `MAP_LINES.people`). It first measured 55,057 B: core imported NIP-44 from
+nostr-tools' whole index, which also put 16.7 kB on every terminal page, and imports it from its own
+path now (terminal 168.5 kB to 151.8). **The card cache is the one people module a mission loads**,
+because `namesOf` fills it and a reporter's name opens a profile through it. It is a chunk of its own,
+under 1 kB, and `boundaries.test.ts` allows the missions entry that module and no other of people or
+crews.
+
 **Estimates, to be replaced by measurement (gzipped):**
 
 | Entry | Its own code | Shared chunks it pulls cold |
@@ -958,7 +983,8 @@ sit under one storage key, and their logs under another.
 
 ## 14. Declined
 
-Each is written into [`../declined.md`](../declined.md) in phase 0, with its cost.
+Each is written into [`../declined.md`](../declined.md) in phase 0, with its cost (done 2026-10-29,
+under *Crews*).
 
 - **Crews in Accruing**, in or out of backups, and a per-crew choice of tier. *Cost:* a wipe or a lost
   phone ends every membership.
@@ -1031,8 +1057,8 @@ People first: it needs no new kind, no new storage, and sends nothing without a 
 | Phase | What | Useful alone | Size | Gate |
 |---|---|---|---|---|
 | **0. Words and guards** | Edit signals.spec.md's *What is NOT here* to scope it to signals (done 2026-10-09), and draft `crews.spec.md` as a design. Dated notes in principles.md §2 (narrowing is not browsing; the log is an exception to *no scrolling timeline*; the crew card exception), C11, and missions.md §2 (the Crew row points at units.md; the enumeration exception) and §4 (crews hold no Honor, rungs or writs), and pointers in watch/signals.md, field-terminal.md, positioning.md, prior-art.md and lore.md, all written 2026-10-09. Crew and unit events were added to the text of the refusal `no-operator-traffic-on-a-private-relay` on 2026-10-09; phase 0 still regenerates the well-known JSON and extends its test. Per-entry figures in `budget.mjs`, reported. The keyboard device check and its reachability case. **Measure** the meeting pair: maximum event size, whether it stores and serves throwaway-signed `1913` events without proof of work or bans, how long it keeps events carrying an expiration, whether it indexes the routing tag, and its per-IP write limits. Open the online safety record reassessment (the record notes it, 2026-10-09; the reassessment is a person's). Correct profiles.md §7, which still lists *a global roster* and *handle proofs* as open when both exist. Write §14 into `declined.md` | The spec stops contradicting a decided design. The budget stops understating what a cold visitor downloads. Today's directory search is protected if the keyboard does cover `Distress` | S | None: the owner's decisions are made |
-| **1. People** | The *profile*, *you* and *find* screens. The session card cache in memory, filled by `namesOf`. *Fetch newest* only on a tap. Back-stack handles. The `navcom:agent` tag, tested for NavCom's own agents. The two honest fixes. Com's index split into missions and people, each through its own host. Tests: `Distress` tapped from each new screen at every height; typing in search sends no REQ to the test relay; no card ever written to storage; a hidden key never asked for | An operator sees exactly what their contact key has put out and what withdrawing would cost, and can open anybody's card from a report, a peer or a board without leaving the map | M. People entry about 3 to 8 kB. Root measured | A ceiling derived for *Root, later* from its measurement, before merge |
-| **2. Crews: roster and Agreed** (units.md's U1) | A core crews module: checking states, deriving epochs, keys and routes, the crew envelope, padding, the crossing rule, the validity rules. Kinds `1913` and `20917`. Summary and join codes, hello and welcome. Admit, remove, both leaves, rename, rotation, move relays, the Agreed line, and the charters units.md ships first. Relays from the shipped list. The crews storage key with its write path, salvage, quota and Wipe-screen line. The screens. Tests against the built artifact: a removed member's phone opens nothing after removal; two crossing removals show a split; a ground lower id never reverses a removal; a panic wipe leaves no crew secret; no crew field in a made backup; a relay outside the list is never dialled whoever names it; The Record never sent an `EVENT`; no REQ names a crew tag beside a contact or operational key; no contact key in any state or welcome; an agent-flagged join code refused; NavCom's agent builds contain no crews module; every `1913` a published length; the crews chunk in the service worker's precache list; the crews chunk calls no notification, badge or vibration API; a chunk that fails to load and a relay that does not answer each say so | A handful of people who met keep who is in, what was agreed and where to meet in one place no relay can read, without publishing a roster or any persona key. Operators who are Alone lose nothing | L. Crews entry about 9 to 15 kB of its own code | The crews spec written, and phase 0's measurements, with rooms offered only up to what the measured relays accept. Review of the composition by somebody who is not its author. The online safety record's organising row, harassment row and overall rating reassessed by a person, the Agreed line included. units.md's U1 gates |
+| **1. People** (built 2026-10-29) | The *profile*, *you* and *find* screens. The session card cache in memory, filled by `namesOf`. *Fetch newest* only on a tap. Back-stack handles. The `navcom:agent` tag, tested for NavCom's own agents. The two honest fixes. Com's index split into missions and people, each through its own host. Tests: `Distress` tapped from each new screen at every height; typing in search sends no REQ to the test relay; no card ever written to storage; a hidden key never asked for | An operator sees exactly what their contact key has put out and what withdrawing would cost, and can open anybody's card from a report, a peer or a board without leaving the map | M. People entry about 3 to 8 kB, measured at 37.3 kB with its shared code (§13). Root measured | A ceiling derived for *Root, later* from its measurement, before merge. Met as the tiers that replaced it: mount's ceiling since 2026-10-18, and people's derived before its first screen merged |
+| **2. Crews: roster and Agreed** (units.md's U1) | A core crews module: checking states, deriving epochs, keys and routes, the crew envelope, padding, the crossing rule, the validity rules. Kinds `1913` and `20917`. Summary and join codes, hello and welcome. Admit, remove, both leaves, rename, rotation, move relays, the Agreed line, and the charters units.md ships first. Relays from the shipped list. The crews storage key with its write path, salvage, quota and Wipe-screen line. The screens. Tests against the built artifact: a removed member's phone opens nothing after removal; two crossing removals show a split; a ground lower id never reverses a removal; a panic wipe leaves no crew secret; no crew field in a made backup; a relay outside the list is never dialled whoever names it; The Record never sent an `EVENT`; no REQ names a crew tag beside a contact or operational key; no contact key in any state or welcome; an agent-flagged join code refused; NavCom's agent builds contain no crews module; every `1913` a published length; the crews chunk in the service worker's precache list; the crews chunk calls no notification, badge or vibration API; a chunk that fails to load and a relay that does not answer each say so | A handful of people who met keep who is in, what was agreed and where to meet in one place no relay can read, without publishing a roster or any persona key. Operators who are Alone lose nothing | L. Crews entry about 9 to 15 kB of its own code | The crews spec written, and phase 0's measurements, with rooms offered only up to what the measured relays accept and crew posting paced under relay.damus.io's volume limit (§7, measured 2026-10-29). Review of the composition by somebody who is not its author. The online safety record's organising row, harassment row and overall rating reassessed by a person, the Agreed line included. units.md's U1 gates |
 | **3. Crews on the signed-in root** | One fixed *Crews* row, names only, read straight from storage. Crews included in search | com.md §2's *your groups* on the root, readable offline and announcing nothing | S. At most 300 B of first paint, measured, otherwise the row lives in the Yours screen | Phase 2 |
 | **4. The log** | Lines of 280 characters, flat, pull-only, closed at EOSE, with withdraw, *since you last looked*, and readouts for lapsed and offline. The sealed cache with its caps and eviction. The composer. The keyboard fix, if needed. Built-artifact tests for the absence of badge, notification, vibration and sync APIs, and for the cache dying with its key | Crews keep ongoing talk in the app instead of moving everything to Signal: no interruptions, no receipts, no presence | M. About 3 to 5 kB in the crews entry | **The online safety record reassessed** for sustained contact: grooming, harassment, encouraging suicide, organising harm, and the overall rating. The keyboard question decided if the device check confirmed it |
 | **5. The crew card** | A second contact key held by one member, the card on its region board, search showing crew cards, renewal dated to a fixed schedule, and the knock with a one-use reply key. Admission is still only in person | An operator who knows nobody can find a crew that chose to be found and knock once, under the rule invites already have: ignoring one sends nothing | M | **The online safety record reassessed** for contact between strangers. The vocabulary person confirming `crew`. The dated notes on principles.md §2 and C11. The question of when a crew may get a card (§16) |

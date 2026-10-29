@@ -20,7 +20,7 @@ let deliver: (event: Event) => void = () => {};
 vi.mock('./identity', () => ({
   loadIdentity: () => ({ secretKey: me, pubkey: myPubkey, callsign: 'Wren' })
 }));
-vi.mock('./card', () => ({ contactKey: () => null, contactPubkey: () => null }));
+vi.mock('./card', () => ({ contactKey: () => null, contactPubkey: () => null, myCard: () => null }));
 vi.mock('./relays', () => ({ relays: () => ['wss://fake.relay'] }));
 vi.mock('./pq.svelte', () => ({ kemKeys: () => ({}) }));
 /** Whether the relays accept anything. A field terminal is offline more often than not. */

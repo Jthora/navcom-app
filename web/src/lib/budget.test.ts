@@ -162,7 +162,7 @@ const FIXTURE_ENTRIES = { missions: MISSIONS };
  * is reported and charged to Deferred, which every test of the tiers is about. That the real one is a
  * line of its own is held below, with the line it is.
  */
-const REPORTED: Lines = Object.fromEntries(Object.entries(MAP_LINES).filter(([name]) => name !== 'missions'));
+const REPORTED: Lines = Object.fromEntries(Object.entries(MAP_LINES).filter(([name]) => name !== 'missions' && name !== 'people'));
 function run(f: ReturnType<typeof fixture>, lines: Lines = REPORTED) {
   const out: string[] = [];
   const { report, failed } = measure({ build: f.build, manifestPath: f.manifestPath, log: (l: string) => out.push(l), lines, comEntries: FIXTURE_ENTRIES });
@@ -585,7 +585,7 @@ describe('the map’s layers, each a line of its own', () => {
   });
 
   it('declares each of the map’s new layers, with every ceiling ~20% over the measurement it came from', () => {
-    expect(Object.keys(MAP_LINES).sort()).toEqual(['ages', 'daylight', 'fine', 'hazards', 'labels', 'layers', 'missions', 'spheres', 'timezones', 'zone-missions', 'zones', 'zones-container', 'zones-lookup']);
+    expect(Object.keys(MAP_LINES).sort()).toEqual(['ages', 'daylight', 'fine', 'hazards', 'labels', 'layers', 'missions', 'people', 'spheres', 'timezones', 'zone-missions', 'zones', 'zones-container', 'zones-lookup']);
     for (const [name, line] of Object.entries(MAP_LINES)) {
       // A layer's own module, or a Com entry of the same name: the picker's screens are `layers`.
       if (line.code !== null) expect([`${LAYER_CODE}${name}.ts`, COM_ENTRIES[name]], name).toContain(line.code);

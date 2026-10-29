@@ -211,7 +211,9 @@ export const ROOT_MOUNT = ['src/lib/components/grid/GridMap.svelte', 'src/lib/mi
 export const COM_ENTRIES = /** @type {Record<string, string>} */ ({
   missions: 'src/lib/components/missions/index.ts',
   // Also a map line, so its code is charged to that line and never to Deferred [MAP_LINES].
-  layers: 'src/lib/components/layers/index.ts'
+  layers: 'src/lib/components/layers/index.ts',
+  // Profiles, your own, and Find [groups.md §13, phase 1]: a line of its own, like missions.
+  people: 'src/lib/components/people/index.ts'
 });
 
 /*
@@ -716,6 +718,31 @@ export const MAP_LINES = {
         'that, downward, so nothing grew room by the move. This line counts every chunk the screens ' +
         'reach beyond first paint and mount, the 10.5 kB they share with other screens included, which ' +
         'Deferred also counts, once.'
+    },
+    data: null
+  },
+  /*
+   * Profiles, your own, and Find [groups.md §13, phase 1]: the people entry, which opening a mission
+   * never loads. Its ceiling is derived from its own measurement before its first screen merges, as
+   * groups.md asks, with the headroom every line here gets.
+   */
+  people: {
+    when: 'opening a profile, what others see of you, or Find',
+    code: 'src/lib/components/people/index.ts',
+    files: null,
+    per: 'all',
+    js: {
+      limit: 45_844,
+      warn: 41_259,
+      measured: 38_203,
+      why:
+        'Derived 2026-10-29 at 38,203 B, from the entry\u2019s first build, before its first screen merged, ' +
+        'as groups.md §13 asks. groups.md estimated 3 to 8 kB of its own code, with the shared chunks ' +
+        'already loaded by missions; they are not. Its own screens are about 6 kB, and most of the rest ' +
+        'is what *Write to them* seals an invite with: ML-KEM, 8 kB, and the relay pool and card code ' +
+        'it shares with the terminal. Measured first at 55,057 B: core imported NIP-44 from ' +
+        'nostr-tools\u2019 whole index, which also cost every terminal page 16.7 kB, and now imports ' +
+        'it from its own path. About 0.4 s on first open at the device floor, then cached.'
     },
     data: null
   }

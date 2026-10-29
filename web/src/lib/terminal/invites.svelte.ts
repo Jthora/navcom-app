@@ -29,9 +29,9 @@
 
 import type { Event } from 'nostr-tools/core';
 import { buildInvite, KIND_INVITE, readInvite, type Invite } from '@navcom/core';
-import { contactKey, contactPubkey } from './card';
+import { contactKey, contactPubkey, myCard } from './card';
 import { loadIdentity } from './identity';
-import { pair, peerPubkeys } from './peers';
+import { noteCard, pair, peerPubkeys } from './peers';
 import { relays } from './relays';
 import { pool } from './pool';
 import { subscribeLive } from './subscribe';
@@ -114,7 +114,9 @@ export const invites = {
     const urls = relays();
     if (!identity || urls.length === 0) return;
 
-    const contact = contactPubkey();
+    // The contact key is an inbox only while there is a card: one withdrawn, or one never published
+    // by a phone that only took part in missions, is not an address anybody was given [groups.md §3].
+    const contact = myCard() ? contactPubkey() : null;
     const addresses = contact ? [identity.pubkey, contact] : [identity.pubkey];
 
     closer?.close();
@@ -144,6 +146,9 @@ export const invites = {
           pair(read.from, read.payload.callsign);
           answeredUs = [...answeredUs, read.payload.callsign];
         }
+        // The request was signed here, so the card it was written to is this phone's own word.
+        const card = read.payload.answers?.tags.find((t) => t[0] === 'p')?.[1];
+        if (card) noteCard(card, read.from);
         return;
       }
 

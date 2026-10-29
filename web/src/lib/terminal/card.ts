@@ -7,15 +7,18 @@
  *
  * ## The contact key
  *
- * A second keypair, generated the first time a card is published, whose only jobs are to
- * sign the card and to receive invites. It is never a presence recipient and never known to
- * a watch — see `@navcom/core`'s `events/public.ts` for why that separation is what makes a
- * card safe to publish at all.
+ * A second keypair, generated the first time a card is published **or the first time this phone
+ * takes part in a mission**, since claims and reports are signed by it too. Its jobs are to sign the
+ * card, those claims and reports, and to receive invites while there is a card. It is never a presence
+ * recipient and never known to a watch — see `@navcom/core`'s `events/public.ts` for why that
+ * separation is what makes a card safe to publish at all. A key with no card is not nothing: others
+ * see its print on what it signed, and nothing else [groups.md §3, corrected 2026-10-29].
  *
- * **Withdrawing discards it.** The card stays on whatever relays kept it — nothing can
- * unpublish it, and the screen says so — but it now names a key nobody holds and nobody
- * listens on. Invites sent to it go nowhere. That is the strongest true version of
- * withdrawal, and the app must not imply a stronger one.
+ * **Withdrawing a card keeps the key; retiring the print discards it.** Withdrawing asks relays to
+ * drop the card and stops listening for invites to it, so anything it signed can still be released.
+ * Retiring throws the key away: the card stays on whatever relays kept it — nothing can unpublish it,
+ * and the screen says so — but it then names a key nobody holds and nobody listens on. Retiring is
+ * refused while the key holds a claim or a report is inside its seven days.
  *
  * Accruing tier: a card outlasts a night, and losing it to a panic wipe would mean
  * republishing under a new key while the old one sits there looking live.
@@ -90,7 +93,7 @@ export function contactPubkey(): string | null {
  * The contact key, generating one if this is the first card.
  *
  * Separate from `contactKey` so that merely *reading* state can never bring a public
- * identity into existence. Only publishing does that.
+ * identity into existence. Only acting does: publishing a card, or taking part in a mission.
  */
 export function ensureContactKey(): SecretKey {
   const existing = contactKey();
@@ -151,7 +154,23 @@ export function sentReadout(
 }
 
 /**
- * Discards the card and the key that signed it.
+ * Takes the card off this phone and keeps the key that signed it [groups.md §3, *The two honest
+ * fixes*]: whatever the key signed — a claim, a report — can still be released by it. The request
+ * that relays drop the card is `withdrawPublished` in `public.svelte.ts`; this is the phone's half.
+ * Clears `listed` for the reason below, and the phone stops listening for invites to the key, since
+ * it listens on the contact key only while there is a card [invites.svelte.ts].
+ */
+export function unpublishCard(): void {
+  clearField('accruing', CARD);
+  clearField('accruing', LISTED);
+  clearField('accruing', SENT);
+}
+
+/**
+ * Discards the card and the key that signed it: *Retire this print*.
+ *
+ * Refused on the card screen while the key holds a claim or a report is inside its seven days
+ * [retire.ts], since nothing could release or withdraw them after.
  *
  * Also clears `listed`, because being listed as out is meaningless without a card to
  * resolve the name against — and leaving a stale switch on is how somebody ends up

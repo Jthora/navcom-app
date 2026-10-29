@@ -75,6 +75,19 @@ describe('the refusals descriptor', () => {
   it('names where the boundary is written, because the rules are not in the JSON', () => {
     expect(refusalsDocument().broadcast.rules).toMatch(/^\//);
   });
+
+  it('publishes crew and unit events among what never rides a private relay [groups.md phase 0]', () => {
+    /*
+     * Decided 2026-10-09 and written into core that day; the published file is what another node
+     * reads before proposing an integration, so it is held to the same words. Sealing hides what a
+     * crew says, not who reads it, and on a small relay who reads it is the roster.
+     */
+    const private_ = (refusalsDocument().refuses as { id: string; refuses: string; because: string }[]).find(
+      (r) => r.id === 'no-operator-traffic-on-a-private-relay'
+    );
+    expect(private_?.refuses).toMatch(/crew and unit events/);
+    expect(private_?.because).toMatch(/who reads it is the roster/);
+  });
 });
 
 describe('the verified-build receipt', () => {

@@ -435,6 +435,23 @@ test('two strangers in one city find each other on its board, pair, and see each
   await expect(Raven.getByRole('button', { name: /^accept$/i })).toHaveCount(0);
   await step(Raven, 'paired');
 
+  // Her card, opened from Find on the map, knows they are paired: Raven wrote to it, so this phone
+  // learned which peer it belongs to, and there is nobody left to write to.
+  await go(Raven, '/');
+  await Raven.locator('[data-yours]').click();
+  await Raven.locator('[data-open-find]').click();
+  // The cities arrive after the screen does, from the file the landing page searches.
+  await expect(Raven.locator('#find-region option', { hasText: /philadelphia/i }).first()).toBeAttached({ timeout: 20_000 });
+  const city = await Raven.locator('#find-region option').evaluateAll((os) => (os as HTMLOptionElement[]).find((o) => /philadelphia/i.test(o.text))?.value ?? null);
+  await Raven.locator('#find-region').selectOption(city!);
+  await Raven.locator('[data-load-board]').click();
+  await Raven.locator('#people-q').fill('wren');
+  await Raven.locator('[data-hits="cards"] [data-hit-card]').filter({ hasText: 'Wren' }).click({ timeout: 20_000 });
+  const profile = Raven.locator('[data-screen="profile"]');
+  await expect(profile.locator('[data-with-you="paired"]')).toContainText(/you call them wren/i);
+  await expect(profile.locator('[data-write]')).toHaveCount(0);
+  await step(Raven, 'her-profile');
+
   // Wren goes out; Raven, on Status, sees it from what Wren's phone sent her.
   await go(Raven, '/terminal/');
   await go(Wren, '/terminal/sign-on/');

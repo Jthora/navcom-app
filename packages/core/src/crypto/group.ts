@@ -1,4 +1,4 @@
-import { nip44 } from 'nostr-tools';
+import * as nip44 from 'nostr-tools/nip44';
 import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils';
 import type { SignalType } from '../events/kinds.js';

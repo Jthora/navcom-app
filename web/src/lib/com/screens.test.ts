@@ -32,7 +32,11 @@ const EACH: Screen[] = [
   { kind: 'sphere', id: null, code: 'mt' },
   { kind: 'sphere', id: null, code: null },
   // What a tap on Hazards' marks took, by the events' own ids, nearest first.
-  { kind: 'hazard', ids: 'usgs:us6000u3ch,usgs:us6000u3c1', of: '2' }
+  { kind: 'hazard', ids: 'usgs:us6000u3ch,usgs:us6000u3c1', of: '2' },
+  // People: a profile by its handle, never a key; what others see of you; and Find.
+  { kind: 'profile', h: '0123456789abcdef' },
+  { kind: 'you' },
+  { kind: 'find' }
 ];
 
 describe('the screens Com has', () => {
@@ -55,7 +59,9 @@ describe('a screen read back from history', () => {
   });
 
   it('is not, when another version wrote it: a kind this one lacks, or a field it needs gone', () => {
-    // A newer build's people screen, reached by Back after the phone went back to an older one.
+    // A newer build's crew screen, reached by Back after the phone went back to an older one, and a
+    // profile with no handle to name anybody by.
+    expect(readScreen({ kind: 'crew', handle: 'h1' })).toBeNull();
     expect(readScreen({ kind: 'profile', handle: 'h1' })).toBeNull();
     expect(readScreen({ kind: 'mission' })).toBeNull();
     expect(readScreen({ kind: 'mission', address: 7 })).toBeNull();

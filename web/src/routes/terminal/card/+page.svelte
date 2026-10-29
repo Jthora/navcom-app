@@ -39,7 +39,8 @@
   } from '$lib/terminal/card';
   import { hiddenOn } from '$lib/hidden';
   import { loadIdentity } from '$lib/terminal/identity';
-  import { publishCard } from '$lib/terminal/public.svelte';
+  import { publishCard, withdrawPublished } from '$lib/terminal/public.svelte';
+  import { retireBlockers, type Blocker } from '$lib/terminal/retire';
 
   let { data } = $props();
 
@@ -50,7 +51,13 @@
   let doing = $state('');
   let showListed = $state(false);
   let busy = $state(false);
-  let confirming = $state(false);
+  /** Which of the two acts is being confirmed: withdrawing the card, or retiring its key. */
+  let confirming = $state<'withdraw' | 'retire' | null>(null);
+  /** What withdrawing reached: how many relays took the request to drop the card. */
+  let withdrew = $state<{ took: number; of: number } | null>(null);
+  /** What stands in the way of retiring, read when it is asked for. */
+  let blockers = $state<Blocker[]>([]);
+  const dayOf = (s: number) => new Date(s * 1000).toLocaleDateString([], { day: 'numeric', month: 'short' });
 
   let visibility = $state<Visibility>('board');
 
@@ -167,13 +174,12 @@
     }
   }
 
-  function withdraw() {
-    withdrawCard();
+  /** The card's fields cleared from this screen, after either act. */
+  function cleared() {
     published = null;
     sent = null;
-    contact = null;
     showListed = false;
-    confirming = false;
+    confirming = null;
     region = '';
     where = 'earth';
     nation = '';
@@ -182,6 +188,29 @@
     keptZone = null;
     doing = '';
     withdrawExtras();
+  }
+
+  /** *Withdraw card*: relays asked to drop it, the key kept so what it signed can still be released. */
+  async function withdraw() {
+    busy = true;
+    try {
+      withdrew = await withdrawPublished();
+      cleared();
+    } finally {
+      busy = false;
+    }
+  }
+
+  /** *Retire this print*: refused while the key holds a claim or a report in its seven days. */
+  function askRetire() {
+    blockers = retireBlockers(Math.floor(Date.now() / 1000));
+    confirming = 'retire';
+  }
+  function retire() {
+    if (retireBlockers(Math.floor(Date.now() / 1000)).length > 0) return;
+    withdrawCard();
+    contact = null;
+    cleared();
   }
 
   /** At most `DOES_MAX`. Choosing is an act, so the cap is felt rather than explained. */
@@ -461,6 +490,18 @@
       {published ? 'Replace your card' : 'Publish your card'}
     </button>
 
+    {#if !published && withdrew}
+      <Slot k="Card">
+        <span data-card-withdrawn>
+          <Readout
+            value="Withdrawn"
+            tone={withdrew.took > 0 ? 'good' : 'warn'}
+            sub={withdrew.took > 0 ? `${withdrew.took} of ${withdrew.of} relays asked to drop it; the key is kept` : 'no relay took the request; the card is off this phone, the key kept'}
+          />
+        </span>
+      </Slot>
+    {/if}
+
     {#if published && contact}
       <Slot k="Card">
         {#if hiddenOn(contact)}
@@ -544,20 +585,40 @@
     </section>
     {/if}
 
-    <section class="act">
+    <section class="act" data-withdraw-card>
       <h2>Withdraw</h2>
-      <Why summary="What withdrawing does">
+      <!-- visibility.md's line, word for word, on both acts. -->
+      <p class="cost">This changes what you share from now on. It can't unshare what's already out.</p>
+      <Why summary="Withdrawing, and retiring the key">
         <p>
-          Throws away the key that signs your card. Invites sent to it stop arriving. Relays
-          that already have the card may keep serving it — <strong>this cannot unpublish
-          it</strong>.
+          <strong>Withdraw card</strong> asks relays to drop your card and keeps the key that signs it,
+          so anything it signed — a claim, a report — can still be released. Invites to it stop
+          arriving here. Relays that already have the card may keep serving it.
+        </p>
+        <p>
+          <strong>Retire this print</strong> also throws the key away. It is refused while the key holds
+          a claim or a report is inside its seven days, because nothing could release them after.
         </p>
       </Why>
-      {#if confirming}
-        <button class="danger" onclick={withdraw}>Throw the key away</button>
-        <button onclick={() => (confirming = false)}>Keep my card</button>
+      {#if confirming === 'withdraw'}
+        <button class="danger" data-confirm-withdraw disabled={busy} onclick={withdraw}>Withdraw my card</button>
+        <button onclick={() => (confirming = null)}>Keep my card</button>
+      {:else if confirming === 'retire'}
+        {#if blockers.length > 0}
+          <div data-retire-refused>
+            <Readout value="Not yet" tone="warn" sub={`retiring would strand ${blockers.length === 1 ? 'this' : 'these'} until ${dayOf(blockers[blockers.length - 1]!.until)}`} />
+            <ul class="blockers">
+              {#each blockers as b, i (i)}<li>{b.what === 'claim' ? 'Taking part in' : 'Your report on'} {b.title} · until {dayOf(b.until)}</li>{/each}
+            </ul>
+          </div>
+          <button onclick={() => (confirming = null)}>Back</button>
+        {:else}
+          <button class="danger" data-confirm-retire onclick={retire}>Throw the key away</button>
+          <button onclick={() => (confirming = null)}>Keep it</button>
+        {/if}
       {:else}
-        <button onclick={() => (confirming = true)}>Withdraw my card</button>
+        <button data-withdraw onclick={() => (confirming = 'withdraw')}>Withdraw my card</button>
+        <button data-retire onclick={askRetire}>Retire this print</button>
       {/if}
     </section>
   {/if}
@@ -567,6 +628,7 @@
   .act { gap: .6rem; }
   select, textarea { width: 100%; }
   .danger { border-color: var(--t-alarm); color: var(--t-alarm); }
+  .blockers { margin: 0; padding-inline-start: 1.1rem; font-size: .88rem; }
 
   .pick { border: 1px solid var(--t-line); border-radius: 4px; padding: .55rem .7rem; margin: 0; }
   .pick legend { padding: 0 .35rem; font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; }

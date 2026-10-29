@@ -47,6 +47,13 @@ const FAMILIES: Record<string, (path: string) => boolean> = {
 };
 const ANY_FAMILY = (p: string) => Object.values(FAMILIES).some((inFamily) => inFamily(p));
 const PEOPLE_OR_CREWS = (p: string) => FAMILIES['units and crews'](p) || FAMILIES.people(p);
+/**
+ * The one people module a mission may load: the session card cache, which `namesOf` fills with the
+ * cards behind a report's names and which a name opens a profile through [groups.md §3]. Memory only,
+ * so carrying it costs bytes and nothing else. The screens, and the fetches only a tap makes, stay
+ * in the people entry.
+ */
+const CARD_CACHE = 'web/src/lib/people/cache.svelte.ts';
 /** The relay stack: the shipped relay addresses and the connection pool. */
 const RELAYS = ['packages/core/src/relays.ts', 'web/src/lib/terminal/pool.ts'];
 /**
@@ -87,6 +94,16 @@ const ROOT_PAINT_OUT = [...RELAYS, 'web/src/lib/missions/claims.ts', 'web/src/li
  * 2026-10-18 again, after the adversary pass split that answer in two (`CWsvlMGh.js`): it reads
  * `why:a.some(o=>o.exposed!==void 0||o.frozen)?"paused":"lapsed",entry:`, so the marker is the pair
  * of words and the property after them; no other source file names "lapsed" beside "paused"
+ *
+ * 2026-10-29, read off the people entry (`B6Mba1Od.js`) and the card cache’s own chunk (`DgZ8h6Ua.js`),
+ * built from the working tree that added them:
+ * - `cache.svelte.ts`: `{card:a,areas:m(t.tags,a.card.region),agent:f,seenAt:n}`, the entry
+ *   `remember` keeps. `areas`, `agent` and `seenAt` are property names, and no other source file has
+ *   `seenAt`. Read again the same day, once the agent mark also came from a publisher's key
+ * - `fetch.ts`: `v({cards:a.size,answered:i>0})`, what an ask resolves with at the end of stored
+ *   events: a count of keys, so `size` survives
+ * - `PeopleHost.svelte`: `S.screen.kind==="profile"?`, its dispatch; no other source compares a
+ *   screen's kind to "profile"
  */
 const INVISIBLE: { measured: string; modules: Record<string, RegExp | null> } = {
   measured: '2026-10-10',
@@ -94,6 +111,9 @@ const INVISIBLE: { measured: string; modules: Record<string, RegExp | null> } = 
     'packages/core/src/missions/claim.ts': /["'`]navcom\.mission["'`]/,
     'packages/core/src/missions/seal.ts': /Math\.max\([\w$]+\.ends,[\w$.]+\+[\w$.]+\+[\w$]+\.within\)/,
     'packages/core/src/missions/trust.ts': /\?"paused":"lapsed",entry:/,
+    'web/src/lib/people/cache.svelte.ts': /areas:[\w$]+\([\w$]+\.tags,[\w$]+\.card\.region\),agent:[\w$]+,seenAt:/,
+    'web/src/lib/people/fetch.ts': /\{cards:[\w$]+\.size,answered:[\w$]+>0\}/,
+    'web/src/lib/components/people/PeopleHost.svelte': /\.screen\.kind==="profile"\?/,
     // No literal of its own and no stable shape once minified. Held instead at the import graph:
     // packages/core/test/units-unreached.test.ts proves nothing in web/src or the box imports units/
     // (merged 2026-10-10), so no built chunk can carry it.
@@ -621,10 +641,10 @@ describe('the boundaries the built site holds', () => {
     expect(breaches([paint('index.html')], (p) => ROOT_PAINT_OUT.includes(p) || ANY_FAMILY(p), read, prints)).toEqual([]);
   });
 
-  it('loads no people or crews module when a mission opens', () => {
+  it('loads no crews module when a mission opens, and of people only the card cache', () => {
     const { manifest, read } = built();
     expect(manifest[MISSIONS_ENTRY], 'the missions entry is gone from the manifest').toBeDefined();
-    expect([...carried(entryLoads(manifest, MISSIONS_ENTRY), read, prints)].filter(PEOPLE_OR_CREWS)).toEqual([]);
+    expect([...carried(entryLoads(manifest, MISSIONS_ENTRY), read, prints)].filter((p) => PEOPLE_OR_CREWS(p) && p !== CARD_CACHE)).toEqual([]);
   });
 
   it('lets no unit or crew module reach the watch key, standing, paging or the config write path', () => {
