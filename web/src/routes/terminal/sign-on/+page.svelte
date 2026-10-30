@@ -16,6 +16,8 @@
   import { loadConfig, storedWatch } from '$lib/terminal/config';
   import { heard } from '$lib/terminal/heard.svelte';
   import { HeardSlot, HeardWhy } from '$lib/components/heard';
+  import { loadContact } from '$lib/terminal/contact';
+  import { distressRead } from '$lib/terminal/distress-read';
 
   /**
    * Whether a Watchtower is configured at all — not whether it is reachable.
@@ -27,6 +29,8 @@
   let configured = $state(false);
   /** Added, and none of its relays reachable from this page. */
   let stranded = $state(false);
+  /** The operator's own person, by name: who a Distress reaches when no watch does [contact.ts]. */
+  let person = $state<string | null>(null);
 
   let area = $state('');
   let hours = $state(2);
@@ -40,6 +44,7 @@
     share = precision();
     configured = loadConfig() !== null;
     stranded = !configured && storedWatch() !== null;
+    person = loadContact()?.label ?? null;
     watch.start();
     const aging = setInterval(() => (nowMs = Date.now()), 15_000);
     return () => {
@@ -102,13 +107,8 @@
       <Readout value={watchRead.value} tone={watchRead.tone} sub={watchRead.sub} />
     </Slot>
     <Slot k="Distress">
-      {#if reachable.length === 0 && configured && !stranded && watch.state.state === 'station'}
-        <Readout value="To the watch" tone="warn" sub="nobody else is paged" />
-      {:else if reachable.length === 0}
-        <Readout value="No addressee" tone="warn" sub="pages nobody, and says so" />
-      {:else}
-        <Readout value="Pages on-call" tone="neutral" />
-      {/if}
+      {@const d = distressRead({ reachable: reachable.length, configured: configured && !stranded, station: watch.state.state === 'station', person })}
+      <Readout value={d.value} tone={d.tone} sub={d.sub} />
     </Slot>
     {#if reachable.length > 0}
       <Slot k="On call">

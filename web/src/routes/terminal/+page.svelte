@@ -24,6 +24,8 @@
   import { heard } from '$lib/terminal/heard.svelte';
   import { HeardSlot, HeardWhy } from '$lib/components/heard';
   import { refusingNow } from '$lib/terminal/refusing.svelte';
+  import { loadContact } from '$lib/terminal/contact';
+  import { distressRead } from '$lib/terminal/distress-read';
   import { hostOf } from '$lib/terminal/heard-copy';
 
   const s = $derived(watch.state);
@@ -72,6 +74,8 @@
   /** A backup named a watch and the operator has not yet added or forgotten it. */
   let offered = $state(false);
   let identity = $state<ReturnType<typeof loadIdentity>>(null);
+  /** The operator's own person, by name: who a Distress reaches when no watch does [contact.ts]. */
+  let person = $state<string | null>(null);
   /** A mission somebody left to take a callsign: once they have one, the way back is the lit action. */
   let leftMission = $state<PendingMission | null>(null);
   let damaged = $state(false);
@@ -170,6 +174,7 @@
     stranded = configured ? null : storedWatch();
     offered = !configured && !stranded && offeredWatch() !== null;
     identity = loadIdentity();
+    person = loadContact()?.label ?? null;
     damaged = corruptTiers().length > 0;
     tonight();
     /*
@@ -544,16 +549,11 @@
         <Readout value={watchRead.value} tone={watchRead.tone} sub={watchRead.sub} />
       </Slot>
       <Slot k="Distress">
-        {#if reachable.length === 0 && configured && s.state === 'station'}
-          <!-- A person on station is who a Distress reaches; what nobody does is page anyone after
-               them. "No addressee" said the first was false while a holder read the board
-               [journey, 2026-10-28]. -->
-          <Readout value="To the watch" tone="warn" sub="nobody else is paged" />
-        {:else if reachable.length === 0}
-          <Readout value="No addressee" tone="warn" sub="pages nobody, and says so" />
-        {:else}
-          <Readout value="Pages on-call" tone="neutral" />
-        {/if}
+        <!-- Read as sign-on reads it [distress-read.ts]. "No addressee" said the first was false
+             while a holder read the board [journey, 2026-10-28], and to an operator whose own
+             person is the whole safety net. -->
+        {@const d = distressRead({ reachable: reachable.length, configured, station: s.state === 'station', person })}
+        <Readout value={d.value} tone={d.tone} sub={d.sub} />
       </Slot>
       {#if reachable.length > 0}
         <Slot k="On call">
@@ -719,12 +719,28 @@
             <strong>What works right now:</strong> the cached directory, with no signal at all,
             and everything on this device.
           </p>
-          <p>
-            <strong>What does not:</strong> Query, Assist and Distress all go to a watch, and
-            there is nothing to send them to. If somebody gives you a Watchtower — in person,
-            because nothing discovers one — you can <a href="/terminal/setup/">add it</a> and
-            they start working.
-          </p>
+          {#if person}
+            <p>
+              <strong>Distress reaches {person}:</strong> it opens a message to them, written and
+              ready, and you press send. Nothing is paged on your behalf.
+            </p>
+            <p>
+              <strong>What does not:</strong> Query and Assist go to a watch, and there is nothing
+              to send them to. If somebody gives you a Watchtower — in person, because nothing
+              discovers one — you can <a href="/terminal/setup/">add it</a> and they start working.
+            </p>
+          {:else}
+            <p>
+              <strong>What does not:</strong> Query, Assist and Distress all go to a watch, and
+              there is nothing to send them to. If somebody gives you a Watchtower — in person,
+              because nothing discovers one — you can <a href="/terminal/setup/">add it</a> and
+              they start working.
+            </p>
+            <p>
+              Distress can still reach <a href="/terminal/setup/#person" data-person-link>someone you would call</a>: a
+              message to them, written and ready, that you send yourself.
+            </p>
+          {/if}
         {:else if configured && watch.read.reason === 'clock'}
           <h2 data-clock-skew>This phone's clock is wrong</h2>
           <p>
@@ -991,8 +1007,12 @@
 
 {#if session}
   <nav class="nc-rail" data-rail="out">
-    <a href="/terminal/query/">Query</a>
-    <a href="/terminal/assist/">Assist</a>
+    <!-- Both go only to a watch: with none at all they would reach nobody. A watch this page
+         cannot reach keeps them, and the panel says why nothing gets through. -->
+    {#if configured || stranded}
+      <a href="/terminal/query/">Query</a>
+      <a href="/terminal/assist/">Assist</a>
+    {/if}
     <button onclick={() => (closing = true)} disabled={operator.busy}>Stand down</button>
   </nav>
 {/if}

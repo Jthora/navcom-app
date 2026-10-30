@@ -43,6 +43,30 @@ partners read.
 - **It reaches phones only by release**, never fetched at run time, so no key, stolen or coerced,
   can reroute a phone
 
+**Today the commons is two relays, below its own floor of three**, and a ban on one leaves a single
+relay carrying everything (it happened to this project's own address on 2026-10-29, §5). Candidates
+looked at on 2026-10-30, read only: each relay's NIP-11 document, where it is hosted, and whether it
+serves notes a month old. Evidence for a decision that is the owner's while the commons is below
+its floor, not an admission:
+
+| Relay | Software | Hosted | Keeps a month | Against the independence rule |
+|---|---|---|---|---|
+| relay.damus.io *(in)* | strfry | Cloudflare, US | yes | — |
+| nos.lol *(in)* | strfry | Hetzner, DE | yes | — |
+| nostr.mom | strfry | **the same address as nos.lol** | yes | Never: one operator's second name |
+| relay.primal.net | strfry | Cloudflare, US | yes | Shares a CDN and a jurisdiction with damus |
+| relay.nostr.net | strfry | Cloudflare, US | — | Shares a CDN and a jurisdiction with damus |
+| nostr.oxtr.dev | strfry | Hetzner, DE | — | Shares a network and a jurisdiction with nos.lol |
+| nostr-pub.wellorder.net | nostr-rs-relay | Hetzner, DE | — | Shares a network and a jurisdiction with nos.lol |
+| offchain.pub | strfry | IncogNet, US | yes | Shares a jurisdiction with damus |
+| relay.snort.social | memlay, in memory | Apex Strata, IE | **no** | Passes; but a card published once is gone at its next restart |
+| relay.nostr.bg | — | — | — | Did not answer |
+
+None passes cleanly. The rule as written admits only relay.snort.social, which cannot hold a card;
+the next nearest each share one thing with a relay already in. **The choice is which rule bends:**
+a third relay that shares a CDN or a jurisdiction, or one that keeps only what is short-lived, with
+cards on the other two. Months of passing NavCom's own check would still have to follow either.
+
 **Watch traffic goes only to commons relays, whoever names a relay:** a list, a watch code, a backup
 or Setup. That is D3 enforced strictly, and it is what makes following a list safe. Following one
 adds exactly one harm a watch's key does not already carry, sending every operator's address and

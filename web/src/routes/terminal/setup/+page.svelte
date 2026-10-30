@@ -444,7 +444,7 @@
   Placed directly after the callsign and before the watch, because for an operator with no
   watch this IS the safety net rather than a nice extra.
 -->
-<section>
+<section id="person">
   <h2>Someone you would call</h2>
   <p class="note">
     One tap on Distress opens a message to them, already written. <strong>Nothing is sent
