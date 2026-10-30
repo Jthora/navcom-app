@@ -22,6 +22,9 @@ publishes Mission Packages NavCom is about to read. A spec for an exchange someb
 building against is not a guess; leaving it unwritten would be. It marks every part LIVE, BUILT,
 DESIGNED or PROPOSED, so the confidence of the format never exceeds the confidence of the work.
 
+**Crews left it on 2026-10-09**, when the owner decided them and the signals spec said no crew kind
+ships before a crews spec is written. It marks its parts the same way, and none of them is built.
+
 | | |
 |---|---|
 | [`bootstrap.spec.md`](./bootstrap.spec.md) | Identity, config, discovery — **read first** |
@@ -29,6 +32,7 @@ DESIGNED or PROPOSED, so the confidence of the format never exceeds the confiden
 | [`watch-state.spec.md`](./watch-state.spec.md) | Board model, TTLs, overdue, handover |
 | [`escalation.spec.md`](./escalation.spec.md) | The ladder as a state machine |
 | [`mission-interchange.spec.md`](./mission-interchange.spec.md) | Mission Packages, raw intel, claims, counts — NavCom's side of the boundary with Starcom and Mecha Jono |
+| [`crews.spec.md`](./crews.spec.md) | Crews, the leaf unit: kinds `1913` and `20917`, keys, codes, admission, removal. Drafted 2026-10-30, nothing built, awaiting review |
 
 ## Conventions
 

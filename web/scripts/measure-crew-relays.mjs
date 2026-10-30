@@ -49,7 +49,7 @@ const tagOf = () => randomBytes(16).toString('hex');
  * @param {number} expiresIn seconds
  */
 function crewEvent(bytes, tag, expiresIn) {
-  const base = finalizeEvent({ kind: 1913, created_at: now() - Math.floor(Math.random() * 600), tags: [['y', tag], ['expiration', String(now() + expiresIn)]], content: '' }, generateSecretKey());
+  const base = finalizeEvent({ kind: 1913, created_at: now() - Math.floor(Math.random() * 600), tags: [['j', tag], ['expiration', String(now() + expiresIn)]], content: '' }, generateSecretKey());
   const overhead = JSON.stringify(base).length;
   const content = randomBytes(Math.max(0, Math.ceil(((bytes - overhead) * 3) / 4))).toString('base64').slice(0, Math.max(0, bytes - overhead));
   return finalizeEvent({ kind: 1913, created_at: base.created_at, tags: base.tags, content }, generateSecretKey());
@@ -109,7 +109,7 @@ function readTag(ws, tag) {
       }
     };
     ws.on('message', on);
-    ws.send(JSON.stringify(['REQ', id, { kinds: [1913], '#y': [tag] }]));
+    ws.send(JSON.stringify(['REQ', id, { kinds: [1913], '#j': [tag] }]));
     setTimeout(() => {
       ws.off('message', on);
       resolve(ids);
@@ -134,7 +134,7 @@ for (const url of RELAYS) {
     if (r.ok) kept.push(e.id);
   }
   const served = await readTag(ws, sizeTag);
-  console.log(`served back by #y: ${served.length} of ${kept.length} taken${served.length === kept.length ? '' : ' — the tag is not indexed, or something taken was not kept'}`);
+  console.log(`served back by #j: ${served.length} of ${kept.length} taken${served.length === kept.length ? '' : ' — the tag is not indexed, or something taken was not kept'}`);
 
   // Expiry: one already past is refused or dropped; one a minute out is gone after it.
   const pastTag = tagOf();
