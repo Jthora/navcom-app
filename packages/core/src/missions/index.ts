@@ -4,3 +4,4 @@ export * from './seal.js';
 export * from './frozen.js';
 export * from './trust.js';
 export * from './registry-rules.js';
+export * from './manifest-signature.js';

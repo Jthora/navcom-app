@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { finalizeEvent, generateSecretKey, getEventHash, getPublicKey } from 'nostr-tools/pure';
-import { panicWipe, set } from '$lib/terminal/storage';
-import { frozenDigest, type FrozenSet, type MissionPublishers } from '@navcom/core';
+import { get, panicWipe, set } from '$lib/terminal/storage';
+import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
+import { frozenDigest, manifestDigest, manifestKeySha256, type FrozenSet, type MissionPublishers } from '@navcom/core';
 import { KEPT_CHARS_MAX, PACKAGES_MAX, UNVERIFIED_MAX, subscribeMissions, type Feed } from './live';
 import { oneKey, trustedKey } from './registry-fixture';
 
@@ -685,5 +686,102 @@ describe('what each relay is asked, key by key, and what it may make this phone 
     const again = reqs(s).slice(first);
     expect(again.map((f) => f[1])).toEqual(['missions:0', 'missions:1', 'missions:3']);
     expect((again[1]![2] as { until: number }).until).toBeGreaterThan(at() + 86_400 - 600);
+  });
+});
+
+describe('a frozen key’s versions off its list, kept by their second signature', () => {
+  const bytesToHex = (b: Uint8Array) => Buffer.from(b).toString('hex');
+  const frozenKey = generateSecretKey();
+  /** The publisher's manifest key, which the exposed Nostr secret is not, and another anybody could make. */
+  const pq = ml_dsa65.keygen(new Uint8Array(32).fill(3));
+  const thief = ml_dsa65.keygen(new Uint8Array(32).fill(4));
+  /** A package under the frozen key, its manifest signed by `signer` as Mecha Jono signs, or not at all. */
+  const twice = (d: string, title: string, created_at: number, signer: typeof pq | null = pq) => {
+    const manifest = { name: title, objectives: [{ id: 'do:it', ask: 'Do it.' }], metadata: { mechaJono: { state: 'open' } } };
+    const signature = signer && { alg: 'ml-dsa-65', pubkey: bytesToHex(signer.publicKey), sig: bytesToHex(ml_dsa65.sign(manifestDigest(manifest), signer.secretKey)) };
+    return finalizeEvent(
+      {
+        kind: 30079,
+        created_at,
+        content: JSON.stringify(signature ? { ...manifest, metadata: { ...manifest.metadata, signature } } : manifest),
+        tags: [['d', d], ['t', 'starcom_mission_package'], ['t', 'navcom_handoff'], ['t', 'navcom_mission'], ['mission_state', 'open'], ['valid_until', '1791608400']]
+      },
+      frozenKey
+    );
+  };
+  const listed = twice('listed', 'Listed', 1791300000);
+  const list: FrozenSet = { key: getPublicKey(frozenKey), taken: '2026-10-18', source: 'a test', packages: [{ id: listed.id, d: 'listed' }] };
+  const registry: MissionPublishers = [
+    {
+      id: 'desk',
+      name: 'Test',
+      agent: true,
+      keys: [trustedKey(getPublicKey(frozenKey), { exposed: '2026-09-28', frozen: { sha256: frozenDigest(list), confirmed: false } })],
+      manifestKey: { alg: 'ml-dsa-65', sha256: manifestKeySha256(bytesToHex(pq.publicKey))! },
+      next: null
+    }
+  ];
+  const at = () => Math.floor(Date.now() / 1000);
+  const go = () => subscribeMissions((f) => feeds.push(f), { relays: [RECORD, MIRROR], publishers: registry, frozen: [list], trustAt: at });
+  const reqs = (s: FakeSocket) => s.sent.filter((f) => f[0] === 'REQ' && f[1] !== 'still-there');
+  const answerAll = (s: FakeSocket, events: unknown[]) => {
+    s.dispatchEvent(new Event('open'));
+    for (const [, id] of reqs(s)) {
+      for (const e of events) s.frame(['EVENT', id, e]);
+      s.frame(['EOSE', id]);
+    }
+  };
+  /** Every check done: they run one at a time, between frames, after their code loads. */
+  const checked = (expected: string[]) => vi.waitFor(() => expect(titles()).toEqual(expected), { timeout: 5_000, interval: 5 });
+
+  it('asks the frozen key for its newest field missions too, since its publisher pins a manifest key', () => {
+    go();
+    socket(RECORD).dispatchEvent(new Event('open'));
+    expect(reqs(socket(RECORD))[0]!.slice(2)).toEqual([
+      { kinds: [30079], authors: [getPublicKey(frozenKey)], ids: [listed.id] },
+      { kinds: [30079], authors: [getPublicKey(frozenKey)], '#d': ['listed'], until: at() + 86_400 },
+      { kinds: [30079], authors: [getPublicKey(frozenKey)], '#t': ['navcom_mission'], limit: PACKAGES_MAX, until: at() + 86_400 }
+    ]);
+  });
+
+  it('shows a mission at a fresh d once its second signature checks, and a newer version of a listed one in its place', async () => {
+    go();
+    answerAll(socket(RECORD), [listed, twice('fresh', 'Fresh', 1791300100), twice('listed', 'Listed, again', 1791300200)]);
+    // Drawn at once: the list. Held aside: the rest, until checked.
+    expect(titles()).toEqual(['Listed']);
+    await checked(['Fresh', 'Listed, again']);
+    // Unconfirmed: at its jurisdiction only, and it cannot be taken.
+    const f = last();
+    expect(f.status === 'live' && f.missions.every((m) => m.retiring === 'unconfirmed')).toBe(true);
+  });
+
+  it('never shows one signed by any other manifest key, or by none, and none of them hides the listed version', async () => {
+    go();
+    const lures = [twice('lure', 'Lure', 1791300100, thief), twice('bare', 'Bare', 1791300100, null), twice('listed', 'Listed, replaced by a thief', 1791300300, thief)];
+    answerAll(socket(RECORD), [listed, ...lures, twice('fresh', 'Fresh', 1791300100)]);
+    await checked(['Fresh', 'Listed']);
+    // A relay carrying them is not at fault: the exposed key can post to it.
+    expect(socket(RECORD).closed).toBe(false);
+  });
+
+  it('keeps a checked version in the copy on this device, and checks it again before drawing it from there', async () => {
+    go();
+    answerAll(socket(RECORD), [listed, twice('fresh', 'Fresh', 1791300100)]);
+    await checked(['Fresh', 'Listed']);
+    vi.advanceTimersByTime(3_000);
+    expect(get<{ events: unknown[] }>('wipeable', 'missions')?.events).toHaveLength(2);
+
+    feeds = [];
+    FakeSocket.made = [];
+    go();
+    expect(titles()).toEqual(['Listed']);
+    await checked(['Fresh', 'Listed']);
+    expect(last().status).toBe('cached');
+  });
+
+  it('draws nothing from a copy on this device that holds a version signed by another manifest key', async () => {
+    set('wipeable', 'missions', { at: NOW.toISOString(), events: [listed, twice('lure', 'Lure', 1791300100, thief), twice('fresh', 'Fresh', 1791300100)] });
+    go();
+    await checked(['Fresh', 'Listed']);
   });
 });

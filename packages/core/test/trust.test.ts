@@ -9,6 +9,7 @@ import {
   gate,
   keptMissionTrusted,
   labelHeard,
+  manifestSignedBy,
   outranks,
   rankOf,
   sealTargetOf,
@@ -116,6 +117,20 @@ describe('the registry gate, asked before anything is kept', () => {
       expect(flood.map((e) => gate(e, frozen(), OCT_18, [set]))).toEqual(Array(150).fill('frozen'));
     });
 
+    it('keeps a version off the list once its second signature is checked, and only under a publisher that pins a manifest key', () => {
+      const fresh = pkg(one, 'fresh', secs('2026-10-26T00:00:00Z'));
+      const pinned: MissionPublishers = [{ ...frozen()[0]!, manifestKey: { alg: 'ml-dsa-65', sha256: 'c'.repeat(64) } }];
+      expect(gate(fresh, pinned, OCT_18 + 20 * 86_400, [set])).toBe('frozen');
+      expect(gate(fresh, pinned, OCT_18 + 20 * 86_400, [set], new Set([fresh.id]))).toBeNull();
+      // Checked for another event, it keeps nothing here.
+      expect(gate(fresh, pinned, OCT_18 + 20 * 86_400, [set], new Set([listed.id]))).toBe('frozen');
+      // A publisher that pins no manifest key keeps nothing this way, whatever the caller says it checked.
+      expect(gate(fresh, frozen(), OCT_18 + 20 * 86_400, [set], new Set([fresh.id]))).toBe('frozen');
+      // The other rules stand before it: ahead of the clock, or past the key's end.
+      const ahead = pkg(one, 'ahead', OCT_18 + 3 * 86_400);
+      expect(gate(ahead, pinned, OCT_18, [set], new Set([ahead.id]))).toBe('future');
+    });
+
     it('keeps nothing under it when no list for it is on hand', () => {
       expect(frozenSetOf(frozen().at(0)!.keys[0]!, [])).toBeNull();
       expect(gate(listed, frozen(), OCT_18, [])).toBe('unpinned');
@@ -141,6 +156,13 @@ describe('the registry gate, asked before anything is kept', () => {
     expect(gate(HEAT, MISSION_PUBLISHERS, OCT_18, [asCaptured])).toBeNull();
     expect(gate(RECALL, MISSION_PUBLISHERS, OCT_18, [asCaptured])).toBeNull();
     expect(gate(HEAT, MISSION_PUBLISHERS, secs('2026-11-13T00:00:00Z'), [asCaptured])).toBe('window');
+  });
+
+  it('keeps Mecha Jono’s superseded heat campaign once its manifest’s second signature checks, until the old key ends', () => {
+    expect(manifestSignedBy(HEAT.content, MISSION_PUBLISHERS[0]!.manifestKey!)).toBe(true);
+    const second = new Set([HEAT.id]);
+    expect(gate(HEAT, MISSION_PUBLISHERS, OCT_18, FROZEN_SETS, second)).toBeNull();
+    expect(gate(HEAT, MISSION_PUBLISHERS, secs('2026-11-13T00:00:00Z'), FROZEN_SETS, second)).toBe('window');
   });
 });
 

@@ -51,6 +51,7 @@
 import { verifyEvent } from 'nostr-tools/pure';
 import type { Event } from 'nostr-tools/core';
 import { isZspId, zoneOfSector } from '../zones/ids.js';
+import type { ManifestKeyPin } from './manifest-signature.js';
 
 /** Starcom's kind. NavCom reads it and never publishes one. */
 export const MISSION_PACKAGE_KIND = 30079;
@@ -127,6 +128,15 @@ export interface MissionPublisher {
   inbox?: readonly string[];
   keys: readonly PublisherKey[];
   /**
+   * The key its manifests are signed with, beside the Nostr key that signs each event: ML-DSA-65,
+   * pinned by the sha256 of its public key [manifest-signature.ts]. **A version under one of its
+   * frozen keys that is not on the list is kept when its manifest carries this key's signature**
+   * [trust.ts, `gate`], because the exposed secret signs events and cannot sign manifests. Kept so,
+   * it is still unconfirmed: at its jurisdiction only, and it cannot be taken. Absent, nothing is
+   * kept that way.
+   */
+  manifestKey?: ManifestKeyPin;
+  /**
    * Reserved for the sha256 of a key committed in advance [interchange spec rev 7, decision 4].
    * Nothing reads it yet, so the build refuses anything but `null`: a field nothing honours would
    * claim a protection that is not there.
@@ -181,6 +191,11 @@ export const MISSION_PUBLISHERS: MissionPublishers = [
         notAfter: '2027-10-18T00:00:00Z'
       }
     ],
+    // The ML-DSA-65 key every package of Mecha Jono's NavCom has read is signed with: all 130 on The
+    // Record and its mirror on 2026-11-01, the 14 of the frozen list's 21 still there among them, and
+    // the packages in core's fixtures, read on 2026-10-06. Pinned from what it signed, not from a
+    // letter; Mecha Jono's own word on it would confirm it [interchange spec §3].
+    manifestKey: { alg: 'ml-dsa-65', sha256: 'd10019760aa4bcd3a2aeba3d4b3ed0c82da3df9070f25ea5e6e3ed7d39fff1ea' },
     next: null
   }
 ];

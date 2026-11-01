@@ -104,6 +104,10 @@ const ROOT_PAINT_OUT = [...RELAYS, 'web/src/lib/missions/claims.ts', 'web/src/li
  *   events: a count of keys, so `size` survives
  * - `PeopleHost.svelte`: `S.screen.kind==="profile"?`, its dispatch; no other source compares a
  *   screen's kind to "profile"
+ *
+ * 2026-11-01, read off the second signature's own chunk (`C3W-ycaU.js`):
+ * - `manifest-signature.ts`: `return delete y.signature,`, the digest leaving out the block it
+ *   checks; no other source deletes a `signature` property
  */
 const INVISIBLE: { measured: string; modules: Record<string, RegExp | null> } = {
   measured: '2026-10-10',
@@ -114,6 +118,7 @@ const INVISIBLE: { measured: string; modules: Record<string, RegExp | null> } = 
     'web/src/lib/people/cache.svelte.ts': /areas:[\w$]+\([\w$]+\.tags,[\w$]+\.card\.region\),agent:[\w$]+,seenAt:/,
     'web/src/lib/people/fetch.ts': /\{cards:[\w$]+\.size,answered:[\w$]+>0\}/,
     'web/src/lib/components/people/PeopleHost.svelte': /\.screen\.kind==="profile"\?/,
+    'packages/core/src/missions/manifest-signature.ts': /delete [\w$]+\.signature,/,
     // No literal of its own and no stable shape once minified. Held instead at the import graph:
     // packages/core/test/units-unreached.test.ts proves nothing in web/src or the box imports units/
     // (merged 2026-10-10), so no built chunk can carry it.

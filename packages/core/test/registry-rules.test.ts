@@ -115,6 +115,15 @@ describe('the file a publisher checks', () => {
     // Anybody can recompute the pin from the file alone.
     expect(frozenDigest({ key: mecha.keys[0]!.pubkey, packages: frozen.packages })).toBe(frozen.sha256);
     expect(frozen.confirmed).toBe(false);
+    // And the key its manifests are signed with, by the sha256 a publisher can recompute from any package.
+    expect(mecha.manifestKey).toEqual({ alg: 'ml-dsa-65', sha256: 'd10019760aa4bcd3a2aeba3d4b3ed0c82da3df9070f25ea5e6e3ed7d39fff1ea' });
+  });
+
+  it('a manifest key of another algorithm, or pinned by anything but 64 lowercase hex', () => {
+    const bad = (manifestKey: unknown) => registryProblems([entry({ manifestKey } as never)], OCT_18);
+    expect(bad({ alg: 'ml-dsa-65', sha256: 'd'.repeat(64) })).toEqual([]);
+    expect(bad({ alg: 'ed25519', sha256: 'd'.repeat(64) })).toEqual([expect.stringMatching(/manifest key/)]);
+    expect(bad({ alg: 'ml-dsa-65', sha256: 'D'.repeat(64) })).toEqual([expect.stringMatching(/manifest key/)]);
   });
 
   it('is the same bytes however often it is made', () => {

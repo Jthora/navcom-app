@@ -722,6 +722,28 @@ export const MAP_LINES = {
     data: null
   },
   /*
+   * The second signature's check [src/lib/missions/second-signature.ts]: ML-DSA-65, loaded by the live
+   * feed the first time a package under a frozen key arrives off its list. Not a layer and not a Com
+   * entry, and not mount: a visit with nothing of the kind to check never fetches it.
+   */
+  'second-signature': {
+    when: 'a mission under a frozen key arriving off its list, whose second signature is checked',
+    code: 'src/lib/missions/second-signature.ts',
+    files: null,
+    per: 'all',
+    js: {
+      limit: 14_029,
+      warn: 12_626,
+      measured: 11_691,
+      why:
+        'Measured 2026-11-01 at 11,691 B: ML-DSA-65 verification from @noble/post-quantum with the SHAKE it ' +
+        'hashes with, and the canonical digest of a manifest. Every package under Mecha Jono\u2019s old key is ' +
+        'off its frozen list now, so until that key ends on 13 November nearly every visit pays it once, after ' +
+        'the map has drawn; from then, only a visit with something of the kind to check.'
+    },
+    data: null
+  },
+  /*
    * Profiles, your own, and Find [groups.md §13, phase 1]: the people entry, which opening a mission
    * never loads. Its ceiling is derived from its own measurement before its first screen merges, as
    * groups.md asks, with the headroom every line here gets.

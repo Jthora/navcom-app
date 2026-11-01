@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { expect, test, type Page } from '@playwright/test';
 import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import { open, seedDevice } from './device';
-import { admit, mission, standInKey, type StandIn, type StandInKey } from './registry';
+import { admit, manifestKeyOf, manifestPin, mission, standInKey, type StandIn, type StandInKey } from './registry';
 
 /**
  * **What a stolen key can still do, against the build as it is served** [interchange spec rev 7].
@@ -173,6 +173,33 @@ test.describe('a frozen key', () => {
     await expect(screen.getByRole('button', { name: 'Take part' })).toHaveCount(0);
     await expect(screen.locator('[data-refusal="retiring"]')).toContainText('cannot be taken');
   });
+
+  test('a version off its list shows once its manifest’s second signature checks, and cannot be taken; one signed by any other manifest key never shows', async ({ page }) => {
+    const key = standInKey({ exposed: '2026-09-28' });
+    const own = manifestKeyOf(5);
+    const thief = manifestKeyOf(6);
+    const onList = mission(key, 'on-the-list', { at: '2026-10-04T00:00:00Z' });
+    frozenOn(key, [onList], false);
+    const fresh = mission(key, 'signed-twice', { title: 'Water run', at: '2026-10-05T00:00:00Z', manifestSigner: own });
+    // What the leaked secret can make: the event, and a manifest signed by a key of the thief's own.
+    const lures = [
+      mission(key, 'thief-signed', { at: '2026-10-05T00:00:00Z', manifestSigner: thief }),
+      mission(key, 'signed-once', { at: '2026-10-05T00:00:00Z' }),
+      mission(key, 'on-the-list', { title: 'Replaced by a thief', at: '2026-10-06T00:00:00Z', manifestSigner: thief })
+    ];
+    await phone(page, [onList, fresh, ...lures], [desk([key], { manifestKey: manifestPin(own) })], { seed: { callsign: 'kestrel', __noStorage: false } });
+    // Checked after the map has drawn, by code loaded only then.
+    await expect(page.locator('[data-missions="open"]')).toBeVisible();
+    await page.locator('[data-missions="open"]').click();
+    await expect(page.locator('[data-screen="missions"] [data-mission="signed-twice"]')).toBeVisible({ timeout: 15_000 });
+    const shown = await page.locator('[data-screen="missions"] [data-mission]').evaluateAll((els) => els.map((el) => el.getAttribute('data-mission')!));
+    expect(shown.sort()).toEqual(['on-the-list', 'signed-twice']);
+    await expect(page.locator('[data-screen="missions"] [data-mission="on-the-list"]')).not.toContainText('Replaced by a thief');
+    await page.locator('[data-screen="missions"] [data-mission="signed-twice"]').click();
+    const screen = page.locator('[data-screen="mission"][data-mission="signed-twice"]');
+    await expect(screen.locator('[data-retiring]')).toContainText('posted under a retiring key');
+    await expect(screen.getByRole('button', { name: 'Take part' })).toHaveCount(0);
+  });
 });
 
 test.describe('sealed sending to a key whose secret leaked', () => {
@@ -296,4 +323,5 @@ test('the registry NavCom pins is published as a file, with its digest in the in
     [MECHA_NEXT, null]
   ]);
   expect(mecha.keys[0].notAfter).toBe('2026-11-13T00:00:00Z');
+  expect(mecha.manifestKey).toEqual({ alg: 'ml-dsa-65', sha256: 'd10019760aa4bcd3a2aeba3d4b3ed0c82da3df9070f25ea5e6e3ed7d39fff1ea' });
 });

@@ -127,6 +127,9 @@ export function registryProblems(registry: MissionPublishers, at: number, sets: 
     if (entry.next !== null) problems.push(`${who}: next is reserved, and nothing reads it yet.`);
     for (const url of entry.inbox ?? []) if (!url.startsWith('wss://')) problems.push(`${who}: its inbox ${url} is not a secure relay address.`);
     if (entry.keys.length === 0) problems.push(`${who}: it has no key.`);
+    if (entry.manifestKey && (entry.manifestKey.alg !== 'ml-dsa-65' || !HEX64.test(entry.manifestKey.sha256))) {
+      problems.push(`${who}: its manifest key must be ml-dsa-65, pinned by 64 lowercase hex.`);
+    }
 
     const generations = new Set<number>();
     for (const key of entry.keys) {
@@ -177,7 +180,7 @@ export function registryDocument(registry: MissionPublishers, sets: readonly Fro
     rules: [
       'A key is trusted to sign from its notBefore until its notAfter, judged on the reader\'s clock and never earlier than the build. A key with no notBefore is trusted to sign nothing, and an event dated before its key\'s notBefore is dropped',
       'For one publisher and one d, a higher generation outranks a lower one whatever created_at says',
-      'A frozen key keeps only the package versions on its list, and versions that close one of their missions. Unconfirmed, each shows at its jurisdiction only and cannot be taken',
+      'A frozen key keeps only the package versions on its list, versions that close one of their missions, and versions whose manifest carries an ML-DSA-65 signature by the publisher\'s manifest key, pinned below by the sha256 of its public key. Unconfirmed, each shows at its jurisdiction only and cannot be taken',
       'Nothing is sealed to an exposed key, and no label counts from a key that is exposed, frozen, or not trusted to sign on the reader\'s clock, whichever word it says',
       'Sealed claims and reports go to the inbox below, never to one a relay names, and to the publisher\'s newest key that is trusted to sign and not exposed; with none, sealed sending to it is paused',
       'A version dated more than a day ahead of the reader\'s clock is dropped'
@@ -200,6 +203,7 @@ export function registryDocument(registry: MissionPublishers, sets: readonly Fro
             : null
         };
       }),
+      manifestKey: entry.manifestKey ?? null,
       next: entry.next
     }))
   };

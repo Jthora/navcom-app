@@ -16,6 +16,13 @@
  * cannot stop the feed either: an event is checked before it is kept, so one malformed frame is
  * dropped rather than stored and replayed into every reload.
  *
+ * **A frozen key's versions off its list wait for their second signature** [core: trust.ts]. Each
+ * package's manifest is signed again, with ML-DSA-65, under a key the exposed secret is not; the
+ * registry pins it. A version that would otherwise be dropped as frozen is held aside — not drawn, not
+ * kept, competing with nothing — until that signature is checked, a few milliseconds each, one at a
+ * time between frames, by code loaded only then [second-signature.ts]. Checked, it is kept as any
+ * other; failed, it is dropped as before. The copy on this device is checked again as it is read back.
+ *
  * What each relay learns is that a device opened NavCom's missions: one request per publisher key
  * NavCom trusts, the same on every device, never which part of the map anybody looked at. The Record
  * also logs the address each connection comes from until it applies the grid's reader rule
@@ -54,6 +61,7 @@ import {
   keyOf,
   outranks,
   rankOf,
+  secondSignatureCould,
   slotOf,
   trustedToSign,
   type FrozenSet,
@@ -62,7 +70,7 @@ import {
 import { generation, get, onWipe, set } from '$lib/terminal/storage';
 // So this page hears a wipe in another tab, or one it slept through in the back-forward cache.
 import '$lib/terminal/wiped-elsewhere';
-import { collect, gateable, readingOf, type Collected, type Readings } from './collect';
+import { READINGS_MAX, collect, gateable, readingOf, type Collected, type Readings } from './collect';
 import { floorNow } from './floor';
 
 export type Feed =
@@ -188,6 +196,12 @@ function plan(publishers: MissionPublishers, at: number, sets: readonly FrozenSe
         if (list.ids.size > 0) filters.push({ ...authored, ids: [...list.ids] });
         // The list's own missions, so a version that closes one can be heard; one per `d` at most.
         if (list.ds.size > 0) filters.push({ ...authored, '#d': [...list.ds], until });
+        /*
+         * Its newest field missions, as a trusted key is asked, when its publisher pins a manifest key:
+         * each waits for its second signature before it is kept [`subscribeMissions`], so a flood at
+         * fresh `d`s under the exposed secret is checked and dropped, and costs only the cap.
+         */
+        if (entry.manifestKey) filters.push({ ...authored, '#t': ['navcom_mission'], limit: PACKAGES_MAX, until });
         if (filters.length > 0) asks.push({ id, key: key.pubkey, filters });
       } else {
         const filters: Record<string, unknown>[] = [{ ...authored, '#t': ['navcom_mission'], limit: PACKAGES_MAX, until }];
@@ -207,6 +221,13 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
   const sets = sources.frozen ?? FROZEN_SETS;
   const readings: Readings = new Map();
   /**
+   * Ids whose second signature checked, and ids whose did not [core: manifest-signature.ts]. Each
+   * check is of the event under that id, whose own signature was verified first, so the id names
+   * the content checked [`authentic`].
+   */
+  const second = new Set<string>();
+  const failed = new Set<string>();
+  /**
    * The shape a package must have, and the registry gate, before anything else is asked of it and
    * before it is kept [core: trust.ts]: asked before a relay's share is capped, before the merge,
    * and of every package in the copy this device kept.
@@ -215,7 +236,17 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
     if (!gateable(e)) return false;
     const x = e as Partial<Signed>;
     if (x.kind !== MISSION_PACKAGE_KIND || !/^[0-9a-f]{64}$/.test(e.id) || typeof x.content !== 'string' || typeof x.sig !== 'string') return false;
-    return gate(e, publishers, trustAt(), sets) === null;
+    return gate(e, publishers, trustAt(), sets, second) === null;
+  };
+  /**
+   * Whether a version the gate drops would be kept once its second signature checks: its key is
+   * frozen and it is off the list, its publisher pins a manifest key, and it has not failed already.
+   */
+  const awaitsSecond = (e: unknown): e is Signed => {
+    if (!gateable(e)) return false;
+    const x = e as Partial<Signed>;
+    if (x.kind !== MISSION_PACKAGE_KIND || !/^[0-9a-f]{64}$/.test(e.id) || typeof x.content !== 'string' || typeof x.sig !== 'string') return false;
+    return !failed.has(e.id) && gate(e, publishers, trustAt(), sets) === 'frozen' && secondSignatureCould(e, publishers);
   };
   /** Where a version competes: its publisher and its `d`, never its address [core: trust.ts, `slotOf`]. */
   const slotOfE = (e: Signed) => slotOf(e, publishers) ?? '';
@@ -241,7 +272,7 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
   };
   /** Whether `a` should replace `b` in one slot: the higher generation, then the newer, then the lower id. */
   const newer = (a: Signed, b: Signed) => outranks(rankOf(a, publishers), rankOf(b, publishers));
-  const opts = () => ({ at: trustAt(), sets });
+  const opts = () => ({ at: trustAt(), sets, second });
   /** Whether an event is worth keeping: a package that is, or genuinely was, its publisher's. */
   const authentic = (e: Signed) => {
     const r = readingOf(e, publishers, readings);
@@ -272,15 +303,86 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
    */
   const since = generation('wipeable');
 
+  /**
+   * Versions held aside until their second signature is checked [`awaitsSecond`]: one map per open
+   * connection, and one for the copy this device kept. Never drawn and never kept while they wait.
+   */
+  const asides = new Set<Map<string, Signed>>();
+  /** What each map does with a version once it has passed: the connection's own, or the copy's. */
+  const passed = new Map<Map<string, Signed>, (e: Signed) => boolean>();
+  const keptAside = new Map<string, Signed>();
+
   const stored = get<Stored>('wipeable', STORE);
   if (stored && Array.isArray(stored.events)) {
     for (const e of stored.events) {
-      if (!wellFormed(e)) continue;
+      if (!wellFormed(e)) {
+        // Checked again before it is drawn: this copy is no more than what was written to the device.
+        if (awaitsSecond(e) && keptAside.size < PACKAGES_MAX) keptAside.set(e.id, e);
+        continue;
+      }
       const held = kept.get(slotOfE(e));
       if (!held || newer(e, held)) kept.set(slotOfE(e), e);
     }
-    if (kept.size > 0) keptAt = new Date(stored.at);
+    if (kept.size > 0 || keptAside.size > 0) keptAt = new Date(stored.at);
   }
+  if (keptAside.size > 0) {
+    asides.add(keptAside);
+    passed.set(keptAside, (e) => {
+      // Only a copy whose signature still verifies, as the copy is read everywhere else [`authentic`].
+      if (!authentic(e)) return false;
+      const held = kept.get(slotOfE(e));
+      if (held && !newer(e, held)) return false;
+      kept.set(slotOfE(e), e);
+      return true;
+    });
+  }
+
+  /** The next version still waiting to be checked, or undefined. */
+  const undecided = (): Signed | undefined => {
+    for (const map of asides) for (const [id, e] of map) if (!second.has(id) && !failed.has(id)) return e;
+    return undefined;
+  };
+  /** Each waiting version that has been checked leaves its map: passed, into what that map feeds; failed, nowhere. */
+  const release = () => {
+    let changed = false;
+    for (const map of asides) {
+      for (const [id, e] of map) {
+        if (failed.has(id)) map.delete(id);
+        else if (second.has(id)) {
+          map.delete(id);
+          if (passed.get(map)?.(e)) changed = true;
+        }
+      }
+    }
+    if (changed) report();
+  };
+  let checking = false;
+  /**
+   * Check every waiting version, one at a time, yielding between them so the map keeps drawing. The
+   * check's code is loaded the first time anything waits; if it cannot load, nothing waiting is
+   * drawn, and it is tried again when the next version arrives.
+   */
+  const checkSoon = () => {
+    if (checking || stopped) return;
+    checking = true;
+    void (async () => {
+      try {
+        const { checkSecond } = await import('./second-signature');
+        for (let e = undecided(); e && !stopped; e = undecided()) {
+          const pin = keyOf(publishers, e.pubkey)?.entry.manifestKey;
+          if (failed.size >= READINGS_MAX) failed.clear();
+          (pin && checkSecond(e.content, pin) ? second : failed).add(e.id);
+          release();
+          await new Promise((r) => setTimeout(r, 0));
+        }
+      } catch {
+        /* not loaded: what waits stays undrawn */
+      } finally {
+        checking = false;
+      }
+    })();
+  };
+  if (keptAside.size > 0) checkSoon();
 
   /**
    * The kept copy, bounded: the best version per package, the most recent first, under the caps —
@@ -389,13 +491,15 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
       const tries = attempt;
       /** What this connection has received, the best version per package. Becomes the relay's share at EOSE. */
       const received = new Map<string, Signed>();
+      /** What it sent that waits for its second signature [`awaitsSecond`], by id: none of it in `received` yet. */
+      const aside = new Map<string, Signed>();
       /** What this connection asked, by request id, and which requests have not finished answering. */
       let asks = new Map<string, Ask>();
       const unanswered = new Set<string>();
       /** When the requests were last sent, on the trust clock: their `until` is renewed from it. */
       let askedAt = 0;
       let caughtUp = false;
-      let failed = false;
+      let closed = false;
       /** Frames on this connection whose signature did not verify. */
       let unverified = 0;
       let ws: WebSocket;
@@ -416,9 +520,11 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
        * alone never hears it: it would say "reaching The Record" forever.
        */
       const fail = () => {
-        if (failed || stopped) return;
-        failed = true;
+        if (closed || stopped) return;
+        closed = true;
         clear();
+        asides.delete(aside);
+        passed.delete(aside);
         try {
           ws.close();
         } catch {
@@ -502,6 +608,18 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
         for (const e of received.values()) if (e.pubkey === key && !atFrozenD(e)) n++;
         return n;
       };
+      /** Whether a version has a place in this relay's answer: newer than what holds its slot, or room under its key's cap. */
+      const fits = (e: Signed) => {
+        const now = received.get(slotOfE(e));
+        return now ? newer(e, now) : atFrozenD(e) || heldBy(e.pubkey) < PACKAGES_MAX;
+      };
+      asides.add(aside);
+      // Checked and passed: into this relay's answer as if it had just arrived, its signature already verified.
+      passed.set(aside, (e) => {
+        if (closed || !fits(e)) return false;
+        received.set(slotOfE(e), e);
+        return caughtUp;
+      });
       waiting = setTimeout(fail, CONNECT_MS);
       ws.addEventListener('open', () => {
         if (waiting) clearTimeout(waiting);
@@ -510,7 +628,7 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
       });
       ws.addEventListener('message', (m: MessageEvent) => {
         // A browser delivers nothing once a socket is closing; a socket that still does is not listened to.
-        if (failed) return;
+        if (closed) return;
         let frame: unknown[];
         try {
           frame = JSON.parse(String(m.data)) as unknown[];
@@ -528,15 +646,27 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
            * a signature check [audit 11, second grid]. Only the key this request asked for: a relay
            * answering one key's request with another's could fill that other key's share.
            */
-          if (!wellFormed(e) || e.pubkey !== asked.key) return;
-          const slot = slotOfE(e);
-          const held = received.get(slot);
-          if (held ? !newer(e, held) : !atFrozenD(e) && heldBy(e.pubkey) >= PACKAGES_MAX) return;
+          if (!wellFormed(e)) {
+            /*
+             * Under a frozen key and off its list: held aside, by id and under the same cap, until its
+             * second signature is checked [`checkSoon`]. Its own signature first, as for any other.
+             */
+            if (!awaitsSecond(e) || e.pubkey !== asked.key || aside.has(e.id) || aside.size >= PACKAGES_MAX) return;
+            if (!authentic(e)) {
+              if (++unverified >= UNVERIFIED_MAX) refuse();
+              return;
+            }
+            aside.set(e.id, e);
+            checkSoon();
+            return;
+          }
+          if (e.pubkey !== asked.key) return;
+          if (!fits(e)) return;
           if (!authentic(e)) {
             if (++unverified >= UNVERIFIED_MAX) refuse();
             return;
           }
-          received.set(slot, e);
+          received.set(slotOfE(e), e);
           // Before EOSE the relay is replaying what it holds; after it, every event is news.
           if (caughtUp) report();
         } else if (frame[0] === 'EOSE' && asked) {
@@ -558,7 +688,7 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
        * some moment nobody saw, so its picture is dated to the last thing it sent [11.E].
        */
       const dropped = () => {
-        if (caughtUp && !failed) heard.set(url, Date.now());
+        if (caughtUp && !closed) heard.set(url, Date.now());
         fail();
       };
       ws.addEventListener('close', dropped);
@@ -591,6 +721,7 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
     if (saving) clearTimeout(saving);
     saving = null;
     kept = new Map();
+    keptAside.clear();
     report();
   });
 

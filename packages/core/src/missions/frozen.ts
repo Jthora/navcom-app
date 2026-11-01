@@ -4,7 +4,8 @@
  * Mecha Jono's old key `6301c4d0…` had its secret exposed on 2026-09-28. Every package NavCom has
  * read under it is dated after that, so no date separates a genuine one from one planted with the
  * stolen secret. Only an id on this list is kept from that key — and a version that closes one of
- * these missions, since closing sends nobody anywhere.
+ * these missions, since closing sends nobody anywhere, and, since 2026-11-01, a version whose manifest
+ * carries the second signature its publisher's manifest key makes [manifest-signature.ts].
  *
  * **Written by `web/scripts/frozen-set.mjs`, which the owner runs; never edited by hand.** Until
  * Mecha Jono's own signed list of the `30079` ids it signed arrives, this is the newest version of

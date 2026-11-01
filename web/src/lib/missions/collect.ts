@@ -9,6 +9,7 @@
  * checked, a package from a key NavCom does not trust to sign — none yet, not any more on this
  * device's floored clock, or frozen and not on its list — is dropped, as is one dated more than a
  * day ahead: a date ahead is how a stolen key wins a sort by date, so it is dropped, not flagged.
+ * A frozen key's version off its list passes only once its second signature is checked [`Trust`].
  *
  * **Versions compete by publisher and `d`, never by address** [11.E, rev 7]. The address holds the
  * key, so grouped by address a republish under a new key showed beside the old one. In one slot
@@ -140,6 +141,11 @@ export interface Trust {
   /** Unix seconds: this device's clock, floored at the build [floor.ts]. Defaults to `now`. */
   at?: number;
   sets?: readonly FrozenSet[];
+  /**
+   * Versions under a frozen key whose manifest's second signature, by the key their publisher pins,
+   * has been checked against the event itself [core: trust.ts, `gate`; live.ts, `checkSecond`].
+   */
+  second?: ReadonlySet<string>;
 }
 
 export function collect(
@@ -158,7 +164,7 @@ export function collect(
 
   for (const event of events) {
     // The registry gate, before any signature is checked [core: trust.ts].
-    if (!gateable(event) || gate(event, publishers, at, sets) !== null) continue;
+    if (!gateable(event) || gate(event, publishers, at, sets, trust.second) !== null) continue;
     const reading = readingOf(event, publishers, memo);
     const from = reading.ok
       ? { address: reading.mission.address, at: reading.mission.publishedAt, id: event.id }

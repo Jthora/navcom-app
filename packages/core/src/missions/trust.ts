@@ -16,7 +16,9 @@
  *   and an event dated before its key's start is dropped even once the start has passed, so a
  *   forgery made in the gap never becomes trusted
  * - **A frozen key keeps only its list** [frozen.ts], and versions that close one of its missions.
- *   Closing sends nobody anywhere; anything else from a key whose secret is out could be a lure
+ *   Closing sends nobody anywhere; anything else from a key whose secret is out could be a lure —
+ *   unless its manifest carries the second signature its publisher's entry pins, which the exposed
+ *   secret cannot make [`gate`, `second`]
  *
  * Pure: the clock is always an argument.
  */
@@ -71,7 +73,8 @@ export function frozenSetOf(key: PublisherKey, sets: readonly FrozenSet[] = FROZ
  * - `future` — dated more than a day past that clock. Dropped, not flagged: a date ahead is how a
  *   stolen key wins a sort by date
  * - `unpinned` — its key is frozen and no list for it is on hand
- * - `frozen` — its key is frozen, it is not on the list, and it closes nothing on it
+ * - `frozen` — its key is frozen, it is not on the list, it closes nothing on it, and no second
+ *   signature by its publisher's manifest key has been checked for it
  */
 export type Dropped = 'unknown' | 'untrusted' | 'early' | 'window' | 'future' | 'unpinned' | 'frozen';
 
@@ -85,8 +88,24 @@ export interface Gated {
 
 const tagOf = (e: Gated, name: string) => e.tags.find((t) => t[0] === name)?.[1];
 
-/** The registry gate [this module's header]. Cheap: no signature, no parse of the content. */
-export function gate(e: Gated, registry: MissionPublishers, at: number, sets: readonly FrozenSet[] = FROZEN_SETS): Dropped | null {
+const NONE: ReadonlySet<string> = new Set();
+
+/**
+ * The registry gate [this module's header]. Cheap: no signature, no parse of the content.
+ *
+ * `second` holds the ids of versions whose manifest carries the ML-DSA-65 signature of the key their
+ * publisher's entry pins [package.ts, `manifestKey`], each checked by the caller against the event
+ * whose id it is [manifest-signature.ts]. Under a frozen key, a version off the list is kept when
+ * its id is there: the exposed secret signs events, never manifests. Nothing else reads it, so a
+ * caller that checks nothing passes nothing and the gate is what it was.
+ */
+export function gate(
+  e: Gated,
+  registry: MissionPublishers,
+  at: number,
+  sets: readonly FrozenSet[] = FROZEN_SETS,
+  second: ReadonlySet<string> = NONE
+): Dropped | null {
   const found = keyOf(registry, e.pubkey);
   if (!found) return 'unknown';
   const { key } = found;
@@ -100,7 +119,17 @@ export function gate(e: Gated, registry: MissionPublishers, at: number, sets: re
   if (!set) return 'unpinned';
   if (set.ids.has(e.id)) return null;
   const d = tagOf(e, 'd');
-  return d !== undefined && set.ds.has(d) && tagOf(e, 'mission_state') === 'closed' ? null : 'frozen';
+  if (d !== undefined && set.ds.has(d) && tagOf(e, 'mission_state') === 'closed') return null;
+  return found.entry.manifestKey && second.has(e.id) ? null : 'frozen';
+}
+
+/**
+ * Whether a version the gate dropped as `frozen` could still be kept by its second signature: its
+ * publisher pins a manifest key. The caller checks the signature [manifest-signature.ts] and passes
+ * the id in `second` once it has.
+ */
+export function secondSignatureCould(e: Gated, registry: MissionPublishers): boolean {
+  return !!keyOf(registry, e.pubkey)?.entry.manifestKey;
 }
 
 /**

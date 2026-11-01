@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import type { BrowserContext, Page } from '@playwright/test';
+import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
 import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 
 /**
@@ -36,6 +37,30 @@ export interface StandIn {
   agent: boolean;
   inbox?: string[];
   keys: StandInKey[];
+  /** The sha256 its manifest key is pinned by [`manifestPin`]: a frozen key's version off its list is kept when signed by it. */
+  manifestKey?: string;
+}
+
+/** A stand-in manifest key: ML-DSA-65, from a seed, so a test can sign a package's manifest as Mecha Jono signs. */
+export const manifestKeyOf = (seed: number) => ml_dsa65.keygen(new Uint8Array(32).fill(seed));
+export type ManifestKey = ReturnType<typeof manifestKeyOf>;
+
+/** What the registry pins a manifest key by: the sha256 of its public key. */
+export const manifestPin = (k: ManifestKey) => createHash('sha256').update(k.publicKey).digest('hex');
+
+/** Canonical JSON as the signer writes it, rewritten here so a build that lacks core's still runs: keys by code unit. */
+function canonical(v: unknown): string {
+  if (v === null || typeof v !== 'object') return JSON.stringify(v);
+  if (Array.isArray(v)) return `[${v.map(canonical).join(',')}]`;
+  const entries = Object.entries(v as Record<string, unknown>).filter(([, x]) => x !== undefined).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+  return `{${entries.map(([k, x]) => `${JSON.stringify(k)}:${canonical(x)}`).join(',')}}`;
+}
+
+/** A manifest with its second signature, by `k`, in `metadata.signature`. */
+function signedManifest(manifest: Record<string, unknown>, k: ManifestKey): Record<string, unknown> {
+  const digest = createHash('sha256').update(canonical({ ...manifest, metadata: {} }), 'utf8').digest();
+  const hex = (b: Uint8Array) => Buffer.from(b).toString('hex');
+  return { ...manifest, metadata: { signature: { alg: 'ml-dsa-65', pubkey: hex(k.publicKey), sig: hex(ml_dsa65.sign(digest, k.secretKey)) } } };
 }
 
 /** A key for a stand-in, trusted from long ago until long after any test, unless told otherwise. */
@@ -70,7 +95,8 @@ function entryNow(s: StandIn): string {
     return `{${parts.join(',')}}`;
   });
   const inbox = s.inbox ? `,inbox:${lit(s.inbox)}` : '';
-  return `{id:${lit(s.id)},name:${lit(s.name)},agent:${s.agent ? '!0' : '!1'}${inbox},keys:[${keys.join(',')}],next:null}`;
+  const manifest = s.manifestKey ? `,manifestKey:{alg:"ml-dsa-65",sha256:${lit(s.manifestKey)}}` : '';
+  return `{id:${lit(s.id)},name:${lit(s.name)},agent:${s.agent ? '!0' : '!1'}${inbox},keys:[${keys.join(',')}]${manifest},next:null}`;
 }
 
 function setNow(k: StandInKey): string {
@@ -91,8 +117,17 @@ export async function admit(target: Page | BrowserContext, standIns: StandIn[]):
   const sets = standIns.flatMap((s) => s.keys.filter((k) => k.frozen).map(setNow)).join(',');
   const before = standIns.map(entriesBefore).join(',');
   await target.route('**/_app/immutable/**/*.js', async (route) => {
-    const response = await route.fetch();
-    let body = await response.text();
+    let response: Awaited<ReturnType<typeof route.fetch>>;
+    let body: string;
+    try {
+      response = await route.fetch();
+      body = await response.text();
+    } catch (e) {
+      // A chunk still arriving as the test ends, such as the second signature's check loaded after
+      // the map drew: the page is gone, and nothing is left to splice into.
+      if (/disposed|closed|Test ended/i.test(String(e))) return;
+      throw e;
+    }
     if (body.includes('{id:"mecha-jono",')) {
       body = body.replace('{id:"mecha-jono",', `${now},{id:"mecha-jono",`);
       admitted = true;
@@ -101,7 +136,9 @@ export async function admit(target: Page | BrowserContext, standIns: StandIn[]):
       admitted = true;
     }
     if (sets && body.includes(`{key:${lit(MECHA_OLD)},`)) body = body.replace(`{key:${lit(MECHA_OLD)},`, `${sets},{key:${lit(MECHA_OLD)},`);
-    await route.fulfill({ response, body });
+    await route.fulfill({ response, body }).catch((e: unknown) => {
+      if (!/disposed|closed|Test ended/i.test(String(e))) throw e;
+    });
   });
   return { admitted: () => admitted };
 }
@@ -120,13 +157,16 @@ export function mission(
     jurisdiction?: string;
     extra?: string[][];
     objectives?: { id: string; ask: string }[];
+    /** Signs its manifest a second time, as Mecha Jono does, with this key. */
+    manifestSigner?: ManifestKey;
   } = {}
 ) {
+  const manifest = { name: o.title ?? d, objectives: o.objectives ?? [{ id: `${d}#do`, ask: 'Hand out water.' }] };
   return finalizeEvent(
     {
       kind: 30079,
       created_at: secs(o.at ?? '2026-10-05T16:00:00Z'),
-      content: JSON.stringify({ name: o.title ?? d, objectives: o.objectives ?? [{ id: `${d}#do`, ask: 'Hand out water.' }] }),
+      content: JSON.stringify(o.manifestSigner ? signedManifest(manifest, o.manifestSigner) : manifest),
       tags: [
         ['d', d], ['t', 'starcom_mission_package'], ['t', 'navcom_handoff'], ['t', 'navcom_mission'],
         ['mission_state', o.state ?? 'open'], ['valid_until', String(secs(o.ends ?? '2026-12-31T00:00:00Z'))], ['jurisdiction', o.jurisdiction ?? 'us-ca'],
