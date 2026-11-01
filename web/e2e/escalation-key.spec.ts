@@ -63,7 +63,7 @@ test.describe('a watch code, on Setup', () => {
   test('fills in the watch and keeps its escalation key, which has no field of its own', async ({ page }) => {
     const k = await keys();
     await seedDevice(page, { callsign: 'Wren' });
-    await open(page, '/terminal/setup/');
+    await open(page, '/terminal/setup/#watch');
     await page.locator('#code').fill(`Here: ${await codeFor(k, { executor: k.X })}.`);
     await page.getByRole('button', { name: 'Fill in from the code' }).click();
     await expect(page.locator('#pubkey')).toHaveValue(k.W);
@@ -80,7 +80,7 @@ test.describe('a watch code, on Setup', () => {
     const { generateSecretKey, getPublicKey } = await import('nostr-tools/pure');
     const stranger = getPublicKey(generateSecretKey());
     await seedDevice(page, { callsign: 'Wren' });
-    await open(page, '/terminal/setup/');
+    await open(page, '/terminal/setup/#watch');
     // The watch's own code, its escalation key swapped for a stranger's, as anybody could post it.
     const forged = (await codeFor(k, { executor: k.X })).replace(`x=${k.X}`, `x=${stranger}`);
     await page.locator('#code').fill(forged);

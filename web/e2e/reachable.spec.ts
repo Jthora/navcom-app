@@ -17,7 +17,7 @@ const OUT = { callsign: 'Wren' };
 test.describe('setup', () => {
   test('a first visit can create an identity and nothing else is required', async ({ page }) => {
     await seedDevice(page);
-    await open(page, '/terminal/setup/');
+    await open(page, '/terminal/setup/#watch');
 
     await expect(page.locator('#callsign')).toBeVisible();
 
@@ -25,14 +25,13 @@ test.describe('setup', () => {
     // refuses an empty one with an error. Disabled removes a tap whose only outcome is that
     // error, and makes the form inert before hydration, where a native submit used to reload
     // the page and throw away what was typed.
-    const generate = page.getByRole('button', { name: /make my callsign/i });
+    const generate = page.getByRole('button', { name: /create profile/i });
     await expect(generate).toBeDisabled();
     await page.locator('#callsign').fill('Wren');
     await expect(generate).toBeEnabled();
 
-    // The watch section must read as optional. An operator who knows nobody is the common
-    // case, and telling them setup is unfinished is telling them the app is broken.
-    await expect(page.getByText(/skip this/i)).toBeVisible();
+    // The extras are rows that open, never steps: the watch's says whose it is.
+    await expect(page.getByText(/Watch — if somebody gave you one/)).toBeVisible();
   });
 
   test('a callsign can be changed without burning the device', async ({ page }) => {
@@ -43,20 +42,20 @@ test.describe('setup', () => {
      * device, destroying the standing that name had been carrying in order to rename it.
      */
     await seedDevice(page, OUT);
-    await open(page, '/terminal/setup/');
+    await open(page, '/terminal/setup/#watch');
 
     await page.locator('#rename').fill('Raven');
     await page.locator('[data-rename]').click();
     await expect(page.getByText('Raven').first()).toBeVisible();
 
     // The stored identity changed, not just the readout.
-    await open(page, '/terminal/setup/');
+    await open(page, '/terminal/setup/#watch');
     await expect(page.locator('#rename')).toHaveValue('Raven');
   });
 
   test('somebody you would call can be added and removed', async ({ page }) => {
     await seedDevice(page, OUT);
-    await open(page, '/terminal/setup/');
+    await open(page, '/terminal/setup/#watch');
 
     await page.locator('#clabel').fill('Sam');
     await page.locator('#cnumber').fill('+1 555 0100');
@@ -74,7 +73,7 @@ test.describe('a squad-held watch', () => {
     // with no box is the arrangement this project expects most, and until now it had no
     // way to say so.
     await seedDevice(page, OUT);
-    await open(page, '/terminal/setup/');
+    await open(page, '/terminal/setup/#watch');
 
     const holders = page.locator('#holders');
     await expect(holders).toBeVisible();
@@ -85,7 +84,7 @@ test.describe('a squad-held watch', () => {
     // A wrong entry here means somebody silently cannot read signals, which surfaces as an
     // unanswered Distress rather than as an error.
     await seedDevice(page, OUT);
-    await open(page, '/terminal/setup/');
+    await open(page, '/terminal/setup/#watch');
 
     await page.locator('#pubkey').fill('b'.repeat(64));
     await page.locator('#holders').fill('not-a-key');
@@ -96,7 +95,7 @@ test.describe('a squad-held watch', () => {
 
   test('holders are saved and read back', async ({ page }) => {
     await seedDevice(page, OUT);
-    await open(page, '/terminal/setup/');
+    await open(page, '/terminal/setup/#watch');
 
     const one = 'c'.repeat(64);
     const two = 'd'.repeat(64);
@@ -1229,7 +1228,7 @@ test.describe('a phone that has run out of room', () => {
   test('says so on the screen the operator is actually looking at', async ({ page }) => {
     await seedDevice(page, OUT);
     await refuseWrites(page);
-    await open(page, '/terminal/setup/');
+    await open(page, '/terminal/setup/#watch');
 
     // Any write will do — the point is that the report does not depend on which screen it
     // happened on, or on the operator going to Status to ask.
@@ -1244,7 +1243,7 @@ test.describe('a phone that has run out of room', () => {
   test('and says what would free some, rather than only that it failed', async ({ page }) => {
     await seedDevice(page, OUT);
     await refuseWrites(page);
-    await open(page, '/terminal/setup/');
+    await open(page, '/terminal/setup/#watch');
 
     await page.locator('#clabel').fill('Sam');
     await page.locator('#cnumber').fill('+1 555 0100');
@@ -1745,8 +1744,7 @@ test.describe('whether this operator has a backup', () => {
 
     const said = page.locator('[data-never-backed-up]');
     await expect(said).toBeVisible({ timeout: 10_000 });
-    await expect(said).toContainText(/not made one on this phone/i);
-    await expect(said).toContainText(/lost phone is a lost persona/i);
+    await expect(said).toContainText(/Never/);
   });
 
   test('says how old the one they have is', async ({ page }) => {
@@ -1761,7 +1759,6 @@ test.describe('whether this operator has a backup', () => {
     const said = page.locator('[data-backup-age]');
     await expect(said).toBeVisible({ timeout: 10_000 });
     await expect(said).toContainText(/days ago/i);
-    await expect(said).toContainText(/is\s+not\s+in\s+it/i);
     await expect(page.locator('[data-never-backed-up]')).toHaveCount(0);
   });
 });

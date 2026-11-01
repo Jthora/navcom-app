@@ -25,7 +25,7 @@ become a sentence.
 | | |
 |---|---|
 | **Claim** | What is asserted. "Intake closes at 21:00." "This person is reliable." "Two on-call are reachable right now." |
-| **Author** | Who says so. A callsign, a node, an agent — never a legal name |
+| **Author** | Who says so. The name they chose, a node, an agent |
 | **Method** | How they know. In person, by phone, from a website, from someone else, by measurement |
 | **Weight** | What that is worth, **derived from method and age — never asserted by the author** |
 

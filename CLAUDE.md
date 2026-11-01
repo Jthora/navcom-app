@@ -159,8 +159,11 @@ withdrawn with it — see the table below.
 5. **Panic wipe destroys the Wipeable tier and nothing else.** Burn destroys everything on
    the device. The node-side accountability log is outside both. Claims, drafts and mission
    history are Wipeable
-6. **No legal names anywhere.** Contact details only where an operator opted in for themselves.
-   Standing accrues to a persona. One exception (2026-10-06): a mission package may name a public
+6. **Nobody is named but by their own choice.** **Revised 2026-11-01 at the owner's direction**
+   (*"users are allowed to do what they want"*; it read *No legal names anywhere*): an operator's
+   name is theirs to choose — a callsign, a nickname or their own legal name — and nothing asks for
+   one. Nobody else is named: not the people being served (invariant 1), not a third party.
+   Contact details only where an operator opted in for themselves. Standing accrues to a persona. One exception (2026-10-06): a mission package may name a public
    figure in their public role, from an official source and with its link, as context — never as
    the object of an action
 7. **Volatile data shows its age.** Stale reads "call first"; blank reads "unknown". An expired

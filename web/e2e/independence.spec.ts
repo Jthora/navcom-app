@@ -24,16 +24,16 @@ test.describe('with nothing at all', () => {
 
     // Not "Not configured". An operator who knows nobody is not half set up.
     await expect(page.getByText(/not configured/i)).toHaveCount(0);
-    await expect(page.getByText(/start here/i)).toBeVisible();
-    await expect(page.getByRole('link', { name: /choose a callsign/i })).toBeVisible();
+    await expect(page.locator('[data-first-run]')).toBeVisible();
+    await expect(page.getByRole('link', { name: /create your profile/i })).toBeVisible();
   });
 
   test('the whole of setup is one field', async ({ page }) => {
     await seedDevice(page);
-    await open(page, '/terminal/setup/');
+    await open(page, '/terminal/setup/#watch');
 
     await page.locator('#callsign').fill('Wren');
-    await page.getByRole('button', { name: /make my callsign/i }).click();
+    await page.getByRole('button', { name: /create profile/i }).click();
 
     await expect(page.getByText('Wren')).toBeVisible();
     // And now the app is ready. Nothing below is required.
@@ -58,9 +58,9 @@ test.describe('with an identity but no watch', () => {
     await seedDevice(page, SOLO);
     await open(page, '/terminal/');
 
-    await expect(page.getByText(/normal way to work/i)).toBeVisible();
-    // And it names what actually stops working, so nobody discovers it by holding Distress.
-    await expect(page.getByText(/Query, Assist and Distress all go to a watch/i)).toBeVisible();
+    // Nothing reads as unfinished: the state is in the readouts, and Distress says where it goes.
+    await expect(page.getByText(/not configured|finish setting up/i)).toHaveCount(0);
+    await expect(page.locator('[data-capability] [data-slot="distress"]')).toBeVisible();
   });
 
   test('pairing works — the feature exists for exactly this operator', async ({ page }) => {

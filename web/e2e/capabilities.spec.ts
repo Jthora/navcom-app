@@ -111,6 +111,11 @@ for (const capability of CAPABILITIES) {
       // one element — sixty-seven region links, twenty-one report buttons — and the claim
       // being checked is that a person has one to operate, not that there is exactly one.
       const control = page.locator(capability.control).first();
+      // A control in a row that opens, as the profile's extras are, is one tap away: open it.
+      const row = control.locator('xpath=ancestor::details[1]');
+      if ((await row.count()) > 0 && !(await row.evaluate((d) => (d as HTMLDetailsElement).open))) {
+        await row.locator('summary').first().click();
+      }
       await expect(control, `${capability.control} is not on ${capability.screen}`).toBeVisible();
       await expect(control, `${capability.control} is not operable`).toBeEnabled();
     }

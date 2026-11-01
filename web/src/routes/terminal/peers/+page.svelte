@@ -342,7 +342,7 @@
   {#if watchRelays}
     <p>
       Your watch’s relays are always included, and changed only on
-      <a href="/terminal/setup/">the setup screen</a> with the watch they belong to.
+      <a href="/terminal/setup/#watch">the setup screen</a> with the watch they belong to.
     </p>
   {/if}
   <label for="relay-list">Your own relays</label>

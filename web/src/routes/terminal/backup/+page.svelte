@@ -12,7 +12,7 @@
   import { onMount } from 'svelte';
   import encodeQR from '@paulmillr/qr';
   import { canScan, scan, ScanError, type Scanner } from '$lib/terminal/scan';
-  import { Slot, Readout, Why } from '$lib/components/panel';
+  import { Slot, Readout } from '$lib/components/panel';
   import { ageInDays, keyPrint, secretToHex } from '@navcom/core';
   import { RestoreError, lastMade, makeBackup, restore, restoreCode, type NamedWatch } from '$lib/terminal/backup';
   import { carryOf } from '$lib/terminal/fields';
@@ -119,16 +119,16 @@
       const text = restoreBlob.trim();
       if (/^[0-9a-f]{64}$/i.test(text)) {
         restoreCode(text);
-        done = 'Your key is back — not your callsign or anything you held. That needs a full backup.';
+        done = 'Signed in with your key. A full backup also brings your name and the rest.';
       } else {
         const { keys, watch, withheld, watchKeyStayed } = restore(restorePass, text);
         named = watch;
         watchAdded = false;
         watchError = null;
-        const restored = `Restored ${keys} thing${keys === 1 ? '' : 's'}.`;
+        const restored = 'Signed in.';
         // Not "reopen the terminal" while a watch is still to be decided on below it.
         done = !watch
-          ? `${restored} Reopen the terminal.`
+          ? restored
           : keys === 0
             ? 'This backup holds only a watch. Add it or forget it below.'
             : `${restored} It also names a watch: add it or forget it below, then reopen the terminal.`;
@@ -139,11 +139,11 @@
          * itself it learns again, and are not worth a sentence.
          */
         if (watchKeyStayed) {
-          done += ' The watch key stayed on the old phone: a backup does not carry one. Another holder can hand it to you in person, and a watch held on that phone alone ended with it.';
+          done += ' The watch key stayed on the other device.';
         }
         const unknown = withheld.filter((k) => carryOf(k) === null).length;
         if (unknown > 0) {
-          done += ` ${unknown} thing${unknown === 1 ? '' : 's'} in it that this version of NavCom does not know ${unknown === 1 ? 'was' : 'were'} left out.`;
+          done += ` ${unknown} unknown item${unknown === 1 ? '' : 's'} left out.`;
         }
       }
       identity = loadIdentity();
@@ -184,118 +184,38 @@
   <p class="eyebrow"><a href="/terminal/">← Status</a></p>
   <h1>Backup</h1>
 </header>
-
-<section>
-  {#if identity}
-    <!--
-      The rule was stated and never applied. "A backup you never made does not exist" is true
-      and general, and the app had no way to tell an operator which of those two people they
-      were — nor that a backup made before they had any standing does not hold it.
-    -->
+{#if identity}
+  <section class="act">
+    <h2>Back up your profile</h2>
     {#if !made}
-      <!-- The marker names the whole statement, not the readout half of it: what the test
-           is asserting is that the operator was told, and the telling is both parts. -->
       <div data-never-backed-up>
-        <Slot k="Backup">
-          <Readout value="Never made" tone="warn" sub="a lost phone is a lost persona" />
-        </Slot>
-        <p class="cost">
-          <strong>You have not made one on this phone.</strong> Nothing here is uploaded or
-          synced, so right now a lost phone is a lost persona.
-        </p>
+        <Slot k="Last backup"><Readout value="Never" tone="warn" /></Slot>
       </div>
     {:else}
       <div data-backup-age>
-        <Slot k="Backup">
-          <Readout
-            value="{ageInDays(made, new Date())} days ago"
-            tone={ageInDays(made, new Date()) > 60 ? 'warn' : 'good'}
-            sub="anything taken up since is not in it"
-          />
+        <Slot k="Last backup">
+          <Readout value="{ageInDays(made, new Date())} days ago" tone={ageInDays(made, new Date()) > 60 ? 'warn' : 'good'} />
         </Slot>
-        <p class="cost">
-        You last made one <strong>{ageInDays(made, new Date())} days ago</strong>. Anything
-          you have taken up since — people you paired with, standing somebody handed you — is
-          not in it.
-        </p>
       </div>
     {/if}
-  {/if}
-
-  <Why summary="What a backup is for">
-    <p>
-      <strong>A backup you can restore is how you move to a new phone.</strong> Same thing,
-      whether you are replacing a handset on purpose or replacing one you dropped.
-    </p>
-  </Why>
-  <p class="cost">
-    <!--
-      The sentence identity.md requires be stated plainly, and the one an operator has to
-      read before they need it rather than after.
-    -->
-    There is no account here, so <strong>there is nobody to ask for your identity back</strong>.
-    Nothing is uploaded, nothing is synced, and no server holds a copy — which means
-    <strong>a backup you never made does not exist</strong>. Choosing not to make one is a
-    real choice, and it means a lost phone is a lost persona.
-  </p>
-  <p class="cost">
-    Keep it wherever you like — a note app, a drive, a printout in a drawer. All of those are
-    places somebody else could find it, which is what the passphrase is for. It is not
-    ceremony: it is the only thing standing between whoever has the file and your identity.
-  </p>
-  <p class="cost">
-    <!--
-      Twelfth time a claim landed behind a conditional the prerendered page cannot reach.
-      It belongs here regardless: somebody deciding whether to make a backup needs to know
-      what forgetting the passphrase costs, before they choose one.
-    -->
-    Pick words you will still have in a year. <strong>Nothing can recover this if you forget
-    it</strong> — there is nowhere for a reset to come from, and a backup you cannot open is
-    the same as one you never made.
-  </p>
-</section>
-
-{#if identity}
-  <section class="act">
-    <h2>Make one</h2>
     <label for="pass">Passphrase</label>
     <input id="pass" type="password" bind:value={passphrase} autocomplete="new-password" />
-    <p class="cost">Words you will still have in a year, not a password you will reset.</p>
     <button onclick={make} disabled={!passphrase.trim()}>Make a backup</button>
-
     {#if blob}
-      <!--
-        The watch key was in this list, and every kit carried it: a copy of it is the watch, and a
-        planted one kept a phone off its real watch. It stays on the phone now (`fields.ts`), and the
-        cost is said here, before the phone is lost, because afterwards is too late to act on it.
-      -->
-      <p class="cost">
-        Everything that outlasts a night: your callsign and key, your peers, your standing,
-        your card, the person you would call — so the file carries their number off this
-        phone. <strong>Not tonight's patrol</strong>, which a wipe destroys, nor <strong>a watch
-        key</strong>: a watch held only here ends with this phone.
-      </p>
       <pre class="blob">{blob}</pre>
-      <button onclick={copy}>{copied ? 'Copied' : 'Copy'}</button>
-      <button onclick={showAsCode} data-show-backup-code>Show as a code</button>
+      <div class="row">
+        <button onclick={copy}>{copied ? 'Copied' : 'Copy'}</button>
+        <button onclick={showAsCode} data-show-backup-code>Show as a code</button>
+      </div>
       {#if asCode}
-        <p class="cost">
-          For your other device: open <strong>Backup</strong> there and scan this. Whoever photographs it
-          still needs the passphrase.
-        </p>
+        <p class="cost">Scan it from Backup on your other device.</p>
         <div class="qr" data-backup-code>{@html asCode}</div>
       {/if}
       {#if codeError}<p class="error">{codeError}</p>{/if}
     {/if}
   </section>
-
   <section class="act">
-    <h2>Your recovery code</h2>
-    <p class="cost">
-      Short enough to write on paper. It brings back <strong>who you are</strong> and nothing
-      you held — no peers, no standing, no card. Anybody who reads it becomes you, so it goes
-      somewhere a backup would not.
-    </p>
+    <h2>Recovery code</h2>
     {#if showCode}
       <p class="blocks">{#each (secretToHex(identity.secretKey).match(/.{1,8}/g) ?? []) as b, i (i)}<span>{b}</span>{/each}</p>
     {:else}
@@ -303,28 +223,19 @@
     {/if}
   </section>
 {/if}
-
 <section class="act" id="restore">
-  <h2>Restore</h2>
+  <h2>Sign in with a backup</h2>
   {#if identity}
-    <p class="cost">
-      <strong>This phone already has an identity.</strong> Restoring onto it would replace
-      that one and lose whatever it holds, so it is refused — <a href="/terminal/wipe/">burn
-      it first</a> if that is genuinely what you mean.
-    </p>
-  {:else}
-    <p class="cost">Paste a backup, or a recovery code. Nothing here goes to a network.</p>
+    <p class="cost">This device already has a profile. <a href="/terminal/wipe/">Burn it</a> to sign in with another.</p>
   {/if}
   <label for="rblob">Backup or recovery code</label>
   <textarea id="rblob" bind:value={restoreBlob} rows="3" autocomplete="off" spellcheck="false"></textarea>
   {#if scannable}
-    <button type="button" data-scan-backup onclick={scanning ? stopScan : startScan}>{scanning ? 'Stop scanning' : 'Scan a backup another device shows'}</button>
-    <!-- Only while scanning, so nothing sits there looking like a camera that is on. -->
+    <button type="button" data-scan-backup onclick={scanning ? stopScan : startScan}>{scanning ? 'Stop scanning' : 'Scan a code'}</button>
     <video bind:this={camera} class="camera" class:on={scanning} playsinline muted></video>
   {/if}
   <label for="rpass">Passphrase</label>
   <input id="rpass" type="password" bind:value={restorePass} autocomplete="current-password" />
-  <p class="cost">Leave the passphrase blank if you are pasting a recovery code.</p>
   {#if error}<p class="error">{error}</p>{/if}
   {#if done}<p class="ok" data-restored>{done}</p>{/if}
   {#if named && reach && !watchAdded}
@@ -365,10 +276,7 @@
           </span>
         </Slot>
       {/if}
-      <p>
-        Not added yet. Add it only if this is your watch: every Distress you send goes to it, and
-        whoever holds it can read everything you send.
-      </p>
+      <p>Not added yet. Every Distress you send would go to it.</p>
       <p class="prints">{#each reach.relays as r (r)}<span>{r}</span>{/each}</p>
       {#if reach.left.length > 0}
         <!-- Left out by the rule every relay list follows, and named rather than dropped. -->

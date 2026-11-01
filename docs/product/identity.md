@@ -11,14 +11,17 @@ What exists:
 
 | | |
 |---|---|
-| **Callsign** | The name they work under |
+| **Name** | What others see: a callsign, a nickname or their own name — **their choice** (2026-11-01) |
 | **Emblem** | Their mark. **Designed, not built** — see below |
 | **City / region** | Coarse by default — metro, not neighbourhood |
 | **Active since** | The date they started |
 | **Focus** | Outreach, medic, patrol, logistics, support — multiple allowed |
 
-What does not exist, anywhere in the system: legal name, phone number, email address,
-date of birth, home location, employer, or any photograph of the operator.
+What nothing in the system asks for: a legal name, phone number, email address, date of birth,
+home location, employer, or any photograph of the operator. **Asked for, never; chosen, always
+allowed** (revised 2026-11-01, the owner: *"users are allowed to do what they want"*): an operator
+who wants to go by their legal name types it as their name, and nothing refuses it or warns them
+off it. What stays out is anybody else's: the people being served, and third parties.
 
 > **The emblem is not built, and that clause used to read as though it were.** It said
 > *"…photograph of the operator's face unless they deliberately upload one as their emblem"*,

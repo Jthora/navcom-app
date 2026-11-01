@@ -46,7 +46,7 @@ test('the code names this phone as a holder, is signed by the watch, and fills S
   const phone = await browser.newContext();
   const operator = await phone.newPage();
   await seedDevice(operator, { callsign: 'Kestrel', secret: 'b'.repeat(63) + '2', relayEvents: [] } as Parameters<typeof seedDevice>[1]);
-  await open(operator, '/terminal/setup/');
+  await open(operator, '/terminal/setup/#watch');
   await operator.locator('#code').fill(code);
   await operator.getByRole('button', { name: /fill in from the code/i }).click();
   await expect(operator.locator('#pubkey')).toHaveValue(address);

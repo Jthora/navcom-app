@@ -299,9 +299,13 @@ test.describe('what this phone already sealed to Mecha Jono’s old key', () => 
     await expect(claim.locator('[data-leaked]')).toContainText('whoever holds it can see that your card took part in this mission');
   });
 
-  test('Status says it in one sentence, for every phone, before anybody asks', async ({ page }) => {
+  test('Status says it in one sentence, on every phone with a profile — the only kind that could have sealed anything', async ({ page }) => {
     await seedDevice(page, { __noStorage: true } as Parameters<typeof seedDevice>[1]);
     await open(page, '/terminal/');
+    await expect(page.locator('[data-sealed-exposed]')).toHaveCount(0);
+    await seedDevice(page, { callsign: 'Wren' });
+    await open(page, '/terminal/');
+    await page.locator('[data-capability] summary').first().click();
     await expect(page.locator('[data-sealed-exposed]')).toContainText(
       'Sealed claims and reports sent to Mecha Jono from 6 October can be opened by whoever holds its old key’s leaked secret'
     );

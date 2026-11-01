@@ -19,9 +19,8 @@ test.describe('arriving with nothing', () => {
     await blankDevice(page);
     await open(page, '/terminal/');
 
-    // One instruction, and it is an invitation rather than a warning.
-    await expect(page.getByRole('heading', { name: /start here/i })).toBeVisible();
-    await expect(page.getByRole('link', { name: /choose a callsign/i })).toBeVisible();
+    // One invitation, and no warning.
+    await expect(page.getByRole('link', { name: /create your profile/i })).toBeVisible();
 
     // And nothing anywhere calls her incomplete, unfinished, or not set up.
     const body = await page.locator('body').innerText();
@@ -31,54 +30,46 @@ test.describe('arriving with nothing', () => {
   test('gets a working tool from one screen, without an account', async ({ page }) => {
     await blankDevice(page);
     await open(page, '/terminal/');
-    await page.getByRole('link', { name: /choose a callsign/i }).click();
+    await page.getByRole('link', { name: /create your profile/i }).click();
 
     await page.locator('#callsign').fill('Newcomer');
-    await page.getByRole('button', { name: /make my callsign/i }).click();
+    await page.getByRole('button', { name: /create profile/i }).click();
 
     // Confirmed where she is standing — the setup screen shows the name and the key it made.
     // (Status deliberately does not repeat it; it is her own device and her own name.)
     await expect(page.getByText('Newcomer').first()).toBeVisible();
-    /*
-     * "There is no recovery", not "there is also no recovery".
-     *
-     * The `also` was a connector to the clause before it — never transmitted, never
-     * registered, nothing anyone could revoke — and that clause is now behind the screen's
-     * `Why`. What she has to be told is unchanged and is still on the glass without a tap:
-     * this cannot be given back to her.
-     */
-    await expect(page.getByText(/there is no recovery/i)).toBeVisible();
+    // A backup is one plain link away, never a warning.
+    await expect(page.locator('[data-backup-link]')).toBeVisible();
 
     // And walking on to Status, the tool is hers and working rather than asking for more.
     await open(page, '/terminal/');
-    await expect(page.getByRole('heading', { name: /start here/i })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: /create your profile/i })).toHaveCount(0);
     // Distress, from Status, without knowing a URL. It was on the two branches that have a
     // watch and not on this one — so the most common operator, in the most common state, had
     // no path from here to their entire safety net.
     await expect(page.getByRole('link', { name: /^distress$/i })).toBeVisible();
   });
 
-  test('is told plainly that having no watch is a normal way to work', async ({ page }) => {
-    // The sentence this project cares most about getting right for her.
+  test('is never told that having no watch is unfinished', async ({ page }) => {
+    // No sentence about it at all (2026-11-01): the readouts say the state, and nothing nags.
     await blankDevice(page);
     await open(page, '/terminal/');
-    await page.getByRole('link', { name: /choose a callsign/i }).click();
+    await page.getByRole('link', { name: /create your profile/i }).click();
     await page.locator('#callsign').fill('Newcomer');
-    await page.getByRole('button', { name: /make my callsign/i }).click();
+    await page.getByRole('button', { name: /create profile/i }).click();
     await open(page, '/terminal/');
 
-    await expect(page.getByRole('heading', { name: /normal way to work/i })).toBeVisible();
-    await expect(page.getByText(/most operators patrol alone/i)).toBeVisible();
-    await expect(page.getByText(/not unfinished setup/i)).toBeVisible();
+    const body = await page.locator('body').innerText();
+    expect(body).not.toMatch(/incomplete|unfinished|finish setting up|complete your setup|not configured/i);
   });
 
   test('can carry an area for a night with no signal, by tapping it', async ({ page }) => {
     // The Alone layer's whole promise: a cached directory, needing nothing and nobody.
     await blankDevice(page);
     await open(page, '/terminal/');
-    await page.getByRole('link', { name: /choose a callsign/i }).click();
+    await page.getByRole('link', { name: /create your profile/i }).click();
     await page.locator('#callsign').fill('Newcomer');
-    await page.getByRole('button', { name: /make my callsign/i }).click();
+    await page.getByRole('button', { name: /create profile/i }).click();
 
     await open(page, '/terminal/directory/');
     const area = page.getByRole('link', { name: /st\.? louis/i }).first();
@@ -96,10 +87,12 @@ test.describe('arriving with nothing', () => {
     // entire ladder.
     await blankDevice(page);
     await open(page, '/terminal/');
-    await page.getByRole('link', { name: /choose a callsign/i }).click();
+    await page.getByRole('link', { name: /create your profile/i }).click();
     await page.locator('#callsign').fill('Newcomer');
-    await page.getByRole('button', { name: /make my callsign/i }).click();
+    await page.getByRole('button', { name: /create profile/i }).click();
 
+    // A row on the profile screen, one tap open.
+    await page.locator('[data-person-open]').click();
     await page.locator('#clabel').fill('Sam');
     await page.locator('#cnumber').fill('+1 555 0100');
     await page.getByRole('button', { name: /^save$/i }).click();

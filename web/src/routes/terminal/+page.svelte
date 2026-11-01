@@ -496,7 +496,7 @@
         />
       </span>
     {:else if !identity}
-      <Action label="Choose a callsign" tone="warn" href="/terminal/setup/" />
+      <Action label="Create your profile" tone="warn" href="/terminal/setup/" />
     {:else if leftMission && !session}
       <!-- They came here to take part in a mission, not to go out: that is the thing this post does now. -->
       <span data-back-to-mission data-sveltekit-reload>
@@ -605,7 +605,16 @@
         <HeardSlot heard={heardNow} {nowMs} />
       {/if}
 
-      <Why open={!identity || !configured || watch.read.reason !== null}>
+      {#if !identity}
+        <!-- The two other ways in, as links: a profile is the button above. Nothing else said. -->
+        <p class="nc-first" data-first-run>
+          <a href="/terminal/backup/#restore" data-restore-link>Sign in with a backup</a>
+          <span aria-hidden="true">·</span>
+          <a href="/terminal/directory/">Cached directory</a>
+        </p>
+      {/if}
+      <!-- Open on its own only when something is wrong; otherwise the readouts above say it. -->
+      <Why open={!!stranded || !!offered || (configured && watch.read.reason !== null)}>
         {#if configured && closure && !closure.attributed}
           <p data-escalation-key-why>
             <strong>This watch does not yet name its escalation key.</strong> Until it does, an answer
@@ -627,37 +636,13 @@
         {#if configured}
           <HeardWhy heard={heardNow} />
         {/if}
-        {#if !identity}
-          <h2>Start here</h2>
-          <p>
-            Pick a callsign. It takes one screen, nothing is sent anywhere, and there is no
-            account to create — the key is made on this device and never leaves it.
-          </p>
-          <p>
-            <!--
-              The Alone layer needs nothing, not even a callsign [CLAUDE.md]. A visitor who only
-              wants to look up a shelter must not be told to enlist first — the rail below this
-              panel only appears once identity exists, so without this line landing here with no
-              callsign yet leaves no visible way to the one thing that needs no commitment at all.
-            -->
-            Only here to look something up? The
-            <a href="/terminal/directory/">cached directory</a> needs no callsign and nothing sent
-            anywhere.
-          </p>
-          <p>
-            <!-- Restoring was reachable only through "Make a backup", inside the form that makes a
-                 new callsign: somebody on a new phone was steered into a second persona. -->
-            A callsign on another phone already? <a href="/terminal/backup/" data-restore-link>Restore it
-            from your backup</a> instead of making a new one.
-          </p>
-        {/if}
 
         <!--
           What was sealed to a publisher key whose secret leaked, said to every phone [decision 2,
           2026-10-18]: the rows in your own mission history say it of what this phone sent. After
           "Start here", so a visitor's first words are what to do, not a publisher's leak.
         -->
-        {#if leaked.length > 0}<p data-sealed-exposed>{leaked.join(' ')}</p>{/if}
+        {#if leaked.length > 0 && identity}<p data-sealed-exposed>{leaked.join(' ')}</p>{/if}
 
         {#if s.state === 'dark' && configured}
           <!-- "Not a failure to connect" went: with no relay answering, or a reading gone stale
@@ -727,13 +712,13 @@
             <p>
               <strong>What does not:</strong> Query and Assist go to a watch, and there is nothing
               to send them to. If somebody gives you a Watchtower — in person, because nothing
-              discovers one — you can <a href="/terminal/setup/">add it</a> and they start working.
+              discovers one — you can <a href="/terminal/setup/#watch">add it</a> and they start working.
             </p>
           {:else}
             <p>
               <strong>What does not:</strong> Query, Assist and Distress all go to a watch, and
               there is nothing to send them to. If somebody gives you a Watchtower — in person,
-              because nothing discovers one — you can <a href="/terminal/setup/">add it</a> and
+              because nothing discovers one — you can <a href="/terminal/setup/#watch">add it</a> and
               they start working.
             </p>
             <p>
@@ -1273,4 +1258,6 @@
   .jotted li { line-height: 1.4; }
   .closing textarea { margin-bottom: .2rem; }
   .opt { color: var(--t-faint); font-size: .8rem; }
+  .nc-first { display: flex; flex-wrap: wrap; gap: .3rem .6rem; align-items: center; margin: .2rem 0 0; }
+  .nc-first a { min-height: 2.75rem; display: inline-flex; align-items: center; }
 </style>

@@ -144,9 +144,9 @@ async function follow(page: Page, link: Locator, path: string) {
 
 /** A callsign, made the way a newcomer makes one. */
 async function newcomer(page: Page, callsign: string) {
-  await go(page, '/terminal/setup/');
+  await go(page, '/terminal/setup/#watch');
   await page.locator('#callsign').fill(callsign);
-  await page.getByRole('button', { name: /make my callsign/i }).click();
+  await page.getByRole('button', { name: /create profile/i }).click();
   await expect(page.locator('#rename')).toBeVisible();
 }
 
@@ -190,19 +190,14 @@ test('a newcomer: from navcom.app to a callsign, a card, and a mission taken, re
   await into.scrollIntoViewIfNeeded();
   await follow(page, into, '/terminal/');
   await step(page, 'terminal');
-  // What to do comes before anything about a publisher's leaked key.
-  const why = page.locator('[data-capability]');
-  // Lower-cased: headings are set in capitals by CSS, and innerText reads them as drawn.
-  const said = (await why.innerText()).toLowerCase();
-  const start = said.indexOf('start here');
-  const leak = said.indexOf('leaked');
-  expect(start).toBeGreaterThan(-1);
-  if (leak > -1) expect(start).toBeLessThan(leak);
+  // What to do, and nothing about a publisher's leaked key on a phone that has sent nothing.
+  await expect(page.locator('[data-first-run]')).toBeVisible();
+  await expect(page.locator('[data-sealed-exposed]')).toHaveCount(0);
   await expect(page.locator('[data-restore-link]')).toBeVisible();
 
-  await follow(page, page.getByRole('link', { name: /choose a callsign/i }), '/terminal/setup/');
+  await follow(page, page.getByRole('link', { name: /create your profile/i }), '/terminal/setup/');
   await page.locator('#callsign').fill('Kestrel');
-  await page.getByRole('button', { name: /make my callsign/i }).click();
+  await page.getByRole('button', { name: /create profile/i }).click();
   await expect(page.locator('[data-setup-done]')).toBeVisible();
   await step(page, 'callsign-made');
   await follow(page, page.locator('[data-setup-done]'), '/terminal/');
@@ -471,6 +466,7 @@ test('alone: somebody to call, and a Distress that says there is no watch to sen
   const step = steps('alone');
   const { page, context } = await hermetic(browser, net, { timezoneId: 'America/New_York' });
   await newcomer(page, 'Heron');
+  await page.locator('[data-person-open]').click();
   await page.locator('#clabel').fill('Sam');
   await page.locator('#cnumber').fill('+1 555 0100');
   await page.getByRole('button', { name: /^save$/i }).click();
@@ -496,12 +492,12 @@ test('a backup made on one phone, restored on a new one from its first screen', 
 
   const two = await hermetic(browser, net, { timezoneId: 'America/New_York' });
   await go(two.page, '/terminal/');
-  await follow(two.page, two.page.locator('[data-restore-link]'), '/terminal/backup/');
+  await follow(two.page, two.page.locator('[data-restore-link]'), '/terminal/backup/#restore');
   await two.page.locator('#rblob').fill(blob);
   await two.page.locator('#rpass').fill('lantern harbour copper mist');
   await two.page.getByRole('button', { name: /^restore$/i }).click();
   await expect(two.page.locator('[data-restored]')).toBeVisible();
-  await go(two.page, '/terminal/setup/');
+  await go(two.page, '/terminal/setup/#watch');
   await expect(two.page.locator('body')).toContainText('Ibis');
   await step(two.page, 'restored');
   await two.context.close();
@@ -524,7 +520,7 @@ test('panic wipe keeps the callsign; burn takes it, and the phone starts over', 
   await go(page, '/terminal/wipe/');
   await page.locator('#confirm').fill('Jay');
   await page.getByRole('button', { name: /burn this device/i }).click();
-  await expect(page.getByRole('link', { name: /choose a callsign/i })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole('link', { name: /create your profile/i })).toBeVisible({ timeout: 15_000 });
   await step(page, 'burned');
   await context.close();
 });

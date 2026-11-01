@@ -572,7 +572,7 @@ describe('the field terminal', () => {
     // was working as designed.
     const t = terminal()!;
     expect(t.bodyText).not.toMatch(/not configured/i);
-    expect(t.bodyText).toMatch(/normal way to work|Start here/i);
+    expect(t.bodyText).toMatch(/Create your profile/);
   });
 
   it('offers a first-time visitor something to do', () => {
@@ -595,9 +595,9 @@ describe('the field terminal', () => {
 
   it('says a watch is optional on the setup screen', () => {
     const setup = screens().find((p) => p.path.includes('/terminal/setup/'))!;
-    expect(setup.bodyText).toMatch(/only step/i);
-    expect(setup.bodyText).toMatch(/optional/i);
-    expect(setup.bodyText).toMatch(/Skip this/i);
+    // The profile is the step; the watch is under the extras' own heading (2026-11-01).
+    expect(setup.bodyText).toMatch(/Create profile/);
+    expect(setup.bodyText).toMatch(/Watch — if somebody gave you one/);
   });
 
   it('renders Dark before anything is configured, not an error or a spinner', () => {
@@ -606,7 +606,7 @@ describe('the field terminal', () => {
     expect(state?.getAttribute('data-state')).toBe('dark');
     // The built page is the FIRST-VISIT state: no identity, no watch. So what it must show
     // is a way to begin, not an explanation of a watch nobody has yet.
-    expect(t.bodyText).toMatch(/Start here/i);
+    expect(t.bodyText).toMatch(/Create your profile/);
     expect(t.bodyText.toLowerCase()).not.toContain('connecting');
     expect(t.bodyText.toLowerCase()).not.toContain('loading');
   });

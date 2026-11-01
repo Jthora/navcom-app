@@ -14,4 +14,4 @@
    */
 </script>
 
-<p>Pick a callsign first — <a href="/terminal/setup/">it takes one screen</a>.</p>
+<p><a href="/terminal/setup/">Create your profile</a> first.</p>

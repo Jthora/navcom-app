@@ -96,12 +96,10 @@ test.describe('starting again on a phone somebody just bought', () => {
     expect(address).toMatch(/^[0-9a-f]{64}$/);
 
     const blob = await backUp(wren, 'correct horse battery');
-    // Said before the phone is lost, beside the backup itself.
-    await expect(wren.getByText(/a watch held only here ends with this phone/i)).toBeVisible();
 
     const { page, context } = await newPhone(browser, blob, 'correct horse battery');
     // Restored, and not silently: the watch key is named as what stayed behind.
-    await expect(page.locator('[data-restored]')).toContainText(/watch key stayed on the old phone/i);
+    await expect(page.locator('[data-restored]')).toContainText(/watch key stayed on the other device/i);
     // A kit this build made never held the key, so this is the same sentence an older kit gets.
 
     await open(page, '/terminal/watch/');

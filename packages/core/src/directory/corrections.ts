@@ -129,7 +129,7 @@ const CORRECTABLE: readonly ResourceField[] = (Object.keys(FIELD_CLASS) as Resou
 export interface Correction {
   /** Which record this is about. */
   record: string;
-  /** A callsign, or `anonymous`. **Never a legal name** [invariant 8]. */
+  /** The name its author goes by, or `anonymous`: their choice [invariant 6]. */
   verified_by: string;
   method: Method;
   /** ISO date, `YYYY-MM-DD`. What makes this weighable against the base record. */

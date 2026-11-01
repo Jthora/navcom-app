@@ -72,7 +72,7 @@ test('navcom.app, read once on a phone, with nothing published', async ({ page, 
   // The Field Terminal, a carried region of the directory, and the public roster.
   await page.goto('/terminal/');
   await hydrated(page);
-  await expect(page.getByRole('link', { name: /choose a callsign/i })).toBeVisible();
+  await expect(page.getByRole('link', { name: /create your profile/i })).toBeVisible();
   await page.goto('/terminal/directory/philadelphia/');
   await hydrated(page);
   await expect(page.locator('[data-record]').first()).toBeVisible({ timeout: 30_000 });

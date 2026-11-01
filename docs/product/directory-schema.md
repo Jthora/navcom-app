@@ -131,7 +131,7 @@ how they knew, and — derived from those — what it is worth.
 | Field | The attestation part it is |
 |---|---|
 | `last_verified` | **Age** |
-| `verified_by` | **Author** — a callsign or `anonymous`, never a legal name |
+| `verified_by` | **Author** — the name they go by, or `anonymous` |
 | `method` | **How they know** — `in_person`, `phone`, `staff_confirmed`, `secondhand`, `website` |
 | `flag` | A **counter-claim** by someone else: `ok`, `reported_closed`, `reported_wrong`, `permanently_closed` |
 

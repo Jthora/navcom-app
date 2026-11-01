@@ -34,7 +34,7 @@ test('Status says this page cannot reach the watch, and which line, rather than 
 
 test('Setup opens with that watch as it was saved, and one edit repairs it with its holders kept', async ({ page }) => {
   await seedDevice(page, stranded);
-  await open(page, '/terminal/setup/');
+  await open(page, '/terminal/setup/#watch');
 
   await expect(page.locator('#pubkey')).toHaveValue(WATCH);
   await expect(page.locator('#relays')).toHaveValue(BAD);
@@ -63,7 +63,7 @@ const LEFT = 'd'.repeat(64);
 
 test('Setup opens a working watch with only the relays this page reaches, so removing a holder saves', async ({ page }) => {
   await seedDevice(page, { callsign: 'Wren', watchtower: { pubkey: WATCH, relays: [BAD, GOOD], holders: [HOLDER, LEFT] } });
-  await open(page, '/terminal/setup/');
+  await open(page, '/terminal/setup/#watch');
 
   await expect(page.locator('#relays')).toHaveValue(GOOD);
   const left = page.locator('[data-relays-refused]');
@@ -82,7 +82,7 @@ test('Setup opens a working watch with only the relays this page reaches, so rem
 
 test('an Update that is refused says why beside its button, and stops saying Saved', async ({ page }) => {
   await seedDevice(page, { callsign: 'Wren', watchtower: { pubkey: WATCH, relays: [GOOD], holders: [HOLDER] } });
-  await open(page, '/terminal/setup/');
+  await open(page, '/terminal/setup/#watch');
 
   await page.locator('#holders').fill(`${HOLDER}\nnot-a-key`);
   await page.getByRole('button', { name: /^update$/i }).click();

@@ -61,7 +61,7 @@ import {
 export const CARD_FIELDS = ['callsign', 'region', 'doing', 'lightning'] as const;
 
 export interface Card {
-  /** Never a legal name [invariant 8]. */
+  /** The name its author goes by: their choice [invariant 6]. */
   callsign: string;
   /**
    * A directory region slug — the same coarse unit the public directory is organised by.

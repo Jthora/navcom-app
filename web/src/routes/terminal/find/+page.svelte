@@ -222,7 +222,7 @@
               </p>
               <button onclick={() => ask(e.contact)} disabled={busy}>Try again</button>
             {:else if !callsign}
-              <p class="cost"><a href="/terminal/setup/">Pick a callsign</a> to ask.</p>
+              <p class="cost"><a href="/terminal/setup/">Create your profile</a> to ask.</p>
             {:else if asking === e.contact}
               <label for="note">Say who you are</label>
               <textarea id="note" bind:value={note} rows="2" maxlength={NOTE_MAX}

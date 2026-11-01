@@ -11,20 +11,6 @@ import { blankDevice, readDevice, seedDevice, open, TEST_SECRET } from './device
 
 const OUT = { callsign: 'Wren' };
 
-test('says plainly that nobody can give an identity back', async ({ page }) => {
-  await seedDevice(page, OUT);
-  await open(page, '/terminal/backup/');
-
-  await expect(page.getByText(/nobody to ask for your identity back/i)).toBeVisible();
-  await expect(page.getByText(/a backup you never made does not exist/i)).toBeVisible();
-});
-
-test('says it at persona creation too, not only when it is too late', async ({ page }) => {
-  await seedDevice(page);
-  await open(page, '/terminal/setup/');
-  await expect(page.getByText(/nobody can give this back to you/i)).toBeVisible();
-});
-
 test('a backup round-trips onto a phone with no identity', async ({ page, browser }) => {
   await seedDevice(page, { ...OUT, contact: { label: 'Sam', number: '+15550100' } });
   await open(page, '/terminal/backup/');
@@ -56,7 +42,7 @@ test('the same persona on a second device, by a code one shows and the other sca
   await page.getByRole('button', { name: /make a backup/i }).click();
   const blob = await page.locator('pre.blob').innerText();
   await page.locator('[data-show-backup-code]').click();
-  // The code is the backup itself, drawn by the same encoder, and says the passphrase still guards it.
+  // The code is the backup itself, drawn by the same encoder.
   const svg = await page.locator('[data-backup-code]').innerHTML();
   const drawn = await page.evaluate((expected) => {
     const box = document.createElement('div');
@@ -64,7 +50,6 @@ test('the same persona on a second device, by a code one shows and the other sca
     return box.innerHTML;
   }, encodeQR(blob, 'svg', { ecc: 'low', border: 2 }));
   expect(svg).toBe(drawn);
-  await expect(page.getByText(/still needs the passphrase/i)).toBeVisible();
 
   // The other device, with nothing on it, and a camera that sees that code.
   const fresh = await browser.newContext();
@@ -147,7 +132,7 @@ test('a recovery code brings back who you are, and says what it does not', async
 
   // It said "Your callsign is back", which a recovery code does not restore: `restoreCode`
   // writes the key alone, and the callsign is stored separately.
-  await expect(other.locator('[data-restored]')).toContainText(/not your callsign or anything you held/i);
+  await expect(other.locator('[data-restored]')).toContainText(/A full backup also brings your name/i);
   const device = await readDevice(other);
   expect(device.accruing['secret']).toBeTruthy();
   await fresh.close();
@@ -165,8 +150,11 @@ test('carries the decade and not tonight', async ({ page }) => {
   await page.locator('#pass').fill('pw');
   await page.getByRole('button', { name: /make a backup/i }).click();
 
-  // Encrypted, so assert on what comes back rather than on the blob.
-  await expect(page.getByText(/not tonight's patrol/i)).toBeVisible();
+  // Opened with its passphrase: the decade is in it, and tonight is not.
+  const { openBackup } = await import('@navcom/core');
+  const kit = openBackup<{ accruing: Record<string, unknown> }>('pw', await page.locator('pre.blob').innerText());
+  expect(kit.accruing['callsign']).toBe('Wren');
+  expect(JSON.stringify(kit)).not.toContain('tonight-only');
 });
 
 test.describe('a watch named in a backup [audit: relay paths, review]', () => {

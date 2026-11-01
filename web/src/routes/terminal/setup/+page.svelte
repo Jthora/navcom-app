@@ -8,7 +8,7 @@
   import { createIdentity, loadIdentity, setCallsign } from '$lib/terminal/identity';
   import { askToKeep } from '$lib/terminal/persist';
   import { backTo, pendingMission, type PendingMission } from '$lib/missions/pending';
-  import { Slot, Readout, Why } from '$lib/components/panel';
+  import { Slot, Readout } from '$lib/components/panel';
   import { onMount } from 'svelte';
 
   let callsign = $state('');
@@ -64,6 +64,9 @@
   /** The operator has said this code came from whoever runs the watch, where it changes the escalation key. */
   let keyConfirmed = $state(false);
   let codeText = $state('');
+  /** Which extras start open: by a link's hash, by what they hold, by a code that arrived. */
+  let personOpen = $state(false);
+  let watchOpen = $state(false);
   let codeError = $state<string | null>(null);
   let scannable = $state(false);
   let scanning = $state(false);
@@ -154,6 +157,8 @@
       codeText = fromLink;
       useCode();
     }
+    personOpen = !!identity || !!contact || fromLink === 'person';
+    watchOpen = configured || fromBackup || fromLink === 'watch' || fromLink === 'relays' || looksLikeWatchCode(fromLink);
   });
 
   /**
@@ -205,7 +210,7 @@
     error = null;
     const name = callsign.trim();
     if (!name) {
-      error = 'A callsign is needed. It is what the board shows.';
+      error = 'A name is needed: it is what others see.';
       return;
     }
     identity = createIdentity(name);
@@ -248,7 +253,7 @@
     error = null;
     const name = renamed.trim();
     if (!name) {
-      error = 'A callsign is needed. It is what the board shows.';
+      error = 'A name is needed: it is what others see.';
       return;
     }
     setCallsign(name);
@@ -292,13 +297,13 @@
 </script>
 
 <svelte:head>
-  <title>Set up · Field Terminal</title>
-  <meta name="description" content="Identity and Watchtower, both entered here." />
+  <title>Your profile · Field Terminal</title>
+  <meta name="description" content="Create your profile, and the optional extras: someone to call, a watch." />
 </svelte:head>
 
 <header>
   <p class="eyebrow"><a href="/terminal/">&larr; Status</a></p>
-  <h1>Set up</h1>
+  <h1>Your profile</h1>
 </header>
 
 {#if error}
@@ -306,168 +311,53 @@
 {/if}
 
 <section>
-  <h2>Your callsign — the only step</h2>
   {#if identity}
-    <Slot k="Callsign">
+    <Slot k="Name">
       <Readout value={identity.callsign ?? '—'} verbatim tone="good" sub="{identity.pubkey.slice(0, 16)}…" />
     </Slot>
     {#if leftMission}
-      <!-- The callsign was the only thing the mission asked for, so the way back is the next thing here. -->
+      <!-- The name was the only thing the mission asked for, so the way back is the next thing here. -->
       <a class="nc-act" data-act data-back-to-mission href="/" data-sveltekit-reload>
         <span class="nc-act-label">{backTo(leftMission)}</span>
       </a>
     {:else if justMade}
-      <!-- Made, and the screen offered nothing to do next: "← Status" was the only way on, at the top
-           of a page already scrolled past it [journey, 2026-10-28]. -->
       <a class="nc-act" data-act data-setup-done href="/terminal/">
         <span class="nc-act-label">Done — to Status</span>
       </a>
     {/if}
-    <p class="note">
-      <strong>There is no recovery</strong> without a <a href="/terminal/backup/">backup</a>: lose this
-      device and you lose this identity.
-    </p>
     <form onsubmit={rename}>
-      <label for="rename">Change your callsign</label>
+      <label for="rename">Change your name</label>
       <input id="rename" bind:value={renamed} autocomplete="off" spellcheck="false" />
       <button type="submit" data-rename>Change it</button>
     </form>
-    <p class="note">Your key does not change, so your standing comes with you.</p>
-    <Why summary="What a new callsign does not change">
-      <p class="note">
-        Nobody has to re-add you, and nothing you hold is reissued. What you have already
-        signed keeps the old name — a correction, an observation, an endorsement somebody gave
-        you — and <a href="/terminal/card/">a published card</a> shows the old one until you
-        publish it again.
-      </p>
-    </Why>
-    <!--
-      Said at the moment it happens, and only here.
-
-      Taking a callsign is what flips the terminal to low signature by default, so this is the
-      one place where the change can be explained rather than discovered. An operator who finds
-      a dim amber screen and no explanation reasonably concludes the app is broken — which is
-      the same failure the Alone state exists to avoid.
-    -->
-    <p class="note" data-signature-explained>
-      <strong>The terminal is dim and amber now</strong> — it keeps your night vision.
-      <strong>Document mode is one tap away.</strong>
-    </p>
-    <Why summary="Why it looks like this">
-      <p class="note">
-        Generated here. Never transmitted, never registered — there is no account, so there is
-        nothing anyone could revoke.
-      </p>
-      <p class="note">
-        The dim amber also stops your phone lighting you up on a dark street. The document
-        mode control is on every screen, and it stays wherever you leave it.
-      </p>
-    </Why>
+    <p class="note"><a href="/terminal/backup/" data-backup-link>Back up your profile</a></p>
+    <!-- Making a profile turns the terminal dim: said once, here, so it never reads as broken. -->
+    <p class="note" data-signature-explained>Dimmed for night use. Document mode is one tap away.</p>
   {:else}
     <form onsubmit={makeIdentity}>
-      <label for="callsign">Callsign</label>
+      <label for="callsign">Your name</label>
+      <input id="callsign" bind:value={callsign} autocomplete="off" spellcheck="false" placeholder="a callsign, a nickname or your own name" />
       <!--
-        Three claims, then one disclosure. This was 130 words standing between somebody
-        opening the app for the first time and the only field they have to fill in — the
-        largest single block of prose in front of a control anywhere in the terminal.
-
-        All three sentences left here are load-bearing and none of them is behind a tap.
-        `Nobody can give this back to you` is additionally asserted **visible** by a browser
-        test rather than merely present, because a person who reads it after dropping the
-        phone is only being told a fact about the past.
+        Inert until there is something to submit: a prerendered page is tappable before it hydrates,
+        and a form tapped in that window does a native GET that reloads the page and loses what was
+        typed. Disabled also blocks Enter on a phone keyboard until there is a name.
       -->
-      <p class="note">
-        How you are known. <strong>Never a legal name.</strong> Once this exists the app is
-        ready — the section below is optional.
-      </p>
-      <p class="note"><strong>This is a pseudonym, not anonymity.</strong></p>
-      <p class="note">
-        <strong>Nobody can give this back to you.</strong>
-        <a href="/terminal/backup/">Make a backup</a>, or decide not to.
-      </p>
-      <Why summary="What this key is, and is not">
-        <p class="note">
-          <!--
-            5.7, stated at the moment the trade is made rather than in a policy nobody reads.
-            There is no account here and no legal name anywhere, and an operator could
-            reasonably read that as anonymity. It is not, and the difference matters most to
-            the people with the most reason to care.
-          -->
-          It is a key generated on this
-          phone, and <strong>everything you sign with it links together</strong> — patrols,
-          answers, anything you add to the directory. That is what lets your work count as
-          yours. If you need something genuinely unlinkable, it has to be a separate identity,
-          and nothing here can retroactively unlink what this one has already signed.
-        </p>
-        <p class="note">
-          <!--
-            identity.md: "no recovery method means no recovery", stated plainly at persona
-            creation rather than after a phone is dropped, when it is only a fact about the past.
-          -->
-          There is no account, so a lost phone is a lost persona unless you have made a
-          backup — and choosing not to is a real choice rather than an oversight.
-        </p>
-        <p class="note">
-          <!--
-            Said where the key is generated, because the post-quantum key is derived from it
-            and there is consequently nothing for an operator to create, copy or back up.
-          -->
-          <strong>A second key is derived from it</strong> and published, so messages to you
-          can be sealed against a future quantum computer as well as a present one. If
-          somebody you send to has not published theirs yet, <strong>the message still
-          goes</strong> with ordinary encryption and <strong>Status says so</strong> — nothing
-          is held back, and nothing pretends to cover more than it did.
-        </p>
-        <p class="note">
-          Most operators will not have a watch at first, and the section below is optional.
-        </p>
-      </Why>
-      <input id="callsign" bind:value={callsign} autocomplete="off" spellcheck="false" />
-      <!--
-    Inert until there is something to submit.
-
-    A prerendered page is tappable before it hydrates, and a `<form>` tapped in that window
-    does a native GET: the page reloads and what was just typed is **gone**. The peers screen
-    already learned this and fixed it there; the same defect was still on all three forms
-    here — including the callsign, which is the first thing every operator types.
-
-    `disabled` rather than a plain button, because it also blocks implicit submission: with
-    the default button disabled, Enter on the phone keyboard does not submit either. Query,
-    Resupply and Sign-on already render this way.
-  -->
-  <button type="submit" disabled={!callsign.trim()}>Make my callsign</button>
+      <button type="submit" disabled={!callsign.trim()}>Create profile</button>
     </form>
-    <!-- The second device: the same persona carried over, never a second one made by mistake. -->
+    <!-- The second device: the same profile carried over, never a second one made by mistake. -->
     <p class="note" data-elsewhere>
-      Already have NavCom on another device? <a href="/terminal/backup/#restore">Bring that callsign here</a>
-      instead.
+      Already on another device? <a href="/terminal/backup/#restore">Sign in with your backup</a>
     </p>
   {/if}
 </section>
 
 <!--
-  Placed directly after the callsign and before the watch, because for an operator with no
-  watch this IS the safety net rather than a nice extra.
+  The extras, each a row that opens: whenever somebody likes, never a step. Open when a link points
+  at one, when it already holds something, and — someone to call — once there is a profile.
 -->
-<section id="person">
-  <h2>Someone you would call</h2>
-  <p class="note">
-    One tap on Distress opens a message to them, already written. <strong>Nothing is sent
-    automatically and you have to press send.</strong>
-  </p>
-  <p class="note">
-    Their number stays on this phone. <strong>A burn erases it; a panic wipe does not.</strong>
-  </p>
-  <Why summary="Where their number goes">
-    <p class="note">
-      A web app cannot press send for you, and this app will not pretend it can.
-    </p>
-    <p class="note">
-      The number is never sent to a watch, a relay, or anyone else's machine — there is no
-      list of operators' contacts anywhere for anyone to take. It is still there the next
-      night.
-    </p>
-  </Why>
+<details class="extra" id="person" bind:open={personOpen}>
+  <summary data-person-open>Someone to call</summary>
+  <p class="note">Distress opens a message to them, ready for you to send.</p>
   <form onsubmit={keepContact}>
     <label for="clabel">Who</label>
     <input id="clabel" bind:value={contactLabel} autocomplete="off" placeholder="Sam" />
@@ -481,27 +371,10 @@
     </Slot>
     <button class="forget" type="button" onclick={forgetContact}>Remove</button>
   {/if}
-</section>
+</details>
 
-<section class="later">
-  <h2>A watch — optional, and only if somebody gave you one</h2>
-  <!-- "Skip this" stays whole. The Alone operator is the common case, not the edge one, and
-       this is the sentence that stops an empty watch section reading as unfinished setup. -->
-  <p class="note">
-    <strong>Skip this.</strong> You do not need a watch to use NavCom, and having none is
-    how most operators work.
-  </p>
-  <p class="note"><strong>Nothing discovers a Watchtower on its own.</strong></p>
-  <Why summary="What a watch adds">
-    <p class="note">
-      What it adds: Query, Assist and Distress — the three things that need a person on the
-      other end. What it does not change: everything else, which already works.
-    </p>
-    <p class="note">
-      Handed to you in person, on paper or by whatever you already use — a list of them
-      would be a list of where operators are. Come back when somebody hands you one.
-    </p>
-  </Why>
+<details class="extra later" id="watch" bind:open={watchOpen}>
+  <summary data-watch-open>Watch — if somebody gave you one</summary>
   <!-- The code first: it fills everything below, and it is the only way the escalation key arrives. -->
   <div class="code" data-watch-code>
     <label for="code">Watch code</label>
@@ -550,23 +423,8 @@
     <label for="holders">Who holds it</label>
     <textarea id="holders" bind:value={holders} rows="3" autocomplete="off" spellcheck="false"
       placeholder="leave empty unless you were given a list"></textarea>
-    <!--
-      Stated before the field, because the answer for most operators is "leave it empty"
-      and a blank box with no explanation reads as something missing. Both claims stay in
-      front of the field they govern: who can read what you send is the one thing an operator
-      must know before filling this in, so it never goes behind a tap.
-    -->
-    <p class="note">
-      <strong>Empty for a watch on a box</strong> — <strong>whoever is on this list can read everything
-      you send</strong>, on watch or off.
-    </p>
-    <Why summary="When it is not empty">
-      <p class="note">
-        A watch running on a box holds its own key, and that is what most people are given. A
-        squad with no box holds the watch on their phones instead, and lists one key per phone
-        here: its watch code fills them in, handed over by whoever holds it; nothing discovers it.
-      </p>
-    </Why>
+    <!-- Who can read what you send is the one thing to know before filling this in: one line, kept. -->
+    <p class="note" data-holders-note>Everyone listed can read what you send.</p>
     {#if changes.length > 0}
       <!-- What this code would change about the watch saved here, said before it is saved. -->
       <div data-code-changes>
@@ -614,15 +472,6 @@
           This code came from whoever runs this watch, and I checked the change with them.
         </label>
       {/if}
-      <Why summary="What the escalation key is">
-        <p class="note">
-          A box names the key only its escalation process holds. Your phone then ends a Distress
-          only on an answer that key signed, and the agent running beside it cannot send one.
-          Without it, anything holding the watch key can tell you a person has it. It comes only in
-          a watch code the watch signed, never typed. A code is still only as good as whoever handed
-          it to you, so this phone asks before one changes the key.
-        </p>
-      </Why>
     {/if}
     {#if watchError}
       <p class="error" role="alert" data-watch-error>{watchError}</p>
@@ -643,7 +492,7 @@
     </Slot>
     <p class="done"><a href="/terminal/">Back to status</a></p>
   {/if}
-</section>
+</details>
 
 <style>
   header { display: flex; flex-direction: column; gap: .2rem; }
@@ -653,10 +502,6 @@
   }
   .eyebrow a { color: var(--t-faint); text-decoration: none; }
   h1 { font-size: 1.7rem; margin: 0; }
-  h2 {
-    font-size: .78rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
-    color: var(--t-faint); margin: 0 0 .5rem;
-  }
   section { display: flex; flex-direction: column; }
   form { display: flex; flex-direction: column; gap: .5rem; }
   label { font-size: .9rem; color: var(--t-muted); }
@@ -667,14 +512,18 @@
   }
   textarea { min-height: 5rem; }
   button { margin-top: .4rem; }
-  /* Visibly secondary, so nobody reads it as a step they are failing to complete. */
-  .later { border-top: 1px solid var(--t-line); padding-top: 1.2rem; opacity: .82; }
+  /* The extras: a row each, closed until wanted, so the profile is the whole first screen. */
+  .extra { border-top: 1px solid var(--t-line); padding-top: .4rem; display: flex; flex-direction: column; gap: .5rem; }
+  .extra > summary {
+    min-height: 3rem; display: flex; align-items: center; cursor: pointer;
+    font-size: .95rem; color: var(--t-muted);
+  }
+  .extra[open] > summary { color: var(--t-ink); }
   .forget {
     min-height: 2.2rem; font-size: .8rem; padding: 0 .7rem;
     border-color: var(--t-line); color: var(--t-faint);
   }
   .note { font-size: .9rem; color: var(--t-faint); margin: 0 0 .3rem; line-height: 1.5; }
-  .note strong { color: var(--t-ink); }
   .done { color: var(--t-muted); display: flex; gap: .6rem; align-items: baseline; flex-wrap: wrap; }
   .refused {
     margin: .2rem 0 .3rem; padding-inline-start: 1.1rem; display: grid; gap: .3rem;

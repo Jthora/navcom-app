@@ -594,8 +594,8 @@ and `responder.pubkey` is one of the holders it was handed, and never the watch 
 **It is a signature, so it can be shown to others.** A relay learns nothing from it, but anybody who
 can open the `20912` can rebuild the event above and present it as one the member's key signed: the
 operator's phone, whoever takes that phone, and everybody who holds or ever held the watch key. It
-names the operator's key, the watch's, the `Distress` ids, the member's callsign and their words —
-never a legal name or a position, and nothing the `20912` did not already carry. Before it, the same
+names the operator's key, the watch's, the `Distress` ids, the member's name as they chose it and
+their words — never a position, and nothing the `20912` did not already carry. Before it, the same
 readers could repeat those words but not prove who said them. That is what lets a person stand behind
 an answer, and it is also everything it proves.
 

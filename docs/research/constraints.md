@@ -17,7 +17,7 @@ Non-negotiable. A design that violates one is wrong regardless of its merits.
 |---|---|---|
 | **H1** | No data about the people being served — no field, no convention, no exception* | Medic, ethics |
 | **H2** | Panic wipe destroys the wipeable tier completely; identity survives | Protest Medic |
-| **H3** | No legal names anywhere. Contact details only where an operator opts in for themselves | Skeptic, Convert |
+| **H3** | Nobody named but by their own choice: an operator's name is theirs, a callsign or their own (revised 2026-11-01; it read *no legal names anywhere*). Contact details only where an operator opts in for themselves | Skeptic, Convert |
 | **H4** | Duress is always deliberate, never inferred from silence | Heart |
 | **H5** | Volatile data displays its age; stale reads "call first" — *weight from method and age* | Medic |
 | **H6** | Runs on a prepaid Android 8 with ~400MB free | Convert — **measured 2026-08-20, see [`device-floor.md`](device-floor.md)**: the constraint is real but it is about *storage*, and the CPU is not what makes the app slow |

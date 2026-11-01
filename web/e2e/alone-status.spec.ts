@@ -23,7 +23,7 @@ test('with your person set and no watch, Distress names your person, at sign-on 
   const distress = page.locator('[data-capability] [data-slot="distress"]');
   await expect(distress).toContainText(/your person/i);
   await expect(distress).not.toContainText(/no addressee/i);
-  await expect(page.getByText(/Distress reaches Sam/)).toBeVisible();
+  await expect(distress).toContainText(/Sam/);
 });
 
 test('with nobody set, it still says nobody, and points to the one net that needs no watch', async ({ page }) => {

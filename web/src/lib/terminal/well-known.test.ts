@@ -218,7 +218,7 @@ describe('the refusals match the rules they claim to summarise', () => {
     expect(claude).toMatch(/Nothing tasks anyone/);
     expect(ids).toContain('no-tasking');
 
-    expect(claude).toMatch(/No legal names anywhere/);
+    expect(claude).toMatch(/Nobody is named but by their own choice/);
     expect(ids).toContain('no-callsigns-outbound');
   });
 });

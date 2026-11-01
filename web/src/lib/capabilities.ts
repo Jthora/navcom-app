@@ -50,11 +50,10 @@ export interface Capability {
   /** Route, relative to the site root, with its trailing slash. */
   screen: string;
   /**
-   * Sentences that must appear on that screen.
-   *
-   * Pick the load-bearing ones: the claim, and the limit that keeps the claim honest. Two
-   * or three. This is not a copy test — it is a check that the promise still has a
-   * mechanism behind it.
+   * Words that must appear on that screen: its own label, or the one line it cannot be operated
+   * without. **Often none** since 2026-11-01, when the owner directed that screens explain nothing
+   * they need not: a capability is its screen, its control and what it requires, and an
+   * explanation is not a claim this manifest keeps on screen.
    */
   claims: string[];
   /**
@@ -145,25 +144,19 @@ export const CAPABILITIES: Capability[] = [
      */
     name: 'What was sealed to a key whose secret leaked',
     screen: 'terminal/',
-    claims: ['can be opened by whoever holds its old key’s leaked secret', 'Nothing is sealed to that key now'],
+    // Said on a device with a profile, the only kind that could have sealed anything (2026-11-01).
+    claims: [],
     readOnly:
       'A statement of what already happened to messages this app sent. Nothing sent can be recalled, so there is nothing to operate; the rows it is about are in Your missions.',
     requires: []
   },
   {
-    name: 'Set up a callsign',
+    name: 'Create a profile',
     screen: 'terminal/setup/',
     claims: [
-      'Never a legal name',
-      // 5.7. An operator reading "no account, no legal name" could reasonably conclude
-      // they are anonymous. They are not, and it is said where the key is generated.
-      'This is a pseudonym, not anonymity',
-      'everything you sign with it links together',
-      // identity.md requires this at persona creation, not after the phone is dropped.
-      'Nobody can give this back to you',
-      // The watch section must read as optional, or an operator who knows nobody believes
-      // their setup is unfinished.
-      'the section below is optional'
+      // A name and a button, as any profile asks (2026-11-01), and the way in from another device.
+      'Create profile',
+      'Sign in with your backup'
     ],
     control: '#callsign',
     requires: []
@@ -172,11 +165,8 @@ export const CAPABILITIES: Capability[] = [
     name: 'Add a watch',
     screen: 'terminal/setup/',
     claims: [
-      'Nothing discovers a Watchtower on its own',
-      // Who can read what you send is the one thing an operator must know before
-      // configuring a squad-held watch, and it is stated before the field.
-      'whoever is on this list can read everything',
-      'Empty for a watch on a box'
+      // Who can read what you send: the one line kept before the field it governs.
+      'Everyone listed can read what you send'
     ],
     control: '#holders',
     requires: []
@@ -185,10 +175,7 @@ export const CAPABILITIES: Capability[] = [
     name: 'Somebody you would call',
     screen: 'terminal/setup/',
     claims: [
-      'you have to press send',
-      // The number never leaves the phone, so there is no roster of operators' contacts
-      // for a seizure to find.
-      'Their number stays on this phone'
+      'ready for you to send'
     ],
     control: '#cnumber',
     requires: []
@@ -304,17 +291,9 @@ export const CAPABILITIES: Capability[] = [
   {
     name: 'Post-quantum cover',
     screen: 'terminal/setup/',
-    claims: [
-      // The *policy*, which is always true and belongs where the key it derives from is
-      // generated. The notice that fires when cover is actually missing is state-dependent
-      // by design -- showing it while cover is hybrid would be a lie -- so it is checked by
-      // a browser test that creates the state instead. This is the one place where the
-      // manifest's "make the claim unconditional" rule does not apply, and the reason is
-      // that the sentence is about a condition rather than about the screen.
-      'A second key is derived from it',
-      'the message still goes',
-      'Status says so'
-    ],
+    // Nothing said on the profile screen since 2026-11-01: the notice that fires when cover is
+    // missing is state-dependent, and a browser test creates that state instead.
+    claims: [],
     readOnly:
       'A readout of whether your peers can be sealed against a future quantum computer. ' +
       'There is nothing to set: coverage follows from whether they have published a key, ' +
@@ -444,14 +423,7 @@ export const CAPABILITIES: Capability[] = [
   {
     name: 'Backup and recovery',
     screen: 'terminal/backup/',
-    claims: [
-      // identity.md requires this be stated plainly, and it has to be read before somebody
-      // needs it rather than after.
-      'there is nobody to ask for your identity back',
-      'a backup you never made does not exist',
-      // The passphrase is the only control, so it must not read as ceremony.
-      'Nothing can recover this if you forget it'
-    ],
+    claims: ['Sign in with a backup'],
     control: '#rblob',
     requires: []
   },

@@ -78,7 +78,7 @@ export class EndorsementError extends Error {}
 
 export interface CredentialPayload {
   scope: Scope;
-  /** What the endorser calls themselves. A callsign, never a legal name [invariant 8]. */
+  /** What the endorser calls themselves: their choice [invariant 6]. */
   endorser: string;
   /** ISO date. Shown as an age rather than checked against a clock. */
   at: string;

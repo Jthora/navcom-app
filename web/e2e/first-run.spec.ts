@@ -28,8 +28,8 @@ test.describe('a stranger opens the terminal', () => {
   test('is told what to do first, and that looking things up needs nothing', async ({ page }) => {
     await blankDevice(page);
     await open(page, '/terminal/');
-    await expect(page.getByText(/pick a callsign/i).first()).toBeVisible();
-    await expect(page.getByText(/needs no callsign/i).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: /create your profile/i })).toBeVisible();
+    await expect(page.locator('[data-first-run]').getByRole('link', { name: /cached directory/i })).toBeVisible();
   });
 
   test('is not shown a dark-watch fault on sign-on when they never added a watch', async ({ page }) => {

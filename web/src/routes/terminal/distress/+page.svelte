@@ -346,7 +346,7 @@
     {#if !contact}
       <p class="cost">
         Nothing on this phone can reach anyone for you.
-        <a href="/terminal/setup/">Add someone you would call</a>.
+        <a href="/terminal/setup/#person">Add someone you would call</a>.
       </p>
     {/if}
     <!--

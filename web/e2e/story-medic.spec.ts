@@ -15,9 +15,9 @@ import { blankDevice, open } from './device';
 async function anIdentity(page: import('@playwright/test').Page, name = 'Medic') {
   await blankDevice(page);
   await open(page, '/terminal/');
-  await page.getByRole('link', { name: /choose a callsign/i }).click();
+  await page.getByRole('link', { name: /create your profile/i }).click();
   await page.locator('#callsign').fill(name);
-  await page.getByRole('button', { name: /make my callsign/i }).click();
+  await page.getByRole('button', { name: /create profile/i }).click();
   await open(page, '/terminal/');
 }
 
@@ -90,7 +90,7 @@ test.describe('a night, with no watch', () => {
 
     // And she can still work: the identity survived, so Status is not asking her to start over.
     await open(page, '/terminal/');
-    await expect(page.getByRole('heading', { name: /start here/i })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: /create your profile/i })).toHaveCount(0);
     await expect(page.getByRole('link', { name: /sign on/i })).toBeVisible();
   });
 });

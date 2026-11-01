@@ -76,7 +76,7 @@ test('ticked, desk work is listed under the field work, without the grant notice
   const screen = page.locator('[data-screen="missions"]');
   await expect(screen.locator('[data-desk-work]')).toContainText('1 from anywhere');
   await expect(screen.locator('[data-mission="longview"]')).toContainText('no end given, posted 1 day ago');
-  await expect(screen.locator('[data-refused]')).toContainText('no legal names');
+  await expect(screen.locator('[data-refused]')).toContainText('nobody who did not choose it');
   await expect(page.locator('[data-refused-count]')).toContainText('1 not read');
 });
 

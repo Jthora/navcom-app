@@ -114,8 +114,8 @@ It binds agents hardest — a wrong answer carries unearned authority coming fro
 ## 10. Pseudonymity is architectural
 
 The realistic threat is doxxing, stalking and harassment. Security effort goes into **not
-holding identifying data**: no legal names; keys on device; no central social graph; local
-inference only.
+holding identifying data**: nothing that asks for a legal name, though an operator may go by
+theirs (2026-11-01); keys on device; no central social graph; local inference only.
 
 **What the node actually holds — stated honestly, because the claim "nothing worth
 seizing" is no longer true:**

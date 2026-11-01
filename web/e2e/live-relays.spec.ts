@@ -44,9 +44,9 @@ async function follow(page: Page, link: Locator, path: string) {
 }
 
 async function newcomer(page: Page, callsign: string) {
-  await go(page, '/terminal/setup/');
+  await go(page, '/terminal/setup/#watch');
   await page.locator('#callsign').fill(callsign);
-  await page.getByRole('button', { name: /make my callsign/i }).click();
+  await page.getByRole('button', { name: /create profile/i }).click();
   await expect(page.locator('#rename')).toBeVisible();
 }
 

@@ -120,7 +120,7 @@ measurement and here by Starcom, and worth noticing that the project produced it
 | `observed_at` | yes | When it was seen. Distinct from the event's own timestamp |
 | `tags` | yes | One or more from the closed vocabulary (§7). May be `nothing_observed` |
 | `method` | yes | `saw` · `told` · `inferred`. Fact, not judgment. See §8 |
-| `callsign` | yes | A callsign, or `anonymous`. **Never a legal name** [invariant 8] |
+| `callsign` | yes | The name its author goes by, or `anonymous`: their choice [invariant 6] |
 | `precision` | yes | `area` or `exact`. See §4 |
 | `supersedes` | no | Event id of an observation this replaces in the author's own account |
 

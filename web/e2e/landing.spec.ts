@@ -751,11 +751,11 @@ test.describe('the landing page: missions you can open', () => {
     await page.locator(`[data-mission="${HEAT_D}"]`).click();
     const signon = page.locator('[data-signon]');
     // By the word the terminal uses for it: "Sign on" there starts a patrol [finding 51].
-    await expect(signon).toContainText('Choose a callsign to take part');
+    await expect(signon).toContainText('Create your profile to take part');
     await signon.click();
     await page.waitForURL('**/terminal/setup/');
     await page.locator('#callsign').fill('kestrel');
-    await page.getByRole('button', { name: /make my callsign/i }).click();
+    await page.getByRole('button', { name: /create profile/i }).click();
     await expect(page.locator('#rename')).toBeVisible();
     // Controls only, never the browser's Back: an installed app on iOS has none [findings 35, 47].
     const back = page.locator('[data-back-to-mission]');
@@ -774,7 +774,7 @@ test.describe('the landing page: missions you can open', () => {
     await page.locator('[data-signon]').click();
     await page.waitForURL('**/terminal/setup/');
     await page.locator('#callsign').fill('kestrel');
-    await page.getByRole('button', { name: /make my callsign/i }).click();
+    await page.getByRole('button', { name: /create profile/i }).click();
     await expect(page.locator('#rename')).toBeVisible();
     await page.getByRole('link', { name: /status/i }).first().click();
     await page.waitForURL((u) => u.pathname === '/terminal/');

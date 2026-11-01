@@ -145,7 +145,7 @@ describe('desk work, when somebody asks for it', () => {
     expect(readMissionPackage(desk([['mission_family', 'exclusion']]), TEST, { desk: true })).toMatchObject({
       ok: false,
       kind: 'refused',
-      because: expect.stringMatching(/legal names/)
+      because: expect.stringMatching(/did not choose/)
     });
   });
 

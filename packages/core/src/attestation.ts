@@ -10,7 +10,7 @@
  * decay windows, and gets the same guarantees in return.
  */
 
-/** Who made a claim. Never a legal name [H3]. */
+/** Who made a claim, by the name they go by [invariant 6]. */
 export interface Author {
   /** Hex pubkey, where one exists. */
   pubkey?: string;

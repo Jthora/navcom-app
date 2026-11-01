@@ -108,7 +108,7 @@ export interface ResourceRecord {
 
   /** ISO date, YYYY-MM-DD. */
   last_verified?: string;
-  /** Callsign or 'anonymous'. Never a legal name [H3]. */
+  /** The name its author goes by, or 'anonymous': their choice [invariant 6]. */
   verified_by?: string;
   method?: Method;
   flag: Flag;

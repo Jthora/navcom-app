@@ -85,7 +85,7 @@ test('navcom.app, signed on, an evening on a phone, with nothing published', asy
     await go(page, '/terminal/setup/');
     await shot(page, 'setup', true);
     await page.locator('#callsign').fill('Nightjar');
-    await page.getByRole('button', { name: /make my callsign/i }).click();
+    await page.getByRole('button', { name: /create profile/i }).click();
     await page.waitForTimeout(1500);
     await shot(page, 'setup-done', true);
   });

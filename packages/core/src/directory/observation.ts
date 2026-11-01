@@ -289,7 +289,7 @@ export interface Observation {
   /** One or more from the closed vocabulary. May be exactly `nothing_observed`. */
   tags: string[];
   method: ObservationMethod;
-  /** A callsign, or `ANONYMOUS`. **Never a legal name** [invariant 8]. */
+  /** The name its author goes by, or `ANONYMOUS`: their choice [invariant 6]. */
   callsign: string;
   precision: Precision;
   /**

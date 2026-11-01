@@ -344,7 +344,9 @@ loses if it goes — the three groups being **the people served**, **the operato
    person's.* More necessary now, not less: agents will post missions.
 5. **Panic wipe destroys the Wipeable tier and nothing else.** *Loses: an operator whose phone is
    taken.* Claims, drafts and mission history are Wipeable by default.
-6. **No legal names anywhere.** *Loses: an operator.* Standing accrues to a persona.
+6. **Nobody is named but by their own choice** (revised 2026-11-01; it read *no legal names anywhere*).
+   *Loses: an operator, or somebody named who never chose it.* An operator's own name, legal or not,
+   is theirs to use. Standing accrues to a persona.
 7. **Volatile data shows its age.** *Loses: somebody at a locked door.* Applies to missions too: an
    expired mission says so.
 

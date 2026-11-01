@@ -44,7 +44,8 @@ confirm the data goes exactly where this page says and nowhere else.
 ## Never optional
 
 - **Anything about the people being served.** No field, no convention, no exception
-- Storing an operator's legal name — nothing in the system needs it, so nothing offers it
+- Asking for an operator's legal name — nothing in the system needs it, so nothing asks. An
+  operator who wants to go by it types it as their name, as any name (2026-11-01)
 - Third-party analytics, engagement telemetry, or behavioural tracking
 - Selling, sharing or aggregating any of the above
 

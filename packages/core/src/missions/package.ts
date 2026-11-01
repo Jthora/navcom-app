@@ -503,7 +503,7 @@ export interface ReadOptions {
    * Desk work too: a package handed to NavCom that is not field work, read as a mission marked
    * `desk` instead of set aside. Never a grant notice, which is an opportunity for an organisation
    * and not a mission (Starcom leaves it out of its own too), and never an exclusion, whose party can
-   * be a person [invariant 6]: the reader cannot tell a company from somebody's legal name.
+   * be a private person [invariant 6]: the reader cannot tell a company from somebody who never chose to be named.
    */
   desk?: boolean;
 }
@@ -573,7 +573,7 @@ export function readMissionPackage(input: unknown, publishers: MissionPublishers
   if (!field && !options.desk) return no('desk', 'Not field work.');
   if (!field && (tag(e, 'mission_family') === 'grant' || flag(e, 'category:funding.grant'))) return no('desk', 'A grant notice, not a mission.');
   if (!field && NAMES_A_PARTY.has(tag(e, 'mission_family') ?? '')) {
-    return no('refused', 'Names a party on an exclusion list, who may be a person: NavCom shows no legal names.');
+    return no('refused', 'Names a party on an exclusion list, who may be a private person: NavCom names nobody who did not choose it.');
   }
 
   if (e.tags.some((t) => t[0] === 'p')) return no('refused', 'Addressed to a person — a mission is an offer, never an assignment.');

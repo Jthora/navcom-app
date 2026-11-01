@@ -199,7 +199,9 @@ your packages. A package that crosses one is not shown.
    missions, not less.
 5. **Panic wipe** destroys an operator's local mission history. Nothing you publish depends on it
    surviving.
-6. **No legal names anywhere.** Operators are callsigns. Standing accrues to a persona. **One
+6. **Nobody is named but by their own choice** (revised 2026-11-01; it read *no legal names
+   anywhere*). An operator goes by the name they chose — a callsign, or their own. Nobody else is
+   named. Standing accrues to a persona. **One
    exception, for packages** (decided 2026-10-06): a public figure named by an official source may
    appear in their public role, with the source's link, as background or as the source itself.
    Never as the object of an action — not in an ask, an objective or `for` — never an operator, and
@@ -244,8 +246,8 @@ without `navcom_mission` is read as desk work. It is outlined, dashed, where it 
 may name no end (said as no end given, with its age); and nobody takes it in NavCom, because a report
 here counts things and desk work hands back a written answer. Two kinds are left out: a grant notice
 (`mission_family=grant` or `category:funding.grant`), which Starcom also leaves out of its missions,
-and an exclusion (`mission_family=exclusion`), whose party may be a person — NavCom shows no legal
-names (invariant 6), and its reader cannot tell a company from a person. The exclusion is listed among
+and an exclusion (`mission_family=exclusion`), whose party may be a private person — NavCom names
+nobody who did not choose it (invariant 6), and its reader cannot tell a company from a person. The exclusion is listed among
 what NavCom did not read, with that reason. Measured on 2026-11-01: 130 packages, 85 open, 79 of them
 desk work.
 

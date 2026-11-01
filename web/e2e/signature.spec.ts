@@ -161,11 +161,11 @@ test.describe('what it does before anybody has chosen', () => {
     await seedDevice(page);
     await open(page, '/terminal/setup/');
     await page.locator('#callsign').fill('Newcomer');
-    await page.getByRole('button', { name: /make my callsign/i }).click();
+    await page.getByRole('button', { name: /create profile/i }).click();
 
     const said = page.locator('[data-signature-explained]');
     await expect(said).toBeVisible();
-    await expect(said).toContainText(/keeps your\s+night vision/i);
+    await expect(said).toContainText(/dimmed for night use/i);
     await expect(said).toContainText(/document mode is one tap\s+away/i);
   });
 

@@ -23,8 +23,8 @@
    * exempt: `McTavish` renders `MCTAVISH`.
    *
    * This is not really an internationalisation defect, which is why it survives the decision
-   * not to translate the interface. NavCom holds no legal names and a callsign is the one
-   * piece of identity a person chooses for themselves — so the terminal displaying something
+   * not to translate the interface. A person's name here is the one piece of identity they
+   * choose for themselves — so the terminal displaying something
    * other than what they typed is the wrong thing on its own terms.
    *
    * ## The mark beside the word

@@ -115,9 +115,9 @@ async function phone(browser: Browser, relay: LocalRelay): Promise<Page> {
 /** A callsign, on the terminal's own setup screen — the only step. */
 async function signOn(page: Page, callsign: string) {
   await open(page, '/terminal/');
-  await page.getByRole('link', { name: /choose a callsign/i }).click();
+  await page.getByRole('link', { name: /create your profile/i }).click();
   await page.locator('#callsign').fill(callsign);
-  await page.getByRole('button', { name: /make my callsign/i }).click();
+  await page.getByRole('button', { name: /create profile/i }).click();
   await expect(page.locator('#rename')).toBeVisible();
 }
 

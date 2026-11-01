@@ -82,7 +82,7 @@ export interface Place {
   type: ResourceType;
   /** Enough to walk to. The one field that makes a place actionable rather than a rumour. */
   address: string;
-  /** A callsign, or `anonymous`. **Never a legal name** [invariant 8]. */
+  /** The name its author goes by, or `anonymous`: their choice [invariant 6]. */
   verified_by: string;
   method: PlaceMethod;
   /** ISO date, `YYYY-MM-DD`. */

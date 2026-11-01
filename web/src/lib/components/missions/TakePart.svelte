@@ -179,7 +179,7 @@
   {:else if why === 'signed-out'}
     <!-- What it asks for, by the word the terminal uses: "Sign on" there starts a patrol [finding 51]. -->
     <a class="nc-act" data-act data-signon href="/terminal/setup/" data-sveltekit-reload onclick={remember}>
-      <span class="nc-act-label">Choose a callsign to take part</span>
+      <span class="nc-act-label">Create your profile to take part</span>
     </a>
   {:else if why === 'ended'}
     <Readout value="Ended" tone="cold" />

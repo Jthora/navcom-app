@@ -232,7 +232,7 @@ npm run check:data --workspace navcom-web
 ```
 
 - **Nothing about any individual person, ever.** No names, no descriptions, no circumstances
-- **No legal names** in `verified_by` — a callsign or `anonymous`
+- `verified_by` — the name you go by, or `anonymous`
 - Anything you did not verify stays **blank**. Blank reads as "unknown"; a guess reads as
   fact, and a confident wrong answer at 10pm is the worst failure this system has
 
