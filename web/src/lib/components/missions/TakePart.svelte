@@ -166,6 +166,11 @@
       <!-- Renewing or sending it again would seal it once more: off, and why [rev 7]. -->
       <Readout value="Sealed sending paused" tone="cold" sub={`${sealedOff} The claim you hold ends by itself.`} />
     {/if}
+  {:else if why === 'desk'}
+    <!-- A report here counts things; desk work asks for a written answer, which Starcom takes. -->
+    <span data-refusal="desk">
+      <Readout value="Desk work" tone="cold" sub="taken up in Starcom: a report here counts things, and this asks for a written answer" />
+    </span>
   {:else if why === 'retiring'}
     <!-- Nobody can take it, signed on or not: it may have been planted with the leaked secret [rev 7]. -->
     <span data-refusal="retiring">

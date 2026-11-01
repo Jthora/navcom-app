@@ -260,7 +260,7 @@ export interface TookPart {
 /** Everything kept in this device's mission history that has not aged out, whichever build kept it. */
 function history(now: number): TookPart[] {
   const all = get<TookPart[]>('wipeable', HISTORY) ?? [];
-  return all.filter((t) => t.mission.validUntil + HISTORY_DAYS * 86_400 > now);
+  return all.filter((t) => (t.mission.validUntil ?? now) + HISTORY_DAYS * 86_400 > now);
 }
 
 /**
@@ -332,7 +332,7 @@ export function signedOn(): boolean {
   return !!get<string>('accruing', 'secret');
 }
 
-export type Refusal = 'retiring' | 'signed-out' | 'ended' | 'taken' | 'cap';
+export type Refusal = 'desk' | 'retiring' | 'signed-out' | 'ended' | 'taken' | 'cap';
 
 /**
  * Whether `m` was posted under a retiring key, and whether the publisher's own list confirmed it
@@ -356,6 +356,8 @@ export function retiringOf(m: Mission, publishers: MissionPublishers = MISSION_P
  * still held a place in the cap for up to a day, with no way to let it go [11.X].
  */
 export function refusal(m: Mission, now: number, open?: ReadonlySet<string>): Refusal | null {
+  // A report here counts things, and desk work asks for a written answer: it is taken up in Starcom.
+  if (m.work === 'desk') return 'desk';
   if (retiringOf(m) === 'unconfirmed') return 'retiring';
   if (!signedOn()) return 'signed-out';
   if (!missionActive(m, new Date(now * 1000))) return 'ended';
@@ -503,7 +505,7 @@ export async function takePart(
 ): Promise<Outcome> {
   const why = refusal(m, now, open);
   if (why) return { ok: false, because: why };
-  const ends = claimEnds(now, m.validUntil);
+  const ends = claimEnds(now, m.validUntil ?? Infinity);
   const built = await build(targetOf(m), 'claimed', visibility, ends, now, w);
   if (!built.ok) return built;
   const others = () => held(now).filter((x) => x.address !== m.address);

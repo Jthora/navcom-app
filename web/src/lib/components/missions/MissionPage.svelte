@@ -94,12 +94,24 @@
         />
       </Slot>
     {/if}
+    {#if m.work === 'desk'}
+      <Slot k="Work">
+        <span data-desk>
+          <Readout value="Desk work" sub="done from anywhere, about where it is filed; taken up in Starcom, since a report here counts things and this asks for a written answer" />
+        </span>
+      </Slot>
+    {/if}
     <Slot k="Ends">
-      <Readout
-        value={endsIn(m.validUntil, now)}
-        tone={endsSoon(m.validUntil, now) ? 'warn' : 'neutral'}
-        sub={stampUtc(m.validUntil)}
-      />
+      {#if m.validUntil === null}
+        <!-- Desk work may name no end: said, with its age, never an end made up for it [invariant 7]. -->
+        <Readout value="No end given" tone="cold" sub={`posted ${stampUtc(m.publishedAt)}`} />
+      {:else}
+        <Readout
+          value={endsIn(m.validUntil, now)}
+          tone={endsSoon(m.validUntil, now) ? 'warn' : 'neutral'}
+          sub={stampUtc(m.validUntil)}
+        />
+      {/if}
     </Slot>
     <Slot k="Open to">
       {#if m.state === 'claimed'}

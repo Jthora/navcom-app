@@ -237,9 +237,17 @@ never a total).
 | Ranking | For one publisher and one `d` — never one address — the higher generation first, whatever `created_at` says; then the newer; then the lower id. A version dated more than a day past the reader's clock is dropped, not flagged. Every package is gated on these rules before it counts against a relay's share, and again when a device reads back its own copy |
 
 Measured on 2026-10-06: **90 packages** carry `t=navcom_handoff`; **15** carry `t=navcom_mission`,
-of which 9 are `open`. NavCom's grid shows **`navcom_mission` packages only** — boots-on-ground
-work. Desk packages (`where:desk`) are Starcom's and are not on the grid in the first release; see
-§9.3 for why they may matter later.
+of which 9 are `open`. NavCom's grid shows **`navcom_mission` packages** — boots-on-ground work —
+by default. **Since 2026-11-01, desk work too, when somebody ticks it** on the map's layers screen
+(the owner's direction): the same relays are asked for `#t: navcom_handoff`, limit 300, and a package
+without `navcom_mission` is read as desk work. It is outlined, dashed, where it is filed, never lit; it
+may name no end (said as no end given, with its age); and nobody takes it in NavCom, because a report
+here counts things and desk work hands back a written answer. Two kinds are left out: a grant notice
+(`mission_family=grant` or `category:funding.grant`), which Starcom also leaves out of its missions,
+and an exclusion (`mission_family=exclusion`), whose party may be a person — NavCom shows no legal
+names (invariant 6), and its reader cannot tell a company from a person. The exclusion is listed among
+what NavCom did not read, with that reason. Measured on 2026-11-01: 130 packages, 85 open, 79 of them
+desk work.
 
 NavCom verifies the Nostr signature and the author key. **Since 2026-11-01 it verifies the ML-DSA-65
 manifest signature** in `metadata.signature` too, for one purpose: a version under the frozen key that
@@ -743,9 +751,9 @@ the map opens populated. It is identified as an agent everywhere it appears.
 - **Settle autonomously and fast.** It is how operators are credited
 - **Cite generously.** It keeps the evidence and pays the finder
 - **Propose new tags.** NavCom ignores tags it doesn't know; nothing breaks
-- **Desk packages stay yours.** NavCom shows field work only (decided 2026-10-06): it is the
-  boots-on-the-ground half, and desk work belongs in Starcom's own app. Nothing about desk
-  packages needs to change for NavCom
+- **Desk packages stay yours to take.** NavCom shows them when somebody asks for desk work
+  (since 2026-11-01, §3), and sends whoever wants to do one to Starcom. Nothing about desk packages
+  needs to change for NavCom; one that names a person on an exclusion list is not shown
 - **Fund bounties** if you can (§8.2)
 
 ---

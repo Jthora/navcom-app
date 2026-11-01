@@ -103,13 +103,13 @@ function keyOf(event: unknown): string | null {
   return key;
 }
 
-export function readingOf(event: unknown, publishers: MissionPublishers, memo?: Readings): MissionReading {
+export function readingOf(event: unknown, publishers: MissionPublishers, memo?: Readings, desk = false): MissionReading {
   const key = memo ? keyOf(event) : null;
   const known = key ? memo!.get(key) : undefined;
   if (known) return known;
   let reading: MissionReading;
   try {
-    reading = readMissionPackage(event, publishers);
+    reading = readMissionPackage(event, publishers, { desk });
   } catch {
     reading = { ok: false, kind: 'not-a-package', because: 'It could not be read.' };
   }
@@ -146,7 +146,12 @@ export interface Trust {
    * has been checked against the event itself [core: trust.ts, `gate`; live.ts, `checkSecond`].
    */
   second?: ReadonlySet<string>;
+  /** Desk work read as missions too, as the desk subscription asks [core: package.ts, `ReadOptions`]. */
+  desk?: boolean;
 }
+
+/** When a mission ends, for its order: one that names no end after every one that does. */
+const ends = (m: Mission) => m.validUntil ?? Number.MAX_SAFE_INTEGER;
 
 export function collect(
   events: readonly unknown[],
@@ -165,7 +170,7 @@ export function collect(
   for (const event of events) {
     // The registry gate, before any signature is checked [core: trust.ts].
     if (!gateable(event) || gate(event, publishers, at, sets, trust.second) !== null) continue;
-    const reading = readingOf(event, publishers, memo);
+    const reading = readingOf(event, publishers, memo, trust.desk);
     const from = reading.ok
       ? { address: reading.mission.address, at: reading.mission.publishedAt, id: event.id }
       : reading.from;
@@ -193,7 +198,7 @@ export function collect(
     }
   }
   missions.sort(
-    (a, b) => (b.priority ?? 0) - (a.priority ?? 0) || a.validUntil - b.validUntil || a.address.localeCompare(b.address)
+    (a, b) => (b.priority ?? 0) - (a.priority ?? 0) || ends(a) - ends(b) || a.address.localeCompare(b.address)
   );
   return { missions, refused, clockBehind };
 }

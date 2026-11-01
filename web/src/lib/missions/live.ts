@@ -65,9 +65,11 @@ import {
   slotOf,
   trustedToSign,
   type FrozenSet,
+  type Mission,
   type MissionPublishers
 } from '@navcom/core';
 import { generation, get, onWipe, set } from '$lib/terminal/storage';
+import { mapLayers } from '$lib/grid/layer.svelte';
 // So this page hears a wipe in another tab, or one it slept through in the back-forward cache.
 import '$lib/terminal/wiped-elsewhere';
 import { READINGS_MAX, collect, gateable, readingOf, type Collected, type Readings } from './collect';
@@ -111,6 +113,11 @@ const PROBE_MS = 240_000;
  */
 export const PACKAGES_MAX = 100;
 /**
+ * The same, with desk work asked for [`watchMissions`]: every package a publisher hands NavCom, open and
+ * closed, is several times its field work — 130 of Mecha Jono's on 2026-11-01, 28 of them field work.
+ */
+export const DESK_MAX = 300;
+/**
  * How long a request's `until` lasts before it is asked again: well inside the day of tolerance
  * it adds, so a page left open keeps hearing packages signed now.
  */
@@ -139,6 +146,12 @@ export interface Sources {
   trustAt?: () => number;
   /** The frozen keys' lists: the release's own, unless a test stands its own in. */
   frozen?: readonly FrozenSet[];
+  /**
+   * Desk work too: every package handed to NavCom, read as missions marked `desk`, under `DESK_MAX`.
+   * **Never kept on the device**: it is asked for while somebody wants it, and is several times the
+   * size of the field work the copy holds for offline.
+   */
+  desk?: boolean;
 }
 
 /** One request: a key, and what it is asked for. */
@@ -179,7 +192,10 @@ function frozenDs(publishers: MissionPublishers, at: number, sets: readonly Froz
  * version NavCom will not show still supersedes [11.E]. One version per `d`, so the answer is
  * bounded by the list.
  */
-function plan(publishers: MissionPublishers, at: number, sets: readonly FrozenSet[]): Ask[] {
+function plan(publishers: MissionPublishers, at: number, sets: readonly FrozenSet[], desk = false): Ask[] {
+  // Field work by its own mark; with desk work, everything handed to NavCom.
+  const topic = desk ? 'navcom_handoff' : 'navcom_mission';
+  const cap = desk ? DESK_MAX : PACKAGES_MAX;
   const asks: Ask[] = [];
   const until = at + FUTURE_TOLERANCE_DAYS * 86_400;
   const frozen = frozenDs(publishers, at, sets);
@@ -201,10 +217,10 @@ function plan(publishers: MissionPublishers, at: number, sets: readonly FrozenSe
          * each waits for its second signature before it is kept [`subscribeMissions`], so a flood at
          * fresh `d`s under the exposed secret is checked and dropped, and costs only the cap.
          */
-        if (entry.manifestKey) filters.push({ ...authored, '#t': ['navcom_mission'], limit: PACKAGES_MAX, until });
+        if (entry.manifestKey) filters.push({ ...authored, '#t': [topic], limit: cap, until });
         if (filters.length > 0) asks.push({ id, key: key.pubkey, filters });
       } else {
-        const filters: Record<string, unknown>[] = [{ ...authored, '#t': ['navcom_mission'], limit: PACKAGES_MAX, until }];
+        const filters: Record<string, unknown>[] = [{ ...authored, '#t': [topic], limit: cap, until }];
         const ds = frozen.get(entry.id);
         if (ds) filters.push({ ...authored, '#d': [...ds], until });
         asks.push({ id, key: key.pubkey, filters });
@@ -219,6 +235,8 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
   const publishers = sources.publishers ?? MISSION_PUBLISHERS;
   const trustAt = sources.trustAt ?? (() => floorNow());
   const sets = sources.frozen ?? FROZEN_SETS;
+  const desk = sources.desk ?? false;
+  const cap = desk ? DESK_MAX : PACKAGES_MAX;
   const readings: Readings = new Map();
   /**
    * Ids whose second signature checked, and ids whose did not [core: manifest-signature.ts]. Each
@@ -272,10 +290,10 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
   };
   /** Whether `a` should replace `b` in one slot: the higher generation, then the newer, then the lower id. */
   const newer = (a: Signed, b: Signed) => outranks(rankOf(a, publishers), rankOf(b, publishers));
-  const opts = () => ({ at: trustAt(), sets, second });
+  const opts = () => ({ at: trustAt(), sets, second, desk });
   /** Whether an event is worth keeping: a package that is, or genuinely was, its publisher's. */
   const authentic = (e: Signed) => {
-    const r = readingOf(e, publishers, readings);
+    const r = readingOf(e, publishers, readings, desk);
     return r.ok || !!r.from;
   };
   /**
@@ -312,12 +330,12 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
   const passed = new Map<Map<string, Signed>, (e: Signed) => boolean>();
   const keptAside = new Map<string, Signed>();
 
-  const stored = get<Stored>('wipeable', STORE);
+  const stored = desk ? null : get<Stored>('wipeable', STORE);
   if (stored && Array.isArray(stored.events)) {
     for (const e of stored.events) {
       if (!wellFormed(e)) {
         // Checked again before it is drawn: this copy is no more than what was written to the device.
-        if (awaitsSecond(e) && keptAside.size < PACKAGES_MAX) keptAside.set(e.id, e);
+        if (awaitsSecond(e) && keptAside.size < cap) keptAside.set(e.id, e);
         continue;
       }
       const held = kept.get(slotOfE(e));
@@ -403,7 +421,7 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
       const size = e.content.length + 512;
       const n = count.get(e.pubkey) ?? 0;
       const c = chars.get(e.pubkey) ?? 0;
-      if (n >= PACKAGES_MAX || c + size > share) continue;
+      if (n >= cap || c + size > share) continue;
       out.set(slotOfE(e), e);
       count.set(e.pubkey, n + 1);
       chars.set(e.pubkey, c + size);
@@ -413,7 +431,7 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
   const save = () => {
     if (saving) clearTimeout(saving);
     saving = null;
-    if (keptAt) set('wipeable', STORE, { at: keptAt.toISOString(), events: [...kept.values()] } satisfies Stored, since);
+    if (keptAt && !desk) set('wipeable', STORE, { at: keptAt.toISOString(), events: [...kept.values()] } satisfies Stored, since);
   };
   const saveSoon = () => {
     if (!saving) saving = setTimeout(save, SAVE_MS);
@@ -441,7 +459,7 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
         if (served && newer(e, served) && authentic(e)) merged.set(slot, e);
       }
       if (live.size > 0) {
-        kept = bounded(merged);
+        kept = desk ? merged : bounded(merged);
         keptAt = new Date();
         // Each relay's full answer is kept at once; the events that follow it, a moment later [11.R].
         if (settled) save();
@@ -557,7 +575,7 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
        */
       const ask = () => {
         const at = trustAt();
-        const next = new Map(plan(publishers, at, sets).map((a) => [a.id, a]));
+        const next = new Map(plan(publishers, at, sets, desk).map((a) => [a.id, a]));
         for (const id of asks.keys()) if (!next.has(id)) send(['CLOSE', id]);
         asks = next;
         askedAt = at;
@@ -611,7 +629,7 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
       /** Whether a version has a place in this relay's answer: newer than what holds its slot, or room under its key's cap. */
       const fits = (e: Signed) => {
         const now = received.get(slotOfE(e));
-        return now ? newer(e, now) : atFrozenD(e) || heldBy(e.pubkey) < PACKAGES_MAX;
+        return now ? newer(e, now) : atFrozenD(e) || heldBy(e.pubkey) < cap;
       };
       asides.add(aside);
       // Checked and passed: into this relay's answer as if it had just arrived, its signature already verified.
@@ -651,7 +669,7 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
              * Under a frozen key and off its list: held aside, by id and under the same cap, until its
              * second signature is checked [`checkSoon`]. Its own signature first, as for any other.
              */
-            if (!awaitsSecond(e) || e.pubkey !== asked.key || aside.has(e.id) || aside.size >= PACKAGES_MAX) return;
+            if (!awaitsSecond(e) || e.pubkey !== asked.key || aside.has(e.id) || aside.size >= cap) return;
             if (!authentic(e)) {
               if (++unverified >= UNVERIFIED_MAX) refuse();
               return;
@@ -733,5 +751,90 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
     unwipe();
     if (typeof removeEventListener === 'function') removeEventListener('pagehide', flush);
     for (const close of closers) close();
+  };
+}
+
+/** Where this device keeps whether desk work is wanted: a convenience, so a reload keeps the tick. */
+const DESK_PREF = 'navcom.desk';
+/** The landing page's subscription, told when desk work is ticked or unticked [`wantDesk`]. */
+const turns = new Set<(on: boolean) => void>();
+
+/** Whether desk work is wanted on this device. Nothing stored, or storage that will not answer, is no. */
+function deskWanted(): boolean {
+  try {
+    return localStorage.getItem(DESK_PREF) === '1';
+  } catch {
+    return false;
+  }
+}
+
+/** Desk work wanted, or not: from the layers screen, kept on this device, and asked for at once. */
+export function wantDesk(on: boolean): void {
+  mapLayers.desk = on;
+  try {
+    if (on) localStorage.setItem(DESK_PREF, '1');
+    else localStorage.removeItem(DESK_PREF);
+  } catch {
+    /* kept for this page only */
+  }
+  for (const turn of turns) turn(on);
+}
+
+type Drawn = Extract<Feed, { missions: Mission[] }>;
+const drawn = (f: Feed | null): f is Drawn => !!f && (f.status === 'live' || f.status === 'cached');
+
+/**
+ * The field work's feed with the desk work's beside it: the field work's state, which the copy on this
+ * device keeps for offline, and its missions first; then each mission marked desk, and each refusal
+ * the field work did not already say. Desk work alone, while the field work has nothing to draw.
+ */
+export function merged(field: Feed, desk: Feed | null): Feed {
+  if (!drawn(desk)) return field;
+  const work = desk.missions.filter((m) => m.work === 'desk');
+  if (!drawn(field)) return { ...desk, missions: work };
+  const said = new Set(field.refused.map((r) => r.address));
+  return { ...field, missions: [...field.missions, ...work], refused: [...field.refused, ...desk.refused.filter((r) => !said.has(r.address))] };
+}
+
+/**
+ * What the landing page draws: field work always, and desk work beside it while this device wants it
+ * [`wantDesk`]. Desk work is done from anywhere, so the map outlines where it is about rather than
+ * lighting it, and nobody takes it here [claims.ts, `refusal`].
+ */
+export function watchMissions(onFeed: (feed: Feed) => void): () => void {
+  let field: Feed = { status: 'connecting' };
+  let desk: Feed | null = null;
+  let stopDesk: (() => void) | null = null;
+  const say = () => onFeed(merged(field, desk));
+  const turn = (on: boolean) => {
+    if (on && !stopDesk) {
+      mapLayers.deskFeed = 'loading';
+      stopDesk = subscribeMissions(
+        (f) => {
+          desk = f;
+          mapLayers.deskFeed = drawn(f) ? 'ready' : f.status === 'unavailable' ? 'failed' : 'loading';
+          say();
+        },
+        { desk: true }
+      );
+    } else if (!on && stopDesk) {
+      stopDesk();
+      stopDesk = null;
+      desk = null;
+      mapLayers.deskFeed = 'off';
+      say();
+    }
+  };
+  turns.add(turn);
+  const stopField = subscribeMissions((f) => {
+    field = f;
+    say();
+  });
+  mapLayers.desk = deskWanted();
+  turn(mapLayers.desk);
+  return () => {
+    turns.delete(turn);
+    stopField();
+    stopDesk?.();
   };
 }

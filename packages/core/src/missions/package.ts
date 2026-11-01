@@ -11,7 +11,7 @@
  *
  * - **`not-a-package`** — malformed, or not a Starcom package at all. Noise.
  * - **`desk`** — a valid package that is not field work. Starcom's, and correct; just not for the
- *   grid. Most of what The Record holds is this.
+ *   grid unless somebody asks for desk work [`ReadOptions`]. Most of what The Record holds is this.
  * - **`refused`** — a package that crosses one of the lines in §2 of the spec. NavCom will not show
  *   it, and the reason says which line, so the publisher can be told.
  *
@@ -295,8 +295,17 @@ export interface Mission {
   state: MissionState;
   /** `many` when the package says nothing: a campaign nobody can lock (§4.5). */
   claims: 'one' | 'many';
-  /** Unix seconds. Always present on a mission; see the refusals above. */
-  validUntil: number;
+  /**
+   * Field work, which this application exists for, or desk work: done from anywhere, about a place
+   * at most, read when somebody asks for it [`ReadOptions`]. Absent on a mission kept by a build before
+   * 2026-11-01, which read field work only.
+   */
+  work: 'field' | 'desk';
+  /**
+   * Unix seconds. Always present on field work; see the refusals above. Desk work may name no end,
+   * and then it is null, said as no end given beside its age, never an end made up for it.
+   */
+  validUntil: number | null;
   placement: MissionPlacement;
   family: string | null;
   categories: string[];
@@ -488,8 +497,22 @@ function objectivesOf(manifest: Record<string, unknown>): MissionObjective[] {
 const strings = (v: unknown): string[] =>
   Array.isArray(v) ? v.filter((s): s is string => typeof s === 'string') : typeof v === 'string' ? [v] : [];
 
+/** What a reader asks for beyond field work. */
+export interface ReadOptions {
+  /**
+   * Desk work too: a package handed to NavCom that is not field work, read as a mission marked
+   * `desk` instead of set aside. Never a grant notice, which is an opportunity for an organisation
+   * and not a mission (Starcom leaves it out of its own too), and never an exclusion, whose party can
+   * be a person [invariant 6]: the reader cannot tell a company from somebody's legal name.
+   */
+  desk?: boolean;
+}
+
+/** Families of desk work that can name a party who may be a person: refused, and said so. */
+const NAMES_A_PARTY = new Set(['exclusion']);
+
 /** One event in, one reading out. Pure: no network, no clock. */
-export function readMissionPackage(input: unknown, publishers: MissionPublishers = MISSION_PUBLISHERS): MissionReading {
+export function readMissionPackage(input: unknown, publishers: MissionPublishers = MISSION_PUBLISHERS, options: ReadOptions = {}): MissionReading {
   const raw = input as Event;
   if (
     !raw || typeof raw !== 'object' || raw.kind !== MISSION_PACKAGE_KIND || typeof raw.pubkey !== 'string' ||
@@ -546,17 +569,24 @@ export function readMissionPackage(input: unknown, publishers: MissionPublishers
     return no('refused', Number.isFinite(start) ? 'Dated before NavCom trusted the key that signed it.' : 'Signed by a key NavCom does not trust to sign yet.');
   }
 
-  if (!flag(e, 'navcom_mission')) return no('desk', 'Not field work.');
+  const field = flag(e, 'navcom_mission');
+  if (!field && !options.desk) return no('desk', 'Not field work.');
+  if (!field && (tag(e, 'mission_family') === 'grant' || flag(e, 'category:funding.grant'))) return no('desk', 'A grant notice, not a mission.');
+  if (!field && NAMES_A_PARTY.has(tag(e, 'mission_family') ?? '')) {
+    return no('refused', 'Names a party on an exclusion list, who may be a person: NavCom shows no legal names.');
+  }
 
   if (e.tags.some((t) => t[0] === 'p')) return no('refused', 'Addressed to a person — a mission is an offer, never an assignment.');
   if (tags(e, 'k').some((k) => DISTRESS_KINDS.test(k))) {
     return no('refused', 'References Distress, which nothing in the mission system may borrow.');
   }
 
-  const until = Number(tag(e, 'valid_until'));
-  if (!Number.isInteger(until) || until <= 0) return no('refused', 'A field mission has to say when it ends.');
+  // Desk work may name no end; field work must, and an end given must be a date [invariant 7].
+  const ends = tag(e, 'valid_until');
+  const until = ends === undefined && !field ? null : Number(ends);
+  if (until !== null && (!Number.isInteger(until) || until <= 0)) return no('refused', 'A field mission has to say when it ends.');
   // An end past 2100 never comes, and draws as no date at all [11.R]: a mission that cannot end is not one.
-  if (until > LAST_END) return no('refused', 'Its end is not a date a mission could have.');
+  if (until !== null && until > LAST_END) return no('refused', 'Its end is not a date a mission could have.');
 
   const state = tag(e, 'mission_state') as MissionState | undefined;
   if (!state || !STATES.includes(state)) return no('refused', 'Its state is not open, claimed or closed.');
@@ -583,7 +613,7 @@ export function readMissionPackage(input: unknown, publishers: MissionPublishers
    * a line too long to count — was accepted, and the operator found out at the end.
    */
   const objectives = objectivesOf(manifest);
-  if (objectives.length === 0) return no('refused', 'A field mission needs at least one objective.');
+  if (objectives.length === 0) return no('refused', `A ${field ? 'field ' : ''}mission needs at least one objective.`);
   if (!objectives.every((o) => OBJECTIVE_ID.test(o.id))) return no('refused', 'An objective id is not one a report could name.');
   if (new Set(objectives.map((o) => o.id)).size !== objectives.length) return no('refused', 'Two of its objectives share an id.');
 
@@ -616,6 +646,7 @@ export function readMissionPackage(input: unknown, publishers: MissionPublishers
       summary: typeof manifest['description'] === 'string' ? manifest['description'] : null,
       state,
       claims,
+      work: field ? 'field' : 'desk',
       validUntil: until,
       /*
        * Unconfirmed under a retiring key, it shows where it is filed and no finer [interchange spec
@@ -641,7 +672,7 @@ export function readMissionPackage(input: unknown, publishers: MissionPublishers
 }
 
 /** Past its `valid_until`. An expired mission says so; it is never shown as current [invariant 7]. */
-export const missionExpired = (m: Mission, now: Date): boolean => now.getTime() / 1000 > m.validUntil;
+export const missionExpired = (m: Mission, now: Date): boolean => m.validUntil !== null && now.getTime() / 1000 > m.validUntil;
 
 /** Somebody could take part in it now: not closed, not expired. */
 export const missionActive = (m: Mission, now: Date): boolean => m.state !== 'closed' && !missionExpired(m, now);

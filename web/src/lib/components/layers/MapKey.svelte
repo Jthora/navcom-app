@@ -26,6 +26,7 @@
       { id: 'mission', line: RING, fill: DOT, text: 'A mission at a place on record: a ring, never smaller than its point’s precision, about a kilometre at the finest; with a centre only at its smallest, where it is a symbol, not a spot' },
       { id: 'filed', line: 'M1 4h14v8H1z', fill: 'M1 4h14v8H1z', text: 'A mission filed under a province or a country: somewhere in it, not all of it' },
       { id: 'national', line: 'M2 3h12v10H2z', text: 'A mission filed for a whole country: its outline' },
+      ...(mapLayers.desk ? [{ id: 'desk', line: 'M1 4h14v8H1z', dash: true, text: 'Desk work about a province or a country: dashed, never lit, since it is done from anywhere' }] : []),
       { id: 'region', line: 'M4.5 4.5h7v7h-7z', text: 'With Places on: a directory region, which stands for the regions under it where they crowd' },
       { id: 'record', fill: 'M6 6h4v4H6z', text: 'Closer in: a place on record' },
       { id: 'held', line: 'M2 2h12v12H2z', dash: true, text: 'Closer in: a region with places held back from the map' }

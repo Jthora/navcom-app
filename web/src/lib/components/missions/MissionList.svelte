@@ -7,17 +7,27 @@
    * narrowed to what is filed under the shape tapped.
    *
    * Every row says an agent posted it when one did [invariant 4], and when it ends, because a
-   * mission is volatile and shows its age [invariant 7].
+   * mission is volatile and shows its age [invariant 7]: desk work that names no end says so, and
+   * when it was posted.
+   *
+   * Desk work, when somebody wants it [missions/live.ts, `wantDesk`], is a list of its own under the
+   * field work: done from anywhere, about a place at most, and taken up in Starcom.
    */
   import type { Mission } from '@navcom/core';
   import type { Refusal } from '$lib/missions/collect';
   import { Panel, Readout, Slot } from '$lib/components/panel';
   import { endsIn, endsSoon, filedUnder, placeName } from './format';
 
-  /** Where a row says it is: the city its package names, in its state, or the state alone. */
+  /** Where a row says it is: the city its package names, in its state, or the state alone; desk work about nowhere, anywhere. */
   const whereOf = (m: Mission) => {
     const city = m.placement.city;
+    if (!city && !m.placement.jurisdiction && m.work === 'desk') return 'from anywhere';
     return city ? `${city.name}, ${placeName(city.in ?? m.placement.jurisdiction)}` : placeName(m.placement.jurisdiction);
+  };
+  /** How old desk work that names no end is: posted today, or so many days ago. */
+  const postedAgo = (m: Mission, now: number) => {
+    const days = Math.floor((now / 1000 - m.publishedAt) / 86_400);
+    return days <= 0 ? 'posted today' : days === 1 ? 'posted 1 day ago' : `posted ${days} days ago`;
   };
 
   let {
@@ -54,25 +64,43 @@
         : missions
   );
   const named = $derived(place ? place.name : province ? placeName(province) : null);
+  const field = $derived(shown.filter((m) => m.work !== 'desk'));
+  const desk = $derived(shown.filter((m) => m.work === 'desk'));
 </script>
+
+{#snippet rows(list: readonly Mission[])}
+  <ul class="nc-missions">
+    {#each list as m (m.address)}
+      <li>
+        <button type="button" data-mission={m.d} data-work={m.work === 'desk' ? 'desk' : null} onclick={() => onopen(m.address)}>
+          <span class="nc-missions-title">{m.title}</span>
+          <span class="nc-missions-meta">
+            {whereOf(m)} ·
+            {#if m.validUntil === null}
+              no end given, {postedAgo(m, now)}
+            {:else}
+              <span class:nc-soon={endsSoon(m.validUntil, now)}>ends in {endsIn(m.validUntil, now)}</span>
+            {/if}
+            {#if m.publisher.agent} · <span data-agent>posted by an agent</span>{/if}
+          </span>
+        </button>
+      </li>
+    {/each}
+  </ul>
+{/snippet}
 
 <div data-screen={place ? null : 'missions'} data-province={place ? null : (province ?? '')}>
   <Panel label="Missions" post={named ?? 'Everywhere'}>
     {#if shown.length > 0}
-      <ul class="nc-missions">
-        {#each shown as m (m.address)}
-          <li>
-            <button type="button" data-mission={m.d} onclick={() => onopen(m.address)}>
-              <span class="nc-missions-title">{m.title}</span>
-              <span class="nc-missions-meta">
-                {whereOf(m)} ·
-                <span class:nc-soon={endsSoon(m.validUntil, now)}>ends in {endsIn(m.validUntil, now)}</span>
-                {#if m.publisher.agent} · <span data-agent>posted by an agent</span>{/if}
-              </span>
-            </button>
-          </li>
-        {/each}
-      </ul>
+      {#if field.length > 0}{@render rows(field)}{/if}
+      {#if desk.length > 0}
+        <div data-desk-work>
+          <Slot k="Desk work">
+            <Readout value={`${desk.length} from anywhere`} sub="about where each is filed, if anywhere; taken up in Starcom" />
+          </Slot>
+          {@render rows(desk)}
+        </div>
+      {/if}
     {:else}
       <!-- Silence is a readout [panel.md rule 6]: why it is empty, never a blank. -->
       <Slot k="Open">

@@ -15,7 +15,7 @@
   "src/lib/components/layers/SphereScreen.svelte": 0,
   "src/lib/components/layers/TimeScreen.svelte": 0,
   "src/lib/components/layers/ZoneScreen.svelte": 2,
-  "src/lib/components/missions/MissionList.svelte": 6,
+  "src/lib/components/missions/MissionList.svelte": 9,
   "src/lib/components/missions/MissionPage.svelte": 2,
   "src/lib/components/missions/MissionsHost.svelte": 0,
   "src/lib/components/missions/NwsWarnings.svelte": 7,

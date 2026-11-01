@@ -233,6 +233,13 @@ export const mapLayers = $state({
   hazards: false,
   /** Hazards' own code: what it reads arrives with its own states, per feed, in `layerData.hazards`. */
   hazardsCode: 'off' as Loading,
+  /**
+   * Desk work beside the field work: Mecha Jono's packages done from anywhere, outlined where they are
+   * about. Off until somebody ticks it, and remembered on this device [missions/live.ts, `wantDesk`].
+   */
+  desk: false,
+  /** Desk work's subscription: off, reaching the relays, answered, or none of them answering. */
+  deskFeed: 'off' as Loading,
   loaded: 0
 });
 

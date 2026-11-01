@@ -162,6 +162,8 @@
   /** What the open missions light: filled, and outlined. Rebuilt only when the missions change. */
   let litFill: Path2D | null = null;
   let litLine: Path2D | null = null;
+  /** Where desk work is about: outlined, dashed, and never lit, since nobody need go there [relight]. */
+  let deskLine: Path2D | null = null;
   let litIds = new Set<string>();
   /** Whether anything is lit, for the key's row: a mission filed under a place lights it [swatches]. */
   let lit = $state(false);
@@ -218,13 +220,16 @@
   function relight() {
     const known = new Set(provinceShapes.map((s) => s.id));
     const placed = new Set(rings.flatMap((r) => (r.kind === 'mission' ? [r.address] : [])));
-    const { fill, outline } = lightsOf(
+    const filed = (desk: boolean) =>
       active.flatMap((m) => {
         const j = m.placement.jurisdiction;
-        return j && j.includes('-') && !known.has(j) && placed.has(m.address) ? [] : [j];
-      }),
-      known
-    );
+        return (m.work === 'desk') !== desk || (j && j.includes('-') && !known.has(j) && placed.has(m.address)) ? [] : [j];
+      });
+    const { fill, outline } = lightsOf(filed(false), known);
+    // Desk work is done from anywhere: where it is about is outlined, dashed, wherever field work does not light it.
+    const desk = lightsOf(filed(true), known);
+    const about = [...provinceShapes, ...countryShapes].filter((s) => s.id !== null && !fill.has(s.id) && (desk.fill.has(s.id) || desk.outline.has(s.id)));
+    deskLine = about.length > 0 ? pathOf(about.flatMap((s) => s.rings)) : null;
     litProvinces = provinceShapes.filter((s) => s.id !== null && fill.has(s.id));
     litCountries = countryShapes.filter((s) => s.id !== null && fill.has(s.id));
     const filled = [...litProvinces, ...litCountries];
@@ -687,6 +692,13 @@
       ctx.lineWidth = 1.5 / scale;
       ctx.strokeStyle = muted;
       ctx.stroke(litLine);
+    }
+    if (deskLine) {
+      ctx.lineWidth = 1.5 / scale;
+      ctx.strokeStyle = muted;
+      ctx.setLineDash([5 / scale, 4 / scale]);
+      ctx.stroke(deskLine);
+      ctx.setLineDash([]);
     }
     for (const lifted of [hoverLine, pickedOn ? picked?.line : null, layerOpen]) {
       if (!lifted) continue;

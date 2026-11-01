@@ -87,6 +87,13 @@ describe('who may take part', () => {
     expect(refusal(mission('a', { claims: 'one', state: 'claimed' }), NOW)).toBe('taken');
   });
 
+  it('takes no desk work, signed on or not: a report here counts things, and desk work asks for a written answer', async () => {
+    signOn();
+    const desk = { ...mission('desk'), work: 'desk' as const, validUntil: null };
+    expect(refusal(desk, NOW)).toBe('desk');
+    expect(await takePart(desk, 'open', NOW, fakeWire().w)).toEqual({ ok: false, because: 'desk' });
+  });
+
   it('holds at most three at once', async () => {
     signOn();
     const { w } = fakeWire();
@@ -767,7 +774,7 @@ describe('a sealed claim or release sent again, kept before the inbox was pinned
     const read = readMissionPackage(fixtures[0]);
     if (!read.ok) throw new Error(read.because);
     const heat = read.mission;
-    const during = heat.validUntil - 2 * 86_400;
+    const during = heat.validUntil! - 2 * 86_400;
     expect(await takePart(heat, 'sealed', during, answering(null).w)).toEqual({ ok: false, because: 'retiring' });
     expect(await takePart(heat, 'open', during, answering(null).w)).toEqual({ ok: false, because: 'retiring' });
     // A sealed claim this device took before 2026-10-18, no relay having confirmed it.

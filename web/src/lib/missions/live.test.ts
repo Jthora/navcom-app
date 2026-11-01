@@ -2,8 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { finalizeEvent, generateSecretKey, getEventHash, getPublicKey } from 'nostr-tools/pure';
 import { get, panicWipe, set } from '$lib/terminal/storage';
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
-import { frozenDigest, manifestDigest, manifestKeySha256, type FrozenSet, type MissionPublishers } from '@navcom/core';
-import { KEPT_CHARS_MAX, PACKAGES_MAX, UNVERIFIED_MAX, subscribeMissions, type Feed } from './live';
+import { MISSION_RELAYS, frozenDigest, manifestDigest, manifestKeySha256, type FrozenSet, type MissionPublishers } from '@navcom/core';
+import { DESK_MAX, KEPT_CHARS_MAX, PACKAGES_MAX, UNVERIFIED_MAX, merged, subscribeMissions, wantDesk, watchMissions, type Feed } from './live';
+import { mapLayers } from '$lib/grid/layer.svelte';
 import { oneKey, trustedKey } from './registry-fixture';
 
 /** Every package read, counted: what a relay can make this phone verify is the cost to bound. */
@@ -783,5 +784,72 @@ describe('a frozen key’s versions off its list, kept by their second signature
     set('wipeable', 'missions', { at: NOW.toISOString(), events: [listed, twice('lure', 'Lure', 1791300100, thief), twice('fresh', 'Fresh', 1791300100)] });
     go();
     await checked(['Fresh', 'Listed']);
+  });
+});
+
+describe('desk work, while somebody wants it', () => {
+  /** A desk package by the test publisher: handed to NavCom, not field work, with no end. */
+  const desk = (d: string, title: string, created_at = 1791300000) =>
+    finalizeEvent(
+      {
+        kind: 30079,
+        created_at,
+        content: JSON.stringify({ name: title, objectives: [{ id: 'read:it', ask: 'Read the filing.' }] }),
+        tags: [['d', d], ['t', 'starcom_mission_package'], ['t', 'navcom_handoff'], ['mission_state', 'open'], ['jurisdiction', 'us-tx']]
+      },
+      secret
+    );
+  const reqs = (s: FakeSocket) => s.sent.filter((f) => f[0] === 'REQ' && f[1] !== 'still-there');
+  const work = () => {
+    const f = last();
+    return f.status === 'live' || f.status === 'cached' ? f.missions.map((m) => `${m.work} ${m.title}`).sort() : [];
+  };
+
+  it('asks for everything handed to NavCom under its own cap, reads desk packages as desk work, and keeps none of it on the device', () => {
+    subscribeMissions((f) => feeds.push(f), { relays: [RECORD], publishers, desk: true });
+    const s = socket(RECORD);
+    s.dispatchEvent(new Event('open'));
+    expect(reqs(s)[0]!.slice(2)).toEqual([{ kinds: [30079], authors: [getPublicKey(secret)], '#t': ['navcom_handoff'], limit: DESK_MAX, until: expect.any(Number) }]);
+    s.frame(['EVENT', 'missions:0', desk('charity', 'Longview, TX')]);
+    s.frame(['EVENT', 'missions:0', pkg('water', 'Water run')]);
+    s.frame(['EOSE', 'missions:0']);
+    expect(work()).toEqual(['desk Longview, TX', 'field Water run']);
+    vi.advanceTimersByTime(5_000);
+    expect(get('wipeable', 'missions')).toBeNull();
+  });
+
+  it('draws the field work’s state with the desk work beside it, each refusal once', () => {
+    const at = new Date(NOW);
+    const m = (title: string, work: 'field' | 'desk') => ({ title, work, address: title }) as unknown as import('@navcom/core').Mission;
+    const field: Feed = { status: 'cached', at, missions: [m('Water run', 'field')], refused: [{ address: 'x', d: 'x', because: 'no' }], clockBehind: false };
+    const deskFeed: Feed = { status: 'live', at, waiting: 0, missions: [m('Water run', 'field'), m('Longview', 'desk')], refused: [{ address: 'x', d: 'x', because: 'no' }, { address: 'y', d: 'y', because: 'names a party' }], clockBehind: false };
+    const both = merged(field, deskFeed);
+    expect(both.status).toBe('cached');
+    expect(both.status === 'cached' && both.missions.map((x) => x.title)).toEqual(['Water run', 'Longview']);
+    expect(both.status === 'cached' && both.refused.map((r) => r.address)).toEqual(['x', 'y']);
+    // Desk work alone, while the field work is still reaching its relays.
+    const alone = merged({ status: 'connecting' }, deskFeed);
+    expect(alone.status === 'live' && alone.missions.map((x) => x.title)).toEqual(['Longview']);
+    expect(merged(field, null)).toBe(field);
+  });
+
+  it('starts asking when it is ticked, stops when it is unticked, and a reload keeps the tick', () => {
+    const stop = watchMissions((f) => feeds.push(f));
+    expect(FakeSocket.made.map((s) => s.url)).toEqual([...MISSION_RELAYS]);
+    expect(mapLayers.desk).toBe(false);
+    wantDesk(true);
+    expect(FakeSocket.made).toHaveLength(4);
+    expect(mapLayers.deskFeed).toBe('loading');
+    wantDesk(false);
+    expect(FakeSocket.made.slice(2).every((s) => s.closed)).toBe(true);
+    expect(mapLayers.deskFeed).toBe('off');
+    wantDesk(true);
+    stop();
+    FakeSocket.made = [];
+    const again = watchMissions((f) => feeds.push(f));
+    expect(mapLayers.desk).toBe(true);
+    expect(FakeSocket.made).toHaveLength(4);
+    again();
+    wantDesk(false);
   });
 });

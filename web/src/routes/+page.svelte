@@ -124,7 +124,7 @@
   let now = $state(Date.now());
   const active = $derived(
     feed.status === 'live' || feed.status === 'cached'
-      ? feed.missions.filter((m) => m.state !== 'closed' && m.validUntil > now / 1000)
+      ? feed.missions.filter((m) => m.state !== 'closed' && (m.validUntil ?? 1 / 0) > now / 1000)
       : []
   );
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -461,8 +461,8 @@
     let stopMissions: (() => void) | null = null;
     let gone = false;
     void import('$lib/missions/live')
-      .then(({ subscribeMissions }) => {
-        if (!gone) stopMissions = subscribeMissions((f) => (feed = f));
+      .then(({ watchMissions }) => {
+        if (!gone) stopMissions = watchMissions((f) => (feed = f));
       })
       .catch(() => (missionsUnloaded = true));
     const tick = setInterval(() => (now = Date.now()), 60_000);

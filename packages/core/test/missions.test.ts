@@ -86,7 +86,7 @@ describe('time and state', () => {
   it('reads an open mission as active until it ends, and not after', () => {
     const m = ok(HEAT);
     expect(missionActive(m, new Date('2026-10-06T12:00:00Z'))).toBe(true);
-    expect(missionActive(m, new Date((m.validUntil + 1) * 1000))).toBe(false);
+    expect(missionActive(m, new Date((m.validUntil! + 1) * 1000))).toBe(false);
   });
 });
 
@@ -108,6 +108,50 @@ describe('what is not a mission', () => {
     expect(readMissionPackage(null)).toMatchObject({ ok: false, kind: 'not-a-package' });
     expect(readMissionPackage({ ...HEAT, kind: 1 })).toMatchObject({ ok: false, kind: 'not-a-package' });
     expect(readMissionPackage(pkg([], { drop: ['navcom_handoff'] }), TEST)).toMatchObject({ ok: false, kind: 'not-a-package' });
+  });
+});
+
+describe('desk work, when somebody asks for it', () => {
+  const desk = (extra: string[][], drop: string[] = []) => pkg(extra, { drop: ['navcom_mission', ...drop] });
+
+  it('reads Mecha Jono’s desk package as desk work, its end where it names one, at its jurisdiction while its key is frozen', () => {
+    const r = readMissionPackage(DESK, MISSION_PUBLISHERS, { desk: true });
+    if (!r.ok) throw new Error(r.because);
+    expect(r.mission.work).toBe('desk');
+    expect(r.mission.retiring).toBe('unconfirmed');
+    expect(r.mission.placement.point).toBeNull();
+  });
+
+  it('reads field work as field work, asked for desk work or not', () => {
+    expect(ok(HEAT).work).toBe('field');
+    const r = readMissionPackage(HEAT, MISSION_PUBLISHERS, { desk: true });
+    expect(r.ok && r.mission.work).toBe('field');
+  });
+
+  it('gives desk work that names no end no end, and keeps it open until it is closed', () => {
+    const r = readMissionPackage(desk([], ['valid_until']), TEST, { desk: true });
+    if (!r.ok) throw new Error(r.because);
+    expect(r.mission.validUntil).toBeNull();
+    expect(missionActive(r.mission, new Date('2100-06-01T00:00:00Z'))).toBe(true);
+    // Field work still has to say when it ends.
+    expect(readMissionPackage(pkg([], { drop: ['valid_until'] }), TEST, { desk: true })).toMatchObject({ ok: false, kind: 'refused' });
+    // And an end desk work does give is held to what any end is.
+    expect(readMissionPackage(desk([['valid_until', 'soon']], ['valid_until']), TEST, { desk: true })).toMatchObject({ ok: false, kind: 'refused' });
+  });
+
+  it('sets aside a grant notice, which is not a mission, and refuses an exclusion, whose party may be a person', () => {
+    expect(readMissionPackage(desk([['mission_family', 'grant']]), TEST, { desk: true })).toMatchObject({ ok: false, kind: 'desk' });
+    expect(readMissionPackage(desk([['t', 'category:funding.grant']]), TEST, { desk: true })).toMatchObject({ ok: false, kind: 'desk' });
+    expect(readMissionPackage(desk([['mission_family', 'exclusion']]), TEST, { desk: true })).toMatchObject({
+      ok: false,
+      kind: 'refused',
+      because: expect.stringMatching(/legal names/)
+    });
+  });
+
+  it('holds desk work to every line field work is held to', () => {
+    expect(readMissionPackage(desk([['p', 'a'.repeat(64)]]), TEST, { desk: true })).toMatchObject({ ok: false, kind: 'refused', because: expect.stringMatching(/person/) });
+    expect(readMissionPackage(desk([['k', '20910']]), TEST, { desk: true })).toMatchObject({ ok: false, kind: 'refused', because: expect.stringMatching(/Distress/) });
   });
 });
 
@@ -290,9 +334,9 @@ describe('what the second audit of Milestone 11 found', () => {
 
     it('is current through the last second of its end, and expired the second after', () => {
       const m = ok(pkg([]), TEST);
-      expect(missionExpired(m, new Date(m.validUntil * 1000))).toBe(false);
-      expect(missionActive(m, new Date(m.validUntil * 1000))).toBe(true);
-      expect(missionExpired(m, new Date((m.validUntil + 1) * 1000))).toBe(true);
+      expect(missionExpired(m, new Date(m.validUntil! * 1000))).toBe(false);
+      expect(missionActive(m, new Date(m.validUntil! * 1000))).toBe(true);
+      expect(missionExpired(m, new Date((m.validUntil! + 1) * 1000))).toBe(true);
     });
 
     it('refuses an end of zero, an end that is not a whole second, and an end past 2100 — and takes 2100 itself', () => {

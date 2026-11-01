@@ -892,6 +892,22 @@ Sphere a country is in, the most specific first; a tap opens them, each a door t
 groups, its sources (links a person chooses to follow, carrying no referrer), when it was read and
 whether it is a draft. A country in no Sphere answers as Nation States does, so a tap is never dead.
 
+### Desk work
+
+**Added 2026-11-01, at the owner's direction**: the missions Starcom shows that NavCom did not, done
+from anywhere — a charity's closure to look into, an industrial advisory to chase, relief by phone. A
+tick on the layers screen beside Hazards, off until somebody ticks it and remembered on the device as
+the choice, never as the missions. What it costs is said beside it before it is ticked: the same two
+relays, asked for everything handed to NavCom, about 2.6 MB from each on 2026-11-01.
+
+**Outlined, dashed, never lit.** A field mission lights where it is filed because somebody goes there;
+desk work asks nobody to be anywhere, so where it is about is a dashed outline, and only where no field
+work already lights it. Its rows sit under the field work's in the missions list, *N from anywhere*, and
+a mission screen says *Desk work* and that it is taken up in Starcom: a report here counts things, and
+desk work hands back a written answer. A desk mission that names no end says so, with when it was
+posted [invariant 7]. Grant notices and exclusions are left out, for the reasons the interchange spec
+gives in §3.
+
 ### Hazards
 
 **Built 2026-10-19.** Fires, volcanoes, storms, floods, droughts and earthquakes, from three public feeds,

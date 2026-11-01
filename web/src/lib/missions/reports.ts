@@ -174,7 +174,7 @@ export function reportableDays(now: number, mission?: TookPart, publishers: Miss
   }
   if (!mission) return days;
   const from = localDay(mission.since);
-  const until = localDay(mission.mission.validUntil);
+  const until = localDay(mission.mission.validUntil ?? now);
   const reported = reportedDays(mission.mission.address);
   return days.filter((d) => d >= from && d <= until && !reported.has(d));
 }
@@ -200,7 +200,7 @@ export function openReach(now: number): string {
 export function stillToReport(now: number, t: TookPart): 'now' | 'tomorrow' | null {
   if (reportableDays(now, t).length > 0) return 'now';
   const today = localDay(now);
-  return localDay(t.since) >= today || today <= localDay(t.mission.validUntil) ? 'tomorrow' : null;
+  return localDay(t.since) >= today || today <= localDay(t.mission.validUntil ?? now) ? 'tomorrow' : null;
 }
 
 /**
