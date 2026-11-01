@@ -4,8 +4,14 @@
    *
    * One mechanism, two situations. The screen says both because an operator arrives here
    * for one of them and should not have to work out that the other is the same thing.
+   *
+   * **And the same persona on two devices** — a tablet and a laptop's browser, the owner's first
+   * test (2026-11-01). Still no account: the backup is shown as a QR code on the device that has it
+   * and scanned by the one that does not, or copied across as text where no camera can scan.
    */
   import { onMount } from 'svelte';
+  import encodeQR from '@paulmillr/qr';
+  import { canScan, scan, ScanError, type Scanner } from '$lib/terminal/scan';
   import { Slot, Readout, Why } from '$lib/components/panel';
   import { ageInDays, keyPrint, secretToHex } from '@navcom/core';
   import { RestoreError, lastMade, makeBackup, restore, restoreCode, type NamedWatch } from '$lib/terminal/backup';
@@ -21,6 +27,14 @@
   let made = $state<string | null>(null);
   let copied = $state(false);
   let showCode = $state(false);
+  /** The backup as a QR code, for the other device's camera; null when it is too big for one. */
+  let asCode = $state<string | null>(null);
+  let codeError = $state<string | null>(null);
+  /** Scanning a backup another device shows: offered only where this browser can scan. */
+  let scannable = $state(false);
+  let scanning = $state(false);
+  let scanner: Scanner | null = null;
+  let camera = $state<HTMLVideoElement>();
 
   let restorePass = $state('');
   let restoreBlob = $state('');
@@ -38,7 +52,43 @@
   const reach = $derived(named ? { relays: usable(named.relays), left: refusedOf(named.relays) } : null);
 
   onMount(() => {
-    made = lastMade(); identity = loadIdentity(); named = offeredWatch(); });
+    made = lastMade(); identity = loadIdentity(); named = offeredWatch(); scannable = canScan();
+    return () => scanner?.stop();
+  });
+
+  /**
+   * The backup as a QR code. Low error correction, since it is read off a screen and the most it can
+   * hold matters more; a kit too big for one code says so and is copied as text instead.
+   */
+  function showAsCode() {
+    codeError = null;
+    try {
+      asCode = blob ? encodeQR(blob, 'svg', { ecc: 'low', border: 2 }) : null;
+    } catch {
+      asCode = null;
+      codeError = 'Too much for one code. Copy it as text instead.';
+    }
+  }
+
+  async function startScan() {
+    if (!camera) return;
+    error = null;
+    scanning = true;
+    try {
+      scanner = await scan(camera);
+      restoreBlob = (await scanner.found).trim();
+    } catch (e) {
+      error = e instanceof ScanError ? e.message : 'Could not scan.';
+    } finally {
+      scanning = false;
+      scanner = null;
+    }
+  }
+  function stopScan() {
+    scanner?.stop();
+    scanner = null;
+    scanning = false;
+  }
 
   function make() {
     error = null;
@@ -46,6 +96,7 @@
       blob = makeBackup(passphrase);
       made = lastMade();
       copied = false;
+      asCode = null;
     } catch (e) {
       error = e instanceof Error ? e.message : 'Could not make a backup.';
     }
@@ -226,6 +277,15 @@
       </p>
       <pre class="blob">{blob}</pre>
       <button onclick={copy}>{copied ? 'Copied' : 'Copy'}</button>
+      <button onclick={showAsCode} data-show-backup-code>Show as a code</button>
+      {#if asCode}
+        <p class="cost">
+          For your other device: open <strong>Backup</strong> there and scan this. Whoever photographs it
+          still needs the passphrase.
+        </p>
+        <div class="qr" data-backup-code>{@html asCode}</div>
+      {/if}
+      {#if codeError}<p class="error">{codeError}</p>{/if}
     {/if}
   </section>
 
@@ -244,7 +304,7 @@
   </section>
 {/if}
 
-<section class="act">
+<section class="act" id="restore">
   <h2>Restore</h2>
   {#if identity}
     <p class="cost">
@@ -257,6 +317,11 @@
   {/if}
   <label for="rblob">Backup or recovery code</label>
   <textarea id="rblob" bind:value={restoreBlob} rows="3" autocomplete="off" spellcheck="false"></textarea>
+  {#if scannable}
+    <button type="button" data-scan-backup onclick={scanning ? stopScan : startScan}>{scanning ? 'Stop scanning' : 'Scan a backup another device shows'}</button>
+    <!-- Only while scanning, so nothing sits there looking like a camera that is on. -->
+    <video bind:this={camera} class="camera" class:on={scanning} playsinline muted></video>
+  {/if}
   <label for="rpass">Passphrase</label>
   <input id="rpass" type="password" bind:value={restorePass} autocomplete="current-password" />
   <p class="cost">Leave the passphrase blank if you are pasting a recovery code.</p>
@@ -347,4 +412,9 @@
   .left { margin: 0; padding-inline-start: 1.1rem; display: grid; gap: .3rem; overflow-wrap: anywhere; }
   .row { display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; }
   .drop { border-color: var(--t-line); color: var(--t-faint); }
+  /* White ground whatever the theme, and large: a backup is a dense code, read off one screen by another's camera. */
+  .qr { background: #fff; padding: .8rem; align-self: flex-start; line-height: 0; }
+  .qr :global(svg) { width: min(86vw, 26rem); height: auto; display: block; }
+  .camera { width: 100%; max-height: 0; border-radius: 2px; background: var(--t-sunk); }
+  .camera.on { max-height: 20rem; object-fit: cover; }
 </style>

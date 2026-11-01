@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import encodeQR from '@paulmillr/qr';
 import { blankDevice, readDevice, seedDevice, open, TEST_SECRET } from './device';
 
 /**
@@ -45,6 +46,54 @@ test('a backup round-trips onto a phone with no identity', async ({ page, browse
   const device = await readDevice(other);
   expect(device.accruing['callsign']).toBe('Wren');
   expect(JSON.stringify(device.accruing['emergency_contact'])).toContain('Sam');
+  await fresh.close();
+});
+
+test('the same persona on a second device, by a code one shows and the other scans', async ({ page, browser }) => {
+  await seedDevice(page, OUT);
+  await open(page, '/terminal/backup/');
+  await page.locator('#pass').fill('correct horse battery');
+  await page.getByRole('button', { name: /make a backup/i }).click();
+  const blob = await page.locator('pre.blob').innerText();
+  await page.locator('[data-show-backup-code]').click();
+  // The code is the backup itself, drawn by the same encoder, and says the passphrase still guards it.
+  const svg = await page.locator('[data-backup-code]').innerHTML();
+  const drawn = await page.evaluate((expected) => {
+    const box = document.createElement('div');
+    box.innerHTML = expected;
+    return box.innerHTML;
+  }, encodeQR(blob, 'svg', { ecc: 'low', border: 2 }));
+  expect(svg).toBe(drawn);
+  await expect(page.getByText(/still needs the passphrase/i)).toBeVisible();
+
+  // The other device, with nothing on it, and a camera that sees that code.
+  const fresh = await browser.newContext();
+  const other = await fresh.newPage();
+  await other.addInitScript((seen) => {
+    (globalThis as unknown as { BarcodeDetector: unknown }).BarcodeDetector = class {
+      async detect() {
+        return [{ rawValue: seen }];
+      }
+    };
+    navigator.mediaDevices.getUserMedia = async () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = 2;
+      return canvas.captureStream();
+    };
+    // A blank stream never sends a frame, so playing it would wait for ever: this camera is a stand-in.
+    HTMLMediaElement.prototype.play = () => Promise.resolve();
+  }, blob);
+  await seedDevice(other);
+  // Set up offers the way here before a second persona is made by mistake.
+  await open(other, '/terminal/setup/');
+  await other.locator('[data-elsewhere] a').click();
+  await expect(other).toHaveURL(/\/terminal\/backup\/#restore$/);
+  await other.locator('[data-scan-backup]').click();
+  await expect(other.locator('#rblob')).toHaveValue(blob);
+  await other.locator('#rpass').fill('correct horse battery');
+  await other.getByRole('button', { name: /^restore$/i }).click();
+  await expect(other.locator('[data-restored]')).toBeVisible();
+  expect((await readDevice(other)).accruing['callsign']).toBe('Wren');
   await fresh.close();
 });
 

@@ -437,6 +437,11 @@
   -->
   <button type="submit" disabled={!callsign.trim()}>Make my callsign</button>
     </form>
+    <!-- The second device: the same persona carried over, never a second one made by mistake. -->
+    <p class="note" data-elsewhere>
+      Already have NavCom on another device? <a href="/terminal/backup/#restore">Bring that callsign here</a>
+      instead.
+    </p>
   {/if}
 </section>
 

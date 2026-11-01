@@ -1,0 +1,8 @@
+{
+  "appId": "app.navcom",
+  "appName": "NavCom",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  }
+}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">NavCom</string>
+    <string name="title_activity_main">NavCom</string>
+    <string name="package_name">app.navcom</string>
+    <string name="custom_url_scheme">app.navcom</string>
+</resources>

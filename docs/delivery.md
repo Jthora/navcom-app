@@ -97,6 +97,24 @@ stale impossibility is how a real option gets ruled out for years without anyone
 Nothing else justifies a native build. In particular, *"it feels more like a real app"*
 does not.
 
+### The Android shell, begun 2026-11-01
+
+At the owner's direction, for their own tablet first: **`apps/android`**, the site's own static
+build bundled by Capacitor (8.5.3, pinned) and served from the device, so it opens with no network.
+Sideloaded over USB — `npm run apk`, then `npm run install-apk` in that folder — with no store
+listing, and nothing on the web app pitches it. **Nothing native is wired yet**: it is the shell the
+three gains above would be built into, and the offline form the Old Net → New Net brief asks of
+NavCom. Kept outside the npm workspaces, so a deploy never installs or builds it.
+
+Two things differ from the site, and both are said here so nobody mistakes them for bugs:
+
+- **Its own storage.** An installed app is not the browser, so it does not share the browser's
+  origin storage the way an installed PWA does. A persona is carried into it as into another
+  device: Backup, shown as a code on one and scanned on the other, or copied across as text
+- **Its prerendered pages.** Capacitor's on-device server answers a path with no extension with the
+  root page, as a single-page app wants; `PrerenderedPages.java` serves each page's own
+  `index.html` instead, for the page and its service worker alike
+
 **What the web app already does on both platforms**, and which was underrated here: it
 installs to the home screen, runs full screen, works entirely offline, and — since iOS
 16.4 — **receives push notifications**. Push is a real paging channel for an on-call

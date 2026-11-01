@@ -1,0 +1,19 @@
+{
+  "name": "navcom-android",
+  "private": true,
+  "type": "module",
+  "description": "NavCom as an installed Android app: the site's own static build, wrapped by Capacitor, served from the device.",
+  "scripts": {
+    "stage": "node scripts/stage.mjs",
+    "sync": "npm run stage && cap sync android",
+    "apk": "npm run sync && cd android && ./gradlew assembleDebug",
+    "install-apk": "node scripts/install.mjs"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/core": "8.5.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.3"
+  }
+}
