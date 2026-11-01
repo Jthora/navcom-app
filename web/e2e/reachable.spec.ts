@@ -198,6 +198,12 @@ test.describe('distress before the app has loaded', () => {
     await expect(call).toBeVisible();
     await expect(text).toHaveAttribute('href', 'sms:+15550100');
     await expect(call).toHaveAttribute('href', 'tel:+15550100');
+    /*
+     * Let the page finish loading before the test ends. Three full runs out of four, the browser was
+     * gone when the next test asked for a context, every time straight after this one: a page closed
+     * mid-load with every script aborted, in a browser five hundred tests old (2026-10-29 to 11-01).
+     */
+    await page.waitForLoadState('load');
   });
 
   test('says nothing at all when there is no contact to offer', async ({ page }) => {
@@ -208,6 +214,7 @@ test.describe('distress before the app has loaded', () => {
     await page.goto('/terminal/distress/', { waitUntil: 'commit' });
 
     await expect(page.getByRole('heading', { name: /your person/i })).toHaveCount(0);
+    await page.waitForLoadState('load');
   });
 
   test('does not survive as a duplicate once the app is running', async ({ page }) => {

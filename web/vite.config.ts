@@ -1,5 +1,6 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
+import { availableParallelism } from 'node:os';
 import { VERSION } from './src/lib/server/version';
 
 /**
@@ -62,6 +63,13 @@ export default defineConfig({
      * silently — which is exactly how car.test.ts got here.
      */
     testTimeout: 60_000,
-    hookTimeout: 120_000
+    hookTimeout: 120_000,
+    /*
+     * Every core, not Vitest's default of one fewer. On Vercel's two-core builder that default is one
+     * worker, so the deploy ran this suite a file at a time: 462 s of wall time for 384 s of tests, 240
+     * s of them in files that wait on relay sockets and timers rather than compute, which a second
+     * worker overlaps (measured 2026-11-01).
+     */
+    maxWorkers: availableParallelism(),
   }
 });

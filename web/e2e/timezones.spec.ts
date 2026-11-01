@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { chunkOf, open, seedDevice, serviceWorkerReady } from './device';
-import { frame, mapReady, screenAt, seen, tapAt, zoomAt } from './map';
+import { frame, mapReady, placesOff, screenAt, seen, tapAt, zoomAt } from './map';
 
 /**
  * The time zones layer [the owner's map decision D8; docs/design/map.md, Layers], against the build
@@ -19,6 +19,8 @@ async function landed(page: Page) {
   await seedDevice(page, { __noStorage: true });
   await open(page, '/');
   await mapReady(page);
+  // With nothing open Places comes on by itself; its squares answer a hover or a tap before a layer's areas.
+  await placesOff(page);
 }
 
 async function chooseTimes(page: Page) {
@@ -103,9 +105,9 @@ test.describe('the time zones layer on a desktop: hover says the time', () => {
     await expect(chip).toHaveText('UTC±0 · 11:05 now, standard time');
 
     // With Places on, Birmingham's ring: Europe/London's clocks read 12:05, BST, which no band says.
-    const arrived = page.waitForResponse((r) => r.url().endsWith('/grid/places.json'));
+    // Its file came when Places came on by itself, and is not asked for twice.
     await page.getByRole('button', { name: 'Places' }).click();
-    await arrived;
+    await expect(page.locator('.grid')).toHaveAttribute('data-places-file', 'ready');
     const b = await page.evaluate(async () => {
       const j = (await (await fetch('/console-regions.json')).json()) as { centroids: { region: string; lat: number; lon: number }[] };
       return j.centroids.find((c) => c.region === 'birmingham-uk')!;

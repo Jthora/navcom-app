@@ -34,6 +34,25 @@ export async function mapReady(page: Page) {
   await frame(page);
 }
 
+/**
+ * Places on with no mission open, as it comes on by itself once every mission relay has answered
+ * [+page.svelte], and its file arrived and drawn. For a test that means to read the map with Places.
+ */
+export async function placesCameOn(page: Page) {
+  await expect(page.getByRole('button', { name: 'Places' })).toHaveAttribute('aria-pressed', 'true', { timeout: 15_000 });
+  await expect(page.locator('.grid')).toHaveAttribute('data-places-file', 'ready', { timeout: 15_000 });
+  await frame(page);
+}
+
+/** Places switched back off once it has come on by itself, for a test that reads the map without it. */
+export async function placesOff(page: Page) {
+  const places = page.getByRole('button', { name: 'Places' });
+  await placesCameOn(page);
+  await places.click();
+  await expect(places).toHaveAttribute('aria-pressed', 'false');
+  await frame(page);
+}
+
 /** Where (lon, lat) is on screen, in CSS px, and whether a tap there would reach the map itself. */
 export async function screenAt(page: Page, lon: number, lat: number): Promise<{ x: number; y: number; uncovered: boolean }> {
   const [ux, uy] = project(lon, lat);

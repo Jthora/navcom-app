@@ -5,8 +5,10 @@
  *
  * There is no CI and there is not going to be. That is a decision rather than a gap — see
  * [`build-order.md`](../../docs/build-order.md) 9.9 — and it makes the deploy the only gate this
- * project has. `vercel.json` runs every workspace's `verify` as its build command, so a deploy
- * that ships is a deploy whose tests passed.
+ * project has. `vercel.json` runs `deploy-gate.mjs` as its build command: the site's checks every
+ * time, and each workspace's `verify` whenever its code changed since the live build, so a deploy
+ * that ships is a deploy whose tests passed, on this deploy or on the one before it that last ran
+ * them. Which, for each workspace, the receipt says (since 2026-11-01).
  *
  * But nobody outside can see that. A static site looks identical whether it was tested or thrown
  * over the wall, which is the thing the whole EIN round kept finding: *a check that never runs
@@ -81,6 +83,21 @@ function browserRan() {
   return false;
 }
 
+/**
+ * What the deploy gate ran and what it left standing on the live build, written by this same pass,
+ * or null where no gate ran it (a local verify runs every workspace by hand).
+ */
+function gate() {
+  const path = join(WEB, '.deploy-gate.json');
+  if (!existsSync(path)) return null;
+  try {
+    if (Date.now() - statSync(path).mtimeMs >= 3_600_000) return null;
+    return JSON.parse(readFileSync(path, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
 const unit = counts();
 const receipt = {
   /*
@@ -93,6 +110,7 @@ const receipt = {
   at: new Date().toISOString(),
   counts: unit,
   browser: browserRan(),
+  gate: gate(),
   /** Said in the artifact, because it is the limit a reader most needs and least expects. */
   note: browserRan()
     ? 'unit and browser suites, this pass'

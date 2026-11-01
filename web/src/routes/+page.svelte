@@ -93,6 +93,20 @@
   /** Places are one switch away; missions are what the map opens on [map.md §6]. */
   let coverage = $state(false);
   /**
+   * With no mission open the map opened on an empty Earth, outlines and nothing on them (the owner,
+   * 2026-11-01). So Places comes on by itself once the live feed says nothing is open: never before
+   * every relay has had its first say, so a relay answering empty while another is still sending does
+   * not decide it; never before the feed answers, so first paint and mount still fetch no places
+   * [map.md, budgets]; and never from a cached or offline feed, where the file may not arrive. Once a
+   * visit, and never against the person: switched off, it stays off.
+   */
+  let placesOffered = false;
+  $effect(() => {
+    if (placesOffered || mapStatus !== 'ready' || feed.status !== 'live' || feed.waiting > 0 || active.length > 0) return;
+    placesOffered = true;
+    coverage = true;
+  });
+  /**
    * The map's own word on whether it drew and whether Places arrived. Places is offered only on a
    * drawn map: without one, or without script, it toggled and nothing changed.
    */

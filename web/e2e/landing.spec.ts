@@ -3,7 +3,7 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import { blankDevice, chunkOf, open, seedDevice } from './device';
-import { frame, inkNear, mapReady, pixelAt, screenAt, tap, tapAt, toneNear, zoomAt } from './map';
+import { frame, inkNear, mapReady, pixelAt, placesOff, screenAt, tap, tapAt, toneNear, zoomAt } from './map';
 import { METRES_PER_UNIT } from '../src/lib/grid/topology';
 import { admit, mission, resign, standInKey, type StandIn } from './registry';
 import { serveHazards } from './hazards';
@@ -378,11 +378,14 @@ test.describe('the landing map draws, and tells nobody', () => {
       await page.getByRole('button', { name: 'Show the whole map' }).click();
     }
 
+
     test('an open mission lights its province, and says it is live', async ({ page }) => {
       await page.clock.setFixedTime(DURING);
       await blankDevice(page);
       await load(page);
       await expect(page.locator('[data-missions="none"]')).toContainText('live');
+      // With nothing open Places comes on by itself; its squares would brighten what a lit province is compared against.
+      await placesOff(page);
       const dark = await brightness(page);
 
       await seedDevice(page, { relayEvents: [HEAT], __noStorage: true } as Parameters<typeof seedDevice>[1]);
@@ -397,6 +400,8 @@ test.describe('the landing map draws, and tells nobody', () => {
       await page.clock.setFixedTime(DURING);
       await blankDevice(page);
       await load(page);
+      // With nothing open Places comes on by itself; its squares would brighten what a lit province is compared against.
+      await placesOff(page);
       const dark = await brightness(page);
 
       // Installed last, so it wins: The Record refuses the connection, the mirror holds the mission.
@@ -550,7 +555,12 @@ test.describe('the landing page: Com over the map', () => {
 
   // Distress at every height, with and without a screen open, is com-distress.spec.ts.
 
-  test('places are one switch away, and off until somebody asks', async ({ page }) => {
+  /*
+   * With nothing open, Places comes on by itself once every mission relay has answered: an empty Earth
+   * said nothing (the owner, 2026-11-01). Off it stays off, and the file is never asked for before the
+   * feed has answered [map.md, budgets]. With a mission open, Places waits to be asked, below.
+   */
+  test('with no mission open, places come on by themselves once the feed has answered, and off they stay off', async ({ page }) => {
     const mutedPixels = () =>
       page.locator('.grid canvas').evaluate((c: HTMLCanvasElement) => {
         const hex = getComputedStyle(c).getPropertyValue('--t-muted').trim().replace('#', '') || '9BA5B2';
@@ -565,12 +575,17 @@ test.describe('the landing page: Com over the map', () => {
     await blankDevice(page);
     await page.goto('/', { waitUntil: 'networkidle' });
     await expect(page.locator('[data-grid="ready"]')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('[data-missions="none"]')).toContainText('live');
     const coverage = page.getByRole('button', { name: 'Places' });
-    await expect(coverage).toHaveAttribute('aria-pressed', 'false');
-    const off = await mutedPixels();
-    await coverage.click();
     await expect(coverage).toHaveAttribute('aria-pressed', 'true');
-    await expect.poll(mutedPixels, { timeout: 5_000 }).toBeGreaterThan(off + 1000);
+    await expect.poll(mutedPixels, { timeout: 5_000 }).toBeGreaterThan(1000);
+    const on = await mutedPixels();
+    await coverage.click();
+    await expect(coverage).toHaveAttribute('aria-pressed', 'false');
+    await expect.poll(mutedPixels, { timeout: 5_000 }).toBeLessThan(on - 1000);
+    // Not switched back on behind the person's back, however long the page stays open.
+    await page.waitForTimeout(2_000);
+    await expect(coverage).toHaveAttribute('aria-pressed', 'false');
   });
 });
 

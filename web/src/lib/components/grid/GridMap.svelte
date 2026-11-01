@@ -1372,7 +1372,9 @@
         const line = parseFloat(getComputedStyle(moreEl).lineHeight) || 17;
         const top = moreEl.getBoundingClientRect().top - box.top;
         const first = moreEl.querySelector('.line')?.getBoundingClientRect();
-        const whole = first ? Math.max(1, Math.round(first.height / line)) : 1;
+        // The line of what ages fastest is kept whole; swatches alone, Places' among them, may be cut to
+        // nothing where the Earth needs the room (320 × 568, signed on, at half: 2026-11-01).
+        const whole = first ? Math.max(1, Math.round(first.height / line)) : 0;
         const was = room;
         room = Math.max(whole, Math.min(3, Math.floor((height - reach - EARTH - GAP - top - 8) / line))) * line;
         cut = moreEl.scrollHeight > moreEl.clientHeight + 1;
@@ -1670,7 +1672,7 @@
   });
 </script>
 
-<div class="grid" data-grid={status}>
+<div class="grid" data-grid={status} data-places-file={placesStatus}>
   <!--
     The canvas is the map: focusable, labelled, and taking the arrow keys. No role, because the
     two that fit do not survive this project's checker — "img" contradicts being focusable, and

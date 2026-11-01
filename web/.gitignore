@@ -17,6 +17,7 @@ playwright-report/
 # Vitest's JSON report, read by scripts/receipt.mjs and deleted once recorded.
 # A stale one is a number a later run could publish as its own.
 .vitest.json
+.deploy-gate.json
 
 # Vite's compiled copy of vite.config.ts, written next to it when the config is
 # reloaded and left behind when a build is interrupted.

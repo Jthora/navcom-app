@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { chunkOf, open, seedDevice } from './device';
-import { bring, frame, mapReady, pixelAt, screenAt, toneNear, zoomAt } from './map';
+import { bring, frame, mapReady, pixelAt, placesOff, screenAt, toneNear, zoomAt } from './map';
 import { subsolar, terminator } from '../src/lib/grid/sun';
 
 /**
@@ -29,6 +29,8 @@ async function landed(page: Page) {
   await seedDevice(page, { __noStorage: true });
   await open(page, '/');
   await mapReady(page);
+  // With nothing open Places comes on by itself, and its squares are ink these read as night and day.
+  await placesOff(page);
 }
 
 /** The layers screen, with a layer chosen. */

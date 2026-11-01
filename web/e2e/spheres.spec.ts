@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { open, seedDevice } from './device';
-import { frame, mapReady, screenAt, tapAt, toneNear, zoomAt } from './map';
+import { frame, mapReady, placesOff, screenAt, tapAt, toneNear, zoomAt } from './map';
 import { serveSpheres } from './spheres';
 
 /**
@@ -20,6 +20,8 @@ async function landed(page: Page) {
   await seedDevice(page, { __noStorage: true });
   await open(page, '/');
   await mapReady(page);
+  // With nothing open Places comes on by itself; its squares answer a hover or a tap before a layer's areas.
+  await placesOff(page);
 }
 
 async function chooseSpheres(page: Page) {

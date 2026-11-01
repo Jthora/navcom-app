@@ -67,13 +67,17 @@ test('fetched once, only when ticked, and never by Places or by what is on scree
   page.on('request', (r) => void (/^https?:/.test(r.url()) && asked.push(new URL(r.url()).pathname)));
   await landed(page, OCTOBER);
   expect(asked.filter((p) => p.includes('region-ages')), 'fetched before it was ticked').toEqual([]);
+  // With nothing open, Places comes on by itself and asks for its own file [+page.svelte]: counted
+  // before the ages are ticked, so what the ages ask for is told apart from what Places did.
+  await frame(page);
+  const placesBefore = asked.filter((p) => p === '/grid/places.json').length;
   const screen = await agesOn(page);
   await screen.locator('[data-ages]').uncheck();
   await screen.locator('[data-ages]').check();
   await frame(page);
   expect(asked.filter((p) => p.includes('region-ages'))).toEqual(['/grid/region-ages.json']);
-  // The regions alone: Places' own file is Places', and nobody asked for it.
-  expect(asked.filter((p) => p === '/grid/places.json')).toEqual([]);
+  // The regions alone: Places' own file is Places', and ticking the ages asked for none of it.
+  expect(asked.filter((p) => p === '/grid/places.json').length, 'asked for by the ages').toBe(placesBefore);
   // The key says what it is, and that no person has confirmed any of the directory, by phone or in person.
   await expect(page.locator('[data-legend="nations"]')).toHaveText('Directory by last check · none by a person');
   await expect(screen.locator('[data-key-full]')).toContainText('by a person is a check confirmed by phone, in person or at the place');

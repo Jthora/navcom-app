@@ -66,7 +66,11 @@ import { collect, gateable, readingOf, type Collected, type Readings } from './c
 import { floorNow } from './floor';
 
 export type Feed =
-  | ({ status: 'live'; at: Date } & Collected)
+  /**
+   * `waiting`: relays still on their first attempt. While any is, the picture may still grow: a relay
+   * that answered empty is not yet word that nothing is open, while another is still sending.
+   */
+  | ({ status: 'live'; at: Date; waiting: number } & Collected)
   | ({ status: 'cached'; at: Date } & Collected)
   | { status: 'connecting' }
   | { status: 'unavailable' };
@@ -340,7 +344,7 @@ export function subscribeMissions(onFeed: (feed: Feed) => void, sources: Sources
         // Each relay's full answer is kept at once; the events that follow it, a moment later [11.R].
         if (settled) save();
         else saveSoon();
-        onFeed({ status: 'live', at: keptAt, ...collect([...merged.values()], keptAt, publishers, readings, opts()) });
+        onFeed({ status: 'live', at: keptAt, waiting: firstTry.size, ...collect([...merged.values()], keptAt, publishers, readings, opts()) });
       } else {
         // Every relay has dropped: the picture stands as of the last moment one was heard.
         onFeed({ status: 'cached', at: keptAt!, ...collect([...merged.values()], new Date(), publishers, readings, opts()) });
