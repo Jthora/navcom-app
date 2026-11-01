@@ -27,6 +27,7 @@
   import type { Feed } from '$lib/missions/live';
   import type { Screen } from '$lib/com/screens';
   import type GridMapType from '$lib/components/grid/GridMap.svelte';
+  import type BuildLineType from '$lib/console/BuildLine.svelte';
 
   /**
    * A local, deliberately-not-imported equivalent of $lib/terminal/signature's own
@@ -344,14 +345,9 @@
     focusedRegionSlug ? (figures[focusedRegionSlug] ?? null) : null
   );
 
-  interface Health {
-    commit: string | null;
-    clean: boolean | null;
-    built_on: 'ci' | 'local';
-    suites: { ran: string; counts: { passed: number; total: number } | null };
-  }
-  let health = $state<Health | null>(null);
-  let healthTried = $state(false);
+  /** The Build line, loaded as the page mounts [BuildLine.svelte]; null until it arrives. */
+  let BuildLine = $state<typeof BuildLineType | null>(null);
+  let buildUnloaded = $state(false);
 
   /**
    * Same rule as $lib/terminal/signature's own `signature()`/`defaultSignature()`,
@@ -405,26 +401,6 @@
      * when they search, like any page they choose to read.
      */
     void locateOnce().then((f) => (fix = f));
-    /*
-     * Bounded, because a fetch that *hangs* is the case this readout is worst at.
-     *
-     * A failure resolves honestly to "Unreachable" — both `.then` and `.catch` set
-     * `healthTried`. A hang sets nothing, and the panel reads "Checking…" for as long as the
-     * page is open. On a captive portal or a dead cell, which is exactly the first-visit
-     * case, that is a pending state that never resolves and reads as a fact still arriving.
-     */
-    const healthTimeout = new AbortController();
-    const healthGaveUp = setTimeout(() => healthTimeout.abort(), 8_000);
-    void fetch('/.well-known/navcom-health.json', { signal: healthTimeout.signal })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j) => {
-        health = j;
-        healthTried = true;
-      })
-      .catch(() => {
-        healthTried = true;
-      })
-      .finally(() => clearTimeout(healthGaveUp));
 
     /*
      * An operator on this device gets Distress, in its own layer that nothing covers
@@ -461,6 +437,9 @@
     void import('$lib/components/grid/GridMap.svelte')
       .then((m) => (GridMap = m.default))
       .catch(() => (mapUnloaded = true));
+    void import('$lib/console/BuildLine.svelte')
+      .then((m) => (BuildLine = m.default))
+      .catch(() => (buildUnloaded = true));
     comArrives = import('$lib/components/com').then(
       (m) => void (Com = m),
       () => void (comUnloaded = true)
@@ -519,17 +498,6 @@
     }
   }
 
-  const healthSub = $derived.by(() => {
-    if (!health) return null;
-    const parts: string[] = [];
-    if (health.clean === true) parts.push('clean tree');
-    else if (health.clean === false) parts.push('uncommitted changes');
-    if (health.suites?.counts) {
-      parts.push(`${health.suites.counts.passed}/${health.suites.counts.total} tests`);
-    }
-    if (health.suites?.ran) parts.push(health.suites.ran);
-    return parts.length ? parts.join(' · ') : null;
-  });
 </script>
 
 <svelte:head>
@@ -885,13 +853,9 @@
         </Slot>
       {/if}
       <Slot k="Build">
-        {#if health}
-          <Readout
-            value={health.commit ? health.commit.slice(0, 7) : 'unknown'} verbatim
-            tone={health.clean === false ? 'warn' : 'neutral'}
-            sub={healthSub}
-          />
-        {:else if healthTried}
+        {#if BuildLine}
+          <BuildLine />
+        {:else if buildUnloaded}
           <Readout value="Unreachable" tone="cold" sub="no build receipt found" />
         {:else}
           <Readout value="Checking…" tone="cold" />
@@ -901,8 +865,8 @@
         <p>
           Regions and records are counted from the same directory anyone can browse — nothing
           here is asserted twice. The build line is this deploy's own verify-then-ship receipt:
-          the actual commit and test count behind what you are using right now, not a claim
-          about it.
+          the actual commit and test count behind what is deployed, not a claim about it. Where
+          this page is running an older build, kept by this browser, it says so and names both.
         </p>
         <p>
           Anything an operator publishes is theirs to answer for, not NavCom's —

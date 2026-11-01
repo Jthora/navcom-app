@@ -79,5 +79,24 @@ test.describe('the suite is served build/, as the host serves it', () => {
     await open(page, '/');
     await expect(page.locator('[data-slot="build"]')).toContainText(health.commit ? health.commit.slice(0, 7) : 'unknown');
     await expect(page.locator('[data-slot="build"]')).not.toContainText(/unreachable/i);
+    // The same build as deployed: no line saying otherwise, and nothing to load.
+    await expect(page.locator('[data-build-older]')).toHaveCount(0);
+  });
+
+  test('a page older than what is deployed says so, names both, and offers the newest', async ({ page, request }) => {
+    /*
+     * The owner's own browser sat on a weeks-old build while this line named the newest commit,
+     * because the health file is fetched past the service worker and names what is deployed
+     * (2026-11-01). Here the deployed commit is made to differ from the one this page was built from.
+     */
+    const health = (await (await request.get('/.well-known/navcom-health.json')).json()) as Record<string, unknown>;
+    const elsewhere = 'abcdef0123456789abcdef0123456789abcdef01';
+    await page.route('**/.well-known/navcom-health.json', (route) => route.fulfill({ json: { ...health, commit: elsewhere } }));
+    await blankDevice(page);
+    await open(page, '/');
+    const older = page.locator('[data-slot="build"] [data-build-older]');
+    await expect(older).toContainText(/this page · abcdef0 is deployed/);
+    await expect(older).not.toContainText('abcdef0123');
+    await expect(page.locator('[data-load-newest]')).toHaveText(/load the newest/i);
   });
 });

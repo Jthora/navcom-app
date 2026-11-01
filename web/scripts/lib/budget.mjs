@@ -202,7 +202,7 @@ export const SURFACES = {
  * own code is one of them: its list of screens and the one component that draws each, so that the
  * page's first paint names no entry [$lib/com/screens].
  */
-export const ROOT_MOUNT = ['src/lib/components/grid/GridMap.svelte', 'src/lib/missions/live.ts', 'src/lib/components/com/index.ts'];
+export const ROOT_MOUNT = ['src/lib/components/grid/GridMap.svelte', 'src/lib/missions/live.ts', 'src/lib/components/com/index.ts', 'src/lib/console/BuildLine.svelte'];
 /**
  * Loaded the first time somebody opens one of Com's screens [com.md §6], by entry name. Imported by
  * Com's registry (`ENTRIES` in `src/lib/com/screens.ts`), never by the page, so each is a tier the

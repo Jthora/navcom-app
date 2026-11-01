@@ -33,10 +33,11 @@ const MAP = 'src/lib/components/grid/GridMap.svelte';
 const LIVE = 'src/lib/missions/live.ts';
 const MISSIONS = 'src/lib/components/missions/index.ts';
 const COM = 'src/lib/components/com/index.ts';
+const BUILD_LINE = 'src/lib/console/BuildLine.svelte';
 const ERROR_PAGE = '.svelte-kit/generated/shared/error-template.js';
 
 /**
- * A landing page that mounts a map, a feed and Com's registry, whose registry opens a missions
+ * A landing page that mounts a map, a feed, Com's registry and its Build line, whose registry opens a missions
  * entry; a roster, a Status page heavy on script, a Find page heavy on HTML, and a public page with
  * none.
  *
@@ -59,7 +60,7 @@ function manifest(): Record<string, { file: string; isEntry?: boolean; isDynamic
       isEntry: true,
       isDynamicEntry: true,
       imports: ['_shared.js'],
-      dynamicImports: [MAP, LIVE, COM, '_shared.js', NODE('2'), ERROR_PAGE],
+      dynamicImports: [MAP, LIVE, COM, BUILD_LINE, '_shared.js', NODE('2'), ERROR_PAGE],
       css: [`${A}/assets/0.css`]
     },
     [NODE('1')]: { file: `${A}/nodes/1.js`, isEntry: true, isDynamicEntry: true, imports: ['_shared.js', '_core.js'] },
@@ -69,6 +70,7 @@ function manifest(): Record<string, { file: string; isEntry?: boolean; isDynamic
     [MAP]: { file: `${A}/chunks/map.js`, isDynamicEntry: true, src: MAP, imports: ['_shared.js'], css: [`${A}/assets/map.css`] },
     [LIVE]: { file: `${A}/chunks/live.js`, isDynamicEntry: true, src: LIVE, imports: ['_core.js'] },
     [COM]: { file: `${A}/chunks/com.js`, isDynamicEntry: true, src: COM, imports: ['_shared.js'], dynamicImports: [MISSIONS] },
+    [BUILD_LINE]: { file: `${A}/chunks/build-line.js`, isDynamicEntry: true, src: BUILD_LINE, imports: ['_shared.js'] },
     [MISSIONS]: {
       file: `${A}/chunks/missions.js`,
       isDynamicEntry: true,
@@ -111,6 +113,7 @@ function fixture(overrides: { manifest?: ReturnType<typeof manifest>; chunks?: R
     [`${A}/chunks/map.js`]: noise(500),
     [`${A}/chunks/live.js`]: noise(250),
     [`${A}/chunks/com.js`]: noise(120),
+    [`${A}/chunks/build-line.js`]: noise(80),
     [`${A}/chunks/missions.js`]: noise(900),
     [`${A}/chunks/error.js`]: noise(60),
     [`${A}/chunks/shared.js`]: noise(700),
@@ -191,6 +194,7 @@ const DEFERRED_BEFORE = [
   `${A}/chunks/map.js`,
   `${A}/chunks/live.js`,
   `${A}/chunks/com.js`,
+  `${A}/chunks/build-line.js`,
   `${A}/chunks/missions.js`,
   `${A}/chunks/pool.js`,
   `${A}/assets/only.css`,
@@ -306,7 +310,7 @@ describe('the budget, run on a build whose answers are known', () => {
     expect(tiers.first_paint.js).toBe(f.sum(`${A}/entry/app.js`, `${A}/nodes/0.js`, `${A}/chunks/shared.js`));
     expect(tiers.first_paint.css).toBe(f.gz(`${A}/assets/0.css`));
     // The map, the feed, the core chunk the feed pulls and Com's registry: every visit pays for these.
-    expect(tiers.mount.js).toBe(f.sum(`${A}/chunks/map.js`, `${A}/chunks/live.js`, `${A}/chunks/core.js`, `${A}/chunks/com.js`));
+    expect(tiers.mount.js).toBe(f.sum(`${A}/chunks/map.js`, `${A}/chunks/live.js`, `${A}/chunks/core.js`, `${A}/chunks/com.js`, `${A}/chunks/build-line.js`));
     expect(tiers.mount.css).toBe(f.gz(`${A}/assets/map.css`));
     // The entry pays for its own code and what mount did not already load: not core again.
     expect(tiers.entries.missions.js).toBe(f.sum(`${A}/chunks/missions.js`, `${A}/chunks/pool.js`));
@@ -339,7 +343,7 @@ describe('the budget, run on a build whose answers are known', () => {
     });
     const { report } = run(f);
     const tiers = report.root_tiers;
-    expect(tiers.mount.js).toBe(f.sum(`${A}/chunks/map.js`, `${A}/chunks/live.js`, `${A}/chunks/core.js`, `${A}/chunks/com.js`));
+    expect(tiers.mount.js).toBe(f.sum(`${A}/chunks/map.js`, `${A}/chunks/live.js`, `${A}/chunks/core.js`, `${A}/chunks/com.js`, `${A}/chunks/build-line.js`));
     expect(tiers.entries.missions.js).toBe(f.sum(`${A}/chunks/missions.js`, `${A}/chunks/pool.js`));
     // Each in its own tier, named for what to declare it as, and paying nothing mount already loaded.
     expect(tiers.unclassified).toEqual({
@@ -357,7 +361,7 @@ describe('the budget, run on a build whose answers are known', () => {
   it('reports a dynamic import nobody declared on a line of its own, and a declared one that went away', () => {
     const m = manifest();
     m['src/lib/components/people/index.ts'] = { file: `${A}/chunks/people.js`, isDynamicEntry: true };
-    m[NODE('0')].dynamicImports = [MAP, COM, 'src/lib/components/people/index.ts'];
+    m[NODE('0')].dynamicImports = [MAP, COM, BUILD_LINE, 'src/lib/components/people/index.ts'];
     const f = fixture({ manifest: m, chunks: { [`${A}/chunks/people.js`]: noise(120) } });
     const { report, out } = run(f);
     expect(report.root_tiers.unclassified['src/lib/components/people/index.ts'].js).toBe(f.gz(`${A}/chunks/people.js`));
@@ -380,6 +384,7 @@ describe('the budget, run on a build whose answers are known', () => {
         `${A}/chunks/map.js`,
         `${A}/chunks/live.js`,
         `${A}/chunks/com.js`,
+        `${A}/chunks/build-line.js`,
         `${A}/chunks/missions.js`,
         `${A}/chunks/pool.js`,
         `${A}/assets/only.css`,
@@ -473,7 +478,7 @@ describe('the map’s layers, each a line of its own', () => {
     });
     expect(tiers.unclassified).toEqual({});
     // Every visit's tier is untouched, and the total still counts each chunk once.
-    expect(tiers.mount.js).toBe(f.sum(`${A}/chunks/map.js`, `${A}/chunks/live.js`, `${A}/chunks/core.js`, `${A}/chunks/com.js`));
+    expect(tiers.mount.js).toBe(f.sum(`${A}/chunks/map.js`, `${A}/chunks/live.js`, `${A}/chunks/core.js`, `${A}/chunks/com.js`, `${A}/chunks/build-line.js`));
     expect(tiers.later.js).toBe(tiers.mount.js + tiers.entries.missions.js + f.sum(`${A}/chunks/zones.js`, `${A}/chunks/reader.js`) + tiers.framework.js);
     expect(failed).toBe(false);
   });

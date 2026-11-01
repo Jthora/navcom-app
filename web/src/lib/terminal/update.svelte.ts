@@ -42,6 +42,9 @@
 
 import { BUILT_COMMIT } from '$lib/built';
 import { sending } from './sending.svelte';
+import { takeOver } from './take-over';
+
+export { TAKE_OVER_MS } from './take-over';
 
 /**
  * How often an open Watch screen asks what is deployed. Never tighter: the site sits behind a host
@@ -58,11 +61,6 @@ export const CHECK_AT_MOST_EVERY_MS = 5 * 60_000;
  */
 export const ASK_WORKER_MS = 5_000;
 
-/**
- * How long the hold waits for the deployed build's worker to take over before saying it could not.
- * Generous: it fetches the whole shell, on the phones and the signal this is for.
- */
-export const TAKE_OVER_MS = 90_000;
 
 /** What decides whether a newer build is waiting. Pure data, for {@link newerWaiting}. */
 export interface UpdateRead {
@@ -228,41 +226,6 @@ async function check(): Promise<void> {
   await readDeployed();
 }
 
-/**
- * Asks the browser for the deployed build's worker and waits for it to take over this page. True once a
- * different worker controls it; false where none arrives in {@link TAKE_OVER_MS}, the browser found
- * nothing new, or it could not ask.
- */
-function takeOver(sw: ServiceWorkerContainer, before: ServiceWorker): Promise<boolean> {
-  return new Promise((resolve) => {
-    let done = false;
-    const finish = (ok: boolean) => {
-      if (done) return;
-      done = true;
-      clearTimeout(timer);
-      sw.removeEventListener('controllerchange', onChange);
-      resolve(ok);
-    };
-    const onChange = () => {
-      const now = sw.controller;
-      if (now && now !== before) finish(true);
-    };
-    const timer = setTimeout(() => finish(false), TAKE_OVER_MS);
-    sw.addEventListener('controllerchange', onChange);
-    void (async () => {
-      try {
-        const registration = await sw.getRegistration();
-        if (!registration) return finish(false);
-        await registration.update();
-        // The same worker script: nothing is coming.
-        if (!registration.installing && !registration.waiting && sw.controller === before) finish(false);
-      } catch {
-        finish(false);
-      }
-    })();
-  });
-}
-
 export const update = {
   /** Whether the hold would load a different build, and would work. */
   get waiting(): boolean {
@@ -349,3 +312,4 @@ export const update = {
     location.reload();
   }
 };
+
