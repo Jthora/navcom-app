@@ -52,6 +52,37 @@ test.describe('a squad grows by one', () => {
     await ash.close();
   });
 
+  test('a relief named in the code stays named after a reload, and the keys cross by QR', async ({ browser }) => {
+    const wren = await device(await browser.newPage(), 'Wren');
+    await open(wren, '/terminal/watch/');
+    await wren.getByRole('button', { name: /start a watch on this phone/i }).click();
+
+    // Both keys that cross in person are shown as codes to hold up, not only as hex to read out.
+    await wren.getByRole('button', { name: /show the watch key/i }).click();
+    await expect(wren.locator('[data-watch-key-qr] svg')).toBeVisible();
+    await wren.getByText("This phone's holder key").click();
+    await expect(wren.locator('[data-holder-qr] svg')).toBeVisible();
+
+    const relief = 'a'.repeat(63) + 'b';
+    await wren.getByText('Other holders').click();
+    await wren.locator('#other-holders').fill(relief);
+    await expect(wren.getByText('2 holders')).toBeVisible();
+
+    // It was the screen's alone: a reload dropped the relief from the next code anybody scanned.
+    await wren.reload();
+    await wren.getByText('Other holders').click();
+    await expect(wren.locator('#other-holders')).toHaveValue(relief);
+    await expect(wren.getByText('2 holders')).toBeVisible();
+
+    // Giving up the watch takes them with it.
+    await wren.getByRole('button', { name: /^give up this watch$/i }).click();
+    await wren.getByRole('button', { name: /remove it from this phone/i }).click();
+    await wren.getByRole('button', { name: /start a watch on this phone/i }).click();
+    await wren.getByText('Other holders').click();
+    await expect(wren.locator('#other-holders')).toHaveValue('');
+    await wren.close();
+  });
+
   test('and holding the key is not permission to hold the board', async ({ browser }) => {
     /*
      * The gate, from the side it protects. Ash can answer as this watch the moment she has the

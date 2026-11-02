@@ -157,4 +157,23 @@ export function joinWatch(secretHex: string): SecretKey {
 export function leaveWatch(): void {
   clearField('accruing', SECRET);
   clearField('accruing', FOUNDED);
+  clearField('accruing', HOLDERS);
+}
+
+const HOLDERS = 'held_watch_holders';
+
+/**
+ * The other phones that hold this watch, by their holder keys: who the code for operators names
+ * beside this one, so what operators send is sealed to every holder and a relief can read it.
+ *
+ * Kept on this phone. It was the screen's alone, so a reload dropped the relief from the next code
+ * anybody scanned, and their board read nothing operators sent.
+ */
+export function otherHolders(): string[] {
+  return get<string[]>('accruing', HOLDERS) ?? [];
+}
+
+export function setOtherHolders(keys: string[]): void {
+  if (keys.length === 0) clearField('accruing', HOLDERS);
+  else set('accruing', HOLDERS, keys);
 }

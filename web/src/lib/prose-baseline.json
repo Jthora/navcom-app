@@ -38,6 +38,7 @@
   "src/lib/components/people/ProfileScreen.svelte": 0,
   "src/lib/components/people/YouScreen.svelte": 0,
   "src/lib/components/watch/AnswerLookup.svelte": 0,
+  "src/lib/components/watch/ScanKey.svelte": 0,
   "src/routes/(site)/+layout.svelte": 30,
   "src/routes/(site)/about/+page.svelte": 435,
   "src/routes/(site)/directory/+page.svelte": 48,

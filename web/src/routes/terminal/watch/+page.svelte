@@ -16,7 +16,8 @@
   import encodeQR from '@paulmillr/qr';
   import { declineIsValid, RESPONSE_WINDOW } from '@navcom/core';
   import { board, type Waiting } from '$lib/terminal/board.svelte';
-  import { createWatch, foundedHere, joinWatch, leaveWatch, watchKey, watchPubkey, watchSecretHex, WatchKeyError } from '$lib/terminal/watch-key';
+  import { createWatch, foundedHere, joinWatch, leaveWatch, otherHolders as keptHolders, setOtherHolders, watchKey, watchPubkey, watchSecretHex, WatchKeyError } from '$lib/terminal/watch-key';
+  import ScanKey from '$lib/components/watch/ScanKey.svelte';
   import { watchCode } from '$lib/terminal/watch-code';
   import { watchRelays } from '$lib/terminal/relays';
   import { endorsersFor } from '$lib/terminal/standing';
@@ -89,6 +90,8 @@
   onMount(() => {
     const ticking = setInterval(() => (nowS = Math.floor(Date.now() / 1000)), 15_000);
     sound = soundOn();
+    others = keptHolders().join('\n');
+    othersLoaded = true;
     // The first touch anywhere lets this browser play; until then it plays nothing.
     const unlock = () => raise.unlock();
     window.addEventListener('pointerdown', unlock);
@@ -152,6 +155,8 @@
   function leave() {
     void board.standDown();
     leaveWatch();
+    // The holders were this watch's: the next one started or joined here names nobody else yet.
+    others = '';
     refresh();
     confirmLeave = false;
   }
@@ -253,9 +258,18 @@
   const holderKey = $derived(address ? (loadIdentity()?.pubkey ?? null) : null);
   const holderBlocks = $derived(holderKey ? (holderKey.match(/.{1,8}/g) ?? []) : []);
   let others = $state('');
+  /** Read from this phone once it has mounted, so the first save is never an empty one over a kept list. */
+  let othersLoaded = $state(false);
   const otherHolders = $derived(
     [...new Set((others.toLowerCase().match(/[0-9a-f]{64}/g) ?? []).filter((k) => k !== holderKey))]
   );
+  // Kept, so a reload does not drop a relief from the next code anybody scans.
+  $effect(() => {
+    if (othersLoaded && address) setOtherHolders(otherHolders);
+  });
+  const addHolder = (k: string) => (others = others.trim() ? `${others.trim()}\n${k}` : k);
+  const holderQr = $derived(holderKey ? encodeQR(holderKey, 'svg', { ecc: 'medium', border: 2 }) : '');
+  const keyQr = $derived(showingKey ? encodeQR(showingKey, 'svg', { ecc: 'medium', border: 2 }) : '');
   const code = $derived.by(() => {
     const secret = address ? watchKey() : null;
     if (!secret || !address || !holderKey) return null;
@@ -304,6 +318,7 @@
 
   <section class="act">
     <h2>Or join one</h2>
+    <ScanKey label="Scan the watch key" onfound={(k) => (joining = k)} />
     <label for="key">Watch key</label>
     <textarea id="key" bind:value={joining} rows="2" autocomplete="off" spellcheck="false"
       placeholder="64 hex characters"></textarea>
@@ -492,6 +507,7 @@
       <div class="qr" data-code-qr>{@html codeQr}</div>
       <button onclick={copyCode}>{codeCopied ? 'Copied' : 'Copy the code'}</button>
       <Why summary="Other holders">
+        <ScanKey label="Scan a holder key" onfound={addHolder} />
         <label for="other-holders">Their holder keys</label>
         <textarea id="other-holders" bind:value={others} rows="2" placeholder="64 hex characters each"></textarea>
         {#if otherHolders.length > 0}
@@ -499,6 +515,7 @@
         {/if}
       </Why>
       <Why summary="This phone's holder key">
+        <div class="qr" data-holder-qr>{@html holderQr}</div>
         <p class="blocks" data-holder-key>{#each holderBlocks as b, i (i)}<span>{b}</span>{/each}</p>
       </Why>
     {/if}
@@ -516,6 +533,7 @@
     <h2>Hand this watch to somebody</h2>
     <p class="cost">Whoever has the key can answer as this watch. It can't be taken back.</p>
     {#if showingKey}
+      <div class="qr" data-watch-key-qr>{@html keyQr}</div>
       <pre class="blob" data-watch-key>{showingKey}</pre>
       <button onclick={() => (showingKey = null)}>Hide it</button>
     {:else}
