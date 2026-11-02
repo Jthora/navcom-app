@@ -68,8 +68,8 @@
             value="Retiring"
             tone={retiring === 'unconfirmed' ? 'warn' : 'cold'}
             sub={retiring === 'unconfirmed'
-              ? 'posted under a retiring key; it may have been replaced, so it shows where it is filed and no finer, and cannot be taken'
-              : 'posted under a retiring key; its poster confirmed it as its own'}
+              ? 'posted under a retiring key, not yet confirmed: shown no finer than where it is filed'
+              : 'posted under a retiring key; its poster confirmed it'}
           />
         </span>
       </Slot>
@@ -97,7 +97,7 @@
     {#if m.work === 'desk'}
       <Slot k="Work">
         <span data-desk>
-          <Readout value="Desk work" sub="done from anywhere, about where it is filed; taken up in Starcom, since a report here counts things and this asks for a written answer" />
+          <Readout value="Desk work" sub="done from anywhere; taken up in Starcom" />
         </span>
       </Slot>
     {/if}

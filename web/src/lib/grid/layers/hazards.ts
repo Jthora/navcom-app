@@ -825,7 +825,7 @@ export const overlay: Overlay = {
   // Where each cell is drawn, which a ring may have moved it to, when that is this view's.
   hit: (v, at) => hitOf(all, v, at, Date.now(), laid?.at === viewKey(v) ? laid.cells : undefined),
   legend: () => legendOf(feeds, Date.now()),
-  credit: () => `${listOf(HAZARD_FEEDS.map((f) => f.name), 'and')}, their whole-world lists, asked every 10 minutes while the map is on screen; each answers on its own, and a feed that did not is named`,
+  credit: () => `${listOf(HAZARD_FEEDS.map((f) => f.name), 'and')}, asked every 10 minutes while the map is on screen`,
   swatches() {
     const counts = new Map<HazardKind, number>();
     for (const m of all) counts.set(m.kind, (counts.get(m.kind) ?? 0) + 1);

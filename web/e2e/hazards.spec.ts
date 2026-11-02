@@ -61,12 +61,11 @@ test('asks the three feeds for their whole-world lists, only once chosen, and no
   await page.getByRole('button', { name: 'Map layers' }).click();
   const ask = page.locator('[data-hazards-ask]');
   await expect(ask).toBeVisible();
-  // Before the box: that an address places a phone roughly, which is not the same as where it looks,
-  // what else each host learns, and what a round costs now and in a busy season.
-  await expect(ask).toContainText('which can place it roughly, often to a city; its browser; the time');
-  await expect(ask).toContainText('not where you are looking on the map');
-  await expect(ask).toContainText('about 196 kB each time now, more in a fire season, up to about 700 kB');
-  await expect(ask).toContainText('www.gdacs.org (GDACS: its orange- and red-alert floods, droughts and cyclones that are still current)');
+  // Before the box: who it asks, that each sees the address and not where the map looks, and what a
+  // round costs now and in a busy season.
+  for (const host of URLS.map((u) => new URL(u).host)) await expect(ask).toContainText(host);
+  await expect(ask).toContainText('sees this phone’s internet address, not where you are looking on the map');
+  await expect(ask).toContainText('about 196 kB, up to 700 kB in a fire season');
   expect(asked, 'asked before anybody chose it').toEqual([]);
   await page.locator('[data-hazards]').check();
   await expect.poll(() => asked.length, { timeout: 10_000 }).toBe(URLS.length);
@@ -144,7 +143,7 @@ test('a feed that listed entries and could read none of them reads not read: unk
   await expect(page.locator('[data-legend]')).toContainText('Hazards · 3 feeds not read: unknown · some events, never all');
   await expect(page.locator('[data-legend]')).not.toContainText('nothing listed');
   for (const id of ['usgs', 'eonet', 'gdacs']) {
-    await expect(screen.locator(`[data-hazard-feed="${id}"]`)).toContainText('not read: unknown · its answer was not in the shape it was measured in');
+    await expect(screen.locator(`[data-hazard-feed="${id}"]`)).toContainText('not read: unknown · its answer could not be read');
   }
 });
 
@@ -157,7 +156,7 @@ test('EONET’s wildfires past their cap read not read, its volcanoes and storms
   const screen = await hazardsOn(page);
   await expect(page.locator('[data-legend]')).toContainText('EONET just now, wildfires not read: unknown');
   await expect(screen.locator('[data-hazard-feed="eonet"]')).toContainText(
-    '2 listed · read just now · wildfires not read: unknown, its answer passed its cap, so it is not asked again on this page'
+    '2 listed · read just now · wildfires not read: unknown, too large; not asked again on this page'
   );
   await page.locator('[data-back]').click();
   const at = await bring(page, ...CHILLAN);
@@ -197,7 +196,6 @@ test('when every feed lists nothing, the map says that is not the same as safe',
   const screen = await hazardsOn(page, /not the same as safe/);
   await expect(page.locator('[data-legend]')).toContainText('Hazards · nothing listed by USGS, EONET or GDACS, read just now · not the same as safe');
   await expect(screen.locator('[data-hazard-feed="eonet"]')).toContainText('nothing listed · read just now');
-  await expect(screen.locator('[data-hazards-ask]')).toContainText('nothing drawn is not nothing happening');
 });
 
 test('asks again at 10 minutes and not before, and not at all while the page is hidden', async ({ page }) => {

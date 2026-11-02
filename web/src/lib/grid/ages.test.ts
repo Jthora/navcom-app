@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { gzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import { MAP_LINES } from '../../../scripts/lib/budget.mjs';
-import { KEY_NOTE, ageIn, agesFileOf, agesOf, key, readingsOf, thin, type RegionAgesFile } from './layers/ages';
+import { ageIn, agesFileOf, agesOf, key, readingsOf, thin, type RegionAgesFile } from './layers/ages';
 import type { PlacesFile } from './places';
 
 const BUILD = fileURLToPath(new URL('../../../build/', import.meta.url));
@@ -102,9 +102,6 @@ describe('what the key says', () => {
     expect(rows.map((r) => r.text)).toEqual(['0–13 days ago', '14–89 days ago', '90+ days ago', 'Unknown · no check date']);
     // The dates know nothing of a record's fields: most records carry no hours, and their pages say "Unknown".
     for (const r of rows) expect(r.text, r.reading).not.toMatch(/hours|call first|intake|never/i);
-    // What the windows mean is said once, for a place that has hours, and the page is named as the one that says.
-    expect(KEY_NOTE).toMatch(/Hours, where a place has them, read call first after 14 days/);
-    expect(KEY_NOTE).toMatch(/own page says/);
   });
 });
 

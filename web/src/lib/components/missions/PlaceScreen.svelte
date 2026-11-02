@@ -189,7 +189,7 @@
         <!-- By its oldest record, the cautious word; the newest beside it, so one fresh check is not read as all of them. -->
         <Slot k="Checked">
           {#if checked.oldest}
-            <Readout value="Oldest {ago(checked.oldest)}" tone={checked.reading === 'current' ? 'neutral' : 'warn'} sub="newest {checked.newest === checked.oldest ? 'the same' : ago(checked.newest ?? checked.oldest)}; each place’s page says what its check still shows" />
+            <Readout value="Oldest {ago(checked.oldest)}" tone={checked.reading === 'current' ? 'neutral' : 'warn'} sub="newest {checked.newest === checked.oldest ? 'the same' : ago(checked.newest ?? checked.oldest)}" />
           {:else}
             <Readout value="Unknown" tone="cold" sub="none of its places carries a check date" />
           {/if}

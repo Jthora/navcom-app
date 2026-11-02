@@ -137,10 +137,10 @@
       <!-- Nobody answering is not nothing there [11.E]. Reports go only to operators' relays, so The Record answering alone is nobody [audit 11, second grid]. -->
       <Slot k="Reports"><Readout value="Unknown" tone="cold" sub="the relays reports go to did not answer; try again with signal" /></Slot>
     {:else if read.reports.length === 0}
-      <Slot k="Reports"><Readout value="None found" tone="cold" sub="on the relays that answered; reports open the day after the work" /></Slot>
+      <Slot k="Reports"><Readout value="None found" tone="cold" sub="on the relays that answered" /></Slot>
     {:else}
       {#if read.partial}
-        <Slot k="Shown"><Readout value="Not all" tone="warn" sub="a relay sent as many as it was asked for; some may not be shown" /></Slot>
+        <Slot k="Shown"><Readout value="Not all" tone="warn" sub="some may not be shown" /></Slot>
       {/if}
       <ul class="nc-reports">
         {#each read.reports as r (r.id)}

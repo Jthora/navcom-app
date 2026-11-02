@@ -333,7 +333,7 @@ export const overlay: Overlay = {
   credit() {
     const m = layerData.missions;
     const by = m ? m.unplaced - (sync()?.named ?? 0) : 0;
-    return m && m.age !== null ? `missions placed by where each package puts its subject, or the Zone it names; ${by} filed by jurisdiction only, counted apart and in no Zone · ${m.age}` : '';
+    return m && m.age !== null ? `${by} filed by jurisdiction only, in no Zone · ${m.age}` : '';
   },
   about(shape) {
     const c = sync();

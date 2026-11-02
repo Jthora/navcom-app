@@ -169,12 +169,12 @@
   {:else if why === 'desk'}
     <!-- A report here counts things; desk work asks for a written answer, which Starcom takes. -->
     <span data-refusal="desk">
-      <Readout value="Desk work" tone="cold" sub="taken up in Starcom: a report here counts things, and this asks for a written answer" />
+      <Readout value="Desk work" tone="cold" sub="taken up in Starcom" />
     </span>
   {:else if why === 'retiring'}
     <!-- Nobody can take it, signed on or not: it may have been planted with the leaked secret [rev 7]. -->
     <span data-refusal="retiring">
-      <Readout value="Not open to take" tone="cold" sub="it cannot be taken: posted under a retiring key, and not yet confirmed by its poster as its own" />
+      <Readout value="Not open to take" tone="cold" sub="posted under a retiring key, not yet confirmed by its poster" />
     </span>
   {:else if why === 'signed-out'}
     <!-- What it asks for, by the word the terminal uses: "Sign on" there starts a patrol [finding 51]. -->
@@ -192,12 +192,12 @@
     <div class="nc-takepart-choices" role="group" aria-label="Who sees that you are taking part">
       <button type="button" data-visibility="open" disabled={sending} onclick={() => take('open')}>
         <span class="nc-takepart-who">Everyone</span>
-        <span class="nc-takepart-line">anyone can see this card took this mission</span>
+        <span class="nc-takepart-line">public, under your name</span>
       </button>
       <!-- Off, with its reason, when nothing can be sealed to the poster now: never sealed to a leaked key [rev 7]. -->
       <button type="button" data-visibility="sealed" data-paused={sealedOff ? '' : undefined} disabled={sending || !!sealedOff} onclick={() => take('sealed')}>
         <span class="nc-takepart-who">{sealedOff ? `Sealed to ${m.publisher.name} — paused` : `Only ${m.publisher.name}`}</span>
-        <span class="nc-takepart-line">{sealedOff ?? 'sealed to the poster; relays see only that somebody wrote'}</span>
+        <span class="nc-takepart-line">{sealedOff ?? 'sealed to the poster'}</span>
       </button>
     </div>
   {:else}
@@ -219,7 +219,7 @@
       value="Let go"
       tone="cold"
       sub={released === 'open'
-        ? 'anyone who saw the claim keeps it, and letting go is public too, under the same card'
+        ? 'public, as the claim was'
         : `sealed to ${m.publisher.name}, as the claim was`}
     />
   {/if}

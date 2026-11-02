@@ -29,7 +29,7 @@
 <div data-screen="hazard" data-hazard={ids}>
   {#if !mapLayers.hazards}
     <Panel label="Hazards" post="Off">
-      <Slot k="Hazards"><Readout value="Off on this page" tone="cold" sub="turn them on to read this again; nothing is asked until then" /></Slot>
+      <Slot k="Hazards"><Readout value="Off on this page" tone="cold" sub="turn them on to read this again" /></Slot>
       <div class="nc-rail"><button type="button" data-hazard-layers onclick={() => nav.open({ kind: 'layers' })}>Map layers</button></div>
     </Panel>
   {:else if mapLayers.hazardsCode === 'failed'}

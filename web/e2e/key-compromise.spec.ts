@@ -169,9 +169,9 @@ test.describe('a frozen key', () => {
     await page.locator('[data-screen="missions"] [data-mission="unconfirmed"]').click();
     const screen = page.locator('[data-screen="mission"][data-mission="unconfirmed"]');
     await expect(screen.locator('[data-retiring]')).toContainText('posted under a retiring key');
-    await expect(screen.locator('[data-retiring]')).toContainText('may have been replaced');
+    await expect(screen.locator('[data-retiring]')).toContainText('not yet confirmed');
     await expect(screen.getByRole('button', { name: 'Take part' })).toHaveCount(0);
-    await expect(screen.locator('[data-refusal="retiring"]')).toContainText('cannot be taken');
+    await expect(screen.locator('[data-refusal="retiring"]')).toContainText('Not open to take');
   });
 
   test('a version off its list shows once its manifest’s second signature checks, and cannot be taken; one signed by any other manifest key never shows', async ({ page }) => {

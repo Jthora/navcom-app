@@ -80,7 +80,7 @@ test('fetched once, only when ticked, and never by Places or by what is on scree
   expect(asked.filter((p) => p === '/grid/places.json').length, 'asked for by the ages').toBe(placesBefore);
   // The key says what it is, and that no person has confirmed any of the directory, by phone or in person.
   await expect(page.locator('[data-legend="nations"]')).toHaveText('Directory by last check · none by a person');
-  await expect(screen.locator('[data-key-full]')).toContainText('by a person is a check confirmed by phone, in person or at the place');
+  await expect(screen.locator('[data-key-full]')).toContainText('by a person: by phone, in person or at the place');
   // And the full key, every class by how long ago, with how many regions each holds today.
   await expect(screen.locator('[data-age-row="hours"]')).toContainText('14–89 days ago');
   await expect(screen.locator('[data-age-row="current"]')).toContainText(/0–13 days ago\s*0/);
@@ -88,9 +88,6 @@ test('fetched once, only when ticked, and never by Places or by what is on scree
   // No class claims what a page shows: the dates know nothing of a record's fields.
   await expect(screen.locator('[data-ages-key]')).not.toContainText(/hours|call first|intake|never/i);
   await expect(page.locator('[data-swatches]')).not.toContainText(/hours|call first|intake|never/i);
-  // What the windows mean, said once, for a place that has hours; each page says the rest.
-  await expect(screen.locator('[data-ages-note]')).toContainText('Hours, where a place has them, read call first after 14 days');
-  await expect(screen.locator('[data-ages-note]')).toContainText('Where marks would crowd, the oldest is drawn');
 });
 
 test('in October a region’s mark is a small solid muted square, 14–89 days ago; in December the same is a hollow one, 90+', async ({ page }) => {
@@ -193,7 +190,6 @@ test('a tap on a region says when it was checked, its oldest and its newest, and
   const checked = page.locator(`[data-screen="place"][data-place="${region.region}"] [data-slot="checked"]`);
   await expect(checked).toContainText(/Oldest \d+ days ago/);
   await expect(checked).toContainText(/newest (the same|\d+ days ago)/);
-  await expect(checked).toContainText('each place’s page says what its check still shows');
   await expect(checked).not.toContainText(/hours|call first/i);
 });
 

@@ -143,7 +143,7 @@
 
     {#if m.effect.length > 0}
       <fieldset class="nc-report-field">
-        <legend class="nc-report-k">What it counts — numbers only, of things, never people</legend>
+        <legend class="nc-report-k">Counts — of things, never people</legend>
         {#each m.effect as line, i (i)}
           <label class="nc-report-count">
             <span>{line}</span>
@@ -156,7 +156,7 @@
     {#snippet action()}
       <div class="nc-report-act">
         {#if unrecorded}
-          <Readout value="Sent" tone="warn" sub="but this device could not record it: its storage is full, so it cannot be withdrawn from here" />
+          <Readout value="Sent" tone="warn" sub="not recorded here: storage is full, so it can't be withdrawn from here" />
           <button type="button" data-done onclick={ondone}>Done</button>
         {:else if pending}
           <Readout
@@ -164,7 +164,7 @@
             tone="warn"
             sub={pending.nowhere
               ? `${pending.nowhere}${pending.kept ? '' : ' This device could not record it.'}`
-              : `${MAY_HAVE_ARRIVED}${pending.again === 'refused' ? ' No relay took it this time.' : ''} Sending it again sends the same report, never a second.${pending.kept ? '' : ' This device could not record it.'}`}
+              : `${MAY_HAVE_ARRIVED}${pending.again === 'refused' ? ' No relay took it this time.' : ''}${pending.kept ? '' : ' This device could not record it.'}`}
           />
           <div class="nc-report-row">
             <button type="button" data-sendagain disabled={phase === 'sending'} onclick={again}>Send again</button>
@@ -176,8 +176,8 @@
             value="Another report here"
             tone="warn"
             sub={warned.series.withdrawn
-              ? 'you withdrew the last one, but copies already taken stay; two close together in one place make a pattern somebody can read'
-              : 'two reports close together in one place make a pattern somebody can read'}
+              ? 'copies of the one you withdrew stay; two close together in one place show a pattern'
+              : 'two close together in one place show a pattern'}
           />
           <div class="nc-report-row">
             <button type="button" data-anyway disabled={phase === 'sending'} onclick={() => send(chosen ?? 'open', true)}>Send anyway</button>
@@ -200,12 +200,12 @@
           <div class="nc-report-choices" role="group" aria-label="Who sees this report">
             <button type="button" data-visibility="open" disabled={phase === 'sending' || openOff} onclick={() => send('open')}>
               <span class="nc-report-who">Everyone</span>
-              <span class="nc-report-line">{openOff ? 'a day more than a week back can be told only sealed, as sealed sending was paused then' : 'a public record that this card did this work'}</span>
+              <span class="nc-report-line">{openOff ? 'a day over a week back can only go sealed' : 'public, under your name'}</span>
             </button>
             <!-- Off, with its reason, when nothing can be sealed to the poster now: never sealed to a leaked key [rev 7]. -->
             <button type="button" data-visibility="sealed" data-paused={sealedOff ? '' : undefined} disabled={phase === 'sending' || !!sealedOff} onclick={() => send('sealed')}>
               <span class="nc-report-who">{sealedOff ? `Sealed to ${m.publisher.name} — paused` : `Only ${m.publisher.name}`}</span>
-              <span class="nc-report-line">{sealedOff ?? 'sealed to the poster, who can still settle it'}</span>
+              <span class="nc-report-line">{sealedOff ?? 'sealed to the poster'}</span>
             </button>
           </div>
         {/if}

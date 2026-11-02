@@ -49,13 +49,13 @@
       {#if print}
         <Readout value={keyPrint(print)} verbatim tone="neutral" sub={card ? 'signs your card' : 'signs your claims and reports; no card'} />
       {:else}
-        <Readout value="None yet" tone="cold" sub="made when you publish a card or take part in a mission" />
+        <Readout value="None yet" tone="cold" sub="made when you publish or take part" />
       {/if}
     </Slot>
     {#if print && !card}
       <!-- The first honest fix: a contact key exists without a card once a mission was taken part in. -->
       <Slot k="Seen as">
-        <span data-print-no-card><Readout value="A print only" tone="neutral" sub="your claims and reports are signed by a key with no card: others see its print and nothing else" /></span>
+        <span data-print-no-card><Readout value="A print only" tone="neutral" sub="others see this and nothing else" /></span>
       </Slot>
     {/if}
     <Slot k="Card"><Readout value={audience.value} tone={card ? 'neutral' : 'cold'} sub={audience.sub} /></Slot>
@@ -89,9 +89,6 @@
 
     <div class="rail">
       <a class="lit" href="/terminal/card/" data-sveltekit-reload data-edit-card>{card ? 'Edit card' : 'Publish a card'}</a>
-      {#if !card}
-        <span class="said">Seen by whoever you choose: anyone, anyone in your city, or only people you give your address to.</span>
-      {/if}
       {#if print && card}
         <button type="button" data-as-others onclick={asOthersSeeIt}>As others see it</button>
       {/if}
@@ -133,9 +130,5 @@
   .rail .lit {
     border-color: var(--t-ink);
     font-weight: 600;
-  }
-  .said {
-    font-size: 0.8rem;
-    color: var(--t-faint);
   }
 </style>

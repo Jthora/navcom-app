@@ -60,10 +60,8 @@
       <span class="nc-nws-sub">asks {NWS.host}, when you tap</span>
     </button>
     <span class="nc-nws-ask" data-nws-ask>
-      Asks {NWS.host} for the warnings it has issued for {area.name}, and the emergencies it relays that
-      ask people to act now, such as an evacuation: it learns this phone’s internet address, which can
-      place it roughly, often to a city; its browser; the time; that it asked from navcom.app; and which
-      state. Watches, advisories and statements are not shown. Whether you take this mission stays yours.
+      Asks {NWS.host} for the warnings and emergencies issued for {area.name}. It sees this phone’s
+      internet address and which state.
     </span>
     {#if asking}
       <Slot k="NWS"><Readout value="Asking" tone="cold" /></Slot>
@@ -72,8 +70,7 @@
     {:else if shown && shown.ok}
       {#if shown.warnings.length === 0}
         <span class="nc-nws-none" data-nws-none>
-          No warnings or emergencies issued for {area.name} as of {utcOf(shown.at)}. The NWS lists what it has
-          issued; it does not say a place is safe.
+          No warnings or emergencies issued for {area.name} as of {utcOf(shown.at)}.
         </span>
       {:else}
         <ul class="nc-nws-list" data-nws-warnings>
@@ -94,23 +91,18 @@
       {#if shown.others > 0}
         <!-- What the filter left out is counted, so none shown never reads as nothing out. -->
         <span class="nc-nws-none" data-nws-others>
-          {shown.others === 1 ? 'One other alert' : `${shown.others} other alerts`} out for {area.name}, such as watches,
-          advisories and statements, {shown.others === 1 ? 'is' : 'are'} not shown here.
+          {shown.others === 1 ? 'One other alert' : `${shown.others} other alerts`} (watches, advisories,
+          statements) not shown.
         </span>
       {/if}
       <Slot k="Read"><Readout value={agoOf(shown.at, at)} tone="neutral" sub="by this phone at {utcOf(shown.at)}, from {NWS.host}" /></Slot>
     {/if}
   {:else if area.kind === 'national'}
-    <span class="nc-nws-ask" data-nws-national>
-      Filed for the whole United States: the NWS is asked by state, and this mission names none, so nothing
-      is asked.
-    </span>
+    <span class="nc-nws-ask" data-nws-national>Filed for the whole United States: no state to ask about.</span>
   {:else if area.kind === 'elsewhere'}
-    <span class="nc-nws-ask" data-nws-elsewhere>
-      No warning service is read for {area.name}. NavCom reads only the US National Weather Service.
-    </span>
+    <span class="nc-nws-ask" data-nws-elsewhere>No warning service is read for {area.name}.</span>
   {:else}
-    <span class="nc-nws-ask" data-nws-unknown>This mission names no state NavCom knows, so no warning service is asked.</span>
+    <span class="nc-nws-ask" data-nws-unknown>No known state named, so nothing is asked.</span>
   {/if}
 </Panel>
 

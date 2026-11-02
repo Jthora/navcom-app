@@ -56,12 +56,9 @@ test('asks nothing before the tap, says what the tap tells weather.gov, and then
   const nws = screen.locator('[data-nws="state"]');
   await expect(nws.locator('[data-nws-check]')).toContainText('Check NWS warnings for California');
   const ask = nws.locator('[data-nws-ask]');
-  await expect(ask).toContainText('Asks api.weather.gov for the warnings it has issued for California');
-  await expect(ask).toContainText('which state');
-  // An address is not where the map looks, and it is not nowhere either: it says so, and what else goes.
-  await expect(ask).toContainText('which can place it roughly, often to a city; its browser; the time');
-  await expect(ask).toContainText('the emergencies it relays that ask people to act now, such as an evacuation');
-  await expect(ask).toContainText('Whether you take this mission stays yours');
+  // Who is asked and what it learns, before the tap.
+  await expect(ask).toContainText('Asks api.weather.gov for the warnings and emergencies issued for California');
+  await expect(ask).toContainText('internet address and which state');
   expect(asked, 'asked before the tap').toEqual([]);
   const before = await takePart(page);
   expect(before.count, 'taking part is not offered on this mission').toBe(1);
@@ -88,7 +85,7 @@ test('asks nothing before the tap, says what the tap tells weather.gov, and then
   await expect(evacuate).toContainText('issued 20 min ago');
   // What it leaves out is counted, so none shown never reads as nothing out.
   await expect(nws.locator('[data-nws-others]')).toHaveText(
-    '2 other alerts out for California, such as watches, advisories and statements, are not shown here.'
+    '2 other alerts (watches, advisories, statements) not shown.'
   );
   // Watches, advisories, a cancellation and a test are not warnings it issued.
   await expect(nws).not.toContainText('Tornado Watch');
@@ -115,19 +112,18 @@ test('a failed ask reads NWS not read: unknown, never none issued', async ({ pag
   await expect(screen.locator('[data-nws-none]')).toHaveCount(0);
 });
 
-test('none issued says so, and that the NWS does not say a place is safe', async ({ page }) => {
+test('none issued says so, as of when it asked', async ({ page }) => {
   await serveNws(page, { empty: true });
   const screen = await toMission(page, HEAT_D);
   await screen.locator('[data-nws-check]').click();
   await expect(screen.locator('[data-nws-none]')).toContainText('No warnings or emergencies issued for California as of 20:00 UTC');
   await expect(screen.locator('[data-nws-others]')).toHaveCount(0);
-  await expect(screen.locator('[data-nws-none]')).toContainText('it does not say a place is safe');
 });
 
 test('outside the US no warning service is asked, and the screen says so', async ({ page }) => {
   const asked = await serveNws(page);
   const screen = await toMission(page, KENYA_D);
-  await expect(screen.locator('[data-nws-elsewhere]')).toHaveText('No warning service is read for Kenya. NavCom reads only the US National Weather Service.');
+  await expect(screen.locator('[data-nws-elsewhere]')).toHaveText('No warning service is read for Kenya.');
   await expect(screen.locator('[data-nws-check]')).toHaveCount(0);
   await page.waitForTimeout(300);
   expect(asked).toEqual([]);

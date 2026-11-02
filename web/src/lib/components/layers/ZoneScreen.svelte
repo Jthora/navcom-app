@@ -127,7 +127,7 @@
         <Slot k="Landform"><Readout value={chain.sector.props.descriptor} tone="neutral" verbatim sub="in the IAU’s words" /></Slot>
       {:else if isSector && !chain.sector}
         <Slot k="Landform">
-          <Readout value="Not fetched" tone="cold" sub="opening its Zone fetches its {containerWord}’s Sectors, and tells navcom.app which {containerWord}" />
+          <Readout value="Not fetched" tone="cold" sub="open its Zone to fetch them" />
         </Slot>
       {/if}
       {#if !chain.zone}
@@ -167,14 +167,14 @@
       {/if}
       <Slot k="Open missions">
         {#if age === null}
-          <Readout value="Not read yet" tone="cold" sub="unknown, not none: the missions have not arrived" />
+          <Readout value="Not read yet" tone="cold" sub="the missions have not arrived" />
         {:else if !counted}
           <Readout value="Counting" tone="cold" />
         {:else}
           <Readout
             value={counting!.openSaid(openHere.length)}
             tone="neutral"
-            sub="{age}; placed by where each package puts its subject, or the Zone it names"
+            sub={age}
           />
         {/if}
       </Slot>
@@ -191,7 +191,7 @@
       {/each}
       {#if age !== null && counted && active.length > rings.length + counted.named}
         <Slot k="Not placed">
-          <Readout value="{active.length - rings.length - counted.named} by jurisdiction only" tone="cold" sub="filed under a country or province, and placed in no Zone" />
+          <Readout value="{active.length - rings.length - counted.named} by jurisdiction only" tone="cold" sub="placed in no Zone" />
         </Slot>
       {/if}
       <Slot k="Source">

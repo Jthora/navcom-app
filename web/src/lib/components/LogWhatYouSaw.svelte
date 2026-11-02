@@ -27,7 +27,6 @@
   import { OBSERVATION_VOCABULARY, OBSERVATION_METHODS, TAGS_MAX, observationLabel,
     type ObservationMethod, type ResourceRecord } from '@navcom/core';
   import { report } from '$lib/terminal/observations.svelte';
-  import { Why } from '$lib/components/panel';
 
   let { record, onclose }: { record: ResourceRecord; onclose: () => void } = $props();
 
@@ -134,14 +133,6 @@
       <p class="cost"><strong>Anonymous means no name. It does not mean no history.</strong></p>
     {/if}
 
-    <Why summary="What gets published">
-      <p>
-        The record's own area, coarsened to about 20 km — <strong>never a reading from this
-        phone</strong> — and the words you picked above. There is nowhere in this to put a
-        description of anybody, and nothing you type stays only on your device because there is
-        nothing to type.
-      </p>
-    </Why>
 
     <div class="row">
       <button class="drop" disabled={picked.length === 0 || busy} onclick={send}>

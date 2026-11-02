@@ -831,8 +831,8 @@ test.describe('the landing page: missions you can open', () => {
 
     await page.locator('[data-letgo]').click();
     await expect(page.getByRole('button', { name: 'Take part' })).toBeVisible();
-    // Letting go recalls nothing anybody already has, and is public too: said, where it was done [audit 11.S].
-    await expect(page.locator('[data-takepart]')).toContainText('anyone who saw the claim keeps it, and letting go is public too');
+    // Letting go is public too, as the claim was: said, where it was done [audit 11.S].
+    await expect(page.locator('[data-takepart]')).toContainText('public, as the claim was');
   });
 
   test('a tap on Take part opens the choice and publishes nothing, and the sealed choice is reachable by touch [audit 11.S]', async ({ page }) => {
@@ -960,10 +960,9 @@ test.describe('the landing page: missions you can open', () => {
     expect(reports[0]!.tags.map((t) => t[0])).toEqual(['a', 'ask']);
     expect(Object.keys(JSON.parse(reports[0]!.content)).sort()).toEqual(['callsign', 'date']);
 
-    // Withdrawn honestly: the screen says relays were asked, not that it is gone — and that the
-    // asking is itself public, under the same card [audit 11.S].
+    // Withdrawn honestly: the button says copies already taken stay, before it is pressed [audit 11.S].
     const withdraw = listed.locator('[data-withdraw]');
-    await expect(withdraw).toContainText('a request anyone can see');
+    await expect(withdraw).toContainText('copies already taken stay');
     expect((await withdraw.boundingBox())!.height, 'Withdraw is under the thumb floor').toBeGreaterThanOrEqual(48);
     await withdraw.click();
     await expect(listed).toContainText('Withdrawn');
@@ -1269,7 +1268,7 @@ test.describe('the landing page: missions you can open', () => {
     // Signal again, and the release goes from the mission's own screen.
     await page.evaluate(() => void ((globalThis as unknown as { __swallow?: boolean }).__swallow = false));
     await takepart.locator('[data-sendrelease]').click();
-    await expect(takepart).toContainText('anyone who saw the claim keeps it', { timeout: 15_000 });
+    await expect(takepart).toContainText('public, as the claim was', { timeout: 15_000 });
     await expect(takepart.locator('[data-sendrelease]')).toHaveCount(0);
     const released = await page.evaluate(
       () =>

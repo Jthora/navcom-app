@@ -23,28 +23,28 @@
   const marks = $derived.by((): Mark[] => {
     const chosen = mapLayers.chosen;
     const out: Mark[] = [
-      { id: 'mission', line: RING, fill: DOT, text: 'A mission at a place on record: a ring, never smaller than its point’s precision, about a kilometre at the finest; with a centre only at its smallest, where it is a symbol, not a spot' },
-      { id: 'filed', line: 'M1 4h14v8H1z', fill: 'M1 4h14v8H1z', text: 'A mission filed under a province or a country: somewhere in it, not all of it' },
-      { id: 'national', line: 'M2 3h12v10H2z', text: 'A mission filed for a whole country: its outline' },
-      ...(mapLayers.desk ? [{ id: 'desk', line: 'M1 4h14v8H1z', dash: true, text: 'Desk work about a province or a country: dashed, never lit, since it is done from anywhere' }] : []),
-      { id: 'region', line: 'M4.5 4.5h7v7h-7z', text: 'With Places on: a directory region, which stands for the regions under it where they crowd' },
+      { id: 'mission', line: RING, fill: DOT, text: 'A mission at a place on record' },
+      { id: 'filed', line: 'M1 4h14v8H1z', fill: 'M1 4h14v8H1z', text: 'A mission somewhere in a province or country' },
+      { id: 'national', line: 'M2 3h12v10H2z', text: 'A mission for a whole country' },
+      ...(mapLayers.desk ? [{ id: 'desk', line: 'M1 4h14v8H1z', dash: true, text: 'Desk work, done from anywhere' }] : []),
+      { id: 'region', line: 'M4.5 4.5h7v7h-7z', text: 'With Places on: a directory region' },
       { id: 'record', fill: 'M6 6h4v4H6z', text: 'Closer in: a place on record' },
-      { id: 'held', line: 'M2 2h12v12H2z', dash: true, text: 'Closer in: a region with places held back from the map' }
+      { id: 'held', line: 'M2 2h12v12H2z', dash: true, text: 'Closer in: a region with places held back' }
     ];
     if (chosen === 'zones') {
       out.push(
-        { id: 'count', line: 'M1 4.5h14v7H1z', text: 'Open missions counted in a Zone or Sector, where each package puts its subject or the Zone it names' },
-        { id: 'count-near', line: 'M1 4.5h14v7H1z', dash: true, text: 'The same, with one near an edge the drawn lines cannot settle' }
+        { id: 'count', line: 'M1 4.5h14v7H1z', text: 'Open missions in a Zone or Sector' },
+        { id: 'count-near', line: 'M1 4.5h14v7H1z', dash: true, text: 'The same, one of them near an edge' }
       );
     }
     if (chosen === 'spheres') {
       out.push(
         { id: 'hatch', line: 'M2 3h12v10H2z', fill: 'M2 9l6-6M2 13l10-10M6 13l8-8M10 13l4-4', text: 'The Sphere or organisation opened, hatched' },
-        { id: 'small', fill: 'M8 4l4 4l-4 4l-4-4z', text: 'A small state, too small for the world’s outlines, at Natural Earth’s label point' }
+        { id: 'small', fill: 'M8 4l4 4l-4 4l-4-4z', text: 'A small state' }
       );
     }
-    if (mapLayers.hazards) out.push({ id: 'area', line: 'M8 1.5L14.5 8L8 14.5L1.5 8Z', dash: true, text: 'Hazards: dashed, an event over an area, drawn at the one point its source gives' });
-    if (daylightDrawn()) out.push({ id: 'sun', line: 'M8 5a3 3 0 1 1 0 6a3 3 0 1 1 0-6zM8 1v2M8 13v2M1 8h2M13 8h2', text: 'Where the sun is overhead: a mark, not a place' });
+    if (mapLayers.hazards) out.push({ id: 'area', line: 'M8 1.5L14.5 8L8 14.5L1.5 8Z', dash: true, text: 'Hazards: an event over an area' });
+    if (daylightDrawn()) out.push({ id: 'sun', line: 'M8 5a3 3 0 1 1 0 6a3 3 0 1 1 0-6zM8 1v2M8 13v2M1 8h2M13 8h2', text: 'Where the sun is overhead' });
     return out;
   });
 </script>
@@ -72,7 +72,7 @@
       </ul>
     {/if}
     <!-- The rest of each line's words, and what every kind of mark means: one layer down [panel.md, rule 3]. -->
-    <Why summary="What each line and mark means">
+    <Why summary="Every mark">
       {#if mapKey.lines.some((k) => k.credit)}
         <ul class="nc-key-lines">
           {#each mapKey.lines as k, i (i)}

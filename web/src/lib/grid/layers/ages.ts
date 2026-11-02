@@ -120,10 +120,6 @@ const WORDS: Record<Reading, { mark: Swatch['mark']; tone: Swatch['tone']; text:
 /** Least cautious first: where marks crowd, the later one is the one drawn. */
 const ORDER: readonly Reading[] = ['current', 'hours', 'stale', 'unknown'];
 
-/** What the windows mean, said once in the full key rather than claimed by every class. */
-export const KEY_NOTE =
-  'A region reads as its oldest check. Hours, where a place has them, read call first after 14 days; each place’s own page says what its check still lets it show. Where marks would crowd, the oldest is drawn.';
-
 /**
  * A region's checks, read against `now`, and one record's when asked: its oldest and its newest, and
  * the reading of the oldest, the cautious word; a record's own reading, when one is asked for. Unknown
@@ -301,7 +297,7 @@ export const overlay: Overlay = {
     const n = ages.confirmed;
     return `Directory by last check · ${n === 0 ? 'none' : n.toLocaleString('en-US')} by a person`;
   },
-  credit: () => 'each region of the directory by its oldest check, read on this phone’s clock; by a person is a check confirmed by phone, in person or at the place, not by a website or a second hand',
+  credit: () => 'each region by its oldest check; by a person: by phone, in person or at the place',
   region(slug, record) {
     const age = ageOf(slug, record);
     if (!age) return null;

@@ -14,13 +14,11 @@
    * directory by when it was last checked**; and over any layer **Hazards**, the one thing on the map
    * that asks anybody outside navcom.app. Each has its own code, loaded when ticked.
    *
-   * **Hazards says what it asks before it is ticked**, in plain words beside the box and not one layer
-   * down: which three hosts and what each lists; that each learns this phone's address, which can place
-   * it roughly, often to a city, its browser, the time and that it asked from navcom.app, not where you
-   * are looking on the map; and what each round costs now and in a fire season [$lib/outside]. The
+   * **Hazards says what it asks before it is ticked**, beside the box: which three hosts, that each sees
+   * this phone's address and not where you are looking, and what each round costs [$lib/outside]. The
    * choice lasts the page's life and is never stored, so a reload asks nobody.
    */
-  import { Panel, Readout, Slot, Why } from '$lib/components/panel';
+  import { Panel, Readout, Slot } from '$lib/components/panel';
   import type { Nav } from '$lib/com/screens';
   import { MAP_LAYERS, daylightDrawn, layerData, mapLayers, type MapLayer } from '$lib/grid/layer.svelte';
   import { HAZARD_FEEDS, HAZARDS_PEAK_KB, HAZARDS_ROUND_KB, agoOf, type HazardFeedId } from '$lib/outside';
@@ -30,11 +28,11 @@
   let { nav }: { nav: Nav } = $props();
 
   const NAMES: Record<MapLayer, { name: string; what: string }> = {
-    nations: { name: 'Nation States', what: 'countries, and provinces where the directory has regions' },
-    zones: { name: 'Zones', what: 'Starcom’s Terrae and Maria, their Zones and Sectors' },
-    spheres: { name: 'Spheres', what: 'cited lists of countries, Spheres and organisations of states, overlapping' },
-    timezones: { name: 'Time zones', what: 'standard offsets from UTC, with day and night' },
-    none: { name: 'None', what: 'the land, and the missions' }
+    nations: { name: 'Nation States', what: 'countries and provinces' },
+    zones: { name: 'Zones', what: 'Starcom’s Terrae, Maria, Zones and Sectors' },
+    spheres: { name: 'Spheres', what: 'lists of countries and organisations of states' },
+    timezones: { name: 'Time zones', what: 'standard offsets from UTC' },
+    none: { name: 'None', what: 'land and missions only' }
   };
 
   const outlines = $derived(mapLayers.loaded >= 0 ? layerData.outlines : null);
@@ -63,7 +61,7 @@
   /** What Hazards has read, per feed, moving on each minute it is on and with every answer. */
   const hazardsHeld = $derived(mapLayers.loaded >= 0 ? layerData.hazards : null);
   const hazardsAt = $derived(mapLayers.loaded >= 0 ? Date.now() : 0);
-  const CAPPED = 'its answer passed its cap, so it is not asked again on this page';
+  const CAPPED = 'too large; not asked again on this page';
   /**
    * One feed's row: how many it listed and when, or that it was not read, which is unknown and never
    * none. *Nothing listed* only when nothing was left out either; an ask of it that did not answer by
@@ -73,7 +71,7 @@
     const f = hazardsHeld?.feeds[id];
     if (!f || f.state === 'unread') return 'not read: unknown';
     if (f.state === 'loading') return 'asking';
-    if (f.state === 'failed') return `not read: unknown · ${f.malformed ? 'its answer was not in the shape it was measured in' : 'the ask failed'}`;
+    if (f.state === 'failed') return `not read: unknown · ${f.malformed ? 'its answer could not be read' : 'the ask failed'}`;
     if (f.state === 'too-large') return `not read: unknown · ${CAPPED}`;
     const extra = [
       ...f.missing.map((m) => `${m.part} not read: unknown, ${m.why === 'too-large' ? CAPPED : 'the ask failed'}`),
@@ -91,7 +89,7 @@
 <div data-screen="layers" data-layer={mapLayers.chosen}>
   <Panel label="Map" post={NAMES[mapLayers.chosen].name}>
     <fieldset class="nc-layers">
-      <legend>What the map divides the Earth by</legend>
+      <legend>Layer</legend>
       {#each MAP_LAYERS as id (id)}
         <label class="nc-layer" data-layer-option={id}>
           <input type="radio" name="map-layer" value={id} checked={mapLayers.chosen === id} onchange={() => choose(id)} />
@@ -101,7 +99,7 @@
           <!-- Over Nation States only: each region's ring, by its oldest check, read against this phone's clock. -->
           <label class="nc-layer nc-over" data-ages-option>
             <input type="checkbox" data-ages bind:checked={mapLayers.ages} />
-            <span><b>Directory by last check</b> <span class="nc-layer-what">how long ago each region’s oldest check was, on this phone’s clock</span></span>
+            <span><b>Directory by last check</b> <span class="nc-layer-what">how long ago each region was checked</span></span>
           </label>
         {/if}
       {/each}
@@ -112,25 +110,22 @@
       {:else}
         <input type="checkbox" data-daylight bind:checked={mapLayers.daylight} />
       {/if}
-      <span><b>Day and night</b> <span class="nc-layer-what">{mapLayers.chosen === 'timezones' ? 'always drawn with Time zones' : 'where the sun is up, over any layer'}</span></span>
+      <span><b>Day and night</b> <span class="nc-layer-what">{mapLayers.chosen === 'timezones' ? 'always on with Time zones' : 'where the sun is up'}</span></span>
     </label>
     <label class="nc-layer nc-check" data-hazards-option>
       <input type="checkbox" data-hazards bind:checked={mapLayers.hazards} aria-describedby="nc-hazards-ask" />
-      <span><b>Hazards</b> <span class="nc-layer-what">fires, volcanoes, storms, floods, droughts and earthquakes, from three public feeds, over any layer</span></span>
+      <span><b>Hazards</b> <span class="nc-layer-what">fires, volcanoes, storms, floods, droughts and earthquakes</span></span>
     </label>
-    <!-- What choosing it costs, said before it is chosen, in plain words and not one layer down. -->
+    <!--
+      The one layer that asks anybody outside navcom.app, so who it asks and what they learn is said
+      before it is chosen, beside the box [D10]. One line since 2026-11-01.
+    -->
     <div class="nc-ask" id="nc-hazards-ask" data-hazards-ask>
       <span>
-        Turning this on asks three services outside NavCom for their whole-world lists:
-        {#each HAZARD_FEEDS as f, i (f.id)}<b class="nc-host">{f.host}</b> ({f.name}: {f.lists}){i === HAZARD_FEEDS.length - 2 ? ' and ' : i < HAZARD_FEEDS.length - 1 ? ', ' : '.'}{/each}
+        Asks {#each HAZARD_FEEDS as f, i (f.id)}<b class="nc-host">{f.host}</b>{i === HAZARD_FEEDS.length - 2 ? ' and ' : i < HAZARD_FEEDS.length - 1 ? ', ' : ''}{/each},
+        each of which sees this phone’s internet address, not where you are looking on the map. Every
+        10 minutes while the map is open: about {HAZARDS_ROUND_KB} kB, up to {HAZARDS_PEAK_KB} kB in a fire season.
       </span>
-      <span>
-        Each learns this phone’s internet address, which can place it roughly, often to a city; its browser;
-        the time; and that it asked from navcom.app — not where you are looking on the map. It asks again
-        every 10 minutes while the map is on screen, never while the page is hidden: about
-        {HAZARDS_ROUND_KB} kB each time now, more in a fire season, up to about {HAZARDS_PEAK_KB} kB.
-      </span>
-      <span>These lists hold some events, never all: nothing drawn is not nothing happening.</span>
     </div>
     {#if mapLayers.hazards}
       <Slot k="Hazards">
@@ -155,7 +150,7 @@
           <Readout
             value="Overhead at {deg(sun.lat, 'N', 'S')} {deg(sun.lon, 'E', 'W')}"
             tone="neutral"
-            sub="{new Date(sun.at).toISOString().slice(11, 16)} UTC by this phone’s clock; worked out here, nothing fetched"
+            sub="{new Date(sun.at).toISOString().slice(11, 16)} UTC by this phone’s clock"
           />
         {:else}
           <Readout value="Working it out" tone="cold" />
@@ -177,8 +172,6 @@
               </li>
             {/each}
           </ul>
-          <!-- What the windows mean, once, one layer down: no class claims it, since the dates know no fields. -->
-          <div data-ages-note><Why summary="What the ages mean"><p>{agesKey?.KEY_NOTE}</p></Why></div>
         {:else}
           <Readout value="Loading" tone="cold" />
         {/if}
@@ -279,37 +272,6 @@
     </Panel>
   {/if}
 
-  <Why summary="Where the layers come from">
-    <p>
-      Nation States and Time zones are Natural Earth’s, which is in the public domain. Zones are
-      Starcom’s partition of the whole Earth, licensed CC BY 4.0, which NavCom copies into its own
-      build at each stage and checks first: nothing is fetched from Starcom, and nothing about where
-      you look is sent anywhere. The Spheres are cited lists of countries, copied the same way; a
-      small state too small for the world’s outlines is a small diamond at Natural Earth’s label point.
-    </p>
-    <p>
-      Day and night is worked out on this phone from its own clock, and nothing is fetched for it: the
-      sun’s position to about a kilometre; the line to within tens of kilometres, since it is drawn in
-      short straight steps and the air bends sunlight near the horizon; and all of it only as right as
-      this phone’s clock. The directory’s ages are the dates its places were last checked, read against
-      this phone’s clock, so they age on the map as they do on each place’s page; they say how old a
-      check is, and each place’s own page says what that check still lets it show.
-    </p>
-    <p>
-      Hazards are three public lists, read as they are given and never filtered by where you look: the
-      U.S. Geological Survey’s earthquakes of magnitude 4.5 and over in the past day, and its
-      significant ones; NASA EONET’s open volcanoes and severe storms, and wildfires reported in the
-      last 30 days; and GDACS’s orange- and red-alert floods, droughts and tropical cyclones that are
-      still current, since its list holds no green ones. Each mark is at the point its source
-      published, in its words; an alert level is quoted, never drawn as a colour, and a feed that did
-      not answer, or answered in a shape nothing of which could be read, reads as not read, never as
-      nothing there. Each source’s time means something else, and each is named: an earthquake’s
-      origin, the date of EONET’s latest point, which for a volcano can be years old, and when GDACS
-      last updated its entry. In a busy fire season EONET’s wildfires can pass what this phone will
-      read of them, and then read as not read while its volcanoes and storms are still drawn. They
-      are lists of some events: an empty map is not a safe one.
-    </p>
-  </Why>
 </div>
 
 <style>

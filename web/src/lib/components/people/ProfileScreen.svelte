@@ -77,7 +77,7 @@
   <Panel label="Profile" post={held && !hidden ? held.card.card.callsign : null}>
     {#if !contact}
       <!-- History holds a handle; the person it named went with the reload or the wipe. -->
-      <Slot k="Who"><Readout value="Not on this phone" tone="cold" sub="this screen named somebody this phone has since forgotten" /></Slot>
+      <Slot k="Who"><Readout value="Not on this phone" tone="cold" sub="forgotten since" /></Slot>
     {:else}
       <Slot k="Name">
         {#if held && !hidden}
@@ -132,7 +132,7 @@
               <Readout value={`Paired since ${dayOf(withYou.since)}`} tone="neutral" sub={`you call them ${withYou.callsign}`} />
             {:else}
               <!-- Never "not paired": a pairing by code, or one from before a wipe, cannot be told from none. -->
-              <Readout value="Not known" tone="cold" sub="only a pairing made by writing to this card shows here" />
+              <Readout value="Not known" tone="cold" sub="not paired through this card" />
             {/if}
           </span>
         </Slot>
@@ -142,7 +142,6 @@
         <div class="rail">
           <button type="button" data-fetch-card disabled={asking} onclick={fetchNewest}>
             <span>Fetch newest</span>
-            <span class="said">The relays learn that this phone asked for this card.</span>
           </button>
           {#if signedOn && held && !withYou}
             {#if writing}
@@ -197,10 +196,6 @@
     text-align: start;
     text-decoration: none;
     cursor: pointer;
-  }
-  .said {
-    font-size: 0.78rem;
-    color: var(--t-faint);
   }
   textarea {
     width: 100%;

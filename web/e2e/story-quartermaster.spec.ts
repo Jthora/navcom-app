@@ -282,8 +282,8 @@ test.describe('the Quartermaster’s week', () => {
     await home(qm);
     await qm.locator('[data-yours]').click();
     const yours = qm.locator('[data-screen="yours"]');
-    await expect(yours).not.toContainText('a mission you take part in waits here');
     const toReport = yours.locator('section.nc-panel').filter({ has: qm.getByRole('heading', { name: 'To report', exact: true }) });
+    await expect(toReport).not.toContainText('None yet');
     await expect(toReport).toContainText('Nothing to report');
     await expect(qm.locator(`[data-their-reports="${WATER}"]`)).toContainText('Water at the overpass');
     // What the row holds, not an offer it cannot keep: two weeks after the end, nothing NavCom files can be witnessed or challenged [review].

@@ -86,7 +86,7 @@
     <label for="people-q" class="q-label">A callsign, or a key’s first characters</label>
     <input id="people-q" type="search" bind:value={query} autocomplete="off" spellcheck="false" placeholder="Wren" />
     <Slot k="Sent">
-      <Readout value="Nothing" tone="good" sub="what you type is searched here and sent nowhere" />
+      <Readout value="Nothing" tone="good" sub="searched on this phone" />
     </Slot>
 
     {#if pasted}
@@ -133,7 +133,6 @@
       </select>
       <button type="button" data-load-board disabled={!region || asking} onclick={loadBoard}>
         <span>Load {region ? `${regionName}’s` : 'a'} board</span>
-        <span class="said">One ask, naming the city: never a person, never what you typed.</span>
       </button>
       {#if board}
         <Readout
@@ -144,7 +143,6 @@
       {/if}
       <button type="button" data-load-roster disabled={asking} onclick={loadRoster}>
         <span>Also search people listed publicly</span>
-        <span class="said">Only cards their holders chose to list on the open web.</span>
       </button>
       {#if roster}
         <Readout
@@ -225,9 +223,5 @@
     font: inherit;
     text-align: start;
     cursor: pointer;
-  }
-  .said {
-    font-size: 0.78rem;
-    color: var(--t-faint);
   }
 </style>

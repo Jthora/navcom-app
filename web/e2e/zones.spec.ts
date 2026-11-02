@@ -171,8 +171,8 @@ test.describe('Starcom’s Zones on the map', () => {
     const sector = page.locator('[data-screen="zone"][data-zone="zone:laurentia-west/sector:north"]');
     await lookup.locator('[data-found="zone:laurentia-west/sector:north"] button').first().click();
     await expect(sector.locator('[data-chain]')).toHaveText(/Terra Laurentia\s*›\s*Laurentia West Zone\s*›\s*Laurentia west, north/);
-    // What would fetch it is the person's own tap on its Zone, and the screen says what that tells the host.
-    await expect(sector.locator('[data-slot="landform"]')).toContainText('tells navcom.app which Terra');
+    // What would fetch it is the person’s own tap on its Zone, and the screen says so.
+    await expect(sector.locator('[data-slot="landform"]')).toContainText('open its Zone to fetch them');
     await frame(page);
     expect(asked, 'opening the Sector the lookup found fetched its container').not.toContain('terra-laurentia.json');
     await page.locator('[data-back]').click();

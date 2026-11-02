@@ -239,9 +239,9 @@
   <Panel label="To report">
     {#if history.length === 0 && went.length > 0}
       <!-- Taken part in, and nothing left to tell: said, not "none yet" [audit 11.S]. A day reported is not offered again [finding 52]. -->
-      <Slot k="Missions"><Readout value="Nothing to report" tone="cold" sub="a report tells of the week before today, while the mission ran, and each day once" /></Slot>
+      <Slot k="Missions"><Readout value="Nothing to report" tone="cold" sub="each day is reported once" /></Slot>
     {:else if history.length === 0}
-      <Slot k="Missions"><Readout value="None yet" tone="cold" sub="a mission you take part in waits here, for a week after the work" /></Slot>
+      <Slot k="Missions"><Readout value="None yet" tone="cold" /></Slot>
     {:else}
       <ul>
         {#each history as h (h.mission.address)}
@@ -275,12 +275,12 @@
             {#if r.unconfirmed && !r.withdrawn}
               <!-- The same report, as it was signed: a second would count the same work twice [finding 61]. -->
               <button type="button" class="nc-yours-withdraw" data-sendagain={r.id} disabled={sending} onclick={() => resend(r)}>
-                Send again · the same report
+                Send again
               </button>
             {/if}
             {#if r.visibility === 'open' && !r.withdrawn}
               <button type="button" class="nc-yours-withdraw" data-withdraw={r.id} onclick={() => takeBack(r)}>
-                Withdraw · a request anyone can see; copies already taken stay
+                Withdraw · copies already taken stay
               </button>
             {/if}
           </li>
@@ -291,7 +291,7 @@
 
   <Panel label="Others' reports">
     {#if went.length === 0}
-      <Slot k="Missions"><Readout value="None yet" tone="cold" sub="a mission you take part in is listed here until 30 days after it ends" /></Slot>
+      <Slot k="Missions"><Readout value="None yet" tone="cold" /></Slot>
     {:else}
       <ul>
         {#each went as h (h.mission.address)}

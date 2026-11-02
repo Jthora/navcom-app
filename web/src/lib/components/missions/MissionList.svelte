@@ -126,7 +126,7 @@
     {/if}
     {#if refused.length > 0 && !named}
       <Slot k="Not read">
-        <Readout value={`${refused.length} not shown`} tone="warn" sub="a package NavCom could not read; its poster can be told why" />
+        <Readout value={`${refused.length} not shown`} tone="warn" sub="packages NavCom could not read" />
       </Slot>
       <ul class="nc-refused" data-refused>
         {#each refused as r, i (i)}<li><span class="nc-missions-meta">{r.d || 'no name'}</span> {r.because}</li>{/each}
