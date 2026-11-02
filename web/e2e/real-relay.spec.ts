@@ -824,7 +824,7 @@ test.describe('the board, the one filter that resisted a naive test', () => {
     const { finalizeEvent, generateSecretKey, getPublicKey } = await import('nostr-tools/pure');
     const { buildSignal, open: openSealed, KIND_RESPONSE } = await import('@navcom/core');
 
-    const watchHex = 'f'.repeat(63) + '7';
+    const watchHex = '9'.repeat(63) + '7';
     const watchSecret = Uint8Array.from((watchHex.match(/../g) ?? []).map((b) => parseInt(b, 16)));
     const watchPub = getPublicKey(watchSecret);
     const holder = await pubkeyOf(TEST_SECRET);
