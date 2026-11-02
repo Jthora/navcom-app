@@ -61,7 +61,7 @@ test.describe('a stranger opens the terminal', () => {
     await open(page, '/terminal/sign-on/');
     // It said "the signal will keep trying". A sign-on is sent once and never retried, and the
     // kind is not stored, so a watch that comes back never sees it.
-    await expect(page.getByText(/stand down and sign on/i)).toBeVisible();
+    await expect(page.getByText(/sign on again once it's back/i)).toBeVisible();
   });
 
   test('is not offered an ordering control on a region with nothing in it', async ({ page }) => {

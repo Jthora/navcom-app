@@ -8,7 +8,7 @@
    */
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { capabilitySentence, pageableNow } from '@navcom/core';
+  import { pageableNow } from '@navcom/core';
   import { Panel, Slot, Readout, Why } from '$lib/components/panel';
   import { watch } from '$lib/terminal/watch.svelte';
   import { operator } from '$lib/terminal/session.svelte';
@@ -124,12 +124,11 @@
     {#if configured}
       <HeardSlot heard={heardNow} {nowMs} />
     {/if}
-    <Why open={watch.state.state === 'dark'}>
-      <p>{capabilitySentence(watch.state, nowS)}</p>
-      {#if configured}
+    {#if configured}
+      <Why summary="Heard">
         <HeardWhy heard={heardNow} />
-      {/if}
-    </Why>
+      </Why>
+    {/if}
   </Panel>
 </div>
 
@@ -142,11 +141,7 @@
 -->
 {#if configured && watch.state.state === 'dark'}
   <section>
-    <p class="error">
-      Nothing is watching. You can still sign on, but <strong>the watch will not see it</strong>
-      — a sign-on is sent once and not stored, so once the watch is back, stand down and sign on
-      again.
-    </p>
+    <p class="error">The watch won't see this. Sign on again once it's back.</p>
   </section>
 {/if}
 
@@ -154,11 +149,7 @@
   <label for="area">Area</label>
   <input
     id="area" bind:value={area} required autocomplete="off"
-    placeholder="Downtown, Riverfront" />
-  <p class="note">
-    Coarse. A district, never an address — this goes on the board and travels with a
-    Distress.
-  </p>
+    placeholder="a district, not an address" />
 
   <label for="hours">Out for</label>
   <select id="hours" bind:value={hours}>
@@ -175,57 +166,13 @@
     <option value={120}>2 hours</option>
     <option value={null}>Never</option>
   </select>
-  <p class="note">
-    <!--
-      Unconditional, because it is the claim `capabilities.ts` checks against the prerendered
-      HTML — and because it is the half that is true for everybody.
-    -->
-    <!-- Kept on one line: this phrase is a capability claim, and a source rewrap that split
-         it across lines is what broke the browser assertion for it once. -->
-    A missed check-in <strong>never</strong> escalates, never pages anyone,
-    and never counts as distress.
-  </p>
-  <p class="note">
-    <!--
-      Who does the nudging, which this screen did not say and needed to.
-
-      It read "a missed check-in gets you a nudge", written when nothing sent one at all. The
-      watch now does [`watch-state.spec.md`: on overdue the node MUST attempt contact with the
-      operator], which made the sentence true for an operator with a watch and left it false
-      for the one without — and the operator without a watch is the default case. Somebody
-      believing a nudge is coming when nothing is watching is invariant 4 at the scale of one
-      person.
-    -->
-    {#if configured}
-      Your watch may send you one — <strong>the only thing it ever sends unasked</strong>. It
-      arrives quietly and waits to be looked at, like everything else here.
-    {:else}
-      You have no watch, so <strong>nothing will send you anything</strong>. The time you give
-      is for you, and for anybody watching for you — they see it on their own screen, and
-      nothing reaches them either.
-    {/if}
-  </p>
-
   <label for="share">Share where you are</label>
   <select id="share" bind:value={share}>
     <option value="off">Off — just the area above</option>
     <option value="coarse">Roughly — about 500m</option>
     <option value="exact">Exactly</option>
   </select>
-  <p class="note">
-    <!--
-      Three facts, all of which change what an operator would choose, and none of which
-      they can discover by using it.
-    -->
-    Goes to <strong>the watch and the peers you paired with, and nowhere else</strong>.
-    There is no setting that makes it public. Only the latest is kept — nobody sees where
-    you were, and it stops the moment you stand down.
-  </p>
-  <p class="note">
-    A browser cannot follow you with the app closed, so this updates while it is open and
-    freezes at the last fix when it is not.
-  </p>
-
+  <p class="note">Only your watch and paired peers see it.</p>
   {#if operator.error}
     <p class="error">{operator.error}</p>
   {/if}

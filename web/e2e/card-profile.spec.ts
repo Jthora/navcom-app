@@ -72,15 +72,6 @@ test('caps what you do at three, by disabling the rest rather than refusing a cl
   await expect(fourth).toBeDisabled();
 });
 
-test('says the handle join is permanent, before the field rather than after it', async ({ page }) => {
-  await seedDevice(page, OUT);
-  await open(page, '/terminal/card/');
-
-  const links = page.locator('fieldset.pick', { hasText: /where else to find you/i });
-  await expect(links).toContainText(/permanent/i);
-  await expect(links).toContainText(/after you remove it here/i);
-});
-
 test('a handle can be added, and the screen says what its position means', async ({ page }) => {
   await seedDevice(page, OUT);
   await open(page, '/terminal/card/');

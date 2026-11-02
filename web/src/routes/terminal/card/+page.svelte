@@ -7,7 +7,7 @@
    * explanation nobody read.
    */
   import { onMount } from 'svelte';
-  import { Slot, Readout, Why } from '$lib/components/panel';
+  import { Slot, Readout } from '$lib/components/panel';
   import PickACallsign from '$lib/components/PickACallsign.svelte';
   import {
     DOES,
@@ -269,49 +269,14 @@
 </script>
 
 <svelte:head>
-  <title>Your card · Field Terminal</title>
-  <meta name="description" content="Being findable, and what it costs." />
+  <title>Public profile · Field Terminal</title>
+  <meta name="description" content="Your public profile: what others can find." />
 </svelte:head>
 
 <header>
   <p class="eyebrow"><a href="/terminal/">← Status</a></p>
-  <h1>Your card</h1>
+  <h1>Public profile</h1>
 </header>
-
-<section>
-  <p><strong>You have no card unless you publish one</strong>, and the app works the same without it.</p>
-  <Why summary="What publishing does and doesn't expose">
-    <p>
-      <!--
-        The claim that makes a card safe to publish, stated before the form rather than after
-        it. It is also the reason the contact key exists at all.
-      -->
-      A card is signed by a <strong>separate key</strong> that is used for nothing else. Nothing
-      in it connects it to your patrols, your peers or your watch — publishing one tells the
-      network your callsign and whatever place you choose to name, and nothing about how you
-      work. A relay carrying both from this phone can still see they come from one phone.
-    </p>
-    <p>
-      <strong>A card carries no position.</strong> Not your address, not your neighbourhood,
-      not a coarse pin. There is nowhere in it to put one.
-    </p>
-  </Why>
-  <!--
-    Reducing exposure is never symmetrical with increasing it, and saying so is the rule. The
-    force of it is in the first four words; the other forty-nine explain, and explanation is
-    what `Why` is for. Kept word for word, one tap away.
-  -->
-  <p class="cost"><strong>Publishing cannot be undone.</strong></p>
-  <Why summary="What withdrawing can and cannot do">
-    <p>
-      A card lets somebody in your area find you and ask to pair, without either of you knowing
-      the other first. Withdrawing throws away the key that signs your card, so nobody can reach
-      you at it again and no invite sent to it arrives — but relays that already have the card
-      may keep serving it. Nothing can unpublish it, and anything claiming otherwise would be
-      lying to you.
-    </p>
-  </Why>
-</section>
 
 {#if !callsign}
   <section class="act">
@@ -341,9 +306,6 @@
           <option value="">Choose a state or province</option>
           {#each data.provinces as p (p.code)}<option value={p.code}>{p.name} · {p.country}</option>{/each}
         </select>
-        <Why summary="Why only these">
-          <p>Those of the countries the directory covers, which this app has names for. Elsewhere, name your nation.</p>
-        </Why>
       {:else if where === 'city'}
         <label class="sr" for="region">City or town</label>
         <select id="region" bind:value={region}>
@@ -367,23 +329,12 @@
           <span><strong>{a.name ?? a.id}</strong> <em>{a.id === keptZone?.id ? 'On your card now' : LEVEL[a.level]}</em></span>
         </label>
       {/each}
-      {#if !work}
-        <Why summary="To name a Zone or Sector">
-          <p>Set where you work on the map’s Zones layer. Its Sector, its Zone and its Terra are then offered here, and nothing is sent until you publish.</p>
-        </Why>
-      {/if}
     </fieldset>
 
     <label for="doing">What you do</label>
     <textarea id="doing" bind:value={doing} rows="2" maxlength={DOING_MAX}
       placeholder="Water and socks, Thursdays."></textarea>
     <p class="cost">Optional. {left} characters left.</p>
-    <Why summary="What not to write here">
-      <p>
-        <strong>Nothing about anybody you have helped</strong> — write about the work, not the
-        people.
-      </p>
-    </Why>
 
     <fieldset class="pick">
       <legend>Who can find you</legend>
@@ -402,22 +353,11 @@
           </span>
         </label>
       {/each}
-      {#if !city}
-        <Why summary="Why not on a board">
-          <p>Boards are by city. A card that names none is on no board, and anybody you give your address to still finds it.</p>
-        </Why>
-      {/if}
     </fieldset>
 
     <fieldset class="pick">
       <legend>What you do</legend>
       <p class="cost">Optional. {DOES_MAX - does.length} left.</p>
-      <Why summary="Nobody checks this">
-        <p>
-          <strong>Nobody checks any of this</strong> — it says what you do, never what you are
-          qualified for.
-        </p>
-      </Why>
       {#each DOES as d (d.id)}
         <label class="opt">
           <input
@@ -434,20 +374,6 @@
     <fieldset class="pick">
       <legend>Where else to find you</legend>
       <p class="cost">Optional, and off unless you add one.</p>
-      <Why summary="This is permanent, and it is a join">
-        <p>
-          Anybody reading your card can connect this callsign to that account from now on,
-          <strong>including after you remove it here</strong>, because relays keep what they
-          were given.
-        </p>
-      </Why>
-      <Why summary="Why the first one is bigger">
-        <p>
-          The first is shown as a feed, the next two beside it, the rest as links. Move them
-          to change that. Some platforms refuse to be shown at all, so those stay links
-          however you order them — better that than a panel that never fills.
-        </p>
-      </Why>
 
       {#each links as l (l.platform)}
         <div class="link">
@@ -486,6 +412,7 @@
       {/if}
     </fieldset>
 
+    {#if !published}<p class="cost" data-cannot-undo>Publishing can't be undone.</p>{/if}
     <button onclick={publish} disabled={!placed || busy}>
       {published ? 'Replace your card' : 'Publish your card'}
     </button>
@@ -518,22 +445,6 @@
           </span>
         {/if}
       </Slot>
-      {#if hiddenOn(contact)}
-        <Why summary="What that means">
-          <p>
-            navcom.app's own pages stopped showing this card after a notice about it. Relays still
-            carry it and other apps may still show it. A hide made before the notice could be
-            checked lapses on its own within 14 days, and no hide stands past 90 without a person
-            looking at it again. <a href="/notice/">The notice page</a> says how to answer.
-          </p>
-        </Why>
-      {/if}
-      <Why summary="Who can see it">
-        <p>
-          Anybody who finds it, on your city's board if you chose one or by your address, can ask
-          to pair. You decide who to accept, and ignoring somebody sends them nothing.
-        </p>
-      </Why>
       <!--
         The card's key, never the operator's own. The two are separate so that publishing costs
         no operational exposure, and printing the wrong one here would hand out the key the
@@ -542,19 +453,6 @@
       <Slot k="Card key">
         <Readout value={keyPrint(contact) ?? '—'} verbatim tone="neutral" sub="shown beside your name" />
       </Slot>
-      <Why summary="What these characters are for">
-        <p>
-          Callsigns are not unique — anybody can publish a card called {callsign}. These
-          characters appear beside your name wherever your card is shown, and they are hard to
-          copy — but only for somebody who compares every one of them.
-        </p>
-        <p>
-          <strong>Showing them in person is safer than posting them.</strong> This key also signs
-          your <em>out tonight</em> and anything you file without a callsign, so posting it where
-          people know you ties all of that to who you are there. Your card's links already make
-          part of that join; posting the key makes it checkable.
-        </p>
-      </Why>
     {/if}
   </section>
 
@@ -563,13 +461,6 @@
     {#if published.region !== EARTH}
     <section class="act">
       <h2>Out tonight</h2>
-      <Why summary="What gets published">
-        <p>
-          With this on, signing on adds your name to that area's board while you are out —
-          <strong>a name and nothing else</strong>. No position, no times, and no count of
-          anybody. It comes off by itself when you stand down or your phone stops.
-        </p>
-      </Why>
       <button onclick={toggleListed} aria-pressed={showListed}>
         {showListed ? 'Listed while out' : 'Not listed'}
       </button>
@@ -589,17 +480,6 @@
       <h2>Withdraw</h2>
       <!-- visibility.md's line, word for word, on both acts. -->
       <p class="cost">This changes what you share from now on. It can't unshare what's already out.</p>
-      <Why summary="Withdrawing, and retiring the key">
-        <p>
-          <strong>Withdraw card</strong> asks relays to drop your card and keeps the key that signs it,
-          so anything it signed — a claim, a report — can still be released. Invites to it stop
-          arriving here. Relays that already have the card may keep serving it.
-        </p>
-        <p>
-          <strong>Retire this print</strong> also throws the key away. It is refused while the key holds
-          a claim or a report is inside its seven days, because nothing could release them after.
-        </p>
-      </Why>
       {#if confirming === 'withdraw'}
         <button class="danger" data-confirm-withdraw disabled={busy} onclick={withdraw}>Withdraw my card</button>
         <button onclick={() => (confirming = null)}>Keep my card</button>

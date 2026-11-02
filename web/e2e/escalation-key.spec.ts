@@ -194,6 +194,6 @@ test.describe('a Distress on a box that names its executor', () => {
     await raiseDistress(page);
     await answerNextSignal(page, await humanFrom(k.watch));
     await expect(page.locator('[data-distress="acknowledged"]')).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator('[data-unattributed]')).toContainText(/does not yet name its escalation key/);
+    await expect(page.locator('[data-unattributed]')).toContainText(/doesn't name its escalation key/);
   });
 });

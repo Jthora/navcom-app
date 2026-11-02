@@ -63,7 +63,7 @@ test.describe('what this device says about a peer', () => {
     await expect(peers).toBeVisible({ timeout: 10_000 });
     await expect(peers).toContainText('Raven');
     await expect(peers).toContainText(/nothing heard/i);
-    await expect(peers).toContainText(/nothing\s+heard\s+is\s+not\s+the\s+same\s+as\s+home/i);
+    await expect(peers).toContainText(/not heard isn't the same as home/i);
   });
 
   test('says somebody is watching only when they said so', async ({ page }) => {

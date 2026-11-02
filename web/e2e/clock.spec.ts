@@ -36,12 +36,9 @@ test.describe('the status screen, on a phone that is days behind', () => {
 
     const said = page.locator('[data-clock-behind]');
     await expect(said).toBeVisible({ timeout: 10_000 });
-    await expect(said).toContainText(/every age in the app is measured from it/i);
-    // The half an operator cannot discover by using it: their own work is dated from this
-    // clock with no input from them, and a newer date beats an older one.
-    await expect(said).toContainText(/lose to the listing you wrote it to fix/i);
-    // The fix is on the phone and nowhere in this app.
+    // The fix, and that the ages here are wrong until it is made.
     await expect(said).toContainText(/automatic date and time/i);
+    await expect(said).toContainText(/Ages shown here are wrong/i);
   });
 
   test('and says nothing at all on a phone that is fine', async ({ page }) => {

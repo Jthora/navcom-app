@@ -36,18 +36,15 @@ function branch(condition: string): string {
 describe('a reading gone stale', () => {
   it('names the signal as a cause, and does not say the relay is still serving', () => {
     const stale = branch("watch.read.reason === 'stale'}");
-    expect(stale).toMatch(/lost its relays/i);
     expect(stale).toMatch(/signal/i);
     expect(stale).not.toMatch(/still serving/i);
     expect(stale).not.toMatch(/daemon may be gone/i);
-    expect(stale, 'the heading and the rule the browser test holds').toMatch(/Last word was/);
-    expect(stale).toMatch(/Old is treated as Dark/);
+    expect(stale, 'the heading the browser test holds').toMatch(/Last word was/);
   });
 
   it('names a clock set fast as a cause too, and what fixes it', () => {
     const stale = branch("watch.read.reason === 'stale'}");
     expect(stale).toMatch(/clock/i);
-    expect(stale).toMatch(/automatic date and time/i);
     expect(stale, 'no closed either/or that leaves the clock out').not.toMatch(/\bEither the watch\b/);
   });
 
@@ -63,12 +60,11 @@ describe('a watch saved on relays this page will not open', () => {
     const receipt = src.indexOf('{capabilitySentence(s, nowS)}');
     expect(receipt, 'the receipt is still shown for every other watch').toBeGreaterThan(-1);
     const above = src.slice(0, receipt);
-    const gate = above.slice(above.lastIndexOf('{#if '));
-    expect(gate).toMatch(/^\{#if stranded\}/);
-    expect(gate).toMatch(/cannot be reached/);
-    expect(gate).not.toMatch(/\bno watch\b/i);
-    expect(gate, 'it still works offline').toMatch(/works offline/);
-    expect(gate).toMatch(/\{:else\}\s*<p>$/);
+    expect(above.slice(above.lastIndexOf('{#if '))).toMatch(/^\{#if !stranded\}/);
+    // Its own words, and never "no watch" (2026-11-01: one heading and what to do).
+    const stranded = src.slice(src.indexOf('<div data-watch-unreachable>'), src.indexOf('</div>', src.indexOf('<div data-watch-unreachable>')));
+    expect(stranded).toMatch(/Can't reach your watch/);
+    expect(stranded).not.toMatch(/\bno watch\b/i);
   });
 });
 
@@ -105,7 +101,7 @@ describe('the heard-on count', () => {
   it('is shown at sign-on the same way, by the same components', () => {
     const src = read('../../routes/terminal/sign-on/+page.svelte');
     expect(gated(src, '<HeardSlot')).toMatch(/^\{#if configured\} $/);
-    expect(gated(src, '<HeardWhy')).toMatch(/^\{#if configured\} $/);
+    expect(gated(src, '<HeardWhy')).toMatch(/^\{#if configured\} (<Why summary="Heard"> )?$/);
   });
 
   it('is shown on the Distress screen as the count already held, and that screen opens no read', () => {

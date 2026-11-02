@@ -39,7 +39,7 @@ test('a relay that rate-limits this phone is named on Status, and the beat holds
   await expect(refusing).toHaveCount(2);
   await expect(page.locator('[data-refusing="wss://relay.damus.io"]')).toContainText('relay.damus.io');
   await expect(refusing.first()).toContainText(/rate-limited/i);
-  await expect(page.getByText('A relay refusing this phone')).toBeVisible();
+  await expect(page.getByText(/Distress still goes to it/)).toBeVisible();
 
   // The next beat goes nowhere: every relay is cooling down.
   const sent = await presences(page);

@@ -555,7 +555,7 @@ describe('the field terminal', () => {
     const distress = screens().find((p) => p.path.includes('/terminal/distress/'))!;
     // Sending is a hold, never a tap — invariant 3, deliberate by construction.
     expect(distress.bodyText).toMatch(/Hold to send/i);
-    expect(distress.bodyText).toMatch(/until a human answers/i);
+    expect(distress.bodyText).toMatch(/until a person answers/i);
   });
 
   it('is an application, so it does load a client bundle', () => {
@@ -629,8 +629,7 @@ describe('the field terminal', () => {
     // abilities. A pitch for a capability that does not exist is the exact failure the
     // capability-claim test exists to catch.
     const t = terminal()!;
-    expect(t.bodyText).not.toMatch(/locked screen|SMS fallback/i);
-    expect(t.bodyText).toMatch(/same app either way/i);
+    expect(t.bodyText).not.toMatch(/locked screen|SMS fallback|home screen/i);
   });
 
   it('states where a wipe stops, rather than implying it is total', () => {

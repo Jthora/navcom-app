@@ -702,11 +702,9 @@ test.describe('post-quantum cover', () => {
     await seedDevice(page, { ...OUT, peers: [{ pubkey: 'f'.repeat(64), callsign: 'Raven', since: 0 }] });
     await open(page, '/terminal/');
 
-    const notice = page.getByText(/standard encryption tonight/i);
+    const notice = page.locator('p.cover');
     await expect(notice).toBeVisible();
-    // What is missing, and what is not.
-    await expect(page.getByText(/unreadable by anyone now/i)).toBeVisible();
-    await expect(page.getByText(/open the app once/i)).toBeVisible();
+    await expect(notice).toContainText(/open the app once/i);
   });
 
   test('is a note, not an alarm', async ({ page }) => {
@@ -721,9 +719,7 @@ test.describe('post-quantum cover', () => {
     }
 
     // Rendered in the same muted colour as every other cost on the screen, not an alert one.
-    const colour = await page
-      .getByText(/standard encryption tonight/i)
-      .evaluate((el) => getComputedStyle(el).color);
+    const colour = await page.locator('p.cover').evaluate((el) => getComputedStyle(el).color);
     const alarm = await page.evaluate(() =>
       getComputedStyle(document.documentElement).getPropertyValue('--t-alarm').trim()
     );
@@ -1441,10 +1437,8 @@ test.describe('being shown Dark, and being told why', () => {
 
     const said = page.locator('[data-watch-absent]');
     await expect(said).toBeVisible({ timeout: 10_000 });
-    await expect(said).toContainText(/not serving anything/i);
-    // Both fixes named, because neither is guessable from "Dark".
-    await expect(said).toContainText(/relay list/i);
-    await expect(said).toContainText(/not running/i);
+    await expect(said).toContainText(/Nothing from this watch/i);
+    await expect(said).toContainText(/relays/i);
   });
 
   test('says when no relay answered, rather than blaming the list or the watch', async ({ page }) => {
@@ -1455,7 +1449,7 @@ test.describe('being shown Dark, and being told why', () => {
 
     const said = page.locator('[data-watch-unanswered]');
     await expect(said).toBeVisible({ timeout: 10_000 });
-    await expect(said).toContainText(/could not reach the watch/i);
+    await expect(said).toContainText(/Can't reach the watch/i);
     await expect(page.locator('[data-watch-absent]')).toHaveCount(0);
   });
 
@@ -1477,8 +1471,7 @@ test.describe('being shown Dark, and being told why', () => {
 
     const said = page.locator('[data-watch-corrupt]');
     await expect(said).toBeVisible({ timeout: 10_000 });
-    await expect(said).toContainText(/none of it can be read/i);
-    await expect(said).toContainText(/safe answer/i);
+    await expect(said).toContainText(/Can't read this watch/i);
   });
 
   /*
@@ -1523,9 +1516,6 @@ test.describe('being shown Dark, and being told why', () => {
     await expect(said).toBeVisible({ timeout: 10_000 });
     // The fix, which is on the phone and nowhere in this app.
     await expect(page.getByText(/automatic date and time/i)).toBeVisible();
-    // And that Dark here is the safe answer rather than the true one — an operator who
-    // reads it as "my watch is down" would go and fix the wrong thing.
-    await expect(page.getByText(/safe answer rather than the true one/i)).toBeVisible();
   });
 
   test('says how old the last word is when a watch has stopped saying anything', async ({ page }) => {
@@ -1540,7 +1530,6 @@ test.describe('being shown Dark, and being told why', () => {
     await open(page, '/terminal/');
 
     await expect(page.getByText(/last word was \d+s ago/i)).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(/old is treated as dark/i)).toBeVisible();
   });
 });
 
@@ -1561,8 +1550,7 @@ test.describe('the post-quantum cover notice', () => {
     await expect(notice).toBeVisible({ timeout: 10_000 });
     await expect(notice).toContainText('Raven');
     await expect(notice).not.toContainText(/\d+ people you send to/);
-    // Still a note about what is missing, not a warning that something is broken.
-    await expect(notice).toContainText(/Unreadable by anyone now/i);
+    await expect(notice).toContainText(/Not yet post-quantum/i);
   });
 });
 
@@ -1828,8 +1816,6 @@ test.describe('lines jotted at a door', () => {
     await expect(home).toBeVisible({ timeout: 15_000 });
     await expect(home.locator('[data-notes-home]')).toBeVisible();
     await expect(home.locator('[data-notes-home]')).toContainText('2 notes');
-    // The honest limit, said where it changes what somebody does tonight.
-    await expect(home).toContainText(/panic wipe destroys them/i);
   });
 });
 
@@ -1906,39 +1892,6 @@ test.describe('what you contributed, as something you can hand over', () => {
     await expect(shared).toContainText('st-louis-our-ladys-inn');
     await expect(shared).toContainText('none recorded');
   });
-});
-
-test.describe('who nudges you when a check-in is missed', () => {
-  /**
-   * A sentence my own change made half-true.
-   *
-   * Sign-on read *"a missed check-in gets you a nudge"*, written when nothing sent one at
-   * all. The watch now does — `watch-state.spec.md` requires the node to attempt contact with
-   * an overdue operator — which made it true for somebody with a watch and left it false for
-   * somebody without. **The operator without a watch is the default case**, and letting them
-   * believe a nudge is coming is invariant 4 at the scale of one person.
-   */
-  test('with no watch, says plainly that nothing will send anything', async ({ page }) => {
-    await seedDevice(page, OUT);
-    await open(page, '/terminal/sign-on/');
-    await expect(page.getByText(/nothing will send you anything/i)).toBeVisible();
-    await expect(page.getByText(/your watch may send you one/i)).toHaveCount(0);
-    // The half true for everybody, and the claim capabilities.ts checks against prerendered
-    // HTML -- so it must not have moved behind the conditional.
-    await expect(page.getByText(/never counts as distress/i)).toBeVisible();
-  });
-
-  test('with a watch, says the nudge is the only thing it ever sends unasked', async ({ page }) => {
-    await seedDevice(page, {
-      ...OUT,
-      watchtower: { pubkey: 'b'.repeat(64), relays: ['wss://relay.example'] }
-    });
-    await open(page, '/terminal/sign-on/');
-    await expect(page.getByText(/only thing it ever sends unasked/i)).toBeVisible();
-    await expect(page.getByText(/nothing will send you anything/i)).toHaveCount(0);
-    await expect(page.getByText(/never counts as distress/i)).toBeVisible();
-  });
-
 });
 
 test.describe('finding which of these is closest', () => {
@@ -2033,10 +1986,8 @@ test.describe('what a Distress reaches when there is no watch', () => {
 
     const notice = page.locator('[data-no-watch]');
     await expect(notice).toBeVisible();
-    await expect(notice).toContainText(/raise nobody/i);
+    await expect(notice).toContainText(/nowhere to send this/i);
     await expect(notice).toContainText(/peers you have paired with are not told/i);
-    // And why, rather than only that: pairing is visibility, and there is no channel back.
-    await expect(notice).toContainText(/nothing here can reach them for you/i);
   });
 
   test('and says it before anybody has paired, not after', async ({ page }) => {

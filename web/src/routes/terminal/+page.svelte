@@ -248,7 +248,7 @@
    */
   const post = $derived(
     !identity
-      ? { id: 'none', label: 'No callsign' }
+      ? { id: 'none', label: 'No profile' }
       : session
         ? { id: 'out', label: 'Out' }
         : { id: 'ready', label: 'Ready' }
@@ -353,24 +353,7 @@
           sub="measured against this build, not a server"
         />
       </Slot>
-      <Why open>
-        <p>
-          This phone reads earlier than the day this page was built, which it cannot honestly
-          do. <strong>Every age in the app is measured from it</strong> — so a place checked a
-          fortnight ago can read as checked this week, and its opening hours get shown when
-          they should have been held back.
-        </p>
-        <p>
-          It also dates your own work. A correction or a new place you add carries this
-          clock's date, and a newer date beats an older one — so <strong>your check of a door
-          can lose to the listing you wrote it to fix</strong>, and nothing would have told
-          you.
-        </p>
-        <p>
-          Turn on automatic date and time in the phone's settings. It usually corrects within
-          a minute of having signal.
-        </p>
-      </Why>
+      <p class="cost">Turn on automatic date and time. Ages shown here are wrong until you do.</p>
     </div>
   </section>
 {/if}
@@ -400,26 +383,7 @@
           {/if}
         </Slot>
       {/each}
-      <Why>
-        {#each watch.alarms.slice(-3) as a, i (i)}
-          <p>
-            {#if a.kind === 'diverged'}
-              It published two different accounts of its own log at the same length
-              ({a.was.size} entries). <strong>Nothing legitimate does that.</strong> History was
-              rewritten after it had been committed to.
-            {:else if a.kind === 'shrank'}
-              Its log went from {a.was.size} entries to {a.now.size}. Retention does this on a
-              schedule; so does deletion.
-            {:else}
-              It was committing to a log and has stopped.
-            {/if}
-          </p>
-        {/each}
-        <p>
-          This device recorded it, and keeps it. Signing on under this watch is a decision you
-          are allowed to make either way — but you get to make it knowing.
-        </p>
-      </Why>
+      <p class="cost">This device keeps the record. Signing on under this watch is your call.</p>
     </div>
   </section>
 {/if}
@@ -580,17 +544,7 @@
         </Slot>
       {/each}
       {#if refusingNow(nowMs).length > 0}
-        <Why summary="A relay refusing this phone">
-          <p>
-            It said this phone sends too much. Your presence to peers, the watch’s Station and
-            <em>out tonight</em> stay off it until then, and every other relay gets them as before. A
-            <code>Distress</code> still goes to it and to every other relay.
-          </p>
-          <p>
-            A relay limits by internet address, so anyone on the same Wi-Fi or mobile network shares
-            the limit. Switching between Wi-Fi and mobile data gives this phone a new address.
-          </p>
-        </Why>
+        <p class="cost">Distress still goes to it. Switching between Wi-Fi and mobile data usually clears it.</p>
       {/if}
       {#if configured && closure && !closure.attributed}
         <Slot k="Escalation key">
@@ -613,183 +567,53 @@
           <a href="/terminal/directory/">Cached directory</a>
         </p>
       {/if}
+      {#if identity && !configured && !stranded && !offered && !person}
+        <p class="nc-first"><a href="/terminal/setup/#person" data-person-link>Add someone to call</a></p>
+      {/if}
       <!-- Open on its own only when something is wrong; otherwise the readouts above say it. -->
       <Why open={!!stranded || !!offered || (configured && watch.read.reason !== null)}>
         {#if configured && closure && !closure.attributed}
-          <p data-escalation-key-why>
-            <strong>This watch does not yet name its escalation key.</strong> Until it does, an answer
-            that ends your Distress could come from the agent on its box, or from anybody who ever
-            held the watch key, as easily as from a person. The key comes only in a watch code the watch
-            signs, handed over by whoever runs it; until this phone is given one, it keeps this rule.
-          </p>
+          <p data-escalation-key-why>This watch doesn't name its escalation key yet. Ask whoever runs it for a new watch code.</p>
         {/if}
-        {#if stranded}
-          <!-- The receipt for a watch this page cannot reach. Core's sentence for Dark opens "No
-               watch.", and a watch somebody added is not none [audit: relay paths, review]. -->
-          <p>
-            Your watch's relays cannot be reached from this page. Distress will page nobody — the
-            terminal will tell you so, and it still works offline.
-          </p>
-        {:else}
+        {#if !stranded}
           <p>{capabilitySentence(s, nowS)}</p>
         {/if}
         {#if configured}
           <HeardWhy heard={heardNow} />
         {/if}
-
-        <!--
-          What was sealed to a publisher key whose secret leaked, said to every phone [decision 2,
-          2026-10-18]: the rows in your own mission history say it of what this phone sent. After
-          "Start here", so a visitor's first words are what to do, not a publisher's leak.
-        -->
         {#if leaked.length > 0 && identity}<p data-sealed-exposed>{leaked.join(' ')}</p>{/if}
 
-        {#if s.state === 'dark' && configured}
-          <!-- "Not a failure to connect" went: with no relay answering, or a reading gone stale
-               because the signal did, a failure to connect is exactly what it can be. -->
-          <p>
-            <strong>Dark is not an error.</strong> Nothing this phone can hear is watching — this
-            screen, your identity and the <a href="/terminal/directory/">cached directory</a> all
-            work with no watch and no signal, and Distress will keep trying regardless.
-          </p>
-          <p>
-            It leaves you less capable, and there is no way around that. <strong>Query needs a
-            watch</strong> — there is nobody to ask, and a cached list you browse one-handed is
-            a poor substitute for someone who can answer a follow-up.
-          </p>
-        {/if}
-
-        <!--
-          Every branch below explains a watch that *exists* and is Dark, so each is gated on
-          `configured`. Without that guard the chain fell through for the commonest visitor
-          this app has — somebody with no callsign and no watch, for whom `!configured &&
-          identity` is false — and told them "A Watchtower is configured, but its relays are
-          not serving anything from it", followed by "assume nobody is reading what you send".
-          Both false, and to a stranger they read as the app being broken on arrival. A watch
-          saved on relays this page will not open is gated on `stranded` instead: it exists, and
-          `configured` is false only because nothing can be sent to it.
-        -->
         {#if stranded}
-          <!-- A watch somebody added, on relays this page will not open. Said as that, never as
-               no watch, with each line that is wrong and where it is fixed [audit: relay paths,
-               review]. -->
           <div data-watch-unreachable>
-            <h2>This page cannot reach your watch</h2>
-            <p>
-              None of the relays saved with it can be opened from here, so Query, Assist and
-              Distress have nowhere to go. <a href="/terminal/setup/#relays">Setup</a> shows the
-              watch as it was saved: fix the line that is wrong there.
-            </p>
+            <h2>Can't reach your watch</h2>
+            <p>Fix its relays in <a href="/terminal/setup/#relays">your profile</a>.</p>
             <ul class="refused">
               {#each stranded.refused as r, i (i)}<li>{r.why}</li>{:else}<li>No relay is saved with it.</li>{/each}
             </ul>
           </div>
-        {:else if !configured && identity}
-          {#if offered}
-            <!-- Kept until the operator adds it or forgets it, so leaving the backup screen does
-                 not lose it — and while it waits, "nothing here is waiting on you" is not true. -->
-            <h2 data-watch-offered>Your backup named a watch</h2>
-            <p>
-              It has not been added, so nothing goes to it.
-              <a href="/terminal/backup/">Add it, or forget it, on the backup screen.</a>
-            </p>
-          {:else}
-            <h2>No watch, and that is a normal way to work</h2>
-            <p>
-              Nobody is watching. Most operators patrol alone and this is what that looks like —
-              it is not unfinished setup, and nothing here is waiting on you.
-            </p>
-          {/if}
-          <p>
-            <strong>What works right now:</strong> the cached directory, with no signal at all,
-            and everything on this device.
-          </p>
-          {#if person}
-            <p>
-              <strong>Distress reaches {person}:</strong> it opens a message to them, written and
-              ready, and you press send. Nothing is paged on your behalf.
-            </p>
-            <p>
-              <strong>What does not:</strong> Query and Assist go to a watch, and there is nothing
-              to send them to. If somebody gives you a Watchtower — in person, because nothing
-              discovers one — you can <a href="/terminal/setup/#watch">add it</a> and they start working.
-            </p>
-          {:else}
-            <p>
-              <strong>What does not:</strong> Query, Assist and Distress all go to a watch, and
-              there is nothing to send them to. If somebody gives you a Watchtower — in person,
-              because nothing discovers one — you can <a href="/terminal/setup/#watch">add it</a> and
-              they start working.
-            </p>
-            <p>
-              Distress can still reach <a href="/terminal/setup/#person" data-person-link>someone you would call</a>: a
-              message to them, written and ready, that you send yourself.
-            </p>
-          {/if}
+        {:else if !configured && identity && offered}
+          <h2 data-watch-offered>Your backup named a watch</h2>
+          <p><a href="/terminal/backup/">Add it or forget it</a></p>
         {:else if configured && watch.read.reason === 'clock'}
           <h2 data-clock-skew>This phone's clock is wrong</h2>
-          <p>
-            The watch is stamping its messages
-            ahead of this phone's time, which means one of the two clocks is off — almost
-            certainly this one.
-          </p>
-          <p>
-            <strong>Until it agrees, nothing here can tell a live watch from a dead one</strong>,
-            so it shows Dark. That is the safe answer rather than the true one.
-          </p>
-          <p>
-            Turn on automatic date and time in the phone's settings. It usually corrects within
-            a minute of having signal.
-          </p>
+          <p>Turn on automatic date and time.</p>
         {:else if configured && watch.read.reason === 'stale'}
           <h2>Last word was {watch.read.ageSeconds ?? '?'}s ago</h2>
-          <!-- Every cause, because this phone cannot tell them apart: a screen left open keeps
-               ageing what it last heard after the signal goes, and blaming the watch then sent
-               the operator to its holder instead of to their own signal. A clock set fast ages a
-               reading that arrived a moment ago, and only the phone's own setting fixes that
-               [audit: relay paths, review]. -->
-          <p>
-            It is one of three things, and this phone cannot tell which. The watch may have
-            stopped publishing. This phone may have lost its relays, as it does when the signal
-            goes. Or the two clocks disagree: a phone set fast reads a live watch as old, and
-            automatic date and time in its settings fixes that.
-            <strong>Old is treated as Dark</strong> — a stale event says what was true, not what is.
-          </p>
+          <p>Check your signal and your phone's clock.</p>
         {:else if configured && watch.read.reason === 'absent' && watch.unanswered}
-          <!-- No relay answered at all: the phone could not ask, so it blames neither the list
-               nor the watch [audit: relay paths, F20]. -->
           <div data-watch-unanswered>
-            <h2>This phone could not reach the watch</h2>
-            <p>
-              None of the watch's relays answered, so this phone cannot tell whether anybody is watching.
-              <strong>Dark is the safe answer</strong> until one does. It is usually the signal; Distress keeps trying regardless.
-            </p>
+            <h2>Can't reach the watch</h2>
+            <p>Usually the signal. Distress keeps trying.</p>
           </div>
         {:else if configured && watch.read.reason === 'absent'}
-          <!-- The marker wraps the whole explanation, not its first paragraph: what the test
-               is asserting is that the operator was told why, and the why is both halves. -->
           <div data-watch-absent>
             <h2>Nothing from this watch</h2>
-            <p>
-              A Watchtower is configured, but its relays are not serving anything from it — not an old message, nothing.
-              <strong>Dark is the safe answer</strong>, and it is the one you should act on: assume nobody is reading what you send.
-            </p>
-            <p>
-              Usually one of two things. The relay list may not be the one the watch publishes to — both come from whoever gave you the address, and they have to match.
-              Or the watch is simply not running, which is a question for the person who holds it.
-            </p>
+            <p>Check its relays with whoever gave it to you.</p>
           </div>
         {:else if watch.read.reason === 'corrupt'}
           <div data-watch-corrupt>
-            <h2>This watch is speaking a language this app does not</h2>
-            <p>
-              Something is arriving from the Watchtower and none of it can be read.
-              <strong>Dark is the safe answer</strong> — an unreadable message is not evidence that anybody is watching.
-            </p>
-            <p>
-              Most often the watch is newer than this app. Reopening this page while you have signal updates it.
-              If that changes nothing, tell whoever holds the watch — they can see what it is publishing and you cannot.
-            </p>
+            <h2>Can't read this watch</h2>
+            <p>Reopen with a signal to update. If that doesn't help, tell whoever holds the watch.</p>
           </div>
         {/if}
       </Why>
@@ -853,7 +677,7 @@
             <Readout value="No fix" tone="warn" sub="weak signal or indoors — not a permission problem" />
           </Slot>
         {/if}
-        <Why summary="What you were told at sign-on">
+        <Why summary="At sign-on">
           <p>{session.toldAtSignOn}</p>
         </Why>
       </div>
@@ -918,24 +742,13 @@
     {#if identity && (pq.uncovered().length > 0 || (offline.shellGaps && offline.shellGaps.length > 0) || damaged)}
       <Why summary="About this device" open>
         {#if pq.uncovered().length > 0}
-          <p class="cover">
-            Standard encryption tonight. Unreadable by anyone now — but not covered against
-            being stored today and opened by a future quantum computer. That needs
-            {uncoveredNames} to open the app once, and it happens on its own after that.
-          </p>
+          <p class="cover">Not yet post-quantum: {uncoveredNames} need to open the app once.</p>
         {/if}
         {#if offline.shellGaps && offline.shellGaps.length > 0}
-          <p>
-            Some of this app did not save for offline use, so parts of it may need a connection.
-            Reopening on a good signal usually fixes it.
-          </p>
+          <p>Parts of the app didn't save for offline. Reopen on a good signal.</p>
         {/if}
         {#if damaged}
-          <p>
-            Some of this phone's saved data could not be read, so it is starting as though it
-            were new. <strong>The damaged copy has been kept</strong> rather than overwritten —
-            do not clear this site's data if you want somebody to try to recover it.
-          </p>
+          <p>Saved data couldn't be read. The damaged copy is kept: don't clear this site's data.</p>
         {/if}
       </Why>
     {/if}
@@ -1014,12 +827,6 @@
     <div class="nc-panel-slots">
       <label for="note">Anything worth remembering <span class="opt">optional</span></label>
       <textarea id="note" bind:value={note} placeholder="quiet night, two handouts at the underpass"></textarea>
-      <Why summary="Where this goes">
-        <p>
-          Goes in your own patrol record and nowhere else. <strong>Nothing about anybody you
-          helped</strong> — that is the one thing this app never keeps.
-        </p>
-      </Why>
       <nav class="nc-rail">
         <button onclick={() => (closing = false)}>Not yet</button>
       </nav>
@@ -1101,23 +908,9 @@
           </span>
         </Slot>
       {/if}
-      <Why summary="Where it went">
-        <p>
-          It is in <a href="/terminal/patrols/">your record</a>, on this device and nowhere
-          else. Nothing about anybody you helped is in it.
-        </p>
-        {#if waiting > 0}
-          <p>
-            The {waiting === 1 ? 'line' : 'lines'} you jotted at a door
-            {waiting === 1 ? 'is' : 'are'} still only here. Open
-            <a href="/terminal/directory/">your area</a> and turn
-            {waiting === 1 ? 'it' : 'them'} into a correction, and the next person who stands
-            outside that place reads what you learned. <strong>A panic wipe destroys them</strong>
-            — they live in the tier that exists to be destroyed, which is the right trade for a
-            line written in a hurry and the reason to promote it while you remember.
-          </p>
-        {/if}
-      </Why>
+      <p class="cost">
+        <a href="/terminal/patrols/">Your record</a>{#if waiting > 0} · <a href="/terminal/directory/">turn your notes into corrections</a>{/if}
+      </p>
     </div>
   </section>
 {/if}
@@ -1133,20 +926,7 @@
     </header>
     <div class="nc-panel-slots">
       <Board entries={peerRows} empty="No contact" />
-      <Why summary="What this is built from">
-        {#if presence.unknown.length > 0}
-          <p>
-            <strong>Nothing heard is not the same as home.</strong> A quiet phone is a flat
-            battery, no signal, or a pocket, and this will never guess which.
-          </p>
-        {/if}
-        <p>
-          Each device drew this itself from what it could decrypt. Nothing holds it and nothing
-          persists it, and an operator past the time they gave is a nudge — nothing escalates
-          from it, because people are late for ordinary reasons far more often than dangerous
-          ones.
-        </p>
-      </Why>
+      {#if presence.unknown.length > 0}<p class="cost">Not heard isn't the same as home.</p>{/if}
       {#if presence.watchingYou.length > 0}
         <!--
           Only what somebody actually said. Never inferred from you watching them — two people
@@ -1195,36 +975,6 @@
   {/if}
 </nav>
 
-<section class="nc-panel" data-home-screen>
-  <header class="nc-panel-head">
-    <span>Home screen</span>
-  </header>
-  <div class="nc-panel-slots">
-    <Why summary="Adding this to your home screen">
-      <p>
-        You can rename it, and you should think about whether you want to. <strong>A phone that
-        is borrowed, searched or taken shows whatever name is on the icon.</strong>
-      </p>
-      <p>
-        <!--
-          Still no pitch: native apps are deferred, so the home screen version and this one
-          are the same app with the same abilities, and nothing is withheld from the browser.
-          But "nothing is added" was flatly false. `delivery.md` names two things that
-          genuinely are better installed and calls the second one "the difference between the
-          directory being there at 2am and not" — and this screen was denying it, which
-          leaves an operator on the device floor deciding against the one thing that protects
-          the layer they actually depend on. Stated once, where it is relevant, and never
-          again.
-        -->
-        It is the same app either way — a home screen icon and no browser bar — and nothing is
-        withheld from the browser version. One thing does change: a phone short of space may
-        throw away a site's cached data, and it is <strong>less likely to do that to something
-        on your home screen</strong>. That is the cached directory being there at 2am or not.
-      </p>
-    </Why>
-  </div>
-</section>
-
 <!--
   One door out, and the only unconditional one on this screen.
 
@@ -1241,11 +991,7 @@
     <span>If this will not load</span>
   </header>
   <div class="nc-panel-slots">
-    <p class="cost">
-      The same places exist as plain pages that need no JavaScript at all —
-      <a href="/directory/">the directory that always works</a>. Slower to search, and nothing
-      there can be corrected or carried offline. It is there when this is not.
-    </p>
+    <p class="cost"><a href="/directory/">The plain directory</a> works without this app.</p>
   </div>
 </section>
 

@@ -80,7 +80,7 @@ test.describe('what the terminal tells you before you go out', () => {
     await under(page, { state: 'dark', holder: null, holder_kind: null, oncall: [] });
 
     const said = page.locator('[data-capability]');
-    await expect(said).toContainText(/page nobody/i, { timeout: 10_000 });
+    await expect(said).toContainText(/pages? nobody/i, { timeout: 10_000 });
     await expect(said).toContainText(/still works offline/i);
   });
 });
@@ -93,7 +93,7 @@ test.describe('and it is there before you commit to anything', () => {
       state: 'dark', holder: null, holder_kind: null, oncall: []
     }, '/terminal/sign-on/');
 
-    await expect(page.locator('[data-told]')).toContainText(/page nobody/i, { timeout: 10_000 });
+    await expect(page.locator('[data-told]')).toContainText(/pages? nobody/i, { timeout: 10_000 });
   });
 
   test('and the roster it names to you is not in anything this device publishes', async ({ page }) => {

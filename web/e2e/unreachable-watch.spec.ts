@@ -25,11 +25,11 @@ test('Status says this page cannot reach the watch, and which line, rather than 
   const said = page.locator('[data-watch-unreachable]');
   await expect(said).toBeVisible({ timeout: 10_000 });
   await expect(said).toContainText(BAD);
-  await expect(said.getByRole('link', { name: /setup/i })).toBeVisible();
+  await expect(said.getByRole('link', { name: /your profile/i })).toBeVisible();
   await expect(page.getByRole('heading', { name: /normal way to work/i })).toHaveCount(0);
   // Nor does the receipt above the block: core's sentence for Dark opens "No watch."
   await expect(page.locator('[data-capability]')).not.toContainText(/\bno watch\b/i);
-  await expect(page.locator('[data-capability]')).toContainText(/cannot be reached from this page/i);
+  await expect(page.locator('[data-capability]')).toContainText(/Can't reach your watch/i);
 });
 
 test('Setup opens with that watch as it was saved, and one edit repairs it with its holders kept', async ({ page }) => {
@@ -111,9 +111,9 @@ test('Distress, Sign on, Query and Assist say the watch cannot be reached, not t
 
   await open(page, '/terminal/distress/');
   const before = page.locator('[data-no-watch]');
-  await expect(before).toContainText(/none of its relays can be reached from this\s+page/i);
+  await expect(before).toContainText(/relays can't be reached/i);
   await expect(before).not.toContainText(/you have\s+not added one/i);
-  await expect(before.getByRole('link', { name: /fix them in setup/i })).toBeVisible();
+  await expect(before.getByRole('link', { name: /fix them/i })).toBeVisible();
 
   await open(page, '/terminal/sign-on/');
   await expect(page.getByText(/its relays cannot be reached from here/i)).toBeVisible();

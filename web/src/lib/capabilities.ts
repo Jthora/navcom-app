@@ -110,33 +110,6 @@ export interface Capability {
 export const CAPABILITIES: Capability[] = [
   {
     /*
-     * The Status screen was the one screen no capability declared.
-     *
-     * Nineteen were in this manifest and the app's own home was not -- the screen every
-     * operator opens first and returns to all night. That is where the first-run audit found
-     * a stranger being told "a Watchtower is configured" when none was, and the two facts are
-     * the same fact: nothing here was watching it.
-     *
-     * The claims are the two sentences on it that are unconditional and load-bearing. The
-     * rest of the screen is state -- watch, callsign, session -- and a claim behind `{#if}`
-     * is not a claim.
-     */
-    name: 'Putting it on your home screen',
-    screen: 'terminal/',
-    claims: [
-      // A safety fact about the icon, on the screen where somebody decides to make one, and
-      // it had no test of any kind.
-      'shows whatever name is on the icon',
-      // This screen used to say "nothing is added", which contradicts delivery.md's own
-      // honest pricing of the install and talks an operator on the device floor out of the
-      // one thing that protects the layer they depend on.
-      'less likely to do that to something on your home screen'
-    ],
-    control: '[data-home-screen] summary',
-    requires: []
-  },
-  {
-    /*
      * Decided 2026-10-18 (decision 2): every sealed claim and report NavCom ever sent to Mecha Jono
      * went to a key whose secret had already leaked, so whoever holds it can open them and show
      * which card sent each. The rows in a phone's own mission history say it of what that phone
@@ -217,23 +190,15 @@ export const CAPABILITIES: Capability[] = [
   {
     name: 'Go out',
     screen: 'terminal/sign-on/',
-    claims: [
-      'A district, never an address',
-      // A missed check-in nudges and does nothing else. Alarm fatigue destroys the one
-      // mechanism where failure means somebody is hurt.
-      'never counts as distress'
-    ],
+    claims: ['Sign on'],
     control: '#area',
     requires: ['identity']
   },
   {
     name: 'Share where you are',
     screen: 'terminal/sign-on/',
-    claims: [
-      'no setting that makes it public',
-      'Only the latest is kept',
-      'cannot follow you with the app closed'
-    ],
+    // Who sees it: the one line kept beside the choice (2026-11-01).
+    claims: ['Only your watch and paired peers see it'],
     control: '#share',
     requires: ['identity']
   },
@@ -241,11 +206,8 @@ export const CAPABILITIES: Capability[] = [
     name: 'Distress',
     screen: 'terminal/distress/',
     claims: [
-      // Conditional on purpose. The retrying is timers in the page: closing it ends it, and a
-      // locked or backgrounded phone pauses or throttles it. A claim without that condition
-      // promised a Distress that keeps going in a pocket.
-      'It keeps sending while this screen stays open',
-      'otherwise only you can stop it'
+      // The retrying is timers in the page, so the one thing to do is keep it open.
+      'Keep this screen open'
     ],
     control: 'button.raise',
     requires: ['identity']
@@ -267,12 +229,7 @@ export const CAPABILITIES: Capability[] = [
   {
     name: 'Your person, before the app loads',
     screen: 'terminal/distress/',
-    claims: [
-      // The claim the pre-bundle fallback exists to keep true. It is stated on the screen
-      // because an operator deciding whether to rely on this needs to know it is the part
-      // that does not depend on anything arriving.
-      'works before the rest of this screen does'
-    ],
+    claims: [],
     control: '[data-contact] a',
     requires: ['identity', 'contact']
   },
@@ -327,16 +284,9 @@ export const CAPABILITIES: Capability[] = [
   {
     name: 'Your card',
     screen: 'terminal/card/',
-    claims: [
-      // The claim that makes a card safe to publish at all, and the reason the contact key
-      // exists. Stated before the form, not under it.
-      'signed by a',
-      'separate key',
-      'A card carries no position',
-      // Reducing exposure is never symmetrical with increasing it, and a control that
-      // implies otherwise is a false promise this community would notice.
-      'Publishing cannot be undone'
-    ],
+    // Its name. The one line kept, that publishing can't be undone, is beside the button, which a
+    // device with no profile does not have.
+    claims: ['Public profile'],
     // Where its holder says they are, Earth until they choose: the first thing on the form since
     // 2026-10-27, and the metro's list appears only once a city is the level chosen.
     control: '[data-card-where] input[name="where"]',

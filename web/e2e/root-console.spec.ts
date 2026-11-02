@@ -212,39 +212,14 @@ test.describe('the fusion — Com reacts to what Nav is looking at', () => {
     // panel's own header — the fusion this file exists to prove, not just describe.
     await expect(networkPanel.locator('[data-slot="records"]')).toBeVisible({ timeout: 5_000 });
     await expect(networkPanel.locator('[data-slot="verify"]')).toBeVisible();
-    await expect(networkPanel.locator('[data-slot="holding-watch"]')).toBeVisible();
   });
 
-  test('the watch explainer never claims coverage — it only explains the mechanic', async ({ page }) => {
-    await blankDevice(page);
-    await open(page, '/');
-    await page.locator('#region-pick').selectOption({ index: 1 });
-
-    // "Holding watch" appears twice — the Slot's own key label, and again inside the Why
-    // body's prose — so the disclosure is opened by its unique `<summary>` text instead.
-    await page.getByText('What that would mean').click();
-    const why = page.locator('details', { has: page.getByText('What that would mean') });
-    // Source line-wraps become literal newlines in raw textContent (unlike rendered,
-    // visually-collapsed text) — normalized so an assertion can't fail on where a sentence
-    // happened to wrap rather than on what it actually says.
-    const text = ((await why.textContent()) ?? '').replace(/\s+/g, ' ');
-
-    // The one line this test exists to hold: no phrasing that would read as a real,
-    // specific coverage claim for whatever region got focused.
-    for (const banned of [/is being watched/i, /is covered/i, /is active near/i, /currently watching/i]) {
-      expect(text).not.toMatch(banned);
-    }
-    expect(text).toMatch(/nothing here discovers a Watchtower/i);
-  });
 
   test('the help-verify prompt links into the real correction flow, not a dead end', async ({ page }) => {
     await blankDevice(page);
     await open(page, '/');
     await page.locator('#region-pick').selectOption({ index: 1 });
-    // The Slot label "Verify" doesn't open anything — the disclosure's own summary does.
-    await page.getByText('Help verify', { exact: false }).click();
-
-    const link = page.locator('a[href^="/terminal/directory/"]').first();
+    const link = page.locator('[data-help-verify]');
     await expect(link).toBeVisible();
     const href = await link.getAttribute('href');
     expect(href).toMatch(/^\/terminal\/directory\/[a-z0-9-]+\/$/);

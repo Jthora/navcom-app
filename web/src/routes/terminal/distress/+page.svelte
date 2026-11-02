@@ -18,7 +18,7 @@
   import { heard } from '$lib/terminal/heard.svelte';
   import { HeardSlot } from '$lib/components/heard';
   import { pulse } from '$lib/terminal/haptic';
-  import { Slot, Elapsed, Why } from '$lib/components/panel';
+  import { Slot, Elapsed } from '$lib/components/panel';
   import {
     callLink,
     distressMessage,
@@ -291,10 +291,7 @@
 <section class="person" id="reach-early" hidden>
   <h2>Your person</h2>
   <div class="reach" id="reach-now"></div>
-  <p class="cost">
-    Opens your messages. <strong>You have to press send</strong> — a web app cannot do that
-    for you.
-  </p>
+  <p class="cost">You press send.</p>
 </section>
 
 {#if contact}
@@ -309,10 +306,7 @@
       <a class="action urgent" href={smsLink(contact, personalMessage)}>Text {contact.label}</a>
       <a class="action urgent" href={callLink(contact)}>Call {contact.label}</a>
     </div>
-    <p class="cost">
-      Opens your messages with it written. <strong>You have to press send</strong> — a web
-      app cannot do that for you, and pretending otherwise would be the worst lie in here.
-    </p>
+    <p class="cost">Written for you. You press send.</p>
   </section>
 {/if}
 
@@ -322,10 +316,7 @@
   <section data-no-watch>
     <p class="error">
       <strong>There is nowhere to send this.</strong>
-      {#if stranded}Distress goes to your watch, and none of its relays can be reached from this
-        page,{:else}Distress goes to a watch and you have not added one,{/if} so holding the button
-      would raise nobody.{#if stranded}
-        <a href="/terminal/setup/#relays">Fix them in setup</a>.{/if}
+      {#if stranded}Your watch's relays can't be reached. <a href="/terminal/setup/#relays">Fix them</a>.{:else}No watch is added.{/if}
     </p>
     <!--
       Peers named, because "raise nobody" is true and the person most likely to read past it
@@ -344,10 +335,7 @@
     -->
     <p class="cost"><strong>Peers you have paired with are not told either.</strong></p>
     {#if !contact}
-      <p class="cost">
-        Nothing on this phone can reach anyone for you.
-        <a href="/terminal/setup/#person">Add someone you would call</a>.
-      </p>
+      <p class="cost"><a href="/terminal/setup/#person">Add someone you would call</a>.</p>
     {/if}
     <!--
       One disclosure for the block, not one per paragraph.
@@ -357,18 +345,6 @@
       them -- fewer words and a worse screen, on the one page nobody is reading calmly. The
       count is not the goal; what a person meets is.
     -->
-    <Why summary="What that means">
-      <p class="cost">
-        Pairing lets somebody see that you are out and that you are past the time you gave —
-        it does not carry this, and nothing here can reach them for you.
-      </p>
-      {#if !contact}
-        <p class="cost">
-          It takes a name and a number, stays on this phone, and is the only thing that helps
-          when there is no watch.
-        </p>
-      {/if}
-    </Why>
   </section>
 {/if}
 
@@ -387,11 +363,7 @@
       backgrounded Android tab pauses or throttles it. Said here, before the hold, because it
       changes what somebody should do with the phone after sending.
     -->
-    <p>
-      This wakes people up. It keeps sending while this screen stays open and the phone stays
-      awake, until a human answers — <strong>not an agent</strong>. Locking the phone can pause
-      it and closing this screen stops it; otherwise only you can stop it.
-    </p>
+    <p>Keeps sending until a person answers. <strong>Keep this screen open.</strong></p>
     <!--
       This paragraph is why `Why` belongs here and not around the person block above.
 
@@ -402,13 +374,6 @@
       app did. A `<details>` here still prerenders its contents, so the claim is in the page
       whether or not anybody opens it.
     -->
-    <Why summary="What works before this screen does">
-      <p class="cost">
-        Calling your own person <strong>works before the rest of this screen does</strong>, and
-        with no data connection — it still needs phone signal. Everything below needs the app to
-        have finished loading; a phone call does not.
-      </p>
-    </Why>
     <label for="d">Anything you can say <span class="opt">optional</span></label>
     <textarea id="d" bind:value={text} placeholder="two of them, heading east"></textarea>
   </section>
@@ -469,26 +434,14 @@
     <section class="nobody" data-nobody-answering data-watch-exhausted={watchSaidNobody ? 'true' : undefined}>
       <h2>Nobody is coming</h2>
       {#if watchSaidNobody}
-        <p>
-          <strong>The watch said nobody could be reached.</strong> Assume no one is on their way
-          and act on that.
-        </p>
+        <p><strong>The watch couldn't reach anyone.</strong> Assume no one is on their way.</p>
         {#if clip(watchSaidNobody.response.text)}
           <p class="cost">In the watch's words: <q>{clip(watchSaidNobody.response.text)}</q></p>
         {/if}
-        <p class="cost">
-          The sending has not stopped, and a human who answers later still counts. Only you can
-          stop it.
-        </p>
+        <p class="cost">Still sending.</p>
       {:else}
-        <p>
-          Long enough has passed that a working watch would have answered or told you it
-          couldn't. <strong>Assume no one is on their way</strong> and act on that.
-        </p>
-        <p class="cost">
-          This phone worked that out on its own — it is not a message from the watch, and it
-          does not mean the sending stopped. It hasn't. Only you can stop it.
-        </p>
+        <p>No answer in time. <strong>Assume no one is on their way.</strong></p>
+        <p class="cost">Still sending.</p>
       {/if}
     </section>
   {/if}
@@ -531,8 +484,7 @@
       {#if acknowledged.by === 'watch-key'}
         <!-- The old rule, kept for a box handed over before it named its escalation key, and said. -->
         <p class="cost" data-unattributed>
-          This watch does not yet name its escalation key, so this phone cannot tell a person’s
-          answer from the agent’s.
+          This watch doesn't name its escalation key, so this could be the agent.
         </p>
       {/if}
     </section>
@@ -543,15 +495,7 @@
         third thing on the screen saying so. What is left is the part a readout cannot carry:
         this does not time out — while this screen stays open and the phone stays awake.
       -->
-      <p class="cost"><strong>It will not stop on its own while this screen stays open and awake.</strong></p>
-      <Why summary="What to do while it sends">
-        <p class="cost">
-          Still going. It will not stop on its own while this screen stays open and the phone
-          stays awake — locking the phone can pause it, and closing this screen stops it. If
-          nothing is answering, that is what the list above is telling you, and it is worth
-          acting on directly.
-        </p>
-      </Why>
+      <p class="cost"><strong>Keep this screen open.</strong></p>
       <button class="stand-down" onclick={() => operator.standDownDistress()}>
         Stand down — I am safe
       </button>
@@ -559,8 +503,7 @@
   {:else}
     <section>
       <p class="error" data-stopped>
-        <strong>Stopped without a human.</strong> Nobody acknowledged this. Nothing on this
-        phone is still trying, and anyone already paged was not told it stopped.
+        <strong>Stopped. Nobody answered.</strong> Anyone already paged wasn't told it stopped.
       </p>
       <button class="raise small" onclick={() => operator.raiseDistress(text.trim())}>
         Send again

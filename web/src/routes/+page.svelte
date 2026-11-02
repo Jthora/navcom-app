@@ -16,7 +16,7 @@
   import '$lib/terminal/tokens.css';
   import '$lib/terminal/screen.css';
   import '$lib/terminal/panel.css';
-  import { Panel, Slot, Readout, Why } from '$lib/components/panel';
+  import { Panel, Slot, Readout } from '$lib/components/panel';
   import { search, type ConsoleHit } from '$lib/console/search';
   import type {
     ConsoleRecordEntry, ConsoleCentroid, ConsoleRegionFigures
@@ -757,23 +757,6 @@
           </select>
         </div>
       {/if}
-      <Why summary="What this searches">
-        <p>
-          <strong>Every region this directory covers</strong>, always — and
-          {#if loaded}
-            <strong>every place in {loaded.name}</strong>, because that is the area nearest you.
-          {:else}
-            no individual places yet: pick a region below, or allow location, and this searches
-            that area's places too.
-          {/if}
-        </p>
-        <p>
-          What you type is searched on this device and sent nowhere. Picking a region, or
-          allowing location, downloads that area's list. Places elsewhere are found by
-          finding their city first — the whole directory is too large to carry on one page, and
-          a search that silently covered only part of it would be worse than one that says so.
-        </p>
-      </Why>
     </Panel>
 
     <!--
@@ -819,37 +802,7 @@
             <Readout value="Nothing confirmed yet" tone="warn" sub="all of it is unverified" />
           {/if}
         </Slot>
-        <Why summary="Help verify {focusedFigures.name}">
-          <p>
-            Do you know this area? If anything is wrong — especially who they take, or what
-            happens to somebody with no ID — the fastest fix is the
-            <a href="/terminal/directory/{focusedRegionSlug}/">field terminal</a>: pick a
-            callsign, find the listing, tap report a problem. No account, and once you have
-            opened that area with signal, it works without.
-          </p>
-          <p>
-            Your correction is <strong>added</strong> under your callsign, or without one — still
-            signed by this phone's own key, so it is not anonymous — and it cannot delete a
-            listing or overrule anybody, and nobody has to approve it.
-          </p>
-        </Why>
-        <Slot k="Holding watch">
-          <Readout value="Not claimed here" tone="cold" />
-        </Slot>
-        <Why summary="What that would mean">
-          <p>
-            Nobody is asserted to be watching {focusedFigures.name} — nothing here discovers a
-            Watchtower, by design: a list of Watchtowers is a list of where operators are.
-            Holding watch, generally, means answering Query, Assist and Distress for operators
-            working an area, backed by a capability receipt that states plainly what that
-            promises — something like <em>two on-call, both reachable by text</em>, or
-            <em>nobody on-call, and Distress will say so</em>.
-          </p>
-          <p>
-            If somebody hands you a Watchtower, or you want to start one,
-            <a href="/terminal/setup/">setup</a> is one screen and nothing is required first.
-          </p>
-        </Why>
+        <p class="nc-foot"><a href="/terminal/directory/{focusedRegionSlug}/" data-help-verify>Correct a listing</a></p>
       {:else}
         <Slot k="Coverage">
           <Readout
@@ -875,18 +828,7 @@
           <Readout value="Checking…" tone="cold" />
         {/if}
       </Slot>
-      <Why summary="What this is">
-        <p>
-          Regions and records are counted from the same directory anyone can browse — nothing
-          here is asserted twice. The build line is this deploy's own verify-then-ship receipt:
-          the actual commit and test count behind what is deployed, not a claim about it. Where
-          this page is running an older build, kept by this browser, it says so and names both.
-        </p>
-        <p>
-          Anything an operator publishes is theirs to answer for, not NavCom's —
-          <a href="/notice/" data-sveltekit-reload>who is responsible for what</a>.
-        </p>
-      </Why>
+      <p class="nc-foot"><a href="/notice/" data-sveltekit-reload>Who is responsible for what</a></p>
     </Panel>
   </div>
 
@@ -898,6 +840,8 @@
 </div>
 
 <style>
+  /* The one link the console's foot keeps: who answers for what is published. */
+  .nc-foot { margin: .5rem 0 0; font-size: .82rem; }
   /*
    * A console, not a phone screen stretched wide. `terminal/+layout.svelte`'s own 30rem
    * column doesn't apply here — Svelte scopes it to that component — so without this the
