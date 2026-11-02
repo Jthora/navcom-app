@@ -67,6 +67,8 @@ import {
   readTag,
   signAnswer,
   teamOf,
+  answersNothing,
+  open,
   type BoardEntry,
   type Position,
   type Provenance,
@@ -261,12 +263,38 @@ function answeredBy(id: string): void {
     .filter((w) => w.type === 'distress' || w.id !== id)
     .map((w) => (w.id === id && !w.answered ? { ...w, answered: true as const } : w));
 }
+/**
+ * Whether a response of this watch's deals with the signal it names: an answer, a decline, or a
+ * person acknowledging. Not being asked to check in or an Assist passed on, which name a signal and
+ * answer none [core `answersNothing`], and not a box's ladder report about a Distress, which is not
+ * a person having it. Opened with the watch key where this phone holds it; a member without it reads
+ * by what the response names, as before.
+ */
+function dealtWith(event: Event): boolean {
+  const secret = watchKey();
+  const operator = readTag(event.tags, 'p');
+  if (!secret || !operator) return true;
+  let r: ResponsePayload;
+  try {
+    r = open<ResponsePayload>(secret, operator, event.content);
+  } catch {
+    return true;
+  }
+  if (answersNothing(r.type)) return false;
+  return r.type === 'answer' || r.type === 'declined' || (r.type === 'ack' && r.responder?.kind === 'human');
+}
 let beat: ReturnType<typeof setInterval> | null = null;
 /**
  * Each operator's latest signal, and where it was heard: what an ask to check in names, and where
  * they listen. Not state anybody reads, and gone with the board.
  */
 let lastHeard: Record<string, { id: string; heardOn: string[] }> = {};
+/**
+ * Each operator's sign-on, by its id: what a `contact` or a `passed-on` names. They named the latest
+ * signal instead, and when that was somebody's Distress or their question, this board heard its own
+ * note back as the answer to it (found 2026-11-02): a Distress read *Answered* and stopped sounding.
+ */
+let signedOnAs: Record<string, string> = {};
 /** When this watch last asked each operator to check in, until they do or stand down. */
 let askedAt = $state<Record<string, number>>({});
 /** Who each Assist was passed on to, by its id. Gone with the board. */
@@ -718,7 +746,8 @@ export const board = {
   async askToCheckIn(operator: string): Promise<boolean> {
     const secret = watchKey();
     const last = lastHeard[operator];
-    if (!secret || !last) return false;
+    const signOn = signedOnAs[operator];
+    if (!secret || !last || !signOn) return false;
     const identity = loadIdentity();
     const payload: ResponsePayload = {
       type: 'contact',
@@ -726,7 +755,7 @@ export const board = {
       text: 'You are past the time you gave. Check in if you are still out, or stand down if you are home.',
       provenance: null
     };
-    const event = finalizeEvent(buildResponse(secret, operator, last.id, payload, Math.floor(Date.now() / 1000)), secret);
+    const event = finalizeEvent(buildResponse(secret, operator, signOn, payload, Math.floor(Date.now() / 1000)), secret);
     const took = await publishEach(usable([...last.heardOn, ...watchRelays()]), event);
     if (took.length === 0) return false;
     askedAt = { ...askedAt, [operator]: Math.floor(Date.now() / 1000) };
@@ -737,8 +766,8 @@ export const board = {
   /**
    * Passing an `Assist` on to the others out [core `passed-on`].
    *
-   * To everybody on this board but the person who asked, each sealed to them alone and naming
-   * their own latest signal, in the holder's words. Gives back who it reached: an offer that
+   * To everybody on this board but the person who asked and anybody in Distress, each sealed to them
+   * alone and naming their sign-on, in the holder's words. Gives back who it reached: an offer that
    * reached nobody is said as that, not as sent.
    */
   async passOn(item: Waiting, text: string): Promise<string[]> {
@@ -747,16 +776,18 @@ export const board = {
     const identity = loadIdentity();
     const reached: string[] = [];
     for (const e of entries) {
-      if (e.operator === item.operator) continue;
+      // Somebody in Distress is not who an offer of somebody else's goes to.
+      if (e.operator === item.operator || e.status === 'distress') continue;
       const last = lastHeard[e.operator];
-      if (!last) continue;
+      const signOn = signedOnAs[e.operator];
+      if (!last || !signOn) continue;
       const payload: ResponsePayload = {
         type: 'passed-on',
         responder: { kind: 'human', callsign: identity?.callsign ?? 'watch' },
         text: text.trim(),
         provenance: null
       };
-      const event = finalizeEvent(buildResponse(secret, e.operator, last.id, payload, Math.floor(Date.now() / 1000)), secret);
+      const event = finalizeEvent(buildResponse(secret, e.operator, signOn, payload, Math.floor(Date.now() / 1000)), secret);
       if ((await publishEach(usable([...last.heardOn, ...watchRelays()]), event)).length > 0) reached.push(e.callsign);
     }
     if (reached.length > 0) {
@@ -801,6 +832,7 @@ export const board = {
     // A wipe has just taken tonight's record off the phone; this screen's copy goes with it.
     night.reload();
     lastHeard = {};
+    signedOnAs = {};
     askedAt = {};
     passedOnFor = {};
     unlisten();
@@ -943,7 +975,7 @@ function follow(): boolean {
         }
         if (event.kind === KIND_RESPONSE) {
           const to = readTag(event.tags, 'e');
-          if (to) answeredBy(to);
+          if (to && dealtWith(event)) answeredBy(to);
           return;
         }
         const read = readSignal(event);
@@ -1243,6 +1275,7 @@ function apply(
       status: 'active'
     };
     entries = [...entries.filter((e) => e.operator !== from), entry];
+    signedOnAs[from] = event.id;
     // What they asked before this board heard them sign on takes the name they signed on with.
     waiting = waiting.map((w) => (w.operator === from ? { ...w, callsign } : w));
     return;

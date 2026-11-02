@@ -417,6 +417,28 @@ describe("a watch that names neither keeps today's rule, and says so", () => {
   });
 });
 
+describe('what a watch sends unasked, naming a Distress (2026-11-02)', () => {
+  const unasked = (type: 'passed-on' | 'contact'): ResponsePayload => ({
+    type,
+    responder: { kind: 'human', callsign: 'Wren' },
+    text: 'Owl asks for someone near Penn Station, now.',
+    provenance: null
+  });
+
+  for (const type of ['passed-on', 'contact'] as const) {
+    it(`a ${type} neither ends it nor is said as somebody answering, even where the watch key alone ends one`, async () => {
+      for (const address of [OLD_BOX, SQUAD]) {
+        const pool = watchPool((id) => [response(WATCH, [id], unasked(type))]);
+        const { names, result } = await drive(pool, address, { stopAfterMs: 1_500 });
+        expect(names, `${type} ended a Distress`).not.toContain('acknowledged');
+        expect(names, `${type} was said as a person answering`).not.toContain('human-unconfirmed');
+        expect(result).toBeInstanceOf(Error);
+        expect(pool.attempts).toBeGreaterThan(1);
+      }
+    });
+  }
+});
+
 describe('a box that names no executor, as every box did before', () => {
   it('a Distress names the watch alone in its filter where no executor is named, as before', async () => {
     const pool = watchPool(() => []);

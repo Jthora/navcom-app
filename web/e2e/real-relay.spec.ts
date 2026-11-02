@@ -869,4 +869,59 @@ test.describe('the board, the one filter that resisted a naive test', () => {
     expect(payload.provenance?.record_id).toBeTruthy();
     await context.close();
   });
+
+  test('an Assist passed on, heard back from the relay, leaves somebody else’s Distress sounding', async ({ browser }: { browser: Browser }) => {
+    /*
+     * A passed-on named each recipient's latest signal, and the board read every response of its own
+     * that named a signal as the answer to it. Raven's latest was her Distress: passing Owl's Assist
+     * on marked it Answered and the watch stopped sounding for it (found 2026-11-02). Over a real relay,
+     * because the board hearing its own note back is the whole of the bug.
+     */
+    const { finalizeEvent, generateSecretKey, getPublicKey } = await import('nostr-tools/pure');
+    const { buildSignal, buildDistress, KIND_RESPONSE } = await import('@navcom/core');
+
+    const watchHex = '5'.repeat(63) + '7';
+    const watchPub = getPublicKey(Uint8Array.from((watchHex.match(/../g) ?? []).map((b) => parseInt(b, 16))));
+    const holder = await pubkeyOf(TEST_SECRET);
+    const to = { pubkey: watchPub, holders: [holder] };
+
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await liveDevice(page, relay.url, {
+      callsign: 'Vale',
+      watchSecret: watchHex,
+      watchtower: { pubkey: watchPub, relays: [relay.url], holders: [holder] }
+    });
+    await open(page, '/terminal/watch/');
+    await expect(page.locator('[data-empty-board]')).toBeVisible({ timeout: 20_000 });
+
+    const now = () => Math.floor(Date.now() / 1000);
+    const [raven, owl, kite] = [generateSecretKey(), generateSecretKey(), generateSecretKey()];
+    for (const [key, callsign] of [[raven, 'Raven'], [owl, 'Owl'], [kite, 'Kite']] as const) {
+      const out = finalizeEvent(
+        buildSignal(key, to, 'on-station', { callsign, area: 'Midtown', expected_duration: 7200, routine_interval: null, share_position: false, position: null }, now()),
+        key
+      );
+      await listenedFor(out, 'a sign-on on the phone holding the watch');
+      await publish(out);
+    }
+    await expect(page.locator('[data-floor] .nc-floor-row')).toHaveCount(3, { timeout: 20_000 });
+
+    await publish(finalizeEvent(buildDistress(raven, to, { position: null, area: 'Midtown' }, now()), raven));
+    await expect(page).toHaveTitle(/^Distress · Watch/, { timeout: 20_000 });
+    await publish(finalizeEvent(buildSignal(owl, to, 'assist', { urgency: 'now', area: 'Penn Station' }, now()), owl));
+    await page.locator('[data-pass-on]').click({ timeout: 20_000 });
+
+    const before = relay.received.length;
+    await page.getByRole('button', { name: 'Pass on', exact: true }).click();
+    // To Kite: Owl asked, and Raven is in Distress.
+    await expect(page.locator('[data-passed]')).toContainText('Kite');
+    await expect(page.locator('[data-passed]')).not.toContainText('Raven');
+    await expect.poll(() => relay.received.slice(before).filter((e) => e.kind === KIND_RESPONSE).length, { timeout: 15_000 }).toBe(1);
+    // Long enough for the relay to have handed the board its own note back.
+    await page.waitForTimeout(2_000);
+    await expect(page.locator('[data-distress-answered]')).toHaveCount(0);
+    await expect(page).toHaveTitle(/^Distress · Watch/);
+    await context.close();
+  });
 });

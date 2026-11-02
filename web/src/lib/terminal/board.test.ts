@@ -377,6 +377,49 @@ describe('a question from somebody on the board', () => {
   });
 });
 
+describe('an Assist passed on, heard back from the relay', () => {
+  it('does not mark anybody else’s Distress answered, or take their question off the board', async () => {
+    const raven = newSecretKey();
+    const kite = newSecretKey();
+    const owl = newSecretKey();
+    deliver(onStation(raven, T));
+    deliver(finalizeEvent(buildDistress(raven, to, { position: null, area: 'north side' }, T + 10), raven));
+    deliver(onStation(kite, T));
+    deliver(finalizeEvent(buildSignal(kite, to, 'query', { text: 'bed tonight', area: 'north' }, T + 20), kite));
+    deliver(onStation(owl, T));
+    deliver(finalizeEvent(buildSignal(owl, to, 'assist', { urgency: 'now', area: 'north' }, T + 30), owl));
+
+    const assist = board.waiting.find((w) => w.type === 'assist')!;
+    published.length = 0;
+    // To Kite alone: Raven is in Distress, and an offer of somebody else's is not for them.
+    expect(await board.passOn(assist, 'Owl asks for someone near north, now.')).toHaveLength(1);
+    const passed = published.filter((x) => x.event.kind === KIND_RESPONSE).map((x) => x.event);
+    expect(passed.map((e) => e.tags.find((t) => t[0] === 'p')?.[1])).toEqual([getPublicKey(kite)]);
+    // Each passed-on comes back from the relay, as the board's own subscription hears it.
+    for (const p of published.filter((x) => x.event.kind === KIND_RESPONSE)) deliver(p.event);
+
+    expect(board.distress.map((w) => w.answered ?? false)).toEqual([false]);
+    expect(board.waiting.map((w) => w.type).sort()).toEqual(['assist', 'query']);
+  });
+});
+
+describe('asking somebody past their time to check in, heard back from the relay', () => {
+  it('names their sign-on, so a question they are still waiting on stays on the board', async () => {
+    const kite = newSecretKey();
+    deliver(finalizeEvent(buildSignal(kite, to, 'on-station', {
+      callsign: 'Kite', area: 'north', expected_duration: 60, routine_interval: null, share_position: false, position: null
+    }, T), kite));
+    const ask = finalizeEvent(buildSignal(kite, to, 'query', { text: 'bed tonight', area: 'north' }, T + 20), kite);
+    deliver(ask);
+    published.length = 0;
+    expect(await board.askToCheckIn(getPublicKey(kite))).toBe(true);
+    const sent = published.filter((x) => x.event.kind === KIND_RESPONSE).map((x) => x.event);
+    expect(sent.map((e) => e.tags.find((t) => t[0] === 'e')?.[1])).not.toContain(ask.id);
+    for (const e of sent) deliver(e);
+    expect(board.waiting.map((w) => w.id)).toEqual([ask.id]);
+  });
+});
+
 describe('state changes arriving out of order', () => {
   it('does not let a replayed stand-down take somebody off the board', () => {
     // The presence store already guards this and says why — out-of-order delivery is normal

@@ -17,7 +17,7 @@ import { executorOf, sealToWatch, watchtowerAt, type WatchtowerAddress } from '.
 import { isPubkey, type SecretKey } from './crypto/keys.js';
 import { KIND_DISTRESS, KIND_RESPONSE, KIND_SIGNAL, type SignalType } from './events/kinds.js';
 import { checkedText, type DistressPayload, type SignalPayload } from './events/signal.js';
-import { answerSignedByResponder, type ResponsePayload } from './events/response.js';
+import { answerSignedByResponder, answersNothing, type ResponsePayload } from './events/response.js';
 import { CLOCK_TOLERANCE_SECONDS, STALE_AFTER_SECONDS } from './events/watch-state.js';
 import { whyNotListable } from './relays.js';
 
@@ -508,6 +508,8 @@ export function waitForResponse(
             if (!authors.includes(event.pubkey)) return;
             try {
               const payload = open<ResponsePayload>(secret, sealedBy(address, event.pubkey), event.content);
+              // Unasked, whatever it names: not the answer this is waiting for.
+              if (answersNothing(payload.type)) return;
               finish(() => resolve(payload));
             } catch {
               // Undecryptable means not for us. Keep waiting rather than failing.
@@ -1087,6 +1089,8 @@ export async function sendDistressUntilAcknowledged(
     } catch {
       return; // Not for us.
     }
+    // Asked to check in, or somebody else's Assist: about this operator, and never an answer to their Distress.
+    if (answersNothing(response.type)) return;
     heardIds.add(event.id);
     if (closure.executor && event.pubkey === closure.executor) fromExecutor.add(event.id);
     // The watch key's copy of a response this phone has already heard from the executor: said once.

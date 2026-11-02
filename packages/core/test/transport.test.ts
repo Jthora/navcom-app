@@ -145,6 +145,36 @@ describe("waitForResponse (found in review)", () => {
     await expect(promise).resolves.toEqual(responsePayload);
   });
 
+  it("waits past what a watch sends unasked, for the answer (2026-11-02)", async () => {
+    const clientSecretKey = generateSecretKey();
+    const clientPubkey = getPublicKey(clientSecretKey);
+    const watchtowerSecretKey = generateSecretKey();
+    const watchtower = watchtowerAt(getPublicKey(watchtowerSecretKey));
+    let capturedOnEvent: ((event: Event) => void) | undefined;
+    const pool = fakePool({
+      subscribeMany: (_relays, _filter, params) => {
+        capturedOnEvent = params.onevent;
+        return { close: () => {} };
+      },
+    });
+    const sentEvent = { id: "abc123", created_at: 1000 } as unknown as Parameters<typeof waitForResponse>[5];
+    const promise = waitForResponse(pool, RELAYS, clientSecretKey, clientPubkey, watchtower.pubkey, sentEvent, 5000);
+    const { finalizeEvent } = await import("nostr-tools/pure");
+    const say = (payload: ResponsePayload, at: number) =>
+      capturedOnEvent?.(
+        finalizeEvent(
+          { kind: KIND_RESPONSE, tags: [["p", clientPubkey], ["e", "abc123"]], content: seal(watchtowerSecretKey, clientPubkey, payload), created_at: at },
+          watchtowerSecretKey,
+        ),
+      );
+    const human = { kind: "human" as const, callsign: "Wren" };
+    say({ type: "passed-on", responder: human, text: "Owl asks for someone, now.", provenance: null }, 1001);
+    say({ type: "contact", responder: human, text: null, provenance: null }, 1002);
+    const answer: ResponsePayload = { type: "answer", responder: human, text: "Try the drop-in on 30th.", provenance: null };
+    say(answer, 1003);
+    await expect(promise).resolves.toEqual(answer);
+  });
+
   it("a fast client clock does not cause a real, on-time response to be filtered out (found in robustness audit)", async () => {
     // `since` used to be derived from the client's own possibly-skewed created_at. A relay
     // enforces `since` against real time, so a fast client clock made the relay drop a

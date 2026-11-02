@@ -573,11 +573,18 @@ no tag on the event. Both parts were wrong, and the implementation deliberately 
 - **Two responses answer nothing the operator is waiting on**, and both arrive silently:
   `contact` (*"you are past the time you gave"*, `watch-state.spec.md`, *Overdue*) and, added
   2026-11-02, `passed-on` — an `Assist` the watch passes on to the others out, sent to each entry
-  on the board but the one who asked, each sealed to that operator alone and naming their own
-  latest signal. It is an offer in the holder's words: who asked, roughly where and how soon,
+  on the board but the one who asked and anybody in `Distress`, each sealed to that operator alone.
+  It is an offer in the holder's words: who asked, roughly where and how soon,
   never the asker's own text. A client MUST hold it as one current fact, newest first, and MUST
   NOT present it as a task; taking it up is the operator's own `query` back to the watch. A watch
   MUST NOT pass on a `Distress`: raising people for one is the ladder's [invariant 2]
+- **Each of those two names the operator's sign-on**, never their latest signal, and **no reader
+  may take either for an answer, whatever it names** (2026-11-02). Both named the latest signal,
+  and a watch's board read its own `passed-on` back as the answer to it: when that signal was
+  somebody's `Distress`, the board marked it answered and stopped sounding, and their phone said a
+  person might have them. A phone waiting on an answer or sending a `Distress` MUST pass over both;
+  a board MUST count a response as dealing with a signal only when it is an `answer`, a
+  `declined`, or an `ack` from a person
 - `sig`, on a squad member's answer from the board, is their own signature on it, made with their
   own key, `responder.pubkey` (*The answer signature*, below). It is what ends a `Distress` on a
   squad's watch, because everybody who ever held the watch key can sign as the watch

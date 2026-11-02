@@ -91,6 +91,16 @@ export function declineIsValid(replyingTo: string): boolean {
   return replyingTo === 'assist' || replyingTo === 'query';
 }
 
+/**
+ * The responses a watch sends unasked: being asked to check in, and somebody else's Assist passed
+ * on. Each names a signal of the operator's, as every `20912` does, and **answers none**: read as an
+ * answer, an Assist passed on to somebody in Distress said a person might have them, and on the
+ * watch's own board it marked their Distress answered and stopped the sound (found 2026-11-02).
+ */
+export function answersNothing(type: unknown): boolean {
+  return type === 'contact' || type === 'passed-on';
+}
+
 /** Which record an answer came from, verified when, and how. */
 export interface Provenance {
   record_id: string;

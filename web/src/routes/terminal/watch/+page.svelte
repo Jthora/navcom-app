@@ -247,8 +247,8 @@
     }
   }
 
-  /** Who else is out to pass an Assist to: everybody on the board but the person who asked. */
-  const othersOut = (w: Waiting) => board.entries.filter((e) => e.operator !== w.operator).length;
+  /** Who else is out to pass an Assist to: everybody on the board but the person who asked and anybody in Distress. */
+  const othersOut = (w: Waiting) => board.entries.filter((e) => e.operator !== w.operator && e.status !== 'distress').length;
   /** Who asked, where and how soon: never their own words, which may be about somebody else. */
   const passDraft = (w: Waiting) =>
     `${withTeam(w.operator, w.callsign)} asks for someone${w.area ? ` near ${w.area}` : ''}${w.urgency === 'now' ? ', now' : ''}.`;
