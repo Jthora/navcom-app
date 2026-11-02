@@ -29,6 +29,9 @@
   import { floorDetail, floorNote, floorPin } from '$lib/terminal/floor';
   import { coordinates, fixAge, mapLink, within } from '$lib/terminal/fix';
   import { awake, raise, setSound, soundOn } from '$lib/terminal/raise.svelte';
+  import { placeLine, provenanceOf } from '$lib/terminal/lookup';
+  import AnswerLookup from '$lib/components/watch/AnswerLookup.svelte';
+  import type { Provenance, ResourceRecord } from '@navcom/core';
 
   let address = $state<string | null>(null);
   let callsign = $state<string | null>(null);
@@ -155,6 +158,17 @@
 
   /** The answer that did not reach a relay, if any. */
   let unsent = $state<string | null>(null);
+  /** A directory record put into the answer being written, and where its words came from. */
+  let attached = $state<{ for: string; name: string; provenance: Provenance } | null>(null);
+
+  function attach(id: string, r: ResourceRecord) {
+    const line = placeLine(r);
+    text = text.trim() ? `${text.trim()}\n${line}` : line;
+    attached = { for: id, name: r.name, provenance: provenanceOf(r) };
+  }
+
+  /** The source line the operator will see under the answer, said here first. */
+  const sourceOf = (p: Provenance) => `${p.method ?? 'source not stated'}, ${p.verified ? `checked ${p.verified}` : 'never checked'}`;
 
   async function send(id: string, declining = false) {
     // Both lists. Distress moved into its own section so it cannot be buried, and looking
@@ -166,9 +180,10 @@
     try {
       // Reported rather than assumed. An answer that reached no relay used to clear the
       // item anyway: the watch believed they had replied and the operator got nothing.
-      if (await board.answer(item, text, declining)) {
+      if (await board.answer(item, text, declining, attached?.for === id ? attached.provenance : null)) {
         answering = null;
         text = '';
+        attached = null;
       } else {
         unsent = id;
       }
@@ -585,6 +600,14 @@
             {#if answering === w.id}
               <label for="a-{w.id}">Your answer</label>
               <textarea id="a-{w.id}" bind:value={text} rows="3"></textarea>
+              {#if attached?.for === w.id}
+                <span data-attached>
+                  <Readout value={attached.name} verbatim tone="neutral" sub={sourceOf(attached.provenance)} />
+                </span>
+              {/if}
+              {#if w.type === 'query' || w.type === 'assist'}
+                <AnswerLookup near={fixOf(w)?.p ?? null} onpick={(r) => attach(w.id, r)} />
+              {/if}
               <div class="row">
                 <button onclick={() => send(w.id)} disabled={busy}>Send</button>
                 <button onclick={() => (answering = null)}>Cancel</button>
@@ -606,7 +629,7 @@
                 </button>
               {/if}
             {:else}
-              <button onclick={() => { answering = w.id; text = ''; }}>
+              <button onclick={() => { answering = w.id; text = ''; attached = null; }}>
                 {w.type === 'distress' ? 'Tell them you are awake' : 'Answer'}
               </button>
             {/if}

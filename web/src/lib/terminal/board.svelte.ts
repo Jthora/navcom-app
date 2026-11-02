@@ -68,6 +68,7 @@ import {
   signAnswer,
   type BoardEntry,
   type Position,
+  type Provenance,
   type ResponsePayload,
   type SignalType
 } from '@navcom/core';
@@ -620,7 +621,7 @@ export const board = {
    * acknowledgement and waited is worse off than one who was told plainly. Core refuses it
    * for a `Distress`, and this checks before sending rather than trusting the caller.
    */
-  async answer(item: Waiting, text: string, declining = false): Promise<boolean> {
+  async answer(item: Waiting, text: string, declining = false, provenance: Provenance | null = null): Promise<boolean> {
     const secret = watchKey();
     const urls = watchRelays();
     if (!secret || urls.length === 0) return false;
@@ -636,10 +637,10 @@ export const board = {
       // talking to one [invariant 5], and this is the field that decides it.
       responder: { kind: 'human', callsign: identity?.callsign ?? 'watch' },
       text: text.trim() || null,
-      // No directory lookup happened here -- a person typed this. Claiming provenance
-      // for a hand-written answer would dress it as verified, and a confident wrong
-      // answer at 10pm is the worst failure available to this system.
-      provenance: null
+      // Only what the holder attached from a directory record, verbatim [`lookup.ts`]. A
+      // hand-written answer carries none: claiming provenance for it would dress it as
+      // verified, and a confident wrong answer at 10pm is the worst failure available here.
+      provenance: declining ? null : provenance
     };
     /*
      * Signed by this holder's own key as well as the watch's [G3; `signals.spec.md`, *The answer

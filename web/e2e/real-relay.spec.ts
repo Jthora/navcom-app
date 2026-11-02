@@ -819,4 +819,54 @@ test.describe('the board, the one filter that resisted a naive test', () => {
     await expect(page).toHaveTitle(/^Distress · Watch/);
     await context.close();
   });
+
+  test('a question answered from a directory record carries where its words came from', async ({ browser }: { browser: Browser }) => {
+    const { finalizeEvent, generateSecretKey, getPublicKey } = await import('nostr-tools/pure');
+    const { buildSignal, open: openSealed, KIND_RESPONSE } = await import('@navcom/core');
+
+    const watchHex = 'f'.repeat(63) + '7';
+    const watchSecret = Uint8Array.from((watchHex.match(/../g) ?? []).map((b) => parseInt(b, 16)));
+    const watchPub = getPublicKey(watchSecret);
+    const holder = await pubkeyOf(TEST_SECRET);
+    const to = { pubkey: watchPub, holders: [holder] };
+
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await liveDevice(page, relay.url, {
+      callsign: 'Vale',
+      watchSecret: watchHex,
+      watchtower: { pubkey: watchPub, relays: [relay.url], holders: [holder] }
+    });
+    await open(page, '/terminal/watch/');
+    await expect(page.locator('[data-empty-board]')).toBeVisible({ timeout: 20_000 });
+
+    // Asked from beside Penn Station, so the lookup opens on New York, nearest first.
+    const wren = generateSecretKey();
+    const ask = finalizeEvent(
+      buildSignal(wren, to, 'query', { text: 'somewhere warm right now', area: 'Midtown', position: { lat: 40.7506, lon: -73.9935, precision_m: 500 } }, Math.floor(Date.now() / 1000)),
+      wren
+    );
+    await listenedFor(ask, 'a question on the phone holding the watch');
+    await publish(ask);
+    await expect(page.getByText('somewhere warm right now')).toBeVisible({ timeout: 25_000 });
+
+    await page.getByRole('button', { name: 'Answer' }).click();
+    await page.locator('[data-lookup-open]').click();
+    await expect(page.locator('[data-lookup]')).toContainText('New York metro', { timeout: 15_000 });
+    const first = page.locator('[data-lookup-place]').first();
+    await expect(first).toBeVisible({ timeout: 15_000 });
+    const name = (await first.locator('.name').textContent())!.trim();
+    await first.click();
+    await expect(page.locator('#a-' + ask.id)).toHaveValue(new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    await expect(page.locator('[data-attached]')).toContainText(name);
+
+    const before = relay.received.length;
+    await page.getByRole('button', { name: 'Send', exact: true }).click();
+    await expect.poll(() => relay.received.slice(before).filter((e) => e.kind === KIND_RESPONSE).length, { timeout: 15_000 }).toBeGreaterThan(0);
+    const sent = relay.received.slice(before).find((e) => e.kind === KIND_RESPONSE)!;
+    const payload = openSealed<{ text: string; provenance: { record_id: string; method: string | null } | null }>(wren, watchPub, sent.content);
+    expect(payload.text).toContain(name);
+    expect(payload.provenance?.record_id).toBeTruthy();
+    await context.close();
+  });
 });

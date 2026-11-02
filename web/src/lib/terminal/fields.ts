@@ -75,7 +75,9 @@ export const ACCRUING_FIELDS = {
   // That this phone founded the watch it holds. Without the key it holds none.
   watch_founded: 'device',
   // Whether this phone sounds a Distress while it holds the watch: how loud this room can be.
-  watch_sound: 'device'
+  watch_sound: 'device',
+  // The area this phone last looked a place up in to answer somebody, so the next lookup starts there.
+  watch_region: 'device'
 } as const satisfies Record<string, Carry>;
 
 /** Tonight's fields. None of them is ever in a backup: carrying one would undo a wipe somebody meant. */
