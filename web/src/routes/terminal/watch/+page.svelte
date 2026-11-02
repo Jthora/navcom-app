@@ -33,6 +33,7 @@
   import { placeLine, provenanceOf } from '$lib/terminal/lookup';
   import AnswerLookup from '$lib/components/watch/AnswerLookup.svelte';
   import PassOn from '$lib/components/watch/PassOn.svelte';
+  import { night } from '$lib/terminal/watch-night.svelte';
   import type { Provenance, ResourceRecord } from '@navcom/core';
 
   let address = $state<string | null>(null);
@@ -238,6 +239,18 @@
   /** Who asked, where and how soon: never their own words, which may be about somebody else. */
   const passDraft = (w: Waiting) =>
     `${w.callsign} asks for someone${w.area ? ` near ${w.area}` : ''}${w.urgency === 'now' ? ', now' : ''}.`;
+
+  let nightCopied = $state(false);
+  let confirmClear = $state(false);
+  async function copyNight() {
+    try {
+      await navigator.clipboard.writeText(night.text());
+      nightCopied = true;
+    } catch {
+      nightCopied = false;
+    }
+  }
+  const timeOf = (s: number) => new Date(s * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
   /** `assist · now`, or the type alone. */
   const badgeOf = (w: Waiting) => (w.urgency ? `${w.type} · ${w.urgency}` : w.type);
@@ -736,6 +749,32 @@
     {/if}
   </section>
 
+  <!--
+    What this phone did while holding the watch: actions and callsigns, never what anybody wrote or
+    where anybody was [watch-night.svelte.ts]. Tonight's: a panic wipe takes it.
+  -->
+  <section class="act" data-night>
+    <h2>Tonight</h2>
+    {#if night.entries.length === 0}
+      <Slot k="Done"><Readout value="Nothing yet" tone="cold" /></Slot>
+    {:else}
+      <Why summary="What the watch did">
+        <ol class="night">
+          {#each night.entries as e, i (i)}<li><span class="t">{timeOf(e.at)}</span> {e.what}</li>{/each}
+        </ol>
+      </Why>
+      <div class="row">
+        <button onclick={copyNight}>{nightCopied ? 'Copied' : 'Copy it'}</button>
+        {#if confirmClear}
+          <button class="danger" onclick={() => { night.clear(); confirmClear = false; }}>Clear it</button>
+          <button onclick={() => (confirmClear = false)}>Keep it</button>
+        {:else}
+          <button onclick={() => (confirmClear = true)}>Clear</button>
+        {/if}
+      </div>
+    {/if}
+  </section>
+
   <section class="act">
     <h2>Give up this watch</h2>
     <p class="cost">
@@ -812,6 +851,8 @@
 <style>
   .act { gap: .6rem; }
   .orphaned { display: flex; flex-direction: column; gap: .5rem; }
+  .night { margin: 0; padding-inline-start: 1.2rem; display: grid; gap: .25rem; font-size: .85rem; }
+  .night .t { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--t-muted); }
   .ask-in { display: flex; align-items: center; justify-content: space-between; gap: .6rem; flex-wrap: wrap; margin-top: .5rem; }
   .toggle { display: flex; align-items: center; justify-content: space-between; gap: .6rem; flex-wrap: wrap; }
   .qr {

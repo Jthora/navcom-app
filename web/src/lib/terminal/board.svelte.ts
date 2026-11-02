@@ -79,6 +79,7 @@ import { usable } from './relay-url';
 import { routineTo, sendEach } from './refusing.svelte';
 import { subscribeLive, type LiveSubscription } from './subscribe';
 import { watchKey, watchPubkey } from './watch-key';
+import { night, waited } from './watch-night.svelte';
 
 /** How often watch state is republished. A stale state reads Dark, which is the point. */
 export const WATCH_BEAT_SECONDS = 120;
@@ -458,6 +459,7 @@ export const board = {
     follow();
     since = Math.floor(Date.now() / 1000);
     onStation = true;
+    night.note('Took the watch');
     // A stand-down still retrying its Dark would land it on top of this claim.
     if (darkRetry) clearInterval(darkRetry);
     darkRetry = null;
@@ -513,6 +515,7 @@ export const board = {
     const secret = watchKey();
     const urls = usable(watchRelays());
     const mine = ++generation;
+    if (onStation) night.note('Stood down');
     onStation = false;
     releasedHere = true;
     // The holding is over; its Dark below goes where it always went, and a later one claims afresh.
@@ -679,6 +682,12 @@ export const board = {
     const took = await publishEach(usable([...heard, ...urls]), event);
     const sent = heard.length > 0 ? took.some((url) => heard.includes(url)) : took.length > 0;
     if (!sent) return false;
+    night.note(
+      `${declining ? 'Told' : item.type === 'distress' ? 'Acknowledged' : 'Answered'} ${item.callsign}’s ${item.type}` +
+        `${declining ? ' that nobody can come' : ''}${provenance ? ', from a directory record' : ''}, ` +
+        waited(Math.floor(Date.now() / 1000) - (item.before ?? item.at)) +
+        (item.before !== undefined ? ' (sent before this screen opened)' : '')
+    );
 
     // A Distress stays until a human has actually ended it, which is not something this
     // screen can know. Acknowledging is telling them somebody is awake, not that it is over.
@@ -715,6 +724,7 @@ export const board = {
     const took = await publishEach(usable([...last.heardOn, ...watchRelays()]), event);
     if (took.length === 0) return false;
     askedAt = { ...askedAt, [operator]: Math.floor(Date.now() / 1000) };
+    night.note(`Asked ${entries.find((e) => e.operator === operator)?.callsign ?? operator.slice(0, 8)} to check in`);
     return true;
   },
 
@@ -743,7 +753,10 @@ export const board = {
       const event = finalizeEvent(buildResponse(secret, e.operator, last.id, payload, Math.floor(Date.now() / 1000)), secret);
       if ((await publishEach(usable([...last.heardOn, ...watchRelays()]), event)).length > 0) reached.push(e.callsign);
     }
-    if (reached.length > 0) passedOnFor = { ...passedOnFor, [item.id]: reached };
+    if (reached.length > 0) {
+      passedOnFor = { ...passedOnFor, [item.id]: reached };
+      night.note(`Passed ${item.callsign}’s assist on to ${reached.join(', ')}`);
+    }
     return reached;
   },
 
@@ -779,6 +792,8 @@ export const board = {
     // Anything still on its way back — a stand-down's read, a Dark — now stops where it is.
     generation++;
     answeredHere = new Set();
+    // A wipe has just taken tonight's record off the phone; this screen's copy goes with it.
+    night.reload();
     lastHeard = {};
     askedAt = {};
     passedOnFor = {};
@@ -1264,6 +1279,8 @@ function apply(
       distressDropped = true;
       return;
     }
+    // Arriving is written down too: a Distress nobody answered has to leave a trace of its own.
+    if (!without.some((w) => w.operator === from && w.type === 'distress')) night.note(`Distress from ${callsign}${history ? ' (sent before this screen opened)' : ''}`);
   } else {
     const held = without.filter((w) => w.type !== 'distress').length;
     if (held >= ROUTINE_MAX) {
