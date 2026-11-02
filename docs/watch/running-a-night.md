@@ -48,6 +48,8 @@ they send.
   on Query and Status, and you can use other screens meanwhile.
 - **Assist** asks for another person: *soon* or *now*.
 - **Distress** keeps sending until a person answers. Use it for an emergency.
+- **Your peers**, on Status, are the people you paired with: who is out, and a map link for any of
+  them sharing where they are.
 - **Passed on**, on Status, is somebody else's Assist that the watch passed to you. It is an offer:
   if you can go, say so to the watch.
 - **Stand down** when you are home.

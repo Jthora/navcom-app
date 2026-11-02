@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { capabilitySentence, pageableNow } from '@navcom/core';
+  import { capabilitySentence, isValidPosition, pageableNow } from '@navcom/core';
+  import { fixAge, mapLink, within } from '$lib/terminal/fix';
   import { Panel, Slot, Readout, Why, Action, Board } from '$lib/components/panel';
   import { watch } from '$lib/terminal/watch.svelte';
   import { operator, watchClosure } from '$lib/terminal/session.svelte';
@@ -265,7 +266,15 @@
       callsign: p.callsign,
       area: p.payload.area ?? '',
       status: presence.stateOf(p) === 'overdue' ? 'overdue' : 'out',
-      note: presence.stateOf(p) === 'overdue' ? 'is past the time they gave' : 'is out'
+      note: presence.stateOf(p) === 'overdue' ? 'is past the time they gave' : 'is out',
+      /*
+       * Where they shared they are, which sign-on tells them their peers see (2026-11-02): a team
+       * lead could see their team was out and not where. Read as untrusted, and only while they are
+       * heard: a peer holds where you are, never where you were.
+       */
+      pin: isValidPosition(p.payload.position)
+        ? { href: mapLink(p.payload.position), label: `Map · ${within(p.payload.position)} · ${fixAge(p.heard, Math.floor(Date.now() / 1000))}` }
+        : null
     })),
     ...presence.unknown.map((p) => ({
       operator: p.pubkey,

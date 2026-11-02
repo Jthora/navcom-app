@@ -122,6 +122,43 @@ test.describe('pairing, standing next to each other', () => {
     await wren.context().close();
     await raven.context().close();
   });
+
+  test('and a team lead sees where a teammate is, roughly, when the teammate shares it', async ({ browser }) => {
+    // A lead could see their team was out and not where, though sign-on says peers see it (2026-11-02).
+    const wren = await phone(browser, 'Wren');
+    const context = await browser.newContext({ permissions: ['geolocation'], geolocation: { latitude: 40.7506, longitude: -73.9935 } });
+    const raven = await context.newPage();
+    await raven.clock.install();
+    await seedDevice(raven, { callsign: 'Raven', relayEvents: [] });
+
+    const ravenCode = await codeOn(raven);
+    const wrenCode = await codeOn(wren);
+    await open(wren, '/terminal/peers/');
+    await wren.locator('#code').fill(ravenCode);
+    await wren.locator('#name').fill('Raven');
+    await wren.getByRole('button', { name: /^pair$/i }).click();
+    await open(raven, '/terminal/peers/');
+    await raven.locator('#code').fill(wrenCode);
+    await raven.locator('#name').fill('Wren');
+    await raven.getByRole('button', { name: /^pair$/i }).click();
+
+    await open(raven, '/terminal/sign-on/');
+    await raven.locator('#area').fill('Penn Station');
+    await raven.locator('#share').selectOption('coarse');
+    await raven.getByRole('button', { name: /^sign on$/i }).click();
+    await raven.waitForURL('**/terminal/');
+    // The next heartbeat, which carries the fix the phone has had time to take.
+    await raven.clock.fastForward(61_000);
+
+    await open(wren, '/terminal/');
+    expect(await deliver(raven, wren)).toBeGreaterThan(0);
+    const pin = wren.locator('[data-peers] [data-floor-pin]');
+    await expect(pin).toContainText(/Map · within 500 m/, { timeout: 10_000 });
+    expect(await pin.getAttribute('href')).toMatch(/^https:\/\/www\.openstreetmap\.org\/\?mlat=40\.7\d*&mlon=-73\.9\d*/);
+
+    await wren.context().close();
+    await context.close();
+  });
 });
 
 test('a link sent through a messaging app, pasted whole, pairs too', async ({ browser }) => {
