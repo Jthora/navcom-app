@@ -206,7 +206,9 @@
       watch.stop();
       presence.stop();
       standing.stop();
-      overdue.stop();
+      // Signed on, it goes on listening on every screen [session `signOn`]; only off patrol does
+      // leaving Status end it.
+      if (!operator.session) overdue.stop();
     };
   });
 

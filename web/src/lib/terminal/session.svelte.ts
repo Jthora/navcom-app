@@ -478,7 +478,13 @@ export const operator = {
     // relays store none of it.
     void presence.announce(operator.presencePayload());
     presence.beat(() => (session ? operator.presencePayload() : null));
-    if (operator.hasWatch) startFixBeat();
+    if (operator.hasWatch) {
+      startFixBeat();
+      // What the watch sends unasked — *past your time*, an Assist passed on — heard on every screen
+      // while out, not only on Status: neither is kept by a relay, so one sent while this phone was
+      // on another screen was gone.
+      overdue.start();
+    }
 
     // Being listed publicly rides on being signed on, and does nothing unless the operator
     // asked for it and has a card. That coupling is what bounds the mistake: somebody who
@@ -771,6 +777,7 @@ export const operator = {
     // the screen next time this operator signs on. So is anything it passed on.
     overdue.clear();
     passedOn.clear();
+    overdue.stop();
     stopAsking();
     return closedBy;
   },
@@ -909,6 +916,7 @@ export const operator = {
     position.stop();
     stopFixBeat();
     stopAsking();
+    overdue.stop();
     session = null;
     lastResponse = null;
     error = null;
