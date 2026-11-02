@@ -101,7 +101,7 @@ key-shaped here is hex, so there is no capital `O` to confuse with `0`.
 Sequence and gates in [`docs/build-order.md`](docs/build-order.md). Surfaces and budgets in
 [`docs/delivery.md`](docs/delivery.md).
 
-`navcom.app` runs in parallel and is ungated — it is live and seeded nationally — 9,635 records across 1,912 regions, 1 of them still empty.
+`navcom.app` runs in parallel and is ungated — it is live and seeded nationally — 9,652 records across 1,912 regions, 1 of them still empty.
 The root itself is a small, real console (Nav + Com, fused, 60 kB of its own script budget and currently at 58.5)
 that searches the directory instantly and shows the network's actual state, with one link
 into the full Field Terminal; `directory/`, `docs/`, `status/` and `about/` remain static and
