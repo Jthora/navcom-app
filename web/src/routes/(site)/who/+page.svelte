@@ -52,18 +52,14 @@
 
 <h1>Operators</h1>
 
-<p class="lede">
-  People who chose to be listed on the open web. Most operators are not here — being findable at
-  all is opt-in, and being findable <em>from outside the app</em> is a further step.
-</p>
+<p class="lede">People who chose to be listed on the open web.</p>
 
 <p class="cost">
-  <strong>Nobody has checked any of this.</strong> Every entry was published by its holder about
-  themselves, and is theirs to answer for. <a href="/notice/">Who is responsible for what</a>.
+  <strong>Nobody has checked any of this.</strong> <a href="/notice/">Who is responsible for what</a>
 </p>
 
 {#if !publicRoster.asked}
-  <p class="cost">Loading needs JavaScript. This page, the console and the terminal are the parts of the site that do.</p>
+  <p class="cost">Loading needs JavaScript.</p>
 {:else if publicRoster.loading && publicRoster.entries.length === 0}
   <p class="cost">Asking relays…</p>
 {:else if publicRoster.entries.length === 0}
@@ -72,13 +68,10 @@
     every relay fails to connect, the pool reports the end of results just as it does for an empty
     answer, so this sentence also appears during an outage and must not claim more than it knows.
   -->
-  <p class="cost">
-    No public card came back from the relays asked. That is the ordinary case rather than a
-    failure — most operators never publish one — but a relay that did not answer looks the same.
-  </p>
+  <p class="cost">No public card came back from the relays asked.</p>
 {:else}
   {#if publicRoster.partial}
-    <p class="cost">More are listed than this shows. This is part of the roster, not all of it.</p>
+    <p class="cost">More are listed than this shows.</p>
   {/if}
   <ul class="roster">
     {#each publicRoster.entries as e (e.contact)}
@@ -109,11 +102,6 @@
   </ul>
 {/if}
 
-<p class="cost">
-  This list is read from relays as you look at it, so it is current. The names are not in this
-  page's HTML and the page asks search engines not to index it, so they <strong>should not appear
-  in any search index</strong>.
-</p>
 
 <style>
   .lede { font-size: 1.05rem; }

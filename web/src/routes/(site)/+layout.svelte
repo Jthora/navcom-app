@@ -44,27 +44,13 @@
 
 <footer>
   <div class="wrap">
-    <p>The resource directory is public and free to use. No account, nothing to install.</p>
+    <p>Free to use. No account, nothing to install. Call ahead before sending anyone anywhere.</p>
     <p class="quiet">
-      Nothing here records anything about the people being served. This directory describes
-      services, never recipients.
+      Contributions are <a href="https://creativecommons.org/publicdomain/zero/1.0/" rel="noreferrer">CC0</a>;
+      map data keeps its sources&rsquo; terms &mdash; <a href="/docs/licensing/">Licensing</a>.
     </p>
-    <p class="quiet">
-      Maintained by volunteers. Every perishable fact shows its age, and &ldquo;call
-      first&rdquo; is a real answer rather than a missing one &mdash; please call ahead
-      before sending anyone anywhere. What contributors wrote is
-      <a href="https://creativecommons.org/publicdomain/zero/1.0/" rel="noreferrer">CC0</a>;
-      records drawn from public map data keep their sources&rsquo; terms &mdash; see
-      <a href="/docs/licensing/">Licensing</a>.
-    </p>
-    <!--
-      On every page, because every page can be the one somebody lands on. NavCom shows other
-      people's words, and a reader who never opens a doc still needs to know whose they are.
-    -->
-    <p class="quiet">
-      What operators publish about themselves is theirs to answer for, not NavCom's.
-      <a href="/notice/">Who is responsible for what</a>.
-    </p>
+    <!-- On every page, because every page can be the one somebody lands on: NavCom shows other people's words. -->
+    <p class="quiet"><a href="/notice/">Who is responsible for what</a></p>
   </div>
 </footer>
 

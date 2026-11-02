@@ -83,11 +83,4 @@ describe('the status page and the directory agree about its age', () => {
     expect(page.includes('Unknown across the whole directory right now')).toBe(dark);
     expect(page.includes('Shown, where somebody has checked recently enough')).toBe(!dark);
   });
-
-  it('keeps saying that addresses are unaffected, because that is what is still usable', () => {
-    const page = text();
-    if (page === null) return;
-    if (!measured().volatileDark) return;
-    expect(page).toMatch(/Addresses, phone numbers and what a place is remain shown/);
-  });
 });

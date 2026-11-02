@@ -100,7 +100,7 @@ test.describe('the root console — search works with nothing set up', () => {
     // The record it named — not its region, and not a near-match.
     await expect(page.getByRole('heading', { level: 1, name: named })).toBeVisible();
     // The three things the console's sentence specifically promised are on it.
-    await expect(page.getByText('Intake', { exact: false }).first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: /will they take this person/i })).toBeVisible();
     // On screen the recency is per-field ("checked 18 Aug 2026"); the "Last checked" line
     // in the same markup is the print header, and is display:none here.
     await expect(page.getByText(/checked \d{1,2} \w{3} \d{4}/).first()).toBeVisible();

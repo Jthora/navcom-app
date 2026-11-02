@@ -59,25 +59,17 @@ test('is alphabetical, which rewards nothing', async ({ page }) => {
   expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)));
 });
 
-test('asks not to be indexed, and says so no more strongly than that is true', async ({ page }) => {
-  /*
-   * It said "not in any search index" with nothing behind it: the names are not in the static
-   * HTML, but a crawler that runs JavaScript reads them. The noindex tag is what makes the
-   * sentence honest, so both are asserted together -- the claim without the tag is the defect.
-   */
+test('asks not to be indexed', async ({ page }) => {
+  // The names are not in the static HTML, but a crawler that runs JavaScript reads them.
   await seed(page, []);
   await open(page, '/who/');
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
-  await expect(page.getByText(/should not appear\s+in any search index/i)).toBeVisible();
 });
 
-test('an empty roster is not the same as nobody using NavCom', async ({ page }) => {
+test('an empty roster says what it asked, not that nobody uses NavCom', async ({ page }) => {
   await seed(page, []);
   await open(page, '/who/');
-  // `\s+` because the source wraps this sentence across a line and Playwright does not
-  // normalise whitespace for a regex match -- the same trap as asserting on source text where
-  // the stylesheet had uppercased it.
-  await expect(page.getByText(/ordinary case rather than a\s+failure/i)).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText(/no public card came back from the relays asked/i)).toBeVisible({ timeout: 10_000 });
 });
 
 test('a card that did not choose public is not on it', async ({ page }) => {

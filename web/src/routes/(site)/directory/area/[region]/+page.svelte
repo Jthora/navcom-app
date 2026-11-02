@@ -38,16 +38,10 @@
     The instruction that survives being out of date, and the reason it is above the list
     rather than under it: a reader who stops after the first entry has still read this.
   -->
-  <p class="note">
-    <strong>Call before you go.</strong> Hours and intake rules change without notice, and
-    nothing here has been confirmed by a person.
-  </p>
+  <p class="note"><strong>Call before you go.</strong></p>
 
   {#if data.records.length === 0}
-    <p class="note">
-      Nothing is carried for this area yet. That is not the same as nothing being here —
-      it means nobody has put it in.
-    </p>
+    <p class="note">Nothing is carried for this area yet.</p>
   {/if}
 
   {#each byType as [type, records] (type)}

@@ -70,11 +70,7 @@
   {#if meta.seeded}
     <div class="notice notice--warn">
       <p class="notice__label">Unverified public listing</p>
-      <p>
-        This entry came from a public source. Nobody has been there or called. The intake
-        rules below are almost certainly incomplete — that is what is missing from official
-        listings, and it is the part that decides whether someone gets in.
-      </p>
+      <p>Nobody has been there or called.</p>
     </div>
   {/if}
 
@@ -188,10 +184,7 @@
 
   <section>
     <h2>Will they take this person</h2>
-    <p class="hint">
-      This is the part official listings leave out. Anything marked unknown means nobody has
-      confirmed it — not that there is no restriction.
-    </p>
+    <p class="hint">Unknown means nobody has confirmed it.</p>
     <dl>
       {#each INTAKE_FIELDS as field (field)}
         <FieldRow {field} label={FIELD_LABELS[field] ?? field} display={displayField(record, field, now)} />
@@ -213,11 +206,6 @@
       <div><dt>By</dt><dd>{record.verified_by ?? 'unknown'}</dd></div>
       <div><dt>How</dt><dd>{record.method ? labelValue(record.method) : 'unknown'}</dd></div>
     </dl>
-    <p class="hint">
-      Confidence is worked out from how it was checked and how long ago — it is never typed
-      in by hand. Different facts go stale at different speeds: hours in two weeks, intake
-      rules in three months, an address in a year.
-    </p>
   </section>
 </div>
 

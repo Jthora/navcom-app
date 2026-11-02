@@ -64,13 +64,11 @@ describe('what is deployed', () => {
     expect(scripts.some((p) => readFileSync(p, 'utf8').includes('Hold to reload'))).toBe(true);
   });
 
-  it('tells a reader what an old build date means, without promising a schedule', () => {
+  it('gives the build date, without promising a schedule', () => {
     // It said "rebuilds daily" for weeks after the only scheduled rebuild had been deleted with
-    // CI. The daily rebuild now runs from a timer on the watch box, which exists only while a box
-    // does, so the page states the condition an old date reveals rather than the promise.
+    // CI. The daily rebuild runs from a timer on the watch box, which exists only while a box does.
     const page = readFileSync(join(BUILD, 'status', 'index.html'), 'utf8');
     expect(page).not.toMatch(/rebuilds daily/i);
-    expect(page).toMatch(/rebuilds whenever it is\s+deployed/i);
-    expect(page).toMatch(/a date more than a day old\s+means none is/i);
+    expect(page).toMatch(/Built from\s+<code>/);
   });
 });

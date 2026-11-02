@@ -14,7 +14,6 @@
    */
   // Derived at build time, not written by hand. See +page.server.ts for why.
   import { formatDate } from '$lib/directory';
-  import { Why } from '$lib/components/panel';
 
   let { data } = $props();
   const components = $derived(
@@ -43,14 +42,9 @@
   <div class="notice notice--stop">
     <p class="notice__label">Escalation</p>
     <p>
-      <strong>Built, unproven, and running with nobody on-call.</strong> The ladder exists
-      and its seven failure paths are tested — but no drill has ever run, and no watch this
-      project runs has a roster. A Distress sent to a watch with nobody on-call pages nobody,
-      reaches the end of the ladder at once, and tells the operator so.
-    </p>
-    <p>
-      That is the ladder working correctly. <strong>It is not the ladder helping.</strong>
-      Nothing here should be relied on in an emergency.
+      <strong>Built, unproven, and running with nobody on-call.</strong> A Distress sent now pages
+      nobody and tells the operator so. <strong>Nothing here should be relied on in an
+      emergency.</strong>
     </p>
   </div>
 
@@ -64,18 +58,9 @@
     <p class="notice__label">Hours and intake</p>
     {#if fresh.volatileDark}
       <p>
-        <strong>Unknown across the whole directory right now.</strong> Every record reads
-        <em>call first</em>: the newest check anywhere is {fresh.newestAgeDays} days old, and these
-        fields stop showing after {volatileWindow} days.
+        <strong>Unknown across the whole directory right now.</strong> The newest check is
+        {fresh.newestAgeDays} days old; these fields stop showing after {volatileWindow} days.
       </p>
-      <Why summary="What that means">
-        <p>
-          That is the design working rather than a fault — a wrong hour sends somebody to a locked
-          door — and it is also the directory at its least useful. <strong>Addresses, phone numbers
-          and what a place is remain shown</strong>, because those do not rot at the same speed.
-          What fixes it is somebody ringing a place and filing what they are told.
-        </p>
-      </Why>
     {:else}
       <p>
         <strong>Shown, where somebody has checked recently enough.</strong> The newest check is
@@ -87,21 +72,6 @@
   <section>
     <h2>Drills</h2>
     <p class="empty">No drill results are shown here.</p>
-    <!--
-      The branch's wording, which stopped this page overpromising, with the explanation behind a
-      `Why` — the state a reader needs is that nothing is shown here, and the rest is why.
-    -->
-    <Why summary="What a drill reports">
-      <p class="hint">
-        A watch tests its own escalation path on an unannounced schedule and publishes the result
-        itself — how many were paged, how many acknowledged, and how long the first acknowledgement
-        took. <strong>This page does not read those results.</strong>
-      </p>
-      <p class="hint">
-        A passing drill is reported as <em>no evidence of failure</em>, never as
-        <em>verified</em>. It means the path worked that time.
-      </p>
-    </Why>
   </section>
 
   <section>
@@ -116,11 +86,7 @@
         </li>
       {/each}
     </ul>
-    <p class="hint">
-      Derived from the repository at build time rather than written by hand. <strong>"Built"
-      means the code is here</strong> — it is a much weaker claim than it looks, and the
-      list below is what it does not cover.
-    </p>
+    <p class="hint"><strong>"Built" means the code is here</strong>, and nothing more.</p>
     <!--
       Absolute, not "3 days ago": this page ships no JavaScript, so a relative age would be
       frozen at build time and start lying the moment somebody read it. A date stays true.
@@ -131,21 +97,15 @@
       a box does — so this states what an old date means rather than promising a fresh one.
     -->
     <p class="stamp" data-version={data.version.commit}>
-      This page was built from
+      Built from
       <code>{data.version.commit}</code>{#if data.version.dirty}&nbsp;(with uncommitted changes){/if}
-      on <time datetime={data.version.builtAt}>{buildDate}</time>. It rebuilds whenever it is
-      deployed, and once a day while a rebuild timer is running — a date more than a day old
-      means none is, and everything on this page is that old.
-      <a href="/version.json">version.json</a> says the same thing to a machine.
+      on <time datetime={data.version.builtAt}>{buildDate}</time>.
+      <a href="/version.json">version.json</a>
     </p>
   </section>
 
   <section>
     <h2>What is not proven</h2>
-    <p class="hint">
-      The things that are true and that no build can check. These matter more than the list
-      above.
-    </p>
     <ul class="unproven">
       {#each data.unproven as line (line)}
         <li>{line}</li>
@@ -155,13 +115,7 @@
 
   <section>
     <h2>Watch state</h2>
-    <p class="hint">
-      <strong>This page cannot see any Watchtower, by design.</strong> Nothing discovers one,
-      because a list of Watchtowers is a list of where operators are. A watch publishes its own
-      state to the people who hold its key, and an operator sees it on the Field Terminal before
-      signing on.
-    </p>
-    <p class="empty">No watch state is shown here.</p>
+    <p class="empty">Not shown here: nothing discovers a watch.</p>
   </section>
 </div>
 
