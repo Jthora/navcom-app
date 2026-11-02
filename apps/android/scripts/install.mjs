@@ -31,5 +31,8 @@ if (!serial || !attached.includes(serial)) {
 }
 console.log(`[install] ${serial}: ${adb('-s', serial, 'shell', 'getprop', 'ro.product.model')}`);
 console.log(adb('-s', serial, 'install', '-r', APK));
+// Started a moment after the update settles: started at once, the system could kill it as the old
+// install's empty process.
+await new Promise((r) => setTimeout(r, 2_000));
 adb('-s', serial, 'shell', 'am', 'start', '-n', 'app.navcom/.MainActivity');
 console.log('[install] opened NavCom');

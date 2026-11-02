@@ -23,6 +23,11 @@ final class PrerenderedPages {
         this.bridge = bridge;
     }
 
+    /** The site's service worker script, which the app never runs [MainActivity]. */
+    static boolean isServiceWorker(WebResourceRequest request) {
+        return "/service-worker.js".equals(request.getUrl().getPath());
+    }
+
     WebResourceRequest resolve(WebResourceRequest request) {
         Uri url = request.getUrl();
         String path = url.getPath();
