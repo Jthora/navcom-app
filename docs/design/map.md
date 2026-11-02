@@ -378,7 +378,8 @@ as graph paper and hid a lit California; and closer in as each record's point, a
 places (about 11 m). The points come from one file, `/grid/places.json`, fetched whole the first time
 Places is switched on and never by what is on screen (§2), in the order of each region's own index, so
 a tap reads the record from the same file a search does. **The places people sleep stay off the map
-(D5, decided 2026-10-18)** — shelters, youth programmes, overnight warming and residential detox:
+(D5, decided 2026-10-18)** — shelters, youth programmes, overnight warming and residential detox,
+and (2026-11-02) a drop-in whose own hours say it is open 24 hours, as New York's are all winter:
 they are published facilities, and some providers may still read a map of where they cluster as
 locating the people they shelter. They stay in the directory and on their own pages at five places.
 Every type is decided on or off in one table (`ON_THE_MAP`), so a type added later is a decision before

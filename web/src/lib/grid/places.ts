@@ -165,12 +165,23 @@ export function namedOfMissions(missions: readonly Mission[]): Named[] {
 }
 
 /**
- * Whether a record is drawn on the map: it has coordinates, its location is not withheld, and its
- * type is not one D5 holds back.
+ * A drop-in that stays open all night, which its own hours say: a place people sleep, by D5's
+ * reason, though its type is a daytime one. New York's drop-in centres are open 24 hours, or all
+ * winter, and people sleep in their chairs (added 2026-11-02, with the city's own list of them).
  */
-export function onTheMap(r: Pick<ResourceRecord, 'type' | 'lat' | 'lon'>): boolean {
+export function openAllNight(r: Pick<ResourceRecord, 'type' | 'hours' | 'intake_hours'>): boolean {
+  return r.type === 'daytime' && /\b24\s*(?:hours|hrs|\/\s*7)\b/i.test(`${r.hours ?? ''} ${r.intake_hours ?? ''}`);
+}
+
+/**
+ * Whether a record is drawn on the map: it has coordinates, its location is not withheld, its type
+ * is not one D5 holds back, and it is not a drop-in open all night, which D5 holds back for the
+ * same reason.
+ */
+export function onTheMap(r: Pick<ResourceRecord, 'type' | 'lat' | 'lon' | 'hours' | 'intake_hours'>): boolean {
   if (r.lat === undefined || r.lon === undefined || !Number.isFinite(r.lat) || !Number.isFinite(r.lon)) return false;
   if (isConfidential(r.type) || locatingLeaks(r).length > 0) return false;
+  if (openAllNight(r)) return false;
   return ON_THE_MAP[r.type] === true;
 }
 

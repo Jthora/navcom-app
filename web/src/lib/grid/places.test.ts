@@ -94,6 +94,11 @@ describe('the directory’s points', () => {
     expect(onTheMap(shelter)).toBe(false);
     expect(onTheMap(record({ id: 'testville-warming-1', type: 'warming', lat: 39.9, lon: -75.1 }))).toBe(false);
     expect(onTheMap(record({ id: 'testville-detox-1', type: 'detox', lat: 39.9, lon: -75.1 }))).toBe(false);
+    // A drop-in open all night is a place people sleep, whatever its type says [D5, 2026-11-02].
+    expect(onTheMap(record({ id: 'testville-daytime-1', type: 'daytime', lat: 39.9, lon: -75.1, hours: 'Open 24 hours a day, seven days a week' }))).toBe(false);
+    expect(onTheMap(record({ id: 'testville-daytime-2', type: 'daytime', lat: 39.9, lon: -75.1, hours: 'Open from 7:30 a.m.-8:30 p.m. This program remain open 24 hours during winter months' }))).toBe(false);
+    expect(onTheMap(record({ id: 'testville-daytime-3', type: 'daytime', lat: 39.9, lon: -75.1, hours: 'Mon-Fri 9-5' }))).toBe(true);
+    expect(onTheMap(record({ id: 'testville-medical-1', type: 'medical', lat: 39.9, lon: -75.1, hours: '24 hours' }))).toBe(true);
     expect(onTheMap(meal)).toBe(true);
   });
 
