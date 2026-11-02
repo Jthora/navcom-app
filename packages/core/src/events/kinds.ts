@@ -246,7 +246,18 @@ export const SIGNAL_TYPES = [
    * The operator's patrol record stays purely local. Nothing about what anybody carried or
    * gave away is transmitted, now or ever.
    */
-  'resupply'
+  'resupply',
+  /**
+   * *"I am here now."* Where an operator who chose to share their position is, sent to a watch
+   * held on phones while they move, so the watch's board shows the fix their peers already get
+   * on every heartbeat (added 2026-11-02, for a watch carrying a patrol in real time).
+   *
+   * **Not contact and not a request.** It moves the board's fix and nothing else: it never
+   * refreshes `last_contact`, never answers a check-in, and nothing answers it. A phone sending
+   * its position says the phone is on; whether the person is all right is never read from that
+   * [invariant 3, `declined.md`].
+   */
+  'position'
 ] as const;
 export type SignalType = (typeof SIGNAL_TYPES)[number];
 

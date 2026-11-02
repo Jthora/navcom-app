@@ -40,6 +40,18 @@ export interface OnStationPayload {
 export interface QueryPayload {
   text: string;
   area?: string;
+  /** Where they are, if they share it: "nearest bed" answers from here. */
+  position?: Position;
+}
+
+/** A check-in. Presence is the message; the fix rides along where they share it. */
+export interface RoutinePayload {
+  position?: Position;
+}
+
+/** Where an operator who shares their position is now. Not contact, and nothing answers it. */
+export interface PositionPayload {
+  position: Position;
 }
 
 export interface AssistPayload {
@@ -56,6 +68,8 @@ export interface AssistPayload {
    * One tap, not a sentence — which is why this stays required where `text` does not.
    */
   urgency: 'soon' | 'now';
+  /** Where they are, if they share it: somebody coming needs somewhere to go. */
+  position?: Position;
 }
 
 export interface DistressPayload {
@@ -129,6 +143,8 @@ export interface WakeOthersPayload {
 
 export type SignalPayload =
   | OnStationPayload
+  | RoutinePayload
+  | PositionPayload
   | QueryPayload
   | AssistPayload
   | LogReviewPayload
@@ -160,6 +176,11 @@ export const RESPONSE_WINDOW: Record<SignalType | 'distress', number | null> = {
    * compete for attention with something that is not.
    */
   resupply: 600,
+  /**
+   * Null, like Distress, for the opposite reason: a Distress has no window because nothing but a
+   * person closes it; a position has none because it asks nothing and nothing answers it.
+   */
+  position: null,
   distress: null
 };
 

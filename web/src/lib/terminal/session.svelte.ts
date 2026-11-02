@@ -19,6 +19,7 @@ import {
   type DistressClosure,
   type DistressPhase,
   type OnStationPayload,
+  type Position,
   type PublishResult,
   type SecretKey,
   type ResponsePayload,
@@ -42,6 +43,7 @@ import { position } from './position.svelte';
 import { overdue } from './overdue.svelte';
 import { pool } from './pool';
 import { distressRelays, watchTargets } from './watch-targets';
+import { routineTo } from './refusing.svelte';
 import { heard } from './heard.svelte';
 import { heardLine } from './heard-copy';
 import { sending, setDistressSending } from './sending.svelte';
@@ -189,6 +191,59 @@ function area(text?: string) {
     ...(text === undefined ? {} : { text }),
     ...(session?.area ? { area: session.area } : {})
   };
+}
+
+/** Where they are, for the watch, only where they chose to share it; nothing otherwise. */
+function here(): { position?: Position } {
+  const fix = position.current;
+  return fix ? { position: fix } : {};
+}
+
+/**
+ * Where they are, told to a watch held on phones while they move [`position`, core kinds].
+ *
+ * Peers were sent a fix on every heartbeat and the watch only at sign-on, so the one person whose
+ * job is knowing where everybody is knew it least. A beat, at the peers' interval, sends a fix only
+ * when it has moved or five minutes have passed, and only routine traffic's relays: a relay cooling
+ * this phone off for volume is left alone, so this never costs a `Distress` its way out.
+ *
+ * Not to a box: no screen there shows it. Never contact: the board moves the fix and nothing else.
+ */
+const FIX_EVERY_SECONDS = 60;
+const FIX_STILL_SECONDS = 300;
+let fixBeat: ReturnType<typeof setInterval> | null = null;
+let fixSent: { lat: number; lon: number; precision_m: number; at: number } | null = null;
+
+function startFixBeat(): void {
+  stopFixBeat();
+  fixBeat = setInterval(() => {
+    const fix = position.current;
+    if (!session || !fix) return;
+    let config: ReturnType<typeof ctx>['config'];
+    let identity: ReturnType<typeof ctx>['identity'];
+    try {
+      ({ config, identity } = ctx());
+    } catch {
+      return;
+    }
+    if (config.holders.length === 0) return;
+    const now = Math.floor(Date.now() / 1000);
+    const same = fixSent && fixSent.lat === fix.lat && fixSent.lon === fix.lon && fixSent.precision_m === fix.precision_m;
+    if (same && now - fixSent!.at < FIX_STILL_SECONDS) return;
+    const relays = routineTo(watchTargets());
+    if (relays.length === 0) return;
+    fixSent = { ...fix, at: now };
+    void signal(relays, identity.secretKey, watchAddress(config), 'position', { position: fix }).catch(() => {
+      // Missed: the next beat tries again, since nothing was recorded as sent.
+      fixSent = null;
+    });
+  }, FIX_EVERY_SECONDS * 1000);
+}
+
+function stopFixBeat(): void {
+  if (fixBeat) clearInterval(fixBeat);
+  fixBeat = null;
+  fixSent = null;
 }
 
 /**
@@ -375,6 +430,7 @@ export const operator = {
     // relays store none of it.
     void presence.announce(operator.presencePayload());
     presence.beat(() => (session ? operator.presencePayload() : null));
+    if (operator.hasWatch) startFixBeat();
 
     // Being listed publicly rides on being signed on, and does nothing unless the operator
     // asked for it and has a card. That coupling is what bounds the mistake: somebody who
@@ -532,7 +588,7 @@ export const operator = {
   },
 
   async routine() {
-    const r = await ask(() => tell('routine', {}));
+    const r = await ask(() => tell('routine', here()));
     if (r) {
       if (r !== 'posted') lastResponse = r;
       // This is one of the two things that answer the watch's *"you are past the time you
@@ -544,7 +600,7 @@ export const operator = {
 
   async query(text: string) {
     // Area rides along so the watch can answer "nearest bed" without asking where you are.
-    const r = await ask(() => send('query', area(text), 15_000));
+    const r = await ask(() => send('query', { ...area(text), ...here() }, 15_000));
     if (r) lastResponse = r;
   },
 
@@ -566,7 +622,7 @@ export const operator = {
   },
 
   async assist(urgency: 'soon' | 'now', text: string) {
-    const r = await ask(() => send('assist', { urgency, ...area(text ? text : undefined) }, 15_000));
+    const r = await ask(() => send('assist', { urgency, ...area(text ? text : undefined), ...here() }, 15_000));
     if (r) lastResponse = r;
   },
 
@@ -638,6 +694,7 @@ export const operator = {
 
     // Stops following and forgets the last fix. Standing down leaves nothing behind.
     position.stop();
+    stopFixBeat();
 
     // No "no longer out" message, and none is needed: the public entry ages off the board
     // by itself. A phone that dies removes you the same way, which is the honest behaviour
@@ -785,6 +842,7 @@ export const operator = {
     stopListed();
     presence.stopBeat();
     position.stop();
+    stopFixBeat();
     session = null;
     lastResponse = null;
     error = null;

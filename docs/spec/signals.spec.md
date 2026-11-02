@@ -174,7 +174,7 @@ cover alone.
 ```
 
 `signal-type` MUST be one of: `on-station` · `routine` · `query` · `assist` ·
-`stood-down` · `log-review` · `distress-ack` · `wake-others` · `resupply`
+`stood-down` · `log-review` · `distress-ack` · `wake-others` · `resupply` · `position`
 
 The type is an unencrypted tag so a client can filter without decrypting. This leaks
 *that* a signal of a given type occurred, not its content. `distress` is deliberately not
@@ -196,16 +196,17 @@ patterns on `20910`.
 `position` MUST be null unless `share_position` is true. When present it is coarsened to
 ~500m by default.
 
-**`routine`** — `{}`. Presence is the message.
+**`routine`** — `{}`, or `{ "position": {...} }` where the operator shares it. Presence is the
+message.
 
 **`query`**
 ```json
-{ "text": "bed tonight, has a dog", "area": "string, coarse" }
+{ "text": "bed tonight, has a dog", "area": "string, coarse", "position": "{...} | absent" }
 ```
 
 **`assist`**
 ```json
-{ "text": "string | absent", "area": "string, coarse", "urgency": "soon|now" }
+{ "text": "string | absent", "area": "string, coarse", "urgency": "soon|now", "position": "{...} | absent" }
 ```
 - `urgency` MUST be present. "I need someone" and "I need someone now" ask for different
   responses, and a watch cannot tell them apart from an absent field. It is one tap
@@ -213,6 +214,21 @@ patterns on `20910`.
   someone*, and requiring a reason delays the send at the moment sending matters. The watch
   can ask. Named `text` rather than `need` so the same concept has the same name across
   `query`, `assist` and `distress`
+
+`position`, on any of these, is present only where the operator chose to share it, at the
+precision they chose, exactly as on `on-station`. A watch MUST refuse one that is not a valid
+`{lat, lon, precision_m}` rather than draw it.
+
+**`position`** — `{ "position": {...} }`. Where an operator who shares their position is now,
+added 2026-11-02 so a watch held on phones sees the fix their peers already get on every
+heartbeat. Sent only to a watch with holders, at most once a minute and only when the fix has
+moved or five minutes have passed, and only to relays not cooling this phone off for volume.
+- **It is not contact.** A watch MUST move the entry's position and MUST NOT refresh
+  `last_contact`, answer a check-in or put it among things waiting. A phone sending where it is
+  says the phone is on; whether the person is all right is never read from that [invariant 3]
+- **Nothing answers it**, and its response window is null for that reason. A box has no screen
+  that shows it and drops it without a word
+- Live only, never a track: each replaces the last, as on `20913`
 
 **`log-review`** — *"show me what you have written about me"* [C33].
 ```json
@@ -611,6 +627,7 @@ an answer, and it is also everything it proves.
 | `log-review` | answer within 120s. Not urgent — nobody is in the street waiting on it |
 | `distress-ack` | 10s. One tap, and somebody is waiting on it as they are waiting on nothing else |
 | `wake-others` | 10s. One tap, by somebody woken for it |
+| `position` | none. It asks nothing |
 | `distress` | see [`escalation.spec.md`](./escalation.spec.md) |
 
 A missed window is not an error condition. It is displayed to the operator as an

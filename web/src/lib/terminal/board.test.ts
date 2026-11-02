@@ -1121,3 +1121,57 @@ describe('what the watch is told, kept (NYC audit, 2026-11-02)', () => {
     expect(board.distress[0]!.position).toBeNull();
   });
 });
+
+describe('a position, sent while an operator moves', () => {
+  const NOW = () => Math.floor(Date.now() / 1000);
+  const wren = newSecretKey();
+  const wrenPub = publicKeyOf(wren);
+  const there = { lat: 40.7128, lon: -74.006, precision_m: 0 };
+
+  const signOn = (at: number) =>
+    finalizeEvent(
+      buildSignal(wren, to, 'on-station', {
+        callsign: 'Wren', area: 'Downtown', expected_duration: 7200,
+        routine_interval: 1800, share_position: true, position: null
+      }, at),
+      wren
+    );
+
+  it('moves their fix on the board', () => {
+    deliver(signOn(NOW() - 600));
+    deliver(finalizeEvent(buildSignal(wren, to, 'position', { position: there }, NOW()), wren));
+    const e = board.entries.find((x) => x.operator === wrenPub)!;
+    expect(e.position).toEqual(there);
+    expect(e.position_at).toBe(NOW());
+  });
+
+  it('is not contact: it never counts as hearing from them, and never as a check-in', () => {
+    // A phone saying where it is says the phone is on. Whether the person is all right is never
+    // read from that [invariant 3].
+    const t0 = NOW() - 600;
+    deliver(signOn(t0));
+    deliver(finalizeEvent(buildSignal(wren, to, 'position', { position: there }, NOW()), wren));
+    const e = board.entries.find((x) => x.operator === wrenPub)!;
+    expect(e.last_contact).toBe(t0);
+    expect(e.routine_due).toBe(t0 + 1800);
+  });
+
+  it('puts nothing on the list of things waiting on the watch', () => {
+    deliver(signOn(NOW() - 600));
+    deliver(finalizeEvent(buildSignal(wren, to, 'position', { position: there }, NOW()), wren));
+    expect(board.waiting).toHaveLength(0);
+    expect(board.distress).toHaveLength(0);
+  });
+
+  it('keeps the newer fix when an older one arrives late', () => {
+    deliver(signOn(NOW() - 600));
+    deliver(finalizeEvent(buildSignal(wren, to, 'position', { position: there }, NOW()), wren));
+    deliver(finalizeEvent(buildSignal(wren, to, 'position', { position: { lat: 1, lon: 1, precision_m: 0 } }, NOW() - 120), wren));
+    expect(board.entries.find((x) => x.operator === wrenPub)!.position).toEqual(there);
+  });
+
+  it('is ignored for somebody not on the board', () => {
+    deliver(finalizeEvent(buildSignal(wren, to, 'position', { position: there }, NOW()), wren));
+    expect(board.entries).toHaveLength(0);
+  });
+});

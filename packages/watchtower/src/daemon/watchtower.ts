@@ -763,6 +763,11 @@ export class WatchtowerDaemon {
           console.log(`[signal] ${type} from ${shortId(event.pubkey)} is the escalation executor's -- not answered here`);
           return;
         }
+        case "position": {
+          // Sent only to a watch held on phones, whose board shows it. A box has no screen that
+          // does, and nothing answers a position, so it is read and left without a word.
+          return;
+        }
         default: {
           console.log(`[signal] dropped: unknown type "${type}" (${event.id.slice(0, 8)})`);
           return;

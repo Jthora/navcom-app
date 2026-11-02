@@ -1126,6 +1126,15 @@ function apply(
     return;
   }
 
+  // Where they are now, and nothing else: not contact, not a check-in, and nobody waits on it.
+  if (type === 'position') {
+    if (!fix) return;
+    entries = entries.map((e) =>
+      e.operator === from && (e.position_at === null || said >= e.position_at) ? { ...e, position: fix, position_at: said } : e
+    );
+    return;
+  }
+
   entries = entries.map((e) => {
     if (e.operator !== from) return e;
     const heard = type === 'routine' ? checkedIn(e, said) : { ...e, last_contact: now };
