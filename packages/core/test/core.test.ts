@@ -11,7 +11,7 @@ import { finalizeEvent } from 'nostr-tools/pure';
 import { buildDistress, buildSignal, RESPONSE_WINDOW } from '../src/events/signal';
 import { isUnverified, type ResponsePayload } from '../src/events/response';
 import { KIND_DISTRESS, KIND_RESPONSE, KIND_SIGNAL, KIND_WATCH_STATE, isEphemeral, readTag } from '../src/events/kinds';
-import { DEFAULT_LIFETIMES, isExpired, isOverdue, standDown, tick, type BoardEntry } from '../src/board';
+import { DEFAULT_LIFETIMES, boardOrder, checkedIn, isExpired, isOverdue, standDown, tick, type BoardEntry } from '../src/board';
 
 const NOW = new Date('2026-08-18T12:00:00Z');
 const NOW_S = Math.floor(NOW.getTime() / 1000);
@@ -304,8 +304,8 @@ describe('responses', () => {
 describe('the board', () => {
   const entry = (over: Partial<BoardEntry> = {}): BoardEntry => ({
     operator: 'pk', callsign: 'Raven', area: 'north side',
-    signed_on: NOW_S - 3600, expected_until: NOW_S + 3600, routine_due: null,
-    last_contact: NOW_S - 600, position: null, status: 'active', ...over
+    signed_on: NOW_S - 3600, expected_until: NOW_S + 3600, routine_interval: null, routine_due: null,
+    last_contact: NOW_S - 600, position: null, position_at: null, status: 'active', ...over
   });
 
   it('marks overdue past the grace window', () => {
@@ -332,6 +332,30 @@ describe('the board', () => {
     expect(isExpired(e, NOW_S)).toBe(false);
     expect(tick([e], NOW_S).board).toHaveLength(1);
     expect(tick([e], NOW_S).expired).toHaveLength(0);
+  });
+
+  it('a check-in moves the next one a full interval on, so checking in on time is never overdue', () => {
+    // Hourly check-ins, signed on 55 minutes ago, checked in now: due again in an hour, and not
+    // overdue at the 90-minute mark it would have hit if the check-in only refreshed contact.
+    const signedOn = NOW_S - 3300;
+    const e = entry({ signed_on: signedOn, expected_until: NOW_S + 7200, routine_interval: 3600, routine_due: signedOn + 3600 });
+    const after = checkedIn(e, NOW_S);
+    expect(after.routine_due).toBe(NOW_S + 3600);
+    expect(after.last_contact).toBe(NOW_S);
+    expect(isOverdue(after, signedOn + 3600 + DEFAULT_LIFETIMES.overdueGrace + 60)).toBe(false);
+  });
+
+  it('a check-in does not extend the time they said they would be back', () => {
+    const e = entry({ expected_until: NOW_S - DEFAULT_LIFETIMES.overdueGrace - 1, routine_interval: 3600, routine_due: NOW_S });
+    expect(isOverdue(checkedIn(e, NOW_S), NOW_S)).toBe(true);
+  });
+
+  it('reads Distress first, then whoever is past their time, then whoever is due soonest', () => {
+    const later = entry({ operator: 'a', callsign: 'Ash', expected_until: NOW_S + 7200 });
+    const sooner = entry({ operator: 'b', callsign: 'Birch', expected_until: NOW_S + 600 });
+    const late = entry({ operator: 'c', callsign: 'Cedar', status: 'overdue' });
+    const hurt = entry({ operator: 'd', callsign: 'Dove', status: 'distress' });
+    expect([later, sooner, late, hurt].sort(boardOrder).map((e) => e.callsign)).toEqual(['Dove', 'Cedar', 'Birch', 'Ash']);
   });
 
   it('standing down removes the entry rather than parking it in a status', () => {

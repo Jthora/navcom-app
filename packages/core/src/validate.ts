@@ -71,7 +71,8 @@ export function sanitizeForLog(value: string, maxLen = 64): string {
   return stripped.length > maxLen ? stripped.slice(0, maxLen) + "…" : stripped;
 }
 
-function isValidPosition(value: unknown): value is Position {
+/** A position as the wire carries it: finite, on the Earth, with a non-negative precision. */
+export function isValidPosition(value: unknown): value is Position {
   if (value === null || typeof value !== "object") return false;
   const p = value as Record<string, unknown>;
   return (

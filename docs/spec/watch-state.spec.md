@@ -158,11 +158,25 @@ callsign        string
 area            string, coarse
 signed_on       timestamp
 expected_until  timestamp
+routine_interval seconds | null
 routine_due     timestamp | null
 last_contact    timestamp
 position        {lat, lon, precision_m} | null
+position_at     timestamp | null
 status          active | overdue | distress
 ```
+
+A `routine` check-in MUST set `routine_due` to the time it was sent plus `routine_interval`, and
+never earlier than it already is. Refreshing `last_contact` alone marked an operator overdue one
+interval and a grace after signing on however often they checked in (found 2026-11-02 on the board
+a phone holds; the daemon already did this). A check-in MUST NOT move `expected_until`.
+
+Any signal carrying a valid `position` replaces the entry's, and `position_at` is when it was
+sent, never later than it arrived. A watch shows a position with its age, beside the board and
+never in place of it.
+
+A watch reads the board in one order: Distress, then overdue, then whoever is next due, soonest
+first (`boardOrder` in core).
 
 A `stood-down` signal is acknowledged and the entry is **removed** from the board.
 Stand-down is not a status an entry rests in, which is why it is absent above — the board

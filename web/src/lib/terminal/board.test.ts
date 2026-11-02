@@ -1060,3 +1060,64 @@ describe('standing down while something else happens [review: relay paths]', () 
     expect(at[2]!).toBeGreaterThan(at[1]!);
   });
 });
+
+describe('what the watch is told, kept (NYC audit, 2026-11-02)', () => {
+  const NOW = () => Math.floor(Date.now() / 1000);
+  const raven = newSecretKey();
+  const ravenPub = publicKeyOf(raven);
+  const fix = { lat: 40.7505, lon: -73.9934, precision_m: 500 };
+
+  const signOn = (at: number, routine: number | null, position: typeof fix | null = null) =>
+    finalizeEvent(
+      buildSignal(raven, to, 'on-station', {
+        callsign: 'Raven', area: 'Midtown', expected_duration: 4 * 3600,
+        routine_interval: routine, share_position: position !== null, position
+      }, at),
+      raven
+    );
+
+  it('moves the next check-in on when one arrives, so checking in on time is never past due', () => {
+    const t0 = NOW() - 3300;
+    deliver(signOn(t0, 3600));
+    deliver(finalizeEvent(buildSignal(raven, to, 'routine', {}, NOW()), raven));
+    const e = board.entries.find((x) => x.operator === ravenPub)!;
+    expect(e.routine_due).toBeGreaterThanOrEqual(NOW() + 3600 - 2);
+    // At the moment the old board marked them overdue: an interval and a grace after signing on.
+    expect(board.entriesAt(t0 + 3600 + 1800 + 60).find((x) => x.operator === ravenPub)!.status).toBe('active');
+  });
+
+  it('keeps where a Distress came from: its area and the fix it carried', () => {
+    deliver(signOn(NOW() - 60, null));
+    deliver(finalizeEvent(buildDistress(raven, to, { position: fix, area: 'Midtown' }, NOW()), raven));
+    const d = board.distress[0]!;
+    expect(d.area).toBe('Midtown');
+    expect(d.position).toEqual(fix);
+    // The board entry follows it, so the row and the map pin show the newest fix.
+    expect(board.entries.find((x) => x.operator === ravenPub)!.position).toEqual(fix);
+  });
+
+  it('keeps an Assist’s urgency, and puts one marked now above older routine traffic', () => {
+    deliver(query(1));
+    const sender = newSecretKey();
+    deliver(finalizeEvent(buildSignal(sender, to, 'assist', { urgency: 'now', area: 'Union Sq' }, NOW()), sender));
+    expect(board.waiting[0]!.type).toBe('assist');
+    expect(board.waiting[0]!.urgency).toBe('now');
+    expect(board.waiting[0]!.area).toBe('Union Sq');
+  });
+
+  it('takes a shared fix at sign-on, with when it was heard', () => {
+    deliver(signOn(NOW() - 30, 1800, fix));
+    const e = board.entries.find((x) => x.operator === ravenPub)!;
+    expect(e.position).toEqual(fix);
+    expect(e.position_at).toBe(NOW() - 30);
+  });
+
+  it('refuses a position that is not one, rather than drawing it', () => {
+    const sender = newSecretKey();
+    deliver(finalizeEvent(
+      buildDistress(sender, to, { position: { lat: 999, lon: 'x', precision_m: -1 } as never, area: null }, NOW()),
+      sender
+    ));
+    expect(board.distress[0]!.position).toBeNull();
+  });
+});

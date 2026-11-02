@@ -36,6 +36,10 @@
     note?: string | null;
     /** Seconds since this device last heard from them. */
     since?: number | null;
+    /** A second line under the area: when they were last heard. */
+    detail?: string | null;
+    /** Where they shared they were, handed off to a street map beside this screen. */
+    pin?: { href: string; label: string } | null;
   }
 
   let {
@@ -56,6 +60,10 @@
         <span>
           <span class="nc-floor-name">{e.callsign}</span>
           <span class="nc-floor-where">{e.area}</span>
+          {#if e.detail}<span class="nc-floor-where" data-floor-detail>{e.detail}</span>{/if}
+          {#if e.pin}
+            <a class="nc-floor-where" data-floor-pin href={e.pin.href} target="_blank" rel="noreferrer">{e.pin.label}</a>
+          {/if}
         </span>
         <span class="nc-floor-when">{e.note ?? e.status}</span>
       </div>

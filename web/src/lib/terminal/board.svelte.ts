@@ -54,14 +54,19 @@ import {
   KIND_WATCH_STATE,
   STALE_AFTER_SECONDS,
   buildResponse,
+  AREA_MAX,
+  boardOrder,
   buildWatchStateEvent,
+  checkedIn,
   darkState,
   declineIsValid,
   isOverdue,
+  isValidPosition,
   openFromGroup,
   readTag,
   signAnswer,
   type BoardEntry,
+  type Position,
   type ResponsePayload,
   type SignalType
 } from '@navcom/core';
@@ -110,6 +115,12 @@ export interface Waiting {
   callsign: string;
   type: SignalType | 'distress';
   text: string | null;
+  /** The area they gave, as they gave it: their sign-on's, or none. */
+  area: string | null;
+  /** Where they were when they sent it, if they share it: a Distress carries their last fix. */
+  position: Position | null;
+  /** An Assist's "now" or "soon": how long the watch has. */
+  urgency?: 'soon' | 'now';
   at: number;
   /**
    * The relays it arrived on. They are ones the sender published to, so they are where an answer
@@ -273,10 +284,20 @@ function readSignal(event: Event): { from: string; payload: Record<string, unkno
 export const board = {
   /** Who is out, as this device has heard it. Never persisted — the board expires [C27]. */
   get entries(): BoardEntry[] {
-    const now = Math.floor(Date.now() / 1000);
+    return board.entriesAt(Math.floor(Date.now() / 1000));
+  },
+
+  /**
+   * The board as it stands at `now`, in the order a watch reads it [core `boardOrder`].
+   *
+   * A screen passes a clock that moves. Read through `entries` alone, overdue was decided only when
+   * something arrived, so on a quiet night somebody passed their time and the board still read
+   * active until the next signal from anybody.
+   */
+  entriesAt(now: number): BoardEntry[] {
     return entries
       .map((e) => ({ ...e, status: isOverdue(e, now) ? ('overdue' as const) : e.status }))
-      .sort((a, b) => a.callsign.localeCompare(b.callsign));
+      .sort(boardOrder);
   },
 
   /**
@@ -302,10 +323,12 @@ export const board = {
     return [...waiting].filter((w) => w.type === 'distress').sort((a, b) => a.at - b.at);
   },
 
+  /** An Assist marked *now* first, since the watch has least time for it; then oldest first. */
   get waiting(): Waiting[] {
+    const now = (w: Waiting) => (w.urgency === 'now' ? 0 : 1);
     return [...waiting]
       .filter((w) => w.type !== 'resupply' && w.type !== 'distress')
-      .sort((a, b) => a.at - b.at);
+      .sort((a, b) => now(a) - now(b) || a.at - b.at);
   },
 
   /**
@@ -1063,6 +1086,11 @@ function apply(
 ): void {
   const callsign = typeof payload.callsign === 'string' ? payload.callsign : from.slice(0, 8);
   const now = event.created_at;
+  /** When it was said, never later than it reached us: a sender's clock ahead of ours moves nothing on. */
+  const said = Math.min(event.created_at, Math.floor(Date.now() / 1000));
+  /** Where they were, read as untrusted: anybody holding the address can put something here. */
+  const fix: Position | null = isValidPosition(payload.position) ? payload.position : null;
+  const area = typeof payload.area === 'string' && payload.area.trim() ? payload.area.trim().slice(0, AREA_MAX) : null;
 
   if (type === 'on-station' || type === 'stood-down') {
     // Their clock, ordering their own two events. Anything older than what we have already
@@ -1078,12 +1106,14 @@ function apply(
     const entry: BoardEntry = {
       operator: from,
       callsign,
-      area: typeof payload.area === 'string' ? payload.area : 'unknown',
+      area: area ?? 'unknown',
       signed_on: now,
       expected_until: now + duration,
+      routine_interval: typeof payload.routine_interval === 'number' ? payload.routine_interval : null,
       routine_due: typeof payload.routine_interval === 'number' ? now + payload.routine_interval : null,
       last_contact: now,
-      position: (payload.position as BoardEntry['position']) ?? null,
+      position: fix,
+      position_at: fix ? said : null,
       status: 'active'
     };
     entries = [...entries.filter((e) => e.operator !== from), entry];
@@ -1096,11 +1126,13 @@ function apply(
     return;
   }
 
-  entries = entries.map((e) =>
-    e.operator === from
-      ? { ...e, last_contact: now, status: type === 'distress' ? 'distress' : e.status }
-      : e
-  );
+  entries = entries.map((e) => {
+    if (e.operator !== from) return e;
+    const heard = type === 'routine' ? checkedIn(e, said) : { ...e, last_contact: now };
+    // The newest fix they sent replaces the last; an older one arriving late does not.
+    const moved = fix && (heard.position_at === null || said >= heard.position_at) ? { position: fix, position_at: said } : {};
+    return { ...heard, ...moved, status: type === 'distress' ? ('distress' as const) : e.status };
+  });
 
   if (type === 'routine') return;
 
@@ -1149,6 +1181,9 @@ function apply(
       callsign,
       type,
       text: typeof payload.text === 'string' ? payload.text : null,
+      area,
+      position: fix,
+      ...(type === 'assist' && (payload.urgency === 'now' || payload.urgency === 'soon') ? { urgency: payload.urgency } : {}),
       /*
        * How long **we** have had it, not when they say they sent it.
        *

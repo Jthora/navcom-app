@@ -1,0 +1,62 @@
+import { describe, expect, it } from 'vitest';
+import type { BoardEntry } from '@navcom/core';
+import { floorDetail, floorNote, floorPin } from './floor';
+import { coordinates, mapLink, within } from './fix';
+
+const NOW = 1_800_000_000;
+const entry = (over: Partial<BoardEntry> = {}): BoardEntry => ({
+  operator: 'pk', callsign: 'Raven', area: 'Midtown',
+  signed_on: NOW - 1800, expected_until: NOW + 5400, routine_interval: 3600, routine_due: NOW + 1800,
+  last_contact: NOW - 720, position: null, position_at: null, status: 'active', ...over
+});
+
+describe('a row on the watch’s board', () => {
+  it('says when the next check-in is due, when that comes before they are back', () => {
+    expect(floorNote(entry(), NOW)).toBe('check-in in 30 min');
+  });
+
+  it('says when they are due back, when that comes first or they gave no check-ins', () => {
+    expect(floorNote(entry({ routine_interval: null, routine_due: null }), NOW)).toBe('back in 90 min');
+    expect(floorNote(entry({ expected_until: NOW + 600 }), NOW)).toBe('back in 10 min');
+  });
+
+  it('says how long ago a time passed, as a fact rather than a verdict', () => {
+    expect(floorNote(entry({ routine_due: NOW - 1200 }), NOW)).toBe('check-in due 20 min ago');
+    expect(floorNote(entry({ expected_until: NOW - 1200, routine_due: NOW - 3000 }), NOW)).toBe('due back 20 min ago');
+    expect(floorNote(entry({ routine_due: NOW - 1200 }), NOW)).not.toMatch(/overdue|missing|late/);
+  });
+
+  it('says Distress, and nothing about timers, for somebody who raised one', () => {
+    expect(floorNote(entry({ status: 'distress', expected_until: NOW - 9999 }), NOW)).toBe('Distress');
+  });
+
+  it('says when the board last heard from them', () => {
+    expect(floorDetail(entry(), NOW)).toBe('heard 12 min ago');
+  });
+
+  it('shows no pin for somebody who does not share where they are', () => {
+    expect(floorPin(entry(), NOW)).toBeNull();
+  });
+
+  it('pins a shared fix with how precise and how old it is', () => {
+    const pin = floorPin(entry({ position: { lat: 40.7505, lon: -73.9934, precision_m: 500 }, position_at: NOW - 180 }), NOW);
+    expect(pin?.label).toBe('Map · within 500 m · 3 min ago');
+    expect(pin?.href).toBe('https://www.openstreetmap.org/?mlat=40.7505&mlon=-73.9934#map=17/40.7505/-73.9934');
+  });
+});
+
+describe('a fix, read out', () => {
+  it('gives an exact fix to six places and a rounded one to four', () => {
+    expect(coordinates({ lat: 40.750512, lon: -73.993421, precision_m: 0 })).toBe('40.750512, -73.993421');
+    expect(coordinates({ lat: 40.750512, lon: -73.993421, precision_m: 500 })).toBe('40.7505, -73.9934');
+  });
+
+  it('says exact or within so many metres', () => {
+    expect(within({ lat: 0, lon: 0, precision_m: 0 })).toBe('exact');
+    expect(within({ lat: 0, lon: 0, precision_m: 500 })).toBe('within 500 m');
+  });
+
+  it('hands off to a street map', () => {
+    expect(mapLink({ lat: 1, lon: 2, precision_m: 0 })).toContain('openstreetmap.org/?mlat=1&mlon=2');
+  });
+});

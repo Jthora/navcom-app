@@ -19,9 +19,13 @@ export interface BoardEntry {
   area: string;
   signed_on: number;
   expected_until: number;
+  /** The cadence they chose at sign-on, kept so a check-in can set the next one. Null: none. */
+  routine_interval: number | null;
   routine_due: number | null;
   last_contact: number;
   position: Position | null;
+  /** When the watch heard that position. Null with it. */
+  position_at: number | null;
   status: EntryStatus;
 }
 
@@ -93,6 +97,39 @@ export function tick(
   }
 
   return { board, newlyOverdue, expired };
+}
+
+/**
+ * A routine check-in: heard from them, and the next one is due a full interval from now.
+ *
+ * Moving `routine_due` is the whole point of checking in. A board that only refreshed
+ * `last_contact` marked an operator overdue one interval and a grace after signing on however
+ * often they checked in, which is the false alarm the overdue rule exists to avoid.
+ * Overdue on the time they gave is untouched: checking in does not extend a patrol.
+ */
+export function checkedIn(entry: BoardEntry, at: number): BoardEntry {
+  return {
+    ...entry,
+    last_contact: Math.max(entry.last_contact, at),
+    // Never earlier than it is: relays deliver out of order, and an older check-in arriving after
+    // a newer one must not pull the next one forward.
+    routine_due: entry.routine_interval !== null ? Math.max(entry.routine_due ?? 0, at + entry.routine_interval) : null
+  };
+}
+
+/** The next time this entry is due for something: a check-in or coming back, whichever is first. */
+export function nextDue(entry: BoardEntry): number {
+  return entry.routine_due !== null ? Math.min(entry.routine_due, entry.expected_until) : entry.expected_until;
+}
+
+/**
+ * The order a watch reads the board in: Distress, then anybody past their time, then whoever is
+ * due soonest. Somebody crossing their window rises past the others, so the movement is the event.
+ * Names break ties, so the order is stable between two reads of the same board.
+ */
+export function boardOrder(a: BoardEntry, b: BoardEntry): number {
+  const rank = (e: BoardEntry) => (e.status === 'distress' ? 0 : e.status === 'overdue' ? 1 : 2);
+  return rank(a) - rank(b) || nextDue(a) - nextDue(b) || a.callsign.localeCompare(b.callsign);
 }
 
 /** Standing down removes the entry. The board holds who is out; someone home is not out. */

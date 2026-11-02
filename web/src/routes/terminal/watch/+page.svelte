@@ -26,6 +26,8 @@
   import { loadConfig } from '$lib/terminal/config';
   import { update } from '$lib/terminal/update.svelte';
   import { sending } from '$lib/terminal/sending.svelte';
+  import { floorDetail, floorNote, floorPin } from '$lib/terminal/floor';
+  import { coordinates, fixAge, mapLink, within } from '$lib/terminal/fix';
 
   let address = $state<string | null>(null);
   let callsign = $state<string | null>(null);
@@ -49,7 +51,11 @@
   let vouchers = $state<{ endorser: string; at: string }[]>([]);
   const qualified = $derived(founded || vouchers.length > 0);
 
+  /** The board's clock: who is due, and who has passed their time, move with it. */
+  let nowS = $state(Math.floor(Date.now() / 1000));
+
   onMount(() => {
+    const ticking = setInterval(() => (nowS = Math.floor(Date.now() / 1000)), 15_000);
     founded = foundedHere();
     vouchers = endorsersFor('can-take-watch').map((e) => ({ endorser: e.endorser, at: e.at }));
     address = watchPubkey();
@@ -59,6 +65,7 @@
     // only screen that answers as the watch, so the only place an older board's answers are made.
     const stopAsking = update.start();
     return () => {
+      clearInterval(ticking);
       board.stop();
       stopAsking();
     };
@@ -132,6 +139,29 @@
     } finally {
       busy = false;
     }
+  }
+
+  /** Who is out, with their times, in the order the board is read. */
+  const floor = $derived(
+    board.entriesAt(nowS).map((e) => ({
+      operator: e.operator,
+      callsign: e.callsign,
+      area: e.area,
+      status: e.status,
+      note: floorNote(e, nowS),
+      detail: floorDetail(e, nowS),
+      pin: floorPin(e, nowS)
+    }))
+  );
+
+  /**
+   * Where somebody waiting on you is: the fix they sent with it, or else the last one they shared,
+   * said as that. A Distress carries their last fix, and the board kept only its words.
+   */
+  function fixOf(w: Waiting): { p: NonNullable<Waiting['position']>; at: number; last: boolean } | null {
+    if (w.position) return { p: w.position, at: w.before ?? w.at, last: false };
+    const e = board.entries.find((x) => x.operator === w.operator);
+    return e?.position && e.position_at !== null ? { p: e.position, at: e.position_at, last: true } : null;
   }
 
   /** What a reload would clear, said before the hold that does it. */
@@ -417,7 +447,7 @@
         others, and peripheral vision reads that without reading anything. Ordering comes from
         the board the core already derives, so there is one definition of "overdue".
       -->
-      <Board entries={board.entries} />
+      <Board entries={floor} />
     {/if}
   </section>
 
@@ -425,9 +455,17 @@
     <li class={w.type === 'distress' ? 'distress' : ''}>
             <div class="who">
               <span class="name">{w.callsign}</span>
-              <span class="badge">{w.type}</span>
+              <span class="badge" data-urgency={w.urgency}>{w.urgency ? `${w.type} · ${w.urgency}` : w.type}</span>
             </div>
             {#if w.text}<p class="said">{w.text}</p>{/if}
+            {#if w.area}<p class="where" data-ask-area>{w.area}</p>{/if}
+            {#if fixOf(w)}
+              {@const f = fixOf(w)!}
+              <p class="where" data-ask-fix>
+                {#if f.last}last shared · {/if}<span class="coords">{coordinates(f.p)}</span> · {within(f.p)} · {fixAge(f.at, nowS)} ·
+                <a href={mapLink(f.p)} target="_blank" rel="noreferrer">Open in maps</a>
+              </p>
+            {/if}
             <!--
               A window that is running, or a Distress that is not.
 
@@ -651,6 +689,13 @@
     color: var(--t-faint); border: 1px solid var(--t-line); padding: .1rem .3rem;
   }
   .board li.distress .badge { color: var(--t-alarm); border-color: var(--t-alarm); }
+  /* Amber, never red: alarm is Distress's alone, and an Assist marked now is not one. */
+  .badge[data-urgency='now'] { color: var(--t-oncall); border-color: var(--t-oncall); }
+  .where {
+    margin: 0; color: var(--t-muted); font-size: .8rem; overflow-wrap: anywhere;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .coords { color: var(--t-ink); user-select: all; }
   .danger { border-color: var(--t-alarm); color: var(--t-alarm); }
   /* Both readings in one cell, one visible: the slot is the same height whichever shows. */
   .build { display: grid; }
