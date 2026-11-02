@@ -81,7 +81,7 @@ are open, some are not, and this list is a starting point rather than a cleared 
 |---|---|---|
 | **HUD HIC / PIT** | Shelters, beds, by CoC region | Annual, national, authoritative on what exists |
 | **211 / United Way** | The broadest listing of services | Coverage and terms vary by region |
-| **City & county open data** | Shelters, warming centres, clinics | Best quality where it exists, absent where it does not |
+| **City & county open data** | Shelters, warming centres, clinics | Best quality where it exists, absent where it does not. New York's is wired up for drop-ins (`sources/nycopendata.ts`, which also says what it declined) |
 | **OpenStreetMap** | `social_facility`, `healthcare`, addresses, coordinates | Open licence, uneven coverage, good for geocoding |
 | **Overture Maps** | `homeless_shelter`, `food_bank`, `soup_kitchen`, **phones**, addresses, a confidence score | Measured 2026-09-02, see below. Open data, bulk Parquet, no rate limit |
 | **Health centre lookups** | Federally qualified clinics | Reliable for `medical` |

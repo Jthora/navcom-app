@@ -72,6 +72,11 @@ export function merge(
   scrapedOn: string,
   urls: Map<string, string> = new Map(),
   region = "",
+  /**
+   * Each record's own date, by id, where its source gave one -- see `asOf` on `RawRecord`.
+   * `scrapedOn` is for a record that arrived without one, from a cache older than the field.
+   */
+  dates: Map<string, string> = new Map(),
 ): MergeResult {
   // Everything the scraper did not make is carried through untouched -- rows a person
   // checked, and rows a person typed in from a website. Both were made by somebody.
@@ -91,7 +96,7 @@ export function merge(
   );
 
   for (const s of scraped) {
-    const record = seededToRecord(s, scrapedOn, urls.get(s.id));
+    const record = seededToRecord(s, dates.get(s.id) ?? scrapedOn, urls.get(s.id));
 
     // A human row already covers this place. The scrape must not add a second copy, and
     // must not correct the human's own fields -- it can only report the disagreement.

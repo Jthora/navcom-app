@@ -66,4 +66,21 @@ export interface RawRecord {
   languages?: string[];
   /** Where a human could go and read the same thing. Ends up in `notes`. */
   url?: string;
+  /**
+   * The day these facts are as of, `YYYY-MM-DD`. Becomes `last_verified`.
+   *
+   * The source's own date where it publishes one -- a city data set's last update -- and
+   * otherwise the day `fetch` read it. **Not the day `build` ran**: build is offline and reads
+   * a cache, and a cache seven weeks old rebuilt today would otherwise claim every row in it was
+   * read this morning. Build falls back to its own date only for a cache older than this field.
+   */
+  asOf?: string;
+}
+
+/**
+ * Every record leaves `fetch` dated: by its source's own date where it gave one, otherwise by
+ * the day it was read. `build` runs from a cache, and only `fetch` knows when that cache was true.
+ */
+export function dated(records: RawRecord[], on: string): RawRecord[] {
+  return records.map((r) => (r.asOf ? r : { ...r, asOf: on }));
 }

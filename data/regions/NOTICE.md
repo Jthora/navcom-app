@@ -68,3 +68,34 @@ Reproduced from <https://opensource.foursquare.com/places-notice-txt/> as read o
 > License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
 > either express or implied. See the License for the specific language governing permissions and
 > limitations under the License.
+
+# Notices for data seeded from NYC Open Data
+
+Rows whose id reads `new-york-nycopendata-<hex>` were seeded from New York City's own data, as the
+City publishes it on NYC Open Data:
+
+| Data set | Published by | Version |
+|---|---|---|
+| Directory Of Homeless Drop- In Centers, `bmxf-3rd4` — <https://data.cityofnewyork.us/d/bmxf-3rd4> | Department of Homeless Services | As updated 2026-10-08, read 2026-11-02 |
+| DYCD Program Sites, `ebkm-iyma` — <https://data.cityofnewyork.us/d/ebkm-iyma> | Department of Youth and Community Development | As updated 2026-09-24, read 2026-11-02 |
+
+New York's Open Data Law, Administrative Code §23-502(d), makes these available without a licence
+or any restriction on their use, and lets the City ask that whoever republishes one identify its
+source and version and describe what was changed. This section is that. Each row also names its
+data set's page in `notes`.
+
+## Changes NavCom made
+
+- **From DHS's list**, every centre, as the type `daytime`. The list's `comments` column became
+  `hours` only where it states opening hours, and was otherwise left out. An address written as a
+  bare street had the row's own borough and postcode added, semicolons became commas, and a
+  no-break space garbled in the City's file was repaired
+- **From DYCD's list**, only sites whose `program_area` is `RHY` and whose `program_type` is
+  `Drop-in Centers`, in the latest fiscal year it lists (2026 when read), as the type `youth`. A
+  site listed more than once was kept once
+- Only the name, address and position were kept. Positions were rounded to at most five decimal places
+- Each row's `last_verified` is its data set's own date — for DYCD's, no later than 30 June, the end
+  of the fiscal year it describes — not the day it was read
+- A row a person has checked is never overwritten by a later scrape
+
+None of this is warranted to be accurate. Call before sending anyone anywhere.

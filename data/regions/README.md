@@ -14,7 +14,9 @@ What contributors wrote is CC0 ([`data/LICENSE`](../LICENSE)). **Rows seeded fro
 keep their sources' terms**: mostly CDLA Permissive 2.0, some Apache 2.0 from Foursquare, and some
 CC0. Those terms travel with the files in [`NOTICE.md`](NOTICE.md),
 [`LICENSE-CDLA-Permissive-2.0.txt`](LICENSE-CDLA-Permissive-2.0.txt) and
-[`LICENSE-Apache-2.0.txt`](LICENSE-Apache-2.0.txt).
+[`LICENSE-Apache-2.0.txt`](LICENSE-Apache-2.0.txt). **Rows seeded from NYC Open Data** carry no
+licence, by New York's Open Data Law; the source and version the City may ask to be named are in
+[`NOTICE.md`](NOTICE.md) too.
 
 They sit in this folder, not beside `data/LICENSE`, because this folder is what the
 content-addressed archive packs, and CDLA Permissive 2.0 requires its text to go wherever the

@@ -7,13 +7,14 @@ import { fileURLToPath } from "node:url";
 import { parseDirectoryOrThrow } from "@navcom/core";
 import { audit } from "./audit.js";
 import { dedupe } from "./dedupe.js";
-import { toCsv } from "./emit.js";
+import { toCsv, writtenCoordinates } from "./emit.js";
 import { merge } from "./merge.js";
 import { needsStatusWrite } from "./manifest.js";
 import { normalise, outsideCountry } from "./normalise.js";
+import { fetchNycOpenData, type NycOpenDataConfig } from "./sources/nycopendata.js";
 import { fetchOsm, type OsmConfig } from "./sources/osm.js";
 import { DuckDbMissing, fetchOverture, type OvertureConfig } from "./sources/overture.js";
-import type { RawRecord, SeededRecord } from "./seeded.js";
+import { dated, type RawRecord, type SeededRecord } from "./seeded.js";
 
 /**
  * Five commands, each doing one thing.
@@ -39,7 +40,7 @@ const USER_AGENT = "navcom-seeder/0.1 (+" + CONTACT + ")";
 interface RegionManifest {
   slug?: string;
   country?: string;
-  sources?: { osm?: OsmConfig; overture?: OvertureConfig };
+  sources?: { osm?: OsmConfig; overture?: OvertureConfig; nycopendata?: NycOpenDataConfig };
 }
 
 interface SourceReport {
@@ -185,6 +186,7 @@ async function cmdFetch(slug: string, only?: string, refresh = false): Promise<v
 
   const raw = cachedRaw(slug);
   const sources: SourceReport[] = [];
+  const today = new Date().toISOString().slice(0, 10);
 
   // Each source is independent. One returning 403 must leave the others intact and say
   // which one broke -- a run that silently produces half a region is worse than one that
@@ -198,7 +200,7 @@ async function cmdFetch(slug: string, only?: string, refresh = false): Promise<v
   if (region.sources?.overture && (!only || only === "overture")) {
     const started = Date.now();
     try {
-      const records = await fetchOverture(region.sources.overture);
+      const records = dated(await fetchOverture(region.sources.overture), today);
       raw["overture"] = records;
       sources.push({ name: "overture", ok: true, records: records.length, ms: Date.now() - started });
     } catch (err: unknown) {
@@ -212,12 +214,28 @@ async function cmdFetch(slug: string, only?: string, refresh = false): Promise<v
   if (region.sources?.osm && (!only || only === "osm")) {
     const started = Date.now();
     try {
-      const records = await fetchOsm(region.sources.osm, USER_AGENT);
+      const records = dated(await fetchOsm(region.sources.osm, USER_AGENT), today);
       raw["osm"] = records;
       sources.push({ name: "osm", ok: true, records: records.length, ms: Date.now() - started });
     } catch (err: unknown) {
       sources.push({
         name: "osm", ok: false, records: 0, ms: Date.now() - started,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  // A city's own published lists. Only regions whose city publishes one declare it; see
+  // `sources/nycopendata.ts` for which lists, and for the ones declined.
+  if (region.sources?.nycopendata && (!only || only === "nycopendata")) {
+    const started = Date.now();
+    try {
+      const records = dated(await fetchNycOpenData(region.sources.nycopendata, USER_AGENT), today);
+      raw["nycopendata"] = records;
+      sources.push({ name: "nycopendata", ok: true, records: records.length, ms: Date.now() - started });
+    } catch (err: unknown) {
+      sources.push({
+        name: "nycopendata", ok: false, records: 0, ms: Date.now() - started,
         error: err instanceof Error ? err.message : String(err),
       });
     }
@@ -237,6 +255,7 @@ function cmdBuild(slug: string): Report {
   const flat = Object.values(raw).flat();
   const normalised: SeededRecord[] = [];
   const urls = new Map<string, string>();
+  const dates = new Map<string, string>();
   // Categories nothing could be done with. Reported by name and count, so the person who
   // owns the taxonomy can see what is being left out and decide whether to extend it.
   const unmapped = new Map<string, number>();
@@ -278,14 +297,17 @@ function cmdBuild(slug: string): Report {
     }
     normalised.push(one);
     if (r.url) urls.set(one.id, r.url);
+    if (r.asOf) dates.set(one.id, r.asOf);
   }
 
   const { records, merged } = dedupe(normalised);
+  // Only for a cache written before `fetch` dated what it read.
   const today = new Date().toISOString().slice(0, 10);
-  const result = merge(committedRecords(slug), records, today, urls, slug);
+  const result = merge(committedRecords(slug), records, today, urls, slug, dates);
 
   mkdirSync(cacheDir(slug), { recursive: true });
-  writeFileSync(proposedPath(slug), toCsv(result.records));
+  const written = existsSync(csvPath(slug)) ? writtenCoordinates(readFileSync(csvPath(slug), "utf8")) : undefined;
+  writeFileSync(proposedPath(slug), toCsv(result.records, written));
   /*
    * Whether this region's cache predates the `serves` tag.
    *

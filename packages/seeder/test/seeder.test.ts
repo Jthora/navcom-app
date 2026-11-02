@@ -10,12 +10,12 @@ import { describe, expect, it } from "vitest";
 import type { ResourceRecord } from "@navcom/core";
 import { audit } from "../src/audit.js";
 import { dedupe, metresApart, nameKey } from "../src/dedupe.js";
-import { COLUMNS, toCsv } from "../src/emit.js";
+import { COLUMNS, toCsv, writtenCoordinates } from "../src/emit.js";
 import { isHumanVerified, merge } from "../src/merge.js";
 import { mapType, normalise, normalisePhone, outsideCountry, seededId } from "../src/normalise.js";
 import { parseRecordArgs } from "../src/record.js";
 import { RESOURCE_TYPES } from "@navcom/core";
-import type { RawRecord, SeededRecord } from "../src/seeded.js";
+import { dated, type RawRecord, type SeededRecord } from "../src/seeded.js";
 import { fromOverpass, overpassQuery , parseStatus, waitForSlot } from "../src/sources/osm.js";
 import { fromOverture, overtureQuery } from "../src/sources/overture.js";
 import { needsStatusWrite } from "../src/manifest.js";
@@ -231,6 +231,25 @@ describe("deduplication keeps both when unsure", () => {
   it("ignores the words that appear in half of all charity names", () => {
     expect(nameKey("The Hope House Center, Inc.")).toBe(nameKey("Hope House"));
   });
+
+  it("keeps two services apart however close they stand", () => {
+    // Found seeding New York: BronxWorks runs a shelter and a drop-in at 800 Barretto Street,
+    // and the drop-in vanished into the shelter, which then wore the drop-in's hours.
+    const byPlace = dedupe([
+      seeded({ id: "a", name: "The Living Room", type: "shelter", lat: 40.81688, lon: -73.88971 }),
+      seeded({ id: "b", name: "Living Room", type: "daytime", lat: 40.8166, lon: -73.8899, hours: "Open 24 hours" }),
+    ]);
+    expect(byPlace.records).toHaveLength(2);
+    expect(byPlace.records[0]?.hours).toBeUndefined();
+
+    // And by phone: one charity's switchboard is what its food bank and its shelter share.
+    const byPhone = dedupe([
+      seeded({ id: "a", type: "meal", phone: "+12123899300" }),
+      seeded({ id: "b", type: "shelter", phone: "+12123899300" }),
+    ]);
+    expect(byPhone.records).toHaveLength(2);
+    expect(byPhone.merged).toEqual([]);
+  });
 });
 
 describe("the scraper owns only what it made", () => {
@@ -310,6 +329,21 @@ describe("what a scrape writes", () => {
     expect(r.method).toBe("website");
     expect(r.verified_by).toBe("");
     expect(r.last_verified).toBe("2026-08-19");
+  });
+
+  it("dates a row by its source's own date, and by the scrape only when there is none", () => {
+    // A city list updated in October is October's claim, whenever it was fetched.
+    const out = merge([], [seeded({ id: "a" }), seeded({ id: "b", name: "B" })], "2026-11-02",
+      new Map(), "", new Map([["a", "2026-10-08"]]));
+    expect(out.records.find((r) => r.id === "a")?.last_verified).toBe("2026-10-08");
+    expect(out.records.find((r) => r.id === "b")?.last_verified).toBe("2026-11-02");
+  });
+
+  it("dates what fetch read by the day it read it, unless the source said otherwise", () => {
+    // `build` runs from a cache. Rebuilt seven weeks later, a cache must not claim this morning.
+    const [plain, own] = dated([raw(), raw({ sourceId: "node/2", asOf: "2026-10-08" })], "2026-09-14");
+    expect(plain!.asOf).toBe("2026-09-14");
+    expect(own!.asOf).toBe("2026-10-08");
   });
 
   it("counts added, changed and unchanged so a diff is explainable", () => {
@@ -474,6 +508,22 @@ describe("the CSV", () => {
     for (const column of ["pets", "sobriety", "id_required", "curfew", "capacity_signal"]) {
       expect(cells[COLUMNS.indexOf(column as never)], column).toBe("");
     }
+  });
+
+  it("writes an unchanged coordinate as it was committed, and a new one as it came", () => {
+    // 40.80400 and 40.804 are the same place. Rebuilding New York from its own cache rewrote
+    // 61 rows to the shorter form and changed nothing else -- a diff about the format.
+    const committedCsv = toCsv([committed({ id: "a", lat: 40.804, lon: -73.95497 })]).replace("40.804,", "40.80400,");
+    const written = writtenCoordinates(committedCsv);
+    expect(written.get("a")).toEqual({ lat: "40.80400", lon: "-73.95497" });
+
+    const same = toCsv([committed({ id: "a", lat: 40.804, lon: -73.95497 })], written);
+    expect(same).toContain(",40.80400,-73.95497,");
+
+    // Moved, so written fresh -- and a four-decimal source is never padded to claim a metre.
+    const moved = toCsv([committed({ id: "a", lat: 40.7646, lon: -73.95497 }), committed({ id: "b", lat: 40.7646, lon: -73.9886 })], written);
+    expect(moved).toContain("a,X,shelter,,40.7646,-73.95497,");
+    expect(moved).toContain("b,X,shelter,,40.7646,-73.9886,");
   });
 
   it("quotes what needs quoting and escapes what needs escaping", () => {

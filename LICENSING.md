@@ -107,6 +107,18 @@ missing by the same audit, and added in the same change that replaced the OpenSt
 
 The attribution Overture asks for: *Overture Maps Foundation, overturemaps.org.*
 
+**New York City's open data carries no licence, by law.** Sixteen rows in `data/regions/new-york/`
+come from the city's own lists on NYC Open Data: the Department of Homeless Services' drop-in
+centres and the Department of Youth and Community Development's youth drop-ins
+(`packages/seeder/src/sources/nycopendata.ts`). A city's data is not public domain the way the
+federal government's is, so this was checked rather than assumed (2026-11-02). New York's Open Data
+Law, [Administrative Code §23-502(d)](https://codelibrary.amlegal.com/codes/newyorkcity/latest/NYCadmin/0-0-0-216807),
+requires public data sets to be available *"without any registration requirement, license
+requirement or restrictions on their use"*, and neither data set names a licence of its own. The one
+thing the city may ask is that whoever republishes a data set identify its source and version and
+describe what was changed; [`data/regions/NOTICE.md`](data/regions/NOTICE.md) does, so it travels
+with the data. Nothing here is share-alike, so the directory stays as permissive as it was.
+
 ### The map's own data
 
 **Natural Earth** draws the grid's outlines and its time zones (`web/static/grid/world.json`,

@@ -46,6 +46,18 @@ export function nameKey(name: string): string {
 const SAME_PLACE_METRES = 120;
 
 function sameThing(a: SeededRecord, b: SeededRecord): boolean {
+  /*
+   * Two types are two services, however close they stand.
+   *
+   * A row is a service, not a building. BronxWorks runs a shelter and a drop-in centre at 800
+   * Barretto Street; Overture lists the first as "The Living Room" and the city lists the second
+   * as "Living Room", so name and place matched and the drop-in vanished into the shelter --
+   * which then wore the drop-in's hours. The same welding had already happened by phone: a
+   * charity's one main line joined its food distribution and its shelter into a single `meal`.
+   * An organisation's switchboard and a shared address are exactly what two services have in
+   * common, so neither can say that two rows of different types are one.
+   */
+  if (a.type !== b.type) return false;
   if (a.phone && b.phone && a.phone === b.phone) return true;
 
   const keyA = nameKey(a.name);

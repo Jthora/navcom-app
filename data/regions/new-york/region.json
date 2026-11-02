@@ -19,6 +19,12 @@
       ],
       "release": "2026-08-19.0",
       "minConfidence": 0.5
+    },
+    "nycopendata": {
+      "datasets": [
+        "bmxf-3rd4",
+        "ebkm-iyma"
+      ]
     }
   }
 }

@@ -1,0 +1,18 @@
+{
+ "bmxf-3rd4": {
+  "id": "bmxf-3rd4",
+  "name": "Directory Of Homeless Drop- In Centers",
+  "attribution": "Department of Homeless Services (DHS)",
+  "dataUpdatedAt": "2026-10-08T13:49:12+0000",
+  "license": null,
+  "webUri": "https://data.cityofnewyork.us/d/bmxf-3rd4"
+ },
+ "ebkm-iyma": {
+  "id": "ebkm-iyma",
+  "name": "DYCD Program Sites",
+  "attribution": "Department of Youth and Community Development (DYCD)",
+  "dataUpdatedAt": "2026-09-24T13:52:59+0000",
+  "license": null,
+  "webUri": "https://data.cityofnewyork.us/d/ebkm-iyma"
+ }
+}
