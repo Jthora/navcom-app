@@ -1,5 +1,5 @@
 import { expect, test, type Browser } from '@playwright/test';
-import { liveDevice, open, TEST_SECRET } from './device';
+import { holdUntil, liveDevice, open, TEST_SECRET } from './device';
 import { startRelay, type LocalRelay } from './relay-server';
 
 /**
@@ -755,6 +755,68 @@ test.describe('the board, the one filter that resisted a naive test', () => {
     const row = page.locator('.nc-floor-row');
     await expect(row).toHaveCount(1, { timeout: 25_000 });
     await expect(row).toContainText('Wren');
+    await context.close();
+  });
+
+  /*
+   * What a watch carrying a patrol needs off the board, on the built page and over a real relay
+   * (NYC audit, 2026-11-02): when somebody is due, where they shared they were, where a Distress
+   * came from, and a screen that sounds and stays lit while it holds the watch.
+   */
+  test('a Distress shows where it came from, on a screen that sounds and stays lit while it holds the watch', async ({ browser }: { browser: Browser }) => {
+    const { finalizeEvent, generateSecretKey, getPublicKey } = await import('nostr-tools/pure');
+    const { buildDistress, buildSignal } = await import('@navcom/core');
+
+    const watchHex = 'e'.repeat(63) + '7';
+    const watchSecret = Uint8Array.from((watchHex.match(/../g) ?? []).map((b) => parseInt(b, 16)));
+    const watchPub = getPublicKey(watchSecret);
+    const holder = await pubkeyOf(TEST_SECRET);
+    const to = { pubkey: watchPub, holders: [holder] };
+    const fix = { lat: 40.7505, lon: -73.9934, precision_m: 500 };
+
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    await liveDevice(page, relay.url, {
+      callsign: 'Vale',
+      watchSecret: watchHex,
+      watchtower: { pubkey: watchPub, relays: [relay.url], holders: [holder] }
+    });
+    await open(page, '/terminal/watch/');
+    await expect(page.locator('[data-empty-board]')).toBeVisible({ timeout: 20_000 });
+
+    await holdUntil(page, 'button:has-text("take the watch")');
+    await expect(page.locator('[data-watch-post]')).toContainText(/on station/i, { timeout: 10_000 });
+    await expect(page.locator('[data-watch-sound]')).toContainText(/Turn off/);
+    await expect(page.locator('[data-watch-screen]')).toBeVisible();
+
+    const wren = generateSecretKey();
+    const now = Math.floor(Date.now() / 1000);
+    const signOn = finalizeEvent(
+      buildSignal(wren, to, 'on-station', {
+        callsign: 'Wren', area: 'Midtown', expected_duration: 7200,
+        routine_interval: 1800, share_position: true, position: fix
+      }, now),
+      wren
+    );
+    await listenedFor(signOn, 'a sign-on on the phone holding the watch');
+    await publish(signOn);
+
+    const row = page.locator('.nc-floor-row');
+    await expect(row).toContainText('check-in in 30 min', { timeout: 25_000 });
+    await expect(page.locator('[data-floor-pin]')).toContainText('within 500 m');
+    await expect(page.locator('[data-floor-pin]')).toHaveAttribute('target', '_blank');
+
+    await publish(finalizeEvent(buildDistress(wren, to, { position: fix, area: 'Midtown' }, now + 1), wren));
+    await expect(page.locator('[data-ask-area]')).toContainText('Midtown', { timeout: 25_000 });
+    await expect(page.locator('[data-ask-fix]')).toContainText('40.7505, -73.9934');
+    await expect(row.first()).toContainText('Distress');
+    await expect(page).toHaveTitle(/^Distress · Watch/);
+
+    // Silenced, it still shows, and the title still says so: silence stops the sound, not the Distress.
+    await page.locator('[data-silence]').click();
+    await expect(page.locator('[data-silence]')).toHaveCount(0);
+    await expect(page.locator('[data-ask-fix]')).toBeVisible();
+    await expect(page).toHaveTitle(/^Distress · Watch/);
     await context.close();
   });
 });
