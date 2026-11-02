@@ -47,6 +47,20 @@ export type ResponseType =
    */
   | 'contact'
   /**
+   * *"Raven asks for someone near Union Sq, now."* The watch passing an `Assist` on to the others
+   * out (added 2026-11-02). `watch/signals.md` has the watch raise operators who are out nearby
+   * when somebody asks for another body, and until this nothing could: a watch could answer the
+   * person who asked and nobody else.
+   *
+   * **An offer, never an order** [invariant 8]. It says who asked, roughly where and how soon, in
+   * the holder's own words, never the asker's own text, which may be about somebody they are with
+   * [invariant 1]. Taking it up is the reader's own act — a question back to the watch — and
+   * ignoring it costs nothing and tells nobody. Silent, like `contact`, and held as one current
+   * fact rather than a list. **Never about a `Distress`**: raising people for one is the ladder's,
+   * and goes only to on-call people who registered for it [invariant 2].
+   */
+  | 'passed-on'
+  /**
    * *"Nobody is coming."*
    *
    * An `assist` means **I need someone**, and until this existed a watch could only

@@ -27,6 +27,7 @@
  * nudge is addressed to the operator and to nobody else.
  */
 
+import { passedOn } from './passed-on.svelte';
 import { KIND_RESPONSE, open, type ResponsePayload } from '@navcom/core';
 import { loadConfig } from './config';
 import { loadIdentity } from './identity';
@@ -81,6 +82,11 @@ export const overdue = {
           } catch {
             // Not for us, or not readable. Every other response type flows through
             // `waitForResponse`; this subscription only exists for the unsolicited one.
+            return;
+          }
+          // The other unasked thing a watch sends: somebody's Assist, passed on. Held on its own.
+          if (payload.type === 'passed-on') {
+            passedOn.heard(payload.text, payload.responder?.callsign ?? 'the watch', event.created_at);
             return;
           }
           if (payload.type !== 'contact') return;

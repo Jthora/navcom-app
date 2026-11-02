@@ -41,6 +41,7 @@ import { kemKeys } from './pq.svelte';
 import { beatListed, stopListed } from './public.svelte';
 import { position } from './position.svelte';
 import { overdue } from './overdue.svelte';
+import { passedOn } from './passed-on.svelte';
 import { pool } from './pool';
 import { distressRelays, watchTargets } from './watch-targets';
 import { routineTo } from './refusing.svelte';
@@ -705,8 +706,9 @@ export const operator = {
     session = null;
     clearField('wipeable', 'signon');
     // Home. Whatever the watch said about the window is spent, and it must not still be on
-    // the screen next time this operator signs on.
+    // the screen next time this operator signs on. So is anything it passed on.
     overdue.clear();
+    passedOn.clear();
     return closedBy;
   },
 

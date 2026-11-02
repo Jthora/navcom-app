@@ -40,7 +40,9 @@ Not an emergency. "I need another body," "I'm out of blankets," "there's a situa
 shouldn't handle alone."
 
 Watch raises operators who are out nearby, or on-call operators who could come out. An
-`Assist` that goes unanswered is reported back honestly rather than left hanging.
+`Assist` that goes unanswered is reported back honestly rather than left hanging. On a watch held
+on phones (2026-11-02) the holder passes it on to the others out in one tap, as an offer in their
+own words; whoever can go says so back to the watch.
 
 ## Distress
 

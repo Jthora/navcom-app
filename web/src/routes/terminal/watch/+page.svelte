@@ -32,6 +32,7 @@
   import { awake, raise, setSound, soundOn } from '$lib/terminal/raise.svelte';
   import { placeLine, provenanceOf } from '$lib/terminal/lookup';
   import AnswerLookup from '$lib/components/watch/AnswerLookup.svelte';
+  import PassOn from '$lib/components/watch/PassOn.svelte';
   import type { Provenance, ResourceRecord } from '@navcom/core';
 
   let address = $state<string | null>(null);
@@ -231,6 +232,12 @@
       asking = null;
     }
   }
+
+  /** Who else is out to pass an Assist to: everybody on the board but the person who asked. */
+  const othersOut = (w: Waiting) => board.entries.filter((e) => e.operator !== w.operator).length;
+  /** Who asked, where and how soon: never their own words, which may be about somebody else. */
+  const passDraft = (w: Waiting) =>
+    `${w.callsign} asks for someone${w.area ? ` near ${w.area}` : ''}${w.urgency === 'now' ? ', now' : ''}.`;
 
   /** `assist · now`, or the type alone. */
   const badgeOf = (w: Waiting) => (w.urgency ? `${w.type} · ${w.urgency}` : w.type);
@@ -650,6 +657,10 @@
               <button onclick={() => { answering = w.id; text = ''; attached = null; }}>
                 {w.type === 'distress' ? 'Tell them you are awake' : 'Answer'}
               </button>
+            {/if}
+            {#if w.type === 'assist'}
+              <PassOn id={w.id} draft={passDraft(w)} others={othersOut(w)} passedTo={board.passedTo(w.id)}
+                onpass={async (t) => (await board.passOn(w, t)).length > 0} />
             {/if}
     </li>
   {/snippet}

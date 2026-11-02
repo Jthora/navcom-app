@@ -519,7 +519,7 @@ no tag on the event. Both parts were wrong, and the implementation deliberately 
 
 ```json
 {
-  "type": "ack | answer | escalation-status | log-review",
+  "type": "ack | answer | escalation-status | log-review | contact | declined | passed-on",
   "responder": { "kind": "human | agent | node", "callsign": "...", "pubkey": "hex | absent" },
   "text": "string|null",
   "provenance": { "record_id": "...", "verified": "2026-08-14", "method": "in_person" },
@@ -558,7 +558,17 @@ no tag on the event. Both parts were wrong, and the implementation deliberately 
   produced both. A client that renders that as verified has told the operator they checked
   something when they did not
 - `provenance` MUST be present on any directory-derived answer [C32, H5]. An answer
-  without provenance MUST render as unverified
+  without provenance MUST render as unverified. A watch held on phones attaches it when the
+  holder puts a directory record into the answer, verbatim from that record, and never to words
+  the holder wrote themselves
+- **Two responses answer nothing the operator is waiting on**, and both arrive silently:
+  `contact` (*"you are past the time you gave"*, `watch-state.spec.md`, *Overdue*) and, added
+  2026-11-02, `passed-on` — an `Assist` the watch passes on to the others out, sent to each entry
+  on the board but the one who asked, each sealed to that operator alone and naming their own
+  latest signal. It is an offer in the holder's words: who asked, roughly where and how soon,
+  never the asker's own text. A client MUST hold it as one current fact, newest first, and MUST
+  NOT present it as a task; taking it up is the operator's own `query` back to the watch. A watch
+  MUST NOT pass on a `Distress`: raising people for one is the ladder's [invariant 2]
 - `sig`, on a squad member's answer from the board, is their own signature on it, made with their
   own key, `responder.pubkey` (*The answer signature*, below). It is what ends a `Distress` on a
   squad's watch, because everybody who ever held the watch key can sign as the watch

@@ -10,6 +10,8 @@
   import { battery } from '$lib/terminal/battery.svelte';
   import { pq } from '$lib/terminal/pq.svelte';
   import { overdue } from '$lib/terminal/overdue.svelte';
+  import { passedOn } from '$lib/terminal/passed-on.svelte';
+  import { ago } from '$lib/terminal/heard-copy';
   import { loadConfig, offeredWatch, storedWatch, type StoredWatch } from '$lib/terminal/config';
   import { peers } from '$lib/terminal/peers';
   import { formatDuration } from '$lib/terminal/patrol';
@@ -642,8 +644,8 @@
             <Readout value="{remaining} min left" tone="good" sub="of what you declared" />
           {:else}
             <!--
-              "The watch will nudge" was promised with no check that a watch exists, and only a
-              watch run on a box nudges at all -- one held on a phone never does.
+              "The watch will nudge" was promised with no check that a watch exists. A box nudges on
+              its own; a watch held on phones only when its holder asks (2026-11-02), so "may".
             -->
             <Readout
               value="Past declared"
@@ -652,6 +654,22 @@
             />
           {/if}
         </Slot>
+        {#if passedOn.text}
+          <!--
+            Somebody's Assist, passed on by the watch: an offer, arrived silently. Taking it up is a
+            question back to the watch; putting it down tells nobody anything [invariant 8].
+          -->
+          <Slot k="Passed on">
+            <span data-passed-on>
+              <Readout value={passedOn.by ?? 'Watch'} verbatim tone="neutral" sub={passedOn.at ? `${ago(Math.floor(nowMs / 1000) - passedOn.at)} ago` : null} />
+            </span>
+          </Slot>
+          <p class="said" data-passed-on-text>{passedOn.text}</p>
+          <div class="passed-acts">
+            <a href="/terminal/query/">Answer the watch</a>
+            <button type="button" onclick={() => passedOn.clear()}>Put down</button>
+          </div>
+        {/if}
         {#if position.live}
           <!--
             Unmissable while it is live, for the same reason a phone shows the location arrow.
@@ -1006,4 +1024,6 @@
   .opt { color: var(--t-faint); font-size: .8rem; }
   .nc-first { display: flex; flex-wrap: wrap; gap: .3rem .6rem; align-items: center; margin: .2rem 0 0; }
   .nc-first a { min-height: 2.75rem; display: inline-flex; align-items: center; }
+  .said { margin: 0; color: var(--t-ink); }
+  .passed-acts { display: flex; gap: .8rem; align-items: center; }
 </style>

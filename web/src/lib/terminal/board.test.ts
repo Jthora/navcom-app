@@ -1216,3 +1216,45 @@ describe('asking somebody past their time to check in', () => {
     expect(await board.askToCheckIn(publicKeyOf(newSecretKey()))).toBe(false);
   });
 });
+
+describe('passing an Assist on to the others out', () => {
+  const NOW = () => Math.floor(Date.now() / 1000);
+  const out = (callsign: string) => {
+    const key = newSecretKey();
+    deliver(finalizeEvent(buildSignal(key, to, 'on-station', {
+      callsign, area: 'Midtown', expected_duration: 7200, routine_interval: null, share_position: false, position: null
+    }, NOW() - 60), key));
+    return { key, pub: publicKeyOf(key) };
+  };
+
+  it('reaches everybody else on the board, each alone, and never the person who asked', async () => {
+    const raven = out('Raven');
+    const ash = out('Ash');
+    const kite = out('Kite');
+    deliver(finalizeEvent(buildSignal(raven.key, to, 'assist', { urgency: 'now', area: 'Union Sq' }, NOW()), raven.key));
+    const item = board.waiting[0]!;
+    const before = published.length;
+    const reached = await board.passOn(item, 'Raven asks for someone near Union Sq, now.');
+    expect(reached.sort()).toEqual(['Ash', 'Kite']);
+    const sent = published.slice(before).map((p) => p.event).filter((e) => e.kind === KIND_RESPONSE);
+    const to_ = new Set(sent.map((e) => e.tags.find((t) => t[0] === 'p')![1]));
+    expect([...to_].sort()).toEqual([ash.pub, kite.pub].sort());
+    expect(to_.has(raven.pub)).toBe(false);
+    expect(board.passedTo(item.id)?.sort()).toEqual(['Ash', 'Kite']);
+  });
+
+  it('passes on nothing but an Assist', async () => {
+    out('Ash');
+    deliver(query(1));
+    expect(await board.passOn(board.waiting[0]!, 'anything')).toEqual([]);
+  });
+
+  it('says it reached nobody when no relay took it', async () => {
+    const raven = out('Raven');
+    out('Ash');
+    deliver(finalizeEvent(buildSignal(raven.key, to, 'assist', { urgency: 'soon' }, NOW()), raven.key));
+    relaysUp = false;
+    expect(await board.passOn(board.waiting[0]!, 'Raven asks for someone.')).toEqual([]);
+    expect(board.passedTo(board.waiting[0]!.id)).toBeNull();
+  });
+});

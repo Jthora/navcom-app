@@ -267,6 +267,8 @@ let beat: ReturnType<typeof setInterval> | null = null;
 let lastHeard: Record<string, { id: string; heardOn: string[] }> = {};
 /** When this watch last asked each operator to check in, until they do or stand down. */
 let askedAt = $state<Record<string, number>>({});
+/** Who each Assist was passed on to, by its id. Gone with the board. */
+let passedOnFor = $state<Record<string, string[]>>({});
 /**
  * Where this holding has sent its Station, and when it last did, in this phone's seconds: every
  * relay it was sent to, not only the ones that took it — one that timed out may still have it.
@@ -716,6 +718,40 @@ export const board = {
     return true;
   },
 
+  /**
+   * Passing an `Assist` on to the others out [core `passed-on`].
+   *
+   * To everybody on this board but the person who asked, each sealed to them alone and naming
+   * their own latest signal, in the holder's words. Gives back who it reached: an offer that
+   * reached nobody is said as that, not as sent.
+   */
+  async passOn(item: Waiting, text: string): Promise<string[]> {
+    const secret = watchKey();
+    if (!secret || item.type !== 'assist' || !text.trim()) return [];
+    const identity = loadIdentity();
+    const reached: string[] = [];
+    for (const e of entries) {
+      if (e.operator === item.operator) continue;
+      const last = lastHeard[e.operator];
+      if (!last) continue;
+      const payload: ResponsePayload = {
+        type: 'passed-on',
+        responder: { kind: 'human', callsign: identity?.callsign ?? 'watch' },
+        text: text.trim(),
+        provenance: null
+      };
+      const event = finalizeEvent(buildResponse(secret, e.operator, last.id, payload, Math.floor(Date.now() / 1000)), secret);
+      if ((await publishEach(usable([...last.heardOn, ...watchRelays()]), event)).length > 0) reached.push(e.callsign);
+    }
+    if (reached.length > 0) passedOnFor = { ...passedOnFor, [item.id]: reached };
+    return reached;
+  },
+
+  /** Who an Assist was passed on to from here, or null. */
+  passedTo(id: string): string[] | null {
+    return passedOnFor[id] ?? null;
+  },
+
   /** When this watch last asked them to check in, until they did; null if it has not. */
   askedAt(operator: string): number | null {
     return askedAt[operator] ?? null;
@@ -745,6 +781,7 @@ export const board = {
     answeredHere = new Set();
     lastHeard = {};
     askedAt = {};
+    passedOnFor = {};
     unlisten();
     if (beat) clearInterval(beat);
     beat = null;
