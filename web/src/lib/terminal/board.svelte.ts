@@ -19,9 +19,10 @@
  *   when a screen closed would end without anybody being told
  * - **Overdue is shown, never acted on.** The board marks somebody past their time and
  *   stops there. It pages nobody, contacts nobody, and starts no ladder [invariant 3]
- * - **There is no alert, no sound and no badge.** A person who took watch is expected to
- *   look. A phone that promised to interrupt them would be promising something a
- *   backgrounded web page cannot deliver
+ * - **Only a Distress makes a sound, and only on the Watch screen while it is open.** A person
+ *   who took watch is expected to look; a page that promised to interrupt them while closed
+ *   would be promising something it cannot deliver, so the screen says *while this is open*
+ *   and keeps itself lit [`raise.svelte.ts`]. Nothing else on the board sounds or badges
  *
  * ## Where the holder is announced
  *

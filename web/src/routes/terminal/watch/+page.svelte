@@ -28,6 +28,7 @@
   import { sending } from '$lib/terminal/sending.svelte';
   import { floorDetail, floorNote, floorPin } from '$lib/terminal/floor';
   import { coordinates, fixAge, mapLink, within } from '$lib/terminal/fix';
+  import { awake, raise, setSound, soundOn } from '$lib/terminal/raise.svelte';
 
   let address = $state<string | null>(null);
   let callsign = $state<string | null>(null);
@@ -54,8 +55,40 @@
   /** The board's clock: who is due, and who has passed their time, move with it. */
   let nowS = $state(Math.floor(Date.now() / 1000));
 
+  /** Whether this phone sounds a Distress while it holds the watch [raise.svelte.ts]. */
+  let sound = $state(true);
+  /** Distress this holder has silenced without answering: they still show, and stop sounding. */
+  let silenced = $state<string[]>([]);
+  /** Assists marked now that have chimed, so each chimes once. */
+  const chimed = new Set<string>();
+
+  const unanswered = $derived(board.distress.filter((w) => !w.answered));
+  const ringing = $derived(board.onStation && sound && unanswered.some((w) => !silenced.includes(w.id)));
+
+  // Sounds while there is a Distress nobody here has answered or silenced, and stops when there is not.
+  $effect(() => raise.alarm(ringing));
+  // The screen stays on while this phone holds the watch.
+  $effect(() => awake.keep(board.onStation));
+  $effect(() => {
+    for (const w of board.waiting) {
+      if (w.urgency !== 'now' || chimed.has(w.id)) continue;
+      chimed.add(w.id);
+      if (board.onStation && sound) raise.chime();
+    }
+  });
+
+  function toggleSound() {
+    sound = !sound;
+    setSound(sound);
+    raise.unlock();
+  }
+
   onMount(() => {
     const ticking = setInterval(() => (nowS = Math.floor(Date.now() / 1000)), 15_000);
+    sound = soundOn();
+    // The first touch anywhere lets this browser play; until then it plays nothing.
+    const unlock = () => raise.unlock();
+    window.addEventListener('pointerdown', unlock);
     founded = foundedHere();
     vouchers = endorsersFor('can-take-watch').map((e) => ({ endorser: e.endorser, at: e.at }));
     address = watchPubkey();
@@ -66,6 +99,9 @@
     const stopAsking = update.start();
     return () => {
       clearInterval(ticking);
+      window.removeEventListener('pointerdown', unlock);
+      raise.stop();
+      awake.keep(false);
       board.stop();
       stopAsking();
     };
@@ -158,11 +194,14 @@
    * Where somebody waiting on you is: the fix they sent with it, or else the last one they shared,
    * said as that. A Distress carries their last fix, and the board kept only its words.
    */
-  function fixOf(w: Waiting): { p: NonNullable<Waiting['position']>; at: number; last: boolean } | null {
-    if (w.position) return { p: w.position, at: w.before ?? w.at, last: false };
+  function fixOf(w: Waiting): { p: NonNullable<Waiting['position']>; at: number } | null {
+    if (w.position) return { p: w.position, at: w.before ?? w.at };
     const e = board.entries.find((x) => x.operator === w.operator);
-    return e?.position && e.position_at !== null ? { p: e.position, at: e.position_at, last: true } : null;
+    return e?.position && e.position_at !== null ? { p: e.position, at: e.position_at } : null;
   }
+
+  /** `assist · now`, or the type alone. */
+  const badgeOf = (w: Waiting) => (w.urgency ? `${w.type} · ${w.urgency}` : w.type);
 
   /** What a reload would clear, said before the hold that does it. */
   const heardOut = $derived(board.entries.length);
@@ -213,7 +252,7 @@
 </script>
 
 <svelte:head>
-  <title>Watch · Field Terminal</title>
+  <title>{unanswered.length > 0 ? 'Distress · ' : ''}Watch · Field Terminal</title>
   <meta name="description" content="Holding the board." />
 </svelte:head>
 
@@ -256,7 +295,10 @@
           holdingLabel="Keep holding…"
           hold={1200}
           tone="warn"
-          onfire={() => board.takeWatch()}
+          onfire={() => {
+            raise.unlock();
+            void board.takeWatch();
+          }}
         />
       {/if}
     {/snippet}
@@ -295,6 +337,30 @@
             Not hearing on any relay: a Distress sent here would not reach you.
           </p>
         {/if}
+        <!-- While this screen is open, and only then: a locked phone or a closed tab sounds nothing. -->
+        <Slot k="Sound">
+          <span class="toggle" data-watch-sound>
+            {#if !sound}
+              <Readout value="Off" tone="cold" sub="a Distress shows, silently" />
+            {:else if raise.playable}
+              <Readout value="On" tone="good" sub="Distress, while this is open" />
+            {:else}
+              <Readout value="Tap the screen" tone="warn" sub="this browser plays nothing until touched" />
+            {/if}
+            <button onclick={toggleSound}>{sound ? 'Turn off' : 'Turn on'}</button>
+          </span>
+        </Slot>
+        <Slot k="Screen">
+          <span data-watch-screen>
+            {#if awake.held}
+              <Readout value="Kept on" tone="good" />
+            {:else if !awake.supported}
+              <Readout value="May sleep" tone="warn" sub="this browser cannot keep it on" />
+            {:else}
+              <Readout value="May sleep" tone="warn" sub="not allowed just now" />
+            {/if}
+          </span>
+        </Slot>
       {:else}
         <Slot k="Published">
           {#if board.stillAdvertised || board.orphaned}
@@ -357,7 +423,7 @@
         {#if !qualified}
           <!-- A refusal keeps its route: together they say what to do. -->
           <p class="cost">
-            Ask somebody who already holds this watch for a <code>can take watch</code>
+            Ask a holder of this watch for a <code>can take watch</code>
             credential, then claim it on <a href="/terminal/standing/">Standing</a>.
           </p>
         {/if}
@@ -365,7 +431,7 @@
 
     <!--
       The last slot in either post, so it is in the same place whichever one the holder is in.
-      Nothing else says it: no notification, no badge, no sound, no vibration -- a holder is expected
+      Nothing else says it: no notification, no badge, no sound, no vibration (only a Distress sounds) -- a holder is expected
       to look, and this is where they look.
 
       **Always here, and always the same height** [review: board reload]. It appeared when a newer
@@ -455,16 +521,17 @@
     <li class={w.type === 'distress' ? 'distress' : ''}>
             <div class="who">
               <span class="name">{w.callsign}</span>
-              <span class="badge" data-urgency={w.urgency}>{w.urgency ? `${w.type} · ${w.urgency}` : w.type}</span>
+              <span class="badge" data-urgency={w.urgency}>{badgeOf(w)}</span>
             </div>
             {#if w.text}<p class="said">{w.text}</p>{/if}
-            {#if w.area}<p class="where" data-ask-area>{w.area}</p>{/if}
+            <!-- Values, not prose: where they said they were, and where their phone last put them. -->
+            {#if w.area}<div class="where" data-ask-area>{w.area}</div>{/if}
             {#if fixOf(w)}
               {@const f = fixOf(w)!}
-              <p class="where" data-ask-fix>
-                {#if f.last}last shared · {/if}<span class="coords">{coordinates(f.p)}</span> · {within(f.p)} · {fixAge(f.at, nowS)} ·
-                <a href={mapLink(f.p)} target="_blank" rel="noreferrer">Open in maps</a>
-              </p>
+              <div class="where" data-ask-fix>
+                <span class="coords">{coordinates(f.p)}</span> · {within(f.p)} · {fixAge(f.at, nowS)} ·
+                <a href={mapLink(f.p)} target="_blank" rel="noreferrer">Map</a>
+              </div>
             {/if}
             <!--
               A window that is running, or a Distress that is not.
@@ -529,6 +596,9 @@
   {#if board.distress.length > 0}
     <section class="urgent">
       <h2>Distress</h2>
+      {#if ringing}
+        <button data-silence onclick={() => (silenced = [...silenced, ...unanswered.map((w) => w.id)])}>Silence</button>
+      {/if}
       {#if board.distressDropped}
         <p class="cost" data-distress-dropped>More Distress is arriving than this board will hold.</p>
       {/if}
@@ -661,6 +731,7 @@
 <style>
   .act { gap: .6rem; }
   .orphaned { display: flex; flex-direction: column; gap: .5rem; }
+  .toggle { display: flex; align-items: center; justify-content: space-between; gap: .6rem; flex-wrap: wrap; }
   .qr {
     background: #fff; padding: .7rem; align-self: flex-start; line-height: 0;
     /* White ground regardless of theme: a scanner needs the contrast the format assumes. */

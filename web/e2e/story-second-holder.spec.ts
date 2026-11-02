@@ -73,7 +73,7 @@ test.describe('a squad grows by one', () => {
     await expect(ash.locator('[data-ungated]')).toBeVisible();
     await expect(ash.getByRole('button', { name: /take the watch/i })).toHaveCount(0);
     // And it says what to do about it, rather than only that she cannot.
-    await expect(ash.getByText(/ask somebody who already holds this watch/i)).toBeVisible();
+    await expect(ash.getByText(/ask a holder of this watch/i)).toBeVisible();
 
     await wren.close();
     await ash.close();

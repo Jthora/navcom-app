@@ -14,7 +14,7 @@ instrument for a different situation.**
 - **Dark.** Legible at night without destroying night vision; no white flashes
 - **Cold.** Usable with gloves. Large targets, no precision gestures
 - **Fast.** Under two seconds from unlock to signal
-- **Quiet.** No notifications, no sounds, nothing that announces itself in public
+- **Quiet.** No notifications, no sounds, nothing that announces itself in public. One exception, decided 2026-11-02: the Watch screen, while you hold the watch, sounds a `Distress` until it is answered or silenced (and chimes once for an Assist marked *now*). On by default, because taking the watch is agreeing to be raised for one; off is one tap. Nothing an operator out does makes a sound
 - **Offline.** Fully functional with no signal; syncs when it can
 - **Small.** Runs on a prepaid Android 8 with 400MB free
 

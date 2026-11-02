@@ -78,7 +78,9 @@ Three further things would have to be untrue for this to be reversible, and none
   structural, not conventional — the refusal is in the type, so no client can express the
   invalid case by accident
 - the field terminal is silent, and `/terminal/on-call/` states in-product that a Distress
-  page is *"the only notification NavCom ever sends."* Shipping this makes that sentence
+  page is *"the only notification NavCom ever sends."* (The one sound added since, 2026-11-02, is
+  the same signal: a `Distress` sounding on the Watch screen of the person holding the watch.
+  Nothing a missed window does makes a sound.) Shipping this makes that sentence
   false — and *"A pulse when a signal is acknowledged"*, below, declines a far weaker
   interrupt precisely to hold that line
 - the mechanism the proposal actually wants **already exists without the alarm**: a buddy is
