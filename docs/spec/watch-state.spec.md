@@ -212,6 +212,12 @@ accountability log, where the operator it concerns can read it.
 It MUST NOT escalate, page, or trigger any part of the ladder [C4, invariant 3]. Only a
 human reviewing an overdue may raise it. An agent MUST NOT close an overdue.
 
+**A watch held on phones** has no node running to attempt contact, and a person is holding the
+board, so it MUST offer the holder the attempt instead: one tap on an overdue entry sends the same
+`contact` response a node sends, sealed to that operator alone and naming their latest signal
+(decided 2026-11-02). It MUST NOT send one on its own because a timer passed. The board shows that
+it asked, and forgets the ask when the operator checks in, signs on again or stands down.
+
 **Rationale, so nobody "improves" this:** people are late for ordinary reasons far more
 often than dangerous ones, and false alarms train everyone to ignore real ones.
 

@@ -200,6 +200,18 @@
     return e?.position && e.position_at !== null ? { p: e.position, at: e.position_at } : null;
   }
 
+  let asking = $state<string | null>(null);
+  let askFailed = $state<string | null>(null);
+  async function askIn(operator: string) {
+    asking = operator;
+    askFailed = null;
+    try {
+      if (!(await board.askToCheckIn(operator))) askFailed = operator;
+    } finally {
+      asking = null;
+    }
+  }
+
   /** `assist · now`, or the type alone. */
   const badgeOf = (w: Waiting) => (w.urgency ? `${w.type} · ${w.urgency}` : w.type);
 
@@ -514,6 +526,23 @@
         the board the core already derives, so there is one definition of "overdue".
       -->
       <Board entries={floor} />
+      <!--
+        Asking somebody past their time to check in: what the spec asks a watch to do on overdue, and
+        the holder's act, never the phone's. It reaches them silently, and nobody else.
+      -->
+      {#each board.entriesAt(nowS).filter((e) => e.status === 'overdue') as e (e.operator)}
+        <div class="ask-in" data-ask-in={e.callsign}>
+          {#if board.askedAt(e.operator) !== null}
+            <Readout value="Asked" tone="neutral" sub={`${e.callsign} · ${fixAge(board.askedAt(e.operator)!, nowS)}`} />
+          {/if}
+          <button onclick={() => askIn(e.operator)} disabled={asking === e.operator}>
+            {board.askedAt(e.operator) !== null ? `Ask ${e.callsign} again` : `Ask ${e.callsign} to check in`}
+          </button>
+          {#if askFailed === e.operator}
+            <span class="error" data-ask-failed>Did not reach a relay.</span>
+          {/if}
+        </div>
+      {/each}
     {/if}
   </section>
 
@@ -731,6 +760,7 @@
 <style>
   .act { gap: .6rem; }
   .orphaned { display: flex; flex-direction: column; gap: .5rem; }
+  .ask-in { display: flex; align-items: center; justify-content: space-between; gap: .6rem; flex-wrap: wrap; margin-top: .5rem; }
   .toggle { display: flex; align-items: center; justify-content: space-between; gap: .6rem; flex-wrap: wrap; }
   .qr {
     background: #fff; padding: .7rem; align-self: flex-start; line-height: 0;

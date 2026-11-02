@@ -260,6 +260,13 @@ function answeredBy(id: string): void {
 }
 let beat: ReturnType<typeof setInterval> | null = null;
 /**
+ * Each operator's latest signal, and where it was heard: what an ask to check in names, and where
+ * they listen. Not state anybody reads, and gone with the board.
+ */
+let lastHeard: Record<string, { id: string; heardOn: string[] }> = {};
+/** When this watch last asked each operator to check in, until they do or stand down. */
+let askedAt = $state<Record<string, number>>({});
+/**
  * Where this holding has sent its Station, and when it last did, in this phone's seconds: every
  * relay it was sent to, not only the ones that took it — one that timed out may still have it.
  *
@@ -680,6 +687,40 @@ export const board = {
   },
 
   /**
+   * *"You are past the time you gave."* Asking an operator past their time to check in.
+   *
+   * What `watch-state.spec.md` requires on overdue — attempt contact with the operator — on a watch
+   * held on phones, where the daemon that does it on a box is not running. The same `contact` the
+   * daemon sends, which the operator's phone already shows and never sounds [`overdue.svelte.ts`].
+   *
+   * **The holder's act, never the phone's.** A person is holding this board and decides; nothing
+   * is sent because a timer passed [invariant 3]. It goes to the operator and nobody else: not
+   * peers, not on-call, not a ladder.
+   */
+  async askToCheckIn(operator: string): Promise<boolean> {
+    const secret = watchKey();
+    const last = lastHeard[operator];
+    if (!secret || !last) return false;
+    const identity = loadIdentity();
+    const payload: ResponsePayload = {
+      type: 'contact',
+      responder: { kind: 'human', callsign: identity?.callsign ?? 'watch' },
+      text: 'You are past the time you gave. Check in if you are still out, or stand down if you are home.',
+      provenance: null
+    };
+    const event = finalizeEvent(buildResponse(secret, operator, last.id, payload, Math.floor(Date.now() / 1000)), secret);
+    const took = await publishEach(usable([...last.heardOn, ...watchRelays()]), event);
+    if (took.length === 0) return false;
+    askedAt = { ...askedAt, [operator]: Math.floor(Date.now() / 1000) };
+    return true;
+  },
+
+  /** When this watch last asked them to check in, until they did; null if it has not. */
+  askedAt(operator: string): number | null {
+    return askedAt[operator] ?? null;
+  },
+
+  /**
    * A screen closing. **Not the end of a watch** — while this phone holds one, the listener
    * stays open with the beat, so a holder who steps away to Status still hears a Distress [audit:
    * relay paths, F09]. The beat announces them only on relays the listener is hearing on.
@@ -701,6 +742,8 @@ export const board = {
     // Anything still on its way back — a stand-down's read, a Dark — now stops where it is.
     generation++;
     answeredHere = new Set();
+    lastHeard = {};
+    askedAt = {};
     unlisten();
     if (beat) clearInterval(beat);
     beat = null;
@@ -1100,6 +1143,14 @@ function apply(
     const applied = stateAt[from];
     if (applied !== undefined && applied >= now) return;
     stateAt[from] = now;
+  }
+
+  if (type !== 'position') lastHeard[from] = { id: event.id, heardOn: [url] };
+  // Answered: a check-in, a sign-on or a stand-down is what an ask to check in asks for.
+  if ((type === 'routine' || type === 'on-station' || type === 'stood-down') && askedAt[from] !== undefined) {
+    const rest = { ...askedAt };
+    delete rest[from];
+    askedAt = rest;
   }
 
   if (type === 'on-station') {

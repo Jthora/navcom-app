@@ -1175,3 +1175,44 @@ describe('a position, sent while an operator moves', () => {
     expect(board.entries).toHaveLength(0);
   });
 });
+
+describe('asking somebody past their time to check in', () => {
+  const NOW = () => Math.floor(Date.now() / 1000);
+  const kite = newSecretKey();
+  const kitePub = publicKeyOf(kite);
+  const signOn = (at: number) =>
+    finalizeEvent(
+      buildSignal(kite, to, 'on-station', {
+        callsign: 'Kite', area: 'Harlem', expected_duration: 3600,
+        routine_interval: null, share_position: false, position: null
+      }, at),
+      kite
+    );
+
+  it('sends them the watch’s contact, addressed to them alone, and remembers it was asked', async () => {
+    deliver(signOn(NOW() - 4 * 3600));
+    expect(await board.askToCheckIn(kitePub)).toBe(true);
+    const sent = published.filter((p) => p.event.kind === KIND_RESPONSE).at(-1)!.event;
+    expect(sent.tags).toContainEqual(['p', kitePub]);
+    expect(sent.tags.filter((t) => t[0] === 'p')).toHaveLength(1);
+    expect(board.askedAt(kitePub)).not.toBeNull();
+  });
+
+  it('forgets the ask once they check in', async () => {
+    deliver(signOn(NOW() - 4 * 3600));
+    await board.askToCheckIn(kitePub);
+    deliver(finalizeEvent(buildSignal(kite, to, 'routine', {}, NOW()), kite));
+    expect(board.askedAt(kitePub)).toBeNull();
+  });
+
+  it('says it did not go when no relay took it', async () => {
+    deliver(signOn(NOW() - 4 * 3600));
+    relaysUp = false;
+    expect(await board.askToCheckIn(kitePub)).toBe(false);
+    expect(board.askedAt(kitePub)).toBeNull();
+  });
+
+  it('cannot ask somebody this board has never heard from', async () => {
+    expect(await board.askToCheckIn(publicKeyOf(newSecretKey()))).toBe(false);
+  });
+});
