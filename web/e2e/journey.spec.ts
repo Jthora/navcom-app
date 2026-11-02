@@ -183,19 +183,14 @@ test('a newcomer: from navcom.app to a callsign, a card, and a mission taken, re
   await onRecord(heat());
   await onRecord(library());
 
-  // The landing page, and the one way from it into the Field Terminal.
+  // The landing page, and its one call to action for somebody new: Create profile.
   await go(page, '/');
   await step(page, 'landing');
-  const into = page.getByRole('link', { name: /open the field terminal/i });
+  const into = page.locator('[data-create-profile]');
   await into.scrollIntoViewIfNeeded();
-  await follow(page, into, '/terminal/');
-  await step(page, 'terminal');
-  // What to do, and nothing about a publisher's leaked key on a phone that has sent nothing.
-  await expect(page.locator('[data-first-run]')).toBeVisible();
-  await expect(page.locator('[data-sealed-exposed]')).toHaveCount(0);
-  await expect(page.locator('[data-restore-link]')).toBeVisible();
-
-  await follow(page, page.getByRole('link', { name: /create your profile/i }), '/terminal/setup/');
+  await follow(page, into, '/terminal/setup/');
+  await step(page, 'setup');
+  await expect(page.locator('[data-elsewhere]')).toBeVisible();
   await page.locator('#callsign').fill('Kestrel');
   await page.getByRole('button', { name: /create profile/i }).click();
   await expect(page.locator('[data-setup-done]')).toBeVisible();

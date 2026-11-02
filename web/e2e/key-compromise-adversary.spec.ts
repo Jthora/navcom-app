@@ -159,8 +159,9 @@ test.describe('a second-generation version at a frozen d', () => {
       two.secret
     );
     await phone(page, [listedPkg, desked], [desk([one, two])]);
-    // Today the frozen version stays on the map: the second generation is asked only for field work,
-    // the frozen key by id, so the version that replaces it is never heard.
-    expect(await listed(page)).toEqual([]);
+    // The frozen field version is gone: its successor stands in its place, as desk work, since NavCom
+    // reads every kind of mission (2026-11-01).
+    expect(await listed(page)).toEqual(['one-mission']);
+    await expect(page.locator('[data-screen="missions"] [data-mission="one-mission"]')).toHaveAttribute('data-work', 'desk');
   });
 });

@@ -5,8 +5,9 @@ import { admit, mission, standInKey, type StandInKey } from './registry';
 
 /**
  * Desk work beside the field work [missions/live.ts, `watchMissions`], against the build as it is
- * served: off until somebody ticks it on the layers screen, then read from the same relays, listed
- * under the field work, never taken here, and kept on the device only as the choice.
+ * served: every kind of mission by default (the owner, 2026-11-01), narrowed to field work by the
+ * missions list's own filter, listed under the field work, never taken here, and kept on the
+ * device only as the choice.
  *
  * The publisher is a stand-in with a key trusted to sign [registry.ts], so what is shown is decided by
  * the reader's rules and not by Mecha Jono's frozen key.
@@ -49,31 +50,30 @@ async function landed(page: Page) {
   expect(admitted(), 'the registry was not in what the server sent').toBe(true);
 }
 
-async function listed(page: Page): Promise<string[]> {
+async function openList(page: Page) {
   await page.locator('[data-missions="open"]').click();
   await expect(page.locator('[data-screen="missions"]')).toBeVisible();
-  return page.locator('[data-screen="missions"] [data-mission]').evaluateAll((els) => els.map((el) => el.getAttribute('data-mission')!));
 }
 
-async function tickDesk(page: Page) {
-  await page.getByRole('button', { name: 'Map layers' }).click();
-  const layers = page.locator('[data-screen="layers"]');
-  await expect(layers.locator('[data-desk-ask]')).toContainText('2.6 MB');
-  await layers.locator('[data-desk-toggle]').check();
-  await expect(layers.getByText('in the missions list, under the field work')).toBeVisible({ timeout: 15_000 });
-  await page.locator('[data-back]').click();
+const ids = (page: Page) => page.locator('[data-screen="missions"] [data-mission]').evaluateAll((els) => els.map((el) => el.getAttribute('data-mission')!));
+
+async function listed(page: Page): Promise<string[]> {
+  await openList(page);
+  return ids(page);
 }
 
-test('is off until it is ticked: the field work alone, and nothing asked for desk work', async ({ page }) => {
-  await landed(page);
-  expect(await listed(page)).toEqual(['water-run']);
-});
+/** The missions list's filter: every kind of mission, or field work only. */
+async function scope(page: Page, which: 'All' | 'Field only') {
+  await page.locator('[data-mission-scope]').getByRole('button', { name: which, exact: true }).click();
+}
 
-test('ticked, desk work is listed under the field work, without the grant notice, and the exclusion is said and not shown', async ({ page }) => {
+test('every kind of mission by default: desk work is listed under the field work, without the grant notice, and the exclusion is said and not shown', async ({ page }) => {
   await landed(page);
-  await tickDesk(page);
-  expect(await listed(page)).toEqual(['water-run', 'longview']);
+  await openList(page);
   const screen = page.locator('[data-screen="missions"]');
+  await expect(screen.locator('[data-mission]')).toHaveCount(2, { timeout: 15_000 });
+  expect(await ids(page)).toEqual(['water-run', 'longview']);
+  await expect(screen.locator('[data-mission-scope] [aria-pressed="true"]')).toHaveText('All');
   await expect(screen.locator('[data-desk-work]')).toContainText('1 from anywhere');
   await expect(screen.locator('[data-mission="longview"]')).toContainText('no end given, posted 1 day ago');
   await expect(screen.locator('[data-refused]')).toContainText('nobody who did not choose it');
@@ -82,9 +82,8 @@ test('ticked, desk work is listed under the field work, without the grant notice
 
 test('a desk mission says what it is and that it is taken up in Starcom, and offers no Take part', async ({ page }) => {
   await landed(page);
-  await tickDesk(page);
-  await listed(page);
-  await page.locator('[data-screen="missions"] [data-mission="longview"]').click();
+  await openList(page);
+  await page.locator('[data-screen="missions"] [data-mission="longview"]').click({ timeout: 15_000 });
   const screen = page.locator('[data-screen="mission"][data-mission="longview"]');
   await expect(screen.locator('[data-desk]')).toContainText('Desk work');
   await expect(screen.locator('[data-refusal="desk"]')).toContainText('taken up in Starcom');
@@ -92,16 +91,16 @@ test('a desk mission says what it is and that it is taken up in Starcom, and off
   await expect(screen).toContainText('No end given');
 });
 
-test('the tick is kept across a reload, and unticking it takes the desk work away', async ({ page }) => {
+test('Field only narrows the list to field work, and a reload keeps the choice', async ({ page }) => {
   await landed(page);
-  await tickDesk(page);
-  expect(await page.evaluate(() => localStorage.getItem('navcom.desk'))).toBe('1');
+  await openList(page);
+  await expect(page.locator('[data-screen="missions"] [data-mission]')).toHaveCount(2, { timeout: 15_000 });
+  await scope(page, 'Field only');
+  await expect(page.locator('[data-screen="missions"] [data-mission]')).toHaveCount(1);
+  expect(await page.evaluate(() => localStorage.getItem('navcom.desk'))).toBe('0');
   await page.reload();
   await expect(page.locator('[data-missions="open"]')).toBeVisible({ timeout: 15_000 });
-  expect(await listed(page)).toEqual(['water-run', 'longview']);
-  await page.locator('[data-back]').click();
-  await page.getByRole('button', { name: 'Map layers' }).click();
-  await page.locator('[data-screen="layers"] [data-desk-toggle]').uncheck();
-  await page.locator('[data-back]').click();
   expect(await listed(page)).toEqual(['water-run']);
+  await scope(page, 'All');
+  await expect(page.locator('[data-screen="missions"] [data-mission="longview"]')).toBeVisible({ timeout: 15_000 });
 });

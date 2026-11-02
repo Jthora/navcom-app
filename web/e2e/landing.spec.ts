@@ -530,7 +530,7 @@ test.describe('the landing page: Com over the map', () => {
     expect(clear).toBe(true);
     await expect(page.locator('.distress-layer')).toBeHidden();
     // And joining is right there in the sheet's head, at its lowest, for the person who came to help.
-    const join = page.getByRole('link', { name: /open the field terminal/i });
+    const join = page.getByRole('link', { name: /create profile/i });
     await expect(join).toHaveCount(1);
     await expect(join).toBeInViewport({ ratio: 1 });
   });

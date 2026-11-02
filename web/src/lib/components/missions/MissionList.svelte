@@ -17,6 +17,13 @@
   import type { Refusal } from '$lib/missions/collect';
   import { Panel, Readout, Slot } from '$lib/components/panel';
   import { endsIn, endsSoon, filedUnder, placeName } from './format';
+  import { mapLayers } from '$lib/grid/layer.svelte';
+
+  /** Every kind of mission, or field work only: kept on this device, and asked for at once [missions/live.ts]. */
+  function scope(all: boolean) {
+    mapLayers.desk = all;
+    void import('$lib/missions/live').then((m) => m.wantDesk(all), () => undefined);
+  }
 
   /** Where a row says it is: the city its package names, in its state, or the state alone; desk work about nowhere, anywhere. */
   const whereOf = (m: Mission) => {
@@ -91,12 +98,16 @@
 
 <div data-screen={place ? null : 'missions'} data-province={place ? null : (province ?? '')}>
   <Panel label="Missions" post={named ?? 'Everywhere'}>
+    <div class="nc-scope" role="group" aria-label="Which missions" data-mission-scope>
+      <button type="button" aria-pressed={mapLayers.desk} onclick={() => scope(true)}>All</button>
+      <button type="button" aria-pressed={!mapLayers.desk} onclick={() => scope(false)}>Field only</button>
+    </div>
     {#if shown.length > 0}
       {#if field.length > 0}{@render rows(field)}{/if}
       {#if desk.length > 0}
         <div data-desk-work>
           <Slot k="Desk work">
-            <Readout value={`${desk.length} from anywhere`} sub="about where each is filed, if anywhere; taken up in Starcom" />
+            <Readout value={`${desk.length} from anywhere`} />
           </Slot>
           {@render rows(desk)}
         </div>
@@ -125,6 +136,9 @@
 </div>
 
 <style>
+  .nc-scope { display: flex; gap: .4rem; }
+  .nc-scope button { flex: 1; min-height: 2.75rem; }
+  .nc-scope button[aria-pressed='true'] { border-color: var(--t-ink); color: var(--t-ink); }
   .nc-refused {
     margin: 0;
     padding-inline-start: 1.1rem;

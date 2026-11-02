@@ -833,23 +833,22 @@ describe('desk work, while somebody wants it', () => {
     expect(merged(field, null)).toBe(field);
   });
 
-  it('starts asking when it is ticked, stops when it is unticked, and a reload keeps the tick', () => {
+  it('asks for every kind of mission unless this device chose Field only, and a reload keeps the choice', () => {
     const stop = watchMissions((f) => feeds.push(f));
-    expect(FakeSocket.made.map((s) => s.url)).toEqual([...MISSION_RELAYS]);
-    expect(mapLayers.desk).toBe(false);
-    wantDesk(true);
-    expect(FakeSocket.made).toHaveLength(4);
+    // All, by default: the field work's two relays and the desk work's two.
+    expect(FakeSocket.made.map((s) => s.url)).toEqual([...MISSION_RELAYS, ...MISSION_RELAYS]);
+    expect(mapLayers.desk).toBe(true);
     expect(mapLayers.deskFeed).toBe('loading');
     wantDesk(false);
     expect(FakeSocket.made.slice(2).every((s) => s.closed)).toBe(true);
     expect(mapLayers.deskFeed).toBe('off');
-    wantDesk(true);
     stop();
     FakeSocket.made = [];
     const again = watchMissions((f) => feeds.push(f));
-    expect(mapLayers.desk).toBe(true);
+    expect(mapLayers.desk).toBe(false);
+    expect(FakeSocket.made).toHaveLength(2);
+    wantDesk(true);
     expect(FakeSocket.made).toHaveLength(4);
     again();
-    wantDesk(false);
   });
 });

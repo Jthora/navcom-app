@@ -48,6 +48,9 @@
 
   let { data } = $props();
   let sig = $state<'low' | 'document'>('document');
+  /** The name on this device's profile, or null with none: the head's one door says which [com-head]. */
+  let profile = $state<string | null>(null);
+  let hasProfile = $state(false);
 
   let query = $state('');
   /**
@@ -391,6 +394,8 @@
     // landed back on / (the brand link, a bookmark) silently lost it here.
     sig = readSignature();
     applySignature(sig);
+    hasProfile = !!get('accruing', 'secret');
+    profile = get<string>('accruing', 'callsign') ?? null;
     void (async () => {
       try {
         const res = await fetch('/console-regions.json');
@@ -626,12 +631,16 @@
           <button type="button" class="back" data-back onclick={back}>Back</button>
         {:else}
           <!--
-            The one way into the Field Terminal, in the head where every height of the sheet shows
-            it. It sat at the foot of Com, below Find and the network, where a phone opening at peek
-            never showed it and a newcomer looking for where to begin did not find it [journey,
-            2026-10-28]. Back takes this place once a screen opens.
+            The one door to your own side of NavCom, in the head where every height of the sheet shows
+            it. With no profile on this device it is the page's call to action, Create profile, which
+            the owner looked for on a first visit and did not find behind "Field Terminal" (2026-11-01);
+            with one, it is your name, as an account's is. Back takes this place once a screen opens.
           -->
-          <a class="back" href="/terminal/" data-sveltekit-reload data-terminal-link aria-label="Open the Field Terminal">Field Terminal</a>
+          {#if hasProfile}
+            <a class="back" href="/terminal/" data-sveltekit-reload data-terminal-link aria-label="Your profile and status">{profile ?? 'You'}</a>
+          {:else}
+            <a class="back cta" href="/terminal/setup/" data-sveltekit-reload data-terminal-link data-create-profile>Create profile</a>
+          {/if}
         {/if}
       <button
         type="button"
@@ -1163,6 +1172,18 @@
     display: inline-flex;
     align-items: center;
     text-decoration: none;
+  }
+  .com-head .back.cta {
+    border-color: var(--t-oncall);
+    color: var(--t-oncall);
+  }
+  .com-head a.back {
+    max-width: 12rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+    line-height: 3rem;
   }
   .com-head .back {
     flex: none;

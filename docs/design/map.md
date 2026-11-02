@@ -895,10 +895,11 @@ whether it is a draft. A country in no Sphere answers as Nation States does, so 
 ### Desk work
 
 **Added 2026-11-01, at the owner's direction**: the missions Starcom shows that NavCom did not, done
-from anywhere — a charity's closure to look into, an industrial advisory to chase, relief by phone. A
-tick on the layers screen beside Hazards, off until somebody ticks it and remembered on the device as
-the choice, never as the missions. What it costs is said beside it before it is ticked: the same two
-relays, asked for everything handed to NavCom, about 2.6 MB from each on 2026-11-01.
+from anywhere — a charity's closure to look into, an industrial advisory to chase, relief by phone.
+**Shown by default** since the same day (*"include all types of missions in navcom, with a filter
+selector that allows us to scope only field missions"*): the missions list opens with **All · Field
+only**, kept on the device as the choice, never as the missions. All asks the same two relays for
+everything handed to NavCom, about 2.6 MB from each on 2026-11-01; Field only asks for none of it.
 
 **Outlined, dashed, never lit.** A field mission lights where it is filed because somebody goes there;
 desk work asks nobody to be anywhere, so where it is about is a dashed outline, and only where no field

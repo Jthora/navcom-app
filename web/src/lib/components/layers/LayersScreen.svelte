@@ -54,12 +54,6 @@
   });
   const openSphere = (id: string) => nav.open({ kind: 'sphere', id, code: null });
   /** A layer chosen; leaving Spheres lets go of the Sphere hatched, so it is never found still hatched on return. */
-  /** Desk work wanted or not: the live feed asks for it at once, and this device keeps the choice [missions/live.ts, `wantDesk`]. */
-  function desk(on: boolean) {
-    mapLayers.desk = on;
-    void import('$lib/missions/live').then((m) => m.wantDesk(on), () => (mapLayers.deskFeed = 'failed'));
-  }
-
   function choose(id: MapLayer) {
     mapLayers.chosen = id;
     if (id !== 'spheres') mapLayers.sphere = null;
@@ -120,29 +114,6 @@
       {/if}
       <span><b>Day and night</b> <span class="nc-layer-what">{mapLayers.chosen === 'timezones' ? 'always drawn with Time zones' : 'where the sun is up, over any layer'}</span></span>
     </label>
-    <label class="nc-layer nc-check" data-desk-option>
-      <input type="checkbox" data-desk-toggle checked={mapLayers.desk} onchange={(e) => desk(e.currentTarget.checked)} aria-describedby="nc-desk-ask" />
-      <span><b>Desk work</b> <span class="nc-layer-what">missions done from anywhere — research, outreach, relief by phone — outlined where each is about, beside the field work</span></span>
-    </label>
-    <!-- What it costs, said before it is chosen: the same relays, a longer answer. -->
-    <div class="nc-ask" id="nc-desk-ask" data-desk-ask>
-      <span>
-        Asks The Record and its mirror for every package handed to NavCom, not only field work: about 2.6 MB
-        from each now, less where they compress it, each time the map opens with it on. This device keeps the
-        choice, never the missions.
-      </span>
-    </div>
-    {#if mapLayers.desk}
-      <Slot k="Desk work">
-        {#if mapLayers.deskFeed === 'failed'}
-          <Readout value="Unavailable" tone="warn" sub="neither The Record nor its mirror answered" />
-        {:else if mapLayers.deskFeed === 'ready'}
-          <Readout value="Read" tone="neutral" sub="in the missions list, under the field work" />
-        {:else}
-          <Readout value="Reaching The Record" tone="cold" />
-        {/if}
-      </Slot>
-    {/if}
     <label class="nc-layer nc-check" data-hazards-option>
       <input type="checkbox" data-hazards bind:checked={mapLayers.hazards} aria-describedby="nc-hazards-ask" />
       <span><b>Hazards</b> <span class="nc-layer-what">fires, volcanoes, storms, floods, droughts and earthquakes, from three public feeds, over any layer</span></span>

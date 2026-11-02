@@ -49,7 +49,7 @@
   "src/routes/(site)/who/+page.svelte": 169,
   "src/routes/+error.svelte": 5,
   "src/routes/+layout.svelte": 0,
-  "src/routes/+page.svelte": 23,
+  "src/routes/+page.svelte": 26,
   "src/routes/terminal/+layout.svelte": 0,
   "src/routes/terminal/+page.svelte": 179,
   "src/routes/terminal/assist/+page.svelte": 137,

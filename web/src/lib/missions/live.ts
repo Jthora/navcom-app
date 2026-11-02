@@ -759,21 +759,25 @@ const DESK_PREF = 'navcom.desk';
 /** The landing page's subscription, told when desk work is ticked or unticked [`wantDesk`]. */
 const turns = new Set<(on: boolean) => void>();
 
-/** Whether desk work is wanted on this device. Nothing stored, or storage that will not answer, is no. */
+/**
+ * Whether desk work is wanted on this device: **yes unless somebody chose Field only** (the owner,
+ * 2026-11-01: every kind of mission, with a filter to narrow to field work). Storage that will not
+ * answer is yes too, as nothing chosen is.
+ */
 function deskWanted(): boolean {
   try {
-    return localStorage.getItem(DESK_PREF) === '1';
+    return localStorage.getItem(DESK_PREF) !== '0';
   } catch {
-    return false;
+    return true;
   }
 }
 
-/** Desk work wanted, or not: from the layers screen, kept on this device, and asked for at once. */
+/** All missions, or field work only: from the missions list's filter, kept on this device, and asked for at once. */
 export function wantDesk(on: boolean): void {
   mapLayers.desk = on;
   try {
-    if (on) localStorage.setItem(DESK_PREF, '1');
-    else localStorage.removeItem(DESK_PREF);
+    if (on) localStorage.removeItem(DESK_PREF);
+    else localStorage.setItem(DESK_PREF, '0');
   } catch {
     /* kept for this page only */
   }

@@ -240,8 +240,8 @@ never a total).
 
 Measured on 2026-10-06: **90 packages** carry `t=navcom_handoff`; **15** carry `t=navcom_mission`,
 of which 9 are `open`. NavCom's grid shows **`navcom_mission` packages** — boots-on-ground work —
-by default. **Since 2026-11-01, desk work too, when somebody ticks it** on the map's layers screen
-(the owner's direction): the same relays are asked for `#t: navcom_handoff`, limit 300, and a package
+too. **Since 2026-11-01, desk work as well, by default** (the owner's direction), with a filter in the
+missions list that narrows to field work: the same relays are asked for `#t: navcom_handoff`, limit 300, and a package
 without `navcom_mission` is read as desk work. It is outlined, dashed, where it is filed, never lit; it
 may name no end (said as no end given, with its age); and nobody takes it in NavCom, because a report
 here counts things and desk work hands back a written answer. Two kinds are left out: a grant notice
