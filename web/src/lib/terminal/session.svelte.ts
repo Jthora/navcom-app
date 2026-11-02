@@ -194,6 +194,53 @@ function area(text?: string) {
   };
 }
 
+/**
+ * A question or an Assist to a watch held on phones, waiting on a person.
+ *
+ * A box answers in seconds, so a send waits for its answer and gives up after fifteen. A person
+ * holding the board reads, looks a place up and types, and their answer came a minute later to a
+ * phone that had stopped listening and said *No response from Watchtower* [NYC audit, 2026-11-02;
+ * the journey answered inside the window, so nothing failed]. So here a send returns once a relay
+ * has it, and the phone goes on listening for the answer, on every screen, for as long as a person
+ * might take. An answer sent while this phone had no signal is still lost: responses are not kept,
+ * and the screen says, when the wait ends, to ask again.
+ */
+export const ANSWER_WAIT_MS = 15 * 60_000;
+let asked = $state<{ id: string; type: 'query' | 'assist'; at: number; gaveUp: boolean } | null>(null);
+let askWait: AbortController | null = null;
+
+function heldOnPhones(): boolean {
+  try {
+    return ctx().config.holders.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+async function askPerson(type: 'query' | 'assist', payload: SignalPayload): Promise<void> {
+  const { config, identity } = ctx();
+  const relays = targets();
+  const address = watchAddress(config);
+  const sent = await signal(relays, identity.secretKey, address, type, payload);
+  askWait?.abort();
+  const controller = new AbortController();
+  askWait = controller;
+  asked = { id: sent.id, type, at: Math.floor(Date.now() / 1000), gaveUp: false };
+  void waitForResponse(pool(), relays, identity.secretKey, identity.pubkey, address, sent, ANSWER_WAIT_MS, controller.signal)
+    .then((r) => {
+      if (askWait === controller) lastResponse = r;
+    })
+    .catch(() => {
+      if (askWait === controller && asked) asked = { ...asked, gaveUp: true };
+    });
+}
+
+function stopAsking(): void {
+  askWait?.abort();
+  askWait = null;
+  asked = null;
+}
+
 /** Where they are, for the watch, only where they chose to share it; nothing otherwise. */
 function here(): { position?: Position } {
   const fix = position.current;
@@ -601,7 +648,12 @@ export const operator = {
 
   async query(text: string) {
     // Area rides along so the watch can answer "nearest bed" without asking where you are.
-    const r = await ask(() => send('query', { ...area(text), ...here() }, 15_000));
+    const payload = { ...area(text), ...here() };
+    if (heldOnPhones()) {
+      await ask(() => askPerson('query', payload));
+      return;
+    }
+    const r = await ask(() => send('query', payload, 15_000));
     if (r) lastResponse = r;
   },
 
@@ -623,8 +675,18 @@ export const operator = {
   },
 
   async assist(urgency: 'soon' | 'now', text: string) {
-    const r = await ask(() => send('assist', { urgency, ...area(text ? text : undefined), ...here() }, 15_000));
+    const payload = { urgency, ...area(text ? text : undefined), ...here() };
+    if (heldOnPhones()) {
+      await ask(() => askPerson('assist', payload));
+      return;
+    }
+    const r = await ask(() => send('assist', payload, 15_000));
     if (r) lastResponse = r;
+  },
+
+  /** A question or an Assist sent to a watch held on phones, and whether the wait for it has ended. */
+  get asked(): { id: string; type: 'query' | 'assist'; at: number; gaveUp: boolean } | null {
+    return asked;
   },
 
   /**
@@ -709,6 +771,7 @@ export const operator = {
     // the screen next time this operator signs on. So is anything it passed on.
     overdue.clear();
     passedOn.clear();
+    stopAsking();
     return closedBy;
   },
 
@@ -845,6 +908,7 @@ export const operator = {
     presence.stopBeat();
     position.stop();
     stopFixBeat();
+    stopAsking();
     session = null;
     lastResponse = null;
     error = null;

@@ -18,7 +18,6 @@
   let urgency = $state<'soon' | 'now'>('soon');
   let text = $state('');
   let sent = $state(false);
-  let declined = $state(false);
   /** Inert until hydrated: a prerendered form tapped before then does a native GET. */
   let ready = $state(false);
 
@@ -35,8 +34,12 @@
     sent = false;
     await operator.assist(urgency, text.trim());
     if (operator.lastResponse) sent = true;
-    declined = operator.lastResponse?.type === 'declined';
   }
+
+  /** Sent to a watch held on phones, where a person answers when they have read it. */
+  const mine = $derived(operator.asked?.type === 'assist' ? operator.asked : null);
+  const answer = $derived(sent || mine ? operator.lastResponse : null);
+  const declined = $derived(answer?.type === 'declined');
 </script>
 
 <svelte:head>
@@ -96,11 +99,22 @@
     -->
     <p class="no" data-declined>
       <strong>Nobody is coming.</strong>
-      {#if operator.lastResponse?.text}{operator.lastResponse.text}{/if}
+      {#if answer?.text}{answer.text}{/if}
       <a href="/terminal/distress/">Go to Distress</a>
     </p>
-  {:else if sent}
-    <p class="ok" data-acked>Acknowledged by the watch.</p>
+  {:else if answer}
+    <!-- What the watch said, and who said it: an acknowledgement alone hid a person's answer. -->
+    <p class="ok" data-acked>{answer.responder?.callsign ?? 'The watch'}: {answer.text ?? 'received'}</p>
+  {:else if mine}
+    <Slot k="Asked">
+      <span data-asked>
+        {#if mine.gaveUp}
+          <Readout value="No answer heard" tone="warn" sub="ask again, or use Distress" />
+        {:else}
+          <Readout value="Waiting for the watch" tone="neutral" sub="the answer shows here, and on Status" />
+        {/if}
+      </span>
+    </Slot>
   {/if}
 
   <!--

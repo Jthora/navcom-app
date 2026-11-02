@@ -55,7 +55,7 @@
   "src/routes/+page.svelte": 26,
   "src/routes/terminal/+layout.svelte": 0,
   "src/routes/terminal/+page.svelte": 179,
-  "src/routes/terminal/assist/+page.svelte": 22,
+  "src/routes/terminal/assist/+page.svelte": 18,
   "src/routes/terminal/backup/+page.svelte": 42,
   "src/routes/terminal/card/+page.svelte": 32,
   "src/routes/terminal/directory/+page.svelte": 22,

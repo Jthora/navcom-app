@@ -654,6 +654,20 @@
             />
           {/if}
         </Slot>
+        {#if operator.asked}
+          <!-- A question or an Assist a person is answering: the answer is on its own screen. -->
+          <Slot k="Asked">
+            <span data-asked-status>
+              {#if operator.lastResponse}
+                <a href="/terminal/{operator.asked.type}/"><Readout value="Answered" tone="good" sub={operator.lastResponse.responder?.callsign ?? null} /></a>
+              {:else if operator.asked.gaveUp}
+                <Readout value="No answer heard" tone="warn" sub="ask again" />
+              {:else}
+                <Readout value="Waiting for the watch" tone="neutral" sub={`${ago(Math.floor(nowMs / 1000) - operator.asked.at)} so far`} />
+              {/if}
+            </span>
+          </Slot>
+        {/if}
         {#if passedOn.text}
           <!--
             Somebody's Assist, passed on by the watch: an offer, arrived silently. Taking it up is a

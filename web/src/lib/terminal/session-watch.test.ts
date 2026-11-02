@@ -332,3 +332,46 @@ describe('a watch taken again by the same holder', () => {
     watch.stop();
   });
 });
+
+describe('a question to a watch held on phones, which a person answers', () => {
+  const HOLDER = publicKeyOf(newSecretKey());
+
+  it('returns once a relay has it, and still hears an answer a minute later', async () => {
+    vi.useFakeTimers();
+    config = { pubkey: W, relays: ['wss://r'], holders: [HOLDER] };
+    await session.operator.query('bed tonight, has a dog');
+    // Not waiting on the screen: a person reads, looks up and types.
+    expect(session.operator.busy).toBe(false);
+    expect(session.operator.error).toBeNull();
+    expect(session.operator.asked?.type).toBe('query');
+
+    await vi.advanceTimersByTimeAsync(60_000);
+    const sent = published.find((e) => e.kind === KIND_SIGNAL)!;
+    deliver(answer(WATCH, [sent.id], { type: 'answer', responder: { kind: 'human', callsign: 'Vale' }, text: 'Olivieri Center, 257 W 30th St' }));
+    await vi.advanceTimersByTimeAsync(10);
+    expect(session.operator.lastResponse?.text).toBe('Olivieri Center, 257 W 30th St');
+    expect(session.operator.asked?.gaveUp).toBe(false);
+  });
+
+  it('says no answer was heard when the wait ends, rather than an error at fifteen seconds', async () => {
+    vi.useFakeTimers();
+    config = { pubkey: W, relays: ['wss://r'], holders: [HOLDER] };
+    await session.operator.assist('soon', '');
+    await vi.advanceTimersByTimeAsync(20_000);
+    expect(session.operator.error).toBeNull();
+    expect(session.operator.asked?.gaveUp).toBe(false);
+    await vi.advanceTimersByTimeAsync(session.ANSWER_WAIT_MS);
+    expect(session.operator.asked?.gaveUp).toBe(true);
+    expect(session.operator.lastResponse).toBeNull();
+  });
+
+  it('still waits fifteen seconds on a box, which answers on its own', async () => {
+    vi.useFakeTimers();
+    config = { pubkey: W, relays: ['wss://r'], holders: [] };
+    const pending = session.operator.query('anyone?');
+    await vi.advanceTimersByTimeAsync(16_000);
+    await pending;
+    expect(session.operator.asked).toBeNull();
+    expect(session.operator.error).toMatch(/No response/);
+  });
+});

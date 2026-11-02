@@ -82,7 +82,20 @@
   </button>
 </form>
 
-{#if answer && sentAt}
+{#if operator.asked?.type === 'query' && !answer}
+  <!-- A person answers a watch held on phones: the phone goes on listening while they do. -->
+  <section data-asked>
+    <Slot k="Asked">
+      {#if operator.asked.gaveUp}
+        <Readout value="No answer heard" tone="warn" sub="it may have come while you had no signal: ask again" />
+      {:else}
+        <Readout value="Waiting for the watch" tone="neutral" sub="the answer shows here, and on Status" />
+      {/if}
+    </Slot>
+  </section>
+{/if}
+
+{#if answer && (sentAt || operator.asked?.type === 'query')}
   <section class="answer" data-answer>
     <h2>Answer</h2>
     <!-- An agent is never presented as a human, on any surface [invariant 5]. -->

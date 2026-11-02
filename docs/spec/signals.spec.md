@@ -643,6 +643,13 @@ an answer, and it is also everything it proves.
 A missed window is not an error condition. It is displayed to the operator as an
 unanswered signal, and it degrades the visible watch state.
 
+**A watch held on phones answers nothing on its own**, so a `query` or `assist` sent to one is
+answered by a person, after they have read it and perhaps looked a place up. A client MUST NOT
+stop listening at the window there: it returns once a relay has the signal and goes on listening
+for the answer, on every screen, for 15 minutes (decided 2026-11-02, after an answer a minute late
+reached a phone that had already said *No response from Watchtower*). When that ends unanswered it
+says so and that the answer may have come while it had no signal, because responses are not kept.
+
 ## What is NOT here
 
 Among the signal kinds `20910`, `20911` and `20912`: no free-text chat kind. No threading, no
