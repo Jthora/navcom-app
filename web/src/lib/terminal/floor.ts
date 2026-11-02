@@ -54,12 +54,21 @@ export function teamsOn(entries: readonly BoardEntry[]): string[] {
 }
 
 /**
- * Whether a row shows while the board is narrowed to one team. A Distress, and anybody past their
- * time, show whatever team they are with: narrowing a list is the holder's convenience, and it never
- * hides the rows a watch exists to see.
+ * Whether a row shows while the board is narrowed to some teams; none chosen is all of them. A
+ * Distress, and anybody past their time, show whatever team they are with: narrowing a list is the
+ * holder's convenience, and it never hides the rows a watch exists to see.
  */
-export function shownFor(e: BoardEntry, team: string | null): boolean {
-  return team === null || e.status === 'distress' || e.status === 'overdue' || sameTeam(e.team, team);
+export function shownFor(e: BoardEntry, teams: readonly string[]): boolean {
+  return teams.length === 0 || e.status === 'distress' || e.status === 'overdue' || teams.some((t) => sameTeam(e.team, t));
+}
+
+/**
+ * Whether a question or an Assist shows while the board is narrowed: two holders sharing one watch
+ * split its teams between them (2026-11-02). One from somebody with no team, or not on the board,
+ * shows to both, since neither can say whose it is. A `Distress` is never narrowed and never comes here.
+ */
+export function askShown(team: string | null | undefined, teams: readonly string[]): boolean {
+  return teams.length === 0 || !team || teams.some((t) => sameTeam(team, t));
 }
 
 /** A name as a person reads it, for telling whether two rows carry the same one. */

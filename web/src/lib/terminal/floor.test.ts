@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { BoardEntry } from '@navcom/core';
-import { floorDetail, floorNote, floorPin, repeatedNames, shownFor, teamsOn } from './floor';
+import { askShown, floorDetail, floorNote, floorPin, repeatedNames, shownFor, teamsOn } from './floor';
 import { coordinates, mapLink, within } from './fix';
 
 const NOW = 1_800_000_000;
@@ -77,9 +77,17 @@ describe('a board several teams share', () => {
   it('narrowed to one team, shows that team, and never hides a Distress or anybody past their time', () => {
     const hurt = entry({ operator: 'e', callsign: 'Dove', team: 'Zone Guardians', status: 'distress' });
     const late = entry({ operator: 'f', callsign: 'Cedar', status: 'overdue' });
-    const shown = [zg, rr, rr2, none, hurt, late].filter((e) => shownFor(e, 'Rescue Rangers')).map((e) => e.operator);
+    const shown = [zg, rr, rr2, none, hurt, late].filter((e) => shownFor(e, ['Rescue Rangers'])).map((e) => e.operator);
     expect(shown).toEqual(['b', 'c', 'e', 'f']);
-    expect([zg, none].every((e) => shownFor(e, null))).toBe(true);
+    expect([zg, none].every((e) => shownFor(e, []))).toBe(true);
+    expect([zg, rr, none].filter((e) => shownFor(e, ['zone guardians', 'Rescue Rangers'])).map((e) => e.operator)).toEqual(['a', 'b']);
+  });
+
+  it('narrowed, keeps the questions of the teams chosen, and of anybody whose team it cannot say', () => {
+    expect(askShown('Rescue Rangers', ['rescue rangers'])).toBe(true);
+    expect(askShown('Zone Guardians', ['Rescue Rangers'])).toBe(false);
+    expect(askShown(null, ['Rescue Rangers'])).toBe(true);
+    expect(askShown('Zone Guardians', [])).toBe(true);
   });
 
   it('tells two operators with one name apart, and leaves a name nobody shares alone', () => {

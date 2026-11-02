@@ -60,8 +60,11 @@ they send.
 - **Who is out** shows Distress first, then anybody past their time, then whoever is due next.
   Each row says their team, when they are due and when you last heard from them, and has a map
   link if they share where they are. Two people with the same name each show the start of their
-  key. With more than one team out, the team buttons narrow the list to one team; a Distress and
-  anybody past their time stay on it.
+  key. With more than one team out, the team buttons narrow the list, and what is waiting on you,
+  to the teams you pick; a Distress and anybody past their time stay on it, and what waits on the
+  other teams is named under **Also waiting**.
+- **Two holding together:** keep both Watch screens open and split the teams between you out loud,
+  each picking their own. An answer from either of you clears it on both screens.
 - **Answering:** **Add a place** opens the area nearest the person asking. The place you pick goes
   into the answer, and the answer shows where it came from and when it was last checked.
 - **Past their time:** **Ask … to check in**. They see it silently, and nobody else does.

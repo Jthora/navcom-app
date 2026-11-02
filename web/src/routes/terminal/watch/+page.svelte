@@ -27,7 +27,7 @@
   import { loadConfig } from '$lib/terminal/config';
   import { update } from '$lib/terminal/update.svelte';
   import { sending } from '$lib/terminal/sending.svelte';
-  import { floorDetail, floorNote, floorPin, nameKey, repeatedNames, shownFor, teamsOn } from '$lib/terminal/floor';
+  import { askShown, floorDetail, floorNote, floorPin, nameKey, repeatedNames, shownFor, teamsOn } from '$lib/terminal/floor';
   import { coordinates, fixAge, mapLink, within } from '$lib/terminal/fix';
   import { awake, raise, setSound, soundOn } from '$lib/terminal/raise.svelte';
   import { placeLine, provenanceOf } from '$lib/terminal/lookup';
@@ -203,16 +203,25 @@
   const out = $derived(board.entriesAt(nowS));
   /** The teams on it, to narrow the list by, where more than one team shares this watch. */
   const teams = $derived(teamsOn(out));
-  let narrowed = $state<string | null>(null);
+  /**
+   * The teams this holder has narrowed the board to; none is all of them. Two holders sharing one
+   * watch split its teams this way, agreed between them, and nothing on the wire says so.
+   */
+  let narrowed = $state<string[]>([]);
   /** A team nobody on the board is with any longer is no narrowing. */
-  const team = $derived(narrowed !== null && teams.some((t) => sameTeam(t, narrowed)) ? narrowed : null);
+  const chosen = $derived(narrowed.filter((n) => teams.some((t) => sameTeam(t, n))));
+  const toggle = (t: string) =>
+    (narrowed = chosen.some((c) => sameTeam(c, t)) ? chosen.filter((c) => !sameTeam(c, t)) : [...chosen, t]);
+  /** What is waiting on this holder, and what is waiting on the teams they have not chosen: named, never hidden. */
+  const asks = $derived(board.waiting.filter((w) => askShown(board.teamFor(w.operator), chosen)));
+  const elsewhere = $derived(board.waiting.filter((w) => !askShown(board.teamFor(w.operator), chosen)));
   /** Names two operators here share: theirs show a key's print, which is who they are. */
   const repeated = $derived(repeatedNames(out));
   const printOf = (operator: string, callsign: string) => (repeated.has(nameKey(callsign)) ? keyPrint(operator) : null);
 
   /** Who is out, with their times, in the order the board is read. */
   const floor = $derived(
-    out.filter((e) => shownFor(e, team)).map((e) => ({
+    out.filter((e) => shownFor(e, chosen)).map((e) => ({
       operator: e.operator,
       callsign: e.callsign,
       team: e.team ?? null,
@@ -597,11 +606,14 @@
         the board the core already derives, so there is one definition of "overdue".
       -->
       {#if teams.length > 1}
-        <!-- Narrowing a list already on this phone. A Distress, and anybody past their time, stay on it. -->
+        <!--
+          Narrowing a list already on this phone, and what is waiting below with it. A Distress, and
+          anybody past their time, stay on it; what waits on the other teams is named, never hidden.
+        -->
         <div class="teams" role="group" aria-label="Team" data-teams>
-          <button aria-pressed={team === null} onclick={() => (narrowed = null)}>All</button>
+          <button aria-pressed={chosen.length === 0} onclick={() => (narrowed = [])}>All</button>
           {#each teams as t (t)}
-            <button aria-pressed={sameTeam(team, t)} data-team={t} onclick={() => (narrowed = t)}>{t}</button>
+            <button aria-pressed={chosen.some((c) => sameTeam(c, t))} data-team={t} onclick={() => toggle(t)}>{t}</button>
           {/each}
         </div>
       {/if}
@@ -746,8 +758,15 @@
       </Slot>
     {:else}
       <ul class="board asks">
-        {#each board.waiting as w (w.id)}{@render ask(w)}{/each}
+        {#each asks as w (w.id)}{@render ask(w)}{/each}
       </ul>
+      {#if elsewhere.length > 0}
+        <Slot k="Also waiting">
+          <span data-also-waiting>
+            <Readout value={elsewhere.map((w) => withTeam(w.operator, w.callsign)).join(', ')} verbatim tone="warn" sub="other teams" />
+          </span>
+        </Slot>
+      {/if}
     {/if}
   </section>
 

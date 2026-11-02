@@ -15,11 +15,12 @@ const WATCH_SECRET = '6'.repeat(63) + '7';
 const bytes = (hex: string) => Uint8Array.from((hex.match(/../g) ?? []).map((b) => parseInt(b, 16)));
 
 /** A signal from `sender`, sealed to this phone as the watch's holder, said at `at`. */
-async function signal(sender: Uint8Array, type: 'on-station' | 'query', payload: Record<string, unknown>, at: number) {
+async function signal(sender: Uint8Array, type: 'on-station' | 'query' | 'distress', payload: Record<string, unknown>, at: number) {
   const { finalizeEvent, getPublicKey } = await import('nostr-tools/pure');
-  const { buildSignal } = await import('@navcom/core');
+  const { buildDistress, buildSignal } = await import('@navcom/core');
   const to = { pubkey: getPublicKey(bytes(WATCH_SECRET)), holders: [getPublicKey(bytes(TEST_SECRET))] };
-  return finalizeEvent(buildSignal(sender, to, type, payload as never, at), sender);
+  const built = type === 'distress' ? buildDistress(sender, to, payload as never, at) : buildSignal(sender, to, type, payload as never, at);
+  return finalizeEvent(built, sender);
 }
 
 const out = (callsign: string, team: string, area: string, expected_duration = 3600) => ({
@@ -30,7 +31,7 @@ test.describe('a watch several teams share', () => {
   test('says each operator’s team, tells two Owls apart, and narrows to one team without hiding who is late', async ({ page }) => {
     const { generateSecretKey } = await import('nostr-tools/pure');
     const now = Math.floor(Date.now() / 1000);
-    const [owlZ, owlR, kite, cedar] = [generateSecretKey(), generateSecretKey(), generateSecretKey(), generateSecretKey()];
+    const [owlZ, owlR, kite, cedar, dove] = [generateSecretKey(), generateSecretKey(), generateSecretKey(), generateSecretKey(), generateSecretKey()];
     await seedDevice(page, {
       callsign: 'Wren',
       watchSecret: WATCH_SECRET,
@@ -40,13 +41,16 @@ test.describe('a watch several teams share', () => {
         await signal(kite, 'on-station', out('Kite', 'rescue rangers', '8th Ave'), now - 60),
         // Out for ten minutes, two hours ago: past their time.
         await signal(cedar, 'on-station', out('Cedar', 'Zone Guardians', 'Times Sq', 600), now - 7200),
-        await signal(kite, 'query', { text: 'somewhere warm near Penn', area: '8th Ave' }, now - 30)
+        await signal(kite, 'query', { text: 'somewhere warm near Penn', area: '8th Ave' }, now - 30),
+        await signal(owlZ, 'query', { text: 'water at Herald Sq', area: 'Herald Sq' }, now - 20),
+        await signal(dove, 'on-station', out('Dove', 'Zone Guardians', 'Bryant Park'), now - 60),
+        await signal(dove, 'distress', { position: null, area: 'Bryant Park' }, now - 10)
       ]
     });
     await open(page, '/terminal/watch/');
 
     const rows = page.locator('[data-floor] .nc-floor-row');
-    await expect(rows).toHaveCount(4, { timeout: 15_000 });
+    await expect(rows).toHaveCount(5, { timeout: 15_000 });
     await expect(rows.filter({ hasText: 'Kite' }).locator('[data-floor-team]')).toHaveText('rescue rangers');
     await expect(rows.filter({ hasText: 'Cedar' }).locator('[data-floor-team]')).toHaveText('Zone Guardians');
 
@@ -61,22 +65,36 @@ test.describe('a watch several teams share', () => {
 
     // The question is under the name its asker signed on with, beside their team, and asking
     // somebody late to check in names their team too.
-    const question = page.locator('li:has([data-ask-team])');
+    const question = page.locator('li:has-text("somewhere warm near Penn")');
     await expect(question.locator('.name')).toHaveText('Kite');
     await expect(question.locator('[data-ask-team]')).toHaveText('rescue rangers');
     await expect(page.getByRole('button', { name: 'Ask Cedar (Zone Guardians) to check in' })).toBeVisible();
 
-    // Narrowed to one team, typed two ways: that team, and Cedar, who is past their time.
+    // Narrowed to one team, typed two ways: that team, Cedar, who is past their time, and Dove, in
+    // Distress. Two holders split a night's teams this way.
     const teams = page.locator('[data-teams] button');
     await expect(teams).toHaveText(['All', 'Rescue Rangers', 'Zone Guardians']);
     await teams.filter({ hasText: 'Rescue Rangers' }).click();
-    await expect(rows).toHaveCount(3);
+    await expect(rows).toHaveCount(4);
     await expect(rows.filter({ hasText: 'Herald Sq' })).toHaveCount(0);
     await expect(rows.filter({ hasText: 'Times Sq' })).toHaveCount(1);
+    await expect(rows.filter({ hasText: 'Bryant Park' })).toHaveCount(1);
     await expect(teams.filter({ hasText: 'Rescue Rangers' })).toHaveAttribute('aria-pressed', 'true');
 
+    // What waits on the other team is named, not hidden; the Distress is not narrowed at all.
+    await expect(page.getByText('somewhere warm near Penn')).toBeVisible();
+    await expect(page.getByText('water at Herald Sq')).toHaveCount(0);
+    await expect(page.locator('[data-also-waiting]')).toContainText('Owl (Zone Guardians)');
+    await expect(page.locator('section.urgent')).toContainText('Dove');
+
+    // Both teams chosen is everything again, and so is All.
+    await teams.filter({ hasText: 'Zone Guardians' }).click();
+    await expect(rows).toHaveCount(5);
+    await expect(page.getByText('water at Herald Sq')).toBeVisible();
+    await expect(page.locator('[data-also-waiting]')).toHaveCount(0);
     await teams.filter({ hasText: 'All' }).click();
-    await expect(rows).toHaveCount(4);
+    await expect(teams.filter({ hasText: 'All' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(rows).toHaveCount(5);
   });
 
   test('a sign-on takes a team, Status shows it, and the next sign-on offers it again', async ({ page }) => {
