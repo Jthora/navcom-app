@@ -11,13 +11,10 @@ import { readDevice, seedDevice, open } from './device';
 
 const OUT = { callsign: 'Wren' };
 
-test('states the real picture before anything is enabled', async ({ page }) => {
+test('states the cost that catches people out, before anything is enabled', async ({ page }) => {
   await seedDevice(page, OUT);
   await open(page, '/terminal/funding/');
 
-  await expect(page.getByText(/this app never touches money/i)).toBeVisible();
-  await expect(page.getByText(/nothing here counts anything/i)).toBeVisible();
-  // The cost that catches people out.
   await expect(page.getByText(/converting to cash usually is not/i)).toBeVisible();
 });
 
@@ -28,7 +25,7 @@ test('says the crew address reaches nobody, where it is typed', async ({ page })
   await seedDevice(page, OUT);
   await open(page, '/terminal/funding/');
 
-  await expect(page.getByText(/published nowhere/i)).toBeVisible();
+  await expect(page.getByText(/kept on this phone only/i)).toBeVisible();
 });
 
 test('shows no amount, and has nowhere to put one', async ({ page }) => {
@@ -88,7 +85,6 @@ test('works from Ghost — an address needs no card', async ({ page }) => {
   const device = await readDevice(page);
   expect(device.accruing['lightning']).toBeTruthy();
   expect(device.accruing['card'], 'no card was published').toBeUndefined();
-  await expect(page.getByText(/this one works from ghost/i)).toBeVisible();
 });
 
 test('clearing the field removes it', async ({ page }) => {

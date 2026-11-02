@@ -106,9 +106,7 @@ test.describe('a squad grows by one', () => {
     const vouchers = ash.locator('[data-vouchers]');
     await expect(vouchers).toBeVisible();
     await expect(vouchers).toContainText(/wren/i);
-    // The claim and its limit in one breath. Somebody's word about how she has worked before
-    // is not a promise about tonight, and only she can make that one.
-    await expect(vouchers).toContainText(/not a\s+promise that you will stay awake tonight/i);
+    await expect(vouchers).toContainText(/says you can take a watch/i);
     await expect(ash.getByRole('button', { name: /take the watch/i })).toBeVisible();
 
     await wren.close();

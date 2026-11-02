@@ -246,57 +246,12 @@
 </header>
 
 <section>
-  <p>
-    Somebody you paired with sees when you are out, and you see when they are. No watch is
-    involved, no server holds it, and either of you can end it without telling the other.
-  </p>
-  <p>
-    <!--
-      The sentence this screen was missing, and the one most likely to matter.
-      Nothing in the code ever required a peer to be an operator — `pair` takes any valid
-      key and a name you choose, and there is no roster to be absent from — but every word
-      here described patrolling, so somebody whose only candidate was their partner had no
-      way to know this was for them. The mechanism shipped; the framing did not.
-    -->
-    <strong>They do not have to be an operator.</strong> A partner, a housemate, a sibling —
-    anyone willing to install this and pick a name. Most people here know nobody else who
-    does this, and the person most likely to notice you did not come home already lives with
-    you.
-  </p>
-  <p class="cost">
-    <strong>Best done face to face.</strong> A code sent through a messaging app travels
-    through whatever carried it — which is fine between people who already talk that way,
-    and worth knowing either way.
-  </p>
-  <p class="cost">
-    <!-- Stated before pairing rather than after. Somebody deciding whether to pair should
-         already know how ending it works. -->
-    Ending it is one tap, immediate, and <strong>they are not told</strong>. It stops what
-    you send them from then on; it cannot recall what they already have.
-  </p>
-  <p class="cost">
-    <!--
-      Before the pairing form, where somebody deciding actually reads it. Sixth time this
-      session an important sentence sat behind a conditional — and the first time it was
-      caught the moment it was written rather than after it shipped.
-    -->
-    <strong>Watching for somebody</strong> is a separate thing you can take on: your phone
-    tells you when they are past the time they gave, and <strong>they are told you are doing
-    it</strong> — a private note would let somebody believe they are watched while nobody
-    is. It is a nudge and nothing else: nothing escalates, nobody is paged, and going quiet
-    is never treated as trouble.
-  </p>
-  <p class="cost">
-    <!--
-      Said before an invite has ever arrived, because the moment one is on the screen is the
-      moment somebody feels they owe an answer. They do not.
-    -->
-    You can also pair with somebody you have not met, from <a href="/terminal/find/">their
-    card</a>. Anybody may ask you — and <strong>ignoring sends nothing</strong>: no refusal,
-    no read receipt, and no way for them to tell an ignored invite from one that never
-    arrived. <a href="/terminal/card/">Publishing a card</a> is what makes you askable, and
-    having none is the default.
-  </p>
+  <!--
+    The one line kept (2026-11-01). Pairing never required a peer to be an operator, and every
+    word here once described patrolling, so somebody whose only candidate was their partner had
+    no way to know this was for them.
+  -->
+  <p>You and anyone you pair with see when the other is out. They don't have to be an operator.</p>
 </section>
 
 <!--
@@ -310,17 +265,12 @@
   this phone holds with no config of its own runs on this list too [audit: relay paths, review].
 -->
 <Why summary="Where this goes" open={openWhere}>
-  <p>
-    Presence, invites, your card, corrections and places travel through these: {watchRelays ? 'your watch’s relays, and beside them ' : ''}{defaults ? 'the public relays NavCom ships with' : 'the relays you chose'}.
-    Presence and invites are sealed and those relays cannot read them; a card and a correction
-    are public.
-  </p>
+  <p>{defaults ? 'NavCom’s public relays' : 'Your relays'}{watchRelays ? ' and your watch’s' : ''}:</p>
   <p class="blocks">{#each using as r (r)}<span>{r}</span>{/each}</p>
   <p data-mission-relays>
     {missionsAlso.length > 0
-      ? `Anything you send about a mission also goes to ${missionsAlso.join(' and ')}, where whoever posted it reads.`
-      : 'Anything you send about a mission goes through these too.'}
-    What you seal to a mission’s poster goes to the relays that poster names.
+      ? `Missions also use ${missionsAlso.join(' and ')}.`
+      : 'Missions use these too.'}
   </p>
   {#if ownRefused.length > 0}
     <!-- A list saved before the check, refused here: said, never replaced in silence. -->
@@ -335,14 +285,12 @@
   {/if}
   {#if holdsWatchHere}
     <p data-held-watch-relays>
-      <strong>The watch this phone holds runs on these too.</strong> Change them and it moves
-      with them, away from the relays its operators were given.
+      <strong>The watch this phone holds runs on these too.</strong>
     </p>
   {/if}
   {#if watchRelays}
     <p>
-      Your watch’s relays are always included, and changed only on
-      <a href="/terminal/setup/#watch">the setup screen</a> with the watch they belong to.
+      Your watch’s relays are always included. Change them in <a href="/terminal/setup/#watch">Setup</a>.
     </p>
   {/if}
   <label for="relay-list">Your own relays</label>
@@ -376,10 +324,7 @@
       <Slot k="Requests">
         <Readout value="Turning away" tone="warn" sub="more arriving than this will hold" />
       </Slot>
-      <p class="over" data-invites-flooded>
-        More pairing requests are arriving than this will hold, so new ones are being
-        turned away. If you were expecting one, clear these and ask them to send it again.
-      </p>
+      <p class="over" data-invites-flooded>Expecting one? Clear these and ask them to send it again.</p>
       <button class="drop" data-ignore-all onclick={() => invites.ignoreAll()}>
         Clear all requests
       </button>
@@ -389,8 +334,7 @@
         <Heartbeat label="Half done" />
       </Slot>
       <p class="over" data-half-paired>
-        You have {halfPaired}, but they do not have you — your reply did not reach a relay.
-        Tap Accept again when you have signal, or they will not see your patrols.
+        Your reply to {halfPaired} did not reach a relay. Tap Accept again when you have signal.
       </p>
     {/if}
     <ul class="asks">
@@ -408,7 +352,7 @@
         </li>
       {/each}
     </ul>
-    <p class="cost">Ignoring sends nothing. Take the time you want.</p>
+    <p class="cost">Ignoring sends nothing.</p>
   </section>
 {/if}
 
@@ -423,10 +367,6 @@
       <p class="blocks">{#each blocks as b, i (i)}<span>{b}</span>{/each}</p>
     </details>
     <button onclick={copy}>{copied ? 'Copied' : 'Copy your link'}</button>
-    <p class="cost">
-      Hold it up to their camera. Nothing happens until they accept, and nothing about you
-      is published by having a code.
-    </p>
   {:else}
     <PickACallsign />
   {/if}
@@ -456,9 +396,6 @@
       placeholder="paste their code or link"></textarea>
     <label for="name">What you call them</label>
     <input id="name" bind:value={callsign} autocomplete="off" placeholder="Raven" />
-    <p class="cost">
-      Your name for them, kept on this phone and never sent anywhere. They will never see it.
-    </p>
     {#if error}<p class="error">{error}</p>{/if}
     <button type="button" onclick={accept}>Pair</button>
   </div>
@@ -494,9 +431,7 @@
         </li>
       {/each}
     </ul>
-    <p class="cost">
-      Removing somebody is immediate, and they are not told.
-    </p>
+    <p class="cost">Removing somebody doesn't tell them.</p>
   </section>
 {/if}
 

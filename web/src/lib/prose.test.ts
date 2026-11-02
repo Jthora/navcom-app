@@ -228,8 +228,9 @@ describe('a disclosure names itself in a phrase, not a sentence', () => {
     });
 
   it('finds the summaries at all', () => {
-    // A regex that matches nothing passes every assertion under it.
-    expect(summaries().length).toBeGreaterThan(20);
+    // A regex that matches nothing passes every assertion under it. Most disclosures were
+    // removed with the explanations they held (2026-11-01), so the floor is low on purpose.
+    expect(summaries().length).toBeGreaterThan(5);
   });
 
   it('keeps every one of them short enough not to wrap', () => {

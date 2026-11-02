@@ -100,10 +100,6 @@ test('says nobody has checked any of it, before the links rather than under them
   expect(claim, 'the claim is not on the page').toBeGreaterThan(-1);
   expect(links, 'the links section is not on the page').toBeGreaterThan(-1);
   expect(claim, 'the claim must come before the links, not after them').toBeLessThan(links);
-
-  // The full sentence survives, one tap away rather than deleted.
-  await page.getByText(/what that means/i).click();
-  await expect(page.getByText(/no part of it has been checked by anybody/i)).toBeVisible();
 });
 
 test('lays links out by rank, and never features one that can only be a link', async ({ page }) => {
@@ -199,11 +195,9 @@ test('an address with no card says so without claiming the card does not exist',
   await seedDevice(page, { callsign: 'Wren', relayEvents: [] });
   await open(page, `/terminal/who/?k=${contact}`);
 
+  // Not found and does not exist are different: the readout says which relays it asked.
   await expect(page.getByText(/nothing here/i)).toBeVisible();
-  // Not found and does not exist are different, and this screen cannot tell them apart. The
-  // explanation moved behind a `Why` with the prose reduction; it is still there, one tap in.
-  await page.getByText(/why that is not the same as no card/i).click();
-  await expect(page.getByText(/cannot tell them apart/i)).toBeVisible();
+  await expect(page.getByText(/no relay we asked has a card/i)).toBeVisible();
 });
 
 test('an address nobody could be asked about is unknown, not without a card', async ({ page }) => {

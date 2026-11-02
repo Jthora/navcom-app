@@ -33,7 +33,6 @@ test.describe('asking the watch', () => {
     await seedDevice(page, { callsign: 'Wren' });
     await open(page, '/terminal/query/');
 
-    await expect(page.getByText(/query goes to a watch/i)).toBeVisible();
     await expect(page.getByText(/nobody\s+to\s+ask/i)).toBeVisible();
   });
 

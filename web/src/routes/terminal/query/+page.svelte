@@ -57,27 +57,21 @@
       <Readout
         value={stranded ? 'Unreachable' : 'No watch'}
         tone={stranded ? 'warn' : 'cold'}
-        sub={stranded ? 'Query goes to your watch, and none of its relays can be reached from this page. Fix them on the setup screen.' : 'Query goes to a watch, and you have not added one. There is nobody to ask.'}
+        sub={stranded ? 'none of its relays can be reached from this page' : 'nobody to ask'}
       />
     </Slot>
   </section>
 {:else if watch.state.state === 'dark'}
   <section>
     <Slot k="Watch"><Readout value="Dark" tone="cold" sub="nobody to ask" /></Slot>
-    <p class="error">
-      No watch. <strong>Query needs one</strong> — there is nobody to ask, and this
-      terminal has nothing cached to fall back on yet.
-    </p>
   </section>
 {/if}
 
 <form onsubmit={submit}>
   <label for="q">Question</label>
   <textarea id="q" bind:value={text} placeholder="bed tonight, has a dog"></textarea>
-  <p class="note">
-    Answer target is 120 seconds. Nothing you write here is recorded about anyone you are
-    asking on behalf of — write about the need, not the person.
-  </p>
+  <!-- Invariant 1, where somebody types. -->
+  <p class="note"><strong>Write about the need, not the person.</strong></p>
 
   {#if operator.error}
     <p class="error">{operator.error}</p>
@@ -100,7 +94,6 @@
       <p class="text pending">
         {answer.text ?? 'Received. The answer is still coming.'}
       </p>
-      <p class="prov">Answers target 120 seconds. This screen updates when it arrives.</p>
     {:else}
       <p class="text">{answer.text ?? '(no text)'}</p>
 

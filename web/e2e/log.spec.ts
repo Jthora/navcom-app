@@ -63,18 +63,6 @@ async function replyBuilder(watchSecret: Uint8Array, payload: Record<string, unk
     );
 }
 
-test.describe('what a check here can and cannot tell you', () => {
-  test('says both limits before anything is asked', async ({ page }) => {
-    await seedDevice(page, { callsign: 'Wren' });
-    await open(page, '/terminal/log/');
-
-    await expect(
-      page.getByText(/never against one the watch hands over with its own answer/i)
-    ).toBeVisible();
-    await expect(page.getByText(/cannot tell you whether anything is missing/i)).toBeVisible();
-  });
-});
-
 test.describe('checking the watch\'s record of you', () => {
   test('a root this device actually saw is Checked', async ({ page }) => {
     const { getPublicKey, generateSecretKey } = await import('nostr-tools/pure');
@@ -126,7 +114,7 @@ test.describe('checking the watch\'s record of you', () => {
 
     const verdict = page.locator('[data-verdict="unchecked"]');
     await expect(verdict).toBeVisible({ timeout: 10_000 });
-    await expect(verdict).toContainText(/marking its own homework/i);
+    await expect(verdict).toContainText(/never seen the watch publish/i);
   });
 
   test('an entry that does not verify against a seen root Did not check out', async ({ page }) => {
@@ -210,11 +198,11 @@ test.describe('the escalation executor\'s own account (log-review merge)', () =>
     // The escalation section renders, names itself honestly, and shows its entry.
     const escalationSection = page.locator('section.escalation');
     await expect(escalationSection).toBeVisible();
-    await expect(escalationSection).toContainText(/not yet checkable/i);
+    await expect(escalationSection).toContainText(/not checkable yet/i);
     await expect(escalationSection).toContainText(/escalation reached human/i);
     // And it must not claim the primary section's own not-checked framing -- that one
     // promises waiting will fix it, and this limit never resolves by waiting.
-    await expect(escalationSection).not.toContainText(/leave it on/i);
+    await expect(escalationSection).not.toContainText(/ask again later/i);
   });
 
   test('does not render the section at all when no escalation log is configured', async ({ page }) => {

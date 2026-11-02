@@ -465,7 +465,7 @@ test.describe('the rest of the filters, against a relay that honours them', () =
 
     const corrected = page.locator('[data-corrected]').first();
     await expect(corrected).toBeVisible({ timeout: 20_000 });
-    await expect(corrected).toContainText(/nothing was removed/i);
+    await expect(corrected).toContainText(/from operators/i);
     // Provenance by name, on the face of the corrected field [build-order 7.6]. The summary
     // line above says a correction exists; this is the part that says whose word it is.
     await expect(page.getByText(/raven/i).first()).toBeVisible();

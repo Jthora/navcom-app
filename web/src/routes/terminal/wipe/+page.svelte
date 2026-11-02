@@ -117,60 +117,26 @@
 <section class="act">
   <h2>Panic wipe</h2>
   <p>
-    Destroys <strong>tonight</strong> and keeps your identity, your standing and the person
-    you would call. You can carry on working straight afterwards — nobody has to
-    re-provision you.
+    Destroys <strong>tonight</strong>. Keeps your profile, your standing and the person you
+    would call.
   </p>
   <!--
-    The cost of stopping what is still sending, said before the hold rather than after. It was
-    decided rather than defaulted into: a wipe that left a Distress and a public listing
-    running kept transmitting from a phone its owner believed was quiet.
-
-    "In this tab", because that is where it stops them. Another tab's pages let go of tonight's
-    storage when they hear the wipe, but whether a wipe here should also end a Distress or a
-    held watch running there is the owner's to decide [wipe-two-tabs.spec.ts], and until it is,
-    the sentence must not promise it.
+    The cost of stopping what is still sending, said before the hold rather than after: a wipe
+    that left a Distress running kept transmitting from a phone its owner believed was quiet.
+    "This tab", because another tab's Distress or held watch is the owner's to decide
+    [wipe-two-tabs.spec.ts], and until it is, the sentence must not promise it.
   -->
-  <p class="cost">
-    <strong>It also stops what this tab is still sending</strong> — a Distress still going,
-    your name on the board as out tonight, your position, and a watch you are holding, which
-    reads Dark to everyone within five minutes. If you are wiping because you are in trouble,
-    that silences your own call for help: send it again once you can. <strong>Another NavCom tab
-    keeps sending until you close it.</strong>
+  <p class="cost" data-wipe-stops>
+    <strong>Also stops anything this tab is still sending</strong>, a Distress included.
   </p>
   <Action label="Hold to wipe tonight" holdingLabel="Keep holding…" hold={800} tone="alarm" onfire={fireWipe} />
-</section>
-
-<!-- The limits, stated. An operator who believes a wipe is total is worse off than one who
-     knows exactly where it stops. -->
-<section class="limits">
-  <h2>What this does not reach</h2>
-  <p>
-    <strong>The watch still has your board entry.</strong> This wipes the phone, not the
-    watch. A box forgets the entry on its own; a phone holding the watch keeps it until that
-    page reloads. The wipe itself sends nothing and tells nobody.
-  </p>
-  <p>
-    <strong>The accountability log is outside both tiers.</strong> It lives on the node and
-    records actions, never positions. It is what makes the watch answerable to you, so it is
-    not yours to delete.
-  </p>
-  <p class="cost">
-    And two limits of the browser itself: there is no OS keystore here, so the secret sits in
-    storage any script on this origin could read; and deleting a key unlinks it rather than
-    scrubbing the pages underneath. Your browser history and this site's address survive
-    both actions. A phone taken by someone patient and equipped is a phone taken.
-  </p>
 </section>
 
 <section class="act burnsec">
   <h2>Burn</h2>
   <p>
-    Destroys <strong>everything on this device, identity included</strong> — both storage
-    tiers and the offline caches, so the cached directory goes too — and stops this phone
-    being woken if it was on call. The watch's on-call list still names you until whoever runs
-    it takes you off. Your standing goes with it and there is no recovery unless you set one
-    up. For seizure or compulsion, not for a phone that might be glanced at.
+    Destroys <strong>everything on this device, your profile included</strong>. There is no
+    recovery without a backup.
   </p>
   {#if callsign}
     <label for="confirm">Type <strong>{callsign}</strong> to confirm</label>
@@ -189,10 +155,7 @@
       It said "nothing to burn", which was not true: cached pages and tonight's data can be here
       with no identity, and burn refuses to run without one. The browser can remove them.
     -->
-    <p class="cost">
-      No identity on this device, so burn will not run. Cached pages and tonight's data can still
-      be here — clear this site's data in the browser to remove them.
-    </p>
+    <p class="cost">Burn needs a profile. Clear this site's data in the browser instead.</p>
   {/if}
 </section>
 
@@ -221,6 +184,5 @@
   /* Burn is typed, not held: no fill, and it stays inert until the callsign matches. */
   .burn::before { content: none; }
 
-  .limits { border-inline-start: 3px solid var(--t-line-strong); padding-inline-start: .9rem; }
   .burnsec { border-top: 1px solid var(--t-line); padding-top: 1.1rem; }
 </style>

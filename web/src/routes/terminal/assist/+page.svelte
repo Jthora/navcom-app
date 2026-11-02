@@ -19,8 +19,11 @@
   let text = $state('');
   let sent = $state(false);
   let declined = $state(false);
+  /** Inert until hydrated: a prerendered form tapped before then does a native GET. */
+  let ready = $state(false);
 
   onMount(() => {
+    ready = true;
     hasWatch = operator.hasWatch;
     stranded = operator.watchStranded;
     watch.start();
@@ -48,9 +51,8 @@
 
 <section>
   <p>
-    You need a person, and it is not an emergency. If it is,
-    <a class="to-distress" href="/terminal/distress/">use Distress</a> — it wakes people up
-    and this does not.
+    A person, not an emergency. If it is one,
+    <a class="to-distress" href="/terminal/distress/">use Distress</a>.
   </p>
 </section>
 
@@ -71,27 +73,17 @@
 
   <label for="a">What for <span class="opt">optional</span></label>
   <textarea id="a" bind:value={text} placeholder="second pair of hands, corner of 4th"></textarea>
-  <p class="note">
-    <strong>A watch that has nobody to send will say so</strong>, in as many words, rather
-    than leaving you on an acknowledgement. If that comes back, your own person is one tap
-    away and <code>Distress</code> is still there.
-  </p>
-  <p class="opt">
-    Leave it blank if typing costs you time. <strong>An assist with no words still means
-    you need someone</strong>, and the watch can ask.
-  </p>
 
   {#if !hasWatch}
     <Slot k="Watch">
       <Readout
         value={stranded ? 'Unreachable' : 'No watch'}
         tone={stranded ? 'warn' : 'cold'}
-        sub={stranded ? 'Assist goes to your watch, and none of its relays can be reached from this page. Fix them on the setup screen.' : 'Assist goes to a watch, and you have not added one. There is nobody to ask.'}
+        sub={stranded ? 'none of its relays can be reached from this page' : 'this goes to a watch'}
       />
     </Slot>
   {:else if watch.state.state === 'dark'}
     <Slot k="Watch"><Readout value="Dark" tone="cold" sub="sends anyway, read when one is up" /></Slot>
-    <p class="error">No watch. This will send, and nobody will see it until one is up.</p>
   {/if}
   {#if operator.error}
     <p class="error">{operator.error}</p>
@@ -105,20 +97,18 @@
     <p class="no" data-declined>
       <strong>Nobody is coming.</strong>
       {#if operator.lastResponse?.text}{operator.lastResponse.text}{/if}
-      Your own person is one tap away on
-      <a href="/terminal/distress/">the Distress screen</a>, and if this is worse than you
-      first said, <strong>Distress keeps sending until a human answers</strong>, while that
-      screen stays open.
+      <a href="/terminal/distress/">Go to Distress</a>
     </p>
   {:else if sent}
     <p class="ok" data-acked>Acknowledged by the watch.</p>
   {/if}
 
   <!--
-      Also inert before hydration: `operator.busy` is false on a prerendered page, so this
-      was tappable and did a native GET. See the setup screen for the whole reasoning.
+      Inert before hydration: `operator.busy` is false on a prerendered page, so this was tappable
+      and did a native GET. Gated on hydrating rather than on the text, which is optional [core:
+      AssistPayload]: requiring it made a blank assist impossible while the label said optional.
     -->
-    <button type="submit" disabled={operator.busy || !text.trim()}>
+  <button type="submit" disabled={operator.busy || !ready}>
     {operator.busy ? 'Sending…' : urgency === 'now' ? 'Assist — now' : 'Assist — soon'}
   </button>
 </form>

@@ -18,7 +18,7 @@
    */
   import { onMount } from 'svelte';
   import { operator, watchClosure, type WakeOutcome } from '$lib/terminal/session.svelte';
-  import { Action, Why } from '$lib/components/panel';
+  import { Action } from '$lib/components/panel';
   import { wakeFrom, wakeWords, type WakeContext } from '$lib/terminal/wake';
 
   /** False until the address has been read: a prerendered page knows no attempt yet. */
@@ -82,8 +82,7 @@
 {#if mounted}
   {#if !ctx.attempt}
     <p class="error" data-wake-no-attempt>
-      This page does not say which Distress it is about, so there is nothing to send from here.
-      Reach the operator another way.
+      This page does not say which Distress it is about. Reach the operator another way.
     </p>
   {:else}
     {#if offer}
@@ -112,39 +111,23 @@
         <p class="words">{clip(outcome.answer.text) ?? 'nothing in words'}</p>
         <p>
           {named
-            ? 'It is not signed by this watch’s escalation key, so this phone cannot confirm anybody is being woken.'
-            : 'This watch does not name its escalation key, so this phone cannot confirm who sent that.'}
+            ? 'Not signed by this watch’s escalation key: this phone cannot confirm anybody is being woken.'
+            : 'This watch names no escalation key: this phone cannot confirm who sent that.'}
           Reach the operator another way as well.
         </p>
       </section>
     {:else if outcome && outcome.took === 0}
       <p class="error" data-wake-failed>
-        <strong>It did not send — {outcome.error}</strong> Nobody else has been woken by this.
-        Reach the operator another way.
+        <strong>It did not send — {outcome.error}</strong> Reach the operator another way.
       </p>
     {:else if outcome}
       <p class="error" data-wake-unanswered>
-        <strong>Sent, and the watch has not answered.</strong> This phone cannot say whether anybody
-        else is being woken. Reach the operator another way.
+        <strong>Sent, and the watch has not answered.</strong> Reach the operator another way.
       </p>
     {/if}
   {/if}
 {/if}
 
-<Why summary="What this does, and does not">
-  <p class="cost">
-    It asks the watch to page everyone on call about this operator, now. It does not tell the
-    operator anybody has it, and it closes nothing: only somebody acknowledging that new page does,
-    you included.
-  </p>
-  <p class="cost">
-    It asks about the one operator this page came for. If you acknowledged more than one who is still
-    sending, it does not ask about the others.
-  </p>
-  <p class="cost">
-    You were paged because you answered them. If you are with them, you do not need this.
-  </p>
-</Why>
 
 <style>
   .again { border: 2px solid var(--t-oncall); background: var(--t-raised); padding: 1rem 1.1rem; }

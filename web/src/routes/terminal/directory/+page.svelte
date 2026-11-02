@@ -7,7 +7,7 @@
    */
   import { onMount } from 'svelte';
   import { offline } from '$lib/terminal/offline.svelte';
-  import { Readout, Why } from '$lib/components/panel';
+  import { Readout } from '$lib/components/panel';
 
   let { data } = $props();
 
@@ -41,16 +41,7 @@
 </header>
 
 <section>
-  <p>
-    Open the one you work in. <strong>Opening it is what saves it</strong> — after that it
-    is on this phone and works with no signal at all.
-  </p>
-  <Why summary="Why only some areas">
-    <p>
-      Only what you open is kept. Carrying every area would fill a cheap phone with places
-      you will never go.
-    </p>
-  </Why>
+  <p>Open the one you work in to keep it on this phone.</p>
 </section>
 
 {#each byCountry as [country, areas] (country)}
@@ -81,28 +72,14 @@
 {/each}
 
 <!--
-  The sentence that was not here.
-
-  Sixty-eight areas were listed and nothing acknowledged the person whose city is not among
-  them — they scrolled a list of somewhere else and got no explanation. A silent absence, which
-  is the failure this project prohibits everywhere else, on the layer `CLAUDE.md` calls the
-  default and not a degraded state.
-
-  It cannot offer a fix yet, because there is not one: `places.add()` needs a region slug and
-  regions are prerendered from `data/regions/`. So it says that plainly rather than implying a
-  path that does not exist.
+  The person whose city is not listed is acknowledged rather than left scrolling somewhere else's
+  list. There is no in-app fix: `places.add()` needs a region slug, and regions are prerendered.
 -->
 <section class="missing" data-area-missing>
   <h2>Yours might not be here</h2>
   <p>
-    {areaCount} areas, in {countryCount} countries. If the one you work in is not among them,
-    <strong>this app cannot add it yet</strong> — a place has to go into an area that already
-    exists, and nothing here makes a new one.
-  </p>
-  <p class="cost">
-    That is a real gap, and it shuts the cached directory out for everybody outside these
-    areas. Until it is built the only way in is to ask whoever runs this —
-    <a href="/docs/contributing/">how to contribute</a> says where.
+    {areaCount} areas, in {countryCount} countries.
+    <a href="/docs/contributing/">Ask for yours to be added</a>.
   </p>
 </section>
 

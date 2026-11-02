@@ -60,7 +60,7 @@ test('another holder’s key, added on the screen, goes into the code beside thi
   await holder(page, 'Lighthouse');
   const other = 'c'.repeat(63) + '7';
   const otherKey = getPublicKey(Uint8Array.from(other.match(/../g)!.map((b) => parseInt(b, 16))));
-  await page.getByText(/others hold this watch on their phones too/i).click();
+  await page.getByText('Other holders').click();
   await page.locator('#other-holders').fill(`  ${otherKey.toUpperCase()}\n`);
   await expect(page.locator('[data-watch-code]')).toContainText('2 holders');
   await page.getByRole('button', { name: /copy the code/i }).click();

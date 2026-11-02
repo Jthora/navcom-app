@@ -87,7 +87,7 @@ test.describe('an area nobody has put anything in', () => {
 
     const marker = page.locator('[data-added]').first();
     await expect(marker).toBeVisible({ timeout: 10_000 });
-    await expect(marker).toContainText(/not in the published directory/i);
+    await expect(marker).toContainText(/added by an operator/i);
     // Provenance by name, as everywhere else.
     await expect(marker).toContainText(/wren/i);
   });

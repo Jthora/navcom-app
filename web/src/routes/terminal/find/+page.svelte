@@ -80,37 +80,9 @@
 </header>
 
 <section>
-  <p>
-    Everybody here <strong>published a card about themselves</strong>. Nobody is listed by
-    being paired with somebody, nothing suggests anyone, and the order is alphabetical
-    because it should reward nothing.
-  </p>
-  <p class="cost">
-    <!--
-      What sending an invite costs the sender, before they send one. It is the only moment
-      an operational key leaves this device to somebody unmet.
-    -->
-    Asking somebody to pair <strong>gives them your key</strong> and the line you write.
-    They can ignore it, and you will never know — there is no read receipt and no refusal,
-    on purpose.
-  </p>
-  <p class="cost">
-    Nothing about anybody you have helped goes in that line [invariant 1]. Write about
-    yourself and the work.
-  </p>
-  <p class="cost">
-    <strong>You are not on this board unless you put yourself there.</strong>
-    <a href="/terminal/card/">Your card</a> is where that happens, and having none is the
-    default.
-  </p>
-  <p class="cost">
-    <!--
-      Whose words these are, said where somebody reads other people's cards. The terminal has no
-      footer, so the site's link to the notice lives here instead.
-    -->
-    What a card says is its holder's to answer for, not NavCom's.
-    <a href="/notice/">Who is responsible for what</a>.
-  </p>
+  <p>Operators who published a public profile, by area.</p>
+  <!-- Whose words these are: the terminal has no footer, so the site's link to the notice lives here. -->
+  <p class="cost"><a href="/notice/">Who is responsible for what</a></p>
 </section>
 
 <section class="act">
@@ -138,10 +110,6 @@
       <Slot k="Cards">
         <Readout value="None here" tone="cold" sub="most operators never publish one" />
       </Slot>
-      <p class="cost">
-        Nobody has published a card here. That is normal — most operators never do, and it
-        says nothing about whether anybody is working this area.
-      </p>
     {:else}
       {#if board.partial}
         <!-- A list that silently stops looks like a complete list. Somebody looking for one
@@ -151,18 +119,13 @@
             <Readout
               value="Partial"
               tone="warn"
-              sub="more cards published here than this can show — this is part of the board"
+              sub="more here than this can show"
             />
           </Slot>
-          <p class="cost">
-            If you are looking for somebody in particular, ask them for their code directly.
-          </p>
+          <p class="cost">Looking for somebody? Ask them for their code.</p>
         </div>
       {/if}
-      <p class="cost">
-        This is one area. <a href="/who/">Operators who chose to be listed publicly</a> are
-        everywhere, on one page.
-      </p>
+      <p class="cost"><a href="/who/">Everyone listed publicly</a></p>
       <ul class="board">
         {#each board.entries as e (e.contact)}
           <li>
@@ -216,10 +179,7 @@
                 It said "Sent." whatever happened, so an operator with no signal watched it
                 succeed and then waited for a reply to something that never left the phone.
               -->
-              <p class="cost" data-invite-failed>
-                That did not reach a relay, so it has not been sent. Try again when you have
-                signal.
-              </p>
+              <p class="cost" data-invite-failed>Not sent: it did not reach a relay.</p>
               <button onclick={() => ask(e.contact)} disabled={busy}>Try again</button>
             {:else if !callsign}
               <p class="cost"><a href="/terminal/setup/">Create your profile</a> to ask.</p>
@@ -227,6 +187,8 @@
               <label for="note">Say who you are</label>
               <textarea id="note" bind:value={note} rows="2" maxlength={NOTE_MAX}
                 placeholder="Out most Thursdays around the north side."></textarea>
+              <!-- Invariant 1, where somebody types: it goes to a stranger with your key. -->
+              <p class="cost">Write about yourself, not anyone you have helped.</p>
               <button onclick={() => ask(e.contact)} disabled={busy}>Send</button>
               <button onclick={() => (asking = null)}>Cancel</button>
             {:else}

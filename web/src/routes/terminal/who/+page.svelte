@@ -19,7 +19,7 @@
    */
   import { onMount } from 'svelte';
   import { page } from '$app/state';
-  import { Slot, Readout, Why, Action } from '$lib/components/panel';
+  import { Slot, Readout, Action } from '$lib/components/panel';
   import { does, embedUrl, frameHeight, keyPrint, layout, platform as platformOf,
     canProve, checkProof, proofRequest, type CardLink, type ProofResult
   } from '@navcom/core';
@@ -155,7 +155,7 @@
 {#if !key}
   <section class="act">
     <Slot k="Card"><Readout value="No address" tone="cold" sub="this link carries no key" /></Slot>
-    <p class="cost">A profile is reached by somebody's address. <a href="/terminal/find/">Browse an area</a> instead.</p>
+    <p class="cost"><a href="/terminal/find/">Browse an area</a></p>
   </section>
 {:else if hiddenOn(key)}
   <section class="act">
@@ -166,22 +166,7 @@
       reason `hidden.ts` gives.
     -->
     <Slot k="Card"><Readout value="Not shown here" tone="cold" sub="since {hiddenOn(key)}" /></Slot>
-    <Why summary="Why not">
-      <p>
-        navcom.app stopped showing this card after it was named in a legal notice or found to be
-        unlawful, or while such a notice is being checked. The decision and its date are recorded
-        in the project's public repository, and it is never made over a disagreement between
-        operators.
-      </p>
-      <p>
-        None of it is permanent. A hide made before a notice could be checked lapses on its own
-        after 14 days, and no hide stands past 90 days without a person looking at it again.
-      </p>
-      <p>
-        Relays may still carry the card and other apps may still show it — NavCom cannot delete
-        what somebody else published. <a href="/notice/">Who is responsible for what</a>.
-      </p>
-    </Why>
+    <p class="cost"><a href="/notice/">Who is responsible for what</a></p>
   </section>
 {:else if profile.loading && !card}
   <section class="act">
@@ -200,13 +185,6 @@
       claims more than we know.
     -->
     <Slot k="Card"><Readout value="Nothing here" tone="cold" sub="no relay we asked has a card for this address" /></Slot>
-    <Why summary="Why that is not the same as no card">
-      <p>
-        That address may never have published one, or may have withdrawn it, or the relays this
-        phone knows may simply not have it. <strong>These are different things and this screen
-        cannot tell them apart.</strong>
-      </p>
-    </Why>
   </section>
 {:else}
   <section class="act">
@@ -234,49 +212,15 @@
       <p class="does">{card.does.map((d) => does(d)?.label ?? d).join(' · ')}</p>
     {/if}
 
-    <!--
-      A readout and a Why, not a paragraph. The claim still comes before the links and still
-      says the same thing; `panel.md` sets a 40-word target for what is read before anything is
-      opened, and this screen was over it. `Why` takes the prose as a slot and changes none of
-      it, which is the mechanism this project already chose for exactly this.
-    -->
     <Slot k="Checked">
       <Readout value="By nobody" tone="cold" sub="published by its holder" />
     </Slot>
-    <Why summary="What that means">
-      <p>
-        Everything on this page was published by the holder of this address, about themselves.
-        No part of it has been checked by anybody — the same claim every one of the 9,635
-        directory records carries, said here because a page shaped like a profile invites the
-        belief that somebody vetted it.
-      </p>
-      <p>
-        Callsigns are not unique, so the name at the top does not say who wrote this. The
-        characters beside <strong>Key</strong> do: if somebody told you theirs, that is how you know
-        this card is them. What it says is theirs to answer for —
-        <a href="/notice/">who is responsible for what</a>.
-      </p>
-    </Why>
 
     {#if provable.length > 0}
       <!--
         The one claim on this page that can be disproven rather than merely unsupported, so it
         gets its own slots. Everything above is its holder's word about themselves.
       -->
-      <Why summary="What checking a handle does">
-        <p>
-          A handle here is a claim until somebody checks it. Where the platform lets anyone read a
-          post without an account, the operator can publish one naming this key, and tapping
-          <strong>Check</strong> fetches that post and compares it. A pass means the same person
-          holds both; a fail can mean the proof names a different key, or was written by a
-          different account.
-        </p>
-        <p>
-          Checking contacts that platform from this phone, once, for that one handle — the only
-          moment this page reaches anything outside NavCom. Nothing is checked until you tap, and
-          nothing is stored afterwards.
-        </p>
-      </Why>
       {#each provable as l (l.platform)}
         {@const got = proofs[l.platform]}
         <Slot k={name(l.platform)}>
@@ -304,13 +248,6 @@
   {#if shape.feature || shape.listed.length > 0}
     <section class="act">
       <h2>Where else they are</h2>
-      <Why summary="What happens when you tap one">
-        <p>
-          Nothing on this page contacts any of these platforms until you tap. Then you leave
-          NavCom and go to them, and <strong>they are told nothing about which card you were
-          reading</strong> — the link carries no referrer.
-        </p>
-      </Why>
 
       {#if shape.feature}
         {@const f = shape.feature}

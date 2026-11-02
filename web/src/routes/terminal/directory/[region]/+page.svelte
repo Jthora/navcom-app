@@ -32,7 +32,7 @@
     observationMethodLabel } from '@navcom/core';
   import { locateOnce, metresApart, type Fix } from '$lib/console/position-once';
   import { places } from '$lib/terminal/places.svelte';
-  import { Slot, Readout, Why, Heartbeat } from '$lib/components/panel';
+  import { Slot, Readout, Heartbeat } from '$lib/components/panel';
   import { clearNote, keepNote, notes, type Note } from '$lib/terminal/notes';
   import { readClock, type ClockRead } from '$lib/terminal/clock';
   import { onMount } from 'svelte';
@@ -431,13 +431,7 @@
       label={corrections.unsentCount === 1 ? 'One not sent' : `${corrections.unsentCount} not sent`}
     />
   </Slot>
-  <p class="cost" data-corrections-unsent>
-    {corrections.unsentCount === 1
-      ? 'One correction you made has not reached a relay yet'
-      : `${corrections.unsentCount} corrections you made have not reached a relay yet`} —
-    you can see them, nobody else can. They go out on their own the next time this opens with
-    signal.
-  </p>
+  <p class="cost" data-corrections-unsent>Only you can see them until they reach a relay.</p>
 {/if}
 
 {#if corrections.partial}
@@ -447,45 +441,9 @@
     directory nobody has corrected.
   -->
   <p class="cost" data-corrections-partial>
-    More corrections are being published for this area than this phone will hold, so some are
-    not shown. What is here is still what you were carrying before they started arriving.
+    More corrections than this phone will hold: some aren't shown.
   </p>
 {/if}
-
-<section>
-  <p>
-    This is what this phone is holding, and it works with no signal at all.
-  </p>
-  <Why summary="When to ask a person instead">
-    <p class="cost">
-      If a watch is up, <strong><a href="/terminal/query/">ask it instead</a></strong> — somebody
-      with both hands free and a real screen can answer things this list cannot. This is what
-      you have when nobody is watching, and it is worse, on purpose.
-    </p>
-  </Why>
-  <p class="cost">
-    <!--
-      Tenth time this session a claim landed behind a conditional the prerendered page cannot
-      reach — here, behind the report control itself. The rule holds again, and for the usual
-      reason: what a report can and cannot do is read before somebody makes one, not after.
-    -->
-    <!--
-      Worded for both states, because the block above it is deliberately unconditional.
-
-      "any listing below" shipped on the eight regions that hold nothing, inviting a report
-      against a list that was not there. The block stays hoisted for the reason the comment
-      above gives; what changes is a claim that was only true when the page had content.
-    -->
-    <strong>
-      {shown.length > 0
-        ? 'You can report a problem with any listing below.'
-        : 'Where there are listings, you can report a problem with one.'}
-    </strong> It goes out under your
-    callsign, or anonymously if you have not picked one, and <strong>adds</strong> what you
-    saw — it cannot delete this listing or overrule anybody, and nobody has to approve it.
-    Reporting is meant to be easier than fixing.
-  </p>
-</section>
 
 <!-- A cached copy has two ages, and only one of them is written on the records. -->
 <section class="snapshot" class:old={snapshotDays !== null && snapshotDays > 7} data-snapshot-age={snapshotDays ?? 'unknown'}>
@@ -522,15 +480,8 @@
   {#if clock.behind}
     <!-- Stays visible: it changes what the reader must do with everything below it. -->
     <p class="cost" data-clock-behind>
-      This phone's clock reads earlier than the day this page was built, so
-      <strong>none of the ages below can be trusted</strong> — and a place checked a fortnight
-      ago can read as checked this week. Turn on automatic date and time in the phone's
-      settings. Until then, <strong>call first, on everything</strong>.
-    </p>
-  {:else if snapshotDays === null || snapshotDays > 7}
-    <!-- Stays visible: it changes what the reader must do with everything below it. -->
-    <p class="cost">
-      Places close and hours change inside a week. <strong>Call first, on everything.</strong>
+      This phone's clock is behind, so <strong>none of the ages below can be trusted</strong>.
+      Turn on automatic date and time.
     </p>
   {/if}
 </section>
@@ -555,7 +506,7 @@
       <Readout
         value="Unconfirmed"
         tone="warn"
-        sub="none of what's below has been checked by a person — every field here came from a website"
+        sub="nothing below has been checked by a person"
       />
     </Slot>
   </section>
@@ -585,15 +536,10 @@
       id="narrow" data-narrow type="text" bind:value={narrow}
       autocomplete="off" spellcheck="false" placeholder="name or street"
     />
-    <p class="cost">
-      Filters what is already on this phone. <strong>Nothing is sent and nobody is asked</strong>
-      — this is not <a href="/terminal/query/">Query</a>.
-    </p>
     {#if narrow.trim() && narrowed.length === 0}
       <p class="cost" data-narrow-empty>
-        Nothing here matches “{narrow.trim()}”. It may still be in this area and spelled
-        differently, or not carried yet — <button class="drop" onclick={() => (narrow = '')}>show
-        all {shown.length}</button>.
+        Nothing matches “{narrow.trim()}”. <button class="drop" onclick={() => (narrow = '')}>Show
+        all {shown.length}</button>
       </p>
     {/if}
   </section>
@@ -605,16 +551,12 @@
     {#if locating}Finding you…{:else if here}Back to listed order{:else}Nearest first{/if}
   </button>
   {#if located === 'refused'}
-    <p class="cost" data-nearest-refused>
-      This phone did not give a location, so the order is unchanged. Nothing was sent
-      anywhere, and nothing about this screen depends on it.
-    </p>
+    <p class="cost" data-nearest-refused>No location given, so the order is unchanged.</p>
   {:else if here}
     <p class="cost" data-nearest-on>
-      Nearest first, worked out on this phone and <strong>sent nowhere</strong>. Rounded to
-      about 500m, so anything closer together than that is in no meaningful order.
+      Nearest first, to about 500m.
       {#if unplaceable > 0}
-        {unplaceable} of these carry no coordinates and stay at the end of their group.
+        {unplaceable} without a location are last in their group.
       {/if}
     </p>
   {/if}
@@ -658,9 +600,7 @@
             {/if}
             <!-- Rule 6. Seeded entries say so in words, not with a subtle border. -->
             {#if meta.seeded}
-              <p class="seeded-note" data-seeded-note>
-                Unverified public listing — nobody has checked this
-              </p>
+              <p class="seeded-note" data-seeded-note>Unverified public listing</p>
             {/if}
 
             <h3>{record.name}</h3>
@@ -680,7 +620,7 @@
             -->
             {#if isAddedPlace(record)}
               <p class="added" data-added={record.id}>
-                <strong>Added by an operator.</strong> Not in the published directory —
+                <strong>Added by an operator</strong> —
                 {record.verified_by ?? 'anonymous'},
                 {(record.method ?? '').replace(/_/g, ' ')}, {record.last_verified}.
               </p>
@@ -695,7 +635,6 @@
               <p class="report" data-report>
                 <strong>{r.verified_by}</strong> reported this
                 {labelValue(r.fields.flag ?? '')} on {r.last_verified}.
-                The listing below is unchanged.
               </p>
             {/each}
 
@@ -732,15 +671,15 @@
             {#if asks.length > 0}
               <p class="asks" data-asks>
                 <strong>Nobody knows</strong>
-                {asks.map((f) => (FIELD_LABELS[f] ?? f).toLowerCase()).join(', ')}.
-                If you are there, ask &mdash; or ring them.
+                {asks.map((f) => (FIELD_LABELS[f] ?? f).toLowerCase()).join(', ')}
+                &mdash; ask if you are there.
               </p>
             {/if}
 
             {#if merged.reports.length > 0 || Object.keys(merged.sources).length > 0}
               <p class="corrected" data-corrected>
                 Carries {Object.keys(merged.sources).length > 0 ? 'corrections' : 'a report'}
-                from operators. Nothing was removed — the published listing is still underneath.
+                from operators.
               </p>
             {/if}
 
@@ -762,11 +701,7 @@
             {#if jotting === record.id}
               <input class="fix" bind:value={jotText} autocomplete="off"
                 placeholder="shut intake 20:30" />
-              <p class="cost">
-                Stays on this phone. Nobody else ever sees it, and a panic wipe takes it —
-                so <strong>turn it into a correction</strong> when you are somewhere warm.
-                Write about the place, never the person.
-              </p>
+              <p class="cost">Stays on this phone.</p>
               <div class="row">
                 <button class="drop" onclick={() => jot(record.id, record.name)}>Keep</button>
                 <button class="drop" onclick={() => (jotting = null)}>Cancel</button>
@@ -837,10 +772,8 @@
               {:else}
                 <input class="fix" bind:value={typed} autocomplete="off"
                   placeholder={String(record[correcting] ?? '')} />
-                <p class="cost">
-                  <strong>Write about the place, not the person.</strong> What the door does —
-                  never who was at it, or why.
-                </p>
+                <!-- Invariant 1, where somebody types. -->
+                <p class="cost"><strong>Write about the place, not the person.</strong></p>
                 <!--
                   Ratified network-wide (R4) after Starcom Academy's own credential format used
                   the same pattern for its modules: a claim can name its own weak backing rather
@@ -893,7 +826,7 @@
                   </button>
                 {/each}
               </div>
-              <p class="cost">Goes out under your callsign, or anonymously if you have not picked one.</p>
+              <p class="cost">Sent under your name, or anonymously.</p>
               <button class="drop" onclick={() => (reporting = null)}>Cancel</button>
             {:else if logging === record.id}
               <!--
@@ -947,9 +880,8 @@
   {#if clock.behind}
     <p class="error" data-clock-dates-this>
       This phone's clock is <strong>{clock.behindDays > 0 ? `${clock.behindDays} days` : 'under a day'}
-      behind</strong>, and what you send carries its date. A newer date beats an older one, so
-      this would lose to the listing you are fixing. Turn on automatic date and time first —
-      it usually corrects within a minute of having signal.
+      behind</strong>, so this would lose to the listing you are fixing. Turn on automatic date
+      and time first.
     </p>
   {/if}
 {/snippet}
@@ -959,10 +891,6 @@
     <button class="drop" data-add-place onclick={() => { adding = true; addError = null; }}>
       Add a place that isn't here
     </button>
-    <p class="cost">
-      Somewhere you have been, or phoned. Not somewhere you read about — that goes to the
-      maintainers, because a place nobody checked can send somebody to a locked door.
-    </p>
   {:else}
     {@render clockDatesThis()}
     <h2>A place that isn't here</h2>
@@ -999,16 +927,6 @@
     <label for="pl-hours">Hours, if you saw them</label>
     <input id="pl-hours" bind:value={draft.hours} autocomplete="off" />
 
-    <!--
-      Rule 5, at the point it matters most. The fields that decide whether somebody gets a
-      bed are deliberately not on this form: nobody can read them off a doorway, and asking
-      for them here would collect a guess with an operator's name attached.
-    -->
-    <p class="limit">
-      Nothing about pets, ID, sobriety, curfew or intake hours. Those come from asking, and
-      they stay <strong>unknown</strong> until somebody does.
-    </p>
-
     {#if addError}
       <p class="err" data-add-error>{addError}</p>
     {/if}
@@ -1020,14 +938,6 @@
   {/if}
 </section>
 
-<Why summary="Why there is no search here">
-  <p>
-    <strong>Query goes to the watch.</strong> Someone with both hands free does the lookup,
-    can ask a follow-up, and can be wrong out loud. Searching a list one-handed in the cold
-    is the problem the watch exists to solve — so this stays something to browse when there
-    is nobody to ask, and not a substitute for asking.
-  </p>
-</Why>
 
 <style>
   /* Evidence, set apart from the record's own fields so the two are never read as one. */
@@ -1131,7 +1041,6 @@
     color: var(--t-faint); margin: 0 0 .4rem;
   }
 
-  .limit { border-inline-start: 3px solid var(--t-line-strong); padding-inline-start: .9rem; }
 
   /*
     The add path. Deliberately the same weight as the correction controls above it rather

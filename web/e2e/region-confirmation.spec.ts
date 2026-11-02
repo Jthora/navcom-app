@@ -18,7 +18,7 @@ test.describe('a region where nothing has been confirmed', () => {
 
     const banner = page.locator('[data-readout][data-tone="warn"]', { hasText: 'Unconfirmed' });
     await expect(banner).toBeVisible();
-    await expect(banner).toContainText(/none of what's below has been checked by a person/i);
+    await expect(banner).toContainText(/nothing below has been checked by a person/i);
   });
 
   test('and disappears the moment one correction from a person lands', async ({ page }) => {

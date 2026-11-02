@@ -68,8 +68,7 @@ async function canBeWoken(page: import('@playwright/test').Page) {
 async function saysItCannotBeWoken(page: import('@playwright/test').Page) {
   await expect(page.getByText(/cannot be woken/i)).toBeVisible();
   await expect(page.getByText(/add to home screen/i)).toBeVisible();
-  // Said twice on that screen — the readout sub-line and the paragraph — so .first().
-  await expect(page.getByText(/legitimate choice/i).first()).toBeVisible();
+  await expect(page.getByText(/this browser cannot be paged/i)).toBeVisible();
 }
 
 async function seedFor(capability: Capability) {

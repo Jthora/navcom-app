@@ -99,7 +99,8 @@ test.describe('the screen a repeat page opens', () => {
     await page.getByRole('button', { name: 'Wake the others now' }).click();
     const unanswered = page.locator('[data-wake-unanswered]');
     await expect(unanswered).toBeVisible({ timeout: 20_000 });
-    await expect(unanswered).toContainText(/cannot say whether anybody/);
+    await expect(unanswered).toContainText(/the watch has not answered/);
+    await expect(unanswered).toContainText(/reach the operator another way/i);
   });
 
   test('gives no time for the others being paged that the page did not give [review: live hole, phone]', async ({ page }) => {

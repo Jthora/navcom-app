@@ -156,10 +156,7 @@ export const CAPABILITIES: Capability[] = [
   {
     name: 'Cached directory',
     screen: 'terminal/directory/',
-    claims: [
-      'Opening it is what saves it',
-      'Only what you open is kept'
-    ],
+    claims: ['to keep it on this phone'],
     // Opening an area is what caches it, so the link IS the mechanism -- not navigation
     // decoration. A region nobody can open is a region nobody has offline.
     control: 'a.area',
@@ -168,21 +165,9 @@ export const CAPABILITIES: Capability[] = [
   {
     name: 'Report a problem with a record',
     screen: 'terminal/directory/st-louis/',
-    claims: [
-      // Display rule 4's own words, finally true in both halves: the app could render a
-      // flag and not set one, so reporting was impossible while fixing needed a pull request.
-      //
-      // The screen's sentence rather than the button's label. The per-record controls are
-      // built in the browser since 2026-09-19, so the label is no longer in the prerendered
-      // HTML this is read from — and a claim checked against markup a fresh visitor never
-      // receives is not checked at all. The button itself is exercised by the browser suite,
-      // which is where `control` below is proven.
-      'report a problem with any listing below',
-      // The abuse answer, said where somebody reports. Nobody adjudicates, so the shape of
-      // the data has to be what makes it survivable.
-      'cannot delete this listing or overrule anybody',
-      'nobody has to approve it'
-    ],
+    // Nothing said about it since 2026-11-01. The per-record controls are built in the browser
+    // since 2026-09-19, so the browser suite is where `control` below is proven.
+    claims: [],
     control: '[data-report-open]',
     cached: 'on-visit',
     requires: []
@@ -236,10 +221,7 @@ export const CAPABILITIES: Capability[] = [
   {
     name: 'Your own patrols',
     screen: 'terminal/patrols/',
-    claims: [
-      'It stays on this phone',
-      'nothing here is sent to a watch, a relay or anybody else'
-    ],
+    claims: ['It stays on this phone'],
     // Whether a year of your nights survives a seized phone. Always on the screen, unlike
     // the export controls, which need a patrol to exist first.
     control: '[data-keep]',
@@ -261,22 +243,10 @@ export const CAPABILITIES: Capability[] = [
     name: 'Peers',
     screen: 'terminal/peers/',
     claims: [
-      'No watch is involved, no server holds it',
-      'Best done face to face',
-      'they are not told',
       // The one that decides whether an operator who knows nobody here has anybody at all.
       // Pairing never required a peer to be an operator, and every word on the screen said
-      // otherwise -- so the cheapest real safety arrangement in the app was invisible to the
-      // people who most needed it. Held here so it cannot quietly go back to being implied.
-      'They do not have to be an operator',
-      // The commitment and its limit together. Watching for somebody is a nudge, and they
-      // are told you are doing it -- a private note means somebody can believe they are
-      // watched while nobody is.
-      'they are told you are doing it',
-      'nothing escalates, nobody is paged',
-      // Somebody who owes a refusal accepts to avoid an awkward one. Said before any invite
-      // has arrived, since that is when it changes what a person feels obliged to do.
-      'ignoring sends nothing'
+      // otherwise. The one line the screen keeps (2026-11-01).
+      "They don't have to be an operator"
     ],
     control: '#code',
     requires: ['identity']
@@ -295,48 +265,25 @@ export const CAPABILITIES: Capability[] = [
   {
     name: 'Find somebody',
     screen: 'terminal/find/',
-    claims: [
-      'published a card about themselves',
-      'gives them your key',
-      // What a reader of this board must understand before deciding to be on it.
-      'not on this board unless you put yourself there'
-    ],
+    // Nothing said beyond what the board is (2026-11-01).
+    claims: ['published a public profile'],
     control: '#area',
     requires: ['identity']
   },
   {
     name: 'Take the watch',
     screen: 'terminal/watch/',
-    claims: [
-      // 4.3, and the sentence the whole screen exists to make unmissable. Everything below
-      // it looks like a safety monitor and is not one.
-      'This app does not watch anybody. You do',
-      'keeping it means looking',
-      // Overdue nudges and does nothing else [invariant 3].
-      'marked, and nothing else happens',
-      // Invariant 2: only a human ends a Distress. An answer from this screen is signed as a
-      // human, so it does end the operator's retrying -- the claim is that, and that no button
-      // here clears one. It said "is not closed by answering it", which was not true.
-      'stops their phone resending it',
-      // A new holder reading an empty board as "nobody is out" is the failure mode of
-      // handover, and it is silent.
-      'An empty board is not the same as nobody being out'
-    ],
+    // 4.3: everything below it looks like a safety monitor and is not one. The one line kept
+    // (2026-11-01).
+    claims: ['This app does not watch anybody. You do'],
     control: '[data-start-watch]',
     requires: ['identity']
   },
   {
     name: 'Being on call',
     screen: 'terminal/on-call/',
-    claims: [
-      // The rule the whole app is built on, stated on the one screen that is an exception
-      // to it. Somebody agreeing to be interrupted needs to know exactly how often.
-      'This is the only notification NavCom ever sends',
-      'The field terminal is silent and stays silent',
-      // The page carries nothing from the wire, and the reason is worth saying.
-      'The page carries no detail',
-      'tells nobody'
-    ],
+    // Somebody agreeing to be interrupted is told when, before the button (2026-11-01).
+    claims: ['reaches this watch'],
     control: '#sender',
     needsPush: true,
     requires: []
@@ -344,29 +291,16 @@ export const CAPABILITIES: Capability[] = [
   {
     name: 'Resupply',
     screen: 'terminal/resupply/',
-    claims: [
-      // The decision, stated where somebody would otherwise expect a tally. Most apps would
-      // count handouts here, and that is a feed and a leaderboard at once.
-      'Nothing counts what you handed out',
-      'a request, not a report',
-      // Invariant 1, in the same words the Query screen uses.
-      'Write about the supply, not the person',
-      'pages nobody'
-    ],
+    // Invariant 1, in the same words the Query screen uses.
+    claims: ['Write about the supply, not the person'],
     control: '#r',
     requires: ['identity', 'watch']
   },
   {
     name: 'Standing',
     screen: 'terminal/standing/',
-    claims: [
-      // The property everything else follows from, stated before anything is written.
-      'A credential names nobody',
-      'no map of who knows whom exists anywhere',
-      // The cost of not naming people, said in the same breath rather than discovered.
-      'whoever holds the bytes can take it up',
-      'There is no free text'
-    ],
+    // Nothing said on the screen since 2026-11-01 beyond what it holds.
+    claims: [],
     control: '#cred',
     requires: ['identity']
   },
@@ -380,25 +314,16 @@ export const CAPABILITIES: Capability[] = [
   {
     name: 'Support',
     screen: 'terminal/funding/',
-    claims: [
-      // funding.md's rule 2, which is the one that would be quietly broken first.
-      'Nothing here counts anything',
-      'This app never touches money',
-      // The cost that catches people out, stated before they enable anything.
-      'Converting to cash usually is not'
-    ],
+    // The cost that catches people out, stated before they enable anything.
+    claims: ['Converting to cash usually is not'],
     control: '#mine',
     requires: []
   },
   {
     name: 'Wipe this device',
     screen: 'terminal/wipe/',
-    claims: [
-      'Destroys tonight and keeps your identity',
-      // Where a wipe stops is the part that changes what an operator does next.
-      'The watch still has your board entry',
-      'The accountability log is outside both tiers'
-    ],
+    // What a wipe also stops, before the hold: a Distress still going is silenced by it.
+    claims: ['Also stops anything this tab is still sending'],
     // `panicWipe` is the original instance of a mechanism nobody can reach -- it had no
     // button for weeks. It is declared here so that can never be true silently again.
     control: '[data-act]',
@@ -407,16 +332,7 @@ export const CAPABILITIES: Capability[] = [
   {
     name: 'What the watch wrote',
     screen: 'terminal/log/',
-    claims: [
-      'The watch writes down what it does',
-      // A response carries entries, proofs AND the root they are against, all three from
-      // the watch. Verifying them against each other proves nothing.
-      'marking its own homework',
-      // The limit that survives every green tick above it, and the reason it is stated
-      // before the record is fetched rather than after.
-      'whether anything is missing',
-      'nothing signs yet'
-    ],
+    claims: ['The watch writes down what it does'],
     control: '[data-ask]',
     // The button is disabled while the watch is dark, so this needs a watch that is
     // actually there -- not merely configured. Declared rather than worked around: an
@@ -429,7 +345,7 @@ export const CAPABILITIES: Capability[] = [
     screen: 'terminal/query/',
     claims: [
       // Nothing about the person being helped is ever recorded [invariant 1].
-      'write about the need, not the person'
+      'Write about the need, not the person'
     ],
     control: '#q',
     requires: ['identity', 'watch']
@@ -437,13 +353,7 @@ export const CAPABILITIES: Capability[] = [
   {
     name: 'Assist',
     screen: 'terminal/assist/',
-    claims: [
-      'An assist with no words still means you need someone',
-      'use Distress',
-      // 5.3. An assist that was received and an assist nobody is answering must never look
-      // alike, and the operator must be told which before they decide what to do next.
-      'A watch that has nobody to send will say so'
-    ],
+    claims: ['use Distress'],
     control: '#a',
     requires: ['identity', 'watch']
   },
@@ -451,14 +361,9 @@ export const CAPABILITIES: Capability[] = [
     name: 'Somebody else\'s card',
     screen: 'terminal/who/',
     claims: [
-      /*
-       * Both sentences are in the prerendered page, which is the whole point of choosing them.
-       * This screen is reached with a key in the link, so what a fresh visitor meets before any
-       * card can load is the empty state — and the empty state has to say why there is nothing
-       * here and where to go instead, or it reads as a profile that failed to load.
-       */
-      'A profile is reached by somebody',
-      'Browse an area instead'
+      // In the prerendered page: reached with a key in the link, so what a fresh visitor meets
+      // before any card can load is the empty state, and it says where to go instead.
+      'Browse an area'
     ],
     readOnly:
       'Nothing on this screen is operated. A card is one person\'s own published claims, rendered ' +

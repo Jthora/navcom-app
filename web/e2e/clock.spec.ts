@@ -72,8 +72,7 @@ test.describe('the cached directory, which is where a wrong clock does the damag
     await expect(refreshed).toContainText(/unknown/i);
     await expect(refreshed).not.toContainText(/today/i);
 
-    // And it says what to do about everything below it, which is the point of saying it.
-    await expect(page.locator('[data-clock-behind]')).toContainText(/call first, on everything/i);
+    await expect(page.locator('[data-clock-behind]')).toContainText(/none of the ages below can be trusted/i);
   });
 
   test('and still reads the real age on a phone that is fine', async ({ page }) => {
@@ -154,7 +153,6 @@ test.describe('what a wrong clock does to the work an operator sends', () => {
     await page.locator('[data-report-open]').first().click();
     const said = page.locator('[data-clock-dates-this]').first();
     await expect(said).toBeVisible({ timeout: 10_000 });
-    await expect(said).toContainText(/what you send carries its date/i);
     await expect(said).toContainText(/lose to the listing you are fixing/i);
   });
 
@@ -173,7 +171,7 @@ test.describe('what a wrong clock does to the work an operator sends', () => {
     await open(page, '/terminal/standing/');
     const said = page.locator('[data-clock-dates-this]');
     await expect(said).toBeVisible({ timeout: 10_000 });
-    await expect(said).toContainText(/older standing than it is/i);
+    await expect(said).toContainText(/would read as older than it is/i);
   });
 
   test('and says none of it on a phone that is fine', async ({ page }) => {

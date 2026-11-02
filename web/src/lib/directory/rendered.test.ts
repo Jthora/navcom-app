@@ -632,18 +632,6 @@ describe('the field terminal', () => {
     expect(t.bodyText).not.toMatch(/locked screen|SMS fallback|home screen/i);
   });
 
-  it('states where a wipe stops, rather than implying it is total', () => {
-    // An operator who believes a wipe removes them from the watch is wrong in a way that
-    // changes what they do next. Invariant 7 is a boundary, and the boundary is the part
-    // worth saying out loud.
-    const wipe = screens().find((p) => p.path.includes('/terminal/wipe/'))!;
-    expect(wipe.bodyText).toMatch(/still has your board entry/i);
-    expect(wipe.bodyText).toMatch(/accountability log is outside both/i);
-    // The browser's own limits, which no amount of care on our side removes.
-    expect(wipe.bodyText).toMatch(/no OS keystore/i);
-    expect(wipe.bodyText).toMatch(/unlinks it rather than scrubbing/i);
-  });
-
   it('shapes the two destructive actions differently', () => {
     // Panic wipe costs an evening and must be fast: a hold, rendered statically.
     // Burn costs everything an operator has built, so it names that cost up front.
@@ -653,8 +641,8 @@ describe('the field terminal', () => {
     // "nothing to burn" branch instead. The confirmation gate is covered where it lives.
     const wipe = screens().find((p) => p.path.includes('/terminal/wipe/'))!;
     expect(wipe.bodyText).toMatch(/Hold to wipe tonight/i);
-    expect(wipe.bodyText).toMatch(/identity included/i);
-    expect(wipe.bodyText).toMatch(/no recovery unless you set one up/i);
+    expect(wipe.bodyText).toMatch(/your profile included/i);
+    expect(wipe.bodyText).toMatch(/no\s+recovery without a backup/i);
     // It said "nothing to burn"; cached pages and tonight's data can exist with no identity.
     expect(wipe.bodyText).toMatch(/no identity on this device/i);
     expect(wipe.bodyText).toMatch(/clear this site's data in the browser/i);
@@ -666,16 +654,6 @@ describe('the field terminal', () => {
     const wipe = screens().find((p) => p.path.includes('/terminal/wipe/'))!;
     expect(wipe.bodyText.toLowerCase()).not.toContain('wiped successfully');
     expect(wipe.bodyText.toLowerCase()).not.toContain('items destroyed');
-  });
-
-  it('never presents a self-verified record as checked', () => {
-    // The trap this screen exists around: a response carries entries, proofs AND the root
-    // they are against, all three from the watch. Verifying them against each other always
-    // succeeds. A tick for that would tell an operator they had checked something when they
-    // had not, which is worse than showing nothing.
-    const log = screens().find((p) => p.path.includes('/terminal/log/'))!;
-    expect(log.bodyText).toMatch(/marking its own homework/i);
-    expect(log.bodyText).toMatch(/this device saw the watch\s+publish/i);
   });
 
   it('keeps the relay stack off the offline directory page', () => {
@@ -737,7 +715,6 @@ describe('the field terminal', () => {
      */
     const dir = screens().find((p) => p.path.includes('/terminal/directory/st-louis'))!;
     expect(dir, 'st-louis is the populated region these rules are checked against').toBeDefined();
-    expect(dir.bodyText).toContain('report a problem with any listing below');
     expect(dir.doc.querySelectorAll('[data-snapshot-age]').length).toBeGreaterThan(0);
     // The rules still have something to read, on the pages that do prerender records.
     const record = pages.find((p) => p.path.includes('/directory/st-louis-'))!;
@@ -753,7 +730,6 @@ describe('the field terminal', () => {
     expect(dir.doc.querySelectorAll('input[type="search"]').length).toBe(0);
     expect(dir.doc.querySelectorAll('input[type="text"]').length).toBe(0);
     expect(dir.raw).not.toMatch(/placeholder="[^"]*search/i);
-    expect(dir.bodyText).toMatch(/Query goes to the watch/i);
   });
 
   it('says how old the cached copy is, separately from how old the facts are', () => {
@@ -784,7 +760,6 @@ describe('the field terminal', () => {
     for (const banned of ['nearby', 'suggested', 'people you may know', 'discover']) {
       expect(peers.bodyText.toLowerCase(), `peers page suggests: ${banned}`).not.toContain(banned);
     }
-    expect(peers.bodyText).toMatch(/best done face to face/i);
   });
 
   it('carries a manifest so it can be installed', () => {

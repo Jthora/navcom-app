@@ -316,19 +316,6 @@ test.describe('wipe', () => {
       .poll(() => page.evaluate(() => (window as unknown as { __navcomUnsubscribed?: boolean }).__navcomUnsubscribed === true))
       .toBe(true);
   });
-
-  test('says plainly where a wipe does not reach', async ({ page }) => {
-    // An operator who believes a wipe is total is worse off than one who knows exactly
-    // where it stops — the watch's own board entry, and the accountability log, survive
-    // both a panic wipe and a burn, and the screen must say so before either is used.
-    await seedDevice(page, OUT);
-    await open(page, '/terminal/wipe/');
-
-    await expect(page.getByText(/the watch still has your board entry/i)).toBeVisible();
-    await expect(page.getByText(/the accountability log is outside both tiers/i)).toBeVisible();
-    await expect(page.getByText(/not yours to delete/i)).toBeVisible();
-    await expect(page.getByText(/unlinks it rather than/i)).toBeVisible();
-  });
 });
 
 test.describe('peers', () => {
@@ -592,7 +579,7 @@ test.describe('finding somebody', () => {
     await open(page, '/terminal/find/');
     await page.locator('#area').selectOption('st-louis');
 
-    await expect(page.getByText(/nobody has published a card here/i)).toBeVisible();
+    await expect(page.getByText(/none here/i)).toBeVisible();
   });
 
   test('an area nobody could be asked about is unknown, not empty', async ({ page }) => {
@@ -604,7 +591,7 @@ test.describe('finding somebody', () => {
 
     // A dead connection gives up after the pool's three-second wait.
     await expect(page.getByText(/no relay answered/i)).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(/nobody has published a card here/i)).toHaveCount(0);
+    await expect(page.getByText(/none here/i)).toHaveCount(0);
   });
 });
 
@@ -675,13 +662,14 @@ test.describe('holding the watch', () => {
 });
 
 test.describe('saying no to an assist', () => {
-  test('the operator is told a refusal is possible before they send', async ({ page }) => {
-    // It changes whether somebody sends an assist at all, or goes straight to their own
-    // person -- so it cannot wait until a refusal arrives.
+  test('a blank assist can be sent, because the words are optional', async ({ page }) => {
+    // Core's AssistPayload: no text still means "I need someone". The button was gated on the
+    // text to stay inert before hydration, which made a blank assist impossible once hydrated.
     await seedDevice(page, { ...OUT, watchtower: { pubkey: 'e'.repeat(64), relays: ['wss://relay.example'] } });
     await open(page, '/terminal/assist/');
 
-    await expect(page.getByText(/will say so/i)).toBeVisible();
+    await expect(page.locator('#a')).toHaveValue('');
+    await expect(page.getByRole('button', { name: /assist — soon/i })).toBeEnabled();
   });
 
   test('no control offers to decline a Distress', async ({ page }) => {
@@ -762,27 +750,16 @@ test.describe('being on call', () => {
     await expect(page.getByText(/sender key is 65 bytes|does not look like a sender key/i)).toBeVisible();
   });
 
-  test('says this is the only notification the app sends', async ({ page }) => {
-    // The rule the rest of the app is built on, stated on its one exception.
+  test('says what somebody is agreeing to, before the button', async ({ page }) => {
     await seedDevice(page, OUT);
     await open(page, '/terminal/on-call/');
 
-    await expect(page.getByText(/only notification navcom ever sends/i)).toBeVisible();
-    await expect(page.getByText(/field terminal is silent/i)).toBeVisible();
+    await expect(page.getByText(/paged the moment a\s+Distress reaches this watch/i)).toBeVisible();
   });
 });
 
 test.describe('resupply', () => {
   const WATCHED = { ...OUT, watchtower: { pubkey: 'e'.repeat(64), relays: ['wss://relay.example'] } };
-
-  test('says plainly that nothing counts what you handed out', async ({ page }) => {
-    // The decision, stated where somebody would otherwise expect a tally.
-    await seedDevice(page, WATCHED);
-    await open(page, '/terminal/resupply/');
-
-    await expect(page.getByText(/nothing counts what you handed out/i)).toBeVisible();
-    await expect(page.getByText(/a request, not a report/i)).toBeVisible();
-  });
 
   test('guides away from writing about a person', async ({ page }) => {
     await seedDevice(page, WATCHED);
@@ -790,12 +767,10 @@ test.describe('resupply', () => {
     await expect(page.getByText(/write about the supply, not the person/i)).toBeVisible();
   });
 
-  test('an operator with no watch is told nothing is missing', async ({ page }) => {
-    // Somebody patrolling alone has no quartermaster either. This must not read as
-    // incomplete setup.
+  test('an operator with no watch is told where this goes, not that setup is incomplete', async ({ page }) => {
     await seedDevice(page, OUT);
     await open(page, '/terminal/resupply/');
-    await expect(page.getByText(/nothing here is missing/i)).toBeVisible();
+    await expect(page.getByText(/this goes to a watch/i)).toBeVisible();
   });
 
   test('the restock list on the watch is separate from what people are waiting on', async ({ page }) => {
@@ -813,14 +788,6 @@ test.describe('resupply', () => {
 
 test.describe('reporting a problem with a record', () => {
   const AREA = '/terminal/directory/st-louis/';
-
-  test('says what a report can and cannot do, before anybody makes one', async ({ page }) => {
-    await seedDevice(page, OUT);
-    await open(page, AREA);
-
-    await expect(page.getByText(/cannot delete this listing or\s+overrule anybody/i)).toBeVisible();
-    await expect(page.getByText(/nobody has to approve it/i)).toBeVisible();
-  });
 
   test('is one tap from the record, with no form and no account', async ({ page }) => {
     // Display rule 4: "reporting must always be easier than fixing". Until now the app could
@@ -846,9 +813,9 @@ test.describe('reporting a problem with a record', () => {
 
     await expect(page.locator('[data-report]').first()).toBeVisible();
     await expect(page.locator('[data-report]').first()).toContainText(/reported this/i);
-    // The listing is still there, and still says so.
+    // The listing is still there.
     expect(await page.locator('[data-record]').count()).toBe(before);
-    await expect(page.getByText(/the published listing is still underneath/i).first()).toBeVisible();
+    await expect(page.locator('[data-corrected]').first()).toContainText(/carries a report/i);
   });
 
   test('says what nobody knows, so contributing is an errand rather than an audit', async ({ page }) => {
@@ -860,7 +827,7 @@ test.describe('reporting a problem with a record', () => {
     const asks = page.locator('[data-asks]').first();
     await expect(asks).toBeVisible();
     await expect(asks).toContainText(/nobody knows/i);
-    await expect(asks).toContainText(/if you are there, ask/i);
+    await expect(asks).toContainText(/ask if you are there/i);
   });
 
   test('stops asking once somebody has answered', async ({ page }) => {
@@ -1122,8 +1089,7 @@ test.describe('who may hold a watch', () => {
     await expect(vouchers).toBeVisible();
     // Provenance by name, never a count.
     await expect(vouchers).toContainText('Wren');
-    // 7.4: the claim and its limit together.
-    await expect(vouchers).toContainText(/not a\s+promise that you will stay awake/i);
+    await expect(vouchers).toContainText(/says you can take a watch/i);
     await expect(page.getByRole('button', { name: /take the watch/i })).toBeVisible();
   });
 });
@@ -1137,9 +1103,10 @@ test.describe('patrols', () => {
     await expect(toggle).toBeVisible();
 
     // Off by default: the Protest Medic needs a phone that is useless to whoever takes it.
-    await expect(page.getByText(/are destroyed by a panic wipe/i)).toBeVisible();
+    const state = page.locator('section.limit [data-readout]');
+    await expect(state).toContainText('Destroyed');
     await toggle.click();
-    await expect(page.getByText(/survive a panic wipe/i)).toBeVisible();
+    await expect(state).toContainText('Kept');
   });
 
   /**
@@ -1276,7 +1243,7 @@ test.describe('being flooded with pairing requests', () => {
 
     const banner = page.locator('[data-invites-flooded]');
     await expect(banner).toBeVisible({ timeout: 10_000 });
-    await expect(banner).toContainText(/turned away/i);
+    await expect(banner).toContainText(/clear these/i);
 
     // A cap the operator cannot clear would be worse than the flood.
     const clear = page.locator('[data-ignore-all]');
@@ -1310,8 +1277,8 @@ test.describe('pairing when the reply cannot be sent', () => {
 
     const warning = page.locator('[data-half-paired]');
     await expect(warning).toBeVisible();
-    await expect(warning).toContainText(/they do not have you/i);
-    await expect(warning).toContainText(/will not see your patrols/i);
+    await expect(warning).toContainText(/did not reach a relay/i);
+    await expect(warning).toContainText(/accept again/i);
 
     // And the request is still there, because tapping Accept again is the retry.
     await expect(page.getByRole('button', { name: /^accept$/i })).toBeVisible();
@@ -1341,7 +1308,7 @@ test.describe('a region board with more cards than it can show', () => {
 
     const notice = page.locator('[data-board-partial]');
     await expect(notice).toBeVisible({ timeout: 10_000 });
-    await expect(notice).toContainText(/part of the board/i);
+    await expect(notice).toContainText(/more here than this can show/i);
     // And it points at the thing that does work.
     await expect(notice).toContainText(/ask them for their code/i);
   });
@@ -1580,9 +1547,7 @@ test.describe('a correction made where there is no signal', () => {
 
     const notice = page.locator('[data-corrections-unsent]');
     await expect(notice).toBeVisible({ timeout: 10_000 });
-    await expect(notice).toContainText(/has not reached a relay yet/i);
-    // And says what happens next, because a notice you cannot act on is just worry.
-    await expect(notice).toContainText(/go out on their own/i);
+    await expect(notice).toContainText(/until they reach a relay/i);
   });
 });
 
@@ -1621,7 +1586,7 @@ test.describe('taking back an endorsement', () => {
 
     const notice = page.locator('[data-withdrawal-unsent]');
     await expect(notice).toBeVisible({ timeout: 10_000 });
-    await expect(notice).toContainText(/stopped honouring what you took back/i);
+    await expect(notice).toContainText(/honoured on this phone, nowhere else/i);
     await expect(notice).toContainText(/did not reach a relay/i);
   });
 });
@@ -1656,7 +1621,7 @@ test.describe('standing that was taken back', () => {
     const list = page.locator('[data-withdrawn]');
     await expect(list).toBeVisible({ timeout: 10_000 });
     await expect(list).toContainText('Raven');
-    await expect(list).toContainText(/no longer counts/i);
+    await expect(list).toContainText(/taken back/i);
   });
 
   test('and the watch gate closes with it', async ({ page }) => {
@@ -1954,7 +1919,6 @@ test.describe('finding which of these is closest', () => {
 
     await page.locator('[data-nearest]').click();
     await expect(page.locator('[data-nearest-on]')).toBeVisible();
-    await expect(page.locator('[data-nearest-on]')).toContainText(/sent nowhere/i);
     // Rounded to ~500m before it is ever held, so the page must not imply more precision.
     await expect(page.locator('[data-nearest-on]')).toContainText(/500m/i);
     expect(await page.locator('section.group').count()).toBe(groupsBefore);

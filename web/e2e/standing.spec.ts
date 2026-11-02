@@ -40,17 +40,6 @@ test.describe('vouching for somebody', () => {
     // And the content carries a scope, the endorser's own callsign, and a date. Nothing else.
     expect(Object.keys(JSON.parse(credential.content)).sort()).toEqual(['at', 'endorser', 'scope']);
   });
-
-  test('and says out loud that whoever holds the bytes can take it up', async ({ page }) => {
-    // The cost of naming nobody, stated on the screen where somebody is about to pay it —
-    // not in a document they will never open.
-    await standing(page, 'Wren');
-    await expect(page.getByText(/whoever holds the bytes can take it up/i)).toBeVisible();
-    await expect(page.getByText(/you will not\s+be told when they do/i)).toHaveCount(0);
-
-    await page.getByRole('button', { name: WATCH }).click();
-    await expect(page.getByText(/you will not\s+be told when they do/i)).toBeVisible();
-  });
 });
 
 test.describe('taking one up', () => {
@@ -61,7 +50,7 @@ test.describe('taking one up', () => {
 
     // Handed over however the two of them already talk. Nothing crosses a relay.
     const ash = await standing(await browser.newPage(), 'Ash');
-    await expect(ash.getByText(/nothing yet, and that is the ordinary starting point/i)).toBeVisible();
+    await expect(ash.locator('[data-holds-nothing]')).toBeVisible();
 
     await ash.locator('#cred').fill(blob);
     await ash.getByRole('button', { name: /take it up/i }).click();
@@ -205,7 +194,7 @@ test.describe('taking it back', () => {
     const gone = ash.locator('[data-withdrawn]');
     await expect(gone).toBeVisible({ timeout: 10_000 });
     await expect(gone).toContainText(/wren/i);
-    await expect(gone).toContainText(/no longer counts for\s+anything/i);
+    await expect(gone).toContainText(/taken back/i);
     // And it is not still sitting in what she holds.
     await expect(ash.locator('[data-endorsement="can-take-watch"]')).toHaveCount(0);
 

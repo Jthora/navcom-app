@@ -237,10 +237,7 @@
     <Slot k="Patrols">
       <Readout value="Nothing yet" tone="cold" sub="lands here when you stand down" />
     </Slot>
-    <p class="cost">
-      Your own record, not the watch's. <strong>It stays on this phone</strong> — nothing
-      here is sent to a watch, a relay or anybody else — and it works with no signal at all.
-    </p>
+    <p class="cost">It stays on this phone.</p>
   </section>
 {:else}
   {#if list.length > 0}
@@ -285,14 +282,7 @@
 
   <section class="act">
     <h2>Share it</h2>
-    <p>
-      <strong>None of this has left your phone.</strong> Sharing is something you do on
-      purpose, and this is what would go.
-    </p>
-    <p class="cost">
-      Built so that using it cannot expose anybody who did not agree to anything: no other
-      operators, nothing about anyone you helped, and no coordinates at any point.
-    </p>
+    <p><strong>None of this has left your phone.</strong></p>
     <label class="opt">
       <input type="checkbox" bind:checked={includeAreas} />
       Include areas
@@ -300,18 +290,12 @@
     <label class="opt opt--explained">
       <input type="checkbox" bind:checked={includeNotes} />
       Include your notes
-      <span class="why">
-        Off by default. Your notes are the one place here you wrote freely, and the most
-        likely place something about another person ended up.
-      </span>
+      <!-- Off by default: the one place you wrote freely, so the likeliest to name somebody. -->
+      <span class="why">Check them for anything about another person.</span>
     </label>
-    <label class="opt opt--explained">
+    <label class="opt">
       <input type="checkbox" bind:checked={includeContributions} />
       Include what you corrected and added
-      <span class="why">
-        Already public under your callsign — a correction goes out on a relay and lands on the
-        face of the record it fixes. This is the same work, gathered.
-      </span>
     </label>
     <button onclick={() => (showExport = !showExport)}>
       {showExport ? 'Hide' : 'Show what would be shared'}
@@ -353,15 +337,6 @@
       sub={keep ? 'a seized phone shows a year of them' : 'nothing about your nights survives'}
     />
   </Slot>
-  <p>
-    {#if keep}
-      Your patrols <strong>survive a panic wipe</strong>. A year of them survives a bad
-      night — and a seized phone shows a year of them.
-    {:else}
-      Your patrols <strong>are destroyed by a panic wipe</strong>, along with everything else
-      from tonight. Nothing about your nights survives a phone being taken.
-    {/if}
-  </p>
   <button data-keep onclick={toggleKeep}>
     {keep ? 'Destroy them on a panic wipe' : 'Keep them through a panic wipe'}
   </button>

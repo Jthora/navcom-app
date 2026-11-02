@@ -304,11 +304,11 @@ and silence is never an answer.
 The hard part was not rendering entries. A response carries entries, proofs **and** the root
 they are against, all three from the watch — so verifying them against each other always
 succeeds. `checkReview` accepts only a root the device saw published itself, and the screen
-says *"marking its own homework"* for the other case rather than showing a tick.
+reads *Not checked* for the other case rather than showing a tick.
 
-**The limit is stated before the record is fetched, not after.** An operator who has just
-read a screen of green ticks is the least likely person to go looking for what the ticks do
-not cover — and what they do not cover is omission, which no proof closes.
+**The limit sits beside the tick** (*"A missing entry would not show"*) since 2026-11-01, when
+the paragraph that stated it before the record was fetched went with the screen's other
+explanations. What a tick does not cover is omission, which no proof closes.
 
 ## Gated on opening past people you personally vetted
 

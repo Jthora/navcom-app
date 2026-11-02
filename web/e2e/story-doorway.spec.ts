@@ -78,7 +78,7 @@ test.describe('a place that turned somebody away', () => {
     await deliver(wren, ash);
 
     await expect(theirs.locator('[data-report]')).toBeVisible({ timeout: 10_000 });
-    await expect(theirs.locator('[data-report]')).toContainText(/listing below is unchanged/i);
+    await expect(theirs.locator('[data-report]')).toContainText(/reported this/i);
 
     // Everything that was on the record is still on the record. Nothing was taken away.
     const after = await theirs.innerText();

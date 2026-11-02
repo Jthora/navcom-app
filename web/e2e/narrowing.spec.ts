@@ -39,33 +39,18 @@ test('narrows a long list to the place you can already name', async ({ page }) =
 });
 
 test('says so when nothing matches, and offers the way back', async ({ page }) => {
-  /*
-   * An empty list with no explanation reads as a broken screen. It also has to be honest about
-   * what it does not know: a place may be in this area and spelled differently, and the filter
-   * cannot tell that from not carried at all.
-   */
+  // An empty list with no word reads as a broken screen.
   await blankDevice(page);
   await open(page, LA);
   await page.locator('[data-narrow]').fill('zzz-nothing-like-this-zzz');
 
   const empty = page.locator('[data-narrow-empty]');
   await expect(empty).toBeVisible();
-  // \s+ not a space: the source line-wraps between the two words, and a raw newline in
-  // textContent is not a space to a regex. Third time this session.
-  await expect(empty).toContainText(/spelled\s+differently/i);
+  await expect(empty).toContainText(/nothing matches/i);
   await expect(page.locator('[data-record]')).toHaveCount(0);
 
   await empty.getByRole('button', { name: /show all/i }).click();
   await expect(page.locator('[data-record]').first()).toBeVisible();
-});
-
-test('and it says plainly that it is not Query', async ({ page }) => {
-  // The sentence that resolves the doctrine question, on the screen rather than in a comment.
-  await blankDevice(page);
-  await open(page, LA);
-  const note = page.locator('section.narrowing');
-  await expect(note).toContainText(/nothing is sent and nobody is asked/i);
-  await expect(note.locator('a[href="/terminal/query/"]')).toBeVisible();
 });
 
 test('and is absent where there is nothing to narrow', async ({ page }) => {

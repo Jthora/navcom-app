@@ -8,7 +8,7 @@
   import { operator } from '$lib/terminal/session.svelte';
   import { watch } from '$lib/terminal/watch.svelte';
 
-  import { Slot, Readout, Why } from '$lib/components/panel';
+  import { Slot, Readout } from '$lib/components/panel';
   let text = $state('');
   let sent = $state(false);
 
@@ -34,29 +34,9 @@
 </header>
 
 <section>
-  <p>
-    Say what you ran out of. It goes to the watch, and whoever keeps the stash reads it.
-  </p>
-  <p class="cost">
-    <!--
-      The design decision, stated where somebody might otherwise expect the other thing.
-      A tally is what most apps would build here and it is the wrong shape twice over.
-    -->
-    <strong>Nothing counts what you handed out.</strong> Not here, not in your patrol record,
-    not anywhere — your record stays on your phone and nothing about what you carried or gave
-    away is ever sent. This is a request, not a report, and there is no number in it to
-    compare against anybody.
-  </p>
-  <p class="cost">
-    <strong>Write about the supply, not the person</strong> — what ran out and what size, not
-    who needed it or where they were. Nothing about anybody you helped belongs in this app.
-  </p>
-  <Why summary="How urgent this is">
-    <p>
-      This is the least urgent thing you can send. It <strong>pages nobody</strong> and it
-      can wait until you are somewhere warm.
-    </p>
-  </Why>
+  <p>Say what ran out. Whoever keeps the stash reads it.</p>
+  <!-- Invariant 1, where somebody types. -->
+  <p class="cost"><strong>Write about the supply, not the person.</strong></p>
 </section>
 
 <form onsubmit={send}>
@@ -65,19 +45,18 @@
       <Readout
         value="No watch"
         tone="cold"
-        sub="Resupply goes to a watch, and you have not added one — the ordinary case for somebody working alone, and nothing here is missing."
+        sub="this goes to a watch"
       />
     </Slot>
   {:else if watch.state.state === 'dark'}
     <Slot k="Watch"><Readout value="Dark" tone="cold" sub="sends anyway, read when one is up" /></Slot>
-    <p class="cost">No watch is up. This will send, and it will be read when one is.</p>
   {/if}
 
   <label for="r">What ran out</label>
   <textarea id="r" bind:value={text} rows="3" placeholder="socks, size 10-12. hand warmers."></textarea>
 
   {#if operator.error}<p class="error">{operator.error}</p>{/if}
-  {#if sent}<p class="ok" data-sent>Sent. Whoever keeps the stash will see it.</p>{/if}
+  {#if sent}<p class="ok" data-sent>Sent.</p>{/if}
 
   <button type="submit" disabled={!text.trim() || operator.busy}>
     {operator.busy ? 'Sending…' : 'Send'}

@@ -104,7 +104,6 @@ test.describe('an operator whose area is not listed', () => {
 
     const said = page.locator('[data-area-missing]');
     await expect(said).toBeVisible();
-    await expect(said).toContainText(/this app cannot add it yet/i);
     // Counted from the data, never typed: this sentence goes wrong the day a 69th is seeded.
     await expect(said).toContainText(/\d+ areas, in \d+ countries/i);
     // And one door out of the terminal, which had none at all.

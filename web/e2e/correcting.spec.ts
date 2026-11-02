@@ -65,12 +65,12 @@ test.describe('correcting a record from a doorway', () => {
     await expect(record.locator('[data-report]')).toBeVisible({ timeout: 10_000 });
   });
 
-  test('the operator is told it goes out under their callsign, before it does', async ({ page }) => {
+  test('the operator is told it goes out under their name, before it does', async ({ page }) => {
     // Provenance by name is the whole model, so somebody about to correct should know their
     // name travels with it.
     const record = await firstRecord(page);
     await record.getByRole('button', { name: /report a problem/i }).click();
-    await expect(record.getByText(/goes out under your callsign/i)).toBeVisible();
+    await expect(record.getByText(/sent under your name/i)).toBeVisible();
   });
 
   test('and backing out leaves the record untouched', async ({ page }) => {

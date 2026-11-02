@@ -70,40 +70,14 @@
 </header>
 
 <section>
-  <p>
-    The watch writes down what it does. This asks for the part that concerns you — actions,
-    never where you were or what you asked.
-  </p>
+  <p>The watch writes down what it does.</p>
   <Slot k="Commitments seen">
     <Readout
       value="{roots} published"
       tone={roots === 0 ? 'cold' : 'neutral'}
-      sub="checking against one of them is the only version of this that means anything"
+      sub="seen by this device"
     />
   </Slot>
-</section>
-
-<!--
-  Stated before the record is fetched, not after. An operator who has just read a screen of
-  green ticks is the least likely person to go looking for the limit.
--->
-<section class="limit">
-  <h2>What a check here can and cannot tell you</h2>
-  <p>
-    Your entries are checked against a commitment <strong>this device saw the watch
-    publish</strong> — never against one the watch hands over with its own answer, which
-    would be the watch marking its own homework and proves nothing.
-  </p>
-  <p>
-    It cannot tell you <strong>whether anything is missing</strong>. A watch that never
-    wrote an entry publishes a commitment to a log that never had it, and every check still
-    passes. Closing that needs your signature on entries as they are written, and
-    <strong>nothing signs yet</strong>.
-  </p>
-  <p class="cost">
-    What you get is narrower and still worth something: what the watch <em>did</em> write
-    cannot be quietly changed afterwards.
-  </p>
 </section>
 
 <button data-ask onclick={ask} disabled={operator.busy || watch.state.state === 'dark'}>
@@ -125,29 +99,20 @@
   {#if check.sound}
     <section class="verdict good" data-verdict="verified">
       <h2>Checked</h2>
-      <p>
-        Every entry below is in a log this watch <strong>publicly committed to</strong>, at a
-        commitment this device recorded independently. It cannot have been edited since.
-      </p>
+      <!-- The limit beside the tick: a check passes on a log that never had an entry. -->
+      <p>None of these can have been changed since. A missing entry would not show.</p>
     </section>
   {:else if notSeen}
     <section class="verdict warn" data-verdict="unchecked">
       <h2>Not checked</h2>
-      <p>
-        The watch answered with a commitment <strong>this device has never seen it
-        publish</strong>. Its proofs check out against its own commitment, which is the
-        watch marking its own homework and proves nothing.
-      </p>
-      <p class="cost">
-        Usually this just means the terminal has not been running long enough to have seen
-        one. Leave it on, come back, and ask again.
-      </p>
+      <p>This device has never seen the watch publish the commitment it answered with.</p>
+      <p class="cost">Leave this open and ask again later.</p>
     </section>
   {:else}
     <section class="verdict bad" data-verdict="failed">
       <h2>Did not check out</h2>
       <p>
-        Some of what the watch sent does not match what it committed to publicly.
+        Some of what the watch sent does not match what it publicly committed to.
         <strong>That is not a glitch.</strong>
       </p>
     </section>
@@ -156,7 +121,7 @@
   <section class="entries">
     <h2>{check.entries.length} entr{check.entries.length === 1 ? 'y' : 'ies'}</h2>
     {#if check.entries.length === 0}
-      <p>Nothing recorded about you. That is a real answer, not an empty screen.</p>
+      <p>Nothing recorded about you.</p>
     {:else}
       <ol>
         {#each check.entries as { entry, proven }, i (i)}
@@ -174,13 +139,7 @@
   {#if result?.escalation}
     <section class="escalation">
       <h2>What the escalation executor recorded</h2>
-      <p>
-        A separate account, from a separate process — the one that actually runs the ladder
-        when you signal <code>Distress</code>. <strong>Not yet checkable</strong> the way the
-        record above is: nothing publishes this log's own commitment anywhere, so there is no
-        root this device could have seen. That is a real limit, not a "come back later" —
-        until publishing one exists, what follows is the executor's own word, unproven.
-      </p>
+      <p><strong>Not checkable yet</strong>: this is the executor's own word.</p>
       <section class="entries">
         <h3>
           {result.escalation.entries.length}
@@ -205,7 +164,7 @@
 
 {:else if asked && !operator.busy && !operator.error}
   <section>
-    <p>The watch answered, and it keeps no accountability log at all.</p>
+    <p>This watch keeps no accountability log.</p>
   </section>
 {/if}
 
@@ -230,7 +189,6 @@
   .flag { grid-column: 2; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase;
           color: var(--t-dark); }
 
-  .limit { border-inline-start: 3px solid var(--t-line-strong); padding-inline-start: .9rem; }
   .escalation {
     border: 2px solid var(--t-line-strong); padding: 1rem 1.1rem; display: flex;
     flex-direction: column; gap: .6rem;

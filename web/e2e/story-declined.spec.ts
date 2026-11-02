@@ -95,13 +95,4 @@ test.describe('a watch with nobody to send', () => {
     await operator.context().close();
     await watch.context().close();
   });
-
-  test('and the operator was told before they asked that this could happen', async ({ browser }) => {
-    // Said on the way in, not only on the way out. Somebody deciding whether to ask should
-    // know the honest answer is available.
-    const operator = await theOperator(browser);
-    await open(operator, '/terminal/assist/');
-    await expect(operator.getByText(/a watch that has nobody to send will say so/i)).toBeVisible();
-    await operator.context().close();
-  });
 });
