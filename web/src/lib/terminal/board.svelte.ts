@@ -66,6 +66,7 @@ import {
   openFromGroup,
   readTag,
   signAnswer,
+  teamOf,
   type BoardEntry,
   type Position,
   type Provenance,
@@ -294,6 +295,11 @@ function readSignal(event: Event): { from: string; payload: Record<string, unkno
 }
 
 export const board = {
+  /** The team an operator on this board gave at sign-on, or null. */
+  teamFor(operator: string): string | null {
+    return entries.find((e) => e.operator === operator)?.team ?? null;
+  },
+
   /** Who is out, as this device has heard it. Never persisted — the board expires [C27]. */
   get entries(): BoardEntry[] {
     return board.entriesAt(Math.floor(Date.now() / 1000));
@@ -683,7 +689,7 @@ export const board = {
     const sent = heard.length > 0 ? took.some((url) => heard.includes(url)) : took.length > 0;
     if (!sent) return false;
     night.note(
-      `${declining ? 'Told' : item.type === 'distress' ? 'Acknowledged' : 'Answered'} ${item.callsign}’s ${item.type}` +
+      `${declining ? 'Told' : item.type === 'distress' ? 'Acknowledged' : 'Answered'} ${named(item.operator, item.callsign)}’s ${item.type}` +
         `${declining ? ' that nobody can come' : ''}${provenance ? ', from a directory record' : ''}, ` +
         waited(Math.floor(Date.now() / 1000) - (item.before ?? item.at)) +
         (item.before !== undefined ? ' (sent before this screen opened)' : '')
@@ -724,7 +730,7 @@ export const board = {
     const took = await publishEach(usable([...last.heardOn, ...watchRelays()]), event);
     if (took.length === 0) return false;
     askedAt = { ...askedAt, [operator]: Math.floor(Date.now() / 1000) };
-    night.note(`Asked ${entries.find((e) => e.operator === operator)?.callsign ?? operator.slice(0, 8)} to check in`);
+    night.note(`Asked ${named(operator, entries.find((e) => e.operator === operator)?.callsign ?? operator.slice(0, 8))} to check in`);
     return true;
   },
 
@@ -755,7 +761,7 @@ export const board = {
     }
     if (reached.length > 0) {
       passedOnFor = { ...passedOnFor, [item.id]: reached };
-      night.note(`Passed ${item.callsign}’s assist on to ${reached.join(', ')}`);
+      night.note(`Passed ${named(item.operator, item.callsign)}’s assist on to ${reached.join(', ')}`);
     }
     return reached;
   },
@@ -1172,6 +1178,12 @@ function heardAlsoOn(id: string, url: string): void {
   waiting = waiting.map((w, i) => (i === at ? { ...w, heardOn: [...w.heardOn, url] } : w));
 }
 
+/** A name as tonight's record gives it: with their team, where they gave one, so two teams' Ravens differ. */
+function named(operator: string, callsign: string): string {
+  const team = entries.find((e) => e.operator === operator)?.team;
+  return team ? `${callsign} (${team})` : callsign;
+}
+
 /** Folds one signal into the board. */
 function apply(
   type: Waiting['type'],
@@ -1181,7 +1193,14 @@ function apply(
   url: string,
   history = false
 ): void {
-  const callsign = typeof payload.callsign === 'string' ? payload.callsign : from.slice(0, 8);
+  /*
+   * Only a sign-on carries a callsign, so a Query, an Assist or a Distress from somebody on the board
+   * showed eight characters of their key where their name was: the board knew them as Raven and their
+   * Distress read 50e431d4 (found 2026-11-02, in a screenshot of several teams' board). The signal is
+   * signed by that key, so the name it signed on with is theirs.
+   */
+  const callsign =
+    typeof payload.callsign === 'string' ? payload.callsign : (entries.find((e) => e.operator === from)?.callsign ?? from.slice(0, 8));
   const now = event.created_at;
   /** When it was said, never later than it reached us: a sender's clock ahead of ours moves nothing on. */
   const said = Math.min(event.created_at, Math.floor(Date.now() / 1000));
@@ -1208,9 +1227,11 @@ function apply(
 
   if (type === 'on-station') {
     const duration = typeof payload.expected_duration === 'number' ? payload.expected_duration : 7200;
+    const team = teamOf(payload.team);
     const entry: BoardEntry = {
       operator: from,
       callsign,
+      ...(team ? { team } : {}),
       area: area ?? 'unknown',
       signed_on: now,
       expected_until: now + duration,
@@ -1222,6 +1243,8 @@ function apply(
       status: 'active'
     };
     entries = [...entries.filter((e) => e.operator !== from), entry];
+    // What they asked before this board heard them sign on takes the name they signed on with.
+    waiting = waiting.map((w) => (w.operator === from ? { ...w, callsign } : w));
     return;
   }
 
@@ -1280,7 +1303,7 @@ function apply(
       return;
     }
     // Arriving is written down too: a Distress nobody answered has to leave a trace of its own.
-    if (!without.some((w) => w.operator === from && w.type === 'distress')) night.note(`Distress from ${callsign}${history ? ' (sent before this screen opened)' : ''}`);
+    if (!without.some((w) => w.operator === from && w.type === 'distress')) night.note(`Distress from ${named(from, callsign)}${history ? ' (sent before this screen opened)' : ''}`);
   } else {
     const held = without.filter((w) => w.type !== 'distress').length;
     if (held >= ROUTINE_MAX) {

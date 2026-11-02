@@ -15,6 +15,7 @@ import {
   PublishError,
   sendDistressUntilAcknowledged,
   sendSignal,
+  teamOf,
   waitForResponse,
   type DistressClosure,
   type DistressPhase,
@@ -52,6 +53,8 @@ import { sending, setDistressSending } from './sending.svelte';
 export interface SignOn {
   at: number;
   area: string;
+  /** The team they are out with tonight, where they gave one. */
+  team?: string;
   expectedUntil: number;
   /**
    * What the watch said it could do at the moment of signing on.
@@ -66,6 +69,14 @@ export interface SignOn {
 }
 
 let session = $state<SignOn | null>(get<SignOn>('wipeable', 'signon'));
+
+/**
+ * The team this phone last signed on with, offered again at the next sign-on. Wipeable: which team
+ * somebody is out with is tonight's arrangement, so a panic wipe takes it and a backup never holds it.
+ */
+export function lastTeam(): string {
+  return teamOf(get<string>('wipeable', 'team')) ?? '';
+}
 let busy = $state(false);
 let lastResponse = $state<ResponsePayload | null>(null);
 let error = $state<string | null>(null);
@@ -342,6 +353,7 @@ function onStationPayload(): OnStationPayload {
   const now = Math.floor(Date.now() / 1000);
   return {
     callsign: loadIdentity()?.callsign ?? undefined,
+    ...(session?.team ? { team: session.team } : {}),
     area: session?.area ?? 'unknown',
     expected_duration: Math.max(0, (session?.expectedUntil ?? now) - now),
     routine_interval: session?.routineInterval ?? null,
@@ -436,8 +448,11 @@ export const operator = {
    * So the session is set either way. If there is a watch, it is told, and what it said it
    * could do is kept with the entry.
    */
-  async signOn(area: string, hours: number, routineMinutes: number | null) {
+  async signOn(area: string, hours: number, routineMinutes: number | null, teamName: string | null = null) {
     const now = Math.floor(Date.now() / 1000);
+    const team = teamOf(teamName);
+    if (team) set('wipeable', 'team', team);
+    else clearField('wipeable', 'team');
     const state: WatchStatePayload = watch.state;
     // Where the watch was heard, as the receipt showed it before they committed [relay-lists §7].
     const where = heard.now();
@@ -448,6 +463,7 @@ export const operator = {
     if (operator.hasWatch) {
       const payload: OnStationPayload = {
         callsign: loadIdentity()?.callsign ?? undefined,
+        ...(team ? { team } : {}),
         area,
         expected_duration: Math.round(hours * 3600),
         routine_interval: routineMinutes === null ? null : routineMinutes * 60,
@@ -464,6 +480,7 @@ export const operator = {
     session = {
       at: now,
       area,
+      ...(team ? { team } : {}),
       expectedUntil: now + Math.round(hours * 3600),
       toldAtSignOn:
         capabilitySentence(state, Math.floor(Date.now() / 1000)) +

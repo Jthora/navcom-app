@@ -8,6 +8,7 @@ import { existsSync, readFileSync } from "node:fs";
 import {
   STALE_AFTER_SECONDS,
   WATCH_STATE_VERSION,
+  teamOf,
   type Drill,
   type LogAction,
   type LogOutcome,
@@ -631,6 +632,7 @@ export class WatchtowerDaemon {
     this.board.onStation({
       operator: operatorPubkey,
       callsign,
+      team: teamOf(payload.team),
       area: payload.area,
       expectedDurationSeconds: payload.expected_duration,
       routineIntervalSeconds,

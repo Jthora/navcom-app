@@ -14,7 +14,7 @@
    */
   import { onMount } from 'svelte';
   import encodeQR from '@paulmillr/qr';
-  import { declineIsValid, RESPONSE_WINDOW } from '@navcom/core';
+  import { declineIsValid, keyPrint, RESPONSE_WINDOW, sameTeam } from '@navcom/core';
   import { board, type Waiting } from '$lib/terminal/board.svelte';
   import { createWatch, foundedHere, joinWatch, leaveWatch, otherHolders as keptHolders, setOtherHolders, watchKey, watchPubkey, watchSecretHex, WatchKeyError } from '$lib/terminal/watch-key';
   import ScanKey from '$lib/components/watch/ScanKey.svelte';
@@ -27,7 +27,7 @@
   import { loadConfig } from '$lib/terminal/config';
   import { update } from '$lib/terminal/update.svelte';
   import { sending } from '$lib/terminal/sending.svelte';
-  import { floorDetail, floorNote, floorPin } from '$lib/terminal/floor';
+  import { floorDetail, floorNote, floorPin, nameKey, repeatedNames, shownFor, teamsOn } from '$lib/terminal/floor';
   import { coordinates, fixAge, mapLink, within } from '$lib/terminal/fix';
   import { awake, raise, setSound, soundOn } from '$lib/terminal/raise.svelte';
   import { placeLine, provenanceOf } from '$lib/terminal/lookup';
@@ -199,11 +199,24 @@
     }
   }
 
+  /** The board as it reads now, in its one order [core `boardOrder`]. */
+  const out = $derived(board.entriesAt(nowS));
+  /** The teams on it, to narrow the list by, where more than one team shares this watch. */
+  const teams = $derived(teamsOn(out));
+  let narrowed = $state<string | null>(null);
+  /** A team nobody on the board is with any longer is no narrowing. */
+  const team = $derived(narrowed !== null && teams.some((t) => sameTeam(t, narrowed)) ? narrowed : null);
+  /** Names two operators here share: theirs show a key's print, which is who they are. */
+  const repeated = $derived(repeatedNames(out));
+  const printOf = (operator: string, callsign: string) => (repeated.has(nameKey(callsign)) ? keyPrint(operator) : null);
+
   /** Who is out, with their times, in the order the board is read. */
   const floor = $derived(
-    board.entriesAt(nowS).map((e) => ({
+    out.filter((e) => shownFor(e, team)).map((e) => ({
       operator: e.operator,
       callsign: e.callsign,
+      team: e.team ?? null,
+      print: printOf(e.operator, e.callsign),
       area: e.area,
       status: e.status,
       note: floorNote(e, nowS),
@@ -238,7 +251,12 @@
   const othersOut = (w: Waiting) => board.entries.filter((e) => e.operator !== w.operator).length;
   /** Who asked, where and how soon: never their own words, which may be about somebody else. */
   const passDraft = (w: Waiting) =>
-    `${w.callsign} asks for someone${w.area ? ` near ${w.area}` : ''}${w.urgency === 'now' ? ', now' : ''}.`;
+    `${withTeam(w.operator, w.callsign)} asks for someone${w.area ? ` near ${w.area}` : ''}${w.urgency === 'now' ? ', now' : ''}.`;
+  /** A name with the team it is out with, where one was given: what tells two teams' Ravens apart in a sentence. */
+  const withTeam = (operator: string, callsign: string) => {
+    const t = board.teamFor(operator);
+    return t ? `${callsign} (${t})` : callsign;
+  };
 
   let nightCopied = $state(false);
   let confirmClear = $state(false);
@@ -578,6 +596,15 @@
         others, and peripheral vision reads that without reading anything. Ordering comes from
         the board the core already derives, so there is one definition of "overdue".
       -->
+      {#if teams.length > 1}
+        <!-- Narrowing a list already on this phone. A Distress, and anybody past their time, stay on it. -->
+        <div class="teams" role="group" aria-label="Team" data-teams>
+          <button aria-pressed={team === null} onclick={() => (narrowed = null)}>All</button>
+          {#each teams as t (t)}
+            <button aria-pressed={sameTeam(team, t)} data-team={t} onclick={() => (narrowed = t)}>{t}</button>
+          {/each}
+        </div>
+      {/if}
       <Board entries={floor} />
       <!--
         Asking somebody past their time to check in: what the spec asks a watch to do on overdue, and
@@ -589,7 +616,7 @@
             <Readout value="Asked" tone="neutral" sub={`${e.callsign} · ${fixAge(board.askedAt(e.operator)!, nowS)}`} />
           {/if}
           <button onclick={() => askIn(e.operator)} disabled={asking === e.operator}>
-            {board.askedAt(e.operator) !== null ? `Ask ${e.callsign} again` : `Ask ${e.callsign} to check in`}
+            {board.askedAt(e.operator) !== null ? `Ask ${withTeam(e.operator, e.callsign)} again` : `Ask ${withTeam(e.operator, e.callsign)} to check in`}
           </button>
           {#if askFailed === e.operator}
             <span class="error" data-ask-failed>Did not reach a relay.</span>
@@ -603,8 +630,10 @@
     <li class={w.type === 'distress' ? 'distress' : ''}>
             <div class="who">
               <span class="name">{w.callsign}</span>
+              {#if board.teamFor(w.operator)}<span class="team" data-ask-team>{board.teamFor(w.operator)}</span>{/if}
               <span class="badge" data-urgency={w.urgency}>{badgeOf(w)}</span>
             </div>
+            {#if printOf(w.operator, w.callsign)}<div class="where" data-ask-print>{printOf(w.operator, w.callsign)}</div>{/if}
             {#if w.text}<p class="said">{w.text}</p>{/if}
             <!-- Values, not prose: where they said they were, and where their phone last put them. -->
             {#if w.area}<div class="where" data-ask-area>{w.area}</div>{/if}
@@ -875,6 +904,11 @@
   .asks li { flex-direction: column; align-items: stretch; gap: .5rem; padding-block: .9rem; }
   .who { display: flex; align-items: center; gap: .7rem; }
   .name { color: var(--t-ink); font-weight: 650; flex: 1; }
+  .team { font-family: var(--font-mono); font-size: .66rem; color: var(--t-muted); }
+  .teams { display: flex; flex-wrap: wrap; gap: .4rem; margin-block-end: .6rem; }
+  /* The directory's toggles, so a list narrowed here reads as a list narrowed there. */
+  .teams button { min-height: 2.4rem; font-size: .85rem; padding: 0 .8rem; border-color: var(--t-line); color: var(--t-faint); }
+  .teams button[aria-pressed='true'] { border-color: var(--t-ink); color: var(--t-ink); }
   .said { margin: 0; color: var(--t-ink); font-size: .95rem; }
   .row { display: flex; gap: .6rem; }
   .badge {

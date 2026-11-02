@@ -134,9 +134,17 @@ export function validateOnStationPayload(payload: unknown): OnStationPayload {
   if (typeof p.callsign === "string" && p.callsign.length > CALLSIGN_MAX) {
     throw new ValidationError(`on-station payload: callsign is longer than ${CALLSIGN_MAX} characters`);
   }
+  // A team is shown where a callsign is, so it has a callsign's cap.
+  if (p.team !== undefined && typeof p.team !== "string") {
+    throw new ValidationError("on-station payload: team must be a string if present");
+  }
+  if (typeof p.team === "string" && p.team.length > CALLSIGN_MAX) {
+    throw new ValidationError(`on-station payload: team is longer than ${CALLSIGN_MAX} characters`);
+  }
 
   return {
     ...(typeof p.callsign === "string" ? { callsign: p.callsign } : {}),
+    ...(typeof p.team === "string" ? { team: p.team } : {}),
     area: p.area,
     expected_duration: p.expected_duration,
     routine_interval: p.routine_interval as number | null,

@@ -18,7 +18,7 @@ import {
   newSecretKey,
   publicKeyOf
 } from '@navcom/core';
-import { finalizeEvent } from 'nostr-tools/pure';
+import { finalizeEvent, getPublicKey } from 'nostr-tools/pure';
 
 const watch = newSecretKey();
 const watchPub = publicKeyOf(watch);
@@ -183,6 +183,15 @@ const onStation = (who: Uint8Array, at: number): Event =>
     who
   );
 
+const withTeam = (who: Uint8Array, at: number, callsign: string, team: unknown): Event =>
+  finalizeEvent(
+    buildSignal(who, to, 'on-station', {
+      callsign, team, area: 'Midtown', expected_duration: 7200,
+      routine_interval: null, share_position: false, position: null
+    } as never, at),
+    who
+  );
+
 const stoodDown = (who: Uint8Array, at: number): Event =>
   finalizeEvent(buildSignal(who, to, 'stood-down', {}, at), who);
 
@@ -324,6 +333,47 @@ describe('a watch whose publishes do not land', () => {
     const item = board.distress[0]!;
     expect(await board.answer(item, 'awake, on my way')).toBe(true);
     expect(board.distress.map((w) => w.id)).toContain(item.id);
+  });
+});
+
+describe('several teams on one watch (2026-11-02)', () => {
+  it('keeps the team each sign-on gave, as one line, and none where none was given', () => {
+    const owl = newSecretKey();
+    const kite = newSecretKey();
+    const wren = newSecretKey();
+    deliver(withTeam(owl, T, 'Owl', '  Zone\nGuardians '));
+    deliver(withTeam(kite, T, 'Kite', 'Rescue Rangers'));
+    deliver(withTeam(wren, T, 'Wren', 7));
+    const byName = Object.fromEntries(board.entries.map((e) => [e.callsign, e.team ?? null]));
+    expect(byName).toEqual({ Owl: 'Zone Guardians', Kite: 'Rescue Rangers', Wren: null });
+    expect(board.teamFor(getPublicKey(kite))).toBe('Rescue Rangers');
+    expect(board.teamFor(getPublicKey(wren))).toBeNull();
+  });
+
+  it('follows a sign-on that changes team', () => {
+    const owl = newSecretKey();
+    deliver(withTeam(owl, T, 'Owl', 'Zone Guardians'));
+    deliver(withTeam(owl, T + 60, 'Owl', 'Rescue Rangers'));
+    expect(board.entries.map((e) => e.team)).toEqual(['Rescue Rangers']);
+  });
+});
+
+describe('a question from somebody on the board', () => {
+  const ask = (who: Uint8Array, at: number) => finalizeEvent(buildSignal(who, to, 'query', { text: 'bed tonight', area: 'north' }, at), who);
+
+  it('is shown under the name they signed on with, not a piece of their key', () => {
+    const raven = newSecretKey();
+    deliver(onStation(raven, T));
+    deliver(ask(raven, T + 60));
+    expect(board.waiting.map((w) => w.callsign)).toEqual(['Raven']);
+  });
+
+  it('takes their name once their sign-on is heard, when the question came first', () => {
+    const raven = newSecretKey();
+    deliver(ask(raven, T + 60));
+    expect(board.waiting[0]!.callsign).toBe(getPublicKey(raven).slice(0, 8));
+    deliver(onStation(raven, T));
+    expect(board.waiting.map((w) => w.callsign)).toEqual(['Raven']);
   });
 });
 

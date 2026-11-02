@@ -11,7 +11,7 @@ import { finalizeEvent } from 'nostr-tools/pure';
 import { buildDistress, buildSignal, RESPONSE_WINDOW } from '../src/events/signal';
 import { isUnverified, type ResponsePayload } from '../src/events/response';
 import { KIND_DISTRESS, KIND_RESPONSE, KIND_SIGNAL, KIND_WATCH_STATE, isEphemeral, readTag } from '../src/events/kinds';
-import { DEFAULT_LIFETIMES, boardOrder, checkedIn, isExpired, isOverdue, standDown, tick, type BoardEntry } from '../src/board';
+import { DEFAULT_LIFETIMES, boardOrder, checkedIn, isExpired, isOverdue, sameTeam, standDown, teamOf, tick, type BoardEntry } from '../src/board';
 
 const NOW = new Date('2026-08-18T12:00:00Z');
 const NOW_S = Math.floor(NOW.getTime() / 1000);
@@ -356,6 +356,20 @@ describe('the board', () => {
     const late = entry({ operator: 'c', callsign: 'Cedar', status: 'overdue' });
     const hurt = entry({ operator: 'd', callsign: 'Dove', status: 'distress' });
     expect([later, sooner, late, hurt].sort(boardOrder).map((e) => e.callsign)).toEqual(['Dove', 'Cedar', 'Birch', 'Ash']);
+  });
+
+  it('a team on the board is what was typed, made one line, and nothing that is not a name', () => {
+    expect(teamOf('  Zone   Guardians ')).toBe('Zone Guardians');
+    expect(teamOf('Rescue\n[board] + Rangers')).toBe('Rescue [board] + Rangers');
+    expect(teamOf('x'.repeat(200))).toHaveLength(48);
+    for (const none of ['', '   ', '\n', undefined, null, 7, {}]) expect(teamOf(none)).toBeNull();
+  });
+
+  it('team b is Team B, and no team is nobody’s team', () => {
+    expect(sameTeam('Team B', 'team b')).toBe(true);
+    expect(sameTeam('Team B', 'Team C')).toBe(false);
+    expect(sameTeam(null, null)).toBe(false);
+    expect(sameTeam(undefined, 'Team B')).toBe(false);
   });
 
   it('standing down removes the entry rather than parking it in a status', () => {

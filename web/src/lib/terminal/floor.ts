@@ -9,7 +9,7 @@
  * Facts, never verdicts [invariant 3]: *check-in due 20 min ago* is what the board knows; *overdue*
  * and *missing* are readings of it, and nothing here makes them.
  */
-import type { BoardEntry } from '@navcom/core';
+import { sameTeam, type BoardEntry } from '@navcom/core';
 import { ago } from './heard-copy';
 import { fixAge, mapLink, within } from './fix';
 
@@ -31,4 +31,50 @@ export function floorDetail(e: BoardEntry, now: number): string {
 export function floorPin(e: BoardEntry, now: number): { href: string; label: string } | null {
   if (!e.position || e.position_at === null) return null;
   return { href: mapLink(e.position), label: `Map · ${within(e.position)} · ${fixAge(e.position_at, now)}` };
+}
+
+/**
+ * The teams on a board, each once and in name order, so the list the holder narrows by stays put.
+ * Each is spelled as most of its members typed it, so one phone's *rescue rangers* does not name
+ * the team for everybody; a tie goes to the spelling with capitals.
+ */
+export function teamsOn(entries: readonly BoardEntry[]): string[] {
+  const spellings = new Map<string, Map<string, number>>();
+  for (const e of entries) {
+    if (!e.team) continue;
+    const key = e.team.toLocaleLowerCase();
+    const ways = spellings.get(key) ?? new Map<string, number>();
+    ways.set(e.team, (ways.get(e.team) ?? 0) + 1);
+    spellings.set(key, ways);
+  }
+  const capitals = (t: string) => [...t].filter((c) => c !== c.toLocaleLowerCase()).length;
+  return [...spellings.values()]
+    .map((ways) => [...ways].sort(([a, n], [b, m]) => m - n || capitals(b) - capitals(a) || a.localeCompare(b))[0]![0])
+    .sort((a, b) => a.localeCompare(b));
+}
+
+/**
+ * Whether a row shows while the board is narrowed to one team. A Distress, and anybody past their
+ * time, show whatever team they are with: narrowing a list is the holder's convenience, and it never
+ * hides the rows a watch exists to see.
+ */
+export function shownFor(e: BoardEntry, team: string | null): boolean {
+  return team === null || e.status === 'distress' || e.status === 'overdue' || sameTeam(e.team, team);
+}
+
+/** A name as a person reads it, for telling whether two rows carry the same one. */
+export function nameKey(callsign: string): string {
+  return callsign.trim().toLocaleLowerCase();
+}
+
+/** The names that more than one operator on this board carries: those rows show a key's print too. */
+export function repeatedNames(entries: readonly { callsign: string }[]): Set<string> {
+  const seen = new Set<string>();
+  const twice = new Set<string>();
+  for (const e of entries) {
+    const k = nameKey(e.callsign);
+    if (seen.has(k)) twice.add(k);
+    seen.add(k);
+  }
+  return twice;
 }

@@ -11,7 +11,7 @@
   import { pageableNow } from '@navcom/core';
   import { Panel, Slot, Readout, Why } from '$lib/components/panel';
   import { watch } from '$lib/terminal/watch.svelte';
-  import { operator } from '$lib/terminal/session.svelte';
+  import { lastTeam, operator } from '$lib/terminal/session.svelte';
   import { precision, setPrecision, type Precision } from '$lib/terminal/position.svelte';
   import { loadConfig, storedWatch } from '$lib/terminal/config';
   import { heard } from '$lib/terminal/heard.svelte';
@@ -33,6 +33,7 @@
   let person = $state<string | null>(null);
 
   let area = $state('');
+  let team = $state('');
   let hours = $state(2);
   let routine = $state<number | null>(60);
   let share = $state<Precision>('off');
@@ -42,6 +43,7 @@
 
   onMount(() => {
     share = precision();
+    team = lastTeam();
     configured = loadConfig() !== null;
     stranded = !configured && storedWatch() !== null;
     person = loadContact()?.label ?? null;
@@ -57,7 +59,7 @@
     e.preventDefault();
     if (!area.trim()) return;
     setPrecision(share);
-    await operator.signOn(area.trim(), hours, routine);
+    await operator.signOn(area.trim(), hours, routine, team);
     if (operator.session) goto('/terminal/');
   }
 
@@ -150,6 +152,9 @@
   <input
     id="area" bind:value={area} required autocomplete="off"
     placeholder="a district, not an address" />
+
+  <label for="team">Team</label>
+  <input id="team" bind:value={team} autocomplete="off" maxlength="48" placeholder="optional" />
 
   <label for="hours">Out for</label>
   <select id="hours" bind:value={hours}>

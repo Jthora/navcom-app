@@ -6,6 +6,8 @@ export type BoardStatus = "active" | "overdue" | "distress";
 export interface BoardEntry {
   operator: string; // pubkey
   callsign: string;
+  /** The team they gave at sign-on, if any. */
+  team: string | null;
   area: string; // coarse -- district, never an address
   signedOn: number;
   expectedUntil: number;
@@ -29,6 +31,7 @@ export interface BoardEntry {
 export interface OnStationParams {
   operator: string;
   callsign: string;
+  team?: string | null;
   area: string;
   expectedDurationSeconds: number;
   routineIntervalSeconds: number | null;
@@ -87,6 +90,7 @@ export class Board {
     const entry: BoardEntry = {
       operator: params.operator,
       callsign: params.callsign,
+      team: params.team ?? null,
       area: params.area,
       signedOn: params.now,
       expectedUntil: params.now + params.expectedDurationSeconds,
@@ -102,7 +106,7 @@ export class Board {
     };
     this.entries.set(params.operator, entry);
     this.log(
-      `+ ${this.shortId(params.operator)} callsign=${sanitizeForLog(entry.callsign)} area=${sanitizeForLog(entry.area)} ` +
+      `+ ${this.shortId(params.operator)} callsign=${sanitizeForLog(entry.callsign)}${entry.team ? ` team=${sanitizeForLog(entry.team)}` : ""} area=${sanitizeForLog(entry.area)} ` +
         `expected_until=${new Date(entry.expectedUntil * 1000).toISOString()} ` +
         `last_contact=${new Date(entry.lastContact * 1000).toISOString()} status=${entry.status}`,
     );
@@ -165,6 +169,7 @@ export class Board {
       entry = {
         operator,
         callsign: `OP-${operator.slice(0, 6)}`,
+        team: null,
         area: "unknown",
         signedOn: now,
         expectedUntil: now,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { BoardEntry } from '@navcom/core';
-import { floorDetail, floorNote, floorPin } from './floor';
+import { floorDetail, floorNote, floorPin, repeatedNames, shownFor, teamsOn } from './floor';
 import { coordinates, mapLink, within } from './fix';
 
 const NOW = 1_800_000_000;
@@ -58,5 +58,31 @@ describe('a fix, read out', () => {
 
   it('hands off to a street map', () => {
     expect(mapLink({ lat: 1, lon: 2, precision_m: 0 })).toContain('openstreetmap.org/?mlat=1&mlon=2');
+  });
+});
+
+describe('a board several teams share', () => {
+  const zg = entry({ operator: 'a', callsign: 'Owl', team: 'Zone Guardians' });
+  const rr = entry({ operator: 'b', callsign: 'owl ', team: 'Rescue Rangers' });
+  const rr2 = entry({ operator: 'c', callsign: 'Kite', team: 'rescue rangers' });
+  const none = entry({ operator: 'd', callsign: 'Wren' });
+
+  it('names each team once, however it was typed, in an order that does not move', () => {
+    expect(teamsOn([zg, rr2, none, rr])).toEqual(['Rescue Rangers', 'Zone Guardians']);
+    const third = entry({ operator: 'g', callsign: 'Jay', team: 'rescue rangers' });
+    expect(teamsOn([rr2, third, rr])).toEqual(['rescue rangers']);
+    expect(teamsOn([none])).toEqual([]);
+  });
+
+  it('narrowed to one team, shows that team, and never hides a Distress or anybody past their time', () => {
+    const hurt = entry({ operator: 'e', callsign: 'Dove', team: 'Zone Guardians', status: 'distress' });
+    const late = entry({ operator: 'f', callsign: 'Cedar', status: 'overdue' });
+    const shown = [zg, rr, rr2, none, hurt, late].filter((e) => shownFor(e, 'Rescue Rangers')).map((e) => e.operator);
+    expect(shown).toEqual(['b', 'c', 'e', 'f']);
+    expect([zg, none].every((e) => shownFor(e, null))).toBe(true);
+  });
+
+  it('tells two operators with one name apart, and leaves a name nobody shares alone', () => {
+    expect([...repeatedNames([zg, rr, rr2, none])]).toEqual(['owl']);
   });
 });

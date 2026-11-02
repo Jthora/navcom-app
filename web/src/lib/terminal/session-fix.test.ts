@@ -60,7 +60,12 @@ beforeEach(async () => {
   (globalThis as Record<string, unknown>).localStorage = {
     getItem: (k: string) => store.get(k) ?? null,
     setItem: (k: string, v: string) => void store.set(k, v),
-    removeItem: (k: string) => void store.delete(k)
+    removeItem: (k: string) => void store.delete(k),
+    // What a panic wipe counts through: it destroys every key under tonight's name.
+    get length() {
+      return store.size;
+    },
+    key: (i: number) => [...store.keys()][i] ?? null
   };
   published.length = 0;
   fix = { lat: 40.7128, lon: -74.006, precision_m: 0 };
@@ -131,5 +136,29 @@ describe('while they move', () => {
     void session.operator.signOn('Downtown', 2, 30);
     await vi.advanceTimersByTimeAsync(5 * 60_000);
     expect(published.filter((e) => e.tags.some((t) => t[0] === 't' && t[1] === 'position'))).toHaveLength(0);
+  });
+});
+
+describe('signing on with a team (2026-11-02)', () => {
+  it('tells the watch the team, as one line, and offers it again next time', async () => {
+    await session.operator.signOn('Midtown', 2, 30, '  Rescue   Rangers ');
+    expect(sent('on-station')[0]).toMatchObject({ area: 'Midtown', team: 'Rescue Rangers' });
+    expect(session.operator.session?.team).toBe('Rescue Rangers');
+    expect(session.lastTeam()).toBe('Rescue Rangers');
+  });
+
+  it('sends no team when none is given, and forgets the last one', async () => {
+    await session.operator.signOn('Midtown', 2, 30, 'Rescue Rangers');
+    session.operator.forget();
+    await session.operator.signOn('Midtown', 2, 30, '   ');
+    expect('team' in sent('on-station')[1]!).toBe(false);
+    expect(session.lastTeam()).toBe('');
+  });
+
+  it('keeps it in tonight’s tier, so a panic wipe takes it', async () => {
+    await session.operator.signOn('Midtown', 2, 30, 'Rescue Rangers');
+    const { panicWipe } = await import('./storage');
+    panicWipe();
+    expect(session.lastTeam()).toBe('');
   });
 });

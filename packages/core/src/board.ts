@@ -8,6 +8,7 @@
  */
 
 import type { Position } from './events/signal.js';
+import { CALLSIGN_MAX } from './limits.js';
 
 /** `stood-down` is absent on purpose: standing down removes the entry, it is not a state. */
 export type EntryStatus = 'active' | 'overdue' | 'distress';
@@ -15,6 +16,8 @@ export type EntryStatus = 'active' | 'overdue' | 'distress';
 export interface BoardEntry {
   operator: string;
   callsign: string;
+  /** The team they gave at sign-on, read by {@link teamOf}. Absent: none given. */
+  team?: string;
   /** Coarse. */
   area: string;
   signed_on: number;
@@ -130,6 +133,26 @@ export function nextDue(entry: BoardEntry): number {
 export function boardOrder(a: BoardEntry, b: BoardEntry): number {
   const rank = (e: BoardEntry) => (e.status === 'distress' ? 0 : e.status === 'overdue' ? 1 : 2);
   return rank(a) - rank(b) || nextDue(a) - nextDue(b) || a.callsign.localeCompare(b.callsign);
+}
+
+/**
+ * A team name off the wire, as a board shows it: trimmed, its runs of space made one, with no
+ * control characters and no longer than a callsign. Null for anything else, so a board shows no
+ * team rather than an empty one.
+ */
+export function teamOf(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  // eslint-disable-next-line no-control-regex
+  const name = raw.replace(/[\x00-\x1f\x7f-\x9f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, CALLSIGN_MAX).trim();
+  return name || null;
+}
+
+/**
+ * Whether two team names are the same team. Typed on twenty phones in the cold, *Team B* and
+ * *team b* are one team, so case is not a difference.
+ */
+export function sameTeam(a: string | null | undefined, b: string | null | undefined): boolean {
+  return !!a && !!b && a.toLocaleLowerCase() === b.toLocaleLowerCase();
 }
 
 /** Standing down removes the entry. The board holds who is out; someone home is not out. */

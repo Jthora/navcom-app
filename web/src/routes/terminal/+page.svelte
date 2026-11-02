@@ -627,6 +627,7 @@
       <!-- What the board believes about you, so a wrong entry is visible here. -->
       <div data-station>
         <Slot k="Area"><Readout value={session.area} verbatim tone="neutral" /></Slot>
+        {#if session.team}<Slot k="Team"><Readout value={session.team} verbatim tone="neutral" /></Slot>{/if}
         <Slot k="Check in">
           {#if overdue.flagged}
             <!--

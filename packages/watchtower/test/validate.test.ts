@@ -84,6 +84,13 @@ describe("validateOnStationPayload", () => {
     expect(result.callsign).toBe("OP-9");
   });
 
+  it("accepts an optional team, and refuses one that is not a string or is too long", () => {
+    expect(validateOnStationPayload({ ...valid, team: "Zone Guardians" }).team).toBe("Zone Guardians");
+    expect("team" in validateOnStationPayload(valid)).toBe(false);
+    expect(() => validateOnStationPayload({ ...valid, team: 7 })).toThrow(ValidationError);
+    expect(() => validateOnStationPayload({ ...valid, team: "x".repeat(49) })).toThrow(ValidationError);
+  });
+
   it("accepts a valid position when share_position is true", () => {
     const result = validateOnStationPayload({
       ...valid,

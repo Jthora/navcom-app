@@ -27,6 +27,10 @@
   interface Row {
     operator: string;
     callsign: string;
+    /** The team they gave at sign-on, beside the name, where several teams share one board. */
+    team?: string | null;
+    /** Their key's print, where another row on this board carries the same name [core `keyPrint`]. */
+    print?: string | null;
     area: string;
     status: string;
     /**
@@ -59,6 +63,8 @@
         <span class="nc-floor-mark"></span>
         <span>
           <span class="nc-floor-name">{e.callsign}</span>
+          {#if e.team}<span class="nc-floor-team" data-floor-team>{e.team}</span>{/if}
+          {#if e.print}<span class="nc-floor-where" data-floor-print>{e.print}</span>{/if}
           <span class="nc-floor-where">{e.area}</span>
           {#if e.detail}<span class="nc-floor-where" data-floor-detail>{e.detail}</span>{/if}
           {#if e.pin}

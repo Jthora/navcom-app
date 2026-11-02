@@ -40,8 +40,9 @@ they send.
 
 ## Each night, going out
 
-- **Sign on.** An area (a neighbourhood, not an address), how long, how often you will check in, and
-  whether to share where you are. *Roughly* is to about 500 m.
+- **Sign on.** An area (a neighbourhood, not an address), your team if several are out together,
+  how long, how often you will check in, and whether to share where you are. *Roughly* is to about
+  500 m. The team you gave is offered again next time.
 - **Check in** at the interval you gave. Past it, the watch may ask you to; nothing else happens.
 - **Query** asks the watch. A person answers, so it can take a minute. *Waiting for the watch* shows
   on Query and Status, and you can use other screens meanwhile.
@@ -57,8 +58,10 @@ they send.
   Distress until you answer it or press Silence. Touch the screen once so the browser lets it play.
 - **Hold to take the watch.** *Published: Yes* means operators can see you.
 - **Who is out** shows Distress first, then anybody past their time, then whoever is due next.
-  Each row says when they are due and when you last heard from them, and has a map link if they
-  share where they are.
+  Each row says their team, when they are due and when you last heard from them, and has a map
+  link if they share where they are. Two people with the same name each show the start of their
+  key. With more than one team out, the team buttons narrow the list to one team; a Distress and
+  anybody past their time stay on it.
 - **Answering:** **Add a place** opens the area nearest the person asking. The place you pick goes
   into the answer, and the answer shows where it came from and when it was last checked.
 - **Past their time:** **Ask … to check in**. They see it silently, and nobody else does.

@@ -186,6 +186,8 @@ patterns on `20910`.
 **`on-station`**
 ```json
 {
+  "callsign": "string | absent",
+  "team": "string | absent",
   "area": "string, coarse — neighbourhood or district, never an address",
   "expected_duration": 7200,
   "routine_interval": 3600,
@@ -195,6 +197,13 @@ patterns on `20910`.
 ```
 `position` MUST be null unless `share_position` is true. When present it is coarsened to
 ~500m by default.
+
+`callsign` is how the board names them; absent, a watch shows a short label from the key. `team`
+(2026-11-02) is the team they are out with, as they typed it, where several teams share one watch.
+Each is at most 48 characters, and a watch MUST refuse a longer one or one that is not a string. A
+team is an operation's own name, never a person's, and it gates nothing: a watch reads it to show
+each row's team and to let a holder narrow the list to one team, and a narrowed list MUST still
+show every `Distress` and everybody past their time. Two teams that differ only in case are one.
 
 **`routine`** — `{}`, or `{ "position": {...} }` where the operator shares it. Presence is the
 message.

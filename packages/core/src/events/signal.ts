@@ -28,6 +28,12 @@ export interface OnStationPayload {
    * caught by the daemon implementation rather than by review.
    */
   callsign?: string;
+  /**
+   * The team they are out with tonight, as they typed it, where several teams share one watch.
+   * Optional: a squad of one watch has no need of it. A team is an operation's own name, never a
+   * person's, and it gates nothing; the watch reads it to tell its teams apart (2026-11-02).
+   */
+  team?: string;
   /** Coarse — a district, never an address. */
   area: string;
   expected_duration: number;

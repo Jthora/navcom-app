@@ -313,7 +313,7 @@ describe('a watch taken again by the same holder', () => {
     watch.start();
     const now = Math.floor(Date.now() / 1000);
     deliver(station(now - 600));
-    await session.operator.signOn('Downtown', 2, null);
+    await session.operator.signOn('Downtown', 2, null, 'Rescue Rangers');
     expect(onStations()).toHaveLength(1);
 
     // The same holding, restated by the beat: nothing to say.
@@ -326,8 +326,10 @@ describe('a watch taken again by the same holder', () => {
     vi.setSystemTime(Date.now() + 600_000);
     deliver(station(now + 600));
     await until(() => onStations().length === 2, 3_000, 'the operator saying they are out again');
-    const again = openFromGroup<{ expected_duration: number; area: string }>(WATCH, MY, onStations()[1]!.content);
+    const again = openFromGroup<{ expected_duration: number; area: string; team?: string }>(WATCH, MY, onStations()[1]!.content);
     expect(again.area).toBe('Downtown');
+    // A new holder learns which team they are with, as the first one did.
+    expect(again.team).toBe('Rescue Rangers');
     expect(Math.abs(again.expected_duration - (2 * 3600 - 600))).toBeLessThanOrEqual(5);
     watch.stop();
   });
