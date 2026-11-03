@@ -418,14 +418,14 @@ describe("a watch that names neither keeps today's rule, and says so", () => {
 });
 
 describe('what a watch sends unasked, naming a Distress (2026-11-02)', () => {
-  const unasked = (type: 'passed-on' | 'contact'): ResponsePayload => ({
+  const unasked = (type: 'passed-on' | 'contact' | 'notice'): ResponsePayload => ({
     type,
     responder: { kind: 'human', callsign: 'Wren' },
     text: 'Owl asks for someone near Penn Station, now.',
     provenance: null
   });
 
-  for (const type of ['passed-on', 'contact'] as const) {
+  for (const type of ['passed-on', 'contact', 'notice'] as const) {
     it(`a ${type} neither ends it nor is said as somebody answering, even where the watch key alone ends one`, async () => {
       for (const address of [OLD_BOX, SQUAD]) {
         const pool = watchPool((id) => [response(WATCH, [id], unasked(type))]);

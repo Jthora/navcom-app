@@ -48,6 +48,8 @@ they send.
   on Query and Status, and you can use other screens meanwhile.
 - **Assist** asks for another person: *soon* or *now*.
 - **Distress** keeps sending until a person answers. Use it for an emergency.
+- **Watch says**, on Status and along the foot of every other screen, is what the watch told
+  everybody out. Only the newest is kept, and nothing needs an answer.
 - **Your peers**, on Status, are the people you paired with: who is out, and a map link for any of
   them sharing where they are.
 - **Passed on**, on Status, is somebody else's Assist that the watch passed to you. It is an offer:
@@ -71,6 +73,8 @@ they send.
   into the answer, and the answer shows where it came from and when it was last checked.
 - **Past their time:** **Ask … to check in**. They see it silently, and nobody else does.
 - **An Assist:** **Pass to the others out** sends it to everyone else on the board, in your words.
+- **Telling everyone:** **Tell everyone out**, under Who is out, sends what is happening to everyone
+  on the board, or to the teams you picked. Places and conditions, not orders and not people.
 - **At the end:** stand down. **Tonight** lists what the watch did; copy it out for whoever reviews
   the night. A panic wipe deletes it.
 

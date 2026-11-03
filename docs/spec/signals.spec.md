@@ -528,7 +528,7 @@ no tag on the event. Both parts were wrong, and the implementation deliberately 
 
 ```json
 {
-  "type": "ack | answer | escalation-status | log-review | contact | declined | passed-on",
+  "type": "ack | answer | escalation-status | log-review | contact | declined | passed-on | notice",
   "responder": { "kind": "human | agent | node", "callsign": "...", "pubkey": "hex | absent" },
   "text": "string|null",
   "provenance": { "record_id": "...", "verified": "2026-08-14", "method": "in_person" },
@@ -578,8 +578,14 @@ no tag on the event. Both parts were wrong, and the implementation deliberately 
   never the asker's own text. A client MUST hold it as one current fact, newest first, and MUST
   NOT present it as a task; taking it up is the operator's own `query` back to the watch. A watch
   MUST NOT pass on a `Distress`: raising people for one is the ladder's [invariant 2]
-- **Each of those two names the operator's sign-on**, never their latest signal, and **no reader
-  may take either for an answer, whatever it names** (2026-11-02). Both named the latest signal,
+- **`notice`** (2026-11-02) is what the watch tells everybody out, or the teams it chose: one per
+  operator, each sealed to them alone, in the holder's words about places and conditions. What is
+  happening, never what to do about it, and never about a person [invariants 1, 6, 8]. A client
+  MUST hold it as one current fact, newest first, show it on every screen while held, and MUST NOT
+  sound, vibrate or badge for it, or ask anything back. It answers nothing, like the two above, and
+  names the sign-on like them
+- **Each of those names the operator's sign-on**, never their latest signal, and **no reader may
+  take one for an answer, whatever it names** (2026-11-02). Both named the latest signal,
   and a watch's board read its own `passed-on` back as the answer to it: when that signal was
   somebody's `Distress`, the board marked it answered and stopped sounding, and their phone said a
   person might have them. A phone waiting on an answer or sending a `Distress` MUST pass over both;

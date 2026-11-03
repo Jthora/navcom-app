@@ -12,6 +12,7 @@
   import { pq } from '$lib/terminal/pq.svelte';
   import { overdue } from '$lib/terminal/overdue.svelte';
   import { passedOn } from '$lib/terminal/passed-on.svelte';
+  import { notice } from '$lib/terminal/notice.svelte';
   import { ago } from '$lib/terminal/heard-copy';
   import { loadConfig, offeredWatch, storedWatch, type StoredWatch } from '$lib/terminal/config';
   import { peers } from '$lib/terminal/peers';
@@ -679,6 +680,21 @@
               {/if}
             </span>
           </Slot>
+        {/if}
+        {#if notice.text}
+          <!--
+            What the watch told everybody out: what is happening, arrived silently, with nothing to
+            accept or answer. Putting it down tells nobody anything [invariant 8].
+          -->
+          <Slot k="Watch says">
+            <span data-notice>
+              <Readout value={notice.by ?? 'Watch'} verbatim tone="neutral" sub={notice.at ? `${ago(Math.floor(nowMs / 1000) - notice.at)} ago` : null} />
+            </span>
+          </Slot>
+          <p class="said" data-notice-text>{notice.text}</p>
+          <div class="passed-acts">
+            <button type="button" onclick={() => notice.clear()}>Put down</button>
+          </div>
         {/if}
         {#if passedOn.text}
           <!--

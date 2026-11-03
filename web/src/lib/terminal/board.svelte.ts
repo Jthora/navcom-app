@@ -66,7 +66,9 @@ import {
   openFromGroup,
   readTag,
   signAnswer,
+  sameTeam,
   teamOf,
+  TEXT_MAX,
   answersNothing,
   open,
   type BoardEntry,
@@ -299,6 +301,8 @@ let signedOnAs: Record<string, string> = {};
 let askedAt = $state<Record<string, number>>({});
 /** Who each Assist was passed on to, by its id. Gone with the board. */
 let passedOnFor = $state<Record<string, string[]>>({});
+/** What this watch last told the people out, who it reached, and when. Gone with the board. */
+let told = $state<{ text: string; to: string[]; at: number } | null>(null);
 /**
  * Where this holding has sent its Station, and when it last did, in this phone's seconds: every
  * relay it was sent to, not only the ones that took it — one that timed out may still have it.
@@ -802,6 +806,49 @@ export const board = {
     return passedOnFor[id] ?? null;
   },
 
+  /**
+   * Telling everybody out, or the teams chosen, what is happening [core `notice`].
+   *
+   * To each operator on this board in those teams, each sealed to them alone and naming their
+   * sign-on, in the holder's words. What is happening, never what to do: nothing is asked back
+   * [invariant 8]. Gives back who it reached, and an offer that reached nobody is said as that.
+   */
+  async tellOut(words: string, teams: readonly string[] = []): Promise<string[]> {
+    const secret = watchKey();
+    const text = words.trim().slice(0, TEXT_MAX);
+    if (!secret || !text) return [];
+    const identity = loadIdentity();
+    const at = Math.floor(Date.now() / 1000);
+    const payload: ResponsePayload = {
+      type: 'notice',
+      responder: { kind: 'human', callsign: identity?.callsign ?? 'watch' },
+      text,
+      provenance: null
+    };
+    const to = entries.filter((e) => teams.length === 0 || teams.some((t) => sameTeam(e.team, t)));
+    // All at once: twenty people, one at a time, on a congested network is the last one told minutes late.
+    const reached = await Promise.all(
+      to.map(async (e) => {
+        const last = lastHeard[e.operator];
+        const signOn = signedOnAs[e.operator];
+        if (!last || !signOn) return null;
+        const event = finalizeEvent(buildResponse(secret, e.operator, signOn, payload, at), secret);
+        return (await publishEach(usable([...last.heardOn, ...watchRelays()]), event)).length > 0 ? e.callsign : null;
+      })
+    ).then((r) => r.filter((c): c is string => c !== null));
+    if (reached.length > 0) {
+      told = { text, to: reached, at };
+      // Who was told, never what: tonight's record holds actions and callsigns, not words or places.
+      night.note(`Told ${teams.length > 0 ? teams.join(', ') : 'everyone out'}: ${reached.join(', ')}`);
+    }
+    return reached;
+  },
+
+  /** What this watch last told the people out, or null. */
+  get told(): { text: string; to: string[]; at: number } | null {
+    return told;
+  },
+
   /** When this watch last asked them to check in, until they did; null if it has not. */
   askedAt(operator: string): number | null {
     return askedAt[operator] ?? null;
@@ -835,6 +882,7 @@ export const board = {
     signedOnAs = {};
     askedAt = {};
     passedOnFor = {};
+    told = null;
     unlisten();
     if (beat) clearInterval(beat);
     beat = null;

@@ -12,6 +12,11 @@
   import '$lib/terminal/screen.css';
   import '$lib/terminal/panel.css';
   import { saving } from '$lib/terminal/saving.svelte';
+  import { page } from '$app/state';
+  import { notice } from '$lib/terminal/notice.svelte';
+  import { overdue } from '$lib/terminal/overdue.svelte';
+  import { get } from '$lib/terminal/storage';
+  import { loadConfig } from '$lib/terminal/config';
   import { apply, setSignature, signature } from '$lib/terminal/signature';
   // Every terminal page hears a wipe or a burn in another tab, or one it slept through in the
   // back-forward cache, and lets go of tonight as the wiping page did [invariant 5].
@@ -46,6 +51,13 @@
     sig = signature();
     apply(sig);
     saving.start();
+    /*
+     * Signed on to a watch, this phone hears what it sends unasked on every screen [session
+     * `signOn`], and a phone reloaded on any screen but Status did not until Status was opened: a
+     * notice about a police line went unseen by somebody reading the directory (2026-11-02). Read
+     * from tonight's sign-on itself, so the session's code stays out of every screen's first load.
+     */
+    if (get('wipeable', 'signon') !== null && loadConfig() !== null) overdue.start();
     document.documentElement.dataset.hydrated = 'true';
     return () => saving.stop();
   });
@@ -100,6 +112,17 @@
         setSignature(sig);
       }}
     >{sig === 'low' ? 'Document' : 'Low signature'}</button>
+
+    <!--
+      What the watch told everybody out, on every screen but Status, which shows it whole. Fixed in
+      the strip the toggle already keeps clear at the foot of every screen, so arriving moves nothing
+      under a thumb on its way to Distress. Silent: it is looked at, never announced.
+    -->
+    {#if notice.text && page.url.pathname !== '/terminal/'}
+      <a class="watch-notice" href="/terminal/" data-notice-line>
+        <span class="from">{notice.by ?? 'Watch'}</span><span class="said">{notice.text}</span>
+      </a>
+    {/if}
   </main>
 </div>
 
@@ -114,6 +137,40 @@
     background: var(--raised, transparent);
     font-size: 0.85rem;
     line-height: 1.4;
+  }
+
+  .watch-notice {
+    position: fixed;
+    inset-block-end: 0.5rem;
+    inset-inline-start: 0.5rem;
+    /* Clear of the signature toggle at the other end of the strip. */
+    inset-inline-end: 8.5rem;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0 0.7rem;
+    font-size: 0.8rem;
+    color: var(--t-ink);
+    text-decoration: none;
+    background: var(--t-raised);
+    border: 1px solid var(--t-line);
+    border-inline-start: 3px solid var(--t-station);
+  }
+  .watch-notice .said {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .watch-notice .from {
+    flex: none;
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--t-muted);
   }
 
   .terminal {

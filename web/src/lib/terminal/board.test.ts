@@ -420,6 +420,44 @@ describe('asking somebody past their time to check in, heard back from the relay
   });
 });
 
+describe('telling the people out what is happening (2026-11-02)', () => {
+  it('reaches everybody on the board, or the teams chosen, each naming their sign-on', async () => {
+    const [owl, kite, wren] = [newSecretKey(), newSecretKey(), newSecretKey()];
+    const owlOn = withTeam(owl, T, 'Owl', 'Zone Guardians');
+    const kiteOn = withTeam(kite, T, 'Kite', 'Rescue Rangers');
+    deliver(owlOn);
+    deliver(kiteOn);
+    deliver(withTeam(wren, T, 'Wren', undefined));
+    const question = finalizeEvent(buildSignal(kite, to, 'query', { text: 'bed tonight', area: 'north' }, T + 20), kite);
+    deliver(question);
+
+    published.length = 0;
+    expect((await board.tellOut('Police line across 8th Ave at 33rd.')).sort()).toEqual(['Kite', 'Owl', 'Wren']);
+    expect(board.told?.to.sort()).toEqual(['Kite', 'Owl', 'Wren']);
+    // Tonight's record says who was told, and never the words.
+    const { night } = await import('./watch-night.svelte');
+    expect(night.entries.at(-1)?.what).toMatch(/^Told everyone out: /);
+    expect(night.entries.map((e) => e.what).join(' ')).not.toContain('8th Ave');
+    const sent = published.filter((p) => p.event.kind === KIND_RESPONSE).map((p) => p.event);
+    const named = (e: Event) => e.tags.find((t) => t[0] === 'e')?.[1];
+    expect(sent.map(named)).not.toContain(question.id);
+    expect(sent.map(named)).toContain(kiteOn.id);
+    // Heard back, it answers nothing: Kite's question is still waiting.
+    for (const e of sent) deliver(e);
+    expect(board.waiting.map((w) => w.id)).toEqual([question.id]);
+
+    published.length = 0;
+    expect(await board.tellOut('Crowd thinning on 7th Ave.', ['rescue rangers'])).toEqual(['Kite']);
+  });
+
+  it('sends nothing with no words', async () => {
+    deliver(withTeam(newSecretKey(), T, 'Owl', 'Zone Guardians'));
+    published.length = 0;
+    expect(await board.tellOut('   ')).toEqual([]);
+    expect(published).toHaveLength(0);
+  });
+});
+
 describe('state changes arriving out of order', () => {
   it('does not let a replayed stand-down take somebody off the board', () => {
     // The presence store already guards this and says why — out-of-order delivery is normal

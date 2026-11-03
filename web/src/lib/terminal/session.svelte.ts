@@ -43,6 +43,7 @@ import { beatListed, stopListed } from './public.svelte';
 import { position } from './position.svelte';
 import { overdue } from './overdue.svelte';
 import { passedOn } from './passed-on.svelte';
+import { notice } from './notice.svelte';
 import { pool } from './pool';
 import { distressRelays, watchTargets } from './watch-targets';
 import { routineTo } from './refusing.svelte';
@@ -794,6 +795,7 @@ export const operator = {
     // the screen next time this operator signs on. So is anything it passed on.
     overdue.clear();
     passedOn.clear();
+    notice.clear();
     overdue.stop();
     stopAsking();
     return closedBy;
@@ -934,6 +936,7 @@ export const operator = {
     stopFixBeat();
     stopAsking();
     overdue.stop();
+    notice.clear();
     session = null;
     lastResponse = null;
     error = null;

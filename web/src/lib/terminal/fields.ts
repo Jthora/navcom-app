@@ -102,7 +102,9 @@ export const WIPEABLE_FIELDS = [
   // kept apart so nothing public links them; this links them, so it is tonight's [peers.ts].
   'peer_cards',
   // What this phone did while holding the watch tonight: actions and callsigns, never text or places.
-  'watch_night'
+  'watch_night',
+  // The team this phone last signed on with, offered at the next sign-on: tonight's arrangement.
+  'team'
 ] as const;
 
 export type AccruingField = keyof typeof ACCRUING_FIELDS;

@@ -14,7 +14,7 @@
    */
   import { onMount } from 'svelte';
   import encodeQR from '@paulmillr/qr';
-  import { declineIsValid, keyPrint, RESPONSE_WINDOW, sameTeam } from '@navcom/core';
+  import { declineIsValid, keyPrint, RESPONSE_WINDOW, sameTeam, TEXT_MAX } from '@navcom/core';
   import { board, type Waiting } from '$lib/terminal/board.svelte';
   import { createWatch, foundedHere, joinWatch, leaveWatch, otherHolders as keptHolders, setOtherHolders, watchKey, watchPubkey, watchSecretHex, WatchKeyError } from '$lib/terminal/watch-key';
   import ScanKey from '$lib/components/watch/ScanKey.svelte';
@@ -242,6 +242,25 @@
     if (w.position) return { p: w.position, at: w.before ?? w.at };
     const e = board.entries.find((x) => x.operator === w.operator);
     return e?.position && e.position_at !== null ? { p: e.position, at: e.position_at } : null;
+  }
+
+  /** Telling the people out what is happening [core `notice`]: everybody, or the teams chosen. */
+  let telling = $state(false);
+  let tellText = $state('');
+  let tellBusy = $state(false);
+  let tellFailed = $state(false);
+  const tellTo = $derived(chosen.length > 0 ? chosen.join(', ') : 'everyone out');
+  async function tell() {
+    tellBusy = true;
+    tellFailed = false;
+    try {
+      if ((await board.tellOut(tellText, chosen)).length > 0) {
+        telling = false;
+        tellText = '';
+      } else tellFailed = true;
+    } finally {
+      tellBusy = false;
+    }
   }
 
   let asking = $state<string | null>(null);
@@ -635,6 +654,30 @@
           {/if}
         </div>
       {/each}
+      <!--
+        What is happening, to the people out: the holder's words, silent on their phones, with
+        nothing to accept or answer. Never an order and never about a person [invariants 1, 8].
+      -->
+      <div class="tell" data-tell>
+        {#if telling}
+          <label for="tell-text">To {tellTo}</label>
+          <textarea id="tell-text" bind:value={tellText} rows="2" maxlength={TEXT_MAX}></textarea>
+          <div class="row">
+            <button onclick={tell} disabled={tellBusy || !tellText.trim()}>Send</button>
+            <button onclick={() => (telling = false)}>Cancel</button>
+          </div>
+          {#if tellFailed}
+            <span data-tell-failed><Readout value="Reached nobody" tone="warn" sub="no relay took it" /></span>
+          {/if}
+        {:else}
+          <button data-tell-open onclick={() => { telling = true; tellFailed = false; }}>Tell {tellTo}</button>
+        {/if}
+        {#if board.told}
+          <span data-told>
+            <Readout value={board.told.text} verbatim tone="neutral" sub={`to ${board.told.to.join(', ')} · ${fixAge(board.told.at, nowS)}`} />
+          </span>
+        {/if}
+      </div>
     {/if}
   </section>
 
@@ -924,6 +967,7 @@
   .who { display: flex; align-items: center; gap: .7rem; }
   .name { color: var(--t-ink); font-weight: 650; flex: 1; }
   .team { font-family: var(--font-mono); font-size: .66rem; color: var(--t-muted); }
+  .tell { display: grid; gap: .5rem; margin-block-start: .8rem; }
   .teams { display: flex; flex-wrap: wrap; gap: .4rem; margin-block-end: .6rem; }
   /* The directory's toggles, so a list narrowed here reads as a list narrowed there. */
   .teams button { min-height: 2.4rem; font-size: .85rem; padding: 0 .8rem; border-color: var(--t-line); color: var(--t-faint); }

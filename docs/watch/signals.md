@@ -78,6 +78,9 @@ it further.
 
 No free-text chat channel. No group conversation. No message history to scroll.
 
+The watch can tell everybody out, or the teams it chooses, what is happening (2026-11-02): one
+way, silent, and only the newest held. Nobody replies to it, and it is never an order.
+
 *Scoped 2026-10-09* (decided, not built): this is about signals. Crews may keep one Agreed line
 and a flat, pull-only log, with no replies and no threads, outside the signal kinds. Anything
 time-critical still belongs to `Distress`, or to Signal

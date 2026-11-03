@@ -28,6 +28,7 @@
  */
 
 import { passedOn } from './passed-on.svelte';
+import { notice } from './notice.svelte';
 import { KIND_RESPONSE, open, type ResponsePayload } from '@navcom/core';
 import { loadConfig } from './config';
 import { loadIdentity } from './identity';
@@ -87,6 +88,11 @@ export const overdue = {
           // The other unasked thing a watch sends: somebody's Assist, passed on. Held on its own.
           if (payload.type === 'passed-on') {
             passedOn.heard(payload.text, payload.responder?.callsign ?? 'the watch', event.created_at);
+            return;
+          }
+          // What the watch tells everybody out: held on its own, the same way.
+          if (payload.type === 'notice') {
+            notice.heard(payload.text, payload.responder?.callsign ?? 'the watch', event.created_at);
             return;
           }
           if (payload.type !== 'contact') return;

@@ -61,6 +61,18 @@ export type ResponseType =
    */
   | 'passed-on'
   /**
+   * *"Police line across 8th Ave at 33rd. Go round by 9th."* What the watch tells everybody out, or
+   * the teams it chose (added 2026-11-02). The Watched layer is somebody who answers questions **and
+   * tells you what is happening**, and until this a watch could tell only the person who asked.
+   *
+   * **What is happening, never what to do about it** [invariant 8]: the holder's words about places
+   * and conditions, held by each phone as one current fact, newest first, with no reply asked and
+   * nothing to accept. Never about a person, the people being served least of all [invariants 1, 6].
+   * **Silent, and never an alarm**: no sound, no vibration, no badge, and nothing to do with a
+   * `Distress`, which has its own channel and borrows none [invariant 2].
+   */
+  | 'notice'
+  /**
    * *"Nobody is coming."*
    *
    * An `assist` means **I need someone**, and until this existed a watch could only
@@ -92,13 +104,13 @@ export function declineIsValid(replyingTo: string): boolean {
 }
 
 /**
- * The responses a watch sends unasked: being asked to check in, and somebody else's Assist passed
- * on. Each names a signal of the operator's, as every `20912` does, and **answers none**: read as an
+ * The responses a watch sends unasked: being asked to check in, somebody else's Assist passed on,
+ * and what the watch tells everybody out. Each names a signal of the operator's, as every `20912` does, and **answers none**: read as an
  * answer, an Assist passed on to somebody in Distress said a person might have them, and on the
  * watch's own board it marked their Distress answered and stopped the sound (found 2026-11-02).
  */
 export function answersNothing(type: unknown): boolean {
-  return type === 'contact' || type === 'passed-on';
+  return type === 'contact' || type === 'passed-on' || type === 'notice';
 }
 
 /** Which record an answer came from, verified when, and how. */
