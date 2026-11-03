@@ -82,6 +82,9 @@ let denied = $state(false);
 let unavailable = $state(false);
 let watchId: number | null = null;
 
+/** What waits on the first fix after starting, if anything. */
+let firstFix: (() => void) | null = null;
+
 export const position = {
   /** The most recent fix, at the precision the operator chose. Never a history. */
   get current(): Position | null {
@@ -122,7 +125,13 @@ export const position = {
     watchId = navigator.geolocation.watchPosition(
       (fix) => {
         live = true;
+        const none = last === null;
         last = coarsen(fix.coords.latitude, fix.coords.longitude, METRES[p]);
+        if (none && firstFix) {
+          const told = firstFix;
+          firstFix = null;
+          told();
+        }
       },
       (error) => {
         // Denied, or no fix. Reported as itself rather than as "off", because an operator
@@ -137,8 +146,18 @@ export const position = {
     );
   },
 
+  /**
+   * Once, when the first fix after starting arrives (2026-11-02). Sign-on cannot wait for one, so its
+   * presence went to peers with no position, and a team lead saw where a teammate was a minute late,
+   * at the next heartbeat.
+   */
+  whenFirstFix(then: () => void): void {
+    firstFix = then;
+  },
+
   /** Stops, and forgets. Standing down leaves nothing behind. */
   stop(): void {
+    firstFix = null;
     if (watchId !== null && typeof navigator !== 'undefined') {
       navigator.geolocation.clearWatch(watchId);
     }

@@ -22,13 +22,17 @@ let fix: Position | null = null;
 vi.mock('./identity', () => ({ loadIdentity: () => ({ secretKey: ME, pubkey: MY, callsign: 'Wren' }) }));
 vi.mock('./config', () => ({ loadConfig: () => config, storedWatch: () => config }));
 vi.mock('./pq.svelte', () => ({ kemKeys: () => ({}) }));
+let firstFix: (() => void) | null = null;
 vi.mock('./position.svelte', () => ({
   position: {
     get current() {
       return fix;
     },
     start: () => {},
-    stop: () => {}
+    stop: () => {},
+    whenFirstFix: (then: () => void) => {
+      firstFix = then;
+    }
   },
   precision: () => 'exact',
   setPrecision: () => {}
@@ -170,5 +174,17 @@ describe('a Distress from somebody signed on with a team (2026-11-02)', () => {
     await vi.advanceTimersByTimeAsync(50);
     const raised = published.filter((e) => e.kind === KIND_DISTRESS).map((e) => openFromGroup<Record<string, unknown>>(HOLDER, MY, e.content));
     expect(raised[0]).toMatchObject({ callsign: 'Wren', team: 'Rescue Rangers', area: 'Penn Station' });
+  });
+});
+
+describe('the first fix after sign-on (2026-11-02)', () => {
+  it('goes to the watch at once, not at the next beat', async () => {
+    fix = null;
+    await session.operator.signOn('Penn Station', 2, 30);
+    expect(sent('position')).toHaveLength(0);
+    fix = { lat: 40.7506, lon: -73.9935, precision_m: 0 };
+    firstFix?.();
+    await vi.advanceTimersByTimeAsync(10);
+    expect(sent('position')).toEqual([{ position: fix }]);
   });
 });

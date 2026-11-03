@@ -276,28 +276,30 @@ let fixSent: { lat: number; lon: number; precision_m: number; at: number } | nul
 
 function startFixBeat(): void {
   stopFixBeat();
-  fixBeat = setInterval(() => {
-    const fix = position.current;
-    if (!session || !fix) return;
-    let config: ReturnType<typeof ctx>['config'];
-    let identity: ReturnType<typeof ctx>['identity'];
-    try {
-      ({ config, identity } = ctx());
-    } catch {
-      return;
-    }
-    if (config.holders.length === 0) return;
-    const now = Math.floor(Date.now() / 1000);
-    const same = fixSent && fixSent.lat === fix.lat && fixSent.lon === fix.lon && fixSent.precision_m === fix.precision_m;
-    if (same && now - fixSent!.at < FIX_STILL_SECONDS) return;
-    const relays = routineTo(watchTargets());
-    if (relays.length === 0) return;
-    fixSent = { ...fix, at: now };
-    void signal(relays, identity.secretKey, watchAddress(config), 'position', { position: fix }).catch(() => {
-      // Missed: the next beat tries again, since nothing was recorded as sent.
-      fixSent = null;
-    });
-  }, FIX_EVERY_SECONDS * 1000);
+  fixBeat = setInterval(sendFix, FIX_EVERY_SECONDS * 1000);
+}
+
+function sendFix(): void {
+  const fix = position.current;
+  if (!session || !fix) return;
+  let config: ReturnType<typeof ctx>['config'];
+  let identity: ReturnType<typeof ctx>['identity'];
+  try {
+    ({ config, identity } = ctx());
+  } catch {
+    return;
+  }
+  if (config.holders.length === 0) return;
+  const now = Math.floor(Date.now() / 1000);
+  const same = fixSent && fixSent.lat === fix.lat && fixSent.lon === fix.lon && fixSent.precision_m === fix.precision_m;
+  if (same && now - fixSent!.at < FIX_STILL_SECONDS) return;
+  const relays = routineTo(watchTargets());
+  if (relays.length === 0) return;
+  fixSent = { ...fix, at: now };
+  void signal(relays, identity.secretKey, watchAddress(config), 'position', { position: fix }).catch(() => {
+    // Missed: the next beat tries again, since nothing was recorded as sent.
+    fixSent = null;
+  });
 }
 
 function stopFixBeat(): void {
@@ -460,6 +462,13 @@ export const operator = {
 
     // Only while signed on, so nobody broadcasts from their kitchen.
     position.start();
+    // The first fix, told at once to peers and the watch rather than at the next beat. One that came
+    // before this sign-on finished is in the presence sent below.
+    position.whenFirstFix(() => {
+      if (!session) return;
+      void presence.announce(operator.presencePayload());
+      if (operator.hasWatch) sendFix();
+    });
 
     if (operator.hasWatch) {
       const payload: OnStationPayload = {
