@@ -14,7 +14,8 @@
    */
   import { onMount } from 'svelte';
   import encodeQR from '@paulmillr/qr';
-  import { declineIsValid, keyPrint, RESPONSE_WINDOW, sameTeam, TEXT_MAX } from '@navcom/core';
+  import { codeTeams, declineIsValid, keyPrint, RESPONSE_WINDOW, sameTeam, TEXT_MAX } from '@navcom/core';
+  import { setWatchTeams, watchTeams } from '$lib/terminal/teams';
   import { board, type Waiting } from '$lib/terminal/board.svelte';
   import { createWatch, foundedHere, joinWatch, leaveWatch, otherHolders as keptHolders, setOtherHolders, watchKey, watchPubkey, watchSecretHex, WatchKeyError } from '$lib/terminal/watch-key';
   import ScanKey from '$lib/components/watch/ScanKey.svelte';
@@ -93,6 +94,7 @@
     const ticking = setInterval(() => (nowS = Math.floor(Date.now() / 1000)), 15_000);
     sound = soundOn();
     others = keptHolders().join('\n');
+    teamsTonight = watchTeams().join(', ');
     othersLoaded = true;
     // The first touch anywhere lets this browser play; until then it plays nothing.
     const unlock = () => raise.unlock();
@@ -347,11 +349,17 @@
   const addHolder = (k: string) => (others = others.trim() ? `${others.trim()}\n${k}` : k);
   const holderQr = $derived(holderKey ? encodeQR(holderKey, 'svg', { ecc: 'medium', border: 2 }) : '');
   const keyQr = $derived(showingKey ? encodeQR(showingKey, 'svg', { ecc: 'medium', border: 2 }) : '');
+  /** Tonight's teams, typed by the holder and carried in the code, so sign-on offers them [teams.ts]. */
+  let teamsTonight = $state('');
+  const namedTeams = $derived(codeTeams(teamsTonight.split(',')));
+  $effect(() => {
+    if (othersLoaded) setWatchTeams(namedTeams);
+  });
   const code = $derived.by(() => {
     const secret = address ? watchKey() : null;
     if (!secret || !address || !holderKey) return null;
     try {
-      return watchCode({ pubkey: address, relays: watchRelays(), holders: [holderKey, ...otherHolders] }, secret);
+      return watchCode({ pubkey: address, relays: watchRelays(), holders: [holderKey, ...otherHolders], teams: namedTeams }, secret);
     } catch {
       return null;
     }
@@ -583,6 +591,8 @@
       <!-- Held up to their camera, as a peer's code is: the in-person path, through nobody's server. -->
       <div class="qr" data-code-qr>{@html codeQr}</div>
       <button onclick={copyCode}>{codeCopied ? 'Copied' : 'Copy the code'}</button>
+      <label for="teams-tonight">Teams tonight</label>
+      <input id="teams-tonight" bind:value={teamsTonight} autocomplete="off" placeholder="optional, separated by commas" data-teams-tonight />
       <Why summary="Other holders">
         <ScanKey label="Scan a holder key" onfound={addHolder} />
         <label for="other-holders">Their holder keys</label>

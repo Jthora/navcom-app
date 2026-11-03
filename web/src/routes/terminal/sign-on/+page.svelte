@@ -12,6 +12,7 @@
   import { Panel, Slot, Readout, Why } from '$lib/components/panel';
   import { watch } from '$lib/terminal/watch.svelte';
   import { lastTeam, operator } from '$lib/terminal/session.svelte';
+  import { watchTeams } from '$lib/terminal/teams';
   import { precision, setPrecision, type Precision } from '$lib/terminal/position.svelte';
   import { loadConfig, storedWatch } from '$lib/terminal/config';
   import { heard } from '$lib/terminal/heard.svelte';
@@ -34,6 +35,8 @@
 
   let area = $state('');
   let team = $state('');
+  /** Tonight's teams, from the watch's code: offered, so one typo does not make a team of its own. */
+  let teams = $state<string[]>([]);
   let hours = $state(2);
   let routine = $state<number | null>(60);
   let share = $state<Precision>('off');
@@ -44,6 +47,7 @@
   onMount(() => {
     share = precision();
     team = lastTeam();
+    teams = watchTeams();
     configured = loadConfig() !== null;
     stranded = !configured && storedWatch() !== null;
     person = loadContact()?.label ?? null;
@@ -154,7 +158,10 @@
     placeholder="a district, not an address" />
 
   <label for="team">Team</label>
-  <input id="team" bind:value={team} autocomplete="off" maxlength="48" placeholder="optional" />
+  <input id="team" bind:value={team} autocomplete="off" maxlength="48" placeholder="optional" list={teams.length > 0 ? 'teams' : undefined} />
+  {#if teams.length > 0}
+    <datalist id="teams">{#each teams as t (t)}<option value={t}></option>{/each}</datalist>
+  {/if}
 
   <label for="hours">Out for</label>
   <select id="hours" bind:value={hours}>

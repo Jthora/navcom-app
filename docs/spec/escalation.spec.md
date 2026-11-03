@@ -131,6 +131,13 @@ saved on that phone**, listing what it changes, and says so when the code is old
 phone already has. The code is stored whole, so wherever the escalation key is read back its signature
 is checked again; a key that reached storage any other way is read as none.
 
+**A code may name tonight's teams** (2026-11-02), at most twelve, each once whatever its case, for
+sign-on to offer. A code naming any is **version 2** (`watch=2`, a team per `n`), and its signature is
+over the teams too, under words of its own (`navcom-watch-code-v2`), so no version-1 code is one and a
+phone that reads only version 1 says the code is newer than it, rather than that it is unsigned. A
+version-1 code is read for no teams, whatever it carries. Teams gate nothing; they are signed because
+everything in a code is.
+
 **Every relay the box uses must take both keys.** The executor's key is new and has no history, and a
 relay that limits new keys — an allowlist, payment, proof of work, web of trust, a rate limit on new
 keys — can take the watch key's writes and refuse the executor's. Then all a phone given the executor

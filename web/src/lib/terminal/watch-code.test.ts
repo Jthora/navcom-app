@@ -161,7 +161,8 @@ describe('what else a code can get wrong', () => {
 
   it('says what is wrong with one that is damaged, or newer than this phone, and tells the two apart', () => {
     expect(() => parseWatchCode('hello')).toThrow(/not a watch code/);
-    expect(() => parseWatchCode(`watch=2&w=${W}&r=wss://r.example`)).toThrow(/newer version/);
+    // Version 2 is a code naming tonight's teams (2026-11-02); 3 is the next one nobody writes yet.
+    expect(() => parseWatchCode(`watch=3&w=${W}&r=wss://r.example`)).toThrow(/newer version/);
     for (const v of ['0', 'abc', '', '1.5', '-3']) {
       expect(() => parseWatchCode(`watch=${v}&w=${W}&r=wss://r.example`), v).toThrow(/damaged/);
     }

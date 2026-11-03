@@ -91,3 +91,30 @@ test('opened from a camera, the code’s link fills Setup — with a callsign or
   }
   await context.close();
 });
+
+test('tonight’s teams, named on the watch, travel in its code and are offered at sign-on', async ({ browser }) => {
+  // One typo split a team in two on the board (2026-11-02). The holder names the night's teams; the
+  // code carries them, signed, as version 2; Setup keeps them; sign-on offers them.
+  const context = await browser.newContext();
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  const page = await context.newPage();
+  await holder(page, 'Lighthouse');
+  await page.locator('[data-teams-tonight]').fill('Rescue Rangers, Zone Guardians, rescue rangers');
+  await page.getByRole('button', { name: /copy the code/i }).click();
+  const code = await page.evaluate(() => navigator.clipboard.readText());
+  expect(code).toMatch(/#watch=2&/);
+  expect(new URL(code).hash.match(/[&#]n=/g)).toHaveLength(2);
+
+  const phone = await browser.newContext();
+  const operator = await phone.newPage();
+  await seedDevice(operator, { callsign: 'Kestrel', secret: 'b'.repeat(63) + '2', relayEvents: [] } as Parameters<typeof seedDevice>[1]);
+  await open(operator, `/terminal/setup/${new URL(code).hash}`);
+  await expect(operator.locator('#pubkey')).toHaveValue(/^[0-9a-f]{64}$/);
+  await operator.getByRole('button', { name: 'Connect' }).click();
+  await open(operator, '/terminal/sign-on/');
+  await expect(operator.locator('#team')).toHaveAttribute('list', 'teams');
+  await expect(operator.locator('#teams option')).toHaveCount(2);
+  expect(await operator.locator('#teams option').evaluateAll((o) => o.map((x) => (x as HTMLOptionElement).value))).toEqual(['Rescue Rangers', 'Zone Guardians']);
+  await phone.close();
+  await context.close();
+});

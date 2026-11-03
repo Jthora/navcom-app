@@ -1,6 +1,7 @@
 <script lang="ts">
   import { DEFAULT_RELAYS, keyPrint } from '@navcom/core';
   import { ConfigError, forgetOfferedWatch, saveConfig, watchForm } from '$lib/terminal/config';
+  import { setWatchTeams } from '$lib/terminal/teams';
   import { WatchCodeError, codeChanges, looksLikeWatchCode, parseWatchCode } from '$lib/terminal/watch-code';
   import { canScan, scan, ScanError, type Scanner } from '$lib/terminal/scan';
   import type { Refused } from '$lib/terminal/relay-url';
@@ -60,7 +61,7 @@
    * the watch signed it, and the signed code itself, which is what a save keeps. A backup that named
    * no key leaves nothing pending.
    */
-  let pending = $state<{ pubkey: string; executor: string | null; executorAt: number | null; text: string } | null>(null);
+  let pending = $state<{ pubkey: string; executor: string | null; executorAt: number | null; text: string; teams: string[] } | null>(null);
   /** The operator has said this code came from whoever runs the watch, where it changes the escalation key. */
   let keyConfirmed = $state(false);
   let codeText = $state('');
@@ -145,7 +146,7 @@
       // A backup's escalation key is kept when its watch is saved here, as a code's is: in the signed
       // code it came in, which the save checks again.
       else if (w.executor && w.escalation) {
-        pending = { pubkey: w.pubkey.toLowerCase(), executor: w.executor, executorAt: w.executorAt ?? null, text: w.escalation };
+        pending = { pubkey: w.pubkey.toLowerCase(), executor: w.executor, executorAt: w.executorAt ?? null, text: w.escalation, teams: [] };
       }
     }
     scannable = canScan();
@@ -175,7 +176,7 @@
       holders = code.holders.join('\n');
       // The saved watch's refused lines no longer describe what is in the field.
       refused = [];
-      pending = { pubkey: code.pubkey, executor: code.executor ?? null, executorAt: code.issuedAt, text: code.text };
+      pending = { pubkey: code.pubkey, executor: code.executor ?? null, executorAt: code.issuedAt, text: code.text, teams: [...(code.teams ?? [])] };
       keyConfirmed = false;
       codeText = '';
     } catch (e) {
@@ -274,6 +275,8 @@
       // The signed code goes with the watch it named, and decides its escalation key; an edit with no
       // code keeps the one saved for the same watch (`saveConfig`): never typed, so never dropped by an edit.
       const saved = saveConfig(pubkey, relays, holders, pendingFor?.text ?? undefined);
+      // A code brings tonight's teams with it, or says there are none; an edit by hand leaves them.
+      if (pendingFor) setWatchTeams(pendingFor.teams);
       configured = true;
       notUpdated = false;
       refused = [];

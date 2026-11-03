@@ -64,6 +64,7 @@
 import { finalizeEvent, getEventHash, verifyEvent } from 'nostr-tools/pure';
 import { isCurveKey, isPubkey } from '../crypto/keys.js';
 import { KIND_WATCH_CODE_SIGNATURE } from './kinds.js';
+import { teamOf } from '../board.js';
 
 /** What a code names. */
 export interface WatchCodeFields {
@@ -72,10 +73,30 @@ export interface WatchCodeFields {
   holders: readonly string[];
   /** The escalation executor's own key, where the watch names one. */
   executor?: string;
+  /**
+   * Tonight's teams, where several share the watch (2026-11-02): what sign-on offers, so one typo
+   * does not split a team in two on the board. A code naming any is version 2.
+   */
+  teams?: readonly string[];
 }
 
 /** Pins the construction, so these words signed for anything else are not this. */
 const WATCH_CODE_SIGNATURE_V1 = 'navcom-watch-code-v1';
+/** A code that names teams signs them too, under words of its own, so no version-1 code is one. */
+const WATCH_CODE_SIGNATURE_V2 = 'navcom-watch-code-v2';
+
+/** More teams than any one night's watch, and few enough that a code stays a QR a phone can read. */
+const MAX_TEAMS = 12;
+
+/** Teams as a code carries them: each a team name, each once whatever its case, in the order given. */
+export function codeTeams(raw: readonly unknown[]): string[] {
+  const teams: string[] = [];
+  for (const r of raw) {
+    const t = teamOf(r);
+    if (t && !teams.some((x) => x.toLocaleLowerCase() === t.toLocaleLowerCase())) teams.push(t);
+  }
+  return teams;
+}
 
 /** The never-published event a code's signature is over. See *The signature*, above. */
 export function watchCodeSignatureEvent(fields: WatchCodeFields, issuedAt: number) {
@@ -85,14 +106,19 @@ export function watchCodeSignatureEvent(fields: WatchCodeFields, issuedAt: numbe
     pubkey,
     created_at: issuedAt,
     tags: [] as string[][],
-    content: JSON.stringify([
-      WATCH_CODE_SIGNATURE_V1,
-      pubkey,
-      [...new Set(fields.relays.map((r) => r.trim()).filter(Boolean))].sort(),
-      [...new Set(fields.holders.map((h) => h.trim().toLowerCase()).filter(Boolean))].sort(),
-      fields.executor ? fields.executor.toLowerCase() : null,
-    ]),
+    content: JSON.stringify(signedPart(fields, pubkey)),
   };
+}
+
+function signedPart(fields: WatchCodeFields, pubkey: string): unknown[] {
+  const teams = codeTeams(fields.teams ?? []);
+  const v1 = [
+    pubkey,
+    [...new Set(fields.relays.map((r) => r.trim()).filter(Boolean))].sort(),
+    [...new Set(fields.holders.map((h) => h.trim().toLowerCase()).filter(Boolean))].sort(),
+    fields.executor ? fields.executor.toLowerCase() : null,
+  ];
+  return teams.length === 0 ? [WATCH_CODE_SIGNATURE_V1, ...v1] : [WATCH_CODE_SIGNATURE_V2, ...v1, teams];
 }
 
 /** A code as read: what it names, when it was signed, and the code itself, to be kept whole. */
@@ -105,8 +131,9 @@ export interface WatchCode extends WatchCodeFields {
 
 export class WatchCodeError extends Error {}
 
-/** The version this box and this phone write and read. */
+/** The version this box and this phone write and read: a code that names teams is the next one. */
 export const WATCH_CODE_VERSION = '1';
+const WATCH_CODE_VERSION_TEAMS = '2';
 
 /** More than any real watch, and few enough that a paste cannot fill the screen with fields. */
 const MAX_ENTRIES = 32;
@@ -133,12 +160,15 @@ export function watchCode(
   if (signed.pubkey !== fields.pubkey.toLowerCase()) {
     throw new WatchCodeError('Only the watch’s own key can sign its code.');
   }
+  const teams = codeTeams(fields.teams ?? []);
+  if (teams.length > MAX_TEAMS) throw new WatchCodeError(`A watch code names at most ${MAX_TEAMS} teams.`);
   const params = new URLSearchParams();
-  params.set('watch', WATCH_CODE_VERSION);
+  params.set('watch', teams.length > 0 ? WATCH_CODE_VERSION_TEAMS : WATCH_CODE_VERSION);
   params.set('w', signed.pubkey);
   for (const r of fields.relays) params.append('r', r);
   for (const h of fields.holders) params.append('h', h.toLowerCase());
   if (executor) params.set('x', executor);
+  for (const team of teams) params.append('n', team);
   params.set('t', String(issuedAt));
   params.set('s', signed.sig);
   return `https://navcom.app/terminal/setup/#${params.toString()}`;
@@ -166,9 +196,9 @@ export function parseWatchCode(text: string): WatchCode {
     throw new WatchCodeError('That watch code is damaged. Ask for it again.');
   }
   const version = params.get('watch') ?? '';
-  if (version !== WATCH_CODE_VERSION) {
+  if (version !== WATCH_CODE_VERSION && version !== WATCH_CODE_VERSION_TEAMS) {
     throw new WatchCodeError(
-      /^\d{1,6}$/.test(version) && Number(version) > Number(WATCH_CODE_VERSION)
+      /^\d{1,6}$/.test(version) && Number(version) > Number(WATCH_CODE_VERSION_TEAMS)
         ? 'That watch code was made by a newer version of NavCom than this one. Open this page again with signal to update it.'
         : 'That watch code is damaged. Ask for it again.'
     );
@@ -201,10 +231,16 @@ export function parseWatchCode(text: string): WatchCode {
     );
   }
 
+  // Only a version-2 code signs its teams, so only one is read for them.
+  const teams = version === WATCH_CODE_VERSION_TEAMS ? codeTeams(params.getAll('n')) : [];
+  if (teams.length > MAX_TEAMS) {
+    throw new WatchCodeError('That watch code names far more teams than a night has. Nothing was filled in.');
+  }
+
   const t = params.get('t') ?? '';
   const sig = (params.get('s') ?? '').trim().toLowerCase();
   const issuedAt = /^\d{1,12}$/.test(t) ? Number(t) : null;
-  const fields: WatchCodeFields = { pubkey, relays, holders, ...(executor ? { executor } : {}) };
+  const fields: WatchCodeFields = { pubkey, relays, holders, ...(executor ? { executor } : {}), ...(teams.length ? { teams } : {}) };
   if (issuedAt === null || !SIG_HEX.test(sig) || !signedBy(fields, issuedAt, sig)) {
     throw new WatchCodeError(
       'That watch code is not signed by the watch it names, or was changed after it was signed, so nothing was filled in. Take a watch code only from whoever runs the watch.'

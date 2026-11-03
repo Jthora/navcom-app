@@ -23,7 +23,8 @@ for somebody on the street is the team's own knowledge, and NavCom does not writ
    - press **Show the watch key** and let them scan it under **Or join one**
    - open **This phone's holder key** on their screen, and scan it under **Other holders** on yours
    - give them a `can take watch` vouch, which they claim on **Standing**
-4. Hold up **Code for operators**.
+4. With more than one team out, type them under **Teams tonight**, so sign-on offers them.
+5. Hold up **Code for operators**.
 
 **Everyone else, after that**
 
