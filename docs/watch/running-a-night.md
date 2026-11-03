@@ -77,7 +77,9 @@ they send.
   you picked, in your words. **Pass to the nearest 3** sends it to the three closest of those who
   share where they are, when the person asking shares too. Nobody in Distress is sent one.
 - **Telling everyone:** **Tell everyone out**, under Who is out, sends what is happening to everyone
-  on the board, or to the teams you picked. Places and conditions, not orders and not people.
+  on the board, or to the teams you picked. Places and conditions, not orders and not people. It
+  stands until you clear it or say something new: anybody who signs on later, or was out of signal,
+  is told it the next time their phone is heard.
 - **At the end:** stand down. **Tonight** lists what the watch did; copy it out for whoever reviews
   the night. A panic wipe deletes it.
 

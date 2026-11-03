@@ -303,8 +303,43 @@ let signedOnAs: Record<string, string> = {};
 let askedAt = $state<Record<string, number>>({});
 /** Who each Assist was passed on to, by its id. Gone with the board. */
 let passedOnFor = $state<Record<string, string[]>>({});
-/** What this watch last told the people out, who it reached, and when. Gone with the board. */
-let told = $state<{ text: string; to: string[]; at: number } | null>(null);
+/** What this watch last told the people out, who it reached, when, and to which teams. Gone with the board. */
+let told = $state<{ text: string | null; to: string[]; at: number; teams: string[] } | null>(null);
+/** Who has been told it again since: once each, on the first live signal heard from them after it. */
+let retold = new Set<string>();
+
+const inTeams = (e: BoardEntry, teams: readonly string[]) => teams.length === 0 || teams.some((t) => sameTeam(e.team, t));
+
+/** The notice, or its clearing, to each of these, dated `at`: who a relay took it for. */
+async function reach(to: readonly BoardEntry[], text: string | null, at: number): Promise<string[]> {
+  const sent = await Promise.all(to.map(async (e) => ((await noticeTo(e.operator, text, at)) ? e.callsign : null)));
+  return sent.filter((c): c is string => c !== null);
+}
+
+async function noticeTo(operator: string, text: string | null, at: number): Promise<boolean> {
+  const secret = watchKey();
+  const last = lastHeard[operator];
+  const signOn = signedOnAs[operator];
+  if (!secret || !last || !signOn) return false;
+  const payload: ResponsePayload = {
+    type: 'notice',
+    responder: { kind: 'human', callsign: loadIdentity()?.callsign ?? 'watch' },
+    text,
+    provenance: null
+  };
+  const event = finalizeEvent(buildResponse(secret, operator, signOn, payload, at), secret);
+  return (await publishEach(usable([...last.heardOn, ...watchRelays()]), event)).length > 0;
+}
+
+/** Telling somebody heard from again what stands, once, as it was first said. */
+function retell(operator: string): void {
+  const standing = told;
+  if (!standing || retold.has(operator)) return;
+  const e = entries.find((x) => x.operator === operator);
+  if (!e || !inTeams(e, standing.teams)) return;
+  retold.add(operator);
+  void noticeTo(operator, standing.text, standing.at);
+}
 /**
  * Where this holding has sent its Station, and when it last did, in this phone's seconds: every
  * relay it was sent to, not only the ones that took it — one that timed out may still have it.
@@ -816,40 +851,41 @@ export const board = {
    * To each operator on this board in those teams, each sealed to them alone and naming their
    * sign-on, in the holder's words. What is happening, never what to do: nothing is asked back
    * [invariant 8]. Gives back who it reached, and an offer that reached nobody is said as that.
+   *
+   * **It stands until it is cleared or replaced** (2026-11-02). A relay taking it is not a phone
+   * hearing it, and somebody in a dead zone, or signing on later, heard nothing; so each operator
+   * is told it again once, on the first signal this board hears from them afterwards, dated as it
+   * was first said, so it never reads newer than it is.
    */
   async tellOut(words: string, teams: readonly string[] = []): Promise<string[]> {
-    const secret = watchKey();
     const text = words.trim().slice(0, TEXT_MAX);
-    if (!secret || !text) return [];
-    const identity = loadIdentity();
+    if (!watchKey() || !text) return [];
     const at = Math.floor(Date.now() / 1000);
-    const payload: ResponsePayload = {
-      type: 'notice',
-      responder: { kind: 'human', callsign: identity?.callsign ?? 'watch' },
-      text,
-      provenance: null
-    };
-    const to = entries.filter((e) => teams.length === 0 || teams.some((t) => sameTeam(e.team, t)));
+    const to = entries.filter((e) => inTeams(e, teams));
     // All at once: twenty people, one at a time, on a congested network is the last one told minutes late.
-    const reached = await Promise.all(
-      to.map(async (e) => {
-        const last = lastHeard[e.operator];
-        const signOn = signedOnAs[e.operator];
-        if (!last || !signOn) return null;
-        const event = finalizeEvent(buildResponse(secret, e.operator, signOn, payload, at), secret);
-        return (await publishEach(usable([...last.heardOn, ...watchRelays()]), event)).length > 0 ? e.callsign : null;
-      })
-    ).then((r) => r.filter((c): c is string => c !== null));
+    const reached = await reach(to, text, at);
     if (reached.length > 0) {
-      told = { text, to: reached, at };
+      told = { text, to: reached, at, teams: [...teams] };
+      retold = new Set();
       // Who was told, never what: tonight's record holds actions and callsigns, not words or places.
       night.note(`Told ${teams.length > 0 ? teams.join(', ') : 'everyone out'}: ${reached.join(', ')}`);
     }
     return reached;
   },
 
-  /** What this watch last told the people out, or null. */
-  get told(): { text: string; to: string[]; at: number } | null {
+  /** Clearing what the watch told the people out: their phones put it down, and so does anybody told it later. */
+  async clearNotice(): Promise<boolean> {
+    if (!told || told.text === null || !watchKey()) return false;
+    const at = Math.max(Math.floor(Date.now() / 1000), told.at + 1);
+    const reached = await reach(entries.filter((e) => inTeams(e, told!.teams)), null, at);
+    told = { text: null, to: reached, at, teams: told.teams };
+    retold = new Set();
+    night.note('Cleared what the watch told everyone');
+    return true;
+  },
+
+  /** What this watch last told the people out, or null; its text is null once cleared. */
+  get told(): { text: string | null; to: string[]; at: number; teams: string[] } | null {
     return told;
   },
 
@@ -887,6 +923,7 @@ export const board = {
     askedAt = {};
     passedOnFor = {};
     told = null;
+    retold = new Set();
     unlisten();
     if (beat) clearInterval(beat);
     beat = null;
@@ -1302,6 +1339,9 @@ function apply(
   }
 
   if (type !== 'position') lastHeard[from] = { id: event.id, heardOn: [url] };
+  // Heard now, not handed over from earlier: what the watch told everybody reaches them too. After
+  // this signal is applied, so a sign-on's entry exists to be told.
+  if (!history) queueMicrotask(() => retell(from));
   // Answered: a check-in, a sign-on or a stand-down is what an ask to check in asks for.
   if ((type === 'routine' || type === 'on-station' || type === 'stood-down') && askedAt[from] !== undefined) {
     const rest = { ...askedAt };

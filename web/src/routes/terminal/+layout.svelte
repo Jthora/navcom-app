@@ -23,6 +23,8 @@
   import '$lib/terminal/wiped-elsewhere';
   let { children } = $props();
   let sig = $state<'low' | 'document'>('document');
+  /** Minutes, for the notice line's age: an hour old, it dims, and stays where it was. */
+  let nowS = $state(Math.floor(Date.now() / 1000));
 
   /**
    * Marks the terminal as interactive.
@@ -58,8 +60,12 @@
      * from tonight's sign-on itself, so the session's code stays out of every screen's first load.
      */
     if (get('wipeable', 'signon') !== null && loadConfig() !== null) overdue.start();
+    const ticking = setInterval(() => (nowS = Math.floor(Date.now() / 1000)), 60_000);
     document.documentElement.dataset.hydrated = 'true';
-    return () => saving.stop();
+    return () => {
+      saving.stop();
+      clearInterval(ticking);
+    };
   });
 </script>
 
@@ -119,7 +125,7 @@
       under a thumb on its way to Distress. Silent: it is looked at, never announced.
     -->
     {#if notice.text && page.url.pathname !== '/terminal/'}
-      <a class="watch-notice" href="/terminal/" data-notice-line>
+      <a class="watch-notice" class:old={notice.at !== null && nowS - notice.at > 3600} href="/terminal/" data-notice-line>
         <span class="from">{notice.by ?? 'Watch'}</span><span class="said">{notice.text}</span>
       </a>
     {/if}
@@ -158,6 +164,8 @@
     border: 1px solid var(--t-line);
     border-inline-start: 3px solid var(--t-station);
   }
+  /* An hour old: still there, and quieter, so it reads as what was true then. */
+  .watch-notice.old { color: var(--t-muted); border-inline-start-color: var(--t-line-strong); }
   .watch-notice .said {
     min-width: 0;
     overflow: hidden;

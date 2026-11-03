@@ -696,7 +696,7 @@
           -->
           <Slot k="Watch says">
             <span data-notice>
-              <Readout value={notice.by ?? 'Watch'} verbatim tone="neutral" sub={notice.at ? `${ago(Math.floor(nowMs / 1000) - notice.at)} ago` : null} />
+              <Readout value={notice.by ?? 'Watch'} verbatim tone={notice.at && Math.floor(nowMs / 1000) - notice.at > 3600 ? 'cold' : 'neutral'} sub={notice.at ? `${ago(Math.floor(nowMs / 1000) - notice.at)} ago` : null} />
             </span>
           </Slot>
           <p class="said" data-notice-text>{notice.text}</p>

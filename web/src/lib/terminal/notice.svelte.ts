@@ -21,15 +21,33 @@ export const notice = {
     return at;
   },
 
-  /** Newest wins: one older than what is held is dropped. */
+  /**
+   * Newest wins: one older than what is held is dropped, and so is one dated as what this phone
+   * already put down, which the watch tells again to anybody it hears from afterwards. One with no
+   * words is the watch clearing it.
+   */
   heard(said: string | null, holder: string, when: number): void {
-    if (!said || (at !== null && when < at)) return;
+    if (at !== null && (when < at || (when === at && text === null))) return;
+    if (!said) {
+      if (at === null) return;
+      text = null;
+      by = null;
+      at = when;
+      return;
+    }
     text = said;
     by = holder;
     at = when;
   },
 
+  /** Put down by the operator: gone from the screen, and not brought back by the same words told again. */
   clear(): void {
+    text = null;
+    by = null;
+  },
+
+  /** Home, or wiped: nothing of tonight's is held. */
+  reset(): void {
     text = null;
     by = null;
     at = null;

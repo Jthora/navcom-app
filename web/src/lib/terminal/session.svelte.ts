@@ -795,7 +795,7 @@ export const operator = {
     // the screen next time this operator signs on. So is anything it passed on.
     overdue.clear();
     passedOn.clear();
-    notice.clear();
+    notice.reset();
     overdue.stop();
     stopAsking();
     return closedBy;
@@ -939,7 +939,7 @@ export const operator = {
     stopFixBeat();
     stopAsking();
     overdue.stop();
-    notice.clear();
+    notice.reset();
     session = null;
     lastResponse = null;
     error = null;

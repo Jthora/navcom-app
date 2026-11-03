@@ -588,7 +588,10 @@ no tag on the event. Both parts were wrong, and the implementation deliberately 
   happening, never what to do about it, and never about a person [invariants 1, 6, 8]. A client
   MUST hold it as one current fact, newest first, show it on every screen while held, and MUST NOT
   sound, vibrate or badge for it, or ask anything back. It answers nothing, like the two above, and
-  names the sign-on like them
+  names the sign-on like them. **It stands until cleared or replaced**: a watch tells it again once
+  to each operator on the first signal it hears from them afterwards, dated as first said, and one
+  with `text` null is the watch clearing it. A client MUST drop one older than what it holds, or
+  dated as one it already put down
 - **Each of those names the operator's sign-on**, never their latest signal, and **no reader may
   take one for an answer, whatever it names** (2026-11-02). Both named the latest signal,
   and a watch's board read its own `passed-on` back as the answer to it: when that signal was

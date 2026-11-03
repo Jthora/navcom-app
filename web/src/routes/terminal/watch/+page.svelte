@@ -693,10 +693,14 @@
         {:else}
           <button data-tell-open onclick={() => { telling = true; tellFailed = false; }}>Tell {tellTo}</button>
         {/if}
-        {#if board.told}
+        {#if board.told && board.told.text !== null}
           <span data-told>
             <Readout value={board.told.text} verbatim tone="neutral" sub={`to ${board.told.to.join(', ')} · ${fixAge(board.told.at, nowS)}`} />
           </span>
+          <!-- It stands, and is told again to anybody heard from afterwards, until it is cleared or replaced. -->
+          <button data-tell-clear onclick={() => board.clearNotice()}>Clear it</button>
+        {:else if board.told}
+          <span data-told-cleared><Readout value="Cleared" tone="cold" sub={fixAge(board.told.at, nowS)} /></span>
         {/if}
       </div>
     {/if}

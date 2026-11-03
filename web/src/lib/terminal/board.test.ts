@@ -479,6 +479,25 @@ describe('telling the people out what is happening (2026-11-02)', () => {
     expect(await board.tellOut('Crowd thinning on 7th Ave.', ['rescue rangers'])).toEqual(['Kite']);
   });
 
+  it('stands: told again once to anybody heard from afterwards, dated as first said, and cleared the same way', async () => {
+    const [owl, kite] = [newSecretKey(), newSecretKey()];
+    deliver(withTeam(owl, T, 'Owl', 'Zone Guardians'));
+    await board.tellOut('Police line across 8th Ave at 33rd.');
+    const first = board.told!.at;
+    // Kite signs on afterwards, and checks in twice: told once.
+    published.length = 0;
+    deliver(withTeam(kite, T + 60, 'Kite', 'Rescue Rangers'));
+    deliver(finalizeEvent(buildSignal(kite, to, 'routine', {}, T + 120), kite));
+    deliver(finalizeEvent(buildSignal(kite, to, 'routine', {}, T + 180), kite));
+    await new Promise((r) => setTimeout(r, 20));
+    const again = published.filter((p) => p.event.kind === KIND_RESPONSE && p.event.tags.some((t) => t[0] === 'p' && t[1] === getPublicKey(kite)));
+    expect(new Set(again.map((p) => p.event.id)).size).toBe(1);
+    expect(again[0]!.event.created_at).toBe(first);
+
+    expect(await board.clearNotice()).toBe(true);
+    expect(board.told?.text).toBeNull();
+  });
+
   it('sends nothing with no words', async () => {
     deliver(withTeam(newSecretKey(), T, 'Owl', 'Zone Guardians'));
     published.length = 0;
