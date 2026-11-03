@@ -32,6 +32,7 @@
   import { coordinates, fixAge, mapLink, within } from '$lib/terminal/fix';
   import { awake, raise, setSound, soundOn } from '$lib/terminal/raise.svelte';
   import { distance, placeLine, provenanceOf } from '$lib/terminal/lookup';
+  import { ago } from '$lib/terminal/heard-copy';
   import AnswerLookup from '$lib/components/watch/AnswerLookup.svelte';
   import PassOn from '$lib/components/watch/PassOn.svelte';
   import { night } from '$lib/terminal/watch-night.svelte';
@@ -832,9 +833,19 @@
         {#each asks as w (w.id)}{@render ask(w)}{/each}
       </ul>
       {#if elsewhere.length > 0}
+        <!--
+          What waits on the teams this holder has not taken, with how long: if the other holder's phone
+          has died, these are nobody's, and one past its window says so (2026-11-02).
+        -->
         <Slot k="Also waiting">
           <span data-also-waiting>
-            <Readout value={elsewhere.map((w) => withTeam(w.operator, w.callsign)).join(', ')} verbatim tone="warn" sub="other teams" />
+            {#each elsewhere as w (w.id)}
+              {@const waited = nowS - (w.before ?? w.at)}
+              {@const late = RESPONSE_WINDOW[w.type] !== null && waited > (RESPONSE_WINDOW[w.type] ?? 0)}
+              <span data-also={w.id} data-late={late}>
+                <Readout value={withTeam(w.operator, w.callsign)} verbatim tone={late ? 'warn' : 'neutral'} sub={`${w.type} · waiting ${ago(Math.max(0, waited))}`} />
+              </span>
+            {/each}
           </span>
         </Slot>
       {/if}

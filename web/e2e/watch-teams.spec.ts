@@ -43,6 +43,8 @@ test.describe('a watch several teams share', () => {
         await signal(cedar, 'on-station', out('Cedar', 'Zone Guardians', 'Times Sq', 600), now - 7200),
         await signal(kite, 'query', { text: 'somewhere warm near Penn', area: '8th Ave' }, now - 30),
         await signal(owlZ, 'query', { text: 'water at Herald Sq', area: 'Herald Sq' }, now - 20),
+        // Asked six minutes ago, well past a question's two: nobody's, if the other holder is gone.
+        await signal(cedar, 'query', { text: 'anybody near Times Sq', area: 'Times Sq' }, now - 360),
         await signal(dove, 'on-station', out('Dove', 'Zone Guardians', 'Bryant Park'), now - 60),
         await signal(dove, 'distress', { position: null, area: 'Bryant Park' }, now - 10)
       ]
@@ -85,12 +87,17 @@ test.describe('a watch several teams share', () => {
     await expect(page.getByText('somewhere warm near Penn')).toBeVisible();
     await expect(page.getByText('water at Herald Sq')).toHaveCount(0);
     await expect(page.locator('[data-also-waiting]')).toContainText('Owl (Zone Guardians)');
+    // How long each has waited, and the one past a question's two minutes marked so.
+    await expect(page.locator('[data-also-waiting]')).toContainText(/query · waiting \d+s/);
+    await expect(page.locator('[data-also-waiting] [data-late="true"]')).toHaveCount(1);
+    await expect(page.locator('[data-also-waiting] [data-late="true"]')).toContainText('Cedar (Zone Guardians)');
     await expect(page.locator('section.urgent')).toContainText('Dove');
 
     // Both teams chosen is everything again, and so is All.
     await teams.filter({ hasText: 'Zone Guardians' }).click();
     await expect(rows).toHaveCount(5);
     await expect(page.getByText('water at Herald Sq')).toBeVisible();
+    await expect(page.getByText('anybody near Times Sq')).toBeVisible();
     await expect(page.locator('[data-also-waiting]')).toHaveCount(0);
     await teams.filter({ hasText: 'All' }).click();
     await expect(teams.filter({ hasText: 'All' })).toHaveAttribute('aria-pressed', 'true');
