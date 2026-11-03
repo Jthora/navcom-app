@@ -292,7 +292,7 @@
   async function canGo() {
     const heardAt = passedOn.at;
     if (!passedOn.text) return;
-    await operator.query(`I can go: ${passedOn.text}`);
+    await operator.canGo(`I can go: ${passedOn.text}`);
     if (!operator.error) goingFor = heardAt;
   }
   let closing = $state(false);

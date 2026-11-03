@@ -377,3 +377,15 @@ describe('a question to a watch held on phones, which a person answers', () => {
     expect(session.operator.error).toMatch(/No response/);
   });
 });
+
+describe('saying I can go, on a box (2026-11-02)', () => {
+  it('is told once a relay has it, without waiting on the box to answer', async () => {
+    replies = () => [];
+    vi.useFakeTimers({ toFake: ['setTimeout', 'Date'], shouldAdvanceTime: true });
+    const started = Date.now();
+    await session.operator.canGo('I can go: Owl asks for someone near Penn Station, now.');
+    expect(Date.now() - started).toBeLessThan(5_000);
+    expect(session.operator.error).toBeNull();
+    expect(published.some((e) => e.kind === KIND_SIGNAL && e.tags.some((t) => t[0] === 't' && t[1] === 'query'))).toBe(true);
+  });
+});

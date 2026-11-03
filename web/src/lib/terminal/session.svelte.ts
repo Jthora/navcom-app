@@ -670,6 +670,16 @@ export const operator = {
     }
   },
 
+  /**
+   * *"I can go"*, to an Assist the watch passed on: the operator's own question back to it [core
+   * `passed-on`]. Told once a relay has it, on any watch: on a box it waited for the box's answer and
+   * said it had failed when none came in fifteen seconds, though it had gone (2026-11-02). The answer
+   * is heard later, as any question's is.
+   */
+  async canGo(text: string) {
+    await ask(() => askPerson('query', { ...area(text), ...here() }));
+  },
+
   async query(text: string) {
     // Area rides along so the watch can answer "nearest bed" without asking where you are.
     const payload = { ...area(text), ...here() };
