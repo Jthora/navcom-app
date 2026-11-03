@@ -104,7 +104,16 @@ describe('the nearest few, for an Assist that needs somebody now', () => {
     const times = at('times', 40.758, -73.9855);
     const harlem = at('harlem', 40.8116, -73.9465);
     const quiet = entry({ operator: 'quiet' });
-    expect(nearestTo(penn, [harlem, quiet, times, herald], 2).map((e) => e.operator)).toEqual(['herald', 'times']);
-    expect(nearestTo(penn, [quiet]).map((e) => e.operator)).toEqual([]);
+    const near = nearestTo(penn, [harlem, quiet, times, herald], NOW, 2);
+    expect(near.map((x) => x.entry.operator)).toEqual(['herald', 'times']);
+    expect(near[0]!.metres).toBeGreaterThan(400);
+    expect(near[0]!.metres).toBeLessThan(600);
+    expect(nearestTo(penn, [quiet], NOW)).toEqual([]);
+  });
+
+  it('leaves out a position too old to say where somebody is now', () => {
+    const stale = entry({ operator: 'stale', position: { lat: 40.7505, lon: -73.9934, precision_m: 0 }, position_at: NOW - 1200 });
+    const fresh = at('fresh', 40.758, -73.9855);
+    expect(nearestTo(penn, [stale, fresh], NOW).map((x) => x.entry.operator)).toEqual(['fresh']);
   });
 });

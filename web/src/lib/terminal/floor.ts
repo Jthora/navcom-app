@@ -89,14 +89,27 @@ export function repeatedNames(entries: readonly { callsign: string }[]): Set<str
   return twice;
 }
 
+/** How old a shared position may be and still say who is near: five minutes of walking is 400 m. */
+export const NEAR_FRESH_SECONDS = 300;
+
 /**
- * The nearest few of these to a fix, by where each last shared they were: who an Assist goes to when
- * somebody needs another body now (2026-11-02). Anybody sharing nothing is left out, not guessed at.
+ * The nearest few of these to a fix, by where each last shared they were, and how far: who an Assist
+ * goes to when somebody needs another body now (2026-11-02). Anybody sharing nothing, or whose last
+ * position is older than {@link NEAR_FRESH_SECONDS}, is left out rather than guessed at: a fix from
+ * twenty minutes ago is where somebody was.
  */
-export function nearestTo(fix: { lat: number; lon: number }, entries: readonly BoardEntry[], n = 3): BoardEntry[] {
+export function nearestTo(
+  fix: { lat: number; lon: number },
+  entries: readonly BoardEntry[],
+  now: number,
+  n = 3
+): { entry: BoardEntry; metres: number }[] {
   return entries
-    .flatMap((e) => (e.position ? [{ e, m: metresApart(fix, e.position) }] : []))
-    .sort((a, b) => a.m - b.m)
-    .slice(0, n)
-    .map((x) => x.e);
+    .flatMap((e) =>
+      e.position && e.position_at !== null && now - e.position_at <= NEAR_FRESH_SECONDS
+        ? [{ entry: e, metres: metresApart(fix, e.position) }]
+        : []
+    )
+    .sort((a, b) => a.metres - b.metres)
+    .slice(0, n);
 }

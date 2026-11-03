@@ -31,7 +31,7 @@
   import { askShown, floorDetail, floorNote, floorPin, nameKey, nearestTo, repeatedNames, shownFor, teamsOn } from '$lib/terminal/floor';
   import { coordinates, fixAge, mapLink, within } from '$lib/terminal/fix';
   import { awake, raise, setSound, soundOn } from '$lib/terminal/raise.svelte';
-  import { placeLine, provenanceOf } from '$lib/terminal/lookup';
+  import { distance, placeLine, provenanceOf } from '$lib/terminal/lookup';
   import AnswerLookup from '$lib/components/watch/AnswerLookup.svelte';
   import PassOn from '$lib/components/watch/PassOn.svelte';
   import { night } from '$lib/terminal/watch-night.svelte';
@@ -288,7 +288,7 @@
     );
   const nearestFor = (w: Waiting) => {
     const f = fixOf(w);
-    return f ? nearestTo(f.p, passable(w), 3) : [];
+    return f ? nearestTo(f.p, passable(w), nowS, 3) : [];
   };
   /** Who asked, where and how soon: never their own words, which may be about somebody else. */
   const passDraft = (w: Waiting) =>
@@ -783,9 +783,9 @@
             {#if w.type === 'assist'}
               <PassOn id={w.id} draft={passDraft(w)} others={passable(w).length}
                 to={chosen.length > 0 ? chosen.join(', ') : 'the others out'}
-                near={nearestFor(w).map((e) => withTeam(e.operator, e.callsign))} passedTo={board.passedTo(w.id)}
+                near={nearestFor(w).map((x) => `${withTeam(x.entry.operator, x.entry.callsign)} ${distance(x.metres)}`)} passedTo={board.passedTo(w.id)}
                 onpass={async (t, near) =>
-                  (await board.passOn(w, t, (near ? nearestFor(w) : passable(w)).map((e) => e.operator))).length > 0} />
+                  (await board.passOn(w, t, near ? nearestFor(w).map((x) => x.entry.operator) : passable(w).map((e) => e.operator))).length > 0} />
             {/if}
     </li>
   {/snippet}
