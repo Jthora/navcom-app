@@ -121,6 +121,8 @@
           {answer.provenance.method ?? 'source not stated'}{#if answer.provenance.verified},
             checked {answer.provenance.verified}{:else}, <strong>never checked</strong>{/if}
         </p>
+        <!-- The place the answer came from, on this phone's own map, and from there to its door. -->
+        <a class="go" href="/terminal/map/?place={encodeURIComponent(answer.provenance.record_id)}" data-go-place>Go there</a>
       {/if}
     {/if}
   </section>

@@ -655,6 +655,7 @@
 
   <section>
     <h2>Who is out</h2>
+    <a href="/terminal/map/" data-live-map-link>Map</a>
     {#if board.entries.length === 0}
       <Slot k="Board">
         {#if board.deaf}

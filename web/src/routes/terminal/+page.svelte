@@ -1040,6 +1040,7 @@
   {#if identity}
     <a class="nc-lead" href="/terminal/card/">Your card</a>
     <a class="nc-lead" href="/terminal/peers/">Peers</a>
+    <a class="nc-lead" href="/terminal/map/" data-live-map-link>Map</a>
     <a class="nc-lead" href="/terminal/directory/">Cached directory</a>
     <a href="/terminal/patrols/">Your patrols</a>
     <a href="/terminal/watch/">Watch</a>

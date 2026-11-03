@@ -209,3 +209,30 @@ describe('a question nobody answered, asked again (2026-11-02)', () => {
     expect(sent('query')).toHaveLength(1);
   });
 });
+
+describe('a phone reloaded while signed on (2026-11-03)', () => {
+  it('picks the patrol back up: it follows where they are and tells the watch again', async () => {
+    await session.operator.signOn('Penn Station', 2, 30);
+    // The page loads again: what was in memory is gone, its timers with it, and the sign-on in storage is not.
+    vi.clearAllTimers();
+    vi.resetModules();
+    session = await import('./session.svelte');
+    published.length = 0;
+    expect(session.operator.session?.area).toBe('Penn Station');
+    session.operator.resume();
+    await vi.advanceTimersByTimeAsync(61_000);
+    expect(sent('position')).toEqual([{ position: fix }]);
+  });
+
+  it('resumes once, and nothing at all for a phone that is not signed on', async () => {
+    session.operator.resume();
+    await vi.advanceTimersByTimeAsync(61_000);
+    expect(published).toHaveLength(0);
+    await session.operator.signOn('Penn Station', 2, 30);
+    session.operator.resume();
+    session.operator.resume();
+    published.length = 0;
+    await vi.advanceTimersByTimeAsync(61_000);
+    expect(sent('position')).toHaveLength(1);
+  });
+});

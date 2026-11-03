@@ -430,6 +430,58 @@ export function watchCover(): Cover | null {
   return coverOf(address.holders, address.kem ?? {});
 }
 
+/** Whether this page has done what being out means: once, from a sign-on or a resume. */
+let going = false;
+
+/** Follows where they are, if they share it, and tells peers and the watch the first fix at once. */
+function followFix(): void {
+  position.start();
+  // The first fix, told at once to peers and the watch rather than at the next beat. One that came
+  // before this sign-on finished is in the presence sent below.
+  position.whenFirstFix(() => {
+    if (!session) return;
+    void presence.announce(operator.presencePayload());
+    if (operator.hasWatch) sendFix();
+  });
+}
+
+/** Everything that runs while out, started once a sign-on is in place. */
+function goOut(): void {
+  going = true;
+  // Peers hear about it too, and they hear about it from nobody else -- there is no
+  // watch in this path and no server holding a list. Republished on a heartbeat because
+  // relays store none of it.
+  void presence.announce(operator.presencePayload());
+  presence.beat(() => (session ? operator.presencePayload() : null));
+  if (operator.hasWatch) {
+    startFixBeat();
+    // What the watch sends unasked — *past your time*, an Assist passed on — heard on every screen
+    // while out, not only on Status: neither is kept by a relay, so one sent while this phone was
+    // on another screen was gone.
+    overdue.start();
+  }
+
+  // Being listed publicly rides on being signed on, and does nothing unless the operator
+  // asked for it and has a card. That coupling is what bounds the mistake: somebody who
+  // forgets this is on broadcasts a callsign and a metro while out, and nothing at all
+  // the rest of the time.
+  // On its own clock, never in the same second as the peers' presence [relay-lists.md §9].
+  beatListed();
+
+  // A watch that changes hands inherits nothing: the incoming holder's board is empty
+  // until the operators on it say so themselves. This is that -- one signal, sent when
+  // this device notices somebody else is answering now, or the same holder has taken the
+  // watch again: a board that reloaded, or a box that restarted, is empty in the same way.
+  //
+  // It matters most for the operator who is already out. Without it they are invisible
+  // to the new watch until their next routine check-in, which by default is an hour of
+  // somebody believing they are being watched by a person who cannot see them.
+  whenWatchChangesHands(() => {
+    if (!session) return;
+    void run(() => tell('on-station', onStationPayload()));
+  });
+}
+
 export const operator = {
   get session(): SignOn | null { return session; },
   /** Whether this device has an identity. The only genuinely required setup step. */
@@ -472,14 +524,7 @@ export const operator = {
     const where = heard.now();
 
     // Only while signed on, so nobody broadcasts from their kitchen.
-    position.start();
-    // The first fix, told at once to peers and the watch rather than at the next beat. One that came
-    // before this sign-on finished is in the presence sent below.
-    position.whenFirstFix(() => {
-      if (!session) return;
-      void presence.announce(operator.presencePayload());
-      if (operator.hasWatch) sendFix();
-    });
+    followFix();
 
     if (operator.hasWatch) {
       const payload: OnStationPayload = {
@@ -512,38 +557,19 @@ export const operator = {
     // Wipeable: tonight's data. Panic wipe removes it; identity survives.
     set('wipeable', 'signon', session);
 
-    // Peers hear about it too, and they hear about it from nobody else -- there is no
-    // watch in this path and no server holding a list. Republished on a heartbeat because
-    // relays store none of it.
-    void presence.announce(operator.presencePayload());
-    presence.beat(() => (session ? operator.presencePayload() : null));
-    if (operator.hasWatch) {
-      startFixBeat();
-      // What the watch sends unasked — *past your time*, an Assist passed on — heard on every screen
-      // while out, not only on Status: neither is kept by a relay, so one sent while this phone was
-      // on another screen was gone.
-      overdue.start();
-    }
+    goOut();
+  },
 
-    // Being listed publicly rides on being signed on, and does nothing unless the operator
-    // asked for it and has a card. That coupling is what bounds the mistake: somebody who
-    // forgets this is on broadcasts a callsign and a metro while out, and nothing at all
-    // the rest of the time.
-    // On its own clock, never in the same second as the peers' presence [relay-lists.md §9].
-    beatListed();
-
-    // A watch that changes hands inherits nothing: the incoming holder's board is empty
-    // until the operators on it say so themselves. This is that -- one signal, sent when
-    // this device notices somebody else is answering now, or the same holder has taken the
-    // watch again: a board that reloaded, or a box that restarted, is empty in the same way.
-    //
-    // It matters most for the operator who is already out. Without it they are invisible
-    // to the new watch until their next routine check-in, which by default is an hour of
-    // somebody believing they are being watched by a person who cannot see them.
-    whenWatchChangesHands(() => {
-      if (!session) return;
-      void run(() => tell('on-station', onStationPayload()));
-    });
+  /**
+   * Picks a patrol back up on a phone that reloaded, or that its OS put away and reopened, while it
+   * was signed on (2026-11-03). The sign-on survived in storage and nothing else did: no position was
+   * followed, so none reached the watch or peers; no heartbeat went out, so peers read *nothing heard*
+   * within three minutes; and nothing listened for the watch changing hands. Once per page.
+   */
+  resume() {
+    if (!session || going) return;
+    followFix();
+    goOut();
   },
 
   /** What peers are told. Coarse by construction, and nothing they did not agree to receive. */
@@ -833,6 +859,7 @@ export const operator = {
     presence.stopBeat();
 
     session = null;
+    going = false;
     clearField('wipeable', 'signon');
     // Home. Whatever the watch said about the window is spent, and it must not still be on
     // the screen next time this operator signs on. So is anything it passed on.
@@ -984,6 +1011,7 @@ export const operator = {
     overdue.stop();
     notice.reset();
     session = null;
+    going = false;
     lastResponse = null;
     error = null;
     distressPhases = [];
@@ -991,3 +1019,10 @@ export const operator = {
     heard.forget();
   }
 };
+
+/*
+ * A phone that reloaded, or was put away by its OS and reopened, while signed on: picked up where it
+ * was, on whichever screen first loads this module [`operator.resume`]. Not on the server, and not
+ * under the unit tests, which sign on themselves and count what is sent.
+ */
+if (typeof window !== 'undefined' && import.meta.env.MODE !== 'test') queueMicrotask(() => operator.resume());
