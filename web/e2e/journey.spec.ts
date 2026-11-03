@@ -546,3 +546,145 @@ test('the directory with no callsign: a region carried, narrowed, and a place ad
   await step(page, 'added');
   await context.close();
 });
+
+test('a joint night: two teams, two holders, a Distress beside an Assist passed on, a notice to one team', async ({ browser }) => {
+  /*
+   * The night the RLSH teams patrol one crowd in New York (2026-11-02), walked whole. Each feature it
+   * touches has its own spec; this is where they meet, which is where today's bugs were: an Assist
+   * passed on beside a live Distress marked it answered on the watch and stopped its sound, and no
+   * feature's own test could see that.
+   */
+  test.setTimeout(360_000);
+  const step = steps('joint-night');
+  const at = (latitude: number, longitude: number) => ({ timezoneId: 'America/New_York', permissions: ['geolocation'], geolocation: { latitude, longitude } });
+  const a = await hermetic(browser, net, { timezoneId: 'America/New_York' });
+  const r = await hermetic(browser, net, { timezoneId: 'America/New_York' });
+  const k = await hermetic(browser, net, at(40.7497, -73.9877));
+  const v = await hermetic(browser, net, at(40.7506, -73.9935));
+  const [A, R, K, V] = [a.page, r.page, k.page, v.page];
+
+  // Lighthouse takes the watch, and names tonight's teams.
+  await newcomer(A, 'Lighthouse');
+  await go(A, '/terminal/watch/');
+  await A.locator('[data-start-watch]').click();
+  await hold(A, A.getByRole('button', { name: /hold to take the watch/i }), 1500);
+  await expect(A.getByRole('button', { name: /^stand down$/i })).toBeVisible();
+  await A.locator('[data-teams-tonight]').fill('Rescue Rangers, Zone Guardians');
+
+  // Relief joins with the watch key, and goes into the code beside her.
+  await A.getByRole('button', { name: /show the watch key/i }).click();
+  const watchKeyHex = (await A.locator('[data-watch-key]').innerText()).trim();
+  await newcomer(R, 'Relief');
+  await go(R, '/terminal/watch/');
+  await R.locator('#key').fill(watchKeyHex);
+  await R.getByRole('button', { name: /^join$/i }).click();
+  await R.locator('summary', { hasText: /this phone's holder key/i }).click();
+  const reliefKey = (await R.locator('[data-holder-key]').innerText()).replace(/\s+/g, '');
+  expect(reliefKey).toMatch(/^[0-9a-f]{64}$/);
+  await A.locator('summary', { hasText: /other holders/i }).click();
+  await A.locator('#other-holders').fill(reliefKey);
+
+  await A.evaluate(() => {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: async (text: string) => void ((window as unknown as { __copied?: string }).__copied = text) }
+    });
+  });
+  await A.getByRole('button', { name: /copy the code/i }).click();
+  const code = await A.evaluate(() => (window as unknown as { __copied: string }).__copied);
+  expect(code).toMatch(/#watch=2&/);
+  expect(code).toContain(`h=${reliefKey}`);
+  await step(A, 'code');
+
+  // Kite and Raven join from the code, and sign on with a team each, sharing where they are.
+  for (const [page, callsign, area, team] of [[K, 'Kite', 'Herald Sq', 'Rescue Rangers'], [V, 'Raven', 'Penn Station', 'Zone Guardians']] as const) {
+    await newcomer(page, callsign);
+    await page.locator('#code').fill(code);
+    await page.getByRole('button', { name: /fill in from the code/i }).click();
+    await page.getByRole('button', { name: /^connect$/i }).click();
+    await go(page, '/terminal/sign-on/');
+    await page.locator('#area').fill(area);
+    await page.locator('#team').fill(team);
+    await page.locator('#share').selectOption('exact');
+    await page.getByRole('button', { name: /^sign on$/i }).click();
+    await page.waitForURL('**/terminal/');
+  }
+
+  // Owl, out with Zone Guardians, is a third phone the test speaks for: signed on to the same watch.
+  const { buildSignal, parseWatchCode } = await import('@navcom/core');
+  const { generateSecretKey } = await import('nostr-tools/pure');
+  const named = parseWatchCode(code);
+  const owl = generateSecretKey();
+  const out = finalizeEvent(
+    buildSignal(owl, { pubkey: named.pubkey, holders: named.holders }, 'on-station', {
+      callsign: 'Owl', team: 'Zone Guardians', area: 'Bryant Park', expected_duration: 7200, routine_interval: null, share_position: false, position: null
+    } as never, Math.floor(Date.now() / 1000)),
+    owl
+  );
+  for (const url of named.relays) await publish(await net.of(url), out);
+
+  // Both holders' boards have all three, each with their team, and nobody on an older build.
+  for (const board of [A, R]) {
+    await expect(board.locator('.nc-floor-row')).toHaveCount(3, { timeout: 30_000 });
+    await expect(board.locator('.nc-floor-row', { hasText: 'Kite' }).locator('[data-floor-team]')).toHaveText('Rescue Rangers');
+  }
+  await expect(A.locator('.nc-floor-row', { hasText: 'Kite' }).locator('[data-floor-build]')).toHaveCount(0);
+  await step(A, 'board');
+
+  // The holders split the night: Lighthouse takes Zone Guardians. Kite's question waits on Relief,
+  // named under Also waiting on Lighthouse's screen, and Relief's answer clears it on both.
+  await A.locator('[data-teams] button', { hasText: 'Zone Guardians' }).click();
+  await go(K, '/terminal/query/');
+  await K.locator('#q').fill('Somewhere warm near Herald Sq?');
+  await K.getByRole('button', { name: /^ask$/i }).click();
+  await expect(A.locator('[data-also-waiting]')).toContainText('Kite (Rescue Rangers)', { timeout: 20_000 });
+  await R.getByRole('button', { name: /^answer$/i }).first().click({ timeout: 20_000 });
+  await R.locator('textarea[id^="a-"]').first().fill('The drop-in on 30th is open all night.');
+  await R.getByRole('button', { name: /^send$/i }).first().click();
+  await expect(K.locator('[data-answer]')).toContainText('open all night', { timeout: 20_000 });
+  await expect(A.locator('[data-also-waiting]')).toHaveCount(0, { timeout: 20_000 });
+
+  // Raven raises a Distress, and while it is live Kite asks for somebody now, which Lighthouse
+  // passes on. It goes to Owl, never to Raven, and Raven's Distress is still nobody's.
+  await go(V, '/terminal/distress/');
+  await hold(V, V.locator('button.raise'), 1500);
+  await expect(A).toHaveTitle(/^Distress · Watch/, { timeout: 20_000 });
+  await go(K, '/terminal/assist/');
+  // The label is what a thumb taps; the radio inside it is hidden.
+  await K.locator('label.choice', { hasText: 'Now' }).click();
+  await K.locator('#a').fill('Second pair of hands, Herald Sq');
+  await K.getByRole('button', { name: /assist — now/i }).click();
+  await A.locator('[data-teams] button', { hasText: 'All' }).click();
+  await A.locator('[data-pass-on]').first().click({ timeout: 20_000 });
+  await A.getByRole('button', { name: 'Pass on', exact: true }).click();
+  await expect(A.locator('[data-passed]')).toContainText('Owl', { timeout: 20_000 });
+  await expect(A.locator('[data-passed]')).not.toContainText('Raven');
+  await A.waitForTimeout(2_000);
+  await expect(A.locator('[data-distress-answered]')).toHaveCount(0);
+  await expect(A).toHaveTitle(/^Distress · Watch/);
+  await expect(V.locator('body')).not.toContainText(/has it|may have you/i);
+  await step(A, 'distress-beside-pass-on');
+
+  // A notice to Zone Guardians: on Raven's screen, whatever it is, and not on Kite's.
+  await A.locator('[data-teams] button', { hasText: 'Zone Guardians' }).click();
+  await A.getByRole('button', { name: 'Tell Zone Guardians' }).click();
+  await A.getByLabel('To Zone Guardians').fill('Police line across 8th Ave at 33rd. Go round by 9th.');
+  await A.getByRole('button', { name: 'Send', exact: true }).click();
+  await expect(A.locator('[data-told]')).toContainText('Police line', { timeout: 20_000 });
+  await expect(V.locator('[data-notice-line]')).toContainText('Police line', { timeout: 20_000 });
+  await go(K, '/terminal/');
+  await K.waitForTimeout(1_500);
+  await expect(K.locator('[data-notice-text]')).toHaveCount(0);
+
+  // Relief answers Raven's Distress with her own key: Raven's phone says she has it, and
+  // Lighthouse's board says it was answered and stops sounding.
+  await R.getByRole('button', { name: /tell them you are awake/i }).first().click({ timeout: 20_000 });
+  const send = R.getByRole('button', { name: /^send$/i }).first();
+  if (await send.isVisible()) await send.click();
+  await expect(V.locator('body')).toContainText(/relief has it/i, { timeout: 30_000 });
+  await expect(A.locator('[data-distress-answered]')).toBeVisible({ timeout: 20_000 });
+  await expect(A).not.toHaveTitle(/^Distress · /, { timeout: 20_000 });
+  await step(V, 'answered');
+
+  for (const h of [a, r, k, v]) await h.context.close();
+});
