@@ -1296,10 +1296,11 @@ describe('what the watch is told, kept (NYC audit, 2026-11-02)', () => {
   });
 
   it('takes a shared fix at sign-on, with when it was heard', () => {
-    deliver(signOn(NOW() - 30, 1800, fix));
+    const at = NOW() - 30;
+    deliver(signOn(at, 1800, fix));
     const e = board.entries.find((x) => x.operator === ravenPub)!;
     expect(e.position).toEqual(fix);
-    expect(e.position_at).toBe(NOW() - 30);
+    expect(e.position_at).toBe(at);
   });
 
   it('refuses a position that is not one, rather than drawing it', () => {
@@ -1328,11 +1329,13 @@ describe('a position, sent while an operator moves', () => {
     );
 
   it('moves their fix on the board', () => {
-    deliver(signOn(NOW() - 600));
-    deliver(finalizeEvent(buildSignal(wren, to, 'position', { position: there }, NOW()), wren));
+    // The clock read once: read twice, a busy machine crossed a second between and it failed.
+    const at = NOW();
+    deliver(signOn(at - 600));
+    deliver(finalizeEvent(buildSignal(wren, to, 'position', { position: there }, at), wren));
     const e = board.entries.find((x) => x.operator === wrenPub)!;
     expect(e.position).toEqual(there);
-    expect(e.position_at).toBe(NOW());
+    expect(e.position_at).toBe(at);
   });
 
   it('is not contact: it never counts as hearing from them, and never as a check-in', () => {
