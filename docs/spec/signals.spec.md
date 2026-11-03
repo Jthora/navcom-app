@@ -188,6 +188,8 @@ patterns on `20910`.
 {
   "callsign": "string | absent",
   "team": "string | absent",
+  "build": "commit | absent",
+  "built_at": "ISO time | absent",
   "area": "string, coarse — neighbourhood or district, never an address",
   "expected_duration": 7200,
   "routine_interval": 3600,
@@ -200,7 +202,10 @@ patterns on `20910`.
 
 `callsign` is how the board names them; absent, a watch shows a short label from the key. `team`
 (2026-11-02) is the team they are out with, as they typed it, where several teams share one watch.
-Each is at most 48 characters, and a watch MUST refuse a longer one or one that is not a string. A
+Each is at most 48 characters, and a watch MUST refuse a longer one or one that is not a string.
+`build` and `built_at` (2026-11-02) are the commit and build time of the NavCom sending it, at most 64
+characters each: a watch marks anybody on an older build than its own, by name, since a fix reaches
+only the phones that have it, and reads a sign-on naming no build as from a build older than these. A
 team is an operation's own name, never a person's, and it gates nothing: a watch reads it to show
 each row's team and to let a holder narrow the list to one team, and a narrowed list MUST still
 show every `Distress` and everybody past their time. Two teams that differ only in case are one.

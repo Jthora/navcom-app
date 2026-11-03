@@ -32,6 +32,9 @@ On **Setup**, under **Watch — if somebody gave you one**, press **Scan a watch
 added later, everyone scans the new code again: until they do, the new holder cannot read anything
 they send.
 
+**The day before**, everyone reloads NavCom once with signal. On the night, **Older build** under
+Who is out names anybody whose phone has not, and they should reload before going out.
+
 **A dry run.** Two phones on two different networks, thirty minutes, before the real night:
 
 1. Sign on and check in.

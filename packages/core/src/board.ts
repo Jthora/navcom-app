@@ -18,6 +18,9 @@ export interface BoardEntry {
   callsign: string;
   /** The team they gave at sign-on, read by {@link teamOf}. Absent: none given. */
   team?: string;
+  /** The build their phone is running, and when it was made, as their sign-on said; see {@link buildAgainst}. */
+  build?: string;
+  built_at?: string;
   /** Coarse. */
   area: string;
   signed_on: number;
@@ -153,6 +156,28 @@ export function teamOf(raw: unknown): string | null {
  */
 export function sameTeam(a: string | null | undefined, b: string | null | undefined): boolean {
   return !!a && !!b && a.toLocaleLowerCase() === b.toLocaleLowerCase();
+}
+
+/**
+ * How an operator's build compares with this watch's (2026-11-02). `older` where theirs was made
+ * before this one, or their sign-on named no build at all, which only a build from before builds were
+ * named sends; `newer` where theirs was made after; `other` where they differ and the dates cannot
+ * say which; null where they are the same, or this watch cannot say what it is running.
+ */
+export function buildAgainst(
+  theirs: { build?: string; built_at?: string },
+  mine: { commit: string | null; at: string | null }
+): 'older' | 'newer' | 'other' | null {
+  if (!mine.commit) return null;
+  const commit = typeof theirs.build === 'string' ? theirs.build.trim().toLowerCase() : '';
+  if (!commit) return 'older';
+  const a = commit.slice(0, 7);
+  const b = mine.commit.toLowerCase().slice(0, 7);
+  if (a === b) return null;
+  const t = theirs.built_at ? Date.parse(theirs.built_at) : NaN;
+  const m = mine.at ? Date.parse(mine.at) : NaN;
+  if (Number.isFinite(t) && Number.isFinite(m) && t !== m) return t < m ? 'older' : 'newer';
+  return 'other';
 }
 
 /** Standing down removes the entry. The board holds who is out; someone home is not out. */

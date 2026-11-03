@@ -350,6 +350,17 @@ describe('several teams on one watch (2026-11-02)', () => {
     expect(board.teamFor(getPublicKey(wren))).toBeNull();
   });
 
+  it('keeps the build each sign-on named, and none where it named none', () => {
+    const [kite, owl] = [newSecretKey(), newSecretKey()];
+    deliver(finalizeEvent(buildSignal(kite, to, 'on-station', {
+      callsign: 'Kite', area: 'Midtown', expected_duration: 7200, routine_interval: null, share_position: false, position: null,
+      build: 'abc1234', built_at: '2026-11-02T20:00:00Z'
+    } as never, T), kite));
+    deliver(withTeam(owl, T, 'Owl', undefined));
+    const byName = Object.fromEntries(board.entries.map((e) => [e.callsign, [e.build ?? null, e.built_at ?? null]]));
+    expect(byName).toEqual({ Kite: ['abc1234', '2026-11-02T20:00:00Z'], Owl: [null, null] });
+  });
+
   it('follows a sign-on that changes team', () => {
     const owl = newSecretKey();
     deliver(withTeam(owl, T, 'Owl', 'Zone Guardians'));

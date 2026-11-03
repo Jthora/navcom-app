@@ -142,9 +142,17 @@ export function validateOnStationPayload(payload: unknown): OnStationPayload {
     throw new ValidationError(`on-station payload: team is longer than ${CALLSIGN_MAX} characters`);
   }
 
+  for (const field of ["build", "built_at"] as const) {
+    if (p[field] !== undefined && (typeof p[field] !== "string" || (p[field] as string).length > 64)) {
+      throw new ValidationError(`on-station payload: ${field} must be a string of at most 64 characters if present`);
+    }
+  }
+
   return {
     ...(typeof p.callsign === "string" ? { callsign: p.callsign } : {}),
     ...(typeof p.team === "string" ? { team: p.team } : {}),
+    ...(typeof p.build === "string" ? { build: p.build } : {}),
+    ...(typeof p.built_at === "string" ? { built_at: p.built_at } : {}),
     area: p.area,
     expected_duration: p.expected_duration,
     routine_interval: p.routine_interval as number | null,

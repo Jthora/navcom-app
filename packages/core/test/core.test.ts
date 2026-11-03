@@ -11,7 +11,7 @@ import { finalizeEvent } from 'nostr-tools/pure';
 import { buildDistress, buildSignal, RESPONSE_WINDOW } from '../src/events/signal';
 import { isUnverified, type ResponsePayload } from '../src/events/response';
 import { KIND_DISTRESS, KIND_RESPONSE, KIND_SIGNAL, KIND_WATCH_STATE, isEphemeral, readTag } from '../src/events/kinds';
-import { DEFAULT_LIFETIMES, boardOrder, checkedIn, isExpired, isOverdue, sameTeam, standDown, teamOf, tick, type BoardEntry } from '../src/board';
+import { DEFAULT_LIFETIMES, boardOrder, buildAgainst, checkedIn, isExpired, isOverdue, sameTeam, standDown, teamOf, tick, type BoardEntry } from '../src/board';
 
 const NOW = new Date('2026-08-18T12:00:00Z');
 const NOW_S = Math.floor(NOW.getTime() / 1000);
@@ -370,6 +370,18 @@ describe('the board', () => {
     expect(sameTeam('Team B', 'Team C')).toBe(false);
     expect(sameTeam(null, null)).toBe(false);
     expect(sameTeam(undefined, 'Team B')).toBe(false);
+  });
+
+  it('says when an operator is on an older build than the watch, or a newer one', () => {
+    const mine = { commit: 'abc1234', at: '2026-11-02T20:00:00Z' };
+    expect(buildAgainst({ build: 'abc1234', built_at: '2026-11-02T20:00:00Z' }, mine)).toBeNull();
+    expect(buildAgainst({ build: 'ABC1234ffff' }, mine)).toBeNull();
+    expect(buildAgainst({ build: 'def5678', built_at: '2026-11-01T09:00:00Z' }, mine)).toBe('older');
+    expect(buildAgainst({ build: 'def5678', built_at: '2026-11-03T09:00:00Z' }, mine)).toBe('newer');
+    expect(buildAgainst({ build: 'def5678' }, mine)).toBe('other');
+    // A sign-on naming no build is from before builds were named.
+    expect(buildAgainst({}, mine)).toBe('older');
+    expect(buildAgainst({}, { commit: null, at: null })).toBeNull();
   });
 
   it('standing down removes the entry rather than parking it in a status', () => {

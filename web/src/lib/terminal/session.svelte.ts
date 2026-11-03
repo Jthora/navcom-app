@@ -44,6 +44,7 @@ import { position } from './position.svelte';
 import { overdue } from './overdue.svelte';
 import { passedOn } from './passed-on.svelte';
 import { notice } from './notice.svelte';
+import { BUILT_AT, BUILT_COMMIT } from '$lib/built';
 import { pool } from './pool';
 import { distressRelays, watchTargets } from './watch-targets';
 import { routineTo } from './refusing.svelte';
@@ -356,11 +357,17 @@ async function run<T>(fn: () => Promise<T>): Promise<T | null> {
  * watch needs to know when this operator is due back, and restating the original duration
  * would push that time forward by however long they have already been out.
  */
+/** Which build this phone is running, for the watch to mark anybody on another one. */
+function builtAs(): { build?: string; built_at?: string } {
+  return { ...(BUILT_COMMIT ? { build: BUILT_COMMIT } : {}), ...(BUILT_AT ? { built_at: BUILT_AT } : {}) };
+}
+
 function onStationPayload(): OnStationPayload {
   const now = Math.floor(Date.now() / 1000);
   return {
     callsign: loadIdentity()?.callsign ?? undefined,
     ...(session?.team ? { team: session.team } : {}),
+    ...builtAs(),
     area: session?.area ?? 'unknown',
     expected_duration: Math.max(0, (session?.expectedUntil ?? now) - now),
     routine_interval: session?.routineInterval ?? null,
@@ -478,6 +485,7 @@ export const operator = {
       const payload: OnStationPayload = {
         callsign: loadIdentity()?.callsign ?? undefined,
         ...(team ? { team } : {}),
+        ...builtAs(),
         area,
         expected_duration: Math.round(hours * 3600),
         routine_interval: routineMinutes === null ? null : routineMinutes * 60,

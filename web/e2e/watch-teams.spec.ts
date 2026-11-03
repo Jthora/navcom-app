@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { readFileSync } from 'node:fs';
 import { seedDevice, open, TEST_SECRET } from './device';
 
 /**
@@ -114,5 +115,28 @@ test.describe('a watch several teams share', () => {
 
     await open(page, '/terminal/sign-on/');
     await expect(page.getByLabel('Team')).toHaveValue('Rescue Rangers');
+  });
+
+  test('marks whoever signed on from an older build, by name, and not whoever runs this one', async ({ page }) => {
+    // A fix reaches only the phones that have it (2026-11-02). A sign-on naming no build is from a
+    // build older than builds being named; one naming this build is not marked.
+    const built = JSON.parse(readFileSync('build/version.json', 'utf8')) as { commit: string; builtAt?: string };
+    const { generateSecretKey } = await import('nostr-tools/pure');
+    const now = Math.floor(Date.now() / 1000);
+    await seedDevice(page, {
+      callsign: 'Wren',
+      watchSecret: WATCH_SECRET,
+      relayEvents: [
+        await signal(generateSecretKey(), 'on-station', { ...out('Kite', 'Rescue Rangers', 'Penn Station'), build: built.commit, ...(built.builtAt ? { built_at: built.builtAt } : {}) }, now - 60),
+        await signal(generateSecretKey(), 'on-station', out('Owl', 'Zone Guardians', 'Herald Sq'), now - 60)
+      ]
+    });
+    await open(page, '/terminal/watch/');
+    const rows = page.locator('[data-floor] .nc-floor-row');
+    await expect(rows).toHaveCount(2, { timeout: 15_000 });
+    await expect(rows.filter({ hasText: 'Owl' }).locator('[data-floor-build="older"]')).toHaveCount(1);
+    await expect(rows.filter({ hasText: 'Kite' }).locator('[data-floor-build]')).toHaveCount(0);
+    await expect(page.locator('[data-older-builds]')).toContainText('Owl (Zone Guardians)');
+    await expect(page.locator('[data-older-builds]')).not.toContainText('Kite');
   });
 });

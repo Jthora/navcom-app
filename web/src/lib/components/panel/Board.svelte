@@ -31,6 +31,8 @@
     team?: string | null;
     /** Their key's print, where another row on this board carries the same name [core `keyPrint`]. */
     print?: string | null;
+    /** Where their phone runs another build than this screen: what a fix only some phones have needs. */
+    build?: 'older' | 'newer' | 'other' | null;
     area: string;
     status: string;
     /**
@@ -65,6 +67,7 @@
           <span class="nc-floor-name">{e.callsign}</span>
           {#if e.team}<span class="nc-floor-team" data-floor-team>{e.team}</span>{/if}
           {#if e.print}<span class="nc-floor-where" data-floor-print>{e.print}</span>{/if}
+          {#if e.build}<span class="nc-floor-where" data-floor-build={e.build}>{e.build === 'older' ? 'older build: reload' : e.build === 'newer' ? 'newer build than this screen' : 'another build'}</span>{/if}
           <span class="nc-floor-where">{e.area}</span>
           {#if e.detail}<span class="nc-floor-where" data-floor-detail>{e.detail}</span>{/if}
           {#if e.pin}

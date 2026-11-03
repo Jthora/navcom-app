@@ -1352,10 +1352,15 @@ function apply(
   if (type === 'on-station') {
     const duration = typeof payload.expected_duration === 'number' ? payload.expected_duration : 7200;
     const team = teamOf(payload.team);
+    const built = (v: unknown) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, 64) : null);
+    const build = built(payload.build);
+    const builtAt = built(payload.built_at);
     const entry: BoardEntry = {
       operator: from,
       callsign,
       ...(team ? { team } : {}),
+      ...(build ? { build } : {}),
+      ...(builtAt ? { built_at: builtAt } : {}),
       area: area ?? 'unknown',
       signed_on: now,
       expected_until: now + duration,

@@ -34,6 +34,13 @@ export interface OnStationPayload {
    * person's, and it gates nothing; the watch reads it to tell its teams apart (2026-11-02).
    */
   team?: string;
+  /**
+   * Which build of NavCom sent it, and when that build was made (2026-11-02): a fix protects only
+   * the phones that have it, so the watch marks anybody on another build, and a sign-on carrying
+   * neither is from a build older than this field.
+   */
+  build?: string;
+  built_at?: string;
   /** Coarse — a district, never an address. */
   area: string;
   expected_duration: number;

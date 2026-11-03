@@ -14,7 +14,8 @@
    */
   import { onMount } from 'svelte';
   import encodeQR from '@paulmillr/qr';
-  import { codeTeams, declineIsValid, keyPrint, RESPONSE_WINDOW, sameTeam, TEXT_MAX } from '@navcom/core';
+  import { buildAgainst, codeTeams, declineIsValid, keyPrint, RESPONSE_WINDOW, sameTeam, TEXT_MAX } from '@navcom/core';
+  import { BUILT_AT, BUILT_COMMIT } from '$lib/built';
   import { setWatchTeams, watchTeams } from '$lib/terminal/teams';
   import { board, type Waiting } from '$lib/terminal/board.svelte';
   import { createWatch, foundedHere, joinWatch, leaveWatch, otherHolders as keptHolders, setOtherHolders, watchKey, watchPubkey, watchSecretHex, WatchKeyError } from '$lib/terminal/watch-key';
@@ -224,6 +225,9 @@
   const repeated = $derived(repeatedNames(out));
   const printOf = (operator: string, callsign: string) => (repeated.has(nameKey(callsign)) ? keyPrint(operator) : null);
 
+  /** Who on the board is running a build older than this screen's. */
+  const behind = $derived(out.filter((e) => buildAgainst(e, { commit: BUILT_COMMIT, at: BUILT_AT }) === 'older').map((e) => withTeam(e.operator, e.callsign)));
+
   /** Who is out, with their times, in the order the board is read. */
   const floor = $derived(
     out.filter((e) => shownFor(e, chosen)).map((e) => ({
@@ -231,6 +235,7 @@
       callsign: e.callsign,
       team: e.team ?? null,
       print: printOf(e.operator, e.callsign),
+      build: buildAgainst(e, { commit: BUILT_COMMIT, at: BUILT_AT }),
       area: e.area,
       status: e.status,
       note: floorNote(e, nowS),
@@ -678,6 +683,12 @@
         </div>
       {/if}
       <Board entries={floor} />
+      {#if behind.length > 0}
+        <!-- By name: who to ask to reload, since a fix reaches only the phones that have it. -->
+        <Slot k="Older build">
+          <span data-older-builds><Readout value={behind.join(', ')} verbatim tone="warn" sub="ask them to reload NavCom" /></span>
+        </Slot>
+      {/if}
       <!--
         Asking somebody past their time to check in: what the spec asks a watch to do on overdue, and
         the holder's act, never the phone's. It reaches them silently, and nobody else.
