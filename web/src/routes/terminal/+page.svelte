@@ -287,6 +287,14 @@
       note: 'nothing heard'
     }))
   ]);
+  /** Which passed-on Assist this operator said they can go to, by when it arrived. */
+  let goingFor = $state<number | null>(null);
+  async function canGo() {
+    const heardAt = passedOn.at;
+    if (!passedOn.text) return;
+    await operator.query(`I can go: ${passedOn.text}`);
+    if (!operator.error) goingFor = heardAt;
+  }
   let closing = $state(false);
   let note = $state('');
   let cameHome = $state<
@@ -708,6 +716,16 @@
           </Slot>
           <p class="said" data-passed-on-text>{passedOn.text}</p>
           <div class="passed-acts">
+            <!--
+              Taking it up in one tap: the operator's own question back to the watch, saying they can
+              go and to what, which the watch answers like any other (2026-11-02). Their act, never
+              assumed: nothing else here says they are going.
+            -->
+            {#if goingFor === passedOn.at}
+              <span data-going><Readout value="Told the watch" tone="neutral" sub="you can go" /></span>
+            {:else}
+              <button type="button" data-can-go disabled={operator.busy} onclick={canGo}>I can go</button>
+            {/if}
             <a href="/terminal/query/">Answer the watch</a>
             <button type="button" onclick={() => passedOn.clear()}>Put down</button>
           </div>

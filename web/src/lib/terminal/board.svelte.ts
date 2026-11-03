@@ -770,18 +770,20 @@ export const board = {
   /**
    * Passing an `Assist` on to the others out [core `passed-on`].
    *
-   * To everybody on this board but the person who asked and anybody in Distress, each sealed to them
-   * alone and naming their sign-on, in the holder's words. Gives back who it reached: an offer that
+   * To everybody on this board but the person who asked and anybody in Distress, or to those of them
+   * the holder chose, each sealed to them alone and naming their sign-on, in the holder's words. Gives back who it reached: an offer that
    * reached nobody is said as that, not as sent.
    */
-  async passOn(item: Waiting, text: string): Promise<string[]> {
+  async passOn(item: Waiting, text: string, only: readonly string[] | null = null): Promise<string[]> {
     const secret = watchKey();
     if (!secret || item.type !== 'assist' || !text.trim()) return [];
     const identity = loadIdentity();
     const reached: string[] = [];
     for (const e of entries) {
-      // Somebody in Distress is not who an offer of somebody else's goes to.
+      // Somebody in Distress is not who an offer of somebody else's goes to. `only`, where the
+      // holder chose whom: some teams, or the nearest few.
       if (e.operator === item.operator || e.status === 'distress') continue;
+      if (only !== null && !only.includes(e.operator)) continue;
       const last = lastHeard[e.operator];
       const signOn = signedOnAs[e.operator];
       if (!last || !signOn) continue;

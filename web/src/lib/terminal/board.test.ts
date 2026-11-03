@@ -403,6 +403,21 @@ describe('an Assist passed on, heard back from the relay', () => {
   });
 });
 
+describe('an Assist passed on to whom the holder chose (2026-11-02)', () => {
+  it('reaches only those, and never the asker or anybody in Distress among them', async () => {
+    const [owl, kite, jay, raven] = [newSecretKey(), newSecretKey(), newSecretKey(), newSecretKey()];
+    deliver(withTeam(owl, T, 'Owl', 'Zone Guardians'));
+    deliver(withTeam(kite, T, 'Kite', 'Rescue Rangers'));
+    deliver(withTeam(jay, T, 'Jay', 'Rescue Rangers'));
+    deliver(withTeam(raven, T, 'Raven', 'Rescue Rangers'));
+    deliver(finalizeEvent(buildDistress(raven, to, { position: null, area: 'Midtown' }, T + 10), raven));
+    deliver(finalizeEvent(buildSignal(owl, to, 'assist', { urgency: 'now', area: 'Midtown' }, T + 20), owl));
+    const assist = board.waiting.find((w) => w.type === 'assist')!;
+    const chosen = [owl, kite, raven].map((k) => getPublicKey(k));
+    expect(await board.passOn(assist, 'Owl asks for someone, now.', chosen)).toEqual(['Kite']);
+  });
+});
+
 describe('asking somebody past their time to check in, heard back from the relay', () => {
   it('names their sign-on, so a question they are still waiting on stays on the board', async () => {
     const kite = newSecretKey();

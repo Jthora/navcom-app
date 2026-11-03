@@ -53,7 +53,7 @@ they send.
 - **Your peers**, on Status, are the people you paired with: who is out, and a map link for any of
   them sharing where they are.
 - **Passed on**, on Status, is somebody else's Assist that the watch passed to you. It is an offer:
-  if you can go, say so to the watch.
+  **I can go** tells the watch in one tap.
 - **Stand down** when you are home.
 
 ## Each night, holding the watch
@@ -72,7 +72,9 @@ they send.
 - **Answering:** **Add a place** opens the area nearest the person asking. The place you pick goes
   into the answer, and the answer shows where it came from and when it was last checked.
 - **Past their time:** **Ask … to check in**. They see it silently, and nobody else does.
-- **An Assist:** **Pass to the others out** sends it to everyone else on the board, in your words.
+- **An Assist:** **Pass to the others out** sends it to everyone else on the board, or to the teams
+  you picked, in your words. **Pass to the nearest 3** sends it to the three closest of those who
+  share where they are, when the person asking shares too. Nobody in Distress is sent one.
 - **Telling everyone:** **Tell everyone out**, under Who is out, sends what is happening to everyone
   on the board, or to the teams you picked. Places and conditions, not orders and not people.
 - **At the end:** stand down. **Tonight** lists what the watch did; copy it out for whoever reviews

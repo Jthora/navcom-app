@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { BoardEntry } from '@navcom/core';
-import { askShown, floorDetail, floorNote, floorPin, repeatedNames, shownFor, teamsOn } from './floor';
+import { askShown, floorDetail, floorNote, floorPin, nearestTo, repeatedNames, shownFor, teamsOn } from './floor';
 import { coordinates, mapLink, within } from './fix';
 
 const NOW = 1_800_000_000;
@@ -92,5 +92,19 @@ describe('a board several teams share', () => {
 
   it('tells two operators with one name apart, and leaves a name nobody shares alone', () => {
     expect([...repeatedNames([zg, rr, rr2, none])]).toEqual(['owl']);
+  });
+});
+
+describe('the nearest few, for an Assist that needs somebody now', () => {
+  const at = (operator: string, lat: number, lon: number) => entry({ operator, position: { lat, lon, precision_m: 500 }, position_at: NOW });
+  const penn = { lat: 40.7506, lon: -73.9935 };
+
+  it('ranks whoever shares where they are by how far, and leaves the rest out', () => {
+    const herald = at('herald', 40.7497, -73.9877);
+    const times = at('times', 40.758, -73.9855);
+    const harlem = at('harlem', 40.8116, -73.9465);
+    const quiet = entry({ operator: 'quiet' });
+    expect(nearestTo(penn, [harlem, quiet, times, herald], 2).map((e) => e.operator)).toEqual(['herald', 'times']);
+    expect(nearestTo(penn, [quiet]).map((e) => e.operator)).toEqual([]);
   });
 });

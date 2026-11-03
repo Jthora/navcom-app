@@ -573,10 +573,12 @@ no tag on the event. Both parts were wrong, and the implementation deliberately 
 - **Two responses answer nothing the operator is waiting on**, and both arrive silently:
   `contact` (*"you are past the time you gave"*, `watch-state.spec.md`, *Overdue*) and, added
   2026-11-02, `passed-on` — an `Assist` the watch passes on to the others out, sent to each entry
-  on the board but the one who asked and anybody in `Distress`, each sealed to that operator alone.
+  on the board but the one who asked and anybody in `Distress`, or to those of them the holder chose
+  (some teams, or the nearest few who share where they are), each sealed to that operator alone.
   It is an offer in the holder's words: who asked, roughly where and how soon,
   never the asker's own text. A client MUST hold it as one current fact, newest first, and MUST
-  NOT present it as a task; taking it up is the operator's own `query` back to the watch. A watch
+  NOT present it as a task; taking it up is the operator's own `query` back to the watch, which a
+  client may offer as one tap that says they can go and to what. A watch
   MUST NOT pass on a `Distress`: raising people for one is the ladder's [invariant 2]
 - **`notice`** (2026-11-02) is what the watch tells everybody out, or the teams it chose: one per
   operator, each sealed to them alone, in the holder's words about places and conditions. What is

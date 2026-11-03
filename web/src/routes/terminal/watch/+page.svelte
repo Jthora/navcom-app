@@ -27,7 +27,7 @@
   import { loadConfig } from '$lib/terminal/config';
   import { update } from '$lib/terminal/update.svelte';
   import { sending } from '$lib/terminal/sending.svelte';
-  import { askShown, floorDetail, floorNote, floorPin, nameKey, repeatedNames, shownFor, teamsOn } from '$lib/terminal/floor';
+  import { askShown, floorDetail, floorNote, floorPin, nameKey, nearestTo, repeatedNames, shownFor, teamsOn } from '$lib/terminal/floor';
   import { coordinates, fixAge, mapLink, within } from '$lib/terminal/fix';
   import { awake, raise, setSound, soundOn } from '$lib/terminal/raise.svelte';
   import { placeLine, provenanceOf } from '$lib/terminal/lookup';
@@ -275,8 +275,19 @@
     }
   }
 
-  /** Who else is out to pass an Assist to: everybody on the board but the person who asked and anybody in Distress. */
-  const othersOut = (w: Waiting) => board.entries.filter((e) => e.operator !== w.operator && e.status !== 'distress').length;
+  /**
+   * Who an Assist can be passed to: everybody out but the person who asked and anybody in Distress,
+   * in the teams the board is narrowed to; and the nearest few of them, where the asker shared where
+   * they are.
+   */
+  const passable = (w: Waiting) =>
+    board.entries.filter(
+      (e) => e.operator !== w.operator && e.status !== 'distress' && (chosen.length === 0 || chosen.some((t) => sameTeam(e.team, t)))
+    );
+  const nearestFor = (w: Waiting) => {
+    const f = fixOf(w);
+    return f ? nearestTo(f.p, passable(w), 3) : [];
+  };
   /** Who asked, where and how soon: never their own words, which may be about somebody else. */
   const passDraft = (w: Waiting) =>
     `${withTeam(w.operator, w.callsign)} asks for someone${w.area ? ` near ${w.area}` : ''}${w.urgency === 'now' ? ', now' : ''}.`;
@@ -756,8 +767,11 @@
               </button>
             {/if}
             {#if w.type === 'assist'}
-              <PassOn id={w.id} draft={passDraft(w)} others={othersOut(w)} passedTo={board.passedTo(w.id)}
-                onpass={async (t) => (await board.passOn(w, t)).length > 0} />
+              <PassOn id={w.id} draft={passDraft(w)} others={passable(w).length}
+                to={chosen.length > 0 ? chosen.join(', ') : 'the others out'}
+                near={nearestFor(w).map((e) => withTeam(e.operator, e.callsign))} passedTo={board.passedTo(w.id)}
+                onpass={async (t, near) =>
+                  (await board.passOn(w, t, (near ? nearestFor(w) : passable(w)).map((e) => e.operator))).length > 0} />
             {/if}
     </li>
   {/snippet}

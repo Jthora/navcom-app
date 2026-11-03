@@ -12,6 +12,7 @@
 import { sameTeam, type BoardEntry } from '@navcom/core';
 import { ago } from './heard-copy';
 import { fixAge, mapLink, within } from './fix';
+import { metresApart } from '$lib/console/position-once';
 
 /** When they are next due for something, or how long ago they were. */
 export function floorNote(e: BoardEntry, now: number): string {
@@ -86,4 +87,16 @@ export function repeatedNames(entries: readonly { callsign: string }[]): Set<str
     seen.add(k);
   }
   return twice;
+}
+
+/**
+ * The nearest few of these to a fix, by where each last shared they were: who an Assist goes to when
+ * somebody needs another body now (2026-11-02). Anybody sharing nothing is left out, not guessed at.
+ */
+export function nearestTo(fix: { lat: number; lon: number }, entries: readonly BoardEntry[], n = 3): BoardEntry[] {
+  return entries
+    .flatMap((e) => (e.position ? [{ e, m: metresApart(fix, e.position) }] : []))
+    .sort((a, b) => a.m - b.m)
+    .slice(0, n)
+    .map((x) => x.e);
 }
