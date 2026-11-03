@@ -58,6 +58,9 @@
   },
   "dependencies": {
     "@navcom/core": "file:../packages/core",
-    "@paulmillr/qr": "^0.3.0"
+    "@paulmillr/qr": "^0.3.0",
+    "@protomaps/basemaps": "^5.7.2",
+    "maplibre-gl": "^6.16.0",
+    "pmtiles": "^4.5.0"
   }
 }

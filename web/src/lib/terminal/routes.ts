@@ -29,6 +29,8 @@ export const TERMINAL_ROUTES = [
   'funding/',
   'log/',
   'wipe/',
+  // The live map: its radar needs nothing from the network, so neither may the page it is on.
+  'map/',
   // Opened by a repeat page, which can arrive with no signal to fetch it. The page's address carries
   // a query, and the worker finds this saved copy by its path (`offline-page.ts`).
   'wake/'

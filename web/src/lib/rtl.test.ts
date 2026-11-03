@@ -62,8 +62,24 @@ function everyStyle(): { file: string; css: string }[] {
   return out;
 }
 
+/**
+ * The one stylesheet allowed physical sides: MapLibre's own, the only stylesheet the live map's streets
+ * layer imports (2026-11-03). It places the map's controls by corner name, and a map does not read in
+ * either direction. Found by the build's manifest, never by its contents, so a rule of ours that
+ * mentions MapLibre's classes is still held to this file.
+ */
+function mapEngineSheets(): Set<string> {
+  try {
+    const manifest = JSON.parse(readFileSync(join(BUILD, '../.svelte-kit/output/client/.vite/manifest.json'), 'utf8')) as Record<string, { css?: string[] }>;
+    return new Set((manifest['src/lib/grid/layers/streets.ts']?.css ?? []).map((f) => join(BUILD, f)));
+  } catch {
+    return new Set();
+  }
+}
+
 describe('right-to-left is not broken by the stylesheet', () => {
-  const styles = everyStyle();
+  const engine = mapEngineSheets();
+  const styles = everyStyle().filter((s) => !engine.has(s.file));
 
   it('finds stylesheets to check, so a passing run means something', () => {
     // Without this the suite passes perfectly against an empty build directory, which is

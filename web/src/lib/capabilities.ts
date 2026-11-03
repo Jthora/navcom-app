@@ -271,6 +271,15 @@ export const CAPABILITIES: Capability[] = [
     requires: ['identity']
   },
   {
+    name: 'The live map',
+    screen: 'terminal/map/',
+    // Its name, and nothing explained (2026-11-03). It needs nothing set up: with nobody sharing where
+    // they are, it says there is nobody to show.
+    claims: ['Map'],
+    control: '[data-live-map]',
+    requires: []
+  },
+  {
     name: 'Take the watch',
     screen: 'terminal/watch/',
     // 4.3: everything below it looks like a safety monitor and is not one. The one line kept

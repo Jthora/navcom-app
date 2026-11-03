@@ -1035,3 +1035,55 @@ part's snippet and that taking part is the same before and after a read. Nothing
 announces assertively, and nothing of it is near Distress, which Com never covers (`e2e/com-distress.spec.ts`
 reads the warnings at every height of the sheet). `web/src/lib/missions/nws.ts`; NavCom's own code, as
 Starcom's is AGPL-3.0-only.
+
+---
+
+## 9. The live map: where the people out are, and the way to them
+
+**Decided 2026-11-03, at the owner's direction**, for the New York night several teams patrol one
+crowd: a hybrid map with an open-source engine, blips on screen, blips tracked, street maps drawn well,
+and an easy way to whoever needs somebody. A screen of its own (`/terminal/map/`), reached from the
+Watch screen and from Status. It is not the grid: the grid shows places on record to anybody; this
+shows people who chose to share where they are, to the watch and their own paired peers, and nobody else.
+
+**What is on it.** On the phone or laptop holding the watch, everybody on its board who shares where
+they are, coloured by state as the board is, a Distress ringed. On an operator's phone, themselves, the
+peers they paired with who share, and their destination, which is a place on record an answer came
+from (never a confidential record, and never one whose location is withheld, as with the hand-off, §5)
+or a peer they chose. **Never anybody being served** [invariant 1], and never the operator whose Assist
+was passed on: they shared their position with the watch and their own peers, and sign-on tells them so.
+Each blip says how old its fix is and how precise: it fades, and is hollow once nothing has been heard
+for three minutes [invariant 7].
+
+**Two views of the same blips.**
+
+| View | When | What draws it |
+|---|---|---|
+| **Streets** | Where this phone has WebGL and the extract covers where everybody is | MapLibre GL, from our own extract of OpenStreetMap |
+| **Radar** | Everywhere else, and whenever chosen | This app, with no tiles and no network: rings with their distances, north up or heading up |
+
+**The streets are ours.** One extract, Manhattan, cut from the Protomaps basemap build of 2026-11-03 and
+hosted beside the app (`web/static/tiles/`), with its fonts and sprites (`web/static/map/`, sources and
+licences in its `NOTICE.txt`). Not saved, the map reads it from navcom.app a range at a time; **saved for
+the night**, it draws with no network, so a crowd taking the cell network does not blank the streets, and
+no tile server learns where anybody is looking. Drawn in neutral: the places of interest are grey, with
+the grayscale icons, because every hue here is a watch state. The engine and its worker are files of their
+own that the service worker leaves out of every install and keeps once somebody opens the map; their weight
+is the `streets` line in `budget.mjs`. **OpenFreeMap is the fallback** for an area nobody saved, chosen and
+never by default, saying what choosing costs (decided; not built).
+
+**Tracking.** Follow keeps a blip in the middle. Positions are told while out, and from the first fix
+at once. **Decided and not built:** a phone sharing its exact position sends about every fifteen seconds
+while it moves, and nothing while it is still; and the watch, only, draws a tail of the last ten minutes,
+held in memory and gone at stand-down or a handover. **That tail bends a rule**, *a peer holds where you
+are and never where you were* (`presence.svelte.ts`), and the owner chose to bend it for the watch alone.
+
+**The way there.** Selecting a blip says how far and which way, with an arrow that turns with the phone's
+compass. Turn-by-turn is the phone's own map app, as everywhere here (§2, §5): Directions hand the pin to
+the phone's own map app, Apple Maps, Google Maps or OpenStreetMap, walking, tapped and never automatic, with
+no referrer, and a person's name never goes with it. **No routing in this app**: a routing server either
+learns every origin and destination or is a server we run.
+
+**Phases.** 1, built 2026-11-03: the screen, the radar, the streets from the saved extract, Follow, Go and
+Directions. 2, decided: the live cadence and the watch's tails. 3: blips over Meshtastic radio when the cell
+network is gone (build order 10.3).

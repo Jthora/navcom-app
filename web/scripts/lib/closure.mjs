@@ -28,7 +28,8 @@ import { join, posix } from 'node:path';
  *   isDynamicEntry?: boolean,
  *   imports?: string[],
  *   dynamicImports?: string[],
- *   css?: string[]
+ *   css?: string[],
+ *   assets?: string[]
  * }} ManifestEntry
  * @typedef {Record<string, ManifestEntry>} Manifest
  * @typedef {{ keys: Set<string>, files: Set<string>, sheets: Set<string> }} Closure
@@ -132,6 +133,14 @@ export function closure(manifest, keys, exclude = [], { dynamic = true } = {}) {
     out.files.add(entry.file);
     owned.add(entry.file);
     for (const css of entry.css ?? []) pending.push([css, 'file']);
+    // A script a chunk names as an asset is code it loads: the live map's engine, imported by its URL
+    // so the service worker can leave it out of every install (2026-11-03). Its weight is the chunk's.
+    for (const asset of entry.assets ?? []) {
+      if (/\.m?js$/.test(asset) && !skip.has(asset) && !out.files.has(asset)) {
+        out.files.add(asset);
+        owned.add(asset);
+      }
+    }
     for (const dep of entry.imports ?? []) pending.push([dep, 'key']);
     if (dynamic) for (const dep of entry.dynamicImports ?? []) pending.push([dep, 'key']);
   }

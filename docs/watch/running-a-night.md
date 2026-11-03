@@ -14,6 +14,8 @@ for somebody on the street is the team's own knowledge, and NavCom does not writ
    Distress then opens a text to them, ready to send, which goes over the phone network even when
    the app cannot reach anything.
 4. Open your city's area under **Cached directory** once, so its places stay on the phone with no signal.
+5. For a night in Manhattan, open **Map** on Status and press **Save Manhattan for tonight** on wifi, so
+   its streets draw with no signal (22 MB).
 
 **The person holding the watch**
 
@@ -52,6 +54,9 @@ Who is out names anybody whose phone has not, and they should reload before goin
   on Query and Status, and you can use other screens meanwhile.
 - **Assist** asks for another person: *soon* or *now*.
 - **Distress** keeps sending until a person answers. Use it for an emergency.
+- **Map**, on Status, shows you, the peers you paired with who share where they are, and where you are
+  going. **Go there**, beside an answer from a directory place, opens it; **Directions** hands it to your
+  phone's map app.
 - **Watch says**, on Status and along the foot of every other screen, is what the watch told
   everybody out. Only the newest is kept, and nothing needs an answer.
 - **Your peers**, on Status, are the people you paired with: who is out, and a map link for any of
@@ -63,6 +68,8 @@ Who is out names anybody whose phone has not, and they should reload before goin
 ## Each night, holding the watch
 
 - **Power** on the Watch screen says whether this laptop is charging, and how much battery is left.
+- **Map**, beside Who is out, shows everybody on the board who shares where they are, on Manhattan's
+  streets or a radar. **Follow** keeps one in the middle.
 - Open **Watch** and keep it open. While you hold the watch it keeps the screen on and sounds a
   Distress until you answer it or press Silence. Touch the screen once so the browser lets it play.
 - **Hold to take the watch.** *Published: Yes* means operators can see you.

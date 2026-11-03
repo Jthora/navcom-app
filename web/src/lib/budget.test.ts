@@ -590,7 +590,7 @@ describe('the map’s layers, each a line of its own', () => {
   });
 
   it('declares each of the map’s new layers, with every ceiling ~20% over the measurement it came from', () => {
-    expect(Object.keys(MAP_LINES).sort()).toEqual(['ages', 'daylight', 'fine', 'hazards', 'labels', 'layers', 'missions', 'people', 'second-signature', 'spheres', 'timezones', 'zone-missions', 'zones', 'zones-container', 'zones-lookup']);
+    expect(Object.keys(MAP_LINES).sort()).toEqual(['ages', 'daylight', 'fine', 'hazards', 'labels', 'layers', 'missions', 'people', 'second-signature', 'spheres', 'streets', 'timezones', 'zone-missions', 'zones', 'zones-container', 'zones-lookup']);
     // The one line whose code the live feed loads rather than the map or Com: the second signature's check.
     const FEED: Record<string, string> = { 'second-signature': 'src/lib/missions/second-signature.ts' };
     for (const [name, line] of Object.entries(MAP_LINES)) {

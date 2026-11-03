@@ -24,6 +24,8 @@
   import { operator } from '$lib/terminal/session.svelte';
   import { distance } from '$lib/terminal/lookup';
   import { ago } from '$lib/terminal/heard-copy';
+  import { covers, saveStreets, savedStreets, STREETS } from '$lib/map/tiles';
+  import type { Streets } from '$lib/grid/layers/streets';
 
   let watching = $state(false);
   let ready = $state(false);
@@ -75,10 +77,81 @@
   }
   const ageOf = (b: Blip) => (b.at === null ? null : `${ago(Math.max(0, nowS - b.at))} ago`);
   const stateWord = (b: Blip) => (b.asking === 'distress' ? 'Distress' : b.state === 'overdue' ? 'past their time' : b.asking === 'assist' ? 'Assist' : null);
+
+  /*
+   * Two views of the same blips: streets, drawn by MapLibre from our own extract, where this phone can
+   * draw them and the extract covers where everybody is; the radar everywhere else, and whenever asked.
+   */
+  let view = $state<'streets' | 'radar'>('streets');
+  let streetsEl = $state<HTMLDivElement | null>(null);
+  let streets = $state<Streets | null>(null);
+  let streetsFailed = $state(false);
+  let saved = $state<boolean | null>(null);
+  let saving = $state(false);
+  let saveFailed = $state(false);
+  const webgl = () => {
+    try {
+      return !!document.createElement('canvas').getContext('webgl');
+    } catch {
+      return false;
+    }
+  };
+  const inStreets = $derived(centre !== null && covers(centre));
+  const drawStreets = $derived(view === 'streets' && inStreets && !streetsFailed);
+
+  $effect(() => {
+    if (!drawStreets || !streetsEl || streets || !centre) return;
+    const at = centre;
+    const el = streetsEl;
+    let gone = false;
+    void (async () => {
+      try {
+        if (!webgl()) throw new Error('no WebGL');
+        const [{ mountStreets }, blob] = await Promise.all([import('$lib/grid/layers/streets'), savedStreets()]);
+        saved = blob !== null;
+        const made = await mountStreets(el, { url: STREETS.url, saved: blob, centre: at, onselect: (id) => (selected = id) });
+        if (gone) made.destroy();
+        else streets = made;
+      } catch {
+        streetsFailed = true;
+      }
+    })();
+    return () => {
+      gone = true;
+    };
+  });
+  $effect(() => {
+    if (!drawStreets && streets) {
+      streets.destroy();
+      streets = null;
+    }
+  });
+  $effect(() => {
+    streets?.draw(blips, (b) => freshness(b, nowS), selected, me);
+  });
+  $effect(() => {
+    if (streets && followed) streets.centre(followed);
+  });
+  onMount(() => {
+    void savedStreets().then((b) => (saved = b !== null));
+    return () => streets?.destroy();
+  });
+
+  async function save() {
+    saving = true;
+    saveFailed = false;
+    try {
+      if (await saveStreets()) saved = true;
+      else saveFailed = true;
+    } finally {
+      saving = false;
+    }
+  }
 </script>
 
 <svelte:head>
   <title>Map · Field Terminal</title>
+  <meta name="description" content="Where the people out are, and the way to them." />
 </svelte:head>
 
 <header>
@@ -96,7 +169,33 @@
       </span>
     </Slot>
   {:else}
-    <Radar {blips} {centre} {selected} heading={compassOn ? compass.heading : null} now={nowS} onselect={(id) => (selected = id)} />
+    <div class="views" role="group" aria-label="View">
+      <button aria-pressed={view === 'streets'} onclick={() => (view = 'streets')} data-view="streets">Streets</button>
+      <button aria-pressed={view === 'radar'} onclick={() => (view = 'radar')} data-view="radar">Radar</button>
+    </div>
+    {#if drawStreets}
+      <!-- MapLibre draws into the inner box, whose classes are its own: Svelte set the outer one's, and took MapLibre's away. -->
+      <div class="streets" data-streets data-drawn={streets !== null}><div bind:this={streetsEl} style="position: absolute; inset: 0;"></div></div>
+    {:else}
+      <Radar {blips} {centre} {selected} heading={compassOn ? compass.heading : null} now={nowS} onselect={(id) => (selected = id)} />
+    {/if}
+    <Slot k="Streets">
+      <span data-streets-state>
+        {#if view === 'streets' && !inStreets}
+          <Readout value={`${STREETS.area} only`} tone="cold" sub="the radar shows the rest" />
+        {:else if view === 'streets' && streetsFailed}
+          <Readout value="Cannot draw them here" tone="warn" sub="the radar shows the same" />
+        {:else if saved}
+          <Readout value="Saved on this phone" tone="good" sub={`${STREETS.area}, ${STREETS.built}`} />
+        {:else}
+          <Readout value="Not saved" tone="neutral" sub="read from navcom.app while there is signal" />
+        {/if}
+      </span>
+      {#if saved === false}
+        <button onclick={save} disabled={saving} data-save-streets>{saving ? 'Saving…' : `Save ${STREETS.area} for tonight · ${Math.round(STREETS.bytes / 1_000_000)} MB`}</button>
+        {#if saveFailed}<span data-save-failed><Readout value="Not saved" tone="warn" sub="try again with signal" /></span>{/if}
+      {/if}
+    </Slot>
 
     {#if chosen}
       <Panel label={chosen.label}>
@@ -145,6 +244,17 @@
 
 <style>
   section { display: grid; gap: 0.9rem; }
+  .views { display: flex; gap: 0.4rem; }
+  .views button { min-height: 2.4rem; font-size: 0.85rem; padding: 0 0.8rem; border-color: var(--t-line); color: var(--t-faint); }
+  .views button[aria-pressed='true'] { border-color: var(--t-ink); color: var(--t-ink); }
+  .streets { position: relative; overflow: hidden; width: 100%; height: min(70vh, 36rem); min-height: 20rem; border: 1px solid var(--t-line); }
+  /* MapLibre's own controls, in the terminal's colours: white boxes are the brightest thing on a dark street. */
+  .streets :global(.maplibregl-ctrl-group) { background: var(--t-raised); border: 1px solid var(--t-line); box-shadow: none; }
+  .streets :global(.maplibregl-ctrl-group button + button) { border-top-color: var(--t-line); }
+  .streets :global(.maplibregl-ctrl-icon) { filter: invert(0.85); }
+  .streets :global(.maplibregl-ctrl-attrib) { background: var(--t-ground); color: var(--t-muted); font: 0.62rem var(--font-mono); }
+  .streets :global(.maplibregl-ctrl-attrib a) { color: var(--t-muted); }
+  .streets :global(.maplibregl-ctrl-attrib-button) { filter: invert(0.85); background-color: transparent; }
   .acts { display: flex; flex-wrap: wrap; gap: 0.5rem; }
   .acts a { font-size: 0.85rem; }
   .arrow { display: inline-block; font-size: 1.6rem; line-height: 1; transition: transform 0.25s; }

@@ -164,6 +164,28 @@ describe('serving build/', () => {
     expect((await get(port, '/late.json')).status).toBe(404);
   });
 
+  it('answers a byte range with just those bytes, as the host does, and one past the end with a 416', async () => {
+    // The live map reads its street tiles a range at a time (2026-11-03).
+    const ranged = (range: string) =>
+      new Promise<{ status: number; headers: Record<string, unknown>; body: string }>((done, fail) => {
+        const req = request({ host: '127.0.0.1', port, path: '/about/index.html', headers: { range } }, (res) => {
+          let body = '';
+          res.setEncoding('utf8');
+          res.on('data', (c) => (body += c));
+          res.on('end', () => done({ status: res.statusCode ?? 0, headers: res.headers, body }));
+        });
+        req.on('error', fail);
+        req.end();
+      });
+    const part = await ranged('bytes=3-7');
+    expect(part.status).toBe(206);
+    expect(part.body).toBe('about');
+    expect(part.headers['content-range']).toBe('bytes 3-7/12');
+    expect((await ranged('bytes=-4')).body).toBe('</p>');
+    expect((await ranged('bytes=99-')).status).toBe(416);
+    expect((await get(port, '/about/index.html')).headers['accept-ranges']).toBe('bytes');
+  });
+
   it('answers a directory with its index, with or without the slash', async () => {
     expect((await get(port, '/about/')).body).toBe('<p>about</p>');
     expect((await get(port, '/about')).body).toBe('<p>about</p>');

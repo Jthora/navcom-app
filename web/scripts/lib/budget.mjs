@@ -455,6 +455,36 @@ export const MAP_LINES = {
     }
   },
   /*
+   * The live map's streets (the owner's map decisions, 2026-11-03): MapLibre, PMTiles and the Protomaps
+   * style, loaded only when the map screen draws streets, and our own extract with its fonts and sprites.
+   */
+  streets: {
+    when: 'opening the live map’s streets',
+    code: `${LAYER_CODE}streets.ts`,
+    files: (f) => f.startsWith('tiles/') || f.startsWith('map/'),
+    per: 'all',
+    js: {
+      limit: 552_849,
+      warn: 497_565,
+      measured: 460_708,
+      why:
+        'Measured 2026-11-03 at 460,708 B: MapLibre GL 6.16 as it ships, 296,359 B, and its worker, 148,331 B, ' +
+        'each a file of its own the service worker leaves out of every install, and 16,018 B of PMTiles 4.5, ' +
+        'the Protomaps basemap style 5.7 and the layer that draws the radar’s blips over them. The heaviest ' +
+        'line here, paid only by somebody who opens the map’s streets, never at first paint, mount or Deferred.'
+    },
+    data: {
+      limit: 26_553_424,
+      warn: 23_898_082,
+      measured: 22_127_854,
+      why:
+        'Measured 2026-11-03 at 22,127,854 B: our Manhattan extract of OpenStreetMap, 21.6 MB, zooms 0 to 15, ' +
+        'from the Protomaps build of that day, with Noto Sans glyphs for three fonts and three ranges and the ' +
+        'grayscale sprites, about 820 kB together. The whole of it is paid only by Save for tonight; reading ' +
+        'the map online fetches the few hundred kilobytes of tiles on screen.'
+    }
+  },
+  /*
    * The Spheres' lists, vendored 26 Oct, and the organisations' beside them from 27 Oct, with the label
    * points D9 draws their small member states at, written into the same file by `scripts/spheres-vendor.mjs`.
    */
@@ -874,6 +904,23 @@ const NAMED = [
     why: 'One line per record. Grows with the directory and is fetched once per crawl.'
   },
   {
+    path: 'tiles/manhattan-20261103.pmtiles',
+    max: 24 * 1024 * 1024,
+    why:
+      'The live map’s streets: our extract of OpenStreetMap for Manhattan, 2026-11-03, zooms 0 to 15 ' +
+      '(the owner’s map decisions, 2026-11-03). Its own map line (streets). Read a range at a time, or ' +
+      'saved whole when somebody chooses Save for tonight; never precached, and no page links it.'
+  },
+  {
+    // Emitted under its own name and a content hash, so it is named by the module it is emitted for.
+    module: '../node_modules/maplibre-gl/dist/maplibre-gl.mjs',
+    max: 1280 * 1024,
+    why:
+      'The live map’s street engine, MapLibre GL 6.16 as it ships, 1.06 MB minified and about 300 kB ' +
+      'compressed, with its 0.5 MB worker beside it. The streets map line’s code, loaded only when somebody ' +
+      'opens the map’s streets, and left out of the service worker’s install.'
+  },
+  {
     path: 'grid/zsp/index.json',
     max: 1536 * 1024,
     why:
@@ -970,7 +1017,8 @@ export function measure({ build, manifestPath, log = console.log, lines = MAP_LI
     const weight = { js: 0, css: 0, chunks: 0 };
     for (const f of set) {
       if (!existsSync(at(f))) continue;
-      if (f.endsWith('.js')) {
+      // `.mjs` too: the live map's engine is a module of its own, emitted under its own name [closure.mjs].
+      if (/\.m?js$/.test(f)) {
         weight.js += gz(f);
         weight.chunks += 1;
       } else weight.css += gz(f);
@@ -1344,10 +1392,12 @@ export function measure({ build, manifestPath, log = console.log, lines = MAP_LI
     log('\n  Zero JavaScript on the public site. Every page there works with scripting disabled.');
   }
 
+  /** A named entry's file: its path, or the chunk Vite emitted for its module. */
+  const namedFile = (/** @type {{ path?: string, module?: string }} */ n) => n.path ?? (n.module && graph ? (graph[n.module]?.file ?? null) : null);
   const over = [];
   for (const name of files) {
     const bytes = statSync(at(name)).size;
-    const named = NAMED.find((n) => n.path === name);
+    const named = NAMED.find((n) => namedFile(n) === name);
     const limit = named ? named.max : ARTIFACT_CEILING;
     if (bytes > limit) over.push({ name, bytes, limit, named: Boolean(named) });
   }
@@ -1364,7 +1414,10 @@ export function measure({ build, manifestPath, log = console.log, lines = MAP_LI
       );
     }
   } else {
-    const biggest = NAMED.map((n) => (files.includes(n.path) ? `${n.path} ${kb(statSync(at(n.path)).size)}` : null)).filter(
+    const biggest = NAMED.map((n) => {
+      const f = namedFile(n);
+      return f && files.includes(f) ? `${n.path ?? n.module} ${kb(statSync(at(f)).size)}` : null;
+    }).filter(
       Boolean
     );
     if (biggest.length) log(`\n  PASS  Artifacts    ${biggest.join(' · ')}`);

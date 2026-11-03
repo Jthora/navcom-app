@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { seedDevice, open, TEST_SECRET } from './device';
+import { seedDevice, open, serviceWorkerReady, TEST_SECRET } from './device';
 
 /**
  * The live map, phase 1: the radar (the owner's map decisions, 2026-11-03).
@@ -49,6 +49,8 @@ test.describe('the live map', () => {
     await page.waitForURL('**/terminal/map/');
 
     await expect(page.locator('[data-live-map]')).toHaveAttribute('data-mode', 'watch');
+    // In Manhattan the map opens on its streets; the radar is one tap away, with the same blips.
+    await page.locator('[data-view="radar"]').click();
     const blips = page.locator('[data-radar] [data-blip]');
     await expect(blips).toHaveCount(2, { timeout: 15_000 });
     await expect(page.locator('[data-radar] [data-blip][data-state="distress"]')).toHaveCount(1);
@@ -75,6 +77,7 @@ test.describe('the live map', () => {
 
     await open(page, `/terminal/map/?place=${DROP_IN}`);
     await expect(page.locator('[data-live-map]')).toHaveAttribute('data-mode', 'operator');
+    await page.locator('[data-view="radar"]').click();
     await expect(page.locator('[data-radar] [data-blip][data-kind="self"]')).toHaveCount(1, { timeout: 15_000 });
     await expect(page.locator('[data-radar] [data-blip][data-kind="place"]')).toHaveCount(1, { timeout: 15_000 });
     // Selected by the link, with how far and which way from here.
@@ -100,6 +103,73 @@ test.describe('the live map', () => {
     await page.waitForSelector('html[data-hydrated="true"]');
     await expect(page.locator('[data-station]')).toBeVisible();
     await expect(page.locator('[data-sharing]')).toBeVisible({ timeout: 15_000 });
+    await context.close();
+  });
+
+  test('the streets: drawn from our own extract, asking nobody but navcom.app, and saved for tonight they draw with no network', async ({ browser }) => {
+    test.setTimeout(120_000);
+    const context = await browser.newContext({ permissions: ['geolocation'], geolocation: PENN });
+    const page = await context.newPage();
+    const asked: string[] = [];
+    const failed: string[] = [];
+    const ranges: number[] = [];
+    page.on('request', (r) => asked.push(r.url()));
+    page.on('response', (r) => {
+      const path = new URL(r.url()).pathname;
+      if (r.status() >= 400) failed.push(`${r.status()} ${path}`);
+      if (path.endsWith('.pmtiles')) ranges.push(r.status());
+    });
+    await seedDevice(page, { callsign: 'Kite', relayEvents: [] });
+    await open(page, '/terminal/sign-on/');
+    await page.locator('#area').fill('Penn Station');
+    await page.locator('#share').selectOption('exact');
+    await page.getByRole('button', { name: /^sign on$/i }).click();
+    await page.waitForURL('**/terminal/');
+    await serviceWorkerReady(page);
+
+    await open(page, '/terminal/map/');
+    await expect(page.locator('[data-streets][data-drawn="true"]')).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('[data-streets] canvas')).toBeVisible();
+    await expect(page.locator('[data-streets-state]')).toContainText('Not saved');
+    // Every request this screen made went to navcom.app, its tiles a range at a time, its fonts found.
+    const here = new URL(page.url()).host;
+    const elsewhere = asked.filter((u) => /^https?:/.test(u) && new URL(u).host !== here);
+    expect(elsewhere, 'the map asked a third party').toEqual([]);
+    expect(ranges.length).toBeGreaterThan(0);
+    expect(ranges.every((s) => s === 206)).toBe(true);
+    expect(failed.filter((f) => f.includes('/map/') || f.includes('/tiles/'))).toEqual([]);
+
+    // Saved for tonight, then the signal goes: the streets come from the phone alone.
+    await page.locator('[data-save-streets]').click();
+    await expect(page.locator('[data-streets-state]')).toContainText('Saved on this phone', { timeout: 60_000 });
+    await context.setOffline(true);
+    await page.reload();
+    await page.waitForSelector('html[data-hydrated="true"]');
+    await expect(page.locator('[data-streets][data-drawn="true"]')).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('[data-streets-state]')).toContainText('Saved on this phone');
+    await context.close();
+  });
+
+  test('the radar, chosen, or wherever the streets cannot be drawn', async ({ browser }) => {
+    const context = await browser.newContext({ permissions: ['geolocation'], geolocation: PENN });
+    const page = await context.newPage();
+    // A phone with no WebGL: the radar, saying why, and the same blips.
+    await page.addInitScript(() => {
+      const real = HTMLCanvasElement.prototype.getContext;
+      HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, kind: string, ...rest: unknown[]) {
+        return kind.startsWith('webgl') ? null : (real as (...a: unknown[]) => unknown).call(this, kind, ...rest);
+      } as typeof real;
+    });
+    await seedDevice(page, { callsign: 'Kite', relayEvents: [] });
+    await open(page, '/terminal/sign-on/');
+    await page.locator('#area').fill('Penn Station');
+    await page.locator('#share').selectOption('exact');
+    await page.getByRole('button', { name: /^sign on$/i }).click();
+    await page.waitForURL('**/terminal/');
+    await open(page, '/terminal/map/');
+    await expect(page.locator('[data-radar]')).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator('[data-streets-state]')).toContainText('Cannot draw them here');
+    await expect(page.locator('[data-radar] [data-blip][data-kind="self"]')).toHaveCount(1);
     await context.close();
   });
 });

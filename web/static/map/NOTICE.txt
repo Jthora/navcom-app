@@ -1,0 +1,19 @@
+The live map's streets, and where each part comes from.
+
+Street tiles  /tiles/manhattan-20261103.pmtiles
+  Map data (c) OpenStreetMap contributors, under the Open Database License (ODbL):
+  https://www.openstreetmap.org/copyright
+  Cut from the Protomaps basemap daily build of 2026-11-03 (schema 4.15.2), Manhattan,
+  bounding box -74.03,40.69,-73.90,40.89, zooms 0 to 15, with the pmtiles tool:
+    pmtiles extract https://build.protomaps.com/20261103.pmtiles manhattan.pmtiles --bbox=-74.03,40.69,-73.90,40.89
+  Protomaps basemaps: https://github.com/protomaps/basemaps (BSD-3-Clause)
+
+Fonts  /map/fonts/
+  Noto Sans Regular, Medium and Italic, as glyph ranges 0-255, 256-511 and 8192-8447,
+  from https://github.com/protomaps/basemaps-assets
+  Copyright 2022 The Noto Project Authors, under the SIL Open Font License 1.1: fonts/OFL.txt
+
+Sprites  /map/sprites/v4/
+  The grayscale set, so nothing on the map takes a hue a watch state uses.
+  From https://github.com/protomaps/basemaps-assets, derived from tangrams/icons,
+  Copyright (c) 2017 Mapzen, under the MIT License: sprites/LICENSE-tangrams-icons.txt

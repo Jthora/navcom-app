@@ -23,9 +23,12 @@
  *   `vite preview` or from a copy of itself started before an edit.
  * - Listens on loopback only.
  *
- * Not modelled: compression, ETags and 304s, range requests, query strings on redirects, and
- * Vercel's own response headers. Tests here assert none of them. Add one before a test relies
- * on it.
+ * Not modelled: compression, ETags and 304s, query strings on redirects, and Vercel's own
+ * response headers. Tests here assert none of them. Add one before a test relies on it.
+ *
+ * Modelled since 2026-11-03: **a single byte range**, `Range: bytes=a-b`, answered 206 with its
+ * `Content-Range`, and 416 past the end, as the host serves static files. The live map reads its
+ * street tiles that way, a few kilobytes of a 22 MB file at a time.
  *
  * ## One port per checkout
  *
@@ -113,7 +116,9 @@ const TYPES = {
   '.ico': 'image/x-icon',
   '.woff2': 'font/woff2',
   '.wasm': 'application/wasm',
-  '.car': 'application/vnd.ipld.car'
+  '.car': 'application/vnd.ipld.car',
+  '.pbf': 'application/x-protobuf',
+  '.pmtiles': 'application/octet-stream'
 };
 
 /**
@@ -310,6 +315,30 @@ function slashRedirect(pathname, mode) {
 }
 
 /**
+ * The one range a `Range` header asks for, clamped to the file; null where it asks for none or for
+ * something this does not model, which is answered whole, as a host may; 'unsatisfiable' past the end.
+ *
+ * @param {string | undefined} header
+ * @param {number} size
+ * @returns {{ start: number, end: number } | 'unsatisfiable' | null}
+ */
+export function byteRange(header, size) {
+  const m = typeof header === 'string' ? /^bytes=(\d*)-(\d*)$/.exec(header.trim()) : null;
+  if (!m || (m[1] === '' && m[2] === '')) return null;
+  let start;
+  let end;
+  if (m[1] === '') {
+    start = Math.max(0, size - Number(m[2]));
+    end = size - 1;
+  } else {
+    start = Number(m[1]);
+    end = m[2] === '' ? size - 1 : Math.min(Number(m[2]), size - 1);
+  }
+  if (start >= size || start > end) return 'unsatisfiable';
+  return { start, end };
+}
+
+/**
  * @param {import('node:http').IncomingMessage} req
  * @param {import('node:http').ServerResponse} res
  * @param {string} file
@@ -323,9 +352,18 @@ function send(req, res, file, status, extra) {
     res.end('Not found');
     return;
   }
-  res.writeHead(status, {
-    'content-type': TYPES[extname(file).toLowerCase()] ?? 'application/octet-stream',
-    'content-length': st.size,
+  const type = TYPES[extname(file).toLowerCase()] ?? 'application/octet-stream';
+  const range = status === 200 ? byteRange(req.headers.range, st.size) : null;
+  if (range === 'unsatisfiable') {
+    res.writeHead(416, { 'content-range': `bytes */${st.size}`, 'accept-ranges': 'bytes', ...extra });
+    res.end();
+    return;
+  }
+  res.writeHead(range ? 206 : status, {
+    'content-type': type,
+    'content-length': range ? range.end - range.start + 1 : st.size,
+    'accept-ranges': 'bytes',
+    ...(range ? { 'content-range': `bytes ${range.start}-${range.end}/${st.size}` } : {}),
     'cache-control': DEFAULT_CACHE,
     ...extra
   });
@@ -333,7 +371,7 @@ function send(req, res, file, status, extra) {
     res.end();
     return;
   }
-  createReadStream(file)
+  createReadStream(file, range ? { start: range.start, end: range.end } : {})
     .on('error', () => res.destroy())
     .pipe(res);
 }

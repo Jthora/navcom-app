@@ -83,6 +83,9 @@ const isNeverCached = (pathname: string) =>
   pathname === `${base}/directory.json` ||
   pathname.endsWith('.csv') ||
   pathname.endsWith('.car') ||
+  // The live map's street tiles: read a range at a time, which the Cache API cannot hold, and saved
+  // whole for the night by the map screen itself, in a cache of its own [$lib/map/tiles].
+  pathname.endsWith('.pmtiles') ||
   pathname.endsWith('/sitemap.xml') ||
   pathname.startsWith(`${base}/.well-known/`);
 
@@ -106,10 +109,22 @@ const isTerminalScope = (pathname: string) =>
  * in the site cache, as `/grid/places.json` is.
  */
 const isLayerData = (f: string) => f.startsWith(`${base}/grid/zsp/`) || f === `${base}/grid/timezones.json` || f === `${base}/grid/spheres.json`;
+/**
+ * The live map's streets: its tiles, and the fonts and sprites their labels are drawn with (2026-11-03).
+ * Only somebody who opens the map pays for them, so they are never precached: the tiles are saved for
+ * the night by the map screen, and the fonts and sprites cached on first use, in the site cache.
+ */
+const isStreetData = (f: string) => f.startsWith(`${base}/map/`) || f.endsWith('.pmtiles');
+/**
+ * The live map's engine and its worker, emitted under their own names: 1.6 MB a phone that never opens
+ * the map would otherwise fetch on every install. Kept the first time somebody opens the map instead,
+ * so it works with no signal from then on.
+ */
+const isMapEngine = (f: string) => /\/_app\/immutable\/assets\/maplibre-gl(-worker)?\.[^/]+\.mjs$/.test(f);
 
 const SHELL = [
-  ...build,
-  ...files.filter((f) => !f.endsWith('.csv') && !isLayerData(f)),
+  ...build.filter((f) => !isMapEngine(f)),
+  ...files.filter((f) => !f.endsWith('.csv') && !isLayerData(f) && !isStreetData(f)),
   /*
    * The landing page, where a signed-on operator in a browser works missions with Distress on
    * the screen [com.md §4]. It lived only in the site cache, which evicts its oldest entry first
@@ -474,6 +489,24 @@ sw.addEventListener('fetch', (event) => {
           return response;
         })
         .catch(() => caches.match(request).then((hit) => hit ?? offline(request)))
+    );
+    return;
+  }
+
+  // The map's engine: from the cache once kept, and kept the first time it is fetched.
+  if (isMapEngine(url.pathname)) {
+    event.respondWith(
+      caches.match(request).then(
+        (hit) =>
+          hit ??
+          fetch(request).then((response) => {
+            if (response.ok) {
+              const copy = response.clone();
+              void caches.open(CACHE).then((c) => c.put(request, copy));
+            }
+            return response;
+          })
+      )
     );
     return;
   }
