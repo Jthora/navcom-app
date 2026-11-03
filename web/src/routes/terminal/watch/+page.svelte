@@ -31,6 +31,7 @@
   import { askShown, floorDetail, floorNote, floorPin, nameKey, nearestTo, repeatedNames, shownFor, teamsOn } from '$lib/terminal/floor';
   import { coordinates, fixAge, mapLink, within } from '$lib/terminal/fix';
   import { awake, raise, setSound, soundOn } from '$lib/terminal/raise.svelte';
+  import { battery } from '$lib/terminal/battery.svelte';
   import { distance, placeLine, provenanceOf } from '$lib/terminal/lookup';
   import { ago } from '$lib/terminal/heard-copy';
   import AnswerLookup from '$lib/components/watch/AnswerLookup.svelte';
@@ -94,6 +95,7 @@
   onMount(() => {
     const ticking = setInterval(() => (nowS = Math.floor(Date.now() / 1000)), 15_000);
     sound = soundOn();
+    void battery.start();
     others = keptHolders().join('\n');
     teamsTonight = watchTeams().join(', ');
     othersLoaded = true;
@@ -488,6 +490,21 @@
               <Readout value="May sleep" tone="warn" sub="this browser cannot keep it on" />
             {:else}
               <Readout value="May sleep" tone="warn" sub="not allowed just now" />
+            {/if}
+          </span>
+        </Slot>
+        <!--
+          This device's own power, told to whoever holds the watch on it and to nobody else: a laptop
+          dying on battery takes the watch with it, and nothing else on this screen would say so.
+        -->
+        <Slot k="Power">
+          <span data-watch-power>
+            {#if battery.percent === null}
+              <Readout value="Unknown" tone="cold" sub="this browser cannot say" />
+            {:else if battery.charging}
+              <Readout value="Charging" tone="good" sub={`${battery.percent}%`} />
+            {:else}
+              <Readout value="On battery" tone={battery.percent <= 30 ? 'warn' : 'neutral'} sub={`${battery.percent}%`} />
             {/if}
           </span>
         </Slot>

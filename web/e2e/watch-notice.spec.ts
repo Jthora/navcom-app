@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { seedDevice, open, TEST_SECRET } from './device';
+import { seedDevice, open, holdUntil, TEST_SECRET } from './device';
 
 /**
  * What the watch tells everybody out [core `notice`], at both ends (2026-11-02).
@@ -113,5 +113,22 @@ test.describe('the watch tells the people out what is happening', () => {
     await expect(told).toContainText('Water at the 34th St corner.', { timeout: 10_000 });
     await expect(told).toContainText('to Kite');
     await expect(told).not.toContainText('Owl');
+  });
+
+  test('the holder sees the watch laptop’s own power, and its battery running low', async ({ page }) => {
+    // A laptop dying on battery takes the watch with it (2026-11-02). Its own level, to its own screen.
+    await page.addInitScript(() => {
+      (navigator as unknown as { getBattery: () => Promise<unknown> }).getBattery = async () => ({
+        level: 0.18,
+        charging: false,
+        addEventListener: () => {}
+      });
+    });
+    await seedDevice(page, { callsign: 'Vale', watchSecret: WATCH_SECRET, relayEvents: [] });
+    await open(page, '/terminal/watch/');
+    await holdUntil(page, 'button:has-text("take the watch")');
+    const power = page.locator('[data-watch-power]');
+    await expect(power).toContainText('On battery', { timeout: 10_000 });
+    await expect(power).toContainText('18%');
   });
 });

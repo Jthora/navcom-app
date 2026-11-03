@@ -59,6 +59,7 @@ they send.
 
 ## Each night, holding the watch
 
+- **Power** on the Watch screen says whether this laptop is charging, and how much battery is left.
 - Open **Watch** and keep it open. While you hold the watch it keeps the screen on and sounds a
   Distress until you answer it or press Silence. Touch the screen once so the browser lets it play.
 - **Hold to take the watch.** *Published: Yes* means operators can see you.
