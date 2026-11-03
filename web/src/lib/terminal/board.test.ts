@@ -435,6 +435,20 @@ describe('asking somebody past their time to check in, heard back from the relay
   });
 });
 
+describe('a Distress reaching a board that never heard its sender sign on', () => {
+  it('is named, with its team, from what it carries', () => {
+    const raven = newSecretKey();
+    deliver(finalizeEvent(buildDistress(raven, to, { position: null, area: 'Bryant Park', callsign: 'Raven', team: 'Zone  Guardians' }, T + 5), raven));
+    expect(board.distress.map((w) => w.callsign)).toEqual(['Raven']);
+    expect(board.teamFor(getPublicKey(raven))).toBe('Zone Guardians');
+  });
+
+  it('is still a Distress with neither', () => {
+    deliver(distress());
+    expect(board.distress).toHaveLength(1);
+  });
+});
+
 describe('telling the people out what is happening (2026-11-02)', () => {
   it('reaches everybody on the board, or the teams chosen, each naming their sign-on', async () => {
     const [owl, kite, wren] = [newSecretKey(), newSecretKey(), newSecretKey()];

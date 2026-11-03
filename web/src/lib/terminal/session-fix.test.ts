@@ -7,7 +7,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Event } from 'nostr-tools/core';
 import type { Filter } from 'nostr-tools/filter';
-import { KIND_SIGNAL, newSecretKey, openFromGroup, publicKeyOf, type Position } from '@navcom/core';
+import { KIND_DISTRESS, KIND_SIGNAL, newSecretKey, openFromGroup, publicKeyOf, type Position } from '@navcom/core';
 
 const ME = newSecretKey();
 const MY = publicKeyOf(ME);
@@ -160,5 +160,15 @@ describe('signing on with a team (2026-11-02)', () => {
     const { panicWipe } = await import('./storage');
     panicWipe();
     expect(session.lastTeam()).toBe('');
+  });
+});
+
+describe('a Distress from somebody signed on with a team (2026-11-02)', () => {
+  it('says who it is from and their team, for a board that never heard them sign on', async () => {
+    await session.operator.signOn('Penn Station', 2, 30, 'Rescue Rangers');
+    void session.operator.raiseDistress('');
+    await vi.advanceTimersByTimeAsync(50);
+    const raised = published.filter((e) => e.kind === KIND_DISTRESS).map((e) => openFromGroup<Record<string, unknown>>(HOLDER, MY, e.content));
+    expect(raised[0]).toMatchObject({ callsign: 'Wren', team: 'Rescue Rangers', area: 'Penn Station' });
   });
 });

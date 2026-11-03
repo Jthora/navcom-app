@@ -129,6 +129,8 @@ export interface Waiting {
   position: Position | null;
   /** An Assist's "now" or "soon": how long the watch has. */
   urgency?: 'soon' | 'now';
+  /** The team a Distress named, for a board that has not heard them sign on. */
+  team?: string;
   at: number;
   /**
    * The relays it arrived on. They are ones the sender published to, so they are where an answer
@@ -327,9 +329,9 @@ function readSignal(event: Event): { from: string; payload: Record<string, unkno
 }
 
 export const board = {
-  /** The team an operator on this board gave at sign-on, or null. */
+  /** The team an operator on this board gave at sign-on, or that their Distress named, or null. */
   teamFor(operator: string): string | null {
-    return entries.find((e) => e.operator === operator)?.team ?? null;
+    return entries.find((e) => e.operator === operator)?.team ?? waiting.find((w) => w.operator === operator && w.team)?.team ?? null;
   },
 
   /** Who is out, as this device has heard it. Never persisted — the board expires [C27]. */
@@ -1404,6 +1406,7 @@ function apply(
       type,
       text: typeof payload.text === 'string' ? payload.text : null,
       area,
+      ...(teamOf(payload.team) ? { team: teamOf(payload.team)! } : {}),
       position: fix,
       ...(type === 'assist' && (payload.urgency === 'now' || payload.urgency === 'soon') ? { urgency: payload.urgency } : {}),
       /*

@@ -485,7 +485,7 @@ no tag on the event. Both parts were wrong, and the implementation deliberately 
 {
   "kind": 20911,
   "tags": [["p", "<watchtower-pubkey>"]],
-  "content": "<nip44( { \"position\": {...}|null, \"area\": \"string|null\", \"text\": \"string|absent\" } )>"
+  "content": "<nip44( { \"position\": {...}|null, \"area\": \"string|null\", \"text\": \"string|absent\", \"callsign\": \"string|absent\", \"team\": \"string|absent\" } )>"
 }
 ```
 
@@ -494,6 +494,9 @@ no tag on the event. Both parts were wrong, and the implementation deliberately 
   inactivity [C24, invariant 3]
 - Carries last known position where the operator shares position; otherwise `area` carries
   the last declared area, so a responder always has somewhere to start
+- Carries the sender's `callsign` and `team` where they have them (2026-11-02), each capped as on
+  `on-station`, so a board that has not heard them sign on still names who it is from. A watch
+  MUST NOT require either: a `Distress` with neither is a `Distress`
 - Client MUST retry until acknowledged, with backoff, indefinitely. **Only the operator may
   end it** — a client that gives up after N attempts has failed silently, which invariant 2
   forbids. Every attempt is reported to the operator, including ones that never left the

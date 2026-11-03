@@ -84,6 +84,13 @@ export interface DistressPayload {
   /** Coarse. Present even when position is null, so a responder has somewhere to start. */
   area: string | null;
   text?: string;
+  /**
+   * Who is sending it, and the team they are out with (2026-11-02). Only a sign-on carried a name,
+   * so a Distress reaching a holder whose board had not yet heard them sign on, after a handover or
+   * a reload, read as eight characters of a key, with no team, at the worst moment for it.
+   */
+  callsign?: string;
+  team?: string;
 }
 
 /**

@@ -855,7 +855,10 @@ export const operator = {
         {
           position: position.current,
           area: session?.area ?? null,
-          ...(text ? { text } : {})
+          ...(text ? { text } : {}),
+          // Named, so a board that has not heard this phone sign on still says who it is.
+          ...(identity.callsign ? { callsign: identity.callsign } : {}),
+          ...(session?.team ? { team: session.team } : {})
         },
         {
           signal: controller.signal,
