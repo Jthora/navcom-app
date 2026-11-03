@@ -188,3 +188,24 @@ describe('the first fix after sign-on (2026-11-02)', () => {
     expect(sent('position')).toEqual([{ position: fix }]);
   });
 });
+
+describe('a question nobody answered, asked again (2026-11-02)', () => {
+  it('goes again in one tap with the same words, and waits afresh', async () => {
+    await session.operator.signOn('Penn Station', 2, 30);
+    await session.operator.query('somewhere warm near Penn');
+    await vi.advanceTimersByTimeAsync(session.ANSWER_WAIT_MS + 1_000);
+    expect(session.operator.asked?.gaveUp).toBe(true);
+    await session.operator.askAgain();
+    const asked = sent('query');
+    expect(asked).toHaveLength(2);
+    expect(asked[1]).toMatchObject({ text: 'somewhere warm near Penn', area: 'Penn Station' });
+    expect(session.operator.asked?.gaveUp).toBe(false);
+  });
+
+  it('does nothing while an answer may still come', async () => {
+    await session.operator.signOn('Penn Station', 2, 30);
+    await session.operator.query('somewhere warm near Penn');
+    await session.operator.askAgain();
+    expect(sent('query')).toHaveLength(1);
+  });
+});

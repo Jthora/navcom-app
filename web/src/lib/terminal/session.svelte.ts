@@ -219,6 +219,8 @@ function area(text?: string) {
  */
 export const ANSWER_WAIT_MS = 15 * 60_000;
 let asked = $state<{ id: string; type: 'query' | 'assist'; at: number; gaveUp: boolean } | null>(null);
+/** What was asked, kept in memory only so it can be asked again in one tap; gone with the question. */
+let askedWith: SignalPayload | null = null;
 let askWait: AbortController | null = null;
 
 function heldOnPhones(): boolean {
@@ -238,6 +240,7 @@ async function askPerson(type: 'query' | 'assist', payload: SignalPayload): Prom
   const controller = new AbortController();
   askWait = controller;
   asked = { id: sent.id, type, at: Math.floor(Date.now() / 1000), gaveUp: false };
+  askedWith = payload;
   void waitForResponse(pool(), relays, identity.secretKey, identity.pubkey, address, sent, ANSWER_WAIT_MS, controller.signal)
     .then((r) => {
       if (askWait === controller) lastResponse = r;
@@ -251,6 +254,7 @@ function stopAsking(): void {
   askWait?.abort();
   askWait = null;
   asked = null;
+  askedWith = null;
 }
 
 /** Where they are, for the watch, only where they chose to share it; nothing otherwise. */
@@ -685,6 +689,18 @@ export const operator = {
    * said it had failed when none came in fifteen seconds, though it had gone (2026-11-02). The answer
    * is heard later, as any question's is.
    */
+  /**
+   * The same question or Assist again, in one tap, once no answer was heard (2026-11-02): an answer
+   * sent while this phone had no signal never arrives, and typing it all again underground is what
+   * nobody does. Where they are is read afresh; the words are the ones they sent.
+   */
+  async askAgain() {
+    const again = asked;
+    const words = askedWith;
+    if (!again?.gaveUp || !words) return;
+    await ask(() => askPerson(again.type, { ...words, ...here() }));
+  },
+
   async canGo(text: string) {
     await ask(() => askPerson('query', { ...area(text), ...here() }));
   },

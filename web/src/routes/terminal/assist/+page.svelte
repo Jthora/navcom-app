@@ -110,6 +110,7 @@
       <span data-asked>
         {#if mine.gaveUp}
           <Readout value="No answer heard" tone="warn" sub="ask again, or use Distress" />
+          <button type="button" data-ask-again disabled={operator.busy} onclick={() => operator.askAgain()}>Ask again</button>
         {:else}
           <Readout value="Waiting for the watch" tone="neutral" sub="the answer shows here, and on Status" />
         {/if}

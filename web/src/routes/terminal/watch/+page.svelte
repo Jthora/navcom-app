@@ -291,6 +291,8 @@
     const f = fixOf(w);
     return f ? nearestTo(f.p, passable(w), nowS, 3) : [];
   };
+  /** Each of the nearest, with their team and how far: *Kite (Rescue Rangers) 150 m*. */
+  const nearLabels = (w: Waiting) => nearestFor(w).map((x) => `${withTeam(x.entry.operator, x.entry.callsign)} ${distance(x.metres)}`);
   /** Who asked, where and how soon: never their own words, which may be about somebody else. */
   const passDraft = (w: Waiting) =>
     `${withTeam(w.operator, w.callsign)} asks for someone${w.area ? ` near ${w.area}` : ''}${w.urgency === 'now' ? ', now' : ''}.`;
@@ -784,7 +786,7 @@
             {#if w.type === 'assist'}
               <PassOn id={w.id} draft={passDraft(w)} others={passable(w).length}
                 to={chosen.length > 0 ? chosen.join(', ') : 'the others out'}
-                near={nearestFor(w).map((x) => `${withTeam(x.entry.operator, x.entry.callsign)} ${distance(x.metres)}`)} passedTo={board.passedTo(w.id)}
+                near={nearLabels(w)} passedTo={board.passedTo(w.id)}
                 onpass={async (t, near) =>
                   (await board.passOn(w, t, near ? nearestFor(w).map((x) => x.entry.operator) : passable(w).map((e) => e.operator))).length > 0} />
             {/if}

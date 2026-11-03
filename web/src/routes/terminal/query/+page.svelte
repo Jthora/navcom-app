@@ -87,7 +87,8 @@
   <section data-asked>
     <Slot k="Asked">
       {#if operator.asked.gaveUp}
-        <Readout value="No answer heard" tone="warn" sub="it may have come while you had no signal: ask again" />
+        <Readout value="No answer heard" tone="warn" sub="it may have come while you had no signal" />
+        <button type="button" data-ask-again disabled={operator.busy} onclick={() => operator.askAgain()}>Ask again</button>
       {:else}
         <Readout value="Waiting for the watch" tone="neutral" sub="the answer shows here, and on Status" />
       {/if}

@@ -682,7 +682,8 @@
               {#if operator.lastResponse}
                 <a href="/terminal/{operator.asked.type}/"><Readout value="Answered" tone="good" sub={operator.lastResponse.responder?.callsign ?? null} /></a>
               {:else if operator.asked.gaveUp}
-                <Readout value="No answer heard" tone="warn" sub="ask again" />
+                <Readout value="No answer heard" tone="warn" sub="it may have come while you had no signal" />
+                <button type="button" data-ask-again disabled={operator.busy} onclick={() => operator.askAgain()}>Ask again</button>
               {:else}
                 <Readout value="Waiting for the watch" tone="neutral" sub={`${ago(Math.floor(nowMs / 1000) - operator.asked.at)} so far`} />
               {/if}
