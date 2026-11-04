@@ -25,6 +25,7 @@
   import { distance } from '$lib/terminal/lookup';
   import { ago } from '$lib/terminal/heard-copy';
   import { covers, saveStreets, savedStreets, STREETS } from '$lib/map/tiles';
+  import { OPENFREEMAP } from '$lib/outside';
   import type { Streets } from '$lib/grid/layers/streets';
 
   let watching = $state(false);
@@ -97,7 +98,13 @@
     }
   };
   const inStreets = $derived(centre !== null && covers(centre));
-  const drawStreets = $derived(view === 'streets' && inStreets && !streetsFailed);
+  /**
+   * OpenFreeMap's streets, where ours stop, chosen for this visit to the map and never stored, so a
+   * reload asks nobody. Its requests say where you are looking, and the screen says so first
+   * [what-leaves.md; outside.ts OPENFREEMAP].
+   */
+  let elsewhere = $state(false);
+  const drawStreets = $derived(view === 'streets' && (inStreets || elsewhere) && !streetsFailed);
 
   $effect(() => {
     if (!drawStreets || !streetsEl || streets || !centre) return;
@@ -109,7 +116,10 @@
         if (!webgl()) throw new Error('no WebGL');
         const [{ mountStreets }, blob] = await Promise.all([import('$lib/grid/layers/streets'), savedStreets()]);
         saved = blob !== null;
-        const made = await mountStreets(el, { url: STREETS.url, saved: blob, centre: at, onselect: (id) => (selected = id) });
+        const source = covers(at)
+          ? ({ kind: 'ours', url: STREETS.url, saved: blob } as const)
+          : ({ kind: 'openfreemap', style: OPENFREEMAP.style } as const);
+        const made = await mountStreets(el, { source, centre: at, onselect: (id) => (selected = id) });
         if (gone) made.destroy();
         else streets = made;
       } catch {
@@ -181,7 +191,9 @@
     {/if}
     <Slot k="Streets">
       <span data-streets-state>
-        {#if view === 'streets' && !inStreets}
+        {#if view === 'streets' && !inStreets && elsewhere}
+          <Readout value="From OpenFreeMap" tone="warn" sub="it sees the streets you look at" />
+        {:else if view === 'streets' && !inStreets}
           <Readout value={`${STREETS.area} only`} tone="cold" sub="the radar shows the rest" />
         {:else if view === 'streets' && streetsFailed}
           <Readout value="Cannot draw them here" tone="warn" sub="the radar shows the same" />
@@ -191,7 +203,12 @@
           <Readout value="Not saved" tone="neutral" sub="read from navcom.app while there is signal" />
         {/if}
       </span>
-      {#if saved === false}
+      {#if view === 'streets' && !inStreets && !elsewhere}
+        <!-- Said before the press, as every outside ask here is: who learns what. -->
+        <button onclick={() => (elsewhere = true)} data-openfreemap>Streets from OpenFreeMap</button>
+        <span data-openfreemap-cost><Readout value="OpenFreeMap" tone="neutral" sub="learns this phone’s address and which streets you look at" /></span>
+      {/if}
+      {#if saved === false && inStreets}
         <button onclick={save} disabled={saving} data-save-streets>{saving ? 'Saving…' : `Save ${STREETS.area} for tonight · ${Math.round(STREETS.bytes / 1_000_000)} MB`}</button>
         {#if saveFailed}<span data-save-failed><Readout value="Not saved" tone="warn" sub="try again with signal" /></span>{/if}
       {/if}

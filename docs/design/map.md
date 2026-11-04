@@ -1069,8 +1069,11 @@ the night**, it draws with no network, so a crowd taking the cell network does n
 no tile server learns where anybody is looking. Drawn in neutral: the places of interest are grey, with
 the grayscale icons, because every hue here is a watch state. The engine and its worker are files of their
 own that the service worker leaves out of every install and keeps once somebody opens the map; their weight
-is the `streets` line in `budget.mjs`. **OpenFreeMap is the fallback** for an area nobody saved, chosen and
-never by default, saying what choosing costs (decided; not built).
+is the `streets` line in `budget.mjs`. **OpenFreeMap is the fallback** where our extract stops: outside
+Manhattan the map is the radar until somebody presses *Streets from OpenFreeMap*, which says first that
+OpenFreeMap learns this phone's address and which streets it looks at, the only ask anywhere here built from
+where somebody looks (`what-leaves.md`, `outside.ts` `OPENFREEMAP`). Their dark style, with the blips laid
+over it on this phone; the choice lasts the visit and is never stored, so a reload asks nobody.
 
 **Tracking.** Follow keeps a blip in the middle. Positions are told while out, and from the first fix
 at once. **Decided and not built:** a phone sharing its exact position sends about every fifteen seconds
@@ -1084,6 +1087,6 @@ the phone's own map app, Apple Maps, Google Maps or OpenStreetMap, walking, tapp
 no referrer, and a person's name never goes with it. **No routing in this app**: a routing server either
 learns every origin and destination or is a server we run.
 
-**Phases.** 1, built 2026-11-03: the screen, the radar, the streets from the saved extract, Follow, Go and
-Directions. 2, decided: the live cadence and the watch's tails. 3: blips over Meshtastic radio when the cell
+**Phases.** 1, built 2026-11-03: the screen, the radar, the streets from the saved extract, OpenFreeMap where
+it stops, Follow, Go and Directions. 2, decided: the live cadence and the watch's tails. 3: blips over Meshtastic radio when the cell
 network is gone (build order 10.3).

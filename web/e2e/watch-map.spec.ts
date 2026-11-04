@@ -172,4 +172,46 @@ test.describe('the live map', () => {
     await expect(page.locator('[data-radar] [data-blip][data-kind="self"]')).toHaveCount(1);
     await context.close();
   });
+
+  test('outside Manhattan: the radar, OpenFreeMap only when pressed, said first, and never kept past the visit', async ({ browser }) => {
+    test.setTimeout(90_000);
+    // Brooklyn: south of the extract's edge.
+    const context = await browser.newContext({ permissions: ['geolocation'], geolocation: { latitude: 40.6782, longitude: -73.9442 } });
+    const page = await context.newPage();
+    // OpenFreeMap stood in for, so the suite never asks the real one: a style with nothing but ground.
+    const asked: string[] = [];
+    await context.route('https://tiles.openfreemap.org/**', (route) => {
+      asked.push(route.request().url());
+      return new URL(route.request().url()).pathname.startsWith('/styles/')
+        ? route.fulfill({ json: { version: 8, sources: {}, glyphs: 'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf', layers: [{ id: 'ground', type: 'background', paint: { 'background-color': '#111111' } }] } })
+        : route.fulfill({ status: 404, body: '' });
+    });
+    await seedDevice(page, { callsign: 'Kite', relayEvents: [] });
+    await open(page, '/terminal/sign-on/');
+    await page.locator('#area').fill('Crown Heights');
+    await page.locator('#share').selectOption('exact');
+    await page.getByRole('button', { name: /^sign on$/i }).click();
+    await page.waitForURL('**/terminal/');
+
+    await open(page, '/terminal/map/');
+    await expect(page.locator('[data-radar]')).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator('[data-streets-state]')).toContainText('Manhattan only');
+    // What pressing costs, on the screen before it is pressed; and nothing asked yet.
+    await expect(page.locator('[data-openfreemap-cost]')).toContainText('which streets you look at');
+    expect(asked).toEqual([]);
+
+    await page.locator('[data-openfreemap]').click();
+    await expect(page.locator('[data-streets][data-drawn="true"]')).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('[data-streets-state]')).toContainText('From OpenFreeMap');
+    expect(asked.some((u) => u === 'https://tiles.openfreemap.org/styles/dark')).toBe(true);
+
+    // Never kept: a reload is the radar again, and asks nobody.
+    asked.length = 0;
+    await page.reload();
+    await page.waitForSelector('html[data-hydrated="true"]');
+    await expect(page.locator('[data-radar]')).toBeVisible({ timeout: 20_000 });
+    await page.waitForTimeout(1_000);
+    expect(asked).toEqual([]);
+    await context.close();
+  });
 });

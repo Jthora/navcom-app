@@ -132,6 +132,21 @@ export const NWS = {
 export const OUTSIDE_HOSTS: readonly string[] = [...HAZARD_FEEDS.map((f) => f.host), NWS.host];
 
 /**
+ * OpenFreeMap's streets, on the live map where our own extract has none, asked only when somebody
+ * presses *Streets from OpenFreeMap* there, and never stored, so a reload asks nobody (the owner's map
+ * decisions, 2026-11-03). Unlike everything above, **its requests are built from where you look**: each
+ * tile names a few streets at the zoom you are at, and it learns each one as you pan. The screen says so
+ * before the press. A terminal screen, with no policy of the root's, so not in `OUTSIDE_HOSTS`.
+ */
+export const OPENFREEMAP = {
+  host: 'tiles.openfreemap.org',
+  style: 'https://tiles.openfreemap.org/styles/dark'
+};
+
+/** Every host a terminal screen may ask outside navcom.app and the relays, each only when chosen. */
+export const TERMINAL_OUTSIDE_HOSTS: readonly string[] = [OPENFREEMAP.host];
+
+/**
  * The most each answer may be, decoded, before it is dropped and reads *not read: unknown*: a feed
  * that grew without warning must not fill a prepaid phone. Several times what each measured
  * (`MAP_LINES.hazards.remote`, which `budget.test.ts` holds equal to these).

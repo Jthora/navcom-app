@@ -17,7 +17,7 @@ import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parse } from 'node-html-parser';
 import { describe, expect, it } from 'vitest';
-import { HAZARD_FEEDS, NWS, OUTSIDE_HOSTS } from './outside';
+import { HAZARD_FEEDS, NWS, OUTSIDE_HOSTS, TERMINAL_OUTSIDE_HOSTS } from './outside';
 
 const VERCEL = fileURLToPath(new URL('../../../vercel.json', import.meta.url));
 const WHAT_LEAVES = fileURLToPath(new URL('../../../docs/product/what-leaves.md', import.meta.url));
@@ -74,8 +74,10 @@ describe('the root’s Content-Security-Policy', () => {
     const section = readFileSync(WHAT_LEAVES, 'utf8').split('## What it asks anyone else, only when you choose')[1]?.split('\n## ')[0];
     expect(section, 'what-leaves.md has no section for what it asks anybody else').toBeDefined();
     const named = [...section!.matchAll(/`([a-z0-9-]+(?:\.[a-z0-9-]+)+)`/g)].map((m) => m[1]!).filter((h) => !h.endsWith('navcom.app') && !/\.(json|ts|md|mjs|svelte)$/.test(h));
-    expect([...new Set(named)].sort()).toEqual([...OUTSIDE_HOSTS].sort());
+    expect([...new Set(named)].sort()).toEqual([...OUTSIDE_HOSTS, ...TERMINAL_OUTSIDE_HOSTS].sort());
     expect(section).toMatch(/not where you are looking/);
+    // OpenFreeMap is the one that learns where somebody looks, and the table says that of it.
+    expect(section).toMatch(/`tiles\.openfreemap\.org`[^\n]*\*\*where you are looking\*\*/);
     expect(HAZARD_FEEDS.map((f) => f.host)).toEqual(['earthquake.usgs.gov', 'eonet.gsfc.nasa.gov', 'www.gdacs.org']);
     expect(NWS.host).toBe('api.weather.gov');
   });

@@ -148,7 +148,8 @@ Stated as capability rather than intent, because you do not get to choose who ru
 ## What it asks anyone else, only when you choose
 
 Everything above goes to relays. On the landing page two things ask somebody else, each only once you
-choose it, and nothing else there does: the page's own `Content-Security-Policy` lets it connect to
+choose it, and nothing else there does; on the terminal's live map, one more (2026-11-03), the last row
+below, and the only one that learns where you are looking. On the landing page: the page's own `Content-Security-Policy` lets it connect to
 navcom.app, to relays, and to these four hosts and no others (`vercel.json`; `web/src/lib/outside.ts` is
 the one list of them, and a test holds the page, the policy and this table to each other). The policy
 arrives with the landing page itself, so it holds whenever that page is opened as a page: every link to
@@ -160,6 +161,7 @@ against the built pages).
 |---|---|---|---|
 | **Hazards**, on the map's layers screen | `earthquake.usgs.gov`, `eonet.gsfc.nasa.gov`, `www.gdacs.org` | When you tick it, and then each again every 10 minutes while the map is on screen; never while the page is hidden. An answer too large to read is not asked again on that page. The choice is never stored, so a reload asks nobody | This phone's internet address, which can place it roughly, often to a city; its browser; the time; and that it asked from navcom.app. Each is asked for its **whole-world list**, so **not where you are looking** on the map: nothing of the map, a tap or this phone's position is in any request. About 196 kB a round in a quiet month for fires, and up to about 700 kB in a busy one, said on the screen before you tick it |
 | **Weather warnings**, on a mission filed under a US state | `api.weather.gov` | When you tap *Check NWS warnings*, and never otherwise | The same, and **which state**: the one the mission is filed under, said on the screen before you tap. Not the mission, and nothing finer than the state |
+| **Streets from OpenFreeMap**, on the live map where NavCom's own streets stop (2026-11-03) | `tiles.openfreemap.org` | When you press it, outside Manhattan, for that visit to the map; never stored, so a reload asks nobody | The same, and **where you are looking**: every tile names a few streets at the zoom you are at, and it learns each one as you pan. Said on the screen before you press it. Nothing of who is on the map goes with it: the blips are drawn on this phone. A view of a few streets is a few hundred kilobytes |
 
 Neither carries a cookie or a referrer, and NavCom's service worker caches neither. What comes back is
 read on this phone and drawn from memory; nothing of it is stored, published or sent on. Outside the US
