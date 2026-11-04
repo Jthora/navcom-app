@@ -228,3 +228,23 @@ test.describe('no relay takes a question in a crowd that took the data', () => {
     expect(decodeURIComponent((await page.locator('[data-text-it]').getAttribute('href'))!)).toContain('Assist, now: Second pair of hands, Herald Sq');
   });
 });
+
+test.describe('making a profile, as a newcomer sees it (the live walk, 2026-11-04)', () => {
+  test('Setup’s rows say they open, the name hint fits, and Status says No watch, never Dark', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 740 });
+    await blankDevice(page);
+    await open(page, '/terminal/setup/');
+    // Both rows that open carry the mark every disclosure here does.
+    for (const row of ['[data-person-open]', '[data-watch-open]']) {
+      const mark = await page.locator(row).evaluate((el) => getComputedStyle(el, '::after').content);
+      expect(mark, `${row} does not say it opens`).toBe('"▸"');
+    }
+    await expect(page.locator('#callsign')).toHaveAttribute('placeholder', 'any name you like');
+    await page.locator('#callsign').fill('Nightjar');
+    await page.getByRole('button', { name: /create profile/i }).click();
+    await open(page, '/terminal/');
+    const watch = page.locator('[data-capability] [data-slot="watch"]');
+    await expect(watch).toContainText('No watch');
+    await expect(watch).not.toContainText(/dark/i);
+  });
+});

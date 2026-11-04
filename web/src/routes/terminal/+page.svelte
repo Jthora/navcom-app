@@ -53,15 +53,19 @@
   const nowS = $derived(Math.floor(Date.now() / 1000));
   const leaked = leakedSentences();
   const reachable = $derived(pageableNow(s.oncall, nowS).map((o) => o.author.callsign));
+  let configured = $state(false);
   const watchRead = $derived(
-    s.state === 'dark'
+    // No watch added is not a watch gone dark: a newcomer alone read DARK on their first Status, a
+    // fault in a setup they never did [the Alone layer]. Sign-on already told the two apart.
+    !configured && !stranded
+      ? { value: 'No watch', tone: 'cold' as const, sub: 'you have not added one' }
+      : s.state === 'dark'
       ? { value: 'Dark', tone: 'cold' as const, sub: stranded ? 'its relays cannot be reached from here' : null }
       : s.state === 'station'
         ? { value: 'On station', tone: 'good' as const, sub: s.holder }
         // Invariant 5. An agent is always identified as an agent, including here.
         : { value: 'Automated', tone: 'warn' as const, sub: 'agent · not a human' }
   );
-  let configured = $state(false);
   /**
    * Where the watch is heard, in relays, before anybody relies on it [relay-lists §7, invariant 9].
    * Aged on screen as the reading is: a relay whose last state goes past five minutes stops

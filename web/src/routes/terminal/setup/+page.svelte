@@ -339,7 +339,7 @@
   {:else}
     <form onsubmit={makeIdentity}>
       <label for="callsign">Your name</label>
-      <input id="callsign" bind:value={callsign} autocomplete="off" spellcheck="false" placeholder="a callsign, a nickname or your own name" />
+      <input id="callsign" bind:value={callsign} autocomplete="off" spellcheck="false" placeholder="any name you like" />
       <!--
         Inert until there is something to submit: a prerendered page is tappable before it hydrates,
         and a form tapped in that window does a native GET that reloads the page and loses what was
@@ -522,6 +522,11 @@
     font-size: .95rem; color: var(--t-muted);
   }
   .extra[open] > summary { color: var(--t-ink); }
+  /* A row that opens says so: `display: flex` took the browser's own marker away, and both rows read
+     as headings with nothing under them [live walk, 2026-11-04]. The same mark every Why carries. */
+  .extra > summary::-webkit-details-marker { display: none; }
+  .extra > summary::after { content: '▸'; margin-inline-start: .5rem; font-size: .75em; }
+  .extra[open] > summary::after { content: '▾'; }
   .forget {
     min-height: 2.2rem; font-size: .8rem; padding: 0 .7rem;
     border-color: var(--t-line); color: var(--t-faint);

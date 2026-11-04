@@ -29,3 +29,25 @@ export async function pastTheEdge(page: Page): Promise<string[]> {
   });
 }
 
+
+/**
+ * Every field whose hint is wider than the field, so the end of it is cut off: a name field said "a
+ * callsign, a nickname or your own" on a 360px phone, and nothing measured it [live walk, 2026-11-04].
+ * Measured in the field's own font, against the room inside its padding.
+ */
+export async function cutHints(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const ctx = document.createElement('canvas').getContext('2d')!;
+    const cut: string[] = [];
+    for (const el of document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input[placeholder], textarea[placeholder]')) {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || el.tagName === 'TEXTAREA') continue;
+      const s = getComputedStyle(el);
+      ctx.font = `${s.fontStyle} ${s.fontWeight} ${s.fontSize} ${s.fontFamily}`;
+      const room = el.clientWidth - parseFloat(s.paddingLeft) - parseFloat(s.paddingRight);
+      const needs = ctx.measureText(el.placeholder).width + parseFloat(s.letterSpacing || '0') * el.placeholder.length;
+      if (needs > room + 1) cut.push(`#${el.id || el.name || '?'}: «${el.placeholder}» needs ${Math.round(needs)}px of ${Math.round(room)}`);
+    }
+    return cut;
+  });
+}

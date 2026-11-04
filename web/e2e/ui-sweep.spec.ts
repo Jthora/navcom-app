@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure';
 import { blankDevice, open, seedDevice, TEST_SECRET } from './device';
-import { pastTheEdge } from './edge';
+import { cutHints, pastTheEdge } from './edge';
 import { TERMINAL_ROUTES } from '../src/lib/terminal/routes';
 
 /**
@@ -98,6 +98,7 @@ for (const state of ['first visit', 'out under a watch', 'holding a busy board']
         await page.waitForTimeout(300);
 
         expect(await pastTheEdge(page), `${path}, ${state}, at 360px`).toEqual([]);
+        expect(await cutHints(page), `${path}, ${state}: a field's hint is cut off`).toEqual([]);
         // Unknown is not suspect: no screen puts a verdict on a person [identity.md; units.md §14].
         expect(await page.locator('body').innerText(), `${path}, ${state}`).not.toMatch(VERDICT);
         // In both signatures, whichever this device would choose: low is every operator's default
