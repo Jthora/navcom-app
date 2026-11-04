@@ -3,9 +3,9 @@ import { mergeCorrections, type Correction, type ResourceRecord } from '../src/i
 
 /** A public listing nobody has checked, as the seeder writes one. */
 const listing: ResourceRecord = {
-  id: 'new-york-overture-abc', region: 'new-york', name: 'The 30th Street Drop-In', type: 'drop_in',
+  id: 'new-york-overture-abc', region: 'new-york', name: 'The 30th Street Drop-In', type: 'daytime',
   address: '400 W 30th St', verified_by: 'seeder', method: 'website', last_verified: '2026-10-01', flag: 'ok'
-} as ResourceRecord;
+};
 
 const said = (by: string, method: Correction['method'], day: string, fields: Correction['fields'] = { flag: 'ok' }): Correction & { by: string } => ({
   record: listing.id, verified_by: by.toUpperCase(), method, last_verified: day, fields, by
