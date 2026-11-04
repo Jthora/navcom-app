@@ -192,4 +192,48 @@ test.describe('a squad grows by one', () => {
     await wren.close();
     await ash.close();
   });
+
+  test('and none of it needs a room: the keys and the vouch are copied on one screen and pasted on another', async ({ browser }) => {
+    // Remote-friendly, the owner's decision of 2026-11-03: the person in the chair may be a state away.
+    const capture = async (page: import('@playwright/test').Page) =>
+      page.evaluate(() => {
+        Object.defineProperty(navigator, 'clipboard', {
+          configurable: true,
+          value: { writeText: async (t: string) => void ((window as unknown as { __copied?: string }).__copied = t) }
+        });
+      });
+    const copied = (page: import('@playwright/test').Page) => page.evaluate(() => (window as unknown as { __copied: string }).__copied);
+
+    const wren = await device(await browser.newPage(), 'Wren');
+    await open(wren, '/terminal/watch/');
+    await wren.getByRole('button', { name: /start a watch on this phone/i }).click();
+    await wren.getByRole('button', { name: /show the watch key/i }).click();
+    await capture(wren);
+    await wren.locator('[data-copy-watch-key]').click();
+    await expect(wren.locator('[data-copy-watch-key]')).toHaveText('Copied');
+    const key = await copied(wren);
+    expect(key).toBe((await wren.locator('[data-watch-key]').innerText()).trim());
+
+    const ash = await device(await browser.newPage(), 'Ash');
+    await open(ash, '/terminal/watch/');
+    await ash.locator('#key').fill(key);
+    await ash.getByRole('button', { name: /^join$/i }).click();
+    await ash.locator('summary', { hasText: /this phone's holder key/i }).click();
+    await capture(ash);
+    await ash.locator('[data-copy-holder-key]').click();
+    expect(await copied(ash)).toMatch(/^[0-9a-f]{64}$/);
+
+    await open(wren, '/terminal/standing/');
+    await wren.getByRole('button', { name: /^can take watch$/i }).click();
+    await capture(wren);
+    await wren.getByRole('button', { name: /^copy$/i }).click();
+    const credential = await copied(wren);
+    await open(ash, '/terminal/standing/');
+    await ash.locator('#cred').fill(credential);
+    await ash.getByRole('button', { name: /take it up/i }).click();
+    await expect(ash.locator('[data-endorsement="can-take-watch"]')).toBeVisible();
+
+    await wren.close();
+    await ash.close();
+  });
 });

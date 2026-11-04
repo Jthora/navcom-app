@@ -1037,6 +1037,8 @@
 -->
 <nav class="nc-rail" data-rail="all" aria-label="Places">
   <a class="nc-lead" href="/" data-sveltekit-reload data-map-link>Missions and the map</a>
+  <!-- Before a callsign too: a first night alone is what it is for. -->
+  <a class="nc-lead" href="/terminal/playbook/" data-playbook-link>Playbook</a>
   {#if identity}
     <a class="nc-lead" href="/terminal/card/">Your card</a>
     <a class="nc-lead" href="/terminal/peers/">Peers</a>

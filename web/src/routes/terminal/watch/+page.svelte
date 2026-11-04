@@ -376,6 +376,21 @@
   });
   const codeQr = $derived(code ? encodeQR(code, 'svg', { ecc: 'medium', border: 2 }) : '');
   let codeCopied = $state(false);
+  /*
+   * The watch key and this phone's holder key, copied to send rather than shown to scan: a watch is
+   * remote-friendly, and nothing here needs two people in one room (the owner, 2026-11-03). Selecting
+   * 64 characters by hand on a phone was the only way, and one character lost is a key that fails.
+   */
+  let keyCopied = $state<'watch' | 'holder' | null>(null);
+  async function copyKey(which: 'watch' | 'holder', text: string | null) {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      keyCopied = which;
+    } catch {
+      keyCopied = null;
+    }
+  }
   async function copyCode() {
     if (!code) return;
     try {
@@ -629,6 +644,7 @@
       <Why summary="This phone's holder key">
         <div class="qr" data-holder-qr>{@html holderQr}</div>
         <p class="blocks" data-holder-key>{#each holderBlocks as b, i (i)}<span>{b}</span>{/each}</p>
+        <button onclick={() => copyKey('holder', holderKey)} data-copy-holder-key>{keyCopied === 'holder' ? 'Copied' : 'Copy it'}</button>
       </Why>
     {/if}
     <Why summary="Watch address">
@@ -647,7 +663,10 @@
     {#if showingKey}
       <div class="qr" data-watch-key-qr>{@html keyQr}</div>
       <pre class="blob" data-watch-key>{showingKey}</pre>
-      <button onclick={() => (showingKey = null)}>Hide it</button>
+      <div class="row">
+        <button onclick={() => copyKey('watch', showingKey)} data-copy-watch-key>{keyCopied === 'watch' ? 'Copied' : 'Copy it'}</button>
+        <button onclick={() => { showingKey = null; keyCopied = null; }}>Hide it</button>
+      </div>
     {:else}
       <button onclick={() => (showingKey = watchSecretHex())}>Show the watch key</button>
     {/if}

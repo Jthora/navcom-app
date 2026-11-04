@@ -382,6 +382,11 @@ a tap reads the record from the same file a search does. **The places people sle
 and (2026-11-02) a drop-in whose own hours say it is open 24 hours, as New York's are all winter:
 they are published facilities, and some providers may still read a map of where they cluster as
 locating the people they shelter. They stay in the directory and on their own pages at five places.
+**Code Blue nights too** (the stint brief's D8, left to the agent by the owner on 2026-11-03 "for
+operationalization and ease of use"): a map of where people sleep on the coldest nights is the map D5
+refuses, at the moment it locates the most people. What an operator needs is the one place, and they
+have it: the watch answers with a drop-in, and **Go there** on their own phone draws that place alone
+as their destination, with **Directions** to it (§9). One place on one phone is not a map of clusters.
 Every type is decided on or off in one table (`ON_THE_MAP`), so a type added later is a decision before
 it is a point. **Where records are drawn, a region with places held back keeps a dashed square** that
 says how many are not on the map, and its place says so too, so Baltimore, whose records are all

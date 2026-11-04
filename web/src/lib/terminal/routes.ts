@@ -31,6 +31,8 @@ export const TERMINAL_ROUTES = [
   'wipe/',
   // The live map: its radar needs nothing from the network, so neither may the page it is on.
   'map/',
+  // The playbook is for a night with no signal, in a stairwell or a subway, so it is carried.
+  'playbook/',
   // Opened by a repeat page, which can arrive with no signal to fetch it. The page's address carries
   // a query, and the worker finds this saved copy by its path (`offline-page.ts`).
   'wake/'

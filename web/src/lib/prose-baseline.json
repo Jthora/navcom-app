@@ -69,6 +69,7 @@
   "src/routes/terminal/on-call/+page.svelte": 35,
   "src/routes/terminal/patrols/+page.svelte": 16,
   "src/routes/terminal/peers/+page.svelte": 62,
+  "src/routes/terminal/playbook/+page.svelte": 2,
   "src/routes/terminal/query/+page.svelte": 18,
   "src/routes/terminal/resupply/+page.svelte": 19,
   "src/routes/terminal/setup/+page.svelte": 46,

@@ -446,7 +446,7 @@ the least now.
 | 2 | **The executor's own key** | Built, 2026-10-08 |
 | 3 | **The commons.** §1's rules, in `packages/core/src/relays.ts` with the meeting set inside it, the build failing when an entry goes stale; `listable()` refusing what is outside it; `--check` printing each watch's subset | Not built |
 | 4 | **Boxes follow lists.** §3, §4, §5 and §8 for a box's key | Not built. Waits on phases 1 to 3 |
-| 5 | **Per-member keys, with vouching**, and the box's recovery key. Every squad re-forms once, in person | Not built |
+| 5 | **Per-member keys, with vouching**, and the box's recovery key. Every squad re-forms once, in person or remotely | Not built |
 | 6 | **Squads follow lists.** §3 and §4 for holders' keys | Not built. Waits on phase 5 |
 
 Beside the order, waiting on nothing: §9's first two timing fixes. The first, public presence on
@@ -502,7 +502,8 @@ it the only combination that stays an equilibrium as NavCom grows.
 
 **What they cost**, as the model listed them:
 
-- Every squad re-forms once, in person, when per-member keys ship. No squad is in the field yet, so
+- Every squad re-forms once when per-member keys ship, in person or over a channel its holders trust
+  (remote-friendly, the owner, 2026-11-03). No squad is in the field yet, so
   this is the cheapest it will be. An older cached app fails safe for a squad: it reads Dark and
   keeps sending
 - Two more keys for each Stationkeeper: the executor's own, and a recovery key kept offline with a
@@ -513,6 +514,6 @@ it the only combination that stays an equilibrium as NavCom grows.
 - D3 enforced strictly: no relay outside the commons ever carries watch traffic
 - Each holder's shifts are visible per key on public relays, though never with a name
 - Holder states carry the roster, and a quiet squad reads Dark once the vouching window passes. A
-  squad of two that loses one member re-forms in person
+  squad of two that loses one member re-forms, in person or remotely
 - A new relay waits months before it is eligible, and boxes must update within a retired relay's
   grace period

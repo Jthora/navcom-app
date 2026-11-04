@@ -26,8 +26,14 @@ for somebody on the street is the team's own knowledge, and NavCom does not writ
    - press **Show the watch key** and let them scan it under **Or join one**
    - open **This phone's holder key** on their screen, and scan it under **Other holders** on yours
    - give them a `can take watch` vouch, which they claim on **Standing**
-4. With more than one team out, type them under **Teams tonight**, so sign-on offers them.
-5. Hold up **Code for operators**.
+
+   Not in the same room: press the Copy button beside each instead, send it over a channel you both trust,
+   such as Signal, and paste it in the same place on the other screen. Whoever has the watch key can
+   answer as the watch, so send it to nobody else.
+4. Another watch can hold other teams on the same night: they start their own watch here, and their
+   teams scan their code instead. The two boards are separate.
+5. With more than one team out, type them under **Teams tonight**, so sign-on offers them.
+6. Hold up **Code for operators**, or press **Copy the code** and send it to operators who are elsewhere.
 
 **Everyone else, after that**
 
@@ -76,6 +82,10 @@ happen. If it does not, stop and tell whoever looks after NavCom.
   them sharing where they are.
 - **Passed on**, on Status, is somebody else's Assist that the watch passed to you. It is an offer:
   **I can go** tells the watch in one tap.
+- **Playbook**, on Status, says what to press and who the city says to call for the nights a patrol
+  meets most: somebody needing somewhere warm, no signal, somebody saying you must register with them,
+  a rumour about another operator. It works with no signal. It never says how to treat somebody: that
+  is the team's own training.
 - **Stand down** when you are home.
 
 ## Each night, holding the watch

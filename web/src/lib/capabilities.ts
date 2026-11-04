@@ -280,6 +280,15 @@ export const CAPABILITIES: Capability[] = [
     requires: []
   },
   {
+    name: 'The playbook',
+    screen: 'terminal/playbook/',
+    // What to press, and who the city says to call, for the nights a patrol meets most (the owner,
+    // 2026-11-03). Its name and its plays; every one works with nothing set up and no signal.
+    claims: ['Playbook', 'Somebody needs somewhere warm on a cold night in New York'],
+    control: '[data-play]',
+    requires: []
+  },
+  {
     name: 'Take the watch',
     screen: 'terminal/watch/',
     // 4.3: everything below it looks like a safety monitor and is not one. The one line kept

@@ -59,6 +59,12 @@ never free text.
 have worked with you, using the standing model rather than introducing a rank. See
 [`../watch/the-watch.md`](../watch/the-watch.md).
 
+**Remote-friendly, decided 2026-11-03 by the owner:** *"in-person is not required for can take
+watch; watch should be remote-friendly."* The person in the chair may be hundreds of miles from the
+operators, so the credential, the watch key and a holder's key may travel over any channel the two
+people trust, copied on one screen and pasted on the other; nothing asks that they meet. This
+answers the stint brief's D4, which had leaned towards in-person issue from two unrelated crews.
+
 Free text is prohibited deliberately. An endorser explaining *why* someone is credible
 is how an operator's history leaks — the person with the most valuable knowledge is
 often the one with the most to lose from it being described.

@@ -144,3 +144,23 @@ test.describe('the only holder asleep when a Distress comes in', () => {
     await expect(page.locator('[data-contact] a').first()).toContainText(/sam/i);
   });
 });
+
+test.describe('the playbook', () => {
+  test('is on Status before a callsign, and still opens underground', async ({ page, context }) => {
+    await blankDevice(page);
+    await open(page, '/terminal/');
+    await page.locator('[data-playbook-link]').click();
+    await page.waitForURL('**/terminal/playbook/');
+    await expect(page.locator('[data-play="cold-night"] h2')).toContainText('somewhere warm');
+    // What the city says is the city's, with the page and the day it was read there.
+    const source = page.locator('[data-play="cold-night"] [data-source]').first();
+    await expect(source).toContainText('NYC 311');
+    await expect(source).toContainText(/read \d{1,2} \w{3} \d{4}/);
+    await expect(source.locator('a')).toHaveAttribute('href', /^https:\/\/portal\.311\.nyc\.gov\//);
+    await serviceWorkerReady(page);
+    await context.setOffline(true);
+    await page.reload();
+    await expect(page.locator('[data-play="no-signal"]')).toBeVisible();
+    expect(await page.locator('main, body').first().innerText()).not.toMatch(VERDICT);
+  });
+});

@@ -135,9 +135,15 @@ to it.
 
 ### Not agent work
 
-Directory seed data, field playbooks, and extending the `type` taxonomy need humans with
-local knowledge. **Do not generate playbook content.** The Medic's kill trigger is confident
-wrong guidance, and plausible-sounding safety content is worse than none.
+Directory seed data and extending the `type` taxonomy need humans with local knowledge.
+
+**Playbooks: revised 2026-11-03 at the owner's direction** (*"perhaps a playbook is a good
+idea"*, with no named people). An agent may write `web/src/lib/playbook.ts`, within two limits:
+what to press in NavCom, and what a public authority says, in its words, with its page and the
+day it was read there, which the build holds to six months. **Never a technique for a person's
+body**: no first aid, cold injury care or overdose response. The Medic's kill trigger is
+confident wrong guidance, and plausible-sounding safety content is worse than none; those are
+taught by people who can be asked questions.
 
 ## Invariants
 
