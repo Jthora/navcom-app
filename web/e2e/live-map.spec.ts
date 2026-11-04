@@ -1,12 +1,13 @@
 import { expect, test, type ConsoleMessage, type Page } from '@playwright/test';
+import { STREET_AREAS } from '../src/lib/map/tiles';
 
 /**
  * navcom.app's live map, after a deploy: the one thing the browser suite cannot stand in for.
  *
  * `serve-build.mjs` answers byte ranges the way this project wrote it to. Whether Vercel does, for a
- * 21.6 MB file, is a fact about Vercel: a host that compresses the extract, or answers a range with
+ * file of 13 to 43 MB, is a fact about Vercel: a host that compresses an extract, or answers a range with
  * the whole file, leaves the streets blank in production while every test here passes. So this asks
- * the deployment itself, once — the deploy stamp, two ranges of the extract, then a phone signed on
+ * the deployment itself, once — the deploy stamp, two ranges of each extract, then a phone signed on
  * in Manhattan drawing the streets, saving them for the night, and drawing them again offline.
  *
  * Nothing leaves this machine but requests to navcom.app: every socket the page opens is answered
@@ -23,8 +24,6 @@ const BASE = process.env['LIVE_BASE'] ?? 'https://navcom.app';
 const HOST = new URL(BASE).hostname;
 test.use({ baseURL: BASE });
 
-const EXTRACT = '/tiles/manhattan-20261103.pmtiles';
-const EXTRACT_BYTES = 21_640_397;
 const HERALD_SQ = { latitude: 40.7497, longitude: -73.9877 };
 
 const problems: string[] = [];
@@ -38,28 +37,29 @@ function watch(page: Page) {
   });
 }
 
-test('the deploy is the one pushed, and Vercel serves the street extract a range at a time', async ({ request }) => {
+test('the deploy is the one pushed, and Vercel serves every street extract a range at a time', async ({ request }) => {
   const stamp = await (await request.get('/version.json', { headers: { 'cache-control': 'no-cache' } })).json();
   console.log(`[live] deployed ${stamp.commit}, built ${stamp.builtAt}`);
   if (process.env['EXPECT_COMMIT']) expect(stamp.commit, 'navcom.app is not serving the commit that was pushed').toBe(process.env['EXPECT_COMMIT'].slice(0, 7));
 
-  // The header: where PMTiles starts reading. A range answered whole, or compressed, breaks it.
-  const head = await request.get(EXTRACT, { headers: { range: 'bytes=0-16383', 'accept-encoding': 'gzip, br' } });
-  expect(head.status(), 'a range of the extract was not answered as a range').toBe(206);
-  expect(head.headers()['content-range']).toBe(`bytes 0-16383/${EXTRACT_BYTES}`);
-  expect(head.headers()['content-encoding'] ?? 'identity', 'Vercel compressed the extract, so its byte offsets mean nothing').toBe('identity');
-  const body = await head.body();
-  expect(body.length).toBe(16_384);
-  expect(body.subarray(0, 7).toString('latin1'), 'not a PMTiles file').toBe('PMTiles');
-  expect(body[7], 'not PMTiles version 3').toBe(3);
-
-  // And a range at the far end, where the tiles are.
-  const tail = await request.get(EXTRACT, { headers: { range: `bytes=${EXTRACT_BYTES - 1024}-${EXTRACT_BYTES - 1}` } });
-  expect(tail.status()).toBe(206);
-  expect((await tail.body()).length).toBe(1024);
-  console.log(`[live] extract: ${head.headers()['content-type']}, cache ${head.headers()['cache-control']}, ${head.headers()['x-vercel-cache'] ?? 'no x-vercel-cache'}`);
-  // Kept by the phone, so a map not saved for the night asks for each tile once, not on every look.
-  expect(head.headers()['cache-control'], 'the extract is not cached by the phone').toMatch(/immutable/);
+  // Each area's header, where PMTiles starts reading, and a range at its far end, where the tiles are.
+  // A range answered whole, or compressed, breaks it.
+  for (const area of STREET_AREAS) {
+    const head = await request.get(area.url, { headers: { range: 'bytes=0-16383', 'accept-encoding': 'gzip, br' } });
+    expect(head.status(), `a range of ${area.id} was not answered as a range`).toBe(206);
+    expect(head.headers()['content-range']).toBe(`bytes 0-16383/${area.bytes}`);
+    expect(head.headers()['content-encoding'] ?? 'identity', `Vercel compressed ${area.id}, so its byte offsets mean nothing`).toBe('identity');
+    const body = await head.body();
+    expect(body.length).toBe(16_384);
+    expect(body.subarray(0, 7).toString('latin1'), `${area.id} is not a PMTiles file`).toBe('PMTiles');
+    expect(body[7], `${area.id} is not PMTiles version 3`).toBe(3);
+    // Kept by the phone, so a map not saved for the night asks for each tile once, not on every look.
+    expect(head.headers()['cache-control'], `${area.id} is not cached by the phone`).toMatch(/immutable/);
+    const tail = await request.get(area.url, { headers: { range: `bytes=${area.bytes - 1024}-${area.bytes - 1}` } });
+    expect(tail.status()).toBe(206);
+    expect((await tail.body()).length).toBe(1024);
+    console.log(`[live] ${area.id}: ${head.headers()['content-type']}, cache ${head.headers()['cache-control']}, ${head.headers()['x-vercel-cache'] ?? 'no x-vercel-cache'}`);
+  }
 });
 
 test('signed on in Manhattan, a phone draws the streets, saves them for the night, and draws them offline', async ({ browser }) => {

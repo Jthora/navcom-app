@@ -474,14 +474,15 @@ export const MAP_LINES = {
         'line here, paid only by somebody who opens the map’s streets, never at first paint, mount or Deferred.'
     },
     data: {
-      limit: 26_553_424,
-      warn: 23_898_082,
-      measured: 22_127_854,
+      limit: 166_720_326,
+      warn: 150_048_293,
+      measured: 138_933_605,
       why:
-        'Measured 2026-11-03 at 22,127,854 B: our Manhattan extract of OpenStreetMap, 21.6 MB, zooms 0 to 15, ' +
-        'from the Protomaps build of that day, with Noto Sans glyphs for three fonts and three ranges and the ' +
-        'grayscale sprites, about 820 kB together. The whole of it is paid only by Save for tonight; reading ' +
-        'the map online fetches the few hundred kilobytes of tiles on screen.'
+        'Measured 2026-11-03 at 138,933,605 B: six extracts of OpenStreetMap, zooms 0 to 15, from the ' +
+        'Protomaps build of that day, for the five boroughs and the New Jersey side (the owner, 2026-11-03: ' +
+        'all five covered, and New Jersey), 13 to 43 MB each, with Noto Sans glyphs for three fonts and ' +
+        'three ranges and the grayscale sprites, about 490 kB. Nobody pays for all of it: a phone saves the ' +
+        'area it patrols, and reading the map online fetches the few hundred kilobytes of tiles on screen.'
     }
   },
   /*
@@ -905,11 +906,51 @@ const NAMED = [
   },
   {
     path: 'tiles/manhattan-20261103.pmtiles',
-    max: 24 * 1024 * 1024,
+    max: 23 * 1024 * 1024,
     why:
-      'The live map’s streets: our extract of OpenStreetMap for Manhattan, 2026-11-03, zooms 0 to 15 ' +
-      '(the owner’s map decisions, 2026-11-03). Its own map line (streets). Read a range at a time, or ' +
-      'saved whole when somebody chooses Save for tonight; never precached, and no page links it.'
+      'The live map’s streets for Manhattan: our extract of OpenStreetMap, 2026-11-03, zooms 0 to 15, one of six ' +
+      'that cover New York City and the New Jersey side (the owner, 2026-11-03). Its own map line (streets). ' +
+      'Read a range at a time, or saved whole when somebody saves the area; never precached, and no page links it.'
+  },
+  {
+    path: 'tiles/brooklyn-20261103.pmtiles',
+    max: 32 * 1024 * 1024,
+    why:
+      'The live map’s streets for Brooklyn: our extract of OpenStreetMap, 2026-11-03, zooms 0 to 15, one of six ' +
+      'that cover New York City and the New Jersey side (the owner, 2026-11-03). Its own map line (streets). ' +
+      'Read a range at a time, or saved whole when somebody saves the area; never precached, and no page links it.'
+  },
+  {
+    path: 'tiles/queens-20261103.pmtiles',
+    max: 46 * 1024 * 1024,
+    why:
+      'The live map’s streets for Queens: our extract of OpenStreetMap, 2026-11-03, zooms 0 to 15, one of six ' +
+      'that cover New York City and the New Jersey side (the owner, 2026-11-03). Its own map line (streets). ' +
+      'Read a range at a time, or saved whole when somebody saves the area; never precached, and no page links it.'
+  },
+  {
+    path: 'tiles/bronx-20261103.pmtiles',
+    max: 17 * 1024 * 1024,
+    why:
+      'The live map’s streets for the Bronx: our extract of OpenStreetMap, 2026-11-03, zooms 0 to 15, one of six ' +
+      'that cover New York City and the New Jersey side (the owner, 2026-11-03). Its own map line (streets). ' +
+      'Read a range at a time, or saved whole when somebody saves the area; never precached, and no page links it.'
+  },
+  {
+    path: 'tiles/staten-island-20261103.pmtiles',
+    max: 14 * 1024 * 1024,
+    why:
+      'The live map’s streets for Staten Island: our extract of OpenStreetMap, 2026-11-03, zooms 0 to 15, one of six ' +
+      'that cover New York City and the New Jersey side (the owner, 2026-11-03). Its own map line (streets). ' +
+      'Read a range at a time, or saved whole when somebody saves the area; never precached, and no page links it.'
+  },
+  {
+    path: 'tiles/new-jersey-20261103.pmtiles',
+    max: 16 * 1024 * 1024,
+    why:
+      'The live map’s streets for Jersey City and Newark: our extract of OpenStreetMap, 2026-11-03, zooms 0 to 15, one of six ' +
+      'that cover New York City and the New Jersey side (the owner, 2026-11-03). Its own map line (streets). ' +
+      'Read a range at a time, or saved whole when somebody saves the area; never precached, and no page links it.'
   },
   {
     // Emitted under its own name and a content hash, so it is named by the module it is emitted for.

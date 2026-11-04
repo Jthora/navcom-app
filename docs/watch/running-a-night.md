@@ -14,8 +14,9 @@ for somebody on the street is the team's own knowledge, and NavCom does not writ
    Distress then opens a text to them, ready to send, which goes over the phone network even when
    the app cannot reach anything.
 4. Open your city's area under **Cached directory** once, so its places stay on the phone with no signal.
-5. For a night in Manhattan, open **Map** on Status and press **Save Manhattan for tonight** on wifi, so
-   its streets draw with no signal (22 MB).
+5. For a night in New York, open **Map** on Status and press **Save … for tonight** on wifi: the borough
+   you are in, or the New Jersey side (13 to 43 MB). Its streets then draw with no signal. Patrolling two,
+   save the other under **Other areas**.
 
 **The person holding the watch**
 
@@ -51,7 +52,7 @@ happen. If it does not, stop and tell whoever looks after NavCom.
    The other holder answers it, and the phone names them.
 6. The holder whose laptop reloaded presses **Stand down**, then holds the watch again. The phones
    read *On station* the whole time.
-7. On a phone, **Save Manhattan for tonight**, then airplane mode, then **Map**: the streets still draw.
+7. On a phone, save tonight's borough, then airplane mode, then **Map**: the streets still draw.
 8. Lock a signed-on iPhone for five minutes. Nothing alarms, and the watch says when it last heard it.
 9. One holder stands down: the phones still read *On station*. Then the other: the phones read
    *Dark*, and Distress says there is no watch to send it to.
@@ -80,8 +81,9 @@ happen. If it does not, stop and tell whoever looks after NavCom.
 ## Each night, holding the watch
 
 - **Power** on the Watch screen says whether this laptop is charging, and how much battery is left.
-- **Map**, beside Who is out, shows everybody on the board who shares where they are, on Manhattan's
-  streets or a radar. **Follow** keeps one in the middle.
+- **Map**, beside Who is out, shows everybody on the board who shares where they are, on the streets of
+  all five boroughs and the New Jersey side, or a radar. **Follow** keeps one in the middle. On the
+  laptop, save every area under **Other areas** (139 MB together).
 - Open **Watch** and keep it open. While you hold the watch it keeps the screen on and sounds a
   Distress until you answer it or press Silence. Touch the screen once so the browser lets it play.
 - **Hold to take the watch.** *Published: Yes* means operators can see you.

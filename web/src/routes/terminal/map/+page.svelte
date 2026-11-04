@@ -24,7 +24,7 @@
   import { operator } from '$lib/terminal/session.svelte';
   import { distance } from '$lib/terminal/lookup';
   import { ago } from '$lib/terminal/heard-copy';
-  import { covers, saveStreets, savedStreets, STREETS } from '$lib/map/tiles';
+  import { areaAt, saveArea, savedAreas, STREET_AREAS, STREETS_COVER, type StreetArea } from '$lib/map/tiles';
   import { OPENFREEMAP } from '$lib/outside';
   import type { Streets } from '$lib/grid/layers/streets';
 
@@ -80,16 +80,32 @@
   const stateWord = (b: Blip) => (b.asking === 'distress' ? 'Distress' : b.state === 'overdue' ? 'past their time' : b.asking === 'assist' ? 'Assist' : null);
 
   /*
-   * Two views of the same blips: streets, drawn by MapLibre from our own extract, where this phone can
-   * draw them and the extract covers where everybody is; the radar everywhere else, and whenever asked.
+   * Two views of the same blips: streets, drawn by MapLibre from our own extracts, where this phone can
+   * draw them and an extract covers where everybody is; the radar everywhere else, and whenever asked.
    */
   let view = $state<'streets' | 'radar'>('streets');
   let streetsEl = $state<HTMLDivElement | null>(null);
   let streets = $state<Streets | null>(null);
+  /** No WebGL: this phone cannot draw streets at all. */
   let streetsFailed = $state(false);
-  let saved = $state<boolean | null>(null);
-  let saving = $state(false);
-  let saveFailed = $state(false);
+  /**
+   * The engine or the streets could not be reached, which with no signal is what happens, whatever the
+   * browser says: `navigator.onLine` reads true on a jammed cell, and under the suite's own offline. The
+   * radar until they can be, asked again in the background so the view does not flicker.
+   */
+  let unreachable = $state(false);
+  /** The areas saved on this phone, by id; null until the cache has been read. */
+  let saved = $state<string[] | null>(null);
+  let saving = $state<string | null>(null);
+  let saveFailed = $state<string | null>(null);
+  /*
+   * With no signal, an area not saved has no streets to draw, so the radar shows the same blips rather
+   * than a blank map that looks like a broken one (the stint's UX fallbacks, 2026-11-03).
+   */
+  // Read as the screen starts, not once it has mounted: opened with no signal, the streets began
+  // loading before the screen knew, failed, and said they could not be drawn here at all [scenarios.spec.ts].
+  let online = $state(typeof navigator === 'undefined' || navigator.onLine);
+  const mb = (a: StreetArea) => Math.round(a.bytes / 1_000_000);
   const webgl = () => {
     try {
       return !!document.createElement('canvas').getContext('webgl');
@@ -97,14 +113,17 @@
       return false;
     }
   };
-  const inStreets = $derived(centre !== null && covers(centre));
+  /** The area the map opens on: where everybody is, or wherever this phone is. */
+  const here = $derived(centre ? areaAt(centre) : null);
+  const inStreets = $derived(here !== null);
+  const hereSaved = $derived(here !== null && saved !== null && saved.includes(here.id));
   /**
    * OpenFreeMap's streets, where ours stop, chosen for this visit to the map and never stored, so a
    * reload asks nobody. Its requests say where you are looking, and the screen says so first
    * [what-leaves.md; outside.ts OPENFREEMAP].
    */
   let elsewhere = $state(false);
-  const drawStreets = $derived(view === 'streets' && (inStreets || elsewhere) && !streetsFailed);
+  const drawStreets = $derived(view === 'streets' && ((inStreets && (hereSaved || online)) || elsewhere) && !streetsFailed && !unreachable);
 
   const hasCentre = $derived(centre !== null);
   $effect(() => {
@@ -119,12 +138,15 @@
     const el = streetsEl;
     let gone = false;
     void (async () => {
+      if (!webgl()) {
+        streetsFailed = true;
+        return;
+      }
       try {
-        if (!webgl()) throw new Error('no WebGL');
-        const [{ mountStreets }, blob] = await Promise.all([import('$lib/grid/layers/streets'), savedStreets()]);
-        saved = blob !== null;
-        const source = covers(at)
-          ? ({ kind: 'ours', url: STREETS.url, saved: blob } as const)
+        const [{ mountStreets }, blobs] = await Promise.all([import('$lib/grid/layers/streets'), savedAreas()]);
+        saved = [...blobs.keys()];
+        const source = areaAt(at)
+          ? ({ kind: 'ours', areas: STREET_AREAS, saved: blobs } as const)
           : ({ kind: 'openfreemap', style: OPENFREEMAP.style } as const);
         const made = await mountStreets(el, { source, centre: at, onselect: (id) => (selected = id) });
         if (gone) made.destroy();
@@ -135,7 +157,7 @@
           if (now && (now.lat !== at.lat || now.lon !== at.lon)) made.centre(now);
         }
       } catch {
-        streetsFailed = true;
+        unreachable = true;
       }
     })();
     return () => {
@@ -155,18 +177,40 @@
     if (streets && followed) streets.centre(followed);
   });
   onMount(() => {
-    void savedStreets().then((b) => (saved = b !== null));
-    return () => streets?.destroy();
+    void savedAreas().then((m) => (saved = [...m.keys()]));
+    online = navigator.onLine;
+    const on = () => {
+      online = true;
+      unreachable = false;
+    };
+    const off = () => (online = false);
+    window.addEventListener('online', on);
+    window.addEventListener('offline', off);
+    // Whether the streets can be reached again, asked quietly: the view changes only once they can.
+    const retry = setInterval(() => {
+      if (unreachable) void import('$lib/grid/layers/streets').then((m) => m.preload()).then((ok) => ok && (unreachable = false)).catch(() => {});
+    }, 30_000);
+    return () => {
+      window.removeEventListener('online', on);
+      window.removeEventListener('offline', off);
+      clearInterval(retry);
+      streets?.destroy();
+    };
   });
 
-  async function save() {
-    saving = true;
-    saveFailed = false;
+  async function save(a: StreetArea) {
+    saving = a.id;
+    saveFailed = null;
     try {
-      if (await saveStreets()) saved = true;
-      else saveFailed = true;
+      if (await saveArea(a)) {
+        saved = [...(saved ?? []), a.id];
+        // And the engine that draws them, for a night the map is first opened with no signal.
+        void import('$lib/grid/layers/streets').then((m) => m.preload()).catch(() => {});
+        const blob = (await savedAreas()).get(a.id);
+        if (blob) streets?.saved(a, blob);
+      } else saveFailed = a.id;
     } finally {
-      saving = false;
+      saving = null;
     }
   }
 </script>
@@ -206,13 +250,15 @@
         {#if view === 'streets' && !inStreets && elsewhere}
           <Readout value="From OpenFreeMap" tone="warn" sub="it sees the streets you look at" />
         {:else if view === 'streets' && !inStreets}
-          <Readout value={`${STREETS.area} only`} tone="cold" sub="the radar shows the rest" />
+          <Readout value="Not here" tone="cold" sub={`${STREETS_COVER} only; the radar shows the rest`} />
         {:else if view === 'streets' && streetsFailed}
           <Readout value="Cannot draw them here" tone="warn" sub="the radar shows the same" />
-        {:else if saved}
-          <Readout value="Saved on this phone" tone="good" sub={`${STREETS.area}, ${STREETS.built}`} />
-        {:else}
-          <Readout value="Not saved" tone="neutral" sub="read from navcom.app while there is signal" />
+        {:else if here && hereSaved}
+          <Readout value="Saved on this phone" tone="good" sub={`${here.name}, ${here.built}`} />
+        {:else if here && (!online || unreachable)}
+          <Readout value="Not saved" tone="warn" sub={`${here.name}: no signal, so the radar`} />
+        {:else if here}
+          <Readout value="Not saved" tone="neutral" sub={`${here.name}, read from navcom.app while there is signal`} />
         {/if}
       </span>
       {#if view === 'streets' && !inStreets && !elsewhere}
@@ -220,9 +266,25 @@
         <button onclick={() => (elsewhere = true)} data-openfreemap>Streets from OpenFreeMap</button>
         <span data-openfreemap-cost><Readout value="OpenFreeMap" tone="neutral" sub="learns this phone’s address and which streets you look at" /></span>
       {/if}
-      {#if saved === false && inStreets}
-        <button onclick={save} disabled={saving} data-save-streets>{saving ? 'Saving…' : `Save ${STREETS.area} for tonight · ${Math.round(STREETS.bytes / 1_000_000)} MB`}</button>
-        {#if saveFailed}<span data-save-failed><Readout value="Not saved" tone="warn" sub="try again with signal" /></span>{/if}
+      {#if here && saved !== null && !hereSaved}
+        <button onclick={() => save(here!)} disabled={saving !== null} data-save-streets>{saving === here.id ? 'Saving…' : `Save ${here.name} for tonight · ${mb(here)} MB`}</button>
+      {/if}
+      {#if saveFailed}<span data-save-failed><Readout value="Not saved" tone="warn" sub="try again with signal" /></span>{/if}
+      {#if here && saved !== null}
+        <!-- The rest of the city, for a phone that patrols two boroughs or a laptop holding the watch for all of them. -->
+        <details class="areas" data-street-areas>
+          <summary>Other areas</summary>
+          {#each STREET_AREAS.filter((a) => a.id !== here!.id) as a (a.id)}
+            <div class="area" data-area={a.id}>
+              <span>{a.name} · {mb(a)} MB</span>
+              {#if saved.includes(a.id)}
+                <span data-area-saved>Saved</span>
+              {:else}
+                <button onclick={() => save(a)} disabled={saving !== null}>{saving === a.id ? 'Saving…' : 'Save'}</button>
+              {/if}
+            </div>
+          {/each}
+        </details>
       {/if}
     </Slot>
 
@@ -294,4 +356,7 @@
   .blips li button { min-height: 2.4rem; max-width: 100%; overflow-wrap: anywhere; font-size: 0.85rem; padding: 0 0.8rem; }
   .blips li[data-state='distress'] button { border-color: var(--t-alarm); color: var(--t-alarm); }
   .blips li[data-state='overdue'] button { border-color: var(--t-oncall); }
+  .areas summary { cursor: pointer; font-size: 0.85rem; color: var(--t-muted); min-height: 2.4rem; display: flex; align-items: center; }
+  .area { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; font-family: var(--font-mono); font-size: 0.72rem; color: var(--t-muted); padding: 0.2rem 0; }
+  .area button { min-height: 2.4rem; font-size: 0.8rem; padding: 0 0.8rem; }
 </style>

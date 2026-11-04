@@ -16,9 +16,10 @@ import 'maplibre-gl/dist/maplibre-gl.css';
  */
 import engineUrl from 'maplibre-gl/dist/maplibre-gl.mjs?url';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
-import { PMTiles, Protocol, type RangeResponse, type Source } from 'pmtiles';
+import { PMTiles, type RangeResponse, type Source } from 'pmtiles';
 import { layers, namedFlavor } from '@protomaps/basemaps';
 import type { Blip } from '$lib/map/blips';
+import type { StreetArea } from '$lib/map/tiles';
 
 /** A saved extract read straight from the phone: a slice of the file, never the network. */
 class SavedSource implements Source {
@@ -37,8 +38,55 @@ class SavedSource implements Source {
 export interface Streets {
   draw(blips: Blip[], fresh: (b: Blip) => 'fresh' | 'aging' | 'stale', selected: string | null, from: Blip | null): void;
   centre(at: { lat: number; lon: number }): void;
+  /** An area just saved: its tiles come from the phone from now on, with no reload. */
+  saved(area: StreetArea, blob: Blob): void;
   destroy(): void;
 }
+
+/** A tile's edges in degrees: west, south, east, north. */
+function tileEdges(z: number, x: number, y: number): [number, number, number, number] {
+  const n = 2 ** z;
+  const lat = (row: number) => (Math.atan(Math.sinh(Math.PI * (1 - (2 * row) / n))) * 180) / Math.PI;
+  return [(x / n) * 360 - 180, lat(y + 1), ((x + 1) / n) * 360 - 180, lat(y)];
+}
+
+/**
+ * Every area's archive, read as one street map.
+ *
+ * One vector source for all of them, so a map that pans from Manhattan into Brooklyn keeps drawing:
+ * a source per area would put every style layer on the map once per area, which a phone pays for on
+ * every frame. Each tile goes to the area its middle is deepest inside, or failing that to any area
+ * it touches; all of them are cut from the same build, so wherever two overlap they hold the same tile.
+ */
+const archives = new Map<string, { area: StreetArea; tiles: PMTiles }>();
+
+function archiveFor(z: number, x: number, y: number): PMTiles | null {
+  const [w, s, e, n] = tileEdges(z, x, y);
+  const lon = (w + e) / 2;
+  const lat = (s + n) / 2;
+  let best: PMTiles | null = null;
+  let depth = -Infinity;
+  for (const { area, tiles } of archives.values()) {
+    const [aw, as, ae, an] = area.bbox;
+    const d = Math.min(lon - aw, ae - lon, lat - as, an - lat);
+    if (d >= 0 && d > depth) {
+      best = tiles;
+      depth = d;
+    }
+  }
+  if (best) return best;
+  for (const { area, tiles } of archives.values()) {
+    const [aw, as, ae, an] = area.bbox;
+    if (w < ae && e > aw && s < an && n > as) return tiles;
+  }
+  return null;
+}
+
+function useArchive(area: StreetArea, blob: Blob | null) {
+  archives.set(area.id, { area, tiles: new PMTiles(blob ? new SavedSource(blob, area.url) : area.url) });
+}
+
+const EMPTY_TILE = new ArrayBuffer(0);
 
 const empty = { type: 'FeatureCollection' as const, features: [] };
 
@@ -60,7 +108,7 @@ function token(name: string, fallback: string): string {
   return v || fallback;
 }
 
-let protocol: Protocol | null = null;
+let registered = false;
 type Engine = typeof import('maplibre-gl');
 let engine: Engine | null = null;
 
@@ -73,8 +121,26 @@ async function load(): Promise<Engine> {
   return engine;
 }
 
-/** Where the streets come from: our extract, saved or read from navcom.app, or OpenFreeMap, only when chosen. */
-export type StreetSource = { kind: 'ours'; url: string; saved: Blob | null } | { kind: 'openfreemap'; style: string };
+/**
+ * Fetches the engine and its worker, so the service worker keeps both [service-worker.ts isMapEngine].
+ *
+ * Called when an area is saved: saved streets are for a night with no signal, and an engine the phone
+ * never kept would leave the saved streets with nothing to draw them, if the map was first opened only
+ * once the signal had gone. True when both arrived.
+ */
+export async function preload(): Promise<boolean> {
+  try {
+    const got = await Promise.all([fetch(engineUrl), fetch(new URL(workerUrl, location.href).href)]);
+    return got.every((r) => r.ok);
+  } catch {
+    return false;
+  }
+}
+
+/** Where the streets come from: our extracts, each saved or read from navcom.app, or OpenFreeMap, only when chosen. */
+export type StreetSource =
+  | { kind: 'ours'; areas: readonly StreetArea[]; saved: ReadonlyMap<string, Blob> }
+  | { kind: 'openfreemap'; style: string };
 
 export async function mountStreets(
   container: HTMLElement,
@@ -83,12 +149,25 @@ export async function mountStreets(
   const gl = await load();
   const ours = options.source.kind === 'ours' ? options.source : null;
   if (ours) {
-    if (!protocol) {
-      protocol = new Protocol();
-      gl.addProtocol('pmtiles', protocol.tile);
+    for (const area of ours.areas) useArchive(area, ours.saved.get(area.id) ?? null);
+    if (!registered) {
+      registered = true;
+      gl.addProtocol('navcom-streets', async (params, abort) => {
+        const [z, x, y] = params.url.replace('navcom-streets://', '').split('/').map(Number) as [number, number, number];
+        const tiles = archiveFor(z, x, y);
+        if (!tiles) return { data: EMPTY_TILE };
+        const got = await tiles.getZxy(z, x, y, abort.signal);
+        return { data: got?.data ?? EMPTY_TILE };
+      });
     }
-    protocol.add(new PMTiles(ours.saved ? new SavedSource(ours.saved, ours.url) : ours.url));
   }
+  /** West, south, east, north of every area together, so nothing is asked for past them. */
+  const bounds = ours
+    ? (ours.areas.reduce(
+        (b, a) => [Math.min(b[0], a.bbox[0]), Math.min(b[1], a.bbox[1]), Math.max(b[2], a.bbox[2]), Math.max(b[3], a.bbox[3])],
+        [180, 90, -180, -90]
+      ) as [number, number, number, number])
+    : undefined;
 
   const station = token('--t-station', '#7fbf7f');
   const oncall = token('--t-oncall', '#e0a030');
@@ -170,7 +249,14 @@ export async function mountStreets(
           glyphs: `${location.origin}/map/fonts/{fontstack}/{range}.pbf`,
           sprite: `${location.origin}/map/sprites/v4/grayscale`,
           sources: {
-            protomaps: { type: 'vector', url: `pmtiles://${ours.url}`, attribution: '© OpenStreetMap contributors · Protomaps' },
+            protomaps: {
+              type: 'vector',
+              tiles: ['navcom-streets://{z}/{x}/{y}'],
+              minzoom: 0,
+              maxzoom: 15,
+              bounds,
+              attribution: '© OpenStreetMap contributors · Protomaps'
+            },
             ...blipSources
           },
           layers: [...layers('protomaps', flavor, { lang: 'en' }), ...blipLayers('Noto Sans Medium')]
@@ -221,6 +307,9 @@ export async function mountStreets(
     },
     centre(at) {
       map.easeTo({ center: [at.lon, at.lat], duration: 400 });
+    },
+    saved(area, blob) {
+      if (ours) useArchive(area, blob);
     },
     destroy() {
       sized.disconnect();

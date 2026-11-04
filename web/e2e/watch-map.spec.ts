@@ -139,6 +139,9 @@ test.describe('the live map', () => {
     expect(ranges.every((s) => s === 206)).toBe(true);
     expect(failed.filter((f) => f.includes('/map/') || f.includes('/tiles/'))).toEqual([]);
 
+    // Manhattan, where the phone is, is the one offered; the rest are listed under it.
+    await expect(page.locator('[data-save-streets]')).toContainText('Save Manhattan for tonight');
+    await expect(page.locator('[data-street-areas] [data-area]')).toHaveCount(5);
     // Saved for tonight, then the signal goes: the streets come from the phone alone.
     await page.locator('[data-save-streets]').click();
     await expect(page.locator('[data-streets-state]')).toContainText('Saved on this phone', { timeout: 60_000 });
@@ -173,10 +176,10 @@ test.describe('the live map', () => {
     await context.close();
   });
 
-  test('outside Manhattan: the radar, OpenFreeMap only when pressed, said first, and never kept past the visit', async ({ browser }) => {
+  test('outside the city: the radar, OpenFreeMap only when pressed, said first, and never kept past the visit', async ({ browser }) => {
     test.setTimeout(90_000);
-    // Brooklyn: south of the extract's edge.
-    const context = await browser.newContext({ permissions: ['geolocation'], geolocation: { latitude: 40.6782, longitude: -73.9442 } });
+    // Hempstead, Long Island: east of Queens, past every extract's edge.
+    const context = await browser.newContext({ permissions: ['geolocation'], geolocation: { latitude: 40.7062, longitude: -73.6187 } });
     const page = await context.newPage();
     // OpenFreeMap stood in for, so the suite never asks the real one: a style with nothing but ground.
     const asked: string[] = [];
@@ -188,14 +191,15 @@ test.describe('the live map', () => {
     });
     await seedDevice(page, { callsign: 'Kite', relayEvents: [] });
     await open(page, '/terminal/sign-on/');
-    await page.locator('#area').fill('Crown Heights');
+    await page.locator('#area').fill('Hempstead');
     await page.locator('#share').selectOption('exact');
     await page.getByRole('button', { name: /^sign on$/i }).click();
     await page.waitForURL('**/terminal/');
 
     await open(page, '/terminal/map/');
     await expect(page.locator('[data-radar]')).toBeVisible({ timeout: 20_000 });
-    await expect(page.locator('[data-streets-state]')).toContainText('Manhattan only');
+    await expect(page.locator('[data-streets-state]')).toContainText('Not here');
+    await expect(page.locator('[data-streets-state]')).toContainText('New York City and the New Jersey side only');
     // What pressing costs, on the screen before it is pressed; and nothing asked yet.
     await expect(page.locator('[data-openfreemap-cost]')).toContainText('which streets you look at');
     expect(asked).toEqual([]);
@@ -242,6 +246,38 @@ test.describe('the live map', () => {
     await expect(page.locator('[data-blip-list] [data-listed]')).toHaveCount(8);
     await page.waitForTimeout(1_500);
     expect(await page.evaluate(() => (window as unknown as { __maps: number }).__maps), 'maps built for one screen').toBe(1);
+    await context.close();
+  });
+
+  test('a borough across the river draws from its own extract, and with no signal and nothing saved, the radar', async ({ browser }) => {
+    test.setTimeout(120_000);
+    // Flushing, Queens: once outside the streets, now inside one of six.
+    const context = await browser.newContext({ permissions: ['geolocation'], geolocation: { latitude: 40.7675, longitude: -73.833 } });
+    const page = await context.newPage();
+    const read: string[] = [];
+    page.on('response', (r) => {
+      const path = new URL(r.url()).pathname;
+      if (path.endsWith('.pmtiles')) read.push(path);
+    });
+    await seedDevice(page, { callsign: 'Kite', relayEvents: [] });
+    await open(page, '/terminal/sign-on/');
+    await page.locator('#area').fill('Flushing');
+    await page.locator('#share').selectOption('exact');
+    await page.getByRole('button', { name: /^sign on$/i }).click();
+    await page.waitForURL('**/terminal/');
+    await serviceWorkerReady(page);
+
+    await open(page, '/terminal/map/');
+    await expect(page.locator('[data-streets][data-drawn="true"]')).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('[data-streets-state]')).toContainText('Queens, read from navcom.app');
+    await expect(page.locator('[data-save-streets]')).toContainText('Save Queens for tonight');
+    expect(read.some((p) => p.includes('/tiles/queens-')), 'Queens was not read from its own extract').toBe(true);
+
+    // The signal goes, with nothing saved: a blank street map would read as a broken one.
+    await context.setOffline(true);
+    await expect(page.locator('[data-radar]')).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('[data-streets-state]')).toContainText('no signal');
+    await expect(page.locator('[data-radar] [data-blip][data-kind="self"]')).toHaveCount(1);
     await context.close();
   });
 });

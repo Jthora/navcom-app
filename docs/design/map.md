@@ -1059,18 +1059,24 @@ for three minutes [invariant 7].
 
 | View | When | What draws it |
 |---|---|---|
-| **Streets** | Where this phone has WebGL and the extract covers where everybody is | MapLibre GL, from our own extract of OpenStreetMap |
+| **Streets** | Where this phone has WebGL and an extract covers where everybody is | MapLibre GL, from our own extracts of OpenStreetMap |
 | **Radar** | Everywhere else, and whenever chosen | This app, with no tiles and no network: rings with their distances, north up or heading up |
 
-**The streets are ours.** One extract, Manhattan, cut from the Protomaps basemap build of 2026-11-03 and
-hosted beside the app (`web/static/tiles/`), with its fonts and sprites (`web/static/map/`, sources and
-licences in its `NOTICE.txt`). Not saved, the map reads it from navcom.app a range at a time; **saved for
-the night**, it draws with no network, so a crowd taking the cell network does not blank the streets, and
-no tile server learns where anybody is looking. Drawn in neutral: the places of interest are grey, with
+**The streets are ours.** Six extracts, one per area: the five boroughs and the New Jersey side of the
+harbour, Jersey City to Newark (the owner, 2026-11-03: "all 5 boroughs should be covered for patrols, just
+in case", and New Jersey with them). Each is cut from the Protomaps basemap build of 2026-11-03, 13 to 43 MB,
+and hosted beside the app (`web/static/tiles/`), with the fonts and sprites (`web/static/map/`, sources,
+boxes and licences in its `NOTICE.txt`). The map reads all six as one street map, each tile from whichever
+area holds it, so panning from one borough into the next keeps drawing; one source and not six, since a
+source per area would put every style layer on the map six times. Not saved, an area is read from
+navcom.app a range at a time; **saved for the night**, it draws with no network, so a crowd taking the cell
+network does not blank the streets, and no tile server learns where anybody is looking. A phone saves the
+area it is in with one press, and any other from the list under it; with no signal and the area not saved,
+the map is the radar, saying so, rather than a blank street map that reads as a broken one. Drawn in neutral: the places of interest are grey, with
 the grayscale icons, because every hue here is a watch state. The engine and its worker are files of their
 own that the service worker leaves out of every install and keeps once somebody opens the map; their weight
-is the `streets` line in `budget.mjs`. **OpenFreeMap is the fallback** where our extract stops: outside
-Manhattan the map is the radar until somebody presses *Streets from OpenFreeMap*, which says first that
+is the `streets` line in `budget.mjs`. **OpenFreeMap is the fallback** where our extracts stop: outside
+the city the map is the radar until somebody presses *Streets from OpenFreeMap*, which says first that
 OpenFreeMap learns this phone's address and which streets it looks at, the only ask anywhere here built from
 where somebody looks (`what-leaves.md`, `outside.ts` `OPENFREEMAP`). Their dark style, with the blips laid
 over it on this phone; the choice lasts the visit and is never stored, so a reload asks nobody.

@@ -103,12 +103,37 @@ describe('which way the phone faces', () => {
   });
 });
 
-describe('the street extract’s name', () => {
-  it('carries the day it was built, so a new extract is a new file the host may cache forever', async () => {
-    const { STREETS } = await import('./tiles');
+describe('the street extracts', () => {
+  it('each carries the day it was built, so a new extract is a new file the host may cache forever', async () => {
+    const { STREET_AREAS } = await import('./tiles');
     const vercel = JSON.parse((await import('node:fs')).readFileSync(new URL('../../../../vercel.json', import.meta.url), 'utf8'));
-    expect(STREETS.url).toContain(STREETS.built.replaceAll('-', ''));
+    for (const a of STREET_AREAS) expect(a.url).toContain(`${a.id}-${a.built.replaceAll('-', '')}`);
+    expect(new Set(STREET_AREAS.map((a) => a.url)).size).toBe(STREET_AREAS.length);
     const rule = (vercel.headers as { source: string; headers: { key: string; value: string }[] }[]).find((h) => h.source === '/tiles/(.*)');
     expect(rule?.headers.find((h) => h.key === 'cache-control')?.value).toMatch(/immutable/);
+  });
+
+  it('are on disk at the size and digest the app checks a save against', async () => {
+    const { STREET_AREAS } = await import('./tiles');
+    const { readFileSync, statSync } = await import('node:fs');
+    const { createHash } = await import('node:crypto');
+    for (const a of STREET_AREAS) {
+      const file = new URL(`../../../static${a.url}`, import.meta.url);
+      expect(statSync(file).size, a.id).toBe(a.bytes);
+      expect(createHash('sha256').update(readFileSync(file)).digest('hex'), a.id).toBe(a.sha256);
+    }
+  });
+
+  it('give a point the borough it is in, by the river too, and nothing outside the city', async () => {
+    const { areaAt } = await import('./tiles');
+    const at = (lat: number, lon: number) => areaAt({ lat, lon })?.id ?? null;
+    expect(at(40.758, -73.9855)).toBe('manhattan'); // Times Square
+    expect(at(40.6928, -73.9903)).toBe('brooklyn'); // Borough Hall, inside Manhattan's box by a hair
+    expect(at(40.7675, -73.833)).toBe('queens'); // Flushing
+    expect(at(40.8448, -73.8648)).toBe('bronx'); // Parkchester
+    expect(at(40.6437, -74.0736)).toBe('staten-island'); // St George, beside the New Jersey box
+    expect(at(40.7178, -74.0431)).toBe('new-jersey'); // Jersey City
+    expect(at(40.7357, -74.1724)).toBe('new-jersey'); // Newark
+    expect(at(40.7062, -73.6187)).toBe(null); // Hempstead, Long Island
   });
 });

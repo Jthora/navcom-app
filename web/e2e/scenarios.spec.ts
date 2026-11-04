@@ -61,10 +61,11 @@ test.describe('a newcomer on no list, a first night in Queens, with no code and 
     await expect(page.locator('[data-no-watch]')).toBeVisible();
     await expect(page.locator('[data-contact] a').first()).toContainText(/sam/i);
 
-    // Queens is outside the saved streets: the radar, asking nobody.
+    // Queens has streets, but none saved on this phone and no signal: the radar, saying why.
     await open(page, '/terminal/map/');
     await expect(page.locator('[data-radar]')).toBeVisible({ timeout: 20_000 });
-    await expect(page.locator('[data-streets-state]')).toContainText('Manhattan only');
+    await expect(page.locator('[data-streets-state]')).toContainText(/not saved/i);
+    await expect(page.locator('[data-streets-state]')).toContainText('no signal');
     await context.close();
   });
 });

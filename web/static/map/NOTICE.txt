@@ -1,11 +1,18 @@
 The live map's streets, and where each part comes from.
 
-Street tiles  /tiles/manhattan-20261103.pmtiles
+Street tiles  /tiles/<area>-20261103.pmtiles
   Map data (c) OpenStreetMap contributors, under the Open Database License (ODbL):
   https://www.openstreetmap.org/copyright
-  Cut from the Protomaps basemap daily build of 2026-11-03 (schema 4.15.2), Manhattan,
-  bounding box -74.03,40.69,-73.90,40.89, zooms 0 to 15, with the pmtiles tool:
-    pmtiles extract https://build.protomaps.com/20261103.pmtiles manhattan.pmtiles --bbox=-74.03,40.69,-73.90,40.89
+  Cut from the Protomaps basemap daily build of 2026-11-03 (schema 4.15.2), zooms 0 to 15, with the
+  pmtiles tool, one file per area, each with its bounding box (west, south, east, north):
+    manhattan       -74.03,40.69,-73.90,40.89
+    brooklyn        -74.05,40.56,-73.83,40.74
+    queens          -73.97,40.54,-73.70,40.81
+    bronx           -73.94,40.78,-73.76,40.92
+    staten-island   -74.26,40.49,-74.05,40.65
+    new-jersey      -74.25,40.64,-74.02,40.80   (Jersey City, Hoboken, Bayonne and Newark)
+  each as:
+    pmtiles extract https://build.protomaps.com/20261103.pmtiles <area>-20261103.pmtiles --bbox=<box>
   Protomaps basemaps: https://github.com/protomaps/basemaps (BSD-3-Clause)
 
 Fonts  /map/fonts/
