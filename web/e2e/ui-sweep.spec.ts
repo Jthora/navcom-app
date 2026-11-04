@@ -105,7 +105,12 @@ for (const state of ['first visit', 'out under a watch', 'holding a busy board']
         for (const signature of ['document', 'low'] as const) {
           await page.evaluate((s) => (document.documentElement.dataset.signature = s), signature);
           await page.waitForTimeout(50);
-          const axe = await new AxeBuilder({ page }).analyze();
+          // Every rule once; in the second signature only the one a palette can change. A long list
+          // is one template, so the first forty of each are read and not 1,912 regions twice over,
+          // which outran the timeout on a loaded machine.
+          let builder = new AxeBuilder({ page }).exclude('ul > li:nth-child(n+41)');
+          if (signature === 'low') builder = builder.withRules(['color-contrast']);
+          const axe = await builder.analyze();
           const said = axe.violations.map((v) => `${v.id} (${v.impact}): ${v.help} — ${v.nodes.slice(0, 3).map((n) => n.target.join(' ')).join(' | ')}`);
           expect(said, `${path}, ${state}, ${signature} signature`).toEqual([]);
         }
