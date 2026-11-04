@@ -18,7 +18,7 @@ import engineUrl from 'maplibre-gl/dist/maplibre-gl.mjs?url';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import { PMTiles, type RangeResponse, type Source } from 'pmtiles';
 import { layers, namedFlavor } from '@protomaps/basemaps';
-import type { Blip } from '$lib/map/blips';
+import { trailLine, type Blip } from '$lib/map/blips';
 import type { StreetArea } from '$lib/map/tiles';
 
 /** A saved extract read straight from the phone: a slice of the file, never the network. */
@@ -189,6 +189,8 @@ export async function mountStreets(
   };
   /** The blips, the same over either streets. OpenFreeMap's fonts name Noto Sans Regular, ours Medium too. */
   const blipLayers = (font: string): LayerSpecification[] => [
+      // The last ten minutes, on the watch only: a thin line in ink, under everything else drawn here.
+      { id: 'trail', type: 'line', source: 'trails', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ink, 'line-width': 2, 'line-opacity': 0.45 } },
       { id: 'spread', type: 'fill', source: 'spread', paint: { 'fill-color': station, 'fill-opacity': 0.1, 'fill-outline-color': station } },
       { id: 'go', type: 'line', source: 'go', paint: { 'line-color': ink, 'line-width': 2, 'line-dasharray': [2, 1.5] } },
       {
@@ -227,6 +229,7 @@ export async function mountStreets(
       }
     ];
   const blipSources: Record<string, SourceSpecification> = {
+    trails: { type: 'geojson', data: empty },
     spread: { type: 'geojson', data: empty },
     go: { type: 'geojson', data: empty },
     blips: { type: 'geojson', data: empty }
@@ -293,6 +296,16 @@ export async function mountStreets(
           geometry: { type: 'Point', coordinates: [b.lon, b.lat] },
           properties: { id: b.id, kind: b.kind, state: b.state ?? '', asking: b.asking ?? '', fresh: fresh(b), selected: b.id === selected, text: `${b.label}${teams(b.team)}` }
         }))
+      });
+      (map.getSource('trails') as GeoJSONSource | undefined)?.setData({
+        type: 'FeatureCollection',
+        features: blips
+          .filter((b) => b.trail && b.trail.length > 0)
+          .map((b) => ({
+            type: 'Feature',
+            geometry: { type: 'LineString', coordinates: trailLine(b).map((p) => [p.lon, p.lat]) },
+            properties: { id: b.id }
+          }))
       });
       (map.getSource('spread') as GeoJSONSource | undefined)?.setData({
         type: 'FeatureCollection',

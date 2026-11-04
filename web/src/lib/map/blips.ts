@@ -28,10 +28,24 @@ export interface Blip {
   state: BlipState | null;
   /** An Assist or a Distress of theirs the watch has not dealt with. */
   asking: 'assist' | 'distress' | null;
+  /** Where they were in the last ten minutes, oldest first: on the watch only, and never kept [board.svelte.ts]. */
+  trail?: { lat: number; lon: number }[];
 }
 
-/** Past this, a blip is drawn hollow: nothing heard for three minutes is not the same as there. */
-export const BLIP_STALE_SECONDS = 180;
+/** A blip's trail, ending where it is now, with the point it already ends on not drawn twice. */
+export function trailLine(b: Blip): { lat: number; lon: number }[] {
+  const pts = [...(b.trail ?? [])];
+  const last = pts[pts.length - 1];
+  if (!last || last.lat !== b.lat || last.lon !== b.lon) pts.push({ lat: b.lat, lon: b.lon });
+  return pts;
+}
+
+/**
+ * Past this, a blip is drawn hollow: nothing heard for five minutes is not the same as there. Five,
+ * since a phone standing still says so once in four [session.svelte.ts FIX_STILL_SECONDS]: at three, a
+ * still operator read as gone between their fixes.
+ */
+export const BLIP_STALE_SECONDS = 300;
 /** Past this, it starts to fade. */
 export const BLIP_AGING_SECONDS = 60;
 

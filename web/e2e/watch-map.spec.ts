@@ -84,6 +84,8 @@ test.describe('the live map', () => {
     await expect(page.locator('[data-go-distance]')).toContainText(/1\.\d km/);
     await expect(page.locator('[data-go-distance]')).toContainText(/N/);
     await expect(page.locator('[data-directions="Your map app"]')).toHaveAttribute('href', /\(9th%20Street%20Drop-In\)$/);
+    // Where anybody was is the watch's alone: no trail on an operator's phone, theirs included.
+    await expect(page.locator('[data-trail]')).toHaveCount(0);
     await context.close();
   });
 
@@ -278,6 +280,28 @@ test.describe('the live map', () => {
     await expect(page.locator('[data-radar]')).toBeVisible({ timeout: 15_000 });
     await expect(page.locator('[data-streets-state]')).toContainText('no signal');
     await expect(page.locator('[data-radar] [data-blip][data-kind="self"]')).toHaveCount(1);
+    await context.close();
+  });
+
+  test('the watch sees the last ten minutes behind each blip, and an operator never does', async ({ browser }) => {
+    test.setTimeout(90_000);
+    const { generateSecretKey, getPublicKey } = await import('nostr-tools/pure');
+    const now = Math.floor(Date.now() / 1000);
+    const kite = generateSecretKey();
+    const at = (metres: number) => ({ lat: 40.7497 + metres / 111_320, lon: -73.9877, precision_m: 0 });
+    const context = await browser.newContext({ viewport: { width: 360, height: 740 } });
+    const page = await context.newPage();
+    await seedDevice(page, { callsign: 'Vale', watchSecret: WATCH_SECRET, relayEvents: [await signal(kite, 'on-station', out('Kite', 'Rescue Rangers', 40.7497, -73.9877), now - 500)] });
+    await open(page, '/terminal/map/');
+    await page.locator('[data-view="radar"]').click();
+    for (const [metres, ago] of [[60, 300], [120, 120], [180, 30]] as const) {
+      const moved = await signal(kite, 'position' as never, { position: at(metres) }, now - ago);
+      await page.evaluate((x) => (window as unknown as { __navcomDeliver: (e: unknown) => number }).__navcomDeliver(x), moved);
+    }
+    const trail = page.locator(`[data-radar] [data-trail="${getPublicKey(kite)}"]`);
+    await expect(trail).toHaveCount(1, { timeout: 15_000 });
+    // Where they signed on, and three moves: four points from the oldest to where they are now.
+    expect((await trail.getAttribute('points'))!.trim().split(/\s+/).length).toBe(4);
     await context.close();
   });
 });

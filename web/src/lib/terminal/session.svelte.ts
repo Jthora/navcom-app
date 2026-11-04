@@ -40,7 +40,8 @@ import { coverOf, watchtowerAt, type Cover, type WatchtowerAddress } from '@navc
 import { presence } from './presence.svelte';
 import { kemKeys } from './pq.svelte';
 import { beatListed, stopListed } from './public.svelte';
-import { position } from './position.svelte';
+import { position, precision } from './position.svelte';
+import { metresApart } from '$lib/console/position-once';
 import { overdue } from './overdue.svelte';
 import { passedOn } from './passed-on.svelte';
 import { notice } from './notice.svelte';
@@ -275,13 +276,38 @@ function here(): { position?: Position } {
  * Not to a box: no screen there shows it. Never contact: the board moves the fix and nothing else.
  */
 const FIX_EVERY_SECONDS = 60;
-const FIX_STILL_SECONDS = 300;
+/**
+ * Sharing exactly, while moving: about every fifteen seconds (the owner's map decisions, 2026-11-03),
+ * so the watch's map follows somebody walking a block rather than jumping a minute at a time.
+ */
+export const FIX_MOVING_SECONDS = 15;
+/** Moved, for an exact fix: past what GPS wanders on its own, so a phone in a pocket on a bench is still. */
+export const FIX_MOVED_METRES = 15;
+/**
+ * Still, once in four minutes and no more: inside the five the map gives a blip before drawing it as
+ * not heard [blips.ts], and the five a fix counts for when the watch passes an Assist to the nearest.
+ */
+export const FIX_STILL_SECONDS = 240;
+
+/** Whether this fix is worth telling the watch: it moved, or a still one is due to say it is still there. */
+export function fixDue(
+  fix: { lat: number; lon: number; precision_m: number },
+  sent: { lat: number; lon: number; precision_m: number; at: number } | null,
+  now: number
+): boolean {
+  if (!sent) return true;
+  const moved =
+    fix.precision_m === 0 && sent.precision_m === 0
+      ? metresApart(sent, fix) >= FIX_MOVED_METRES
+      : fix.lat !== sent.lat || fix.lon !== sent.lon || fix.precision_m !== sent.precision_m;
+  return moved || now - sent.at >= FIX_STILL_SECONDS;
+}
 let fixBeat: ReturnType<typeof setInterval> | null = null;
 let fixSent: { lat: number; lon: number; precision_m: number; at: number } | null = null;
 
 function startFixBeat(): void {
   stopFixBeat();
-  fixBeat = setInterval(sendFix, FIX_EVERY_SECONDS * 1000);
+  fixBeat = setInterval(sendFix, (precision() === 'exact' ? FIX_MOVING_SECONDS : FIX_EVERY_SECONDS) * 1000);
 }
 
 function sendFix(): void {
@@ -296,8 +322,7 @@ function sendFix(): void {
   }
   if (config.holders.length === 0) return;
   const now = Math.floor(Date.now() / 1000);
-  const same = fixSent && fixSent.lat === fix.lat && fixSent.lon === fix.lon && fixSent.precision_m === fix.precision_m;
-  if (same && now - fixSent!.at < FIX_STILL_SECONDS) return;
+  if (!fixDue(fix, fixSent, now)) return;
   const relays = routineTo(watchTargets());
   if (relays.length === 0) return;
   fixSent = { ...fix, at: now };

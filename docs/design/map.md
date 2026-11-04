@@ -1087,10 +1087,15 @@ where somebody looks (`what-leaves.md`, `outside.ts` `OPENFREEMAP`). Their dark 
 over it on this phone; the choice lasts the visit and is never stored, so a reload asks nobody.
 
 **Tracking.** Follow keeps a blip in the middle. Positions are told while out, and from the first fix
-at once. **Decided and not built:** a phone sharing its exact position sends about every fifteen seconds
-while it moves, and nothing while it is still; and the watch, only, draws a tail of the last ten minutes,
-held in memory and gone at stand-down or a handover. **That tail bends a rule**, *a peer holds where you
-are and never where you were* (`presence.svelte.ts`), and the owner chose to bend it for the watch alone.
+at once. **Built 2026-11-04, as decided:** a phone sharing its exact position looks every fifteen seconds
+and sends once it has moved fifteen metres, past what GPS wanders on its own; standing still, it says so
+once in four minutes, inside the five a blip is drawn as heard and a fix counts for the nearest, so a still
+operator never reads as gone. Sharing roughly keeps its minute. The watch, only, draws a trail of the last
+ten minutes behind each blip, from exact fixes alone, since rough ones would draw a path nobody walked: on
+the streets and on the radar, held in the page and gone when the operator stands down, when this phone
+stands down, and at a wipe (`board.svelte.ts` `trailOf`; never written to storage, which a test holds).
+**That trail bends a rule**, *a peer holds where you are and never where you were* (`presence.svelte.ts`),
+and the owner chose to bend it for the watch alone.
 
 **The way there.** Selecting a blip says how far and which way, with an arrow that turns with the phone's
 compass. Turn-by-turn is the phone's own map app, as everywhere here (§2, §5): Directions hand the pin to

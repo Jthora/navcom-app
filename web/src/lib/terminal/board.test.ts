@@ -1367,6 +1367,68 @@ describe('a position, sent while an operator moves', () => {
     deliver(finalizeEvent(buildSignal(wren, to, 'position', { position: there }, NOW()), wren));
     expect(board.entries).toHaveLength(0);
   });
+
+  describe('the watch’s trail (the owner’s map decisions, 2026-11-03)', () => {
+    const step = (metres: number) => ({ lat: there.lat + metres / 111_320, lon: there.lon, precision_m: 0 });
+    const fixAt = (p: typeof there, at: number) => deliver(finalizeEvent(buildSignal(wren, to, 'position', { position: p }, at), wren));
+
+    it('keeps where they were in the last ten minutes, oldest first, and nothing older', () => {
+      const now = NOW();
+      deliver(signOn(now - 1_200));
+      fixAt(step(0), now - 700);
+      fixAt(step(50), now - 300);
+      fixAt(step(100), now - 60);
+      expect(board.trailOf(wrenPub, now)).toEqual([
+        { lat: step(50).lat, lon: step(50).lon },
+        { lat: step(100).lat, lon: step(100).lon }
+      ]);
+    });
+
+    it('draws no trail from rough fixes, which would be a path nobody walked', () => {
+      const now = NOW();
+      deliver(signOn(now - 600));
+      fixAt({ lat: 40.71, lon: -74.0, precision_m: 500 }, now - 120);
+      fixAt({ lat: 40.715, lon: -74.0, precision_m: 500 }, now - 60);
+      expect(board.trailOf(wrenPub, now)).toEqual([]);
+    });
+
+    it('is gone when they stand down, and when this phone stands down', async () => {
+      const now = NOW();
+      deliver(signOn(now - 600));
+      fixAt(step(0), now - 120);
+      deliver(stoodDown(wren, now - 30));
+      expect(board.trailOf(wrenPub, now)).toEqual([]);
+      deliver(signOn(now - 20));
+      fixAt(step(20), now - 10);
+      expect(board.trailOf(wrenPub, now)).toHaveLength(1);
+      await board.standDown();
+      expect(board.trailOf(wrenPub, now)).toEqual([]);
+    });
+
+    it('is never written to storage', () => {
+      // A storage that remembers every write, so anything the board or what it calls keeps is seen.
+      const written: string[] = [];
+      const store = new Map<string, string>();
+      vi.stubGlobal('localStorage', {
+        getItem: (k: string) => store.get(k) ?? null,
+        setItem: (k: string, v: string) => (written.push(v), store.set(k, v)),
+        removeItem: (k: string) => store.delete(k),
+        key: (i: number) => [...store.keys()][i] ?? null,
+        get length() { return store.size; },
+        clear: () => store.clear()
+      });
+      try {
+        const now = NOW();
+        deliver(signOn(now - 600));
+        fixAt(step(0), now - 120);
+        fixAt(step(40), now - 60);
+        expect(board.trailOf(wrenPub, now)).toHaveLength(2);
+        expect(written.join('\n')).not.toContain(String(step(40).lat).slice(0, 9));
+      } finally {
+        vi.unstubAllGlobals();
+      }
+    });
+  });
 });
 
 describe('asking somebody past their time to check in', () => {

@@ -180,6 +180,32 @@ let stillAdvertised = $state(false);
 let darkRetry: ReturnType<typeof setInterval> | null = null;
 /** A renewal waiting for a relay that has just started answering to have kept at it. */
 let recheck: ReturnType<typeof setTimeout> | null = null;
+/**
+ * Where each operator was in the last ten minutes, for the watch's map, and only for those sharing
+ * exactly: a trail of rough fixes would draw a path nobody walked (the owner's map decisions,
+ * 2026-11-03). In this page and nowhere else: never stored, never sent, and gone when this phone
+ * stands down, is wiped, or the operator does. It bends "a peer holds where you are, never where you
+ * were", for the watch only, and the owner accepted that.
+ */
+export const TRAIL_SECONDS = 600;
+/** The most points kept for one operator: ten minutes at one every fifteen seconds, with room. */
+const TRAIL_MAX = 60;
+let trails = $state<Record<string, { lat: number; lon: number; at: number }[]>>({});
+
+function noteTrail(from: string, fix: Position | null, said: number): void {
+  if (!fix || fix.precision_m !== 0) return;
+  const had = (trails[from] ?? []).filter((p) => p.at !== said);
+  const all = [...had, { lat: fix.lat, lon: fix.lon, at: said }].sort((a, b) => a.at - b.at);
+  const newest = all[all.length - 1]!.at;
+  trails = { ...trails, [from]: all.filter((p) => newest - p.at < TRAIL_SECONDS).slice(-TRAIL_MAX) };
+}
+
+function dropTrail(from: string): void {
+  if (!(from in trails)) return;
+  const { [from]: _gone, ...rest } = trails;
+  trails = rest;
+}
+
 /** A claim put back after another holder of this key said Dark while this phone holds it. */
 let reclaim: ReturnType<typeof setTimeout> | null = null;
 /**
@@ -595,6 +621,7 @@ export const board = {
     if (onStation) night.note('Stood down');
     onStation = false;
     releasedHere = true;
+    trails = {};
     // The holding is over; its Dark below goes where it always went, and a later one claims afresh.
     claimed = new Map();
     unannounced = false;
@@ -893,6 +920,11 @@ export const board = {
     return told;
   },
 
+  /** Where `operator` was in the last ten minutes, oldest first; the watch's map draws it under their blip. */
+  trailOf(operator: string, now: number): { lat: number; lon: number }[] {
+    return (trails[operator] ?? []).filter((p) => now - p.at < TRAIL_SECONDS).map(({ lat, lon }) => ({ lat, lon }));
+  },
+
   /** When this watch last asked them to check in, until they did; null if it has not. */
   askedAt(operator: string): number | null {
     return askedAt[operator] ?? null;
@@ -928,6 +960,7 @@ export const board = {
     passedOnFor = {};
     told = null;
     retold = new Set();
+    trails = {};
     unlisten();
     if (beat) clearInterval(beat);
     beat = null;
@@ -1407,6 +1440,7 @@ function apply(
       status: 'active'
     };
     entries = [...entries.filter((e) => e.operator !== from), entry];
+    noteTrail(from, fix, said);
     signedOnAs[from] = event.id;
     // What they asked before this board heard them sign on takes the name they signed on with.
     waiting = waiting.map((w) => (w.operator === from ? { ...w, callsign } : w));
@@ -1416,6 +1450,7 @@ function apply(
   if (type === 'stood-down') {
     entries = entries.filter((e) => e.operator !== from);
     waiting = waiting.filter((w) => w.operator !== from);
+    dropTrail(from);
     return;
   }
 
@@ -1425,6 +1460,7 @@ function apply(
     entries = entries.map((e) =>
       e.operator === from && (e.position_at === null || said >= e.position_at) ? { ...e, position: fix, position_at: said } : e
     );
+    if (entries.some((e) => e.operator === from)) noteTrail(from, fix, said);
     return;
   }
 
@@ -1435,6 +1471,7 @@ function apply(
     const moved = fix && (heard.position_at === null || said >= heard.position_at) ? { position: fix, position_at: said } : {};
     return { ...heard, ...moved, status: type === 'distress' ? ('distress' as const) : e.status };
   });
+  if (fix && entries.some((e) => e.operator === from)) noteTrail(from, fix, said);
 
   if (type === 'routine') return;
 

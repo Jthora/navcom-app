@@ -62,7 +62,7 @@
     !ready
       ? []
       : watching
-        ? watchBlips(board.entriesAt(nowS), [...board.distress, ...board.waiting])
+        ? watchBlips(board.entriesAt(nowS), [...board.distress, ...board.waiting]).map((b) => ({ ...b, trail: board.trailOf(b.id, nowS) }))
         : operatorBlips(position.current, nowS, presence.out, (p) => presence.stateOf(p as PeerPresence, nowS), destination)
   );
   const me = $derived(blips.find((b) => b.kind === 'self') ?? null);

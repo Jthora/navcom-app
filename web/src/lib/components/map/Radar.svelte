@@ -7,7 +7,7 @@
    * North up, or heading up where the phone has a compass. Every blip says how old it is: fading, then
    * hollow once nothing has been heard for three minutes [invariant 7].
    */
-  import { freshness, type Blip } from '$lib/map/blips';
+  import { freshness, trailLine, type Blip } from '$lib/map/blips';
   import { metresApart, offset, ringsFor, type LatLon } from '$lib/map/geometry';
   import { distance } from '$lib/terminal/lookup';
 
@@ -33,7 +33,7 @@
   const k = $derived(R / outer);
   const turn = $derived(heading ?? 0);
 
-  function place(b: Blip): { x: number; y: number } {
+  function place(b: LatLon): { x: number; y: number } {
     const { east, north } = offset(centre, b);
     const a = (-turn * Math.PI) / 180;
     const x = east * Math.cos(a) - north * Math.sin(a);
@@ -61,6 +61,10 @@
       <line class="go" x1="0" y1="0" x2={p.x} y2={p.y} />
     {/if}
   {/if}
+  {#each blips.filter((b) => b.trail && b.trail.length > 0) as b (b.id)}
+    <!-- The last ten minutes, on the watch only, under every blip. -->
+    <polyline class="trail" data-trail={b.id} points={trailLine(b).map((t) => { const q = place(t); return `${q.x},${q.y}`; }).join(' ')} />
+  {/each}
   {#each blips as b (b.id)}
     {@const p = place(b)}
     {@const f = freshness(b, now)}
@@ -93,6 +97,7 @@
 <style>
   .radar { width: 100%; max-width: 32rem; aspect-ratio: 1; display: block; margin-inline: auto; background: var(--t-sunk); border: 1px solid var(--t-line); }
   .ring { fill: none; stroke: var(--t-line-strong); stroke-width: 0.4; }
+  .trail { fill: none; stroke: var(--t-ink); stroke-width: 0.9; stroke-opacity: 0.45; stroke-linecap: round; stroke-linejoin: round; }
   .hub { fill: var(--t-faint); }
   .ring-label, .north { fill: var(--t-faint); font: 4px var(--font-mono); }
   .north { fill: var(--t-muted); font-size: 5px; }

@@ -67,7 +67,8 @@ happen. If it does not, stop and tell whoever looks after NavCom.
 
 - **Sign on.** An area (a neighbourhood, not an address), your team if several are out together,
   how long, how often you will check in, and whether to share where you are. *Roughly* is to about
-  500 m. The team you gave is offered again next time.
+  500 m. *Exactly* tells the watch every few steps while you move, and every few minutes while you are
+  still. The team you gave is offered again next time.
 - **Check in** at the interval you gave. Past it, the watch may ask you to; nothing else happens.
 - **Query** asks the watch. A person answers, so it can take a minute. *Waiting for the watch* shows
   on Query and Status, and you can use other screens meanwhile.
@@ -92,7 +93,9 @@ happen. If it does not, stop and tell whoever looks after NavCom.
 
 - **Power** on the Watch screen says whether this laptop is charging, and how much battery is left.
 - **Map**, beside Who is out, shows everybody on the board who shares where they are, on the streets of
-  all five boroughs and the New Jersey side, or a radar. **Follow** keeps one in the middle. On the
+  all five boroughs and the New Jersey side, or a radar, with a line behind each of them for the last ten
+  minutes. **Follow** keeps one in the middle. Only the watch sees those lines, and they are gone when you
+  stand down. On the
   laptop, save every area under **Other areas** (139 MB together).
 - Open **Watch** and keep it open. While you hold the watch it keeps the screen on and sounds a
   Distress until you answer it or press Silence. Touch the screen once so the browser lets it play.
