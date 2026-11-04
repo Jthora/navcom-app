@@ -8,6 +8,7 @@
   import { isUnverified } from '@navcom/core';
   import { watch } from '$lib/terminal/watch.svelte';
   import { operator } from '$lib/terminal/session.svelte';
+  import { loadContact, smsLink, type EmergencyContact } from '$lib/terminal/contact';
 
   import { Slot, Readout } from '$lib/components/panel';
   // No watch added and a watch that is down are different situations, and an operator
@@ -17,10 +18,17 @@
 
   let text = $state('');
   let sentAt = $state<number | null>(null);
+  /**
+   * Their own person, for when no relay takes it (the joint night, 2026-11-04): a crowd that takes the
+   * data network often leaves texts going, and the night guide has the watch's holder as that person.
+   * Their words, to the person they chose, sent by their own tap; never sent for them.
+   */
+  let contact = $state<EmergencyContact | null>(null);
 
   onMount(() => {
     hasWatch = operator.hasWatch;
     stranded = operator.watchStranded;
+    contact = loadContact();
     watch.start();
     return () => watch.stop();
   });
@@ -75,6 +83,9 @@
 
   {#if operator.error}
     <p class="error">{operator.error}</p>
+    {#if contact && text.trim()}
+      <a class="action" href={smsLink(contact, text.trim())} data-text-it>Text it to {contact.label}</a>
+    {/if}
   {/if}
 
   <button type="submit" disabled={operator.busy || !text.trim()}>

@@ -200,3 +200,31 @@ test.describe('a check-in pressed underground', () => {
     expect(routines[routines.length - 1]!).toBeLessThanOrEqual(pressed + 1);
   });
 });
+
+test.describe('no relay takes a question in a crowd that took the data', () => {
+  test('offers it as a text to the operator’s own person, in their words, sent only by their tap', async ({ page }) => {
+    await seedDevice(page, {
+      callsign: 'Kite',
+      contact: SAM,
+      watchtower: { pubkey: getPublicKey(generateSecretKey()), relays: ['wss://fake.relay'], holders: [me] },
+      relayEvents: [],
+      refusePublish: true
+    });
+    await open(page, '/terminal/query/');
+    await page.locator('#q').fill('Is the drop-in on 30th open? Two of us.');
+    await page.getByRole('button', { name: /^ask$/i }).click();
+    const text = page.locator('[data-text-it]');
+    await expect(text).toHaveText('Text it to Sam', { timeout: 15_000 });
+    const href = (await text.getAttribute('href'))!;
+    expect(href).toMatch(/^sms:/);
+    expect(decodeURIComponent(href)).toContain('Is the drop-in on 30th open? Two of us.');
+
+    // The same for an Assist, saying how soon.
+    await open(page, '/terminal/assist/');
+    await page.locator('label.choice', { hasText: 'Now' }).click();
+    await page.locator('#a').fill('Second pair of hands, Herald Sq');
+    await page.getByRole('button', { name: /assist — now/i }).click();
+    await expect(page.locator('[data-text-it]')).toHaveText('Text it to Sam', { timeout: 15_000 });
+    expect(decodeURIComponent((await page.locator('[data-text-it]').getAttribute('href'))!)).toContain('Assist, now: Second pair of hands, Herald Sq');
+  });
+});

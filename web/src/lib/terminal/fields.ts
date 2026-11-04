@@ -108,7 +108,9 @@ export const WIPEABLE_FIELDS = [
   // The team this phone last signed on with, offered at the next sign-on: tonight's arrangement.
   'team',
   // Tonight's teams, from the watch's signed code or as its holder named them [teams.ts].
-  'watch_teams'
+  'watch_teams',
+  // Tonight's phrases for answering, written ahead by the holder: a panic wipe takes them.
+  'watch_phrases'
 ] as const;
 
 export type AccruingField = keyof typeof ACCRUING_FIELDS;

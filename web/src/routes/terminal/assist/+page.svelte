@@ -8,6 +8,7 @@
   import { onMount } from 'svelte';
   import { watch } from '$lib/terminal/watch.svelte';
   import { operator } from '$lib/terminal/session.svelte';
+  import { loadContact, smsLink, type EmergencyContact } from '$lib/terminal/contact';
 
   import { Slot, Readout } from '$lib/components/panel';
   // No watch added and a watch that is down are different situations, and an operator
@@ -18,6 +19,8 @@
   let urgency = $state<'soon' | 'now'>('soon');
   let text = $state('');
   let sent = $state(false);
+  /** Their own person, for when no relay takes it: their words, by their tap [query/+page.svelte]. */
+  let contact = $state<EmergencyContact | null>(null);
   /** Inert until hydrated: a prerendered form tapped before then does a native GET. */
   let ready = $state(false);
 
@@ -25,6 +28,7 @@
     ready = true;
     hasWatch = operator.hasWatch;
     stranded = operator.watchStranded;
+    contact = loadContact();
     watch.start();
     return () => watch.stop();
   });
@@ -90,6 +94,9 @@
   {/if}
   {#if operator.error}
     <p class="error">{operator.error}</p>
+    {#if contact}
+      <a class="action" href={smsLink(contact, `Assist, ${urgency}${text.trim() ? `: ${text.trim()}` : ''}`)} data-text-it>Text it to {contact.label}</a>
+    {/if}
   {/if}
   {#if declined}
     <!--

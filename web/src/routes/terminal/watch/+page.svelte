@@ -17,6 +17,8 @@
   import { buildAgainst, codeTeams, declineIsValid, keyPrint, RESPONSE_WINDOW, sameTeam, TEXT_MAX } from '@navcom/core';
   import { BUILT_AT, BUILT_COMMIT } from '$lib/built';
   import { setWatchTeams, watchTeams } from '$lib/terminal/teams';
+  import { phrases, setPhrases, PHRASES_MAX } from '$lib/terminal/phrases';
+  import Phrases from '$lib/components/watch/Phrases.svelte';
   import { board, type Waiting } from '$lib/terminal/board.svelte';
   import { createWatch, foundedHere, joinWatch, leaveWatch, otherHolders as keptHolders, setOtherHolders, watchKey, watchPubkey, watchSecretHex, WatchKeyError } from '$lib/terminal/watch-key';
   import ScanKey from '$lib/components/watch/ScanKey.svelte';
@@ -379,6 +381,14 @@
   });
   const codeQr = $derived(code ? encodeQR(code, 'svg', { ecc: 'medium', border: 2 }) : '');
   let codeCopied = $state(false);
+  /** Tonight's phrases, written ahead; a tap puts one in the answer box [phrases.ts]. */
+  let phraseList = $state<string[]>(phrases());
+  let phraseDraft = $state(phrases().join('\n'));
+  let phrasesSaved = $state(false);
+  /** A phrase into the answer being written: after what is there, or as all of it. */
+  function pickPhrase(p: string) {
+    text = text.trim() ? `${text.trim()} ${p}` : p;
+  }
   /*
    * The watch key and this phone's holder key, copied to send rather than shown to scan: a watch is
    * remote-friendly, and nothing here needs two people in one room (the owner, 2026-11-03). Selecting
@@ -650,6 +660,11 @@
       <button onclick={copyCode}>{codeCopied ? 'Copied' : 'Copy the code'}</button>
       <label for="teams-tonight">Teams tonight</label>
       <input id="teams-tonight" bind:value={teamsTonight} autocomplete="off" placeholder="optional, separated by commas" data-teams-tonight />
+      <Why summary="Phrases for tonight">
+        <label for="phrases">One per line, up to {PHRASES_MAX}</label>
+        <textarea id="phrases" bind:value={phraseDraft} rows="4" data-phrases-edit oninput={() => (phrasesSaved = false)}></textarea>
+        <button onclick={() => { phraseList = setPhrases(phraseDraft); phraseDraft = phraseList.join('\n'); phrasesSaved = true; }} data-phrases-save>{phrasesSaved ? 'Saved' : 'Save'}</button>
+      </Why>
       <Why summary="Other holders">
         <ScanKey label="Scan a holder key" onfound={addHolder} />
         <label for="other-holders">Their holder keys</label>
@@ -815,6 +830,7 @@
             {#if answering === w.id}
               <label for="a-{w.id}">Your answer</label>
               <textarea id="a-{w.id}" bind:value={text} rows="3"></textarea>
+              <Phrases list={phraseList} onpick={pickPhrase} />
               {#if attached?.for === w.id}
                 <span data-attached>
                   <Readout value={attached.name} verbatim tone="neutral" sub={sourceOf(attached.provenance)} />

@@ -75,7 +75,8 @@ happen. If it does not, stop and tell whoever looks after NavCom.
   Pressed with no signal, it says *Waiting for signal* and goes by itself once there is some, marked
   with the time you pressed it.
 - **Query** asks the watch. A person answers, so it can take a minute. *Waiting for the watch* shows
-  on Query and Status, and you can use other screens meanwhile.
+  on Query and Status, and you can use other screens meanwhile. If nothing can take it, **Text it to …**
+  puts the same words in a text to your person, which often goes when data does not.
 - **Assist** asks for another person: *soon* or *now*.
 - **Distress** keeps sending until a person answers. Use it for an emergency.
 - **Map**, on Status, shows you, the peers you paired with who share where they are, and where you are
@@ -114,6 +115,9 @@ happen. If it does not, stop and tell whoever looks after NavCom.
   each picking their own. An answer from either of you clears it on both screens. **Also holding**
   names the other while they keep it; if it reads *Nobody*, they have gone quiet and you are holding
   alone.
+- **Phrases for tonight**, under the watch's code: write the answers you expect to give again, one
+  per line. Under every answer box, a tap puts one in; nothing is sent until you press Send. A panic
+  wipe takes them.
 - **Answering:** **Add a place** opens the area nearest the person asking. The place you pick goes
   into the answer, and the answer shows where it came from and when it was last checked.
 - **Past their time:** **Ask … to check in**. They see it silently, and nobody else does.
