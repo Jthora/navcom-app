@@ -57,6 +57,9 @@ async function board() {
   return events;
 }
 
+/** Words that put a verdict on a person, which no screen may say of anybody. */
+const VERDICT = /\b(suspected|infiltrat\w*|informants?|untrusted|unvetted|not vetted|fake operator)\b/i;
+
 type State = 'first visit' | 'out under a watch' | 'holding a busy board';
 
 async function enter(page: Page, state: State) {
@@ -95,6 +98,8 @@ for (const state of ['first visit', 'out under a watch', 'holding a busy board']
         await page.waitForTimeout(300);
 
         expect(await pastTheEdge(page), `${path}, ${state}, at 360px`).toEqual([]);
+        // Unknown is not suspect: no screen puts a verdict on a person [identity.md; units.md §14].
+        expect(await page.locator('body').innerText(), `${path}, ${state}`).not.toMatch(VERDICT);
         // In both signatures, whichever this device would choose: low is every operator's default
         // once they have a callsign, and the document one is everybody else's [signature.ts].
         for (const signature of ['document', 'low'] as const) {

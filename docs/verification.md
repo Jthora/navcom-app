@@ -723,6 +723,15 @@ publish refused on this machine. `LIVE_BASE` points it at a local build to try t
 Tried there first, it found the extract served `max-age=0`, so a phone that had not saved the
 streets asked again for every tile; `/tiles/` is immutable now, and a new extract takes a new name.
 
+**Three nights from the stint brief** (the owner's, 2026-11-03; `e2e/scenarios.spec.ts`, in the
+gate): a newcomer on no list going out alone in Queens, an iPhone locking in a pocket, and the only
+holder asleep when a Distress comes in. The second found sign-on saying nothing about what a locked
+phone sends, before the operator commits to a night that depends on it [invariant 9]; its panel now
+says. The third is the first time a browser has seen the operator told *Nobody is coming* at ten
+minutes, on the page's own clock: until it, only core's unit tests had. Two refusals are held as
+assertions beside them: no field the app keeps is a verdict on a person (`fields.test.ts`), and no
+screen in the sweep says one.
+
 **Still not covered:** a phone in a hand. A harness that drives an Android phone's own Chrome over
 USB, against this machine's build, was planned and not built: the phone's Chrome had never been
 opened, and getting past its first screen is its owner's to do. Two networks and a crowd remain the

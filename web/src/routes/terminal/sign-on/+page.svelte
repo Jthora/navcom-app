@@ -74,6 +74,18 @@
    * reimplements "reachable" and then drifts from the other.
    */
   const nowS = $derived(Math.floor(Date.now() / 1000));
+
+  /*
+   * What a locked phone sends, said before signing on [invariant 9]: the check-ins, the position and
+   * the Distress retrying all live in this page, and a phone that locks stops or slows it. An iPhone
+   * stops it outright, so nothing goes until NavCom is open again; Android's Chrome throttles a page
+   * it cannot see, and may freeze it. A value in the panel, the same height either way, so the form
+   * does not move when the word changes after the page wakes (the stint brief's SC6, 2026-11-03).
+   */
+  let apple = $state(false);
+  onMount(() => {
+    apple = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  });
   const reachable = $derived(pageableNow(watch.state.oncall, nowS).map((o) => o.author.callsign));
   const watchRead = $derived(
     // "Dark" is a configured watch that is not answering. An operator who never added one
@@ -127,6 +139,13 @@
     {:else}
       <Slot k="On call" />
     {/if}
+    <Slot k="Locked">
+      {#if apple}
+        <Readout value="Pauses" tone="warn" sub="nothing goes until NavCom is open" />
+      {:else}
+        <Readout value="May pause" tone="cold" sub="NavCom open is the only sure way" />
+      {/if}
+    </Slot>
     {#if configured}
       <HeardSlot heard={heardNow} {nowMs} />
     {/if}

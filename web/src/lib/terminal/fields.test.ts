@@ -221,3 +221,17 @@ describe('what a kit may carry', () => {
     for (const field of ['__proto__', 'constructor', 'toString', 'hasOwnProperty']) expect(carryOf(field), field).toBeNull();
   });
 });
+
+describe('nothing the app keeps marks a person', () => {
+  /*
+   * A declined thing, held as an assertion: no field for a suspicion, a flag, a ban or a warning about
+   * somebody. Its documented uses are bad-jacketing and antisocial punishment [units.md §14], and the
+   * request to "just add a warning field" is the attack itself (the stint brief, 2026-11-03, A3). A
+   * newcomer with no standing is unknown, never suspect [identity.md].
+   */
+  it('declares no field whose name is a verdict on somebody', () => {
+    const names = [...Object.keys(ACCRUING_FIELDS), ...WIPEABLE_FIELDS];
+    const verdicts = names.filter((n) => /suspect|flag|ban(ned|list)?\b|blacklist|blocklist|watchlist|informant|warning|untrusted|vett/i.test(n));
+    expect(verdicts).toEqual([]);
+  });
+});
