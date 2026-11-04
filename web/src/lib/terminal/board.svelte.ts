@@ -180,6 +180,8 @@ let stillAdvertised = $state(false);
 let darkRetry: ReturnType<typeof setInterval> | null = null;
 /** A renewal waiting for a relay that has just started answering to have kept at it. */
 let recheck: ReturnType<typeof setTimeout> | null = null;
+/** A claim put back after another holder of this key said Dark while this phone holds it. */
+let reclaim: ReturnType<typeof setTimeout> | null = null;
 /**
  * Moved on by taking the watch, standing down, and forgetting it all.
  *
@@ -601,6 +603,8 @@ export const board = {
     beat = null;
     if (recheck) clearTimeout(recheck);
     recheck = null;
+    if (reclaim) clearTimeout(reclaim);
+    reclaim = null;
     // An earlier stand-down's retry is this one's to finish: it retries for itself if it must.
     if (darkRetry) clearInterval(darkRetry);
     darkRetry = null;
@@ -931,6 +935,8 @@ export const board = {
     darkRetry = null;
     if (recheck) clearTimeout(recheck);
     recheck = null;
+    if (reclaim) clearTimeout(reclaim);
+    reclaim = null;
     onStation = false;
     since = 0;
     claimed = new Map();
@@ -1060,6 +1066,7 @@ function follow(): boolean {
           } catch {
             advertised = null;
           }
+          if (onStation && advertised?.state === 'dark') reclaimAfter(event.created_at);
           return;
         }
         if (event.kind === KIND_RESPONSE) {
@@ -1139,6 +1146,34 @@ async function announce(): Promise<void> {
   if (generation !== mine) return;
   unannounced = !ok;
   if (ok) setAnnounced(true);
+}
+
+/**
+ * Says this holder is here again, at once, after another holder of the same key said Dark.
+ *
+ * Two holders hold one watch together on a joint night [running-a-night.md], and the watch state is
+ * one replaceable event under the key they share, each heartbeat replacing the other's. Whoever took
+ * it last finds their own claim newest when they stand down, so the handover guard in `standDown`
+ * reads nobody else as holding and says Dark — and every operator signing on was told nobody was
+ * watching while somebody was, until the next beat up to two minutes later [journey-night.spec.ts].
+ * A reloaded holder pressing Stand down over a relief who still holds did the same.
+ *
+ * The guard cannot know: a relay keeps only the newest claim, so the other holder's is not there to
+ * read. The holder who is still here can, because their screen is open and hearing it. So the one
+ * on station puts the claim back, rather than the one leaving guessing whether they are last. It
+ * only ever repeats what is true of a live page holding the watch, so it cannot make a claim that a
+ * person is here outlast the person.
+ *
+ * In the second after the Dark: a claim in the same second loses to it on the id, and nothing
+ * newer would replace it.
+ */
+function reclaimAfter(darkAt: number): void {
+  if (reclaim) return;
+  const wait = Math.max(0, (darkAt + 1) * 1000 - Date.now());
+  reclaim = setTimeout(() => {
+    reclaim = null;
+    void announce();
+  }, wait);
 }
 
 /**

@@ -234,6 +234,13 @@ to `automated`, or to `dark` if the agent is unavailable. Standing down MUST pub
 rather than going quiet: a stale `station` left on a relay tells every operator reading it
 that a human is present.
 
+**Two holders on one key.** A squad's holders share the key and its one replaceable state, and
+on a joint night both hold it at once. Whoever took it last finds their own claim newest when
+they stand down, so their `dark` lands while the other is still on station. A holder on station
+that hears `dark` under its own key MUST announce `station` again at once, after the second the
+`dark` was signed in, since a claim in the same second loses to it on the id. Only a page that
+is holding does this, so the claim it renews never outlasts the person behind it.
+
 ### Nothing is transferred, and that is the change
 
 An earlier version of this section required handover to transfer all board entries, all

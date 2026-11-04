@@ -37,12 +37,24 @@ they send.
 **The day before**, everyone reloads NavCom once with signal. On the night, **Older build** under
 Who is out names anybody whose phone has not, and they should reload before going out.
 
-**A dry run.** Two phones on two different networks, thirty minutes, before the real night:
+**A dry run.** Before the real night, with both holders and at least two phones on two different
+networks (one on wifi, one on cell data), about forty-five minutes. Each line says what should
+happen. If it does not, stop and tell whoever looks after NavCom.
 
-1. Sign on and check in.
-2. Ask a question and answer it.
-3. Send an Assist and pass it on.
-4. Raise one Distress that says it is a test, and answer it.
+1. Both holders hold the watch. Each phone signs on with its team. Both holders see both phones.
+2. A phone checks in, then asks a question. Both holders answer it at once: the phone shows an answer.
+3. A phone sends an Assist marked *now*, and a holder passes it to the nearest 3. A phone it reached
+   presses **I can go**.
+4. Put one phone in airplane mode, then tell everyone out something. When the phone comes back, it
+   has it too.
+5. A phone raises one Distress that says it is a test. While it sounds, reload one holder's laptop.
+   The other holder answers it, and the phone names them.
+6. The holder whose laptop reloaded presses **Stand down**, then holds the watch again. The phones
+   read *On station* the whole time.
+7. On a phone, **Save Manhattan for tonight**, then airplane mode, then **Map**: the streets still draw.
+8. Lock a signed-on iPhone for five minutes. Nothing alarms, and the watch says when it last heard it.
+9. One holder stands down: the phones still read *On station*. Then the other: the phones read
+   *Dark*, and Distress says there is no watch to send it to.
 
 ## Each night, going out
 
