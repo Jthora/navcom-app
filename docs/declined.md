@@ -1109,6 +1109,21 @@ Founding could be paid for, like posting a mission.
 
 **Cost:** none.
 
+## The watch
+
+### A handover summary handed from one holder to the next
+
+The outgoing holder could pass the incoming one a written picture of who is out, what waits and
+what was said, so the relief starts warm.
+
+**Declined, decided 2026-11-04.** Nobody hands a board over, because nobody holds anybody else's
+picture: the incoming watch draws its own from what each operator's phone tells it
+[watch-state.spec.md, Handover]. A summary is that picture told, and once told it is wrong as soon as
+somebody moves. The relief keeps the Watch screen open all night instead [running-a-night.md], and
+Tonight's recap says how long the night's answers waited, for whoever reviews it.
+
+**Cost:** a relief who did not keep the screen open starts empty until each phone is heard again.
+
 ## What is **not** declined, so nobody mistakes this page for a licence
 
 Everything in [`build-order.md`](build-order.md) is deferred, not declined — endorsements,

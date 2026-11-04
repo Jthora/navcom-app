@@ -907,6 +907,14 @@ card did the work.
 - **Keeping the two descriptions in step.** This document is NavCom's side and yours is Starcom's.
   Each links the other, each is versioned, and neither restates the other
 
+### Starcom's open questions from its revs 12–19, answered 2026-11-04
+
+| | Question | Answer |
+|---|---|---|
+| MX15 | Will NavCom read `navcom_mission` packages published through Starcom to the public relays, from keys it admits? | **Yes, for keys this registry admits, from where each publishes.** Who counts stays the registry (§3): a package is kept only when a key a NavCom release admits signed it, so reading more relays opens nothing. Where it is read follows the publisher's own relay list once relay lists ship (build order G3). Admission is a person's decision, by release, one publisher at a time; today the registry admits Mecha Jono alone, so the map does not change until a second key is admitted |
+| MX26 | Does an observation count as refined once a key other than its operator's cites it? | **NavCom keeps no rule of its own**, since it does not evaluate observations (§6; `raw-intel.md` §11): that is Starcom's call, and citing your own is rightly not uptake. Kind 1911's `refines` tag means something else, the same author re-issuing at the resolution withheld, and must not be counted as being refined |
+| rev 17 | Should a team's step on a package be a `claimed` label in `navcom.mission` with a `step` tag? | **No: steps stay a team's own**, in `starcom.step` on the team's relay, and NavCom reads none. A NavCom claim is one person taking up a whole offer (invariant 8); a step counted as a claim would put a team's internal work on a public map. Asked again when units ship |
+
 ---
 
 ## 11. The grid — decided 2026-10-06

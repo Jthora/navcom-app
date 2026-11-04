@@ -800,11 +800,15 @@ export const board = {
     const took = await publishEach(usable([...heard, ...urls]), event);
     const sent = heard.length > 0 ? took.some((url) => heard.includes(url)) : took.length > 0;
     if (!sent) return false;
+    const wait = Math.floor(Date.now() / 1000) - (item.before ?? item.at);
     night.note(
       `${declining ? 'Told' : item.type === 'distress' ? 'Acknowledged' : 'Answered'} ${named(item.operator, item.callsign)}’s ${item.type}` +
         `${declining ? ' that nobody can come' : ''}${provenance ? ', from a directory record' : ''}, ` +
-        waited(Math.floor(Date.now() / 1000) - (item.before ?? item.at)) +
-        (item.before !== undefined ? ' (sent before this screen opened)' : '')
+        waited(wait) +
+        (item.before !== undefined ? ' (sent before this screen opened)' : ''),
+      undefined,
+      // Only a first answer with its true wait: one sent before this screen opened waited longer than it says.
+      item.before === undefined ? { type: item.type, waited: Math.max(0, wait) } : undefined
     );
 
     // A Distress stays until a human has actually ended it, which is not something this

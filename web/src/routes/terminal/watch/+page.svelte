@@ -37,7 +37,7 @@
   import { ago } from '$lib/terminal/heard-copy';
   import AnswerLookup from '$lib/components/watch/AnswerLookup.svelte';
   import PassOn from '$lib/components/watch/PassOn.svelte';
-  import { night } from '$lib/terminal/watch-night.svelte';
+  import { night, span } from '$lib/terminal/watch-night.svelte';
   import type { Provenance, ResourceRecord } from '@navcom/core';
 
   let address = $state<string | null>(null);
@@ -955,6 +955,14 @@
     {#if night.entries.length === 0}
       <Slot k="Done"><Readout value="Nothing yet" tone="cold" /></Slot>
     {:else}
+      {#each night.recap() as r (r.type)}
+        <!-- How long each kind waited for a person tonight, for whoever reviews the night. -->
+        <Slot k={r.type === 'distress' ? 'Distress' : r.type === 'query' ? 'Questions' : r.type === 'assist' ? 'Assists' : r.type}>
+          <span data-recap={r.type}>
+            <Readout value={`${r.count} answered`} tone="neutral" sub={`middle ${span(r.median)}, longest ${span(r.longest)}`} />
+          </span>
+        </Slot>
+      {/each}
       <Why summary="What the watch did">
         <ol class="night">
           {#each night.entries as e, i (i)}<li><span class="t">{timeOf(e.at)}</span> {e.what}</li>{/each}

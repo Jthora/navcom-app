@@ -125,8 +125,9 @@ happen. If it does not, stop and tell whoever looks after NavCom.
   stands until you clear it or say something new: anybody who signs on later, or was out of signal,
   is told it the next time their phone is heard. Said before anybody is out, such as where to meet, it
   waits for whoever signs on.
-- **At the end:** stand down. **Tonight** lists what the watch did; copy it out for whoever reviews
-  the night. A panic wipe deletes it.
+- **At the end:** stand down. **Tonight** lists what the watch did, and first how many Distresses,
+  Assists and questions it answered and how long the middle one and the longest waited; copy it out
+  for whoever reviews the night. A panic wipe deletes it.
 
 ## What it does not do
 

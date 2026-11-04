@@ -238,6 +238,9 @@ test.describe('both holders answer the same question at once', () => {
     await expect(k.page.locator('[data-answer]')).toContainText(/all night|until 6am/, { timeout: 25_000 });
     await expect(k.page.locator('.error, [role="alert"]')).toHaveCount(0);
     for (const board of [a.page, r.page]) await expect(board.getByRole('button', { name: /^answer$/i })).toHaveCount(0, { timeout: 20_000 });
+    // Each holder's own Tonight sums up what it answered, and how long that waited for a person.
+    await expect(a.page.locator('[data-recap="query"]')).toContainText('1 answered');
+    await expect(a.page.locator('[data-recap="query"]')).toContainText(/middle \d+s, longest \d+s/);
 
     for (const h of [a, r, k]) await h.context.close();
   });

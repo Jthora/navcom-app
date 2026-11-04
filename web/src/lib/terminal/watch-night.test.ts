@@ -47,4 +47,27 @@ describe('what the watch did tonight', () => {
     expect(mod.waited(40)).toBe('after 40s');
     expect(mod.waited(300)).toBe('after 5 min');
   });
+
+  it('sums the night up for whoever reviews it: how many of each it answered, the middle wait and the longest, a Distress first', () => {
+    mod.night.note('Answered Kite’s query, after 40s', 1_800_000_060, { type: 'query', waited: 40 });
+    mod.night.note('Acknowledged Raven’s distress, after 25s', 1_800_000_100, { type: 'distress', waited: 25 });
+    mod.night.note('Answered Owl’s query, after 6 min', 1_800_000_500, { type: 'query', waited: 360 });
+    mod.night.note('Answered Ash’s query, after 90s', 1_800_000_600, { type: 'query', waited: 90 });
+    mod.night.note('Took the watch', 1_800_000_000);
+    expect(mod.night.recap()).toEqual([
+      { type: 'distress', count: 1, median: 25, longest: 25 },
+      { type: 'query', count: 3, median: 90, longest: 360 }
+    ]);
+    // Copied out, the recap leads, and the night follows as it happened.
+    const lines = mod.night.text().split('\n');
+    expect(lines.slice(0, 3)).toEqual(['1 distress: middle 25s, longest 25s', '3 query: middle 90s, longest 6 min', '']);
+    // And it holds the watch's own acts only: no words anybody sent, no place.
+    expect(JSON.stringify(mod.night.entries)).not.toMatch(/Herald|lat|lon/);
+  });
+
+  it('says nothing to sum when the watch answered nothing', () => {
+    mod.night.note('Took the watch', 1_800_000_000);
+    expect(mod.night.recap()).toEqual([]);
+    expect(mod.night.text()).toBe('2027-01-15 08:00Z  Took the watch');
+  });
 });
