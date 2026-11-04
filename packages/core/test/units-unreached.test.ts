@@ -38,10 +38,12 @@ describe('nothing a person can reach uses units/ yet', () => {
     expect(places.map(sources).flat().length).toBeGreaterThan(50);
   });
 
+  // Every source file read from disk: half a second alone, and seven on a machine shared with another
+  // project's build (2026-11-03), which failed the full verify on the default five.
   it.each(places.map((p) => ({ p, name: p.slice(repo.length) })))('$name does not import units/', ({ p }) => {
     const offenders = sources(p).filter((f) => /from\s+['"][^'"]*units\/|import\(\s*['"][^'"]*units\//.test(readFileSync(f, 'utf8')));
     expect(offenders, UNREVIEWED).toEqual([]);
-  });
+  }, 30_000);
 
   it('is not re-exported from the package root, and has no subpath', () => {
     for (const name of ['evaluate', 'readCharter', 'sealCrewState', 'signStatement', 'linearize']) {
