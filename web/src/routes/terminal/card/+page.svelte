@@ -514,14 +514,15 @@
   .pick legend { padding: 0 .35rem; font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; }
   /* A row a thumb can hit, with the consequence on the same line as the choice. */
   .opt { display: flex; gap: .55rem; align-items: baseline; padding: .4rem 0; min-height: 2.75rem; }
-  .opt em { display: block; font-style: normal; opacity: .78; font-size: .86rem; }
+  /* Dimmed by colour, never opacity: opacity took it to 3.2:1 in low signature [ui-sweep.spec.ts]. */
+  .opt em { display: block; font-style: normal; color: var(--t-muted); font-size: .86rem; }
   .opt input { margin-top: .2rem; }
 
   /* Two lines, always. Never a wrap that orphans a control under the wrong link. */
   .link { padding: .5rem 0; border-bottom: 1px solid var(--t-line); }
   .link:last-of-type { border-bottom: 0; }
   .link .who { margin: 0 0 .3rem; overflow-wrap: anywhere; }
-  .link .who em { font-style: normal; opacity: .78; }
+  .link .who em { font-style: normal; color: var(--t-muted); }
   .link .controls { margin: 0; display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
   .link .buttons { display: flex; gap: .35rem; flex: 0 0 auto; }
   .rank { font-size: .74rem; text-transform: uppercase; letter-spacing: .07em; opacity: .7; }

@@ -66,10 +66,16 @@
 
 .terminal .nc-slot {
   display: grid;
-  grid-template-columns: 5.5rem 1fr;
+  /*
+   * `minmax(0, 1fr)`, not `1fr`: a bare `1fr` never shrinks below its longest word, so one callsign
+   * or team with nowhere to break widened the whole panel past the screen, and Status scrolled
+   * sideways at 567px on a 360px phone [ui-sweep.spec.ts, 2026-11-03]. The value breaks instead.
+   */
+  grid-template-columns: 5.5rem minmax(0, 1fr);
   gap: 0.7rem;
   align-items: baseline;
 }
+.terminal .nc-slot-v { min-width: 0; overflow-wrap: anywhere; }
 .terminal .nc-slot-k {
   font-family: var(--font-mono);
   font-size: 0.56rem;
@@ -369,7 +375,8 @@
 .terminal .nc-floor { display: grid; gap: 0.5rem; }
 .terminal .nc-floor-row {
   display: grid;
-  grid-template-columns: 3px 1fr auto;
+  /* `minmax(0, 1fr)` and a name that breaks: a visitor's 48-letter team took the board to 639px. */
+  grid-template-columns: 3px minmax(0, 1fr) auto;
   gap: 0.8rem;
   align-items: center;
   border: 1px solid var(--t-line);
@@ -377,6 +384,7 @@
   padding: 0.65rem 0.8rem;
 }
 .terminal .nc-floor-mark { align-self: stretch; background: var(--t-line-strong); }
+.terminal .nc-floor-row > :nth-child(2) { min-width: 0; overflow-wrap: anywhere; }
 .terminal .nc-floor-name {
   font-size: 1rem;
   font-weight: 600;

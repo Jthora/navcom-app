@@ -163,7 +163,7 @@ body {
  * mid for warning, dim for cold — with red reserved for the alarm channel, which is the one
  * hue that both preserves dark adaptation and must never be mistaken for anything else.
  *
- * Contrast against the true black ground: ink 6.8:1, muted 4.6:1, faint 4.5:1 (raised from
+ * Contrast against the true black ground: ink 7.2:1, muted 4.8:1, faint 4.7:1 (raised from
  * 3.0:1 — axe-core's first-ever pass against this codebase found it failing WCAG AA on every
  * Slot key, Readout sub-line and Panel label; a "labels only" carve-out isn't one WCAG makes).
  * Still the dimmest tier, deliberately close to --t-muted now — the gap that matters for
@@ -183,11 +183,20 @@ body {
   --t-line: #2A1D08;
   --t-line-strong: #4A340C;
 
-  /* Brightness, not hue. The words in the readout are what say which state this is. */
+  /*
+   * Brightness, not hue. The words in the readout are what say which state this is.
+   *
+   * Every one of them is text somewhere, so every one clears 4.5:1 on black and on --t-raised,
+   * and the ladder still runs station 8.2 > on-call 5.8 > automated 5.1 > dark 4.7. It ran down to
+   * 3.1 until the UI sweep put axe on the terminal's screens as an operator with a callsign sees
+   * them, which is this mode [ui-sweep.spec.ts, 2026-11-03]: `Dark` was the colour of the Distress
+   * screen's own "Hold to send", of every error line, and of "use Distress" on Assist; on-call, the
+   * lit action's label, measured 4.37:1 on its own tint.
+   */
   --t-station: #D9932E;
-  --t-oncall: #A0701F;
-  --t-auto: #8A5F1E;
-  --t-dark: #7A5518;
+  --t-oncall: #B37C27;
+  --t-auto: #A67224;
+  --t-dark: #9F6E1F;
 
   /* The one exception, and the reason it is the exception. Lifted from #C0392B on 2026-10-06:
      3.68:1 on its own tint, the `Distress` label every operator sees by default in this mode,

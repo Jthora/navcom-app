@@ -8,7 +8,7 @@
    * else, ever, and never anybody being served [invariant 1]. Drawn by this app as a radar, which needs
    * no tiles and no network; turn-by-turn is the phone's own map app, handed a pin [map.md §2].
    */
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { page } from '$app/state';
   import { Panel, Slot, Readout } from '$lib/components/panel';
   import Radar from '$lib/components/map/Radar.svelte';
@@ -106,9 +106,16 @@
   let elsewhere = $state(false);
   const drawStreets = $derived(view === 'streets' && (inStreets || elsewhere) && !streetsFailed);
 
+  const hasCentre = $derived(centre !== null);
   $effect(() => {
-    if (!drawStreets || !streetsEl || streets || !centre) return;
-    const at = centre;
+    if (!drawStreets || !streetsEl || streets || !hasCentre) return;
+    /*
+     * Where to open, read once and not followed: this read the centre itself, so every position heard
+     * while the engine was still loading started another map and threw the last away — nine engines
+     * built on a phone for one screen as a busy board's positions came in [watch-map.spec.ts]. Where
+     * the blips go after is the draw's and the follow's.
+     */
+    const at = untrack(() => centre)!;
     const el = streetsEl;
     let gone = false;
     void (async () => {
@@ -121,7 +128,12 @@
           : ({ kind: 'openfreemap', style: OPENFREEMAP.style } as const);
         const made = await mountStreets(el, { source, centre: at, onselect: (id) => (selected = id) });
         if (gone) made.destroy();
-        else streets = made;
+        else {
+          streets = made;
+          // Where the middle of everybody is now, if it moved while the engine loaded.
+          const now = untrack(() => centre);
+          if (now && (now.lat !== at.lat || now.lon !== at.lon)) made.centre(now);
+        }
       } catch {
         streetsFailed = true;
       }
@@ -260,7 +272,8 @@
 </section>
 
 <style>
-  section { display: grid; gap: 0.9rem; }
+  /* A column that can shrink: an unbroken callsign in the list below widened the map past the screen. */
+  section { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.9rem; }
   .views { display: flex; gap: 0.4rem; }
   .views button { min-height: 2.4rem; font-size: 0.85rem; padding: 0 0.8rem; border-color: var(--t-line); color: var(--t-faint); }
   .views button[aria-pressed='true'] { border-color: var(--t-ink); color: var(--t-ink); }
@@ -275,9 +288,10 @@
   .acts { display: flex; flex-wrap: wrap; gap: 0.5rem; }
   .acts a { font-size: 0.85rem; }
   .arrow { display: inline-block; font-size: 1.6rem; line-height: 1; transition: transform 0.25s; }
-  .blips { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.3rem; }
+  .blips { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.3rem; }
+  .blips li > * { min-width: 0; overflow-wrap: anywhere; }
   .blips li { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; font-family: var(--font-mono); font-size: 0.72rem; color: var(--t-muted); }
-  .blips li button { min-height: 2.4rem; font-size: 0.85rem; padding: 0 0.8rem; }
+  .blips li button { min-height: 2.4rem; max-width: 100%; overflow-wrap: anywhere; font-size: 0.85rem; padding: 0 0.8rem; }
   .blips li[data-state='distress'] button { border-color: var(--t-alarm); color: var(--t-alarm); }
   .blips li[data-state='overdue'] button { border-color: var(--t-oncall); }
 </style>

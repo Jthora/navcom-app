@@ -214,4 +214,34 @@ test.describe('the live map', () => {
     expect(asked).toEqual([]);
     await context.close();
   });
+
+  test('a board filling while the streets load builds one map, not one for every position that arrives', async ({ browser }) => {
+    // The mount read the centre, so each position heard while the engine was still loading started
+    // another map and threw the last away: on a busy board, several engines built on a phone to show one.
+    test.setTimeout(90_000);
+    const context = await browser.newContext({ viewport: { width: 360, height: 640 } });
+    const page = await context.newPage();
+    await page.addInitScript(() => {
+      const w = window as unknown as { __maps: number };
+      w.__maps = 0;
+      new MutationObserver((changes) => {
+        for (const c of changes) for (const n of c.addedNodes) if (n instanceof HTMLElement && n.classList.contains('maplibregl-canvas-container')) w.__maps += 1;
+      }).observe(document, { subtree: true, childList: true });
+    });
+    const now = Math.floor(Date.now() / 1000);
+    const events = [];
+    for (let i = 0; i < 8; i++) events.push(await signal(new Uint8Array(32).fill(i + 3), 'on-station', out(`Unit ${i}`, 'Rescue Rangers', 40.745 + i * 0.002, -73.99 + i * 0.001), now - 60 + i));
+    await seedDevice(page, { callsign: 'Lighthouse', watchSecret: WATCH_SECRET, relayEvents: events.slice(0, 1) });
+    await open(page, '/terminal/map/');
+    // The rest trickle in while the engine is loading, as a board's do.
+    for (const e of events.slice(1)) {
+      await page.evaluate((x) => (window as unknown as { __navcomDeliver: (e: unknown) => number }).__navcomDeliver(x), e);
+      await page.waitForTimeout(120);
+    }
+    await expect(page.locator('[data-streets][data-drawn="true"]')).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('[data-blip-list] [data-listed]')).toHaveCount(8);
+    await page.waitForTimeout(1_500);
+    expect(await page.evaluate(() => (window as unknown as { __maps: number }).__maps), 'maps built for one screen').toBe(1);
+    await context.close();
+  });
 });

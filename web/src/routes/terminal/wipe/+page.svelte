@@ -139,7 +139,7 @@
     recovery without a backup.
   </p>
   {#if callsign}
-    <label for="confirm">Type <strong>{callsign}</strong> to confirm</label>
+    <label for="confirm" class="confirm">Type <strong>{callsign}</strong> to confirm</label>
     <input id="confirm" bind:value={typed} autocomplete="off" spellcheck="false" />
     <!--
       Asked of `storage.ts`, never re-derived here. The raw comparison this replaces ignored the
@@ -185,4 +185,6 @@
   .burn::before { content: none; }
 
   .burnsec { border-top: 1px solid var(--t-line); padding-top: 1.1rem; }
+  /* The callsign as typed, which may be one long word: it breaks rather than push the hold off the screen. */
+  .confirm strong { overflow-wrap: anywhere; }
 </style>

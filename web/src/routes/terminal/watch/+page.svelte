@@ -1012,7 +1012,7 @@
 <style>
   .act { gap: .6rem; }
   .orphaned { display: flex; flex-direction: column; gap: .5rem; }
-  .night { margin: 0; padding-inline-start: 1.2rem; display: grid; gap: .25rem; font-size: .85rem; }
+  .night { margin: 0; padding-inline-start: 1.2rem; display: grid; grid-template-columns: minmax(0, 1fr); gap: .25rem; font-size: .85rem; overflow-wrap: anywhere; }
   .night .t { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--t-muted); }
   .ask-in { display: flex; align-items: center; justify-content: space-between; gap: .6rem; flex-wrap: wrap; margin-top: .5rem; }
   .toggle { display: flex; align-items: center; justify-content: space-between; gap: .6rem; flex-wrap: wrap; }
@@ -1034,13 +1034,15 @@
     border-bottom: 1px solid var(--t-line); min-height: 3.2rem;
   }
   .asks li { flex-direction: column; align-items: stretch; gap: .5rem; padding-block: .9rem; }
-  .who { display: flex; align-items: center; gap: .7rem; }
+  /* Wraps, and a long name breaks: a visitor's 48-letter team pushed the Distress badge off the screen. */
+  .who { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .7rem; }
+  .who > * { min-width: 0; overflow-wrap: anywhere; }
   .name { color: var(--t-ink); font-weight: 650; flex: 1; }
   .team { font-family: var(--font-mono); font-size: .66rem; color: var(--t-muted); }
   .tell { display: grid; gap: .5rem; margin-block-start: .8rem; }
   .teams { display: flex; flex-wrap: wrap; gap: .4rem; margin-block-end: .6rem; }
   /* The directory's toggles, so a list narrowed here reads as a list narrowed there. */
-  .teams button { min-height: 2.4rem; font-size: .85rem; padding: 0 .8rem; border-color: var(--t-line); color: var(--t-faint); }
+  .teams button { min-height: 2.4rem; max-width: 100%; overflow-wrap: anywhere; font-size: .85rem; padding: 0 .8rem; border-color: var(--t-line); color: var(--t-faint); }
   .teams button[aria-pressed='true'] { border-color: var(--t-ink); color: var(--t-ink); }
   .said { margin: 0; color: var(--t-ink); font-size: .95rem; }
   .row { display: flex; gap: .6rem; }

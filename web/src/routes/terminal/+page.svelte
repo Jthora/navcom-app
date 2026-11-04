@@ -883,7 +883,7 @@
 
 
 {#if session}
-  <nav class="nc-rail" data-rail="out">
+  <nav class="nc-rail" data-rail="out" aria-label="While out">
     <!-- Both go only to a watch: with none at all they would reach nobody. A watch this page
          cannot reach keeps them, and the panel says why nothing gets through. -->
     {#if configured || stranded}
@@ -1035,7 +1035,7 @@
   said nothing about what comes next after a callsign [journey, 2026-10-28]. The rest keep their
   places, in the order an operator reaches for them.
 -->
-<nav class="nc-rail" data-rail="all">
+<nav class="nc-rail" data-rail="all" aria-label="Places">
   <a class="nc-lead" href="/" data-sveltekit-reload data-map-link>Missions and the map</a>
   {#if identity}
     <a class="nc-lead" href="/terminal/card/">Your card</a>
