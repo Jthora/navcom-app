@@ -14,6 +14,8 @@ for somebody on the street is the team's own knowledge, and NavCom does not writ
    Distress then opens a text to them, ready to send, which goes over the phone network even when
    the app cannot reach anything.
 4. Open your city's area under **Cached directory** once, so its places stay on the phone with no signal.
+   For each place your team actually uses and knows, press **Still right**, or **Report a problem** if
+   something changed. Most listings are copied from public websites and nobody has checked them.
 5. For a night in New York, open **Map** on Status and press **Save … for tonight** on wifi: the borough
    you are in, or the New Jersey side (13 to 43 MB). Its streets then draw with no signal. Patrolling two,
    save the other under **Other areas**.

@@ -135,6 +135,14 @@ how they knew, and — derived from those — what it is worth.
 | `method` | **How they know** — `in_person`, `phone`, `staff_confirmed`, `secondhand`, `website` |
 | `flag` | A **counter-claim** by someone else: `ok`, `reported_closed`, `reported_wrong`, `permanently_closed` |
 
+**A correction whose one claim is `flag: ok` is a confirmation** (2026-11-04): a person stood behind
+the listing as it is, on that day, and the area screen's **Still right** writes one. It counts only
+when made `in_person`, by `phone` or on `staff_confirmed` word, never from a `website` or `secondhand`.
+It changes no value, so it is the source of no field; the record shows the newest with who, how and
+when, in place of *Unverified public listing*, and the area no longer reads as checked by nobody. A
+report beside it is still read first (display rule 3): a confirmation never answers somebody else's
+report, only says what this person found.
+
 Everything below is the attestation model applied to places, not a separate design.
 
 ### Volatility classes

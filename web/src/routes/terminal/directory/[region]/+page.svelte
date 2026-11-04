@@ -24,7 +24,10 @@
   import { AVAILABILITY_FIELDS, FIELD_LABELS, FIELD_QUESTION, INTAKE_FIELDS, labelValue,
     PLACE_METHODS, type PlaceMethod, abroad, countryName } from '@navcom/core';
   import { displayMerged, mergeCorrections, needsChecking, CORRECTABLE_FIELDS, FIELD_OPTIONS,
-    isAddedPlace, isSeeded, withPlaces, PlaceError } from '@navcom/core';
+    isAddedPlace, isSeeded, withPlaces, PlaceError, CHECKED_BY_A_PERSON } from '@navcom/core';
+  import { fiveOffer, setFiveOffer } from '$lib/terminal/five';
+  import { loadIdentity } from '$lib/terminal/identity';
+  import { contactPubkey } from '$lib/terminal/card';
   import { corrections } from '$lib/terminal/corrections.svelte';
   import LogWhatYouSaw from '$lib/components/LogWhatYouSaw.svelte';
   import { observed } from '$lib/terminal/observations.svelte';
@@ -161,6 +164,34 @@
    * default and one at a time, like every other control on this screen — it is an errand,
    * not a form somebody sits down to.
    */
+  /*
+   * Still right: a person standing behind a listing as it is, on a day, by a way of knowing that is
+   * theirs [core `confirmations`]. Offered on every seeded record, beside Report a problem.
+   */
+  let checking = $state<string | null>(null);
+  async function stillRight(id: string, method: 'in_person' | 'staff_confirmed' | 'phone') {
+    await corrections.submit(id, { flag: 'ok' }, method);
+    checking = null;
+  }
+  /*
+   * Verify five local listings, offered once and never a gate [propagation.md, Cold start]: on an area
+   * nobody has checked, to somebody with a profile, until five are marked Still right or it is put
+   * down. A count of their own, never a score beside anybody's, and gone for good either way.
+   */
+  let offer = $state(fiveOffer());
+  const mineChecked = $derived.by(() => {
+    // By key, not by callsign: two people may share a name, never a key. Read with the corrections,
+    // since the first Still right is what makes the key.
+    const all = corrections.all;
+    const me = browser ? contactPubkey() : null;
+    return me ? all.filter((c) => c.fields.flag === 'ok' && c.by === me && HUMAN_METHODS.has(c.method)).length : 0;
+  });
+  $effect(() => {
+    if (offer === 'open' && mineChecked >= 5) {
+      setFiveOffer('done');
+      offer = 'done';
+    }
+  });
   let adding = $state(false);
   let draft = $state({ name: '', type: 'shelter' as ResourceType, address: '', phone: '', hours: '' });
   /** How this operator knows. Refused for anything they only read — see `places.ts`. */
@@ -289,8 +320,12 @@
     );
   });
 
+  /** Public listings in this area nobody has stood behind yet: where the offer is worth making. */
+  const uncheckedHere = $derived(
+    shown.filter((r) => isSeeded(r) && !isAddedPlace(r) && mergeCorrections(r, corrections.about(r.id), now).confirmations.length === 0).length
+  );
   /** The ways of knowing that count as a person having checked, everywhere in this system. */
-  const HUMAN_METHODS = new Set(['in_person', 'staff_confirmed', 'phone']);
+  const HUMAN_METHODS = new Set(CHECKED_BY_A_PERSON);
 
   /**
    * Whether *anything* in this region has ever been confirmed by a person.
@@ -311,7 +346,8 @@
     shown.some((record) => {
       if (isAddedPlace(record) || !isSeeded(record)) return true;
       const merged = mergeCorrections(record, corrections.about(record.id), now);
-      return Object.values(merged.sources).some(
+      // Or somebody stood behind it as listed, which changes no field and is still a person checking.
+      return merged.confirmations.length > 0 || Object.values(merged.sources).some(
         (source) => source?.correction && HUMAN_METHODS.has(source.correction.method)
       );
     })
@@ -512,6 +548,16 @@
   </section>
 {/if}
 
+{#if offer === 'open' && uncheckedHere > 0 && loadIdentity()}
+  <!-- Offered once, never a gate: until five are marked Still right, or it is put down for good. -->
+  <section data-check-five>
+    <Slot k="Check five">
+      <Readout value={`${Math.min(mineChecked, 5)} of 5`} tone="neutral" sub="places you know, marked Still right" />
+    </Slot>
+    <button class="drop" onclick={() => { setFiveOffer('declined'); offer = 'declined'; }} data-check-five-later>Not now</button>
+  </section>
+{/if}
+
 
 <!--
   Ordering, offered rather than applied. See `sortByDistance` for why this is a tap and not a
@@ -599,7 +645,7 @@
               <p class="flag" data-flag>{meta.flagFirst.label}</p>
             {/if}
             <!-- Rule 6. Seeded entries say so in words, not with a subtle border. -->
-            {#if meta.seeded}
+            {#if meta.seeded && merged.confirmations.length === 0}
               <p class="seeded-note" data-seeded-note>Unverified public listing</p>
             {/if}
 
@@ -637,6 +683,13 @@
                 {labelValue(r.fields.flag ?? '')} on {r.last_verified}.
               </p>
             {/each}
+            {#if merged.confirmations.length > 0}
+              {@const c = merged.confirmations[0]!}
+              <!-- Who last stood behind it as listed, how and when; the newest, with how many more. -->
+              <span data-confirmed={record.id}>
+                <Readout value="Checked" tone="good" sub={`${c.verified_by}, ${c.method.replace(/_/g, ' ')}, ${c.last_verified}${merged.confirmations.length > 1 ? `, and ${merged.confirmations.length - 1} more` : ''}`} />
+              </span>
+            {/if}
 
             <dl>
               {#each ['address', 'phone', ...AVAILABILITY_FIELDS, ...INTAKE_FIELDS] as ResourceField[] as field (field)}
@@ -828,6 +881,14 @@
               </div>
               <p class="cost">Sent under your name, or anonymously.</p>
               <button class="drop" onclick={() => (reporting = null)}>Cancel</button>
+            {:else if checking === record.id}
+              {@render clockDatesThis()}
+              <div class="row" data-still-right-how>
+                <button class="drop" onclick={() => stillRight(record.id, 'in_person')}>I was there</button>
+                <button class="drop" onclick={() => stillRight(record.id, 'staff_confirmed')}>Staff told me</button>
+                <button class="drop" onclick={() => stillRight(record.id, 'phone')}>I phoned</button>
+                <button class="drop" onclick={() => (checking = null)}>Cancel</button>
+              </div>
             {:else if logging === record.id}
               <!--
                 An observation, not a correction. A correction says what *is* and rots; this
@@ -837,7 +898,10 @@
               <LogWhatYouSaw {record} onclose={() => (logging = null)} />
             {:else}
               <div class="row">
-                <button class="drop" data-report-open onclick={() => { reporting = record.id; correcting = null; }}>
+                {#if meta.seeded}
+                  <button class="drop" data-still-right onclick={() => { checking = record.id; reporting = null; logging = null; }}>Still right</button>
+                {/if}
+                <button class="drop" data-report-open onclick={() => { reporting = record.id; correcting = null; checking = null; }}>
                   Report a problem
                 </button>
                 {#if anchorFromRecord(record).ok}

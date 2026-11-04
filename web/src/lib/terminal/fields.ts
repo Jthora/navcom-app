@@ -44,6 +44,8 @@ export const ACCRUING_FIELDS = {
   revocations: 'kit',
   corrections: 'kit',
   corrections_unsent: 'kit',
+  // Whether "Verify five local listings" was done or put down: an offer, kept on this device only.
+  five_offer: 'device',
   places: 'kit',
   places_unsent: 'kit',
   patrols: 'kit',

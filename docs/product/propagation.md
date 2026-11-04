@@ -157,7 +157,10 @@ than an empty screen.
 
 **Onboarding offers a verification task.** Verify five local listings — offered once,
 never a gate, never repeated. It teaches the app, contributes real local data, and turns
-the emptiest moment in a new city into someone's first contribution.
+the emptiest moment in a new city into someone's first contribution. **Built 2026-11-04**: on an
+area with public listings nobody has checked, somebody with a profile sees *Check five* and a count
+of their own, marks places **Still right** (I was there, Staff told me, I phoned), and the offer is
+gone for good at five or at *Not now*. A count of their own and nothing beside anybody else's.
 
 The first operator in a city should find a thin, clearly-imperfect, obviously-useful
 starting point — never a blank screen.

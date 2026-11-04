@@ -328,7 +328,20 @@ export interface MergedRecord {
    * attributed and dated, and the record underneath is untouched.
    */
   reports: (Correction & { by: string })[];
+  /**
+   * People who checked the record and found it right as listed, newest first: a correction whose one
+   * claim is `flag: ok`, made in person, by phone or on staff's word (2026-11-04).
+   *
+   * It changes no value, so it is not a source of any field; it is a person standing behind the
+   * listing on a day, which is what a seeded record lacks, and what "Verify five local listings" asks
+   * of a newcomer [propagation.md, Cold start]. Shown with who, how and when, and never hiding a
+   * report: display rule 3 still reads a report first.
+   */
+  confirmations: (Correction & { by: string })[];
 }
+
+/** The ways of knowing that count as a person having checked: never a website, never secondhand. */
+export const CHECKED_BY_A_PERSON: readonly string[] = ['in_person', 'staff_confirmed', 'phone'];
 
 const RANK: Record<Confidence, number> = { high: 4, medium: 3, low: 2, stale: 1, suspect: 0 };
 
@@ -381,10 +394,13 @@ export function mergeCorrections(
   const record = { ...base };
   const sources: Partial<Record<ResourceField, FieldSource>> = {};
   const reports: (Correction & { by: string })[] = [];
+  const confirmations: (Correction & { by: string })[] = [];
 
   for (const c of mine) {
     if (c.fields.flag && c.fields.flag !== 'ok') reports.push(c);
+    else if (c.fields.flag === 'ok' && CHECKED_BY_A_PERSON.includes(c.method)) confirmations.push(c);
   }
+  confirmations.sort((a, b) => (a.last_verified < b.last_verified ? 1 : a.last_verified > b.last_verified ? -1 : a.by < b.by ? -1 : 1));
 
   for (const field of CORRECTABLE) {
     // A flag is a report about a record, not a value to overwrite. Handled above.
@@ -473,7 +489,7 @@ export function mergeCorrections(
     }
   }
 
-  return { record, sources, reports };
+  return { record, sources, reports, confirmations };
 }
 
 /**
