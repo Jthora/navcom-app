@@ -91,9 +91,16 @@ describe('the registry gate, asked before anything is kept', () => {
     expect(gate(before, ended, trustClock(Date.parse('2026-10-01T12:00:00Z'), '2026-10-18T00:00:00Z'))).toBe('window');
   });
 
-  it('drops anything under Mecha Jono’s next key today: it has no start', () => {
+  it('drops anything under Mecha Jono’s next key dated before its start, 4 November, whenever it is read', () => {
+    // Its start, at Mecha Jono's ask of 4 November: anything dated before it is a thief's, since
+    // Mecha Jono signed nothing with the key before then [key-change letter, "New on 4 November"].
     const forged = { ...pkg(one, 'starcom_mission_package_field-heat_relief-CA-2026-10-02', OCT_18), pubkey: MECHA_NEXT };
-    expect(gate(forged, MISSION_PUBLISHERS, OCT_18)).toBe('untrusted');
+    expect(gate(forged, MISSION_PUBLISHERS, secs('2026-11-20T00:00:00Z'))).toBe('early');
+  });
+
+  it('keeps what Mecha Jono’s next key signs from its start, once the switch republishes under it', () => {
+    const switched = { ...pkg(one, 'starcom_mission_package_field-heat_relief-CA-2026-10-02', secs('2026-11-06T15:00:00Z')), pubkey: MECHA_NEXT };
+    expect(gate(switched, MISSION_PUBLISHERS, secs('2026-11-06T16:00:00Z'))).toBeNull();
   });
 
   describe('a frozen key', () => {

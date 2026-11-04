@@ -288,9 +288,10 @@ describe('what this device says of what it sealed to a key that leaked', () => {
     expect(secondUtc(secs('2026-10-08T03:14:15Z'))).toBe('8 Oct, 03:14:15 UTC');
   });
 
-  it('says it once, generally, on Status, from the registry: from the day sealing began, for Mecha Jono', () => {
+  it('says it once, generally, on Status, from the registry: from the day sealing began until the new key’s start, for Mecha Jono', () => {
+    // Bounded by the release that gave 86f824c3… its start (4 November), with no other edit [spec §5.4].
     expect(leakedSentences()).toEqual([
-      'Sealed claims and reports sent to Mecha Jono from 6 October can be opened by whoever holds its old key’s leaked secret, and shown to come from the card that sent them. Nothing is sealed to that key now.'
+      'Sealed claims and reports sent to Mecha Jono from 6 October until 4 November can be opened by whoever holds its old key’s leaked secret, and shown to come from the card that sent them. Nothing is sealed to that key now, and from 4 November sealed messages go to its new key.'
     ]);
     expect(leakedSentences(desk([trustedKey(pk(old))]))).toEqual([]);
   });

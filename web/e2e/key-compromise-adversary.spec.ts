@@ -160,7 +160,9 @@ test.describe('a second-generation version at a frozen d', () => {
     );
     await phone(page, [listedPkg, desked], [desk([one, two])]);
     // The frozen field version is gone: its successor stands in its place, as desk work, since NavCom
-    // reads every kind of mission (2026-11-01).
+    // reads every kind of mission (2026-11-01). Waited for: the feed can read "none" for a moment
+    // before the relay's packages are in, and `listed` takes that moment at its word.
+    await expect(page.locator('[data-missions="open"]')).toBeVisible({ timeout: 15_000 });
     expect(await listed(page)).toEqual(['one-mission']);
     await expect(page.locator('[data-screen="missions"] [data-mission="one-mission"]')).toHaveAttribute('data-work', 'desk');
   });

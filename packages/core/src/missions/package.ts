@@ -181,13 +181,16 @@ export const MISSION_PUBLISHERS: MissionPublishers = [
         exposed: '2026-09-28',
         frozen: { sha256: 'f225840937640ab8dd7e4e331e104c2a67a63fe9f885f38b85a096dd523e9a76', confirmed: false }
       },
-      // Mecha Jono's next key, confirmed by Jono. **Not trusted to sign until the cut-over**
-      // (decided 2026-10-18): Mecha Jono signs nothing with it before then, so anything under it
-      // before its start is a thief's, and is dropped. A later release gives it its start once
-      // Mecha Jono names the day.
+      // Mecha Jono's next key, confirmed by Jono. Its start, 4 November, at Mecha Jono's ask of that
+      // day (the key-change letter, "New on 4 November"): the switch comes when their own steps are
+      // done and cannot be named a week ahead, so the start covers any day from now, and their runner
+      // waits until NavCom's main has it. It opens nothing early: Mecha Jono signs nothing with this
+      // key before the switch, and its secret was made in their key store and never shown; anything
+      // under it dated before the start is still dropped. Sealing to Mecha Jono resumes, to this key.
       {
         pubkey: '86f824c3f1e67c60b1dc15ce110648c4de5c3fb879022fbbcc5e8deb720e402c',
         generation: 2,
+        notBefore: '2026-11-04T00:00:00Z',
         notAfter: '2027-10-18T00:00:00Z'
       }
     ],

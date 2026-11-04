@@ -307,8 +307,10 @@ test.describe('what this phone already sealed to Mecha Jono’s old key', () => 
     await open(page, '/terminal/');
     await page.locator('[data-capability] summary').first().click();
     await expect(page.locator('[data-sealed-exposed]')).toContainText(
-      'Sealed claims and reports sent to Mecha Jono from 6 October can be opened by whoever holds its old key’s leaked secret'
+      'Sealed claims and reports sent to Mecha Jono from 6 October until 4 November can be opened by whoever holds its old key’s leaked secret'
     );
+    // Bounded by the release that gave the new key its start, and saying where sealing goes now.
+    await expect(page.locator('[data-sealed-exposed]')).toContainText('from 4 November sealed messages go to its new key');
   });
 });
 
@@ -324,7 +326,7 @@ test('the registry NavCom pins is published as a file, with its digest in the in
   expect(mecha.inbox).toEqual(INBOX);
   expect(mecha.keys.map((k: { pubkey: string; notBefore: string | null }) => [k.pubkey, k.notBefore])).toEqual([
     [MECHA_OLD, '2025-01-01T00:00:00Z'],
-    [MECHA_NEXT, null]
+    [MECHA_NEXT, '2026-11-04T00:00:00Z']
   ]);
   expect(mecha.keys[0].notAfter).toBe('2026-11-13T00:00:00Z');
   expect(mecha.manifestKey).toEqual({ alg: 'ml-dsa-65', sha256: 'd10019760aa4bcd3a2aeba3d4b3ed0c82da3df9070f25ea5e6e3ed7d39fff1ea' });

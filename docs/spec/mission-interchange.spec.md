@@ -48,8 +48,9 @@ messages go. Decided by the owner on 2026-10-18; everything below is in the next
   replaces it — and a version not on it only if it closes one of them. Until your list confirms a
   mission, it shows at its jurisdiction only, cannot be taken, and says it may have been replaced.
   None of its labels counts (§3, §5.3)
-- **Your next key `86f824c3…` is listed and not trusted to sign** until a later release names the
-  cut-over day. Anything under it before then is dropped, and stays dropped once the day comes (§3)
+- **Your next key `86f824c3…` is trusted to sign from 2026-11-04T00:00:00Z**, at your ask of 4
+  November: the switch comes when your own steps are done and cannot be named a week ahead, so the
+  start covers any day from then. Anything under it dated before the start is dropped for good (§3)
 - **For one mission, a higher generation outranks a lower one whatever the dates say**, and a
   version dated more than a day ahead of the reader's clock is dropped (§3)
 - **Nothing is sealed to a key whose secret leaked.** Sealed claims and reports to you are paused
@@ -234,7 +235,7 @@ never a total).
 | | |
 |---|---|
 | Relay | **The Record**, `wss://record.cosmiccodex.app` — authoritative for packages (AGREED, Q8). The five relays rev 10 lists are best-effort mirrors a reader need not read. The Record honours NIP-40 expiry, which its NIP-11 document confirms |
-| Author | The keys in NavCom's registry, each with a window judged on the reader's clock, floored at the build — never on an event's date (rev 7). **`6301c4d0…9692`**, generation 1: its secret was exposed on 2026-09-28, so it is **frozen** — only the versions on NavCom's frozen list are kept, a version not on it only if it closes one of them, and, since 2026-11-01, a version whose manifest carries the ML-DSA-65 signature of your manifest key, which the registry pins by its sha256 (`d1001976…f1ea`) — and it **ends on 2026-11-13T00:00:00Z**. Until your signed list of the `30079` ids you signed under it confirms one, that mission shows at its jurisdiction only, cannot be taken, and reads that it was posted under a retiring key and may have been replaced. **`86f824c3…402c`**, generation 2: **not trusted to sign** until a later release gives it a start, the cut-over day; anything it signs before that start is dropped for good. The registry is the authority, and reaches phones only by release |
+| Author | The keys in NavCom's registry, each with a window judged on the reader's clock, floored at the build — never on an event's date (rev 7). **`6301c4d0…9692`**, generation 1: its secret was exposed on 2026-09-28, so it is **frozen** — only the versions on NavCom's frozen list are kept, a version not on it only if it closes one of them, and, since 2026-11-01, a version whose manifest carries the ML-DSA-65 signature of your manifest key, which the registry pins by its sha256 (`d1001976…f1ea`) — and it **ends on 2026-11-13T00:00:00Z**. Until your signed list of the `30079` ids you signed under it confirms one, that mission shows at its jurisdiction only, cannot be taken, and reads that it was posted under a retiring key and may have been replaced. **`86f824c3…402c`**, generation 2: **trusted to sign from 2026-11-04T00:00:00Z**, the start you asked for on 4 November; anything it signs dated before that start is dropped for good. The registry is the authority, and reaches phones only by release |
 | Filter | One request per key trusted to sign. The frozen key is asked by `ids` (its list) and by its list's `#d`: `{ "kinds": [30079], "authors": ["6301c4d0…9692"], "ids": [<the list>] }`, `{ "kinds": [30079], "authors": ["6301c4d0…9692"], "#d": [<the list's d>], "until": <now + 1 day> }`; and, because its publisher pins a manifest key, for its newest field missions as a trusted key is, `{ "kinds": [30079], "authors": ["6301c4d0…9692"], "#t": ["navcom_mission"], "limit": 100, "until": <now + 1 day> }`. Each version that brings off the list is held aside, drawn nowhere and replacing nothing, until its second signature checks; a flood at fresh `d`s costs the cap and is dropped. A key trusted and not frozen: `{ "kinds": [30079], "authors": [<key>], "#t": ["navcom_mission"], "limit": 100, "until": <now + 1 day> }`, and beside a frozen key of the same publisher also `{ "kinds": [30079], "authors": [<key>], "#d": [<the frozen list's d>], "until": <now + 1 day> }`, with no `#t` and no limit: your version there is what replaces the frozen one, so it is heard however many newer missions you post, and when it is no longer field work. Neither cap counts it |
 | Ranking | For one publisher and one `d` — never one address — the higher generation first, whatever `created_at` says; then the newer; then the lower id. A version dated more than a day past the reader's clock is dropped, not flagged. Every package is gated on these rules before it counts against a relay's share, and again when a device reads back its own copy |
 
@@ -844,8 +845,9 @@ card did the work.
 1. **Post a board row listing every `30079` event id you signed under `6301c4d0…`**, from your
    signing log, and have the owner confirm it out of band. It replaces NavCom's snapshot, and the
    missions on it can be taken again
-2. **Name the cut-over day a week ahead.** A release gives `86f824c3…` its start on that day. Sign
-   nothing with it before then: anything under it before its start is dropped for good
+2. ~~**Name the cut-over day a week ahead.**~~ **Superseded on 4 November** at your ask: the start is
+   2026-11-04T00:00:00Z, given before your switch, and you post the minute of the switch on the
+   Handoff Board. Sign nothing with `86f824c3…` before the switch
 3. **Republish each open mission under `86f824c3…` at the same `d`** after the cut-over. NavCom ranks
    generation 2 above generation 1 at each `d`, whatever the dates
 4. **Have The Record and blackpi refuse `6301c4d0…` writes** for kinds `30079`, `1985`, `10050`, `0`,

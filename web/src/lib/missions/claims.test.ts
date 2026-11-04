@@ -783,7 +783,8 @@ describe('a sealed claim or release sent again, kept before the inbox was pinned
       { address: heat.address, title: heat.title, visibility: 'sealed', ends: during + 86_400, claimId: null, relays: ['wss://nos.lol'], signer: contactPubkey(), unconfirmed: wrap }
     ]);
     const { w, sent } = answering(null);
-    expect(await claimAgain(heat.address, during + 60, w)).toMatchObject({ nowhere: expect.stringMatching(/Sealed sending to Mecha Jono is paused/) });
+    // Sealed to the old key, it cannot go again; sealing to Mecha Jono goes to its new key now, never this one.
+    expect(await claimAgain(heat.address, during + 60, w)).toMatchObject({ nowhere: expect.stringMatching(/sealed to a key Mecha Jono no longer reads under, so it cannot go again\. Nothing was sent/) });
     expect(await letGo(heat, during + 120, w)).toMatchObject({ sent: false, nowhere: true, because: expect.stringMatching(/^The release cannot go\..*ends by itself within a day\.$/) });
     expect(sent).toEqual([]);
     // Nothing kept to send later [P5].

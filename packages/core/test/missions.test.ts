@@ -515,7 +515,7 @@ describe('who NavCom reads packages from', () => {
    * under the frozen key that is off the list is kept when its manifest carries that key's ML-DSA-65
    * signature, which the exposed secret cannot make [manifest-signature.ts].
    */
-  it('is one entry, Mecha Jono, an agent, with its inbox pinned, its old key frozen to 13 November, its next key not yet trusted to sign, and its manifest key pinned', () => {
+  it('is one entry, Mecha Jono, an agent, with its inbox pinned, its old key frozen to 13 November, its next key trusted to sign from 4 November, and its manifest key pinned', () => {
     expect(MISSION_PUBLISHERS).toEqual([
       {
         id: 'mecha-jono',
@@ -531,7 +531,7 @@ describe('who NavCom reads packages from', () => {
             exposed: '2026-09-28',
             frozen: { sha256: 'f225840937640ab8dd7e4e331e104c2a67a63fe9f885f38b85a096dd523e9a76', confirmed: false }
           },
-          { pubkey: '86f824c3f1e67c60b1dc15ce110648c4de5c3fb879022fbbcc5e8deb720e402c', generation: 2, notAfter: '2027-10-18T00:00:00Z' }
+          { pubkey: '86f824c3f1e67c60b1dc15ce110648c4de5c3fb879022fbbcc5e8deb720e402c', generation: 2, notBefore: '2026-11-04T00:00:00Z', notAfter: '2027-10-18T00:00:00Z' }
         ],
         manifestKey: { alg: 'ml-dsa-65', sha256: 'd10019760aa4bcd3a2aeba3d4b3ed0c82da3df9070f25ea5e6e3ed7d39fff1ea' },
         next: null

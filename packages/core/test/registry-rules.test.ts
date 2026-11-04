@@ -109,7 +109,7 @@ describe('the file a publisher checks', () => {
     expect(mecha).toMatchObject({ id: 'mecha-jono', name: 'Mecha Jono', agent: true, inbox: ['wss://nos.lol', 'wss://relay.primal.net'], next: null });
     expect(mecha.keys.map((k) => [k.pubkey.slice(0, 8), k.generation, k.notBefore, k.notAfter, k.exposed])).toEqual([
       ['6301c4d0', 1, '2025-01-01T00:00:00Z', '2026-11-13T00:00:00Z', '2026-09-28'],
-      ['86f824c3', 2, null, '2027-10-18T00:00:00Z', null]
+      ['86f824c3', 2, '2026-11-04T00:00:00Z', '2027-10-18T00:00:00Z', null]
     ]);
     const frozen = mecha.keys[0]!.frozen!;
     // Anybody can recompute the pin from the file alone.
