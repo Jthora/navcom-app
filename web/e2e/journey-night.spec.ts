@@ -111,6 +111,10 @@ test.describe('two holders on station at once', () => {
     await take(a.page);
     await take(r.page);
     await expect.poll(async () => (await stateOnRelay(watch))?.holder, { timeout: 15_000 }).toBe('Relief');
+    // Each sees the other keeping it too: the reading that would say if one of them went quiet.
+    await expect(a.page.locator('[data-also-holding]')).toContainText('Relief', { timeout: 15_000 });
+    await expect(a.page.locator('[data-also-holding]')).toContainText('claiming it too');
+    await expect(r.page.locator('[data-also-holding]')).toContainText('Lighthouse', { timeout: 15_000 });
 
     // Relief goes home first, while Lighthouse holds on.
     await r.page.getByRole('button', { name: /^stand down$/i }).click();
@@ -344,5 +348,25 @@ test.describe('thirty out, six teams, one board', () => {
     await expect(a.page.locator('[data-radar] [data-blip]')).toHaveCount(30);
 
     await a.context.close();
+  });
+});
+
+test.describe('a notice given before anybody is out', () => {
+  test('stands for whoever signs on, and reaches them when they do', async ({ browser }) => {
+    test.setTimeout(180_000);
+    const watch = watchFor('Lighthouse');
+    const a = await holderPhone(browser, watch, 0, 'Lighthouse');
+    await take(a.page);
+    // Eight o'clock, nobody out yet: the rally point for nine.
+    await a.page.getByRole('button', { name: /^tell everyone out$/i }).click();
+    await a.page.getByLabel(/^to everyone out$/i).fill('Rally at Herald Sq, 9pm, by the north entrance.');
+    await a.page.getByRole('button', { name: 'Send', exact: true }).click();
+    await expect(a.page.locator('[data-told]')).toContainText('to whoever signs on', { timeout: 15_000 });
+    await expect(a.page.locator('[data-tell-failed]')).toHaveCount(0);
+
+    const k = await operatorPhone(browser, watch, 'Kite');
+    await signOn(k.page, 'Herald Sq', 'Rescue Rangers');
+    await expect(k.page.locator('[data-notice-text]')).toContainText('Rally at Herald Sq', { timeout: 30_000 });
+    for (const h of [a, k]) await h.context.close();
   });
 });

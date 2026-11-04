@@ -647,7 +647,12 @@
         <Slot k="Area"><Readout value={session.area} verbatim tone="neutral" /></Slot>
         {#if session.team}<Slot k="Team"><Readout value={session.team} verbatim tone="neutral" /></Slot>{/if}
         <Slot k="Check in">
-          {#if overdue.flagged}
+          {#if operator.heldCheckIn !== null}
+            <!-- Pressed where nothing took it: it goes by itself, stamped when it was pressed. -->
+            <span data-check-in-held>
+              <Readout value="Waiting for signal" tone="warn" sub={`pressed ${new Date(operator.heldCheckIn * 1000).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}; it goes by itself`} />
+            </span>
+          {:else if overdue.flagged}
             <!--
               The watch has actually said it, so this stops being the device's own arithmetic
               and becomes a thing somebody sent. It is the only unasked message NavCom

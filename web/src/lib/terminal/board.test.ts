@@ -1513,3 +1513,17 @@ describe('passing an Assist on to the others out', () => {
     expect(board.passedTo(board.waiting[0]!.id)).toBeNull();
   });
 });
+
+describe('another holder of this key, heard or gone quiet', () => {
+  it('names the other holder claiming it, and says when they stopped', async () => {
+    board.start();
+    const at = Math.floor(Date.now() / 1000);
+    deliver(advertisedState('Relief', at - 30));
+    expect(board.othersAt(at)).toEqual([{ holder: 'Relief', at: at - 30, holding: true }]);
+    // A beat and a minute's grace with nothing more from them: quiet, and said so, not sounded.
+    expect(board.othersAt(at + 200)).toEqual([{ holder: 'Relief', at: at - 30, holding: false }]);
+    // Two hours on, nothing is said of them at all.
+    expect(board.othersAt(at + 7_300)).toEqual([]);
+  });
+});
+

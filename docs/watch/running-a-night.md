@@ -70,6 +70,8 @@ happen. If it does not, stop and tell whoever looks after NavCom.
   500 m. *Exactly* tells the watch every few steps while you move, and every few minutes while you are
   still. The team you gave is offered again next time.
 - **Check in** at the interval you gave. Past it, the watch may ask you to; nothing else happens.
+  Pressed with no signal, it says *Waiting for signal* and goes by itself once there is some, marked
+  with the time you pressed it.
 - **Query** asks the watch. A person answers, so it can take a minute. *Waiting for the watch* shows
   on Query and Status, and you can use other screens meanwhile.
 - **Assist** asks for another person: *soon* or *now*.
@@ -107,7 +109,9 @@ happen. If it does not, stop and tell whoever looks after NavCom.
   to the teams you pick; a Distress and anybody past their time stay on it, and what waits on the
   other teams is named under **Also waiting**.
 - **Two holding together:** keep both Watch screens open and split the teams between you out loud,
-  each picking their own. An answer from either of you clears it on both screens.
+  each picking their own. An answer from either of you clears it on both screens. **Also holding**
+  names the other while they keep it; if it reads *Nobody*, they have gone quiet and you are holding
+  alone.
 - **Answering:** **Add a place** opens the area nearest the person asking. The place you pick goes
   into the answer, and the answer shows where it came from and when it was last checked.
 - **Past their time:** **Ask … to check in**. They see it silently, and nobody else does.
@@ -117,7 +121,8 @@ happen. If it does not, stop and tell whoever looks after NavCom.
 - **Telling everyone:** **Tell everyone out**, under Who is out, sends what is happening to everyone
   on the board, or to the teams you picked. Places and conditions, not orders and not people. It
   stands until you clear it or say something new: anybody who signs on later, or was out of signal,
-  is told it the next time their phone is heard.
+  is told it the next time their phone is heard. Said before anybody is out, such as where to meet, it
+  waits for whoever signs on.
 - **At the end:** stand down. **Tonight** lists what the watch did; copy it out for whoever reviews
   the night. A panic wipe deletes it.
 

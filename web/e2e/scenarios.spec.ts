@@ -164,3 +164,39 @@ test.describe('the playbook', () => {
     expect(await page.locator('main, body').first().innerText()).not.toMatch(VERDICT);
   });
 });
+
+test.describe('a check-in pressed underground', () => {
+  test('waits, goes by itself once a relay takes it, and says when it was pressed, not when it got out', async ({ page }) => {
+    test.setTimeout(60_000);
+    const now = Math.floor(Date.now() / 1000);
+    await seedDevice(page, {
+      callsign: 'Kite',
+      watchtower: { pubkey: getPublicKey(generateSecretKey()), relays: ['wss://fake.relay'], holders: [me] },
+      relayEvents: [],
+      refusePublish: true,
+      wipeable: { signon: { at: now - 1800, area: 'Herald Sq', expectedUntil: now + 5400, toldAtSignOn: 'Lighthouse', routineInterval: 1800 } }
+    });
+    await open(page, '/terminal/');
+    const pressed = Math.floor(Date.now() / 1000);
+    await page.getByRole('button', { name: /^check in$/i }).click();
+    const held = page.locator('[data-check-in-held]');
+    await expect(held).toContainText('Waiting for signal', { timeout: 15_000 });
+    await expect(held).toContainText('it goes by itself');
+
+    // Some minutes on the platform, then the train comes up into signal.
+    await page.waitForTimeout(3_000);
+    await page.evaluate(() => {
+      (window as unknown as { __navcomRefuse: boolean }).__navcomRefuse = false;
+      window.dispatchEvent(new Event('online'));
+    });
+    await expect(held).toHaveCount(0, { timeout: 15_000 });
+    const routines = await page.evaluate(() =>
+      ((window as never as { __navcomPublished?: { kind: number; created_at: number; tags: string[][] }[] }).__navcomPublished ?? [])
+        .filter((e) => e.kind === 20910 && e.tags.some((t) => t[0] === 't' && t[1] === 'routine'))
+        .map((e) => e.created_at)
+    );
+    expect(routines.length, 'the held check-in was never sent again').toBeGreaterThanOrEqual(2);
+    // The one that got out is stamped when it was pressed, not three seconds later.
+    expect(routines[routines.length - 1]!).toBeLessThanOrEqual(pressed + 1);
+  });
+});

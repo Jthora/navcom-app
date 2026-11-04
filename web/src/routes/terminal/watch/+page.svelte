@@ -264,7 +264,10 @@
     tellBusy = true;
     tellFailed = false;
     try {
-      if ((await board.tellOut(tellText, chosen)).length > 0) {
+      const prior = board.told;
+      // Reached somebody, or nobody is out yet and it now stands for whoever signs on.
+      const reached = await board.tellOut(tellText, chosen);
+      if (reached.length > 0 || (board.told !== prior && board.told?.text != null)) {
         telling = false;
         tellText = '';
       } else tellFailed = true;
@@ -517,6 +520,20 @@
           This device's own power, told to whoever holds the watch on it and to nobody else: a laptop
           dying on battery takes the watch with it, and nothing else on this screen would say so.
         -->
+        {#if board.othersAt(nowS).length > 0}
+          {@const others = board.othersAt(nowS)}
+          {@const holding = others.filter((o) => o.holding)}
+          <!-- Who else is keeping the watch tonight, as a reading: if they went quiet, this one is alone. -->
+          <Slot k="Also holding">
+            <span data-also-holding>
+              {#if holding.length > 0}
+                <Readout value={holding.map((o) => o.holder).join(', ')} verbatim tone="good" sub="claiming it too" />
+              {:else}
+                <Readout value="Nobody" tone="warn" sub={`${others[0]!.holder} last heard ${fixAge(others[0]!.at, nowS)}`} />
+              {/if}
+            </span>
+          </Slot>
+        {/if}
         <Slot k="Power">
           <span data-watch-power>
             {#if battery.percent === null}
@@ -726,6 +743,7 @@
           {/if}
         </div>
       {/each}
+    {/if}
       <!--
         What is happening, to the people out: the holder's words, silent on their phones, with
         nothing to accept or answer. Never an order and never about a person [invariants 1, 8].
@@ -746,7 +764,7 @@
         {/if}
         {#if board.told && board.told.text !== null}
           <span data-told>
-            <Readout value={board.told.text} verbatim tone="neutral" sub={`to ${board.told.to.join(', ')} · ${fixAge(board.told.at, nowS)}`} />
+            <Readout value={board.told.text} verbatim tone="neutral" sub={`${board.told.to.length > 0 ? `to ${board.told.to.join(', ')}` : 'to whoever signs on'} · ${fixAge(board.told.at, nowS)}`} />
           </span>
           <!-- It stands, and is told again to anybody heard from afterwards, until it is cleared or replaced. -->
           <button data-tell-clear onclick={() => board.clearNotice()}>Clear it</button>
@@ -754,7 +772,6 @@
           <span data-told-cleared><Readout value="Cleared" tone="cold" sub={fixAge(board.told.at, nowS)} /></span>
         {/if}
       </div>
-    {/if}
   </section>
 
   {#snippet ask(w: Waiting)}

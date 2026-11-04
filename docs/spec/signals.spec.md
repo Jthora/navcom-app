@@ -211,7 +211,10 @@ each row's team and to let a holder narrow the list to one team, and a narrowed 
 show every `Distress` and everybody past their time. Two teams that differ only in case are one.
 
 **`routine`** — `{}`, or `{ "position": {...} }` where the operator shares it. Presence is the
-message.
+message. A check-in no relay took is kept and sent again once one does, and its `created_at` is the
+moment the operator pressed it, never the moment it got out (2026-11-04): later, it would tell the
+watch they were known well more recently than they were. A watch reads its time from `created_at`
+and never moves the next check-in earlier for one that arrives late.
 
 **`query`**
 ```json

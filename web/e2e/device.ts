@@ -218,7 +218,9 @@ export async function seedDevice(page: Page, seed: Seed = {}): Promise<void> {
           const w = globalThis as unknown as { __navcomPublished: unknown[] };
           (w.__navcomPublished ??= []).push(event);
 
-          const accepted = !s.refusePublish;
+          // `__navcomRefuse`, set by a test, changes its mind mid-test: no signal, then signal again.
+          const flip = (globalThis as unknown as { __navcomRefuse?: boolean }).__navcomRefuse;
+          const accepted = !(flip ?? s.refusePublish);
           this.deliver(
             JSON.stringify(['OK', event.id ?? '', accepted, accepted ? '' : (s.refuseWith ?? 'blocked: no')])
           );

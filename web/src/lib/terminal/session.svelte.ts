@@ -142,10 +142,11 @@ async function signal(
   secret: SecretKey,
   address: WatchtowerAddress,
   type: SignalType,
-  payload: SignalPayload
+  payload: SignalPayload,
+  createdAt?: number
 ) {
   try {
-    return await sendSignal(pool(), relays, secret, address, type, payload, (result: PublishResult) => heard.answered(result));
+    return await sendSignal(pool(), relays, secret, address, type, payload, (result: PublishResult) => heard.answered(result), createdAt);
   } catch (e) {
     if (e instanceof PublishError && e.result) heard.answered(e.result);
     throw e;
@@ -304,6 +305,57 @@ export function fixDue(
 }
 let fixBeat: ReturnType<typeof setInterval> | null = null;
 let fixSent: { lat: number; lon: number; precision_m: number; at: number } | null = null;
+
+/**
+ * A check-in pressed where nothing could take it, kept to send once something can (the joint night,
+ * 2026-11-04): underground, the button said it had failed and nothing tried again, and pressing it
+ * every few minutes on a subway platform is what nobody does.
+ *
+ * It goes stamped with the moment it was pressed, with where they were then, never with the moment
+ * it got out [core `sendSignal` `createdAt`]: a later stamp would tell the watch they were known well
+ * more recently than they were. In this page only: a wipe, a burn or a stand-down drops it unsent.
+ */
+let heldCheckIn = $state<{ at: number; payload: SignalPayload } | null>(null);
+let checkInRetry: ReturnType<typeof setInterval> | null = null;
+let checkInSending = false;
+const CHECK_IN_RETRY_SECONDS = 30;
+
+function holdCheckIn(at: number, payload: SignalPayload): void {
+  heldCheckIn = { at, payload };
+  if (checkInRetry) return;
+  checkInRetry = setInterval(() => void sendHeldCheckIn(), CHECK_IN_RETRY_SECONDS * 1000);
+  if (typeof window !== 'undefined') window.addEventListener('online', onlineAgain);
+}
+
+function onlineAgain(): void {
+  void sendHeldCheckIn();
+}
+
+async function sendHeldCheckIn(): Promise<void> {
+  const held = heldCheckIn;
+  if (!held || !session) return dropHeldCheckIn();
+  if (checkInSending) return;
+  checkInSending = true;
+  try {
+    const { config, identity } = ctx();
+    await signal(targets(), identity.secretKey, watchAddress(config), 'routine', held.payload, held.at);
+    if (heldCheckIn === held) {
+      dropHeldCheckIn();
+      overdue.clear();
+    }
+  } catch {
+    // Still nothing takes it: the next try, or the signal coming back.
+  } finally {
+    checkInSending = false;
+  }
+}
+
+function dropHeldCheckIn(): void {
+  heldCheckIn = null;
+  if (checkInRetry) clearInterval(checkInRetry);
+  checkInRetry = null;
+  if (typeof window !== 'undefined') window.removeEventListener('online', onlineAgain);
+}
 
 function startFixBeat(): void {
   stopFixBeat();
@@ -522,6 +574,8 @@ export const operator = {
   /** A watch was added, and none of its relays can be reached from this page: it sends nowhere. */
   get watchStranded(): boolean { return loadConfig() === null && storedWatch() !== null; },
   get busy(): boolean { return busy; },
+  /** When a check-in that has not gone yet was pressed, or null: it goes by itself once there is signal. */
+  get heldCheckIn(): number | null { return heldCheckIn?.at ?? null; },
   get error(): string | null { return error; },
   get lastResponse(): ResponsePayload | null { return lastResponse; },
   get distress(): DistressPhase[] { return distressPhases; },
@@ -732,8 +786,20 @@ export const operator = {
   },
 
   async routine() {
-    const r = await ask(() => tell('routine', here()));
+    const pressed = Math.floor(Date.now() / 1000);
+    const payload = here();
+    const r = await ask(async () => {
+      try {
+        return await tell('routine', payload);
+      } catch (e) {
+        // No relay took it: kept, and sent by itself once one does. A box that took it and did not
+        // answer in time is not this: the check-in went, and sending it again would say it twice.
+        if (e instanceof PublishError && session) holdCheckIn(pressed, payload);
+        throw e;
+      }
+    });
     if (r) {
+      dropHeldCheckIn();
       if (r !== 'posted') lastResponse = r;
       // This is one of the two things that answer the watch's *"you are past the time you
       // gave"* -- and it clears the overdue on the board too, so the screen and the board
@@ -876,6 +942,7 @@ export const operator = {
     // Stops following and forgets the last fix. Standing down leaves nothing behind.
     position.stop();
     stopFixBeat();
+    dropHeldCheckIn();
 
     // No "no longer out" message, and none is needed: the public entry ages off the board
     // by itself. A phone that dies removes you the same way, which is the honest behaviour
@@ -1032,6 +1099,7 @@ export const operator = {
     presence.stopBeat();
     position.stop();
     stopFixBeat();
+    dropHeldCheckIn();
     stopAsking();
     overdue.stop();
     notice.reset();

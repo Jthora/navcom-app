@@ -354,7 +354,13 @@ export async function sendSignal(
    * no relay took throws a {@link PublishError} carrying the same, so both outcomes say which relay
    * refused it and why.
    */
-  onPublished?: (result: PublishResult) => void
+  onPublished?: (result: PublishResult) => void,
+  /**
+   * When it was made, if not now: a check-in pressed underground and sent once there is signal says
+   * the moment the person pressed it, never the moment it got out. Sent with the later time, it would
+   * tell the watch they were last known well more recently than they were.
+   */
+  createdAt?: number
 ): Promise<Event> {
   // Enforced here, not only in buildSignal/buildDistress: this is the path every real
   // sender actually uses (the terminal and the CLI both call this, not the builders), and
@@ -367,7 +373,7 @@ export async function sendSignal(
       // whoever holds the watch, and to the executor's own key for what it acts on.
       tags: [['p', watchtower.pubkey], ['t', type]],
       content: sealToWatch(secret, watchtower, payload, type),
-      created_at: Math.floor(Date.now() / 1000)
+      created_at: createdAt ?? Math.floor(Date.now() / 1000)
     },
     secret
   );

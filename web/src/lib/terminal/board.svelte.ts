@@ -206,6 +206,18 @@ function dropTrail(from: string): void {
   trails = rest;
 }
 
+/**
+ * The other holders of this key this page has heard claim the watch, each with the newest claim heard.
+ *
+ * Two holders hold one night together [running-a-night.md], and each claim replaces the other's on the
+ * relays, so the board's one advertised state cannot say whether the other is still there. A holder
+ * whose laptop slept, or who went home, simply stops claiming; this is where that shows, as a reading
+ * and never a sound [the anti-pattern on notifications]: the one still here should know they are alone.
+ */
+let otherHolders = $state<Record<string, number>>({});
+/** Past one beat and a minute's grace, another holder who was claiming the watch has stopped. */
+export const HOLDER_QUIET_SECONDS = WATCH_BEAT_SECONDS + 60;
+
 /** A claim put back after another holder of this key said Dark while this phone holds it. */
 let reclaim: ReturnType<typeof setTimeout> | null = null;
 /**
@@ -895,11 +907,17 @@ export const board = {
     const to = entries.filter((e) => inTeams(e, teams));
     // All at once: twenty people, one at a time, on a congested network is the last one told minutes late.
     const reached = await reach(to, text, at);
-    if (reached.length > 0) {
+    /*
+     * Said before anybody is out, it stands for whoever signs on: a rally point given at eight for a
+     * gathering at nine (the joint night, 2026-11-04). It reached nobody because nobody is here yet, and
+     * each phone is told it the first time this board hears it. With somebody to tell and no relay
+     * taking it, it did not stand: that is a failure, said as one.
+     */
+    if (reached.length > 0 || to.length === 0) {
       told = { text, to: reached, at, teams: [...teams] };
       retold = new Set();
       // Who was told, never what: tonight's record holds actions and callsigns, not words or places.
-      night.note(`Told ${teams.length > 0 ? teams.join(', ') : 'everyone out'}: ${reached.join(', ')}`);
+      night.note(`Told ${teams.length > 0 ? teams.join(', ') : 'everyone out'}: ${reached.length > 0 ? reached.join(', ') : 'nobody out yet, so whoever signs on'}`);
     }
     return reached;
   },
@@ -918,6 +936,17 @@ export const board = {
   /** What this watch last told the people out, or null; its text is null once cleared. */
   get told(): { text: string | null; to: string[]; at: number; teams: string[] } | null {
     return told;
+  },
+
+  /**
+   * The other holders this page has heard claim the watch in the last two hours: each with when, and
+   * whether they are still claiming it, or have gone quiet past a beat and a minute's grace.
+   */
+  othersAt(now: number): { holder: string; at: number; holding: boolean }[] {
+    return Object.entries(otherHolders)
+      .filter(([, at]) => now - at < 7_200)
+      .map(([holder, at]) => ({ holder, at, holding: now - at < HOLDER_QUIET_SECONDS }))
+      .sort((a, b) => b.at - a.at);
   },
 
   /** Where `operator` was in the last ten minutes, oldest first; the watch's map draws it under their blip. */
@@ -961,6 +990,7 @@ export const board = {
     told = null;
     retold = new Set();
     trails = {};
+    otherHolders = {};
     unlisten();
     if (beat) clearInterval(beat);
     beat = null;
@@ -1089,6 +1119,17 @@ function follow(): boolean {
       onevent: (event: Event, url: string, how: { stored: boolean }) => {
         if (listenToken !== token) return;
         if (event.kind === KIND_WATCH_STATE) {
+          // Every claim by another holder, newest or not: which one the relays keep says nothing of
+          // whether the other is still here.
+          try {
+            const claim = JSON.parse(event.content) as Advertised;
+            const me = loadIdentity()?.callsign;
+            if (claim.state === 'station' && claim.holder && claim.holder !== me && event.created_at > (otherHolders[claim.holder] ?? 0)) {
+              otherHolders = { ...otherHolders, [claim.holder]: event.created_at };
+            }
+          } catch {
+            /* unreadable: the newest-wins read below says so */
+          }
           // Newest wins, whichever relay answers last [audit: relay paths, F11]: the stand-down
           // guard below trusts this, and a lagging relay's old Station made it refuse to say Dark.
           if (!newer(event, advertisedAt, advertisedId)) return;
