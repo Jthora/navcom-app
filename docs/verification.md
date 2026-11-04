@@ -686,6 +686,48 @@ on a public relay was then taken away in turn:
 Pairing found one of its own on the way: "Copy your link" makes a link, the box asks for "their code
 or link", and a link pasted whole was refused as not a NavCom code.
 
+## The night's edges, every screen, and the deploy itself, 2026-11-03
+
+Three layers for the first NYC night, each of which found something the rest had passed.
+
+**The joint night's edges** (`e2e/journey-night.spec.ts`, with the journeys): two holders on
+station at once, a holder's laptop reloading while a Distress is raised, both holders answering one
+question, a phone in a tunnel when the watch tells everyone something, a Distress from a phone that
+scanned the code and never signed on, and thirty operators in six teams on a watch phone slowed four
+times. **The first found a hole in exactly the setup `running-a-night.md` recommends**: both holders
+keep the watch, the watch state is one replaceable event under their shared key, and whoever took
+it last found their own claim newest when they stood down, so every operator was told Dark while
+the other holder was still there. The holder still on station now puts the claim back within a
+second [watch-state.spec.md, Handover]. Broken deliberately, the test fails.
+
+**Every terminal screen** (`e2e/ui-sweep.spec.ts`, in the gate): each of the terminal's screens, as a
+first visit, out under a watch, and holding a busy board, on the device floor's 360 px and with the
+phone's text at 150%, the board carrying a 48-letter callsign and team with nowhere to break and names
+in Hebrew and with emoji. Nothing may reach past the screen's edge, and axe must find nothing in either
+signature. Only the landing page and the root console had ever been scanned, and the first pass failed
+27 of 66:
+
+- Low signature is every operator's default once they have a callsign, and in it `--t-dark` and
+  `--t-auto` were 3.1:1 and 3.7:1: the Distress screen's own "Hold to send", every error line, and
+  "use Distress" on Assist. The lit action's label was 4.4:1 on its own tint
+- A slot's value column was `1fr`, which never shrinks below its longest word, so one long name
+  took Status to 567 px and the Watch screen to 639 px; large text did the same on four screens
+  with ordinary names
+- The map's mount read the centre, so each position heard while the engine loaded built another
+  one: nine engines for one screen (`watch-map.spec.ts` now counts them)
+
+**The deployment** (`e2e/live-map.spec.ts`, in `check:live-site`, by hand after a deploy): whether
+Vercel serves the 21.6 MB street extract a range at a time, uncompressed, and kept by the phone, then a
+phone signed on in Manhattan drawing the streets, saving them and drawing them offline, with every
+publish refused on this machine. `LIVE_BASE` points it at a local build to try the check itself.
+Tried there first, it found the extract served `max-age=0`, so a phone that had not saved the
+streets asked again for every tile; `/tiles/` is immutable now, and a new extract takes a new name.
+
+**Still not covered:** a phone in a hand. A harness that drives an Android phone's own Chrome over
+USB, against this machine's build, was planned and not built: the phone's Chrome had never been
+opened, and getting past its first screen is its owner's to do. Two networks and a crowd remain the
+dry run's [running-a-night.md].
+
 ## The part that is not architectural
 
 Several of the nine came from editing files by string replacement against text written from

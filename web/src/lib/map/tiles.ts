@@ -8,6 +8,11 @@
  *
  * Kept in a cache of its own, outside the Wipeable tier: it is a public map of Manhattan, nothing of
  * anybody's, so a panic wipe leaves it [invariant 5], and a burn takes it with every other cache.
+ *
+ * **A new extract takes a new name.** `vercel.json` serves `/tiles/` as immutable for a year, so a
+ * phone that has not saved the streets reads tiles it already fetched from its own cache rather than
+ * asking again for each one on a congested cell; a file changed under the same name would never reach
+ * it. The name carries the day it was built, and `map.test.ts` holds the two together.
  */
 export const STREETS = {
   url: '/tiles/manhattan-20261103.pmtiles',

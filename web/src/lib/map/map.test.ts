@@ -102,3 +102,13 @@ describe('which way the phone faces', () => {
     expect(headingOf({})).toBeNull();
   });
 });
+
+describe('the street extract’s name', () => {
+  it('carries the day it was built, so a new extract is a new file the host may cache forever', async () => {
+    const { STREETS } = await import('./tiles');
+    const vercel = JSON.parse((await import('node:fs')).readFileSync(new URL('../../../../vercel.json', import.meta.url), 'utf8'));
+    expect(STREETS.url).toContain(STREETS.built.replaceAll('-', ''));
+    const rule = (vercel.headers as { source: string; headers: { key: string; value: string }[] }[]).find((h) => h.source === '/tiles/(.*)');
+    expect(rule?.headers.find((h) => h.key === 'cache-control')?.value).toMatch(/immutable/);
+  });
+});

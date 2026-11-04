@@ -76,7 +76,8 @@ choose a chain of command inside themselves, and orders exist only inside a unit
 chose them and which the member joined with that charter shown first. The watch still never
 assigns, and unit office makes nobody a watch holder ([`docs/design/units.md`](docs/design/units.md)).
 
-**Pseudonymity is architectural.** No legal names. Keys on device. No persisted position
+**Pseudonymity is architectural.** Nothing asks for a name, and nobody is named but by their
+own choice. Keys on device. No persisted position
 history, no social graph, no legal identities — and `principles.md` states plainly what
 the node *does* hold rather than claiming there's nothing worth seizing. An operator may
 waive protections for themselves, never for a third party.
