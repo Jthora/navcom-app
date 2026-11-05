@@ -50,7 +50,7 @@ privkey_path = "/var/lib/navcom/watchtower.key"
 
 [relays]
 # Its own subscription. This is what makes the separation structural.
-urls = ["wss://relay.damus.io", "wss://nos.lol"]
+urls = ["wss://relay.damus.io", "wss://nos.lol", "wss://offchain.pub"]
 
 [log]
 # Where THIS process records what actually happened to each Distress -- paged, acknowledged

@@ -42,7 +42,7 @@ test('the code names this phone as a holder, is signed by the watch, and fills S
   expect(read.holders).toEqual([TEST_SECRET_PUBKEY()]);
   expect(read.relays.length).toBeGreaterThan(0);
   // The night's third relay rides in the code, so one relay down still leaves two (2026-11-04).
-  expect(read.relays).toEqual(expect.arrayContaining(['wss://relay.damus.io', 'wss://nos.lol', 'wss://relay.snort.social']));
+  expect(read.relays).toEqual(expect.arrayContaining(['wss://relay.damus.io', 'wss://nos.lol', 'wss://offchain.pub', 'wss://relay.snort.social']));
 
   // Pasted on another phone — its own context, so its own storage — Setup fills in all of it.
   const phone = await browser.newContext();

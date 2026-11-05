@@ -12,7 +12,7 @@ privkey_path = "./watchtower.key"
 [relays]
 # Any public Nostr relay(s) the daemon connects OUTWARD to as a client.
 # The daemon is not a relay itself -- nothing here needs to be hosted.
-urls = ["wss://relay.damus.io", "wss://nos.lol"]
+urls = ["wss://relay.damus.io", "wss://nos.lol", "wss://offchain.pub"]
 
 [watch]
 routine_interval_default = 3600

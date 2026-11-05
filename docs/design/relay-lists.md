@@ -43,7 +43,7 @@ partners read.
 - **It reaches phones only by release**, never fetched at run time, so no key, stolen or coerced,
   can reroute a phone
 
-**Today the commons is two relays, below its own floor of three**, and a ban on one leaves a single
+**The commons was two relays until 2026-11-04, below its own floor of three**, and a ban on one left a single
 relay carrying everything (it happened to this project's own address on 2026-10-29, §5). Candidates
 looked at on 2026-10-30, read only: each relay's NIP-11 document, where it is hosted, and whether it
 serves notes a month old. Evidence for a decision that is the owner's while the commons is below
@@ -58,7 +58,7 @@ its floor, not an admission:
 | relay.nostr.net | strfry | Cloudflare, US | — | Shares a CDN and a jurisdiction with damus |
 | nostr.oxtr.dev | strfry | Hetzner, DE | — | Shares a network and a jurisdiction with nos.lol |
 | nostr-pub.wellorder.net | nostr-rs-relay | Hetzner, DE | — | Shares a network and a jurisdiction with nos.lol |
-| offchain.pub | strfry | IncogNet, US | yes | Shares a jurisdiction with damus |
+| offchain.pub *(in, 2026-11-04)* | strfry | IncogNet, US | yes | Shares a jurisdiction with damus |
 | relay.snort.social | memlay, in memory | Apex Strata, IE | **no** | Passes; but a card published once is gone at its next restart |
 | relay.nostr.bg | — | — | — | Did not answer |
 
@@ -68,8 +68,13 @@ connections (503) during a live walk, leaving every sign-on, check-in and Distre
 and a probe that evening found all five candidates above accepting a sealed ephemeral signal and
 delivering it in 120 to 245 ms. What a watch carries is sealed and short-lived, so a relay that keeps
 nothing past a restart is no loss there; cards and missions stay on the two that keep a month. A watch
-started on a phone names all three in its code. The defaults, and so the commons for everything else,
-are still two.
+started on a phone names all three in its code.
+
+**Decided the same day, by the owner: offchain.pub is a third relay for everything** (core
+`DEFAULT_RELAYS`), so the commons meets its floor of three. It bends the independence rule on one
+count — it shares a jurisdiction, the US, with relay.damus.io, on a network of its own — and keeps a
+month, so cards, claims and reports survive a restart on all three. A watch started on a phone now
+names four. Months of passing NavCom's own check still have to follow.
 
 None passes cleanly. The rule as written admits only relay.snort.social, which cannot hold a card;
 the next nearest each share one thing with a relay already in. **The choice is which rule bends:**

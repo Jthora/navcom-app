@@ -13,7 +13,7 @@ privkey_path = "./operator.key"
 pubkey = "REPLACE_WITH_WATCHTOWER_PUBKEY"
 
 [relays]
-urls = ["wss://relay.damus.io", "wss://nos.lol"]
+urls = ["wss://relay.damus.io", "wss://nos.lol", "wss://offchain.pub"]
 
 [operator]
 # Optional. If unset, the daemon assigns a short callsign derived from

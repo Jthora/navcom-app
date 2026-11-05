@@ -34,9 +34,9 @@ test('a relay that rate-limits this phone is named on Status, and the beat holds
   await page.getByRole('button', { name: /^sign on$/i }).click();
   await page.waitForURL('**/terminal/');
 
-  // Both shipped relays refused the presence sent at sign-on, in those words.
+  // Every shipped relay refused the presence sent at sign-on, in those words.
   const refusing = page.locator('[data-refusing]');
-  await expect(refusing).toHaveCount(2);
+  await expect(refusing).toHaveCount(3);
   await expect(page.locator('[data-refusing="wss://relay.damus.io"]')).toContainText('relay.damus.io');
   await expect(refusing.first()).toContainText(/rate-limited/i);
   await expect(page.getByText(/Distress still goes to it/)).toBeVisible();
@@ -50,7 +50,7 @@ test('a relay that rate-limits this phone is named on Status, and the beat holds
   // Once it has cooled, the beat tries again, and is refused again, so the line stays.
   await page.clock.runFor(10 * 60_000);
   expect(await presences(page)).toBeGreaterThan(sent);
-  await expect(refusing).toHaveCount(2);
+  await expect(refusing).toHaveCount(3);
 });
 
 test('a relay that refuses for any other reason is not held off, and Status does not call it a rate limit', async ({ page }) => {

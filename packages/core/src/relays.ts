@@ -5,8 +5,12 @@ import { MISSION_RELAYS, THE_RECORD } from './mission-relays.js';
 /**
  * Where an operator starts.
  *
- * Two, not one: a single relay is a single point of failure for presence, and these are free
- * services run by volunteers who owe nobody uptime.
+ * Three, not one: a single relay is a single point of failure for presence, and these are free
+ * services run by volunteers who owe nobody uptime. **Three since 2026-11-04, by the owner:**
+ * offchain.pub joined the two, for everything, so a ban or an outage on one leaves two rather than
+ * one. It bends the independence rule [relay-lists.md] -- it shares a jurisdiction, the US, with
+ * relay.damus.io -- and keeps a month, which the in-memory relay.snort.social cannot, so a card or a
+ * mission published here survives a restart on all three.
  *
  * **In core because two things need the same answer.** The client picks these when an operator
  * has chosen nothing, and `navcom-relay-check` asks whether they can carry this app's traffic.
@@ -18,18 +22,18 @@ import { MISSION_RELAYS, THE_RECORD } from './mission-relays.js';
  * read, and using one reveals no Watchtower -- which is why a default list is fine here and a
  * default *Watchtower* would not be.
  */
-export const DEFAULT_RELAYS: readonly string[] = ['wss://relay.damus.io', 'wss://nos.lol'];
+export const DEFAULT_RELAYS: readonly string[] = ['wss://relay.damus.io', 'wss://nos.lol', 'wss://offchain.pub'];
 
 /**
- * A watch's third relay, beside the two defaults, for the night's traffic (the owner, 2026-11-04).
+ * A watch's own extra relay, beside the defaults, for the night's traffic (the owner, 2026-11-04).
  *
- * The commons sat at two, below its own floor of three [relay-lists.md], and on 4 November
- * relay.damus.io refused connections (503) during a live walk: every sign-on, check-in and Distress
- * rode on nos.lol alone. What a watch carries is sealed and short-lived, so its third relay's job is
- * to stay up, not to keep anything: relay.snort.social, in Ireland on a host of its own, the one
- * candidate that passed the independence rule, and kept out of the defaults only because it holds
- * nothing past a restart, which cards need and the night does not. A watch started here names all
- * three in its code, so every phone that scans it sends there too.
+ * On 4 November relay.damus.io refused connections (503) during a live walk: every sign-on,
+ * check-in and Distress rode on nos.lol alone. What a watch carries is sealed and short-lived, so
+ * this relay's job is to stay up, not to keep anything: relay.snort.social, in Ireland on a host of
+ * its own, the one candidate that passed the independence rule outright, and kept out of the
+ * defaults only because it holds nothing past a restart, which cards need and the night does not. A
+ * watch started here names it in its code beside the defaults, so every phone that scans it sends
+ * there too: four relays for the night, on three networks in two jurisdictions.
  */
 export const WATCH_EXTRA_RELAYS: readonly string[] = ['wss://relay.snort.social'];
 

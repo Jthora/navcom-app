@@ -33,7 +33,7 @@ pubkey = "REPLACE_WITH_WATCHTOWER_PUBKEY"
 
 [relays]
 # Its own subscription. It does not talk to the daemon and does not need to be near it.
-urls = ["wss://relay.damus.io", "wss://nos.lol"]
+urls = ["wss://relay.damus.io", "wss://nos.lol", "wss://offchain.pub"]
 
 [page]
 # argv, never a shell string, so nothing on the wire can become a command.

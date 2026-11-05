@@ -61,7 +61,7 @@ const WIRED = {
 };
 
 /** The watch's relay, and beside it the defaults everything else also goes to [audit: relay paths, F15]. */
-const DIALLED = ['wss://relay.example', 'wss://relay.damus.io', 'wss://nos.lol'];
+const DIALLED = ['wss://relay.example', 'wss://relay.damus.io', 'wss://nos.lol', 'wss://offchain.pub'];
 
 test('opens one connection per relay, not one per module', async ({ page }) => {
   // Status alone starts the watch reader, peer presence and the key-bundle fetcher. Three
@@ -187,6 +187,6 @@ test.describe('where the Peers screen says things go [audit: relay paths, review
     await where(page).locator('[data-relay-reset]').click();
     await expect(where(page).locator('[data-relays-set-aside]')).toHaveCount(0);
     await expect(where(page)).toHaveJSProperty('open', true);
-    await expect(where(page).locator('[data-relay-note]')).toContainText(/two that ship with the app/i);
+    await expect(where(page).locator('[data-relay-note]')).toContainText(/three that ship with the app/i);
   });
 });

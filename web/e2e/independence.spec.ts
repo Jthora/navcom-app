@@ -77,9 +77,9 @@ test.describe('with an identity but no watch', () => {
     await expect(page.getByText('Raven')).toBeVisible();
 
     // And it says where presence will go, because every network call has to be explainable.
-    // Two relays, not one: a single relay is a single point of failure for presence, and
-    // these are free services run by volunteers who owe nobody uptime.
-    await expect(page.getByText(/^wss:\/\//)).toHaveCount(2);
+    // Three relays, not one: a single relay is a single point of failure for presence, and
+    // these are free services run by volunteers who owe nobody uptime (three since 2026-11-04).
+    await expect(page.getByText(/^wss:\/\//)).toHaveCount(3);
   });
 
   test('a whole patrol needs no watch', async ({ page }) => {

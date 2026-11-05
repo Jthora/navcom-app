@@ -128,14 +128,14 @@
       (holdsWatchHere ? ' The watch this phone holds moves with it, so tell its operators.' : '');
   }
 
-  /** Back to the shipped pair. An empty own-list is how `relays()` falls through to them. */
+  /** Back to the shipped defaults. An empty own-list is how `relays()` falls through to them. */
   function backToDefaults() {
     relayError = null;
     setRelays([]);
     readRelays();
     relayDraft = ownRelays().join('\n');
     relayNote =
-      'Back to the two that ship with the app.' +
+      'Back to the three that ship with the app.' +
       (holdsWatchHere ? ' The watch this phone holds moves with it, so tell its operators.' : '');
   }
 

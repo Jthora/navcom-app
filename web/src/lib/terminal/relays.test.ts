@@ -175,11 +175,16 @@ describe('the watch’s relays, read without its escalation key [budget: public 
 });
 
 describe('a watch started on this phone (2026-11-04)', () => {
-  it('listens on the defaults and the night’s third relay, so one relay down leaves two', () => {
+  it('listens on the defaults and the night’s own relay, so one relay down leaves three', () => {
     expect(watchRelays()).toEqual([...DEFAULT_RELAYS, 'wss://relay.snort.social']);
+    expect(watchRelays()).toHaveLength(4);
   });
 
-  it('and the third carries the watch alone: the card, presence and missions keep the defaults', () => {
+  it('everything else has three, offchain.pub among them (the owner, 2026-11-04)', () => {
+    expect(DEFAULT_RELAYS).toEqual(['wss://relay.damus.io', 'wss://nos.lol', 'wss://offchain.pub']);
+  });
+
+  it('and the night’s own relay carries the watch alone: the card, presence and missions keep the defaults', () => {
     expect(relays()).toEqual([...DEFAULT_RELAYS]);
     expect(missionRelays()).not.toContain('wss://relay.snort.social');
   });
