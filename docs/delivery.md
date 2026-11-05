@@ -101,8 +101,8 @@ does not.
 
 At the owner's direction, for their own tablet first: **`apps/android`**, the site's own static
 build bundled by Capacitor (8.5.3, pinned) and served from the device, so it opens with no network.
-Sideloaded over USB — `npm run apk`, then `npm run install-apk` in that folder — with no store
-listing, and nothing on the web app pitches it. It is the shell the three gains above are built into,
+Sideloaded over USB — `npm run apk`, then `npm run install-apk` in that folder, with JDK 21 on the path
+(Capacitor 8 refuses 17) — with no store listing, and nothing on the web app pitches it. It is the shell the three gains above are built into,
 and the offline form the Old Net → New Net brief asks of NavCom. Kept outside the npm workspaces, so a
 deploy never installs or builds it.
 

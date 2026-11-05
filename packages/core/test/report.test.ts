@@ -490,7 +490,8 @@ describe('what the second audit of Milestone 11 found', () => {
           expect(() => buildReport(contact, missionReport({ date: yesterday }), at), `${h}:00 UTC, UTC${offset}`).not.toThrow();
         }
       }
-    });
+      // 648 sealed reports: past vitest's 5 s on a loaded build machine, which failed a deploy (2026-11-05).
+    }, 30_000);
 
     it('names at most three kinds of work', () => {
       expect(() => buildReport(contact, { callsign: 'K', date: '2026-10-07', does: ['patrol', 'supplies', 'firstaid'] }, NOW)).not.toThrow();
