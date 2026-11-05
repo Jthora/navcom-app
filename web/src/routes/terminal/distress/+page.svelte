@@ -14,11 +14,12 @@
    *    person nor an agent, and is shown as the watch.
    */
   import { onDestroy } from 'svelte';
+  import { retiredWatch } from '$lib/terminal/config';
   import { operator } from '$lib/terminal/session.svelte';
   import { heard } from '$lib/terminal/heard.svelte';
   import { HeardSlot } from '$lib/components/heard';
   import { pulse } from '$lib/terminal/haptic';
-  import { Slot, Elapsed } from '$lib/components/panel';
+  import { Slot, Elapsed, Readout } from '$lib/components/panel';
   import {
     callLink,
     distressMessage,
@@ -46,6 +47,8 @@
   let hasWatch = $state(true);
   /** Added, and unreachable from this page: not the same thing as never added. */
   let stranded = $state(false);
+  /** Retired by one of its holders: nothing goes there from this phone [config.ts]. */
+  let retired = $state(false);
   let contact = $state<EmergencyContact | null>(null);
   let callsign = $state<string | null>(null);
   /**
@@ -64,6 +67,7 @@
   onMount(() => {
     hasWatch = operator.hasWatch;
     stranded = operator.watchStranded;
+    retired = retiredWatch() !== null;
     mounted = true;
     aging = setInterval(() => (nowMs = Date.now()), 15_000);
     contact = loadContact();
@@ -316,8 +320,13 @@
   <section data-no-watch>
     <p class="error">
       <strong>There is nowhere to send this.</strong>
-      {#if stranded}Your watch's relays can't be reached. <a href="/terminal/setup/#relays">Fix them</a>.{:else}No watch is added.{/if}
+      {#if stranded && !retired}Your watch's relays can't be reached. <a href="/terminal/setup/#relays">Fix them</a>.{:else if !retired}No watch is added.{/if}
     </p>
+    {#if retired}
+      <!-- Retired by a holder [config.ts]: a readout, and the way to the new code. -->
+      <Slot k="Watch"><span data-watch-moved><Readout value="Moved" tone="warn" sub="scan its new code" /></span></Slot>
+      <a href="/terminal/setup/">Setup</a>
+    {/if}
     <!--
       Peers named, because "raise nobody" is true and the person most likely to read past it
       is the one who has paired with somebody. Pairing is mutual *visibility* — a peer sees

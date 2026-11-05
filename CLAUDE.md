@@ -110,7 +110,7 @@ zero-JavaScript.
 | | Decision | Status |
 |---|---|---|
 | Field Terminal | PWA at `navcom.app` — try instantly, no install, fully capable | Decided |
-| Native mobile | Deprioritised 2026-08-19. Adds three things: locked-screen `Distress` (both platforms — iOS 18 Controls make this possible, contrary to an earlier note), a phone holding the watch overnight (Android only), and silent SMS (Android only). None blocking. **An Android shell exists since 2026-11-01** (`apps/android`, Capacitor, sideloaded on the owner's tablet); nothing native is wired into it yet | Decided, deferred; shell begun |
+| Native mobile | Deprioritised 2026-08-19. Adds three things: locked-screen `Distress` (both platforms — iOS 18 Controls make this possible, contrary to an earlier note), a phone holding the watch overnight (Android only), and silent SMS (Android only). None blocking. **An Android shell exists since 2026-11-01** (`apps/android`, Capacitor, sideloaded on the owner's tablet); locked-screen `Distress` is wired into it since 2026-11-04, as a Quick Settings tile that opens the Distress screen over the lock | Decided, deferred; shell begun |
 | UI framework | Svelte | Decided |
 | Watch | A mode of the same app, not a separate Console. A box may hold it all night; a squad without one holds it on a phone | Decided 2026-08-19, reversing "served from the box" |
 | Relay topology | Operator traffic follows relay lists (NIP-65, NIP-17) inside a commons of large public relays NavCom keeps; no grid node carries it while the private-relay refusal stands; grid nodes are read, and no grid relay keeps a record of who reads it. See [`relay-lists.md`](docs/design/relay-lists.md) | Decided 2026-10-08, correcting 2026-10-06's "across grid nodes and public relays" |

@@ -18,6 +18,7 @@ export * from './events/announce.js';
 export * from './events/key-bundle.js';
 export * from './events/endorsement.js';
 export * from './events/invite.js';
+export * from './events/retire.js';
 export * from './events/response.js';
 export * from './events/watch-code.js';
 export * from './board.js';

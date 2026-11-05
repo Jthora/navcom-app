@@ -264,6 +264,24 @@ So the incoming watch starts empty and fills from the operators themselves:
 - Until it arrives, an empty board means *"nothing heard yet"*, and a client MUST NOT
   present it as *"nobody is out"*
 
+### Retiring a key (2026-11-04)
+
+A holder who leaves a squad still holds its key, and with it every signal sealed to it. A holder who
+stays MAY retire the key: a `dark` state under it carrying `retired`, a `10910` signed by that holder's
+own key, tagged `["retires", <watch pubkey>]`, whose content is `{ "by": <their callsign>, "reason":
+<their words> }` (core `retire.ts`). The reason is required: it is a use of power, and operators are
+shown whose hand it was and why.
+
+- A client MUST believe a retirement only under the watch key, signed by a holder its watch code
+  named, naming that watch. One from anybody else is ignored, so the holder who left cannot retire
+  a watch to send its operators elsewhere
+- A client that has read one MUST keep it: from then on it refuses every state under that key and
+  sends nothing to it, whatever the key publishes later, and says the watch moved, by whom and why.
+  Only a newly scanned code, a different watch, ends it
+- It cannot stop the old key. A client that never read the retirement sees only the relay's newest
+  copy, so the new code is handed out at once
+- Additive: a client that predates it reads `dark`
+
 ## Shared watch [C28]
 
 Exactly **one** holder has the board at a time and is the accountable party shown in

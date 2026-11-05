@@ -102,9 +102,15 @@ does not.
 At the owner's direction, for their own tablet first: **`apps/android`**, the site's own static
 build bundled by Capacitor (8.5.3, pinned) and served from the device, so it opens with no network.
 Sideloaded over USB — `npm run apk`, then `npm run install-apk` in that folder — with no store
-listing, and nothing on the web app pitches it. **Nothing native is wired yet**: it is the shell the
-three gains above would be built into, and the offline form the Old Net → New Net brief asks of
-NavCom. Kept outside the npm workspaces, so a deploy never installs or builds it.
+listing, and nothing on the web app pitches it. It is the shell the three gains above are built into,
+and the offline form the Old Net → New Net brief asks of NavCom. Kept outside the npm workspaces, so a
+deploy never installs or builds it.
+
+**The first gain is wired, 2026-11-04: `Distress` from a locked screen.** A Quick Settings tile
+(`DistressTile.java`), which Android shows on the lock screen, and the icon's long-press shortcut open
+the app on the Distress screen, over the lock. They open it; the hold sends, as everywhere (invariant 3).
+Over the lock the app is that screen and nothing else: any other page puts it back behind the lock, and
+unlocking ends the exemption, so a locked phone shows nobody the rest. The other two are not built.
 
 Two things differ from the site, and both are said here so nobody mistakes them for bugs:
 

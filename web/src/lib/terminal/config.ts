@@ -12,7 +12,7 @@
  * destroys it; a wipe does not.
  */
 
-import { isPubkey } from '@navcom/core';
+import { isPubkey, type RetirementRead } from '@navcom/core';
 import { clearField, get, set } from './storage';
 import { refusedOf, usable, whyNotReachable, type Refused } from './relay-url';
 import { WatchCodeError, escalationOf, parseWatchCode } from './watch-code';
@@ -101,6 +101,8 @@ export function storedWatch(): StoredWatch | null {
 export function loadConfig(): WatchtowerConfig | null {
   const watch = storedWatch();
   if (!watch || watch.relays.length === 0) return null;
+  // Retired by one of its holders: nothing more goes to it from this phone [retiredWatch].
+  if (retiredWatch()?.pubkey === watch.pubkey) return null;
   return {
     pubkey: watch.pubkey,
     relays: watch.relays,
@@ -348,4 +350,29 @@ export function addOfferedWatch(watch: NamedWatch): WatchtowerConfig {
   const saved = saveConfig(watch.pubkey, reachable.join('\n'), watch.holders.join('\n'), code);
   forgetOfferedWatch();
   return saved;
+}
+
+const RETIRED = 'watch_retired';
+
+export interface Retired extends RetirementRead {
+  /** The watch key it retired. */
+  pubkey: string;
+}
+
+/**
+ * The watch this phone was given, retired by one of its holders (2026-11-04, SC3) [core `retire.ts`]:
+ * who, why, and when, as they signed it. **Kept for good once seen**: whoever kept the old key can
+ * publish under it again, so a later state from it is refused here rather than believed, and nothing
+ * more is sent to it. A new code, scanned, is a different watch, and this no longer applies.
+ */
+export function retiredWatch(): Retired | null {
+  const kept = get<Retired>('accruing', RETIRED);
+  const watch = savedWatch();
+  return kept && watch && kept.pubkey === watch.pubkey ? kept : null;
+}
+
+/** Records a retirement this phone read under its watch's key, from a holder its code named. */
+export function noteRetired(pubkey: string, r: RetirementRead): void {
+  if (retiredWatch()?.pubkey === pubkey) return;
+  set('accruing', RETIRED, { ...r, pubkey });
 }

@@ -21,6 +21,8 @@
   import Phrases from '$lib/components/watch/Phrases.svelte';
   import { board, type Waiting } from '$lib/terminal/board.svelte';
   import { createWatch, foundedHere, joinWatch, leaveWatch, otherHolders as keptHolders, setOtherHolders, watchKey, watchPubkey, watchSecretHex, WatchKeyError } from '$lib/terminal/watch-key';
+  import { buildRetirement } from '@navcom/core';
+  import { pool } from '$lib/terminal/pool';
   import ScanKey from '$lib/components/watch/ScanKey.svelte';
   import { watchCode } from '$lib/terminal/watch-code';
   import { watchRelays } from '$lib/terminal/relays';
@@ -139,6 +141,47 @@
     createWatch();
     refresh();
     board.start();
+  }
+
+  /*
+   * Retiring the watch key (2026-11-04, SC3) [core `retire.ts`]: a holder who left still holds it. The
+   * old key says, under its own signature and this holder's, who retired it and why; every phone under
+   * it reads Moved and sends nothing more there. A new watch starts here, with no other holders: the
+   * ones who stay are added back by their holder keys, so the one who left cannot come along unseen.
+   */
+  let retireWhy = $state('');
+  let confirmRetire = $state(false);
+  let retiring = $state(false);
+  let retireFailed = $state(false);
+  let retiredDone = $state(false);
+  async function retire() {
+    const key = watchKey();
+    const me = loadIdentity();
+    if (!key || !me?.callsign || !retireWhy.trim()) return;
+    retiring = true;
+    retireFailed = false;
+    try {
+      board.stop();
+      const event = buildRetirement(key, me.secretKey, { by: me.callsign, reason: retireWhy }, Math.floor(Date.now() / 1000));
+      const results = await Promise.allSettled(pool().publish(watchRelays(), event));
+      if (!results.some((r) => r.status === 'fulfilled')) {
+        retireFailed = true;
+        board.start();
+        return;
+      }
+      night.note(`Retired the watch key: ${retireWhy.trim()}`);
+      // The old key off this phone first, as giving it up does: createWatch never overwrites one.
+      leaveWatch();
+      others = '';
+      createWatch();
+      refresh();
+      board.start();
+      retireWhy = '';
+      confirmRetire = false;
+      retiredDone = true;
+    } finally {
+      retiring = false;
+    }
   }
 
   function join() {
@@ -749,6 +792,28 @@
         <Readout value="Under no watch" tone="cold" sub="you can hold one without being under one" />
       </Slot>
     {/if}
+  </section>
+
+  <section class="act" data-retire>
+    <h2>Somebody stopped holding it</h2>
+    {#if retiredDone}
+      <span data-retired-done><Readout value="Retired" tone="good" sub="a new watch is on this phone: hand out its code" /></span>
+    {/if}
+    <Why summary="Retire this key">
+      <label for="retire-why">Why, for everyone under it</label>
+      <textarea id="retire-why" bind:value={retireWhy} rows="2" maxlength="280" data-retire-why></textarea>
+      {#if confirmRetire}
+        <div class="row">
+          <button class="danger" onclick={retire} disabled={retiring || !retireWhy.trim()} data-retire-confirm>Retire it</button>
+          <button onclick={() => (confirmRetire = false)}>Keep it</button>
+        </div>
+      {:else}
+        <button onclick={() => (confirmRetire = true)} disabled={!retireWhy.trim()} data-retire-open>Retire this key</button>
+      {/if}
+      {#if retireFailed}
+        <span data-retire-failed><Readout value="Not sent" tone="warn" sub="no relay took it: nothing changed" /></span>
+      {/if}
+    </Why>
   </section>
 
   <section class="act">

@@ -14,7 +14,7 @@
   import { passedOn } from '$lib/terminal/passed-on.svelte';
   import { notice } from '$lib/terminal/notice.svelte';
   import { ago } from '$lib/terminal/heard-copy';
-  import { loadConfig, offeredWatch, storedWatch, type StoredWatch } from '$lib/terminal/config';
+  import { loadConfig, offeredWatch, retiredWatch, storedWatch, type Retired, type StoredWatch } from '$lib/terminal/config';
   import { peers } from '$lib/terminal/peers';
   import { formatDuration } from '$lib/terminal/patrol';
   import { notes } from '$lib/terminal/notes';
@@ -38,6 +38,8 @@
    * added it, and is told what is wrong with it and where to fix it [audit: relay paths, review].
    */
   let stranded = $state<StoredWatch | null>(null);
+  /** Retired by one of its holders, as they signed it [config.ts `retiredWatch`]. */
+  let retired = $state<Retired | null>(null);
 
   /*
    * The capability receipt as a panel rather than a sentence [docs/design/panel.md].
@@ -57,7 +59,9 @@
   const watchRead = $derived(
     // No watch added is not a watch gone dark: a newcomer alone read DARK on their first Status, a
     // fault in a setup they never did [the Alone layer]. Sign-on already told the two apart.
-    !configured && !stranded
+    retired
+      ? { value: 'Moved', tone: 'warn' as const, sub: `${retired.by}: ${retired.reason}` }
+      : !configured && !stranded
       ? { value: 'No watch', tone: 'cold' as const, sub: 'you have not added one' }
       : s.state === 'dark'
       ? { value: 'Dark', tone: 'cold' as const, sub: stranded ? 'its relays cannot be reached from here' : null }
@@ -73,6 +77,11 @@
    */
   let nowMs = $state(Date.now());
   const heardNow = $derived(heard.now(nowMs));
+  // A retirement arrives through the same read [config.ts `retiredWatch`]: shown as it lands.
+  $effect(() => {
+    void heardNow;
+    retired = retiredWatch();
+  });
   /**
    * Who may end a `Distress` sent to this phone's watch [G3]. `attributed` false is a box handed
    * over before it named its escalation key: on it, an answer the agent beside it sent cannot be
@@ -180,6 +189,7 @@
     configured = loadConfig() !== null;
     closure = watchClosure();
     stranded = configured ? null : storedWatch();
+    retired = retiredWatch();
     offered = !configured && !stranded && offeredWatch() !== null;
     identity = loadIdentity();
     person = loadContact()?.label ?? null;

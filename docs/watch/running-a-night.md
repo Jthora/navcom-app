@@ -19,7 +19,11 @@ for somebody on the street is the team's own knowledge, and NavCom does not writ
 5. For a night in New York, open **Map** on Status and press **Save … for tonight** on wifi: the borough
    you are in, or the New Jersey side (13 to 43 MB). Its streets then draw with no signal. Patrolling two,
    save the other under **Other areas**.
-6. Open **Practice** on Status. Check in, ask a question, send an Assist and hold Distress against a
+6. **Pair your team at once:** on **Peers**, one of you presses **Show a team code** and the rest scan
+   it under **Scan their code**. Every phone then lists the others by the names they chose; press
+   **Pair with …**. Untick anybody you do not know. The code is good for ten minutes, so show it rather
+   than post it.
+7. Open **Practice** on Status. Check in, ask a question, send an Assist and hold Distress against a
    pretend watch, then again with **No signal** and **No watch** ticked, to see what each looks like.
    Nothing is sent. **Real Distress**, at the top of that screen, is the real one.
 
@@ -86,7 +90,9 @@ happen. If it does not, stop and tell whoever looks after NavCom.
   puts the same words in a text to your person, which often goes when data does not.
 - **Assist** asks for another person: *soon* or *now*.
 - **Distress** keeps sending until a person answers. Use it for an emergency. If NavCom is installed on
-  an Android phone, pressing and holding its icon offers Distress straight from the home screen.
+  an Android phone, pressing and holding its icon offers Distress straight from the home screen. In the
+  NavCom Android app, add the **Distress** tile to Quick Settings: pulled down on a locked phone, it
+  opens the Distress screen without unlocking, and you still hold to send.
 - **Map**, on Status, shows you, the peers you paired with who share where they are, and where you are
   going. **Go there**, beside an answer from a directory place, opens it; **Directions** hands it to your
   phone's map app.
@@ -142,6 +148,11 @@ happen. If it does not, stop and tell whoever looks after NavCom.
   stands until you clear it or say something new: anybody who signs on later, or was out of signal,
   is told it the next time their phone is heard. Said before anybody is out, such as where to meet, it
   waits for whoever signs on.
+- **Somebody stops holding it**, or a laptop with the key is lost: under **Somebody stopped holding it**,
+  open **Retire this key**, say why in a line, and press **Retire it**. Every phone under the watch then
+  reads **Moved**, with your name and your line, sends nothing more to the old key, and keeps refusing it
+  whatever it says later. A new watch starts on your laptop with no other holders: add back the ones
+  who stay by their holder keys, then hand out the new code.
 - **At the end:** stand down. **Tonight** lists what the watch did, and first how many Distresses,
   Assists and questions it answered and how long the middle one and the longest waited; copy it out
   for whoever reviews the night. A panic wipe deletes it.

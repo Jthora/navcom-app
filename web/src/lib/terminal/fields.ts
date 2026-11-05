@@ -64,6 +64,10 @@ export const ACCRUING_FIELDS = {
   watch_holders: 'watch',
   watch_escalation: 'watch',
   watch_executor: 'watch',
+  // A watch retired by a holder [config.ts `retiredWatch`]: carried, so a restored phone does not
+  // send to a key the holder who left still holds. Read only against the same watch's key, so one
+  // planted for another watch does nothing, and one planted for this watch says Moved, out loud.
+  watch_retired: 'kit',
   // The relays this phone talks to: a kit choosing them routes everything somebody else's way.
   relays_own: 'device',
   // Other people's key bundles, learned from relays and learned again. A planted one for a watch

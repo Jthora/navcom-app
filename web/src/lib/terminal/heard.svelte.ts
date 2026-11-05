@@ -27,12 +27,13 @@
 
 import {
   KIND_WATCH_STATE,
+  readRetirement,
   readWatchStateAt,
   type DistressPhase,
   type PublishResult,
   type RelayReason
 } from '@navcom/core';
-import { loadConfig } from './config';
+import { loadConfig, noteRetired, storedWatch } from './config';
 import { relayLine, type HeardState } from './heard-copy';
 import { reachableRelay } from './relay-url';
 import { heardFrom, tookFrom } from './refusing.svelte';
@@ -257,6 +258,17 @@ export const heard = {
           const state: State = { at: event.created_at, id: event.id, content: String(event.content ?? ''), receivedMs: now };
           if (!s.state || newer(state, s.state)) s.state = state;
           changed();
+          // A holder's retirement of this watch, kept once seen [config.ts `retiredWatch`]. Its own
+          // guard: what this phone stores must never stop it hearing the watch.
+          try {
+            const given = storedWatch();
+            if (given?.pubkey === pubkey) {
+              const r = readRetirement({ pubkey: event.pubkey, content: state.content }, pubkey, given.holders);
+              if (r) noteRetired(pubkey, r);
+            }
+          } catch {
+            /* storage unreadable: the watch is still heard */
+          }
         } catch {
           /* a reader's callback: never thrown into a screen */
         }
