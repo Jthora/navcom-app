@@ -178,4 +178,13 @@ describe('an accept that carries the request it answers', () => {
     const read = readInvite(wren, overRelay(buildInvite(raven, getPublicKey(wren), { callsign: 'Raven' }, T)))!;
     expect(read.answering).toBeNull();
   });
+
+  it('carries a NIP-40 expiry on the outside when asked, and only then: a team code\'s answers go with it', () => {
+    const plain = buildInvite(raven, getPublicKey(wren), { callsign: 'Raven' }, T);
+    expect(plain.tags.some((t) => t[0] === 'expiration')).toBe(false);
+    const short = buildInvite(raven, getPublicKey(wren), { callsign: 'Raven' }, T, undefined, T + 600);
+    expect(short.tags).toContainEqual(['expiration', String(T + 600)]);
+    // Still opens as an ordinary invite, and still proves the key it offers.
+    expect(readInvite(wren, overRelay(short))?.from).toBe(getPublicKey(raven));
+  });
 });

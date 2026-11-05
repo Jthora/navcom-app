@@ -6,8 +6,10 @@
    * might know each other — that list is the thing this design refuses to build, and its
    * absence is the feature.
    */
-  import { onMount } from 'svelte';
-  import { Slot, Readout, Heartbeat, Why } from '$lib/components/panel';
+  import { onDestroy, onMount } from 'svelte';
+  import { keyPrint } from '@navcom/core';
+  import { Slot, Readout, Heartbeat, Why, Window } from '$lib/components/panel';
+  import { newTeamCode, readTeamLink, team, TEAM_CODE_SECONDS, type TeamCode } from '$lib/terminal/team.svelte';
   import PickACallsign from '$lib/components/PickACallsign.svelte';
   import { page } from '$app/state';
   import { PairError, pair, peers, setBuddy, unpair, type Peer } from '$lib/terminal/peers';
@@ -89,7 +91,10 @@
     // A pairing link opens straight into the form with the code already there. The person
     // still has to name them and accept, because pairing must be something you did.
     const fromLink = page.url.hash.replace(/^#/, '');
-    if (fromLink) code = fromLink;
+    // A team code opens the team, never the one-person form: it is a different act [team.svelte.ts].
+    const teamFromLink = readTeamLink(page.url.hash);
+    if (teamFromLink) void openTeam(teamFromLink);
+    else if (fromLink) code = fromLink;
 
     // Only listens on inboxes this operator actually has. Somebody who never published a
     // card has no public address, so nothing can arrive here uninvited.
@@ -163,6 +168,11 @@
     try {
       scanner = await scan(camera);
       const raw = await scanner.found;
+      const teamCode = readTeamLink(raw);
+      if (teamCode) {
+        await openTeam(teamCode);
+        return;
+      }
       const key = pubkeyFrom(raw);
       if (!key) throw new ScanError('That code is not a NavCom code.');
       code = key;
@@ -173,6 +183,52 @@
       scanner = null;
     }
   }
+
+  /*
+   * A whole team in one scan [team.svelte.ts]: one phone shows the code, everybody scans it, and each
+   * phone lists the others to pair with. Every one arrives ticked; pressing Pair is the act.
+   */
+  let teamOpen = $state(false);
+  let teamMine = $state(false);
+  let teamPick = $state<string[]>([]);
+  let teamSeen = new Set<string>();
+  let teamPaired = $state<number | null>(null);
+  let teamRefused = $state<string | null>(null);
+  $effect(() => {
+    for (const m of team.others) {
+      if (teamSeen.has(m.pubkey)) continue;
+      teamSeen.add(m.pubkey);
+      teamPick = [...teamPick, m.pubkey];
+    }
+  });
+  const teamQr = $derived(team.link && teamMine ? encodeQR(team.link, 'svg', { ecc: 'medium', border: 2 }) : '');
+  async function openTeam(c: TeamCode, mine = false) {
+    teamOpen = true;
+    teamMine = mine;
+    teamPick = [];
+    teamSeen = new Set();
+    teamPaired = null;
+    teamRefused = null;
+    if (Math.floor(Date.now() / 1000) >= c.expiresAt) {
+      teamRefused = 'That team code has run out. Ask for a new one.';
+      return;
+    }
+    if (!loadIdentity()?.callsign) {
+      teamRefused = 'Pick a callsign first: the others pair with you under it.';
+      return;
+    }
+    await team.open(c);
+  }
+  function acceptTeam() {
+    teamPaired = team.accept(teamPick);
+    mine = peers();
+  }
+  function closeTeam() {
+    team.close();
+    teamOpen = false;
+    teamMine = false;
+  }
+  onDestroy(() => team.close());
 
   function stopScan() {
     scanner?.stop();
@@ -194,6 +250,12 @@
    */
   function accept() {
     error = null;
+    const teamCode = readTeamLink(code);
+    if (teamCode) {
+      code = '';
+      void openTeam(teamCode);
+      return;
+    }
     try {
       // A link pasted whole is a code too: "Copy your link" makes one, the box asks for "their
       // code or link", and the link alone was refused as not a NavCom code [live check, 2026-10-28].
@@ -372,6 +434,49 @@
   {/if}
 </section>
 
+<section class="act" data-team>
+  <h2>A team</h2>
+  {#if !teamOpen}
+    <button onclick={() => openTeam(newTeamCode(), true)} disabled={!myPubkey} data-team-show>Show a team code</button>
+  {:else}
+    {#if teamRefused}
+      <span data-team-refused><Readout value="Not opened" tone="warn" sub={teamRefused} /></span>
+    {:else if team.code}
+      {#if teamMine}
+        <div class="qr" data-team-qr data-link={team.link}>{@html teamQr}</div>
+      {/if}
+      <Window sentAt={team.code.expiresAt - TEAM_CODE_SECONDS} seconds={TEAM_CODE_SECONDS} label="code" />
+      {#if team.sent === false}
+        <span data-team-unsent><Readout value="Not sent" tone="warn" sub="no relay took this phone's answer" /></span>
+        <button onclick={() => team.resend()}>Send again</button>
+      {/if}
+      {#if team.others.length === 0}
+        <Slot k="Answered">
+          <Readout value="Nobody yet" tone="cold" sub={teamMine ? 'each scans this once' : 'waiting for the others'} />
+        </Slot>
+      {:else}
+        <div class="team" data-team-list>
+          {#each team.others as m (m.pubkey)}
+            <label class="member" data-team-member={m.callsign}>
+              <input type="checkbox" bind:group={teamPick} value={m.pubkey} />
+              <span class="name">{m.callsign}</span>
+              <span class="print">{keyPrint(m.pubkey)}</span>
+            </label>
+          {/each}
+        </div>
+        <button onclick={acceptTeam} disabled={teamPick.length === 0} data-team-accept>Pair with {teamPick.length}</button>
+      {/if}
+      {#if team.full}
+        <span data-team-full><Readout value="Full" tone="warn" sub="more answered than a team" /></span>
+      {/if}
+      {#if teamPaired !== null}
+        <span data-team-paired><Readout value={`${teamPaired} paired`} tone="good" /></span>
+      {/if}
+    {/if}
+    <button class="drop" onclick={closeTeam} data-team-close>Done</button>
+  {/if}
+</section>
+
 <section class="act">
   <h2>Add somebody</h2>
   <!-- Camera first where the browser has one, because holding a phone up beats reading
@@ -489,6 +594,10 @@
   }
   .asks input { width: 100%; }
   .row { display: flex; gap: .6rem; }
+  .team { display: flex; flex-direction: column; }
+  .member { display: flex; align-items: center; gap: .7rem; min-height: 3rem; border-bottom: 1px solid var(--t-line); }
+  .member input { width: 1.3rem; height: 1.3rem; }
+  .print { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .8rem; color: var(--t-faint); }
   .doing { margin: 0; color: var(--t-faint); font-size: .92rem; }
   .drop { min-height: 2.2rem; font-size: .8rem; padding: 0 .7rem; border-color: var(--t-line); color: var(--t-faint); }
 </style>

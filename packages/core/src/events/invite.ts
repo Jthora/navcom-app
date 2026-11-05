@@ -87,7 +87,13 @@ export function buildInvite(
   payload: InvitePayload,
   createdAt: number,
   /** Their published ML-KEM key, where we have it. Classical cover without. */
-  recipientKem?: string
+  recipientKem?: string,
+  /**
+   * When the wrapper should go: a NIP-40 expiry on the outside, for an invite that answers something
+   * short-lived, such as a team code [web `team.svelte.ts`]. A relay honouring NIP-40 deletes it then;
+   * one that does not keeps a sealed event nobody reads.
+   */
+  expiresAt?: number
 ): Event {
   const callsign = payload.callsign.trim();
   if (!withinLimit(callsign, CALLSIGN_MAX)) {
@@ -118,7 +124,7 @@ export function buildInvite(
     {
       kind: KIND_INVITE,
       created_at: createdAt,
-      tags: [tagRecipient(to)],
+      tags: expiresAt === undefined ? [tagRecipient(to)] : [tagRecipient(to), ['expiration', String(expiresAt)]],
       content: seal(ephemeral, to, inner, recipientKem)
     },
     ephemeral
