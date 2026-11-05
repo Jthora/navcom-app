@@ -3,13 +3,22 @@
    * Tonight's phrases under an answer box: one tap puts one in, and the holder still presses Send
    * [phrases.ts]. Nothing here sends anything.
    */
-  let { list, onpick }: { list: string[]; onpick: (phrase: string) => void } = $props();
+  let {
+    list,
+    onpick,
+    keyOf
+  }: {
+    list: string[];
+    onpick: (phrase: string) => void;
+    /** The key that puts phrase i in, for its tooltip, where it has one [watch-keys.ts]. */
+    keyOf?: (i: number) => string | undefined;
+  } = $props();
 </script>
 
 {#if list.length > 0}
   <div class="phrases" data-phrases>
-    {#each list as p (p)}
-      <button class="phrase" onclick={() => onpick(p)}>{p}</button>
+    {#each list as p, i (p)}
+      <button class="phrase" onclick={() => onpick(p)} title={keyOf?.(i)} aria-keyshortcuts={keyOf && i < 9 ? `Alt+${i + 1}` : undefined}>{p}</button>
     {/each}
   </div>
 {/if}

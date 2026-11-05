@@ -12,7 +12,7 @@
    * named human is watching; if that sentence is not true, invariant 4 has failed and
    * somebody went out believing something false.
    */
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import encodeQR from '@paulmillr/qr';
   import { buildAgainst, codeTeams, declineIsValid, keyPrint, RESPONSE_WINDOW, sameTeam, TEXT_MAX } from '@navcom/core';
   import { BUILT_AT, BUILT_COMMIT } from '$lib/built';
@@ -40,6 +40,7 @@
   import AnswerLookup from '$lib/components/watch/AnswerLookup.svelte';
   import PassOn from '$lib/components/watch/PassOn.svelte';
   import { night, span } from '$lib/terminal/watch-night.svelte';
+  import { ARIA_KEYS, keyLabel, watchKeyFor, type WatchField } from '$lib/terminal/watch-keys';
   import type { Provenance, ResourceRecord } from '@navcom/core';
 
   let address = $state<string | null>(null);
@@ -102,9 +103,12 @@
     others = keptHolders().join('\n');
     teamsTonight = watchTeams().join(', ');
     othersLoaded = true;
-    // The first touch anywhere lets this browser play; until then it plays nothing.
+    // The first touch or key anywhere lets this browser play; until then it plays nothing. A key
+    // counts, since a holder at a laptop may never touch the screen [watch-keys.ts].
     const unlock = () => raise.unlock();
     window.addEventListener('pointerdown', unlock);
+    window.addEventListener('keydown', unlock);
+    mac = /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent);
     founded = foundedHere();
     vouchers = endorsersFor('can-take-watch').map((e) => ({ endorser: e.endorser, at: e.at }));
     address = watchPubkey();
@@ -116,6 +120,7 @@
     return () => {
       clearInterval(ticking);
       window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
       raise.stop();
       awake.keep(false);
       board.stop();
@@ -223,6 +228,8 @@
   /** What is waiting on this holder, and what is waiting on the teams they have not chosen: named, never hidden. */
   const asks = $derived(board.waiting.filter((w) => askShown(board.teamFor(w.operator), chosen)));
   const elsewhere = $derived(board.waiting.filter((w) => !askShown(board.teamFor(w.operator), chosen)));
+  /** What Alt+A answers: an unanswered Distress first, then the top of what is waiting on this holder. */
+  const firstWaiting = $derived(unanswered[0] ?? asks[0] ?? null);
   /** Names two operators here share: theirs show a key's print, which is who they are. */
   const repeated = $derived(repeatedNames(out));
   const printOf = (operator: string, callsign: string) => (repeated.has(nameKey(callsign)) ? keyPrint(operator) : null);
@@ -413,7 +420,61 @@
       codeCopied = false;
     }
   }
+
+  /** Whether this is a Mac, for how a key is written on a button's tooltip: ⌥A rather than Alt+A. */
+  let mac = $state(false);
+  const sendKey = $derived(mac ? '⌘Enter' : 'Ctrl+Enter');
+  /** Alt+A's mark, on the one Answer button it opens. */
+  const answerKeys = (w: Waiting) => (firstWaiting?.id === w.id ? { 'aria-keyshortcuts': ARIA_KEYS.answer, title: keyLabel('A', mac) } : {});
+  /**
+   * Keys for a holder at a laptop [watch-keys.ts]: every one with a modifier, or inside the box being
+   * written in. A draft is never thrown away by a key: Alt+A with words in the answer box goes back to
+   * that box rather than opening the next one.
+   */
+  async function onKey(e: KeyboardEvent) {
+    const el = document.activeElement;
+    const field: WatchField =
+      el instanceof HTMLTextAreaElement && answering !== null && el.id === `a-${answering}`
+        ? 'answer'
+        : el instanceof HTMLTextAreaElement && el.id === 'tell-text'
+          ? 'tell'
+          : null;
+    const k = watchKeyFor(e, field);
+    if (!k) return;
+    e.preventDefault();
+    if (k.do === 'answer') {
+      const next = answering !== null && text.trim() ? null : firstWaiting;
+      if (next && answering !== next.id) {
+        answering = next.id;
+        text = '';
+        attached = null;
+      }
+      await tick();
+      const box = answering === null ? null : document.getElementById(`a-${answering}`);
+      box?.focus();
+      box?.scrollIntoView({ block: 'center' });
+    } else if (k.do === 'silence') {
+      if (ringing) silenced = [...silenced, ...unanswered.map((w) => w.id)];
+    } else if (k.do === 'tell') {
+      if (!telling && !document.querySelector('[data-tell-open]')) return;
+      telling = true;
+      tellFailed = false;
+      await tick();
+      document.getElementById('tell-text')?.focus();
+    } else if (k.do === 'send') {
+      if (field === 'answer' && answering !== null) void send(answering);
+      else if (field === 'tell' && tellText.trim() && !tellBusy) void tell();
+    } else if (k.do === 'cancel') {
+      if (field === 'answer') answering = null;
+      else telling = false;
+    } else if (k.do === 'phrase') {
+      const p = phraseList[k.index];
+      if (p) pickPhrase(p);
+    }
+  }
 </script>
+
+<svelte:window onkeydown={onKey} />
 
 <svelte:head>
   <title>{unanswered.length > 0 ? 'Distress · ' : ''}Watch · Field Terminal</title>
@@ -769,14 +830,14 @@
           <label for="tell-text">To {tellTo}</label>
           <textarea id="tell-text" bind:value={tellText} rows="2" maxlength={TEXT_MAX}></textarea>
           <div class="row">
-            <button onclick={tell} disabled={tellBusy || !tellText.trim()}>Send</button>
+            <button onclick={tell} disabled={tellBusy || !tellText.trim()} aria-keyshortcuts={ARIA_KEYS.send} title={sendKey}>Send</button>
             <button onclick={() => (telling = false)}>Cancel</button>
           </div>
           {#if tellFailed}
             <span data-tell-failed><Readout value="Reached nobody" tone="warn" sub="no relay took it" /></span>
           {/if}
         {:else}
-          <button data-tell-open onclick={() => { telling = true; tellFailed = false; }}>Tell {tellTo}</button>
+          <button data-tell-open onclick={() => { telling = true; tellFailed = false; }} aria-keyshortcuts={ARIA_KEYS.tell} title={keyLabel('M', mac)}>Tell {tellTo}</button>
         {/if}
         {#if board.told && board.told.text !== null}
           <span data-told>
@@ -831,7 +892,7 @@
             {#if answering === w.id}
               <label for="a-{w.id}">Your answer</label>
               <textarea id="a-{w.id}" bind:value={text} rows="3"></textarea>
-              <Phrases list={phraseList} onpick={pickPhrase} />
+              <Phrases list={phraseList} onpick={pickPhrase} keyOf={(i) => (i < 9 ? keyLabel(String(i + 1), mac) : undefined)} />
               {#if attached?.for === w.id}
                 <span data-attached>
                   <Readout value={attached.name} verbatim tone="neutral" sub={sourceOf(attached.provenance)} />
@@ -841,7 +902,7 @@
                 <AnswerLookup near={fixOf(w)?.p ?? null} onpick={(r) => attach(w.id, r)} />
               {/if}
               <div class="row">
-                <button onclick={() => send(w.id)} disabled={busy}>Send</button>
+                <button onclick={() => send(w.id)} disabled={busy} aria-keyshortcuts={ARIA_KEYS.send} title={sendKey}>Send</button>
                 <button onclick={() => (answering = null)}>Cancel</button>
               </div>
               {#if unsent === w.id}
@@ -861,7 +922,7 @@
                 </button>
               {/if}
             {:else}
-              <button onclick={() => { answering = w.id; text = ''; attached = null; }}>
+              <button onclick={() => { answering = w.id; text = ''; attached = null; }} {...answerKeys(w)}>
                 {w.type === 'distress' ? 'Tell them you are awake' : 'Answer'}
               </button>
             {/if}
@@ -888,7 +949,7 @@
     <section class="urgent">
       <h2>Distress</h2>
       {#if ringing}
-        <button data-silence onclick={() => (silenced = [...silenced, ...unanswered.map((w) => w.id)])}>Silence</button>
+        <button data-silence onclick={() => (silenced = [...silenced, ...unanswered.map((w) => w.id)])} aria-keyshortcuts={ARIA_KEYS.silence} title={keyLabel('Q', mac)}>Silence</button>
       {/if}
       {#if board.distressDropped}
         <p class="cost" data-distress-dropped>More Distress is arriving than this board will hold.</p>
