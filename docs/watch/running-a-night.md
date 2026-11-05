@@ -19,6 +19,9 @@ for somebody on the street is the team's own knowledge, and NavCom does not writ
 5. For a night in New York, open **Map** on Status and press **Save … for tonight** on wifi: the borough
    you are in, or the New Jersey side (13 to 43 MB). Its streets then draw with no signal. Patrolling two,
    save the other under **Other areas**.
+6. Open **Practice** on Status. Check in, ask a question, send an Assist and hold Distress against a
+   pretend watch, then again with **No signal** and **No watch** ticked, to see what each looks like.
+   Nothing is sent. **Real Distress**, at the top of that screen, is the real one.
 
 **The person holding the watch**
 
@@ -124,6 +127,10 @@ happen. If it does not, stop and tell whoever looks after NavCom.
 - **Phrases for tonight**, under the watch's code: write the answers you expect to give again, one
   per line. Under every answer box, a tap puts one in; nothing is sent until you press Send. A panic
   wipe takes them.
+- **At a keyboard:** **Alt+A** (⌥A on a Mac) opens the answer to whatever is waiting first, a Distress
+  before anything else, with the cursor in it. **Alt+1** to **Alt+9** put in tonight's phrases,
+  **Ctrl+Enter** (⌘Enter) sends, and **Esc** puts it away unsent. **Alt+Q** silences the alarm and
+  **Alt+M** opens **Tell everyone out**. Resting the pointer on a button shows its key.
 - **Answering:** **Add a place** opens the area nearest the person asking. The place you pick goes
   into the answer, and the answer shows where it came from and when it was last checked.
 - **Past their time:** **Ask … to check in**. They see it silently, and nobody else does.

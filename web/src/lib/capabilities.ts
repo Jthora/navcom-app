@@ -289,6 +289,15 @@ export const CAPABILITIES: Capability[] = [
     requires: []
   },
   {
+    name: 'Practice',
+    screen: 'terminal/practice/',
+    // Check in, Query, Assist and Distress against a pretend watch (2026-11-04): nothing is sent, and
+    // the real Distress is one tap away at the top. Works with nothing set up and no signal.
+    claims: ['Practice', 'Real Distress'],
+    control: '[data-practice-distress]',
+    requires: []
+  },
+  {
     name: 'Take the watch',
     screen: 'terminal/watch/',
     // 4.3: everything below it looks like a safety monitor and is not one. The one line kept

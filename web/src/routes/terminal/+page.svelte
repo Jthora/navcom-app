@@ -1064,6 +1064,8 @@
     <a href="/terminal/funding/">Support</a>
     <a href="/terminal/wipe/">Wipe this device</a>
   {/if}
+  <!-- Before a callsign too: the hold is worth learning before the night it is needed. -->
+  <a href="/terminal/practice/" data-practice-link>Practice</a>
 </nav>
 
 <!--

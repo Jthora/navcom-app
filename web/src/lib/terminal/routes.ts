@@ -33,6 +33,8 @@ export const TERMINAL_ROUTES = [
   'map/',
   // The playbook is for a night with no signal, in a stairwell or a subway, so it is carried.
   'playbook/',
+  // Practice needs nothing from the network, so it works wherever somebody has a minute.
+  'practice/',
   // Opened by a repeat page, which can arrive with no signal to fetch it. The page's address carries
   // a query, and the worker finds this saved copy by its path (`offline-page.ts`).
   'wake/'
