@@ -909,14 +909,14 @@ export class WatchtowerDaemon {
       );
       return;
     }
-    if (!isAuthorizedOperator(event.pubkey, this.config.authorization.allowedPubkeys)) {
-      // Silent drop, not an ack -- an unauthorized sender doesn't
-      // get confirmation that anything was even received. With no
-      // allowed_pubkeys configured this never fires (matches
-      // Session One's "any pubkey" MVP policy); once a real
-      // allowlist is set, telling a rejected party "yes, I'm here,
-      // and no" is strictly worse than saying nothing.
-      console.log(`[signal] dropped: unauthorized operator (${shortId(event.pubkey)})`);
+    if (!isAuthorizedOperator(event.pubkey, this.config.authorization)) {
+      // Silent drop, not an ack -- an unauthorized sender doesn't get confirmation that anything
+      // was even received; telling a stranger "yes, I'm here, and no" is strictly worse than
+      // saying nothing. The whole code goes in this box's own log, so the person holding it can
+      // add somebody they do know after asking them, without a second channel to carry it.
+      console.log(
+        `[signal] dropped: not on [authorization] allowed_pubkeys: ${event.pubkey} -- add it there only if you know whose it is`,
+      );
       return;
     }
     const task =

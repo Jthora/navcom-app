@@ -45,13 +45,16 @@ query_timeout_seconds = 8
 max_event_age_seconds = 300
 
 [authorization]
-# Stage 2. Leave this section out entirely (or allowed_pubkeys = [])
-# during an early closed pilot -- that's Session One's original "any
-# pubkey" policy, unchanged. Once you're ready to restrict who may sign
-# on, list their Watchtower CLI pubkeys here (lowercase 64-char hex --
-# the same value `watchtower-cli status` and the on-station/etc commands
-# already use). Everyone NOT listed is silently dropped, not told no.
-# allowed_pubkeys = ["<lowercase 64-char hex pubkey>", "<another one>"]
+# Who may sign on. Closed by default: list each operator's code -- the "Your code" on their
+# Peers screen (64 lowercase hex), or the pairing link that screen gives
+# (https://navcom.app/terminal/peers/#...). Everyone not listed is dropped without an answer,
+# and this box's log prints the code each drop came from.
+#
+# With nobody listed the daemon does not start: it would publish a watch state and hear nobody.
+# For a closed pilot among people who know each other, `open = true` instead lets anyone who
+# knows this watch's key sign on; the box says OPEN BOARD at every start while it does.
+# allowed_pubkeys = ["<64-char lowercase hex>", "https://navcom.app/terminal/peers/#<64 hex>"]
+# open = true
 allowed_pubkeys = []
 
 [log]

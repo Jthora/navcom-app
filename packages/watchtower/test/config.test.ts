@@ -35,10 +35,10 @@ hard_expiry             = 14400
     expect(config.watch.hardExpiry).toBe(14400);
     expect(config.watch.heartbeatIntervalSeconds).toBeGreaterThan(0);
     expect(config.watch.sweepIntervalSeconds).toBeGreaterThan(0);
-    // No [authorization] section in the brief's sample block -- must
-    // default to empty (Session One's "any pubkey" MVP policy), not
-    // throw or require operators to add a section they don't need yet.
-    expect(config.authorization.allowedPubkeys).toEqual([]);
+    // No [authorization] section in the brief's sample block: it still parses, closed, and the
+    // daemon refuses to start on it (refusalToStart) rather than this throwing, so `--check` and
+    // the CLIs can read a config that is halfway written.
+    expect(config.authorization).toEqual({ allowedPubkeys: [], open: false });
   });
 
   it("throws a clear error when the file is missing", () => {
@@ -201,20 +201,56 @@ hard_expiry             = 14400
       expect(config.authorization.allowedPubkeys).toEqual([pk1, pk2]);
     });
 
-    it("defaults to empty when [authorization] is entirely absent", () => {
+    it("is closed when [authorization] is entirely absent", () => {
       dir = mkdtempSync(join(tmpdir(), "watchtower-cfg-"));
       const path = join(dir, "watchtower.toml");
       writeFileSync(path, base);
       const config = loadDaemonConfig(path);
-      expect(config.authorization.allowedPubkeys).toEqual([]);
+      expect(config.authorization).toEqual({ allowedPubkeys: [], open: false });
     });
 
-    it("defaults to empty when allowed_pubkeys is present but empty", () => {
+    it("is closed when allowed_pubkeys is present but empty", () => {
       dir = mkdtempSync(join(tmpdir(), "watchtower-cfg-"));
       const path = join(dir, "watchtower.toml");
       writeFileSync(path, `${base}[authorization]\nallowed_pubkeys = []\n`);
       const config = loadDaemonConfig(path);
-      expect(config.authorization.allowedPubkeys).toEqual([]);
+      expect(config.authorization).toEqual({ allowedPubkeys: [], open: false });
+    });
+
+    it("is open only where open = true says so", () => {
+      dir = mkdtempSync(join(tmpdir(), "watchtower-cfg-"));
+      const path = join(dir, "watchtower.toml");
+      writeFileSync(path, `${base}[authorization]\nopen = true\n`);
+      expect(loadDaemonConfig(path).authorization).toEqual({ allowedPubkeys: [], open: true });
+    });
+
+    it("refuses open given as anything but true or false", () => {
+      dir = mkdtempSync(join(tmpdir(), "watchtower-cfg-"));
+      const path = join(dir, "watchtower.toml");
+      writeFileSync(path, `${base}[authorization]\nopen = "yes"\n`);
+      expect(() => loadDaemonConfig(path)).toThrow(/open must be true or false/);
+    });
+
+    it("refuses open = true beside a list, since the list would do nothing", () => {
+      dir = mkdtempSync(join(tmpdir(), "watchtower-cfg-"));
+      const path = join(dir, "watchtower.toml");
+      writeFileSync(path, `${base}[authorization]\nopen = true\nallowed_pubkeys = ["${"a".repeat(64)}"]\n`);
+      expect(() => loadDaemonConfig(path)).toThrow(/Remove one of them/);
+    });
+
+    it("takes the pairing link an operator's Peers screen gives, as their code, once", () => {
+      dir = mkdtempSync(join(tmpdir(), "watchtower-cfg-"));
+      const path = join(dir, "watchtower.toml");
+      const pk = "c".repeat(64);
+      writeFileSync(path, `${base}[authorization]\nallowed_pubkeys = ["https://navcom.app/terminal/peers/#${pk}", "${pk}"]\n`);
+      expect(loadDaemonConfig(path).authorization.allowedPubkeys).toEqual([pk]);
+    });
+
+    it("refuses a link that is not a navcom.app pairing link", () => {
+      dir = mkdtempSync(join(tmpdir(), "watchtower-cfg-"));
+      const path = join(dir, "watchtower.toml");
+      writeFileSync(path, `${base}[authorization]\nallowed_pubkeys = ["https://example.com/terminal/peers/#${"c".repeat(64)}"]\n`);
+      expect(() => loadDaemonConfig(path)).toThrow(/invalid entry/);
     });
 
     it("rejects a non-hex or wrong-length pubkey entry", () => {

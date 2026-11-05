@@ -47,7 +47,7 @@ function config(urls: string[], path: string | undefined, heartbeatIntervalSecon
       routineIntervalDefault: 3600, overdueGrace: 1800, hardExpiry: 14400,
       heartbeatIntervalSeconds, sweepIntervalSeconds: 3600, queryTimeoutSeconds: 8, maxEventAgeSeconds: 300,
     },
-    authorization: { allowedPubkeys: [] },
+    authorization: { allowedPubkeys: [], open: true },
     log: {
       path: "/dev/null", retentionDays: 90, drillStatePath: "/dev/null/nope", escalationLogPath: null,
       ...(path ? { hearingStatePath: path } : {}),

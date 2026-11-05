@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { parse } from "smol-toml";
 import { STALE_AFTER_SECONDS } from "@navcom/core";
 import { relayList } from "../shared/relay-urls.js";
+import type { Authorization } from "./authorization.js";
 
 /**
  * Daemon configuration, per the brief's exact TOML shape:
@@ -60,9 +61,8 @@ export interface DaemonConfig {
      */
     maxEventAgeSeconds: number;
   };
-  authorization: {
-    allowedPubkeys: string[];
-  };
+  /** Who may sign on: closed unless listed, open only by `open = true` [authorization.ts]. */
+  authorization: Authorization;
   log: {
     /** Where the accountability log lives. Retained, unlike the board. */
     path: string;
@@ -142,6 +142,7 @@ interface RawToml {
   };
   authorization?: {
     allowed_pubkeys?: string[];
+    open?: boolean;
   };
   log?: {
     path?: string;
@@ -198,15 +199,15 @@ function eventAgeWindow(raw: unknown, configPath: string): number {
   return seconds;
 }
 
-// ADDED (Stage 2, allowlist): empty/missing allowed_pubkeys means "any
-// pubkey may sign on" -- the exact MVP policy documented in
-// src/daemon/authorization.ts's own docstring, preserved as the default
-// so an already-running pilot deployment isn't silently locked out the
-// moment it upgrades to a version of this file that adds the concept.
-// Enforcement only activates once an operator explicitly populates this
-// list. Same fail-loud-on-malformed-config convention as positiveNumber()
-// and the relay URL check above -- a typo'd pubkey should error at
-// startup, not silently admit or reject the wrong set of people.
+/** The pairing link an operator's Peers screen gives: their code after the `#`. */
+const PAIRING_LINK = /^https:\/\/navcom\.app\/terminal\/peers\/#([0-9a-f]{64})$/;
+
+// Who may sign on, closed by default (SC7, 2026-11-04) [authorization.ts]. An empty or missing
+// list parses -- `--check` and the CLIs read configs too -- and the daemon itself refuses to start
+// on it unless `open = true` says the board is open on purpose. Same fail-loud convention as
+// positiveNumber() and the relay URL check above: a typo'd code should error at startup, not
+// silently admit or refuse the wrong people. An entry may be the code itself or the pairing link
+// the operator's Peers screen gives, since that is what somebody texts.
 function parseAllowedPubkeys(raw: unknown, configPath: string): string[] {
   if (raw === undefined) return [];
   if (!Array.isArray(raw)) {
@@ -214,13 +215,30 @@ function parseAllowedPubkeys(raw: unknown, configPath: string): string[] {
       `Config [authorization] allowed_pubkeys must be an array, got ${JSON.stringify(raw)} (${configPath})`,
     );
   }
-  const badEntry = raw.find((p) => typeof p !== "string" || !HEX64_PUBKEY.test(p));
-  if (badEntry !== undefined) {
+  const codes = raw.map((p) => (typeof p === "string" ? (PAIRING_LINK.exec(p.trim())?.[1] ?? p.trim()) : p));
+  const badEntry = codes.findIndex((p) => typeof p !== "string" || !HEX64_PUBKEY.test(p));
+  if (badEntry !== -1) {
     throw new Error(
-      `Config [authorization] allowed_pubkeys contains an invalid entry (must be 64-char lowercase hex pubkey): ${JSON.stringify(badEntry)} (${configPath})`,
+      `Config [authorization] allowed_pubkeys contains an invalid entry (must be 64-char lowercase hex pubkey, or a navcom.app pairing link): ${JSON.stringify(raw[badEntry])} (${configPath})`,
     );
   }
-  return raw as string[];
+  return [...new Set(codes as string[])];
+}
+
+function parseAuthorization(raw: { allowed_pubkeys?: unknown; open?: unknown } | undefined, configPath: string): Authorization {
+  const allowedPubkeys = parseAllowedPubkeys(raw?.allowed_pubkeys, configPath);
+  if (raw?.open !== undefined && typeof raw.open !== "boolean") {
+    throw new Error(`Config [authorization] open must be true or false, got ${JSON.stringify(raw.open)} (${configPath})`);
+  }
+  const open = raw?.open === true;
+  if (open && allowedPubkeys.length > 0) {
+    // Both at once is a config somebody is halfway through changing: which did they mean?
+    throw new Error(
+      `Config [authorization] sets open = true and also lists allowed_pubkeys; an open board hears everyone, ` +
+        `so the list would do nothing. Remove one of them (${configPath})`,
+    );
+  }
+  return { allowedPubkeys, open };
 }
 
 /** A path, or nothing; an empty string or a number is a typo worth stopping for, not "none". */
@@ -277,9 +295,7 @@ export function loadDaemonConfig(path: string): DaemonConfig {
       queryTimeoutSeconds: positiveNumber(raw.watch?.query_timeout_seconds, "query_timeout_seconds", DEFAULTS.queryTimeoutSeconds, path),
       maxEventAgeSeconds: eventAgeWindow(raw.watch?.max_event_age_seconds, path),
     },
-    authorization: {
-      allowedPubkeys: parseAllowedPubkeys(raw.authorization?.allowed_pubkeys, path),
-    },
+    authorization: parseAuthorization(raw.authorization, path),
     log: {
       path: logPath,
       // Same fail-loud rule as every other timing value: a quoted number in TOML is a

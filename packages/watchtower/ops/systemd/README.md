@@ -211,8 +211,9 @@ own build date is how anybody else notices, and the public pages say what an old
   sources `~/.bashrc` (where nvm's init lives) instead of hardcoding a
   version-specific path like `.../v24.13.0/bin/node`, which would break
   on the next `nvm install`.
-- **Not yet decided: a real allowlist.** `src/daemon/authorization.ts`'s
-  `isAuthorizedOperator()` currently accepts any pubkey, matching Session
-  One's documented MVP policy. That's a fine posture for continued
-  testing; it stops being fine the moment this is actually depended on by
-  real operators who aren't all people who already know each other.
+- **Closed by default.** The daemon hears only the operators listed under
+  `[authorization] allowed_pubkeys`, and does not start with nobody listed
+  (`[daemon] not starting: this watch would hear nobody`, then
+  `Restart=always` retries). List their codes, or set `open = true` for a
+  closed pilot among people who know each other.
+  `docs/watch/stationkeeper.md`, *Who may sign on*.

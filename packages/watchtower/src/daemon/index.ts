@@ -4,6 +4,7 @@ import { loadOrCreateKeypair } from "../shared/identity.js";
 import { WatchtowerDaemon } from "./watchtower.js";
 import { AccountabilityLog } from "../shared/accountability.js";
 import { checkPasses, checkWatch, report } from "./check.js";
+import { refusalToStart } from "./authorization.js";
 
 // Found in review: nothing guarded against a truly unexpected error
 // outside the known try/catch paths inside WatchtowerDaemon. Node's own
@@ -67,10 +68,21 @@ async function main(): Promise<void> {
     return;
   }
   const config = loadDaemonConfig(path);
+  // Closed by default (SC7): a box that would hear nobody does not start and look up [authorization.ts].
+  const refused = refusalToStart(config.authorization);
+  if (refused) {
+    console.error(`[daemon] not starting: ${refused} (${path})`);
+    process.exit(1);
+  }
   const { secretKey, pubkey } = loadOrCreateKeypair(config.identity.privkeyPath);
 
   console.log(`[daemon] Watchtower pubkey: ${pubkey}`);
   console.log(`[daemon] relays: ${config.relays.urls.join(", ")}`);
+  console.log(
+    config.authorization.open
+      ? "[daemon] OPEN BOARD: anyone who knows this watch's key may sign on ([authorization] open = true)"
+      : `[daemon] hears ${config.authorization.allowedPubkeys.length} operator(s) on [authorization] allowed_pubkeys`,
+  );
   console.log(
     `[daemon] watch: routine_default=${config.watch.routineIntervalDefault}s ` +
       `overdue_grace=${config.watch.overdueGrace}s hard_expiry=${config.watch.hardExpiry}s`,

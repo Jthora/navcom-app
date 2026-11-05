@@ -37,6 +37,24 @@ below). A relay can stay the public default; somebody else can host it for you.
 **Not patrol experience, and not permission from anyone.** Standing up your own Watchtower is
 the founder case — nobody has to endorse you into existing.
 
+## Who may sign on
+
+**The box hears the operators you list, and nobody else.** Under `[authorization]` in
+`watchtower.toml`, `allowed_pubkeys` takes each operator's code: the *Your code* on their Peers
+screen, or the pairing link that screen gives, which is what somebody texts you. A signal from
+anybody else is dropped without a word, and the box's own log prints the whole code it came from,
+so somebody you do know who has not been added yet can be, after you have asked them.
+
+A config that lists nobody does not start: `[daemon] not starting: this watch would hear nobody`.
+That is on purpose. A box closed to everyone would come up, publish a watch state, and drop every
+sign-on and every `Distress` — it would look up and hear nobody. **`open = true`** is the old open
+board, where anyone who learns the watch's key can sign on, spend your attention and read the watch
+state; say it in as many words, for a closed pilot among people who know each other. The box says
+`OPEN BOARD` at every start while it is. Both at once is refused, since the list would do nothing.
+
+This is the box. A watch held on a phone hears whoever has its watch code, which you hand over
+yourself (*running-a-night.md*).
+
 ## How to know it is working
 
 This section did not exist, and the word *check* did not appear anywhere on this page. That
@@ -180,6 +198,9 @@ What to look for in their output:
 | `[executor] HEARS ON NO RELAY (0/N)` | Every relay is unreachable or refuses the executor's subscription, so a `Distress` pages nobody from it. Said fifteen seconds after start and every thirty seconds while it lasts; each relay's own line above says why. `hears on k/N relay(s) again` follows when one answers |
 | `[executor] COULD NOT WRITE WHERE IT HEARS to <path>: ...` | The hearing file cannot be written there — a directory that does not exist and cannot be made, one this user cannot write, or one that `belongs to uid N, not to this user` or `can be written by its group or by anybody`. In the last two nothing is written, deliberately: whoever else can write that directory could leave a link where the file goes and have the executor's next write replace one of its own files, its key included. The ladder runs regardless, but a daemon reading that file reads the executor as hearing nowhere once it is ninety seconds old, and the watch reads Dark. Fix the directory, or point the file at the drill directory (`ops/systemd/README.md`, 4b). Said once, and `writing where it hears to <path> again` follows. The drill file keeps the same rule, and says it as `[drill] RESULT NOT RECORDED` |
 | `[pager] watching on k/N relay(s)` | Printed only once a relay has answered. `NOT WATCHING` means no relay is listening — since one stopped, or since the pager started fifteen seconds ago |
+| `[daemon] not starting: this watch would hear nobody` | `[authorization]` lists no operators and does not say `open = true`. *Who may sign on*, above |
+| `[daemon] hears N operator(s) on [authorization] allowed_pubkeys` / `OPEN BOARD` | Every start: how many codes it hears, or that it hears anybody, because the config says `open = true` |
+| `[signal] dropped: not on [authorization] allowed_pubkeys: <64 hex>` | A signal from a code that is not on the list, dropped without an answer. Add it only once you know whose it is |
 | `[signal] dropped: … stamped Ns away` / `[executor] … outside the age window (Ns), ignored` | A signal or `Distress` stamped further from this machine's clock than the age window: replayed by a relay, or sent from a phone whose clock is wrong. Not acted on and not answered. The window is never under five minutes — the daemon refuses a smaller `max_event_age_seconds` at startup, and the executor uses five minutes whenever `paging_window_seconds` is shorter — so if one operator's signals keep dropping, it is their clock, and that phone already reads the watch as Dark. If every operator's do, check this machine's clock |
 | `[executor] NO EXECUTOR KEY. ...` | This box has no executor key of its own: every answer that ends a `Distress` is signed with the watch key, which the daemon and the agent beside it hold too. Said at every start until you set one up (below) |
 | `[executor] NO WATCH KEY: there is nothing at ...` | The executor did not start: `privkey_path` names no file this user can read. It never makes one — a new key would be a watch no phone knows. Copy the daemon's key there (`ops/systemd/README.md`, 4b) |

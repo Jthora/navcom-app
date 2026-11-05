@@ -33,7 +33,7 @@ function config(urls: string[], over: Partial<DaemonConfig["watch"]> = {}): Daem
       maxEventAgeSeconds: 300,
       ...over,
     },
-    authorization: { allowedPubkeys: [] },
+    authorization: { allowedPubkeys: [], open: true },
     log: { path: "/dev/null", retentionDays: 90, drillStatePath: "/dev/null/nope", escalationLogPath: null },
   };
 }

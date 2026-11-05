@@ -78,7 +78,7 @@ describe("an executor deaf on one relay, and the state withheld there [relay-lis
         routineIntervalDefault: 3600, overdueGrace: 1800, hardExpiry: 14400,
         heartbeatIntervalSeconds: 1, sweepIntervalSeconds: 3600, queryTimeoutSeconds: 8, maxEventAgeSeconds: 300,
       },
-      authorization: { allowedPubkeys: [] },
+      authorization: { allowedPubkeys: [], open: true },
       log: { path: "/dev/null", retentionDays: 90, drillStatePath: join(dir, "drill.json"), escalationLogPath: null, hearingStatePath },
     };
     const daemon = new WatchtowerDaemon({ config: watch, secretKey, pubkey });

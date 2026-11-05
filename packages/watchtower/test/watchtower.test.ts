@@ -40,7 +40,7 @@ function fakeConfig(
       maxEventAgeSeconds: 300,
       ...overrides,
     },
-    authorization: { allowedPubkeys },
+    authorization: { allowedPubkeys, open: allowedPubkeys.length === 0 },
     // Tests that care about the log inject an AccountabilityLog directly; this path is
     // never opened, so a daemon built from fakeConfig records nothing.
     log: { path: "/dev/null", retentionDays: 90, drillStatePath: "/dev/null/nope", escalationLogPath },

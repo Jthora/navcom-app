@@ -112,20 +112,24 @@ The node learns an operator's pubkey the first time it receives a signal from th
 
 ## Who may sign on
 
-**MVP: any pubkey.** The first Watchtower is a closed test among people who know each
-other, and an allowlist would be ceremony without security.
+**A box is closed by default (2026-11-04).** It hears the operators its config lists under
+`[authorization] allowed_pubkeys`, by code or pairing link, and drops every other signal without
+an answer. A config listing nobody **MUST NOT start**: a box closed to everyone would publish a
+watch state and hear nobody. The MVP's open board — any pubkey — exists only where the config
+says `open = true`, and the box says so at every start; both at once is refused.
 
-**Mk1 MUST NOT ship this.** An open board means anyone who learns the Watchtower pubkey
-can place entries on it, consume watch attention, and observe the watch state. Mk1 needs
-one of:
+The MVP was **any pubkey**: the first Watchtower was a closed test among people who know each
+other, and an allowlist would have been ceremony without security. An open board means anyone
+who learns the Watchtower pubkey can place entries on it, consume watch attention, and observe
+the watch state, which is why it is no longer what a config drifts into. Mk1 needs one of:
 
 - An operator allowlist held on the node, or
 - An endorsement check — sign-on accepted from pubkeys presenting a valid credential from
   a known endorser
 
 The second is preferred; it reuses [`../product/identity.md`](../product/identity.md)
-rather than adding a second trust mechanism. **Flagged as the largest known gap between
-MVP and Mk1.**
+rather than adding a second trust mechanism. **The first is built**, and closes the gap this
+section flagged as the largest between MVP and Mk1; the endorsement check is not.
 
 ## Configuration
 
