@@ -108,6 +108,16 @@ export const raise = {
     tones(CHIME);
   },
 
+  /**
+   * A Distress's sound, once, asked for (2026-11-04): a holder hears what it sounds like and at what
+   * volume before the night, rather than learning that the laptop was muted, or playing into headphones
+   * nobody wore, when the first one comes. From the press, which is also what lets the browser play.
+   */
+  test(): void {
+    raise.unlock();
+    alarmOnce();
+  },
+
   stop(): void {
     raise.alarm(false);
   }

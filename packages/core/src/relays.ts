@@ -21,6 +21,19 @@ import { MISSION_RELAYS, THE_RECORD } from './mission-relays.js';
 export const DEFAULT_RELAYS: readonly string[] = ['wss://relay.damus.io', 'wss://nos.lol'];
 
 /**
+ * A watch's third relay, beside the two defaults, for the night's traffic (the owner, 2026-11-04).
+ *
+ * The commons sat at two, below its own floor of three [relay-lists.md], and on 4 November
+ * relay.damus.io refused connections (503) during a live walk: every sign-on, check-in and Distress
+ * rode on nos.lol alone. What a watch carries is sealed and short-lived, so its third relay's job is
+ * to stay up, not to keep anything: relay.snort.social, in Ireland on a host of its own, the one
+ * candidate that passed the independence rule, and kept out of the defaults only because it holds
+ * nothing past a restart, which cards need and the night does not. A watch started here names all
+ * three in its code, so every phone that scans it sends there too.
+ */
+export const WATCH_EXTRA_RELAYS: readonly string[] = ['wss://relay.snort.social'];
+
+/**
  * The hosts of the mission relays: The Record and the mirrors that copy it.
  *
  * Compared by host, not by address, because a config can spell one relay many ways -- a trailing

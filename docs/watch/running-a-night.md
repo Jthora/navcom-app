@@ -64,6 +64,10 @@ happen. If it does not, stop and tell whoever looks after NavCom.
 8. Lock a signed-on iPhone for five minutes. Nothing alarms, and the watch says when it last heard it.
 9. One holder stands down: the phones still read *On station*. Then the other: the phones read
    *Dark*, and Distress says there is no watch to send it to.
+10. The crowd's night, rehearsed: on one phone turn off mobile data and leave texts on. Raise a
+    Distress that says it is a test. It cannot reach the watch, and **Text …** at the top of the
+    screen opens a text to your person: send it, and the holder's phone gets it. Then a question:
+    **Text it to …** does the same with your words.
 
 ## Each night, going out
 
@@ -78,7 +82,8 @@ happen. If it does not, stop and tell whoever looks after NavCom.
   on Query and Status, and you can use other screens meanwhile. If nothing can take it, **Text it to …**
   puts the same words in a text to your person, which often goes when data does not.
 - **Assist** asks for another person: *soon* or *now*.
-- **Distress** keeps sending until a person answers. Use it for an emergency.
+- **Distress** keeps sending until a person answers. Use it for an emergency. If NavCom is installed on
+  an Android phone, pressing and holding its icon offers Distress straight from the home screen.
 - **Map**, on Status, shows you, the peers you paired with who share where they are, and where you are
   going. **Go there**, beside an answer from a directory place, opens it; **Directions** hands it to your
   phone's map app.
@@ -103,7 +108,8 @@ happen. If it does not, stop and tell whoever looks after NavCom.
   stand down. On the
   laptop, save every area under **Other areas** (139 MB together).
 - Open **Watch** and keep it open. While you hold the watch it keeps the screen on and sounds a
-  Distress until you answer it or press Silence. Touch the screen once so the browser lets it play.
+  Distress until you answer it or press Silence. Press **Play it once** beside Sound: you hear what a
+  Distress sounds like, at this laptop's volume, and the browser is then allowed to play it.
 - **Hold to take the watch.** *Published: Yes* means operators can see you.
 - **Who is out** shows Distress first, then anybody past their time, then whoever is due next.
   Each row says their team, when they are due and when you last heard from them, and has a map

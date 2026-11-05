@@ -173,3 +173,31 @@ describe('the watch’s relays, read without its escalation key [budget: public 
     }
   });
 });
+
+describe('a watch started on this phone (2026-11-04)', () => {
+  it('listens on the defaults and the night’s third relay, so one relay down leaves two', () => {
+    expect(watchRelays()).toEqual([...DEFAULT_RELAYS, 'wss://relay.snort.social']);
+  });
+
+  it('and the third carries the watch alone: the card, presence and missions keep the defaults', () => {
+    expect(relays()).toEqual([...DEFAULT_RELAYS]);
+    expect(missionRelays()).not.toContain('wss://relay.snort.social');
+  });
+
+  it('a watch handed over with its own relays keeps them, and adds nothing', () => {
+    set('accruing', 'watchtower', 'f'.repeat(64));
+    set('accruing', 'relays', ['wss://watch.example']);
+    expect(watchRelays()).toEqual(['wss://watch.example']);
+  });
+});
+
+describe('the app’s shortcut to Distress (2026-11-04)', () => {
+  it('opens a screen that is built and carried offline, from a long press on an installed icon', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { TERMINAL_ROUTES } = await import('./routes');
+    const manifest = JSON.parse(readFileSync(new URL('../../../static/manifest.webmanifest', import.meta.url), 'utf8'));
+    const shortcut = (manifest.shortcuts as { name: string; url: string }[]).find((s) => s.name === 'Distress');
+    expect(shortcut?.url).toBe('/terminal/distress/');
+    expect(TERMINAL_ROUTES).toContain('distress/');
+  });
+});

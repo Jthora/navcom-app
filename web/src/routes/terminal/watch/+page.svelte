@@ -513,6 +513,7 @@
               <Readout value="Tap the screen" tone="warn" sub="this browser plays nothing until touched" />
             {/if}
             <button onclick={toggleSound}>{sound ? 'Turn off' : 'Turn on'}</button>
+            {#if sound}<button onclick={() => raise.test()} data-sound-test>Play it once</button>{/if}
           </span>
         </Slot>
         <Slot k="Screen">

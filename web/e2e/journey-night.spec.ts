@@ -110,6 +110,9 @@ test.describe('two holders on station at once', () => {
 
     await take(a.page);
     await take(r.page);
+    // The holder can hear what a Distress sounds like before one comes.
+    await expect(a.page.locator('[data-sound-test]')).toHaveText('Play it once');
+    await a.page.locator('[data-sound-test]').click();
     await expect.poll(async () => (await stateOnRelay(watch))?.holder, { timeout: 15_000 }).toBe('Relief');
     // Each sees the other keeping it too: the reading that would say if one of them went quiet.
     await expect(a.page.locator('[data-also-holding]')).toContainText('Relief', { timeout: 15_000 });

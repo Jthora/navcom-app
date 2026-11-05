@@ -81,6 +81,11 @@ breach.
 
 Stated as capability rather than intent, because you do not get to choose who runs the relay.
 
+**Which relays a watch's traffic reaches** (2026-11-04): a watch started on a phone names three in its
+code, relay.damus.io, nos.lol and relay.snort.social, and every phone that scans it sends there. Each
+can learn what follows about that watch's traffic, and no more; the third keeps nothing past a restart
+[relay-lists.md].
+
 **They can see:**
 
 - That an operator pubkey sent a signal to a particular Watchtower, and its type — but not

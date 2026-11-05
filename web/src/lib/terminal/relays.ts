@@ -14,7 +14,7 @@
  * be explainable to somebody pointing a proxy at it.
  */
 
-import { DEFAULT_RELAYS } from '@navcom/core/relays';
+import { DEFAULT_RELAYS, WATCH_EXTRA_RELAYS } from '@navcom/core/relays';
 import { get, set } from './storage';
 import { watchRelayList } from './watch-relays';
 import { refusedOf, usable, type Refused } from './relay-url';
@@ -59,7 +59,8 @@ export function missionRelays(): string[] {
  * answers stay here — widening them would put a privately relayed watch's state on public relays.
  */
 export function watchRelays(): string[] {
-  return watchRelayList() ?? relays();
+  // A watch this phone started, with no list of its own: the defaults and the night's third relay.
+  return watchRelayList() ?? usable([...relays(), ...WATCH_EXTRA_RELAYS]);
 }
 
 /**

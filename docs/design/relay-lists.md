@@ -62,6 +62,15 @@ its floor, not an admission:
 | relay.snort.social | memlay, in memory | Apex Strata, IE | **no** | Passes; but a card published once is gone at its next restart |
 | relay.nostr.bg | — | — | — | Did not answer |
 
+**Decided 2026-11-04, by the owner: relay.snort.social is a watch's third relay, for the night's
+traffic and nothing else** (core `WATCH_EXTRA_RELAYS`). The same day relay.damus.io refused
+connections (503) during a live walk, leaving every sign-on, check-in and Distress on nos.lol alone,
+and a probe that evening found all five candidates above accepting a sealed ephemeral signal and
+delivering it in 120 to 245 ms. What a watch carries is sealed and short-lived, so a relay that keeps
+nothing past a restart is no loss there; cards and missions stay on the two that keep a month. A watch
+started on a phone names all three in its code. The defaults, and so the commons for everything else,
+are still two.
+
 None passes cleanly. The rule as written admits only relay.snort.social, which cannot hold a card;
 the next nearest each share one thing with a relay already in. **The choice is which rule bends:**
 a third relay that shares a CDN or a jurisdiction, or one that keeps only what is short-lived, with
