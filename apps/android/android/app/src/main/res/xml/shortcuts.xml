@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Pressing and holding the icon offers Distress, as the site's manifest does on a home screen. It opens the screen; the hold sends. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="distress"
+        android:enabled="true"
+        android:icon="@drawable/ic_distress"
+        android:shortcutShortLabel="@string/distress_tile"
+        android:shortcutLongLabel="@string/distress_tile">
+        <intent
+            android:action="app.navcom.DISTRESS"
+            android:targetPackage="app.navcom"
+            android:targetClass="app.navcom.MainActivity" />
+    </shortcut>
+</shortcuts>

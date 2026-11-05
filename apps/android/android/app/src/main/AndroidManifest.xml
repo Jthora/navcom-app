@@ -15,6 +15,8 @@
             android:label="@string/title_activity_main"
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:launchMode="singleTask"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
             android:exported="true">
 
             <intent-filter>
@@ -22,7 +24,32 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!--
+              Opened on the Distress screen, by the tile and the icon's shortcut. showWhenLocked above is
+              what lets Android open it from a locked phone's tile at all (the system reads it from here,
+              before the app runs); every launch that is not a Distress turns it off again before anything
+              shows [MainActivity.onCreate].
+            -->
+            <intent-filter>
+                <action android:name="app.navcom.DISTRESS" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+            <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
+
         </activity>
+
+        <!-- Distress from the lock screen: a Quick Settings tile, which opens the Distress screen over the lock [DistressTile]. -->
+        <service
+            android:name=".DistressTile"
+            android:exported="true"
+            android:label="@string/distress_tile"
+            android:icon="@drawable/ic_distress"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
 
         <provider
             android:name="androidx.core.content.FileProvider"

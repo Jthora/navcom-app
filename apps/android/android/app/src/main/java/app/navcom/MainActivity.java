@@ -1,6 +1,14 @@
 package app.navcom;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.view.WindowManager;
+import androidx.core.content.ContextCompat;
 import android.webkit.ServiceWorkerClient;
 import androidx.webkit.WebViewCompat;
 import androidx.webkit.WebViewFeature;
@@ -27,8 +35,28 @@ import com.getcapacitor.BridgeWebViewClient;
  * build over the one just installed. So the worker's script answers 404, registering it is refused,
  * and one left by an earlier install is removed with its caches before the page reloads, once.
  * Storage, the profile with it, is not touched.
+ *
+ * **Distress from the lock screen** (2026-11-04): the Quick Settings tile ({@link DistressTile}) and
+ * the icon's shortcut open this activity with {@link #ACTION_DISTRESS}, on the Distress screen and
+ * shown over the lock screen, so a locked phone reaches it without the code. Over the lock it is that
+ * screen and nothing else: opening anything else puts the app back behind the lock, and unlocking
+ * ends the exemption. It opens the screen; the hold sends, as everywhere.
  */
 public class MainActivity extends BridgeActivity {
+
+    /** Opens on the Distress screen, over the lock screen. */
+    public static final String ACTION_DISTRESS = "app.navcom.DISTRESS";
+    private static final String DISTRESS_PATH = "/terminal/distress/";
+
+    /** Shown over the lock screen, for the Distress screen only. */
+    private boolean overLock = false;
+    /** Unlocking ends it: from then on this is an app like any other. */
+    private final BroadcastReceiver unlocked = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            showOverLock(false);
+        }
+    };
 
     /** Refuses a registration, and removes a worker and its caches left by an earlier install. */
     private static final String NO_SERVICE_WORKER =
@@ -42,6 +70,9 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // Declared over the lock in the manifest, since a locked phone's tile can open nothing that is
+        // not; turned off here, before anything is drawn, for every launch that is not a Distress.
+        showOverLock(getIntent() != null && ACTION_DISTRESS.equals(getIntent().getAction()));
         super.onCreate(savedInstanceState);
         if (WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) {
             WebViewCompat.addDocumentStartJavaScript(bridge.getWebView(), NO_SERVICE_WORKER, Collections.singleton("*"));
@@ -54,8 +85,17 @@ public class MainActivity extends BridgeActivity {
                     if (PrerenderedPages.isServiceWorker(request)) return notFound();
                     return bridge.getLocalServer().shouldInterceptRequest(pages.resolve(request));
                 }
+
+                /** Every page change, a client-side one too: off the Distress screen, back behind the lock. */
+                @Override
+                public void doUpdateVisitedHistory(WebView view, String url, boolean isReload) {
+                    super.doUpdateVisitedHistory(view, url, isReload);
+                    if (overLock && !onDistress(url)) showOverLock(false);
+                }
             }
         );
+        ContextCompat.registerReceiver(this, unlocked, new IntentFilter(Intent.ACTION_USER_PRESENT), ContextCompat.RECEIVER_NOT_EXPORTED);
+        openDistress(getIntent());
         ServiceWorkerController.getInstance().setServiceWorkerClient(
             new ServiceWorkerClient() {
                 @Override
@@ -65,6 +105,55 @@ public class MainActivity extends BridgeActivity {
                 }
             }
         );
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        openDistress(intent);
+    }
+
+    @Override
+    public void onDestroy() {
+        try {
+            unregisterReceiver(unlocked);
+        } catch (IllegalArgumentException ignored) {
+            // Never registered: nothing to undo.
+        }
+        super.onDestroy();
+    }
+
+    /**
+     * Opened by the tile or the shortcut: the Distress screen, over the lock. A Distress already on the
+     * screen is left as it is, never reloaded, so a second tap cannot restart one that is sending.
+     */
+    private void openDistress(Intent intent) {
+        if (intent == null || !ACTION_DISTRESS.equals(intent.getAction())) return;
+        showOverLock(true);
+        final WebView view = bridge.getWebView();
+        view.post(() -> {
+            if (!onDistress(view.getUrl())) view.loadUrl(bridge.getLocalUrl() + DISTRESS_PATH);
+        });
+    }
+
+    private static boolean onDistress(String url) {
+        if (url == null) return false;
+        String path = Uri.parse(url).getPath();
+        return path != null && path.startsWith(DISTRESS_PATH.substring(0, DISTRESS_PATH.length() - 1));
+    }
+
+    @SuppressWarnings("deprecation")
+    private void showOverLock(boolean on) {
+        overLock = on;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(on);
+            setTurnScreenOn(on);
+        } else if (on) {
+            getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+        } else {
+            getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+        }
     }
 
     private static WebResourceResponse notFound() {

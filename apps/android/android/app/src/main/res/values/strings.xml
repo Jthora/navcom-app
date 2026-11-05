@@ -4,4 +4,5 @@
     <string name="title_activity_main">NavCom</string>
     <string name="package_name">app.navcom</string>
     <string name="custom_url_scheme">app.navcom</string>
+    <string name="distress_tile">Distress</string>
 </resources>
