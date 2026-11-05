@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { COM_ENTRIES } from '../scripts/lib/budget.mjs';
-import { chunkOf, open, seedDevice } from './device';
+import { chunkOf, open, openFind, openYou, seedDevice, toMap } from './device';
 import { mapReady, screenAt, tap, tapAt, zoomAt } from './map';
 import { serveHazards, serveNws } from './hazards';
 import { admit, resign, standInKey, type StandIn } from './registry';
@@ -9,7 +9,8 @@ import { serveSpheres } from './spheres';
 import { serveZones } from './zsp';
 
 /**
- * `Distress` on the landing page, with every screen Com can show, at every height of the sheet.
+ * `Distress` on the landing page, with every screen Com can show, at every height of the sheet, and
+ * on the map with nothing open over it, which is where every one of them closes to [com.md §3].
  *
  * com.md §4 puts Distress in a layer of its own that no sheet, map, detail or modal may cover, and
  * asks for "the test that `panicWipe` lacked: not that the component renders, but that the control
@@ -150,6 +151,7 @@ const WAYS_IN: Record<string, WayIn[]> = {
       name: 'your missions',
       go: async (page) => {
         await signedOnWithHeat(page);
+        await openYou(page);
         await page.locator('[data-yours]').click();
         return page.locator('[data-screen="yours"]');
       }
@@ -338,8 +340,8 @@ const WAYS_IN: Record<string, WayIn[]> = {
         await page.waitForTimeout(450);
         await page.locator('[data-visibility="open"]').click();
         await expect(page.locator('[data-slot="you"]')).toContainText('Taking part');
-        await page.locator('[data-back]').click();
-        await page.locator('[data-back]').click();
+        await toMap(page);
+        await openYou(page);
         await page.locator('[data-yours]').click();
         await page.locator(`[data-report-mission="${HEAT_D}"]`).click();
         return page.locator(`[data-screen="report"][data-mission="${HEAT_D}"]`);
@@ -351,6 +353,7 @@ const WAYS_IN: Record<string, WayIn[]> = {
       name: 'what others see of you',
       go: async (page) => {
         await signedOnWithHeat(page);
+        await openYou(page);
         await page.locator('[data-yours]').click();
         await page.locator('[data-open-you]').click();
         return page.locator('[data-screen="you"]');
@@ -362,6 +365,7 @@ const WAYS_IN: Record<string, WayIn[]> = {
       name: 'Find, typed into',
       go: async (page) => {
         await signedOnWithHeat(page);
+        await openYou(page);
         await page.locator('[data-yours]').click();
         await page.locator('[data-open-find]').click();
         // Typing is where a phone's keyboard comes up, and Distress must still be there under it.
@@ -375,6 +379,7 @@ const WAYS_IN: Record<string, WayIn[]> = {
       name: 'a profile opened from a pasted key',
       go: async (page) => {
         await signedOnWithHeat(page);
+        await openYou(page);
         await page.locator('[data-yours]').click();
         await page.locator('[data-open-find]').click();
         await page.locator('#people-q').fill('a'.repeat(64));
@@ -404,6 +409,7 @@ const OPEN_ONE_OF: Record<string, (page: Page) => Promise<void>> = {
   // Yours is the missions entry's; *Find people* on it is the first tap that needs the people entry.
   people: async (page) => {
     await signedOnWithHeat(page);
+    await openYou(page);
     await page.locator('[data-yours]').click();
     await page.locator('[data-open-find]').click();
   }
@@ -495,11 +501,15 @@ const NOT_A_SCREEN: WayIn[] = [
   }
 ];
 
-const DETENTS = ['peek', 'half', 'full'] as const;
+/**
+ * The two heights of a sheet that is open [com.md §3]. Closed is the third state, and no height: the
+ * map with nothing over it, which every state below is closed back to and checked at too.
+ */
+const DETENTS = ['half', 'full'] as const;
 const detentOf = (page: Page) => page.locator('[data-com]').getAttribute('data-detent');
-/** One tap on the handle moves one step: peek → half → full → peek. */
+/** One tap on the handle moves one step: half ⇄ full. */
 async function setDetent(page: Page, want: (typeof DETENTS)[number]) {
-  for (let i = 0; i < 3 && (await detentOf(page)) !== want; i++) await page.locator('.grab').click();
+  for (let i = 0; i < 2 && (await detentOf(page)) !== want; i++) await page.locator('.grab').click();
   await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', want);
 }
 
@@ -524,6 +534,46 @@ async function expectReachable(page: Page, where: string) {
   });
   expect(onTop, `${where}: something covers Distress`).toBe(true);
 }
+
+/** Closed to the map by Close and Back, as a person leaves anything Com shows, and Distress there too. */
+async function expectReachableClosed(page: Page, where: string) {
+  await toMap(page);
+  await expectReachable(page, `${where}, closed to the map`);
+}
+
+/**
+ * What the Find and You corners open: this page's own, not screens of Com's, so not in its registry.
+ * The Missions and Map corners open Com's missions and layers screens, which `WAYS_IN` opens.
+ */
+const CORNERS: WayIn[] = [
+  {
+    name: 'Find, as its corner opens it',
+    go: async (page) => {
+      await signedOnWithHeat(page);
+      await openFind(page);
+      return page.locator('[data-root="find"]');
+    }
+  },
+  {
+    // Typed into: where a phone's keyboard comes up, and the results the sheet opened at half to show.
+    name: 'Find, typed into',
+    go: async (page) => {
+      await signedOnWithHeat(page);
+      await openFind(page);
+      await page.locator('#lookup').fill('philadelphia');
+      await expect(page.locator('.nc-results li').first()).toBeVisible({ timeout: 10_000 });
+      return page.locator('[data-root="find"]');
+    }
+  },
+  {
+    name: 'You, as its corner opens it',
+    go: async (page) => {
+      await signedOnWithHeat(page);
+      await openYou(page);
+      return page.locator('[data-root="you"]');
+    }
+  }
+];
 
 test('every screen Com declares has a way in here, and nothing here names a screen it no longer has', () => {
   // The positive control for everything below: without it, a new screen is simply not looped over.
@@ -551,16 +601,27 @@ for (const phone of PHONES) {
     if (phone.viewport) test.use({ viewport: phone.viewport });
     test.beforeEach(async ({ page }) => void (await admit(page, [HEAT_DESK])));
 
-    test('Com’s root, signed on: at every height, and nothing covers it', async ({ page }) => {
+    test('the map with nothing open, signed on: nothing covers it', async ({ page }) => {
       // The test panicWipe never had [verification.md]: not that the control renders, but that a
       // person can reach it whatever state the interface is in [com.md §4, invariant 2].
       await signedOnWithHeat(page);
-      await expect(page.locator('[data-yours]')).toBeVisible();
-      for (const detent of DETENTS) {
-        await setDetent(page, detent);
-        await expectReachable(page, `the root at ${detent}`);
-      }
+      await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'closed');
+      await expect(page.locator('[data-terminal-link]')).toBeVisible();
+      await expectReachable(page, 'the map with nothing open');
     });
+
+    for (const way of CORNERS) {
+      test(`${way.name}: at every height, and nothing covers it`, async ({ page }) => {
+        const state = await way.go(page);
+        await expect(state, 'the corner did not open').toBeVisible();
+        for (const detent of DETENTS) {
+          await setDetent(page, detent);
+          await expect(state, `${detent}: the corner under test closed`).toBeVisible();
+          await expectReachable(page, `${way.name} at ${detent}`);
+        }
+        await expectReachableClosed(page, way.name);
+      });
+    }
 
     for (const way of NOT_A_SCREEN) {
       test(`${way.name}: at every height, and nothing covers it`, async ({ page }) => {
@@ -571,6 +632,7 @@ for (const phone of PHONES) {
           await expect(state, `${detent}: the state under test went away`).toBeVisible();
           await expectReachable(page, `${way.name} at ${detent}`);
         }
+        await expectReachableClosed(page, way.name);
       });
     }
 
@@ -587,6 +649,7 @@ for (const phone of PHONES) {
           await expect(state, `${detent}: the state under test went away`).toBeVisible();
           await expectReachable(page, `${entry} failed at ${detent}`);
         }
+        await expectReachableClosed(page, `${entry} failed`);
       });
     }
 
@@ -608,6 +671,7 @@ for (const phone of PHONES) {
             await expect(screen, `${detent}: the screen under test closed`).toBeVisible();
             await expectReachable(page, `${kind} at ${detent}`);
           }
+          await expectReachableClosed(page, kind);
         });
       }
     }

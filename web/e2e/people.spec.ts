@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { open, seedDevice } from './device';
+import { open, openYou, seedDevice } from './device';
 
 /**
  * People, against the built site [docs/design/groups.md §3, §4, phase 1's tests].
@@ -31,6 +31,7 @@ const forCards = (reqs: Filter[][]) => reqs.filter((fs) => fs.some((f) => (f['ki
 async function toFind(page: Page, relayEvents: unknown[]) {
   await seedDevice(page, { callsign: 'kestrel', relayEvents });
   await open(page, '/');
+  await openYou(page);
   await page.locator('[data-yours]').click();
   await page.locator('[data-open-find]').click();
   await expect(page.locator('[data-screen="find"]')).toBeVisible();
@@ -103,7 +104,9 @@ test('after a reload a profile in history names nobody, and asks for nothing', a
   await page.goBack();
   await expect(page.locator('[data-screen="find"]')).toBeVisible();
   await page.reload();
-  await expect(page.locator('[data-yours]')).toBeVisible();
+  // The map again, with nothing open over it: a reload starts at the map [+page.svelte].
+  await expect(page.locator('[data-terminal-link]')).toBeVisible();
+  await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'closed');
   await page.goForward();
   const profile = page.locator('[data-screen="profile"]');
   await expect(profile).toContainText('Not on this phone');

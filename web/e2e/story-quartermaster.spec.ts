@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { expect, test, devices, type Browser, type BrowserContext, type Page } from '@playwright/test';
 import WebSocket from 'ws';
 import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure';
-import { open } from './device';
+import { open, openYou } from './device';
 import { startRelay, type LocalRelay } from './relay-server';
 import { admit, type StandIn } from './registry';
 
@@ -167,6 +167,7 @@ test.describe('the Quartermaster’s week', () => {
     // Wednesday: she reports Tuesday's work, from her own missions.
     await qm.clock.setFixedTime(PDT('2026-10-07T11:00:00'));
     await home(qm);
+    await openYou(qm);
     await qm.locator('[data-yours]').click();
     await qm.locator(`[data-report-mission="${SOCKS}"]`).click();
     const form = qm.locator('[data-screen="report"]');
@@ -206,6 +207,7 @@ test.describe('the Quartermaster’s week', () => {
     // Back on her phone that afternoon: who decided, by name, and that it was a machine.
     await qm.clock.setFixedTime(PDT('2026-10-07T15:00:00'));
     await home(qm);
+    await openYou(qm);
     await qm.locator('[data-yours]').click();
     const mine = qm.locator(`[data-screen="yours"] [data-sent="${report!.id}"]`);
     await expect(mine).toContainText('Settled', { timeout: 15_000 });
@@ -241,6 +243,7 @@ test.describe('the Quartermaster’s week', () => {
     // work; until midnight her missions said she had nothing to report [audit 11.S, review].
     await qm.clock.setFixedTime(PDT('2026-10-07T23:00:00'));
     await home(qm);
+    await openYou(qm);
     await qm.locator('[data-yours]').click();
     await expect(qm.locator(`[data-report-mission="${WATER}"]`)).toContainText('reports open tomorrow');
     await expect(qm.locator('[data-screen="yours"]')).not.toContainText('Nothing to report');
@@ -262,6 +265,7 @@ test.describe('the Quartermaster’s week', () => {
     await qm.clock.setFixedTime(PDT('2026-10-08T12:00:00'));
     await home(qm);
     await expect(qm.locator('[data-missions="none"]')).toBeVisible();
+    await openYou(qm);
     await qm.locator('[data-yours]').click();
     // Nothing else reached the reports screen once the mission was off the map [audit 11.S].
     await qm.locator(`[data-their-reports="${WATER}"]`).click({ timeout: 10_000 });
@@ -280,6 +284,7 @@ test.describe('the Quartermaster’s week', () => {
     // did is still where she left it, rather than gone with "none yet" in its place [audit 11.S].
     await qm.clock.setFixedTime(PDT('2026-10-17T12:00:00'));
     await home(qm);
+    await openYou(qm);
     await qm.locator('[data-yours]').click();
     const yours = qm.locator('[data-screen="yours"]');
     const toReport = yours.locator('section.nc-panel').filter({ has: qm.getByRole('heading', { name: 'To report', exact: true }) });
@@ -322,6 +327,7 @@ test.describe('the Quartermaster’s week', () => {
     await qm.clock.setFixedTime(PDT('2026-10-06T15:00:00'));
     await home(qm);
     await expect(qm.locator('[data-refused-count]')).toContainText('1 not read');
+    await openYou(qm);
     await qm.locator('[data-yours]').click();
     const held = qm.locator(`[data-held$=":${KITS}"]`);
     // It is not over: it ends on the 10th. What is true is that this phone cannot read it [invariant 7].

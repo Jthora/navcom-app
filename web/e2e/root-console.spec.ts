@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { blankDevice, open, seedDevice } from './device';
+import { blankDevice, open, openFind, seedDevice } from './device';
 
 /**
  * The root console, driven for real.
@@ -11,6 +11,9 @@ import { blankDevice, open, seedDevice } from './device';
  * only, in `playwright.config.ts` — the one deliberate exception, because this is the one
  * screen meant to be seen on a desktop monitor first, and the bridge layout and the
  * white-margin regression this file guards against were both invisible at phone width).
+ *
+ * Since 2026-11-05 the map is the whole screen and the console's search and Network panel are what
+ * the Find corner opens [com.md §3], so every test of them opens it first, as a person does.
  */
 
 test.describe('the root console — search works with nothing set up', () => {
@@ -27,6 +30,7 @@ test.describe('the root console — search works with nothing set up', () => {
      */
     await blankDevice(page);
     await open(page, '/');
+    await openFind(page);
 
     const input = page.getByLabel(/where are you, or what do you need/i);
     await expect(input).toBeVisible();
@@ -47,6 +51,7 @@ test.describe('the root console — search works with nothing set up', () => {
      */
     await blankDevice(page);
     await open(page, '/');
+    await openFind(page);
     await page.getByLabel(/where are you, or what do you need/i).fill('st. louis');
     const link = page.locator('.nc-results li [data-hit="region"]').first();
     await expect(link).toBeVisible({ timeout: 10_000 });
@@ -56,6 +61,7 @@ test.describe('the root console — search works with nothing set up', () => {
   test('an unmatched query says so plainly, rather than showing nothing silently', async ({ page }) => {
     await blankDevice(page);
     await open(page, '/');
+    await openFind(page);
     await page.getByLabel(/where are you, or what do you need/i).fill('zzz-nothing-like-this-zzz');
     await expect(page.getByText(/nothing matches yet/i)).toBeVisible();
   });
@@ -70,6 +76,7 @@ test.describe('the root console — search works with nothing set up', () => {
      */
     await blankDevice(page);
     await open(page, '/');
+    await openFind(page);
 
     /*
      * Pick a region first, which a visitor who denied location does by hand.
@@ -122,6 +129,7 @@ test.describe('the root console — search works with nothing set up', () => {
     await blankDevice(page);
     await page.clock.setFixedTime(new Date(Date.parse(freshest + 'T12:00:00Z') - 3 * 86_400_000));
     await open(page, '/');
+    await openFind(page);
 
     await expect(page.getByText(/this clock is wrong/i)).toBeVisible({ timeout: 10_000 });
     await expect(page.getByText(/most recent check, anywhere/i)).toBeVisible();
@@ -131,6 +139,7 @@ test.describe('the root console — search works with nothing set up', () => {
     // The pair: returning "unknown" always would satisfy the test above and delete the figure.
     await blankDevice(page);
     await open(page, '/');
+    await openFind(page);
     const freshest = page.locator('.nc-slot', { hasText: 'most recent check, anywhere' });
     await expect(freshest).toBeVisible({ timeout: 10_000 });
     await expect(freshest).toContainText(/today|day[s]? ago/i);
@@ -152,8 +161,13 @@ test.describe('the root console — search works with nothing set up', () => {
     });
     await blankDevice(page);
     await open(page, '/');
-    await expect(page.getByText(/^Near /)).toBeVisible({ timeout: 10_000 });
+    // Placed, and said so on the Find corner, over the map.
+    await expect(page.locator('[data-find-open]')).toContainText(/Near /, { timeout: 10_000 });
     await page.waitForTimeout(1_000);
+    expect(fetched).toEqual([]);
+    // Opening the search is not searching: still nothing fetched.
+    await openFind(page);
+    await page.waitForTimeout(500);
     expect(fetched).toEqual([]);
 
     await page.getByLabel(/where are you, or what do you need/i).fill('shelter');
@@ -163,6 +177,7 @@ test.describe('the root console — search works with nothing set up', () => {
   test('the manual region picker is the fallback when nothing is typed', async ({ page }) => {
     await blankDevice(page);
     await open(page, '/');
+    await openFind(page);
     const select = page.locator('#region-pick');
     await expect(select).toBeVisible();
     const optionCount = await select.locator('option').count();
@@ -201,6 +216,7 @@ test.describe('the fusion — Com reacts to what Nav is looking at', () => {
   test('picking a region changes the Network panel from network-wide to that region\'s own figures', async ({ page }) => {
     await blankDevice(page);
     await open(page, '/');
+    await openFind(page);
 
     const networkPanel = page.locator('section.nc-panel', { has: page.locator('h2', { hasText: 'Network' }) });
     // Before any focus: the network-wide "Coverage" slot is what's shown.
@@ -218,6 +234,7 @@ test.describe('the fusion — Com reacts to what Nav is looking at', () => {
   test('the help-verify prompt links into the real correction flow, not a dead end', async ({ page }) => {
     await blankDevice(page);
     await open(page, '/');
+    await openFind(page);
     await page.locator('#region-pick').selectOption({ index: 1 });
     const link = page.locator('[data-help-verify]');
     await expect(link).toBeVisible();
@@ -227,21 +244,48 @@ test.describe('the fusion — Com reacts to what Nav is looking at', () => {
 });
 
 test.describe('desktop-only: the split-screen bridge and the white-margin regression', () => {
-  test('Nav and Com render side by side above the 48rem breakpoint', async ({ page }, testInfo) => {
+  /*
+   * It was "Nav and Com render side by side": a sidebar always open beside the map. Since 2026-11-05 the
+   * map is the whole screen on a desktop too, and Com a panel over it on the side of the corner that
+   * opened it, with that side's corners moved in beside it so all four stay in reach [com.md §3].
+   */
+  test('above the 48rem breakpoint the map is the whole screen, and Com a panel over it on its corner’s side, with every corner in reach', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'desktop', 'layout check needs real desktop width');
     await blankDevice(page);
     await open(page, '/');
+    const nav = (await page.locator('[data-nav]').boundingBox())!;
+    const viewport = page.viewportSize()!;
+    expect(nav.x).toBeLessThan(1);
+    expect(nav.width).toBeGreaterThan(viewport.width - 2);
+    await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'closed');
 
-    // Nav is the map and Com the sidebar beside it [com.md §3]; the search and the network
-    // panels now live inside Com, stacked, which is where this test used to look for the split.
-    const [nav, com] = await Promise.all([
-      page.locator('[data-nav]').boundingBox(),
-      page.locator('[data-com]').boundingBox()
-    ]);
-    if (!nav || !com) throw new Error('Nav or Com did not render with a bounding box');
-    expect(Math.abs(nav.y - com.y)).toBeLessThan(4);
-    expect(com.x).toBeGreaterThanOrEqual(nav.x + nav.width - 4);
-    expect(nav.width).toBeGreaterThan(com.width);
+    const corners = ['missions', 'map', 'find', 'you'].map((c) => page.locator(`[data-corner="${c}"]`));
+    const clearOf = async (com: { x: number; y: number; width: number; height: number }, where: string) => {
+      for (const corner of corners) {
+        await expect(corner, where).toBeInViewport({ ratio: 1 });
+        const b = (await corner.boundingBox())!;
+        const over = b.x < com.x + com.width && b.x + b.width > com.x && b.y < com.y + com.height && b.y + b.height > com.y;
+        expect(over, `${where}: Com covers a corner`).toBe(false);
+      }
+    };
+    for (const [open, side] of [
+      [() => openFind(page), 'start'],
+      [() => page.getByRole('button', { name: 'Map layers' }).click(), 'end']
+    ] as const) {
+      await open();
+      const com = page.locator('[data-com]');
+      await expect(com).toHaveAttribute('data-side', side);
+      const box = (await com.boundingBox())!;
+      // Over the map, not beside it: the map keeps its width.
+      expect((await page.locator('[data-nav]').boundingBox())!.width).toBeGreaterThan(viewport.width - 2);
+      expect(Math.abs(box.y - nav.y)).toBeLessThan(4);
+      expect(nav.width).toBeGreaterThan(box.width * 2);
+      if (side === 'start') expect(box.x).toBeLessThan(nav.x + 4);
+      else expect(box.x + box.width).toBeGreaterThan(nav.x + nav.width - 4);
+      await clearOf(box, `${side}`);
+      await page.locator('[data-back]').click();
+      await expect(com).toHaveAttribute('data-detent', 'closed');
+    }
   });
 
   test('no gap between the viewport edge and the console — the bug this shipped with', async ({ page }, testInfo) => {
@@ -264,6 +308,10 @@ test.describe('accessibility — automated, both signature modes', () => {
   test('no axe violations in the default (document) signature', async ({ page }) => {
     await blankDevice(page);
     await open(page, '/');
+    // With nothing open, the map and its corners alone.
+    const closed = await new AxeBuilder({ page }).analyze();
+    expect(closed.violations, JSON.stringify(closed.violations, null, 2)).toEqual([]);
+    await openFind(page);
     await page.locator('#region-pick').selectOption({ index: 1 }); // exercise the focused-region markup too
 
     const results = await new AxeBuilder({ page }).analyze();
@@ -276,6 +324,7 @@ test.describe('accessibility — automated, both signature modes', () => {
     await seedDevice(page, { accruing: { signature: 'low' } });
     await open(page, '/');
     await expect(page.locator('html')).toHaveAttribute('data-signature', 'low');
+    await openFind(page);
     await page.locator('#region-pick').selectOption({ index: 1 });
 
     const results = await new AxeBuilder({ page }).analyze();
@@ -292,5 +341,11 @@ test.describe('accessibility — automated, both signature modes', () => {
     await toggle.click();
     await expect(page.locator('html')).toHaveAttribute('data-signature', 'low');
     await expect(toggle).toHaveText(/document/i);
+    // And with something open over the map: one toggle, in Com's head, where the corner's went.
+    await openFind(page);
+    await expect(toggle).toHaveCount(1);
+    await expect(page.locator('[data-com] [data-signature-toggle]')).toBeVisible();
+    await toggle.click();
+    await expect(page.locator('html')).toHaveAttribute('data-signature', 'document');
   });
 });

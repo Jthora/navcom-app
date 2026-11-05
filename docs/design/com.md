@@ -7,8 +7,9 @@ state.** Profile, groups, chat, search and the detail view of anything all live 
 more than a panel holds and exactly what a stack is for. Bottom sheets are how a stack presents on a
 phone, which is why both arrived in the same sentence.
 
-Status: **design, decided 2026-10-06. The shell is built** — the two containers, the three detents,
-the search-first root and the `Distress` layer, as the landing page — **and the stack's first
+Status: **design, decided 2026-10-06; the shell revised 2026-11-05 at the owner's direction** to the map
+on the whole screen with four corner nodes over it (§3). **Built** — the corners, Com as a sheet or a side
+panel that opens from them, the search-first Find and the `Distress` layer, as the landing page — **and the stack's first
 screens**: the mission list, opened from the map's missions line, a mission's page, and since
 2026-10-18 a place, opened by tapping anything on the map — a province or a country with what is
 filed under it, a region, a record — all loaded on first open. **Since 2026-10-19 a second entry,
@@ -68,32 +69,44 @@ thing being pitched is already running.
 
 ---
 
-## 3. Mobile is a different layout, not a narrower one
+## 3. The map is the whole screen, and the page is four corners over it
 
-**A map at half a phone screen is unusable**, so the two-pane split is a desktop arrangement only.
+**Revised 2026-11-05 at the owner's direction**, looking at the landing page on a Redmi A3: in portrait
+the Earth did not use the screen's width, and held sideways the map was covered by an overview and a
+sidebar. *"In both viewscapes, the map should take absolute priority. Then navigation exists in the
+corners."*
+
+So **Nav takes the whole screen on every device, in every orientation, and nothing permanent sits in
+its middle.** Its opening view is the whole Earth as large as the screen allows, centred: on a portrait
+phone the full width, held sideways or on a monitor the full height. Over its four corners, where the
+Earth's own outline leaves the most room, are four **corner nodes**. Each is an information node and a
+way in at once: a caption, a line of what that corner holds, and the whole node is the tap.
+
+| Corner | Node says | A tap opens |
+|---|---|---|
+| **Top left, Missions** | NavCom, and how many missions are open, how old that is, how many were not read | The mission list |
+| **Top right, Map** | What is drawn, whose and how old (the map's own lines, invariant 7), with zoom and the whole map | The layers |
+| **Bottom left, Find** | Where you are, or *a shelter, a clinic, a city*, and the Places switch | The directory search, with the cursor in it, and the Network figures beneath it |
+| **Bottom right, You** | *Create profile*, or your name and what you hold, and Low signature | Your missions and your profile and status |
+
+Missions and the Map are at the top, where the eye goes first and the thumb least; Find and You are at
+the foot, where the thumb is, because the person who needs a bed tonight and the person about to sign up
+both start there.
+
+**Opened, a corner becomes Com**, the navigation stack of §1:
 
 | | |
 |---|---|
-| **Desktop** | Nav takes the larger pane; Com is a stack in a sidebar beside it |
-| **Mobile** | **Nav takes the whole viewport. Com is a bottom sheet with three detents** |
+| **Phone, upright** | A sheet from the foot, at **half** or **full** by its handle. The top corners stay above it, so Missions and the Map switch what is open |
+| **Phone sideways, tablet, desktop** | A panel on that corner's side, over the map rather than beside it: Missions and Find at the start, the Map, You and whatever the map itself opens at the end. Only that side's corners are covered |
 
-The three detents are what make it work:
+**Close**, Escape and the system back all return to the map with its four corners. There is no peek:
+closed is the map. What the map itself opens, a place, a province, a mission, comes up as before, at the
+end side.
 
-1. **Peek** — a collapsed bar carrying watch state and your open claim. The one thing worth seeing
-   while looking at the map.
-2. **Half** — lists, search, a group. Enough to read and act, with the map still oriented behind.
-3. **Full** — one detail view, filling the screen.
-
-Signed out on a phone, the sheet opens at **peek**, and peek is sized to hold the whole search field:
-**12.75rem, measured** on a Pixel 5 and an iPhone SE rather than guessed. Focusing the search lifts it
-to half, where the results are. The first draft opened at half with setup in it; §2's revision put the
-search first, and a search that fits in the peek leaves the map at full size behind it. Which is the
-point: somebody who has not signed up is looking at real missions while they decide.
-
-This is mobile-first in the sense that matters here — **the field case is the phone case.** Somebody
-standing in a car park at 1am gets the map at full size and summons everything else.
-
----
+The rejected arrangement was the one this replaces: a key over the map's top, a column of controls down
+its right, and a sheet always at least at peek, or a sidebar always open. Each was reasonable alone; on a
+small phone together they left the Earth a quarter of the screen, and sideways they hid it.
 
 ## 4. `Distress` is a fixed layer that nothing can cover
 
@@ -161,7 +174,7 @@ and detail views do not fit in that, and it is not close.
 The budget is derived from a time — about 3 seconds to interactive on a congested cell at 0.8 Mbps —
 so it is protecting something real rather than expressing a preference.
 
-**Decided: code-split, so first paint ships the peek bar only.** The landing page loads the map and a
+**Decided: code-split, so first paint ships the corners only.** (It said the peek bar until the corners replaced it, 2026-11-05.) The landing page loads the map and a
 collapsed Com bar inside the existing budget. The stack, chat, search and detail views load the moment
 somebody opens the sheet.
 
@@ -197,7 +210,7 @@ document said.
 
 **The budget already measures first paint correctly, and that is the problem.** `assetsOf` reads each
 page's HTML and counts only what the HTML references, so a chunk pulled by a dynamic `import()` is
-invisible to it. The peek bar stays measured and capped — that part is fine. What goes wrong is the
+invisible to it. The corners stay measured and capped — that part is fine. What goes wrong is the
 line the report prints at the end: *"15,398 unreferenced files, 11,498 kB gzipped — emitted by the
 client build, loaded by no page."* **That claim becomes false the day Com code-splits**, because those
 chunks will be loaded, just later. A budget that silently stops describing what a reader downloads is
@@ -252,7 +265,7 @@ version cannot read.
 what makes the place mean anything — losing the map to read the mission discards the context that
 made it legible. Full height is for profiles and long-form, where there is no map to lose.
 
-**The peek bar has fixed slots and silence is a readout.** It carries watch state, which is never
+**The corners have fixed slots and silence is a readout.** They carry watch state, which is never
 empty — somebody is on watch or nobody is, and both are answers — and your claim slot, which reads
 *nothing claimed* rather than disappearing. A bar whose contents come and go is a bar nobody learns
 the shape of, and [`panel.md`](panel.md) already settled that: fixed slots, and silence reads as a

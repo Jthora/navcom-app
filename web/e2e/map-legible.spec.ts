@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
-import { open, seedDevice } from './device';
-import { bring, frame, inkNear, mapReady, screenAt, seen, tap, tapAt, zoomAt } from './map';
+import { open, seedDevice, toMap } from './device';
+import { bring, frame, inkNear, mapReady, overEarth, screenAt, seen, tap, tapAt, zoomAt } from './map';
 import { admit, mission, standInKey, type StandIn } from './registry';
 import { busySeason, serveHazards } from './hazards';
 import { serveSpheres } from './spheres';
@@ -59,12 +59,24 @@ async function choose(page: Page, name: RegExp) {
   return screen;
 }
 
-/** Back to the root of Com and the sheet at peek, so the map is read with nothing open over it. */
+/** Com closed, by Close and Back, so the map is read with nothing open over it [com.md §3]. */
 async function home(page: Page) {
-  for (let i = 0; i < 6 && (await page.locator('[data-back]').count()) > 0; i++) await page.locator('[data-back]').click();
-  await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', /peek|half/);
+  await toMap(page);
   await frame(page);
   await frame(page);
+}
+
+/**
+ * A point in the open middle of the map with nothing open: halfway between the feet of the top corners
+ * and the tops of the bottom ones, `dx` from the centre. Where a test starts a pan, as a person would.
+ */
+async function openMiddle(page: Page, dx: number): Promise<[number, number]> {
+  const box = (await page.locator('.grid canvas').boundingBox())!;
+  const feet = await page.evaluate(() => {
+    const b = (c: string) => document.querySelector(`[data-corner="${c}"]`)!.getBoundingClientRect();
+    return { top: Math.max(b('missions').bottom, b('map').bottom), foot: Math.min(b('find').top, b('you').top) };
+  });
+  return [box.x + box.width / 2 + dx, (feet.top + feet.foot) / 2];
 }
 
 /** WCAG's relative luminance of an [r, g, b], and the contrast of two. */
@@ -146,7 +158,8 @@ async function layout(page: Page) {
     const top = r.top + r.height / 2 - cy * scale;
     const more = document.querySelector('[data-key-more]') as HTMLElement | null;
     const line = more ? parseFloat(getComputedStyle(more).lineHeight) : 0;
-    const key = document.querySelector('.nav-key') as HTMLElement;
+    // The Map corner, which the map's own lines are put in [GridMap cover].
+    const key = document.querySelector('[data-corner="map"]') as HTMLElement;
     const bg = getComputedStyle(key).backgroundColor;
     const alpha = /\/\s*([\d.]+)\)$/.exec(bg)?.[1] ?? /rgba\([^)]*,\s*([\d.]+)\)$/.exec(bg)?.[1] ?? '1';
     return {
@@ -205,16 +218,24 @@ for (const viewport of PHONES) {
           return { whole: r.bottom <= more.getBoundingClientRect().bottom + 1, rows: Math.round(r.height / parseFloat(getComputedStyle(more).lineHeight)) };
         });
         expect(feeds.whole, 'the feeds’ age, or that they hold some events, never all, is cut from the key').toBe(true);
-        // What of the Earth's box is below the key and above the sheet at half: 120 px, unless the key is
-        // already cut to the feeds' line alone, and then no less than 100.
-        const clear = Math.min(at.earthFoot, at.sheetTop) - Math.max(at.earthTop, at.keyFoot);
+        // What of the Earth's box is above the sheet at half: 120 px, unless the key is already cut to the
+        // feeds' line alone, and then no less than 100.
+        const clear = Math.min(at.earthFoot, at.sheetTop) - at.earthTop;
         expect(clear, `the Earth above the sheet at half: ${JSON.stringify(at)}`).toBeGreaterThanOrEqual(100);
         if (clear < 120) expect(at.lines, `the Earth is ${Math.round(clear)} px tall while the key keeps more than the feeds’ line`).toBeLessThanOrEqual(feeds.rows + 0.05);
-        // And all of it: nothing of the Earth is under the sheet while the layer's screen is open.
+        // And all of it: nothing of the Earth is under the sheet while the layer's screen is open,
         expect(at.earthFoot, 'the Earth runs under the sheet at half').toBeLessThanOrEqual(at.sheetTop + 1);
+        // nor under the key, nor the corner beside it: they sit over the room the Earth's outline leaves,
+        // below them or beside them [com.md §3]. It was the Earth's box below the key's foot, when the key
+        // ran across the map's top.
+        for (const corner of ['map', 'missions']) {
+          expect(await overEarth(page, page.locator(`[data-corner="${corner}"]`)), `the ${corner} corner covers the Earth at half: ${JSON.stringify(at)}`).toBe(false);
+        }
         // Every one of the map's controls in reach with the sheet at half: the topmost thing at its centre.
+        // Docked in the Map corner since 2026-11-05 [com.md §3], and all three of them there.
+        await expect(page.locator('[data-corner="map"] .controls button')).toHaveCount(3);
         const under = await page.evaluate(() =>
-          [...document.querySelectorAll('.grid .controls button')].flatMap((b) => {
+          [...document.querySelectorAll('[data-corner="map"] .controls button')].flatMap((b) => {
             const r = b.getBoundingClientRect();
             const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
             return top === b || b.contains(top) ? [] : [b.getAttribute('aria-label')];
@@ -249,19 +270,20 @@ test.describe('the map, moved', () => {
     await zoomAt(page, -100, 60, 1);
   });
 
-  test('a pan or a pinch that starts on the key moves the map, and the page stays as it is', async ({ page }) => {
+  test('a pan or a pinch that starts on a corner moves the map, and the page stays as it is', async ({ page }) => {
     await landed(page);
     const canvas = page.locator('.grid canvas');
     await zoomAt(page, -98, 38, 3);
     const before = await canvas.getAttribute('data-view');
-    const name = (await page.locator('.nav-key h1').boundingBox())!;
+    // The product's name, in the Missions corner: a node's words take no gesture from the map.
+    const name = (await page.locator('[data-corner="missions"] h1').boundingBox())!;
     const cdp = await page.context().newCDPSession(page);
     const [x, y] = [name.x + name.width / 2, name.y + name.height / 2];
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1 }] });
     for (let i = 1; i <= 8; i++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + 8 * i, y: y + 6 * i, id: 1 }] });
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
     await frame(page);
-    expect(await canvas.getAttribute('data-view'), 'a drag on the key did not move the map').not.toBe(before);
+    expect(await canvas.getAttribute('data-view'), 'a drag on a corner did not move the map').not.toBe(before);
     expect(await page.evaluate(() => window.visualViewport?.scale ?? 1), 'the page was zoomed instead').toBe(1);
   });
 
@@ -275,10 +297,7 @@ test.describe('the map, moved', () => {
       }).observe({ type: 'longtask', buffered: false });
     });
     await landed(page, { signedOn: true });
-    const box = (await page.locator('.grid canvas').boundingBox())!;
-    const keyFoot = (await page.locator('.nav-key').boundingBox())!;
-    const sheet = (await page.locator('[data-com]').boundingBox())!;
-    const [x, y] = [box.x + box.width / 2 - 40, (keyFoot.y + keyFoot.height + sheet.y) / 2];
+    const [x, y] = await openMiddle(page, -40);
     const cdp = await page.context().newCDPSession(page);
     await cdp.send('Emulation.setCPUThrottlingRate', { rate: 6 });
     await page.waitForTimeout(500);
@@ -317,15 +336,12 @@ test.describe('the map, moved', () => {
     await expect(page.locator('[data-legend]')).toContainText('Hazards · 3 feeds');
     await home(page);
     const places = page.waitForResponse((r) => r.url().endsWith('/grid/places.json'));
-    await page.locator('.nav-key button.layer').click();
+    await page.locator('[data-corner="find"] button.layer').click();
     await places;
     await zoomAt(page, -98, 38, 4);
     await page.waitForTimeout(300);
     await frame(page);
-    const box = (await page.locator('.grid canvas').boundingBox())!;
-    const keyFoot = (await page.locator('.nav-key').boundingBox())!;
-    const sheet = (await page.locator('[data-com]').boundingBox())!;
-    const [x, y] = [box.x + box.width / 2 - 60, (keyFoot.y + keyFoot.height + sheet.y) / 2];
+    const [x, y] = await openMiddle(page, -60);
     const cdp = await page.context().newCDPSession(page);
     await cdp.send('Emulation.setCPUThrottlingRate', { rate: 6 });
     await page.waitForTimeout(500);
@@ -389,13 +405,15 @@ async function countsOn(page: Page): Promise<{ of: string; n: number; x: number;
   return raw.map(([of, n, x, y, l, t, r, b]) => ({ of, n, x: c.x + x, y: c.y + y, box: { l: c.x + l, t: c.y + t, r: c.x + r, b: c.y + b } }));
 }
 
-/** Whether a point of the page shows the map: the canvas topmost there, and nothing painted over it, the key included. */
+/** Whether a point of the page shows the map: the canvas topmost there, and nothing painted over it, the corners included. */
 const openAt = (page: Page, x: number, y: number) =>
   page.evaluate(
     ([x, y]) => {
-      const key = document.querySelector('.nav-key')!.getBoundingClientRect();
-      const underKey = x! >= key.left && x! <= key.right && y! >= key.top && y! <= key.bottom;
-      return !underKey && document.elementFromPoint(x!, y!) === document.querySelector('.grid canvas');
+      const underCorner = [...document.querySelectorAll('[data-corner]')].some((c) => {
+        const b = c.getBoundingClientRect();
+        return getComputedStyle(c).visibility !== 'hidden' && x! >= b.left && x! <= b.right && y! >= b.top && y! <= b.bottom;
+      });
+      return !underCorner && document.elementFromPoint(x!, y!) === document.querySelector('.grid canvas');
     },
     [x, y]
   );
@@ -405,7 +423,7 @@ test.describe('the missions, among everything else', () => {
     test(`${low ? 'low' : 'document'} signature: with Places on at the opening view, a mission's ring keeps 3:1 against what is round it`, async ({ page }) => {
       await landed(page, { low });
       const places = page.waitForResponse((r) => r.url().endsWith('/grid/places.json'));
-      await page.locator('.nav-key button.layer').click();
+      await page.locator('[data-corner="find"] button.layer').click();
       await places;
       await page.waitForTimeout(300);
       await frame(page);
@@ -528,7 +546,7 @@ test.describe('a tap takes what the finger is inside', () => {
   test('at ×40, where a thumb is a street, a tap 10 px off a record opens the record, as its 12 px reach says, not the province under it', async ({ page }) => {
     await landed(page);
     const arrived = page.waitForResponse((r) => r.url().endsWith('/grid/places.json'));
-    await page.locator('.nav-key button.layer').click();
+    await page.locator('[data-corner="find"] button.layer').click();
     await arrived;
     // The record standing furthest from any other, in the band the opening view shows, on the map's rectangle.
     const file = await page.evaluate(async () => (await (await fetch('/grid/places.json')).json()) as { regions: Record<string, ([number, number] | null)[]> });
@@ -564,7 +582,10 @@ test.describe('a tap takes what the finger is inside', () => {
     await choose(page, /^Spheres/);
     await expect(page.locator('[data-legend="spheres"]')).toContainText('draft lists');
     await home(page);
-    await zoomAt(page, 14.4, 37, 8);
+    // To about 2,700 px a unit, whatever the opening view is: there 11 px north of Malta is in Sicily. It
+    // was ×8 from an opening view 337 px wide, before the map had the whole screen (2026-11-05).
+    const opening = Number(((await page.locator('.grid canvas').getAttribute('data-view')) ?? '').split(' ')[2]);
+    await zoomAt(page, 14.4, 37, 2700 / opening);
     await page.mouse.move(5, 5);
     await frame(page);
     const malta = await screenAt(page, 14.43, 35.89);
@@ -682,19 +703,22 @@ test.describe('what the map says, and where', () => {
       await expect(chip).toHaveText(/^Water at the depot · open mission/);
       await frame(page);
       const box = (await chip.boundingBox())!;
-      const controls = (await page.locator('.grid .controls').boundingBox())!;
-      const key = (await page.locator('.nav-key').boundingBox())!;
+      const controls = (await page.locator('[data-corner="map"] .controls').boundingBox())!;
       const over = (b: { x: number; y: number; width: number; height: number }) => box.x < b.x + b.width && box.x + box.width > b.x && box.y < b.y + b.height && box.y + box.height > b.y;
       expect(over(controls), `the readout ${JSON.stringify(box)} is over the controls ${JSON.stringify(controls)}`).toBe(false);
-      expect(over(key), `the readout ${JSON.stringify(box)} is over the key ${JSON.stringify(key)}`).toBe(false);
+      // Nor any corner, the Map's key among them.
+      for (const corner of ['missions', 'map', 'find', 'you']) {
+        const b = (await page.locator(`[data-corner="${corner}"]`).boundingBox())!;
+        expect(over(b), `the readout ${JSON.stringify(box)} is over the ${corner} corner ${JSON.stringify(b)}`).toBe(false);
+      }
       expect(over({ x: at.x - 3, y: at.y - 3, width: 6, height: 6 }), 'the readout is over the point it names').toBe(false);
     });
   }
 
   test('a readout under the pointer never sits over the key or the controls', async ({ page }) => {
     await landed(page);
-    const key = (await page.locator('.nav-key').boundingBox())!;
-    const controls = (await page.locator('.grid .controls').boundingBox())!;
+    const key = (await page.locator('[data-corner="map"]').boundingBox())!;
+    const controls = (await page.locator('[data-corner="map"] .controls').boundingBox())!;
     // Canada's far north, just under the key at the opening view: a readout above the pointer was over the key.
     const at = await screenAt(page, -95, 68);
     expect(at.uncovered).toBe(true);
@@ -745,7 +769,7 @@ test.describe('what the map says, and where', () => {
       await expect(page.locator('[data-legend="zones"] .line').first()).toHaveText('Zones · draft 2, view only');
       await expect(credit).toHaveText('Zones: NavCom test fixture, never shipped, CC BY 4.0');
       await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'half');
-      const controls = (await page.locator('.grid .controls').boundingBox())!;
+      const controls = (await page.locator('[data-corner="map"] .controls').boundingBox())!;
       const clear = async (where: string) => {
         expect(await seen(credit), `the credit is under the sheet at ${where}`).toBe(true);
         const box = (await credit.boundingBox())!;
@@ -755,21 +779,21 @@ test.describe('what the map says, and where', () => {
         if (beside) expect(box.x + box.width, `the credit runs under the controls at ${where}`).toBeLessThanOrEqual(controls.x);
       };
       await clear('half');
-      await home(page);
       const detent = async (want: string) => {
-        for (let i = 0; i < 3 && (await page.locator('[data-com]').getAttribute('data-detent')) !== want; i++) await page.locator('.grab').click();
+        for (let i = 0; i < 2 && (await page.locator('[data-com]').getAttribute('data-detent')) !== want; i++) await page.locator('.grab').click();
         await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', want);
         // The sheet eases to its height over 0.2 s.
         await page.waitForTimeout(400);
         await frame(page);
       };
-      await detent('peek');
-      await clear('peek');
       // At full height the map is a strip under the key: the credit stays on the layers screen.
       await detent('full');
       await expect(credit).toHaveCount(0);
-      // Nation States carries none: Natural Earth's outlines are public domain.
+      // With nothing open over the map, on the map still, clear of the corners at its foot [com.md §3].
       await detent('half');
+      await home(page);
+      await clear('the map with nothing open');
+      // Nation States carries none: Natural Earth's outlines are public domain.
       await choose(page, /^Nation States/);
       await expect(credit).toHaveCount(0);
     });

@@ -72,6 +72,8 @@
     placesStatus = $bindable('off'),
     missionsAge = null,
     cover,
+    corners = [],
+    dock,
     onpick
   }: {
     /** The missions open now. Each lights where it is filed: its province, or else its country. */
@@ -98,6 +100,15 @@
      * covers the canvas's foot, where a readout of what is drawn was present and unseen.
      */
     cover?: HTMLElement;
+    /**
+     * The page's corner nodes, over the canvas's four corners (the owner, 2026-11-05): the map is the
+     * whole screen and they float over its corners, where the Earth's own outline leaves the most room.
+     * With them, the opening view is the whole Earth as large as the screen allows, centred, and the
+     * names, the chip and the reticle keep clear of every one.
+     */
+    corners?: HTMLElement[];
+    /** Where the map's own controls go: into a corner of the page's, rather than over the canvas. */
+    dock?: HTMLElement;
     /**
      * Something on the map was tapped, or chosen by keyboard: the screen that opens it. A shortcut,
      * never the only way in — whatever opens from here is also reachable without the map, by
@@ -314,6 +325,11 @@
   /** The foot of the key, in CSS px: the top of what nothing covers. */
   const keyFoot = () => keyBox?.b ?? 0;
   /**
+   * The right edge of what nothing covers: the controls' column over the canvas, or the canvas's own edge
+   * where the controls are docked in a corner of the page's, under the key, and are no column [dock].
+   */
+  const openRight = () => (dock ? width : (controlsBox?.l ?? width));
+  /**
    * Where the keyboard's reticle sits: the centre of the part of the canvas nothing covers, below the
    * key, left of the controls and above the sheet at whatever height it is now. With the peek alone it
    * sat under a tall key, or the sheet at half, and Enter opened what nobody could see.
@@ -321,7 +337,7 @@
   const reticle = (): [number, number] => {
     const floor = height - Math.max(inset, sheet);
     const top = keyFoot();
-    return [(controlsBox?.l ?? width) / 2, floor - top > 24 ? (top + floor) / 2 : Math.max(0, floor) / 2];
+    return [openRight() / 2, floor - top > 24 ? (top + floor) / 2 : Math.max(0, floor) / 2];
   };
 
   let queued = false;
@@ -1020,7 +1036,7 @@
     const h = chipEl.offsetHeight;
     const pad = CHIP_PAD;
     const floor = height - Math.max(inset, sheet) - pad;
-    const right = (controlsBox?.l ?? width) - pad;
+    const right = openRight() - pad;
     const { x, y } = chip;
     const off = (l: number, t: number) => x < l - 4 || x > l + w + 4 || y < t - 4 || y > t + h + 4;
     const clear = ([l, t]: [number, number]) =>
@@ -1140,7 +1156,7 @@
     return shape?.bbox ?? null;
   }
   function bring([x0, y0, x1, y1]: [number, number, number, number]) {
-    const right = controlsBox?.l ?? width;
+    const right = openRight();
     const top = keyFoot();
     const floor = height - Math.max(inset, reach, sheet);
     if (right <= 2 * GAP || floor - top <= 2 * GAP) return;
@@ -1214,6 +1230,39 @@
   function world() {
     least = 0;
     cx = 0.5;
+    // Corners over the canvas's corners: the whole Earth, as large as the screen allows, centred, with the
+    // corners over the room its outline leaves at the edges [corners].
+    // Above whatever sheet is open now, so what a tap opened stays in view over it; and below a corner's
+    // foot where the Earth fits there, which on an upright phone it does.
+    if (corners.length > 0) {
+      // Clear of an open sheet by the gap kept everywhere else, so its edge never takes the poles.
+      const under = Math.max(inset, sheet);
+      const floor = height - under - (under > 0 ? GAP : 0);
+      scale = Math.min(width, floor / HEIGHT);
+      if (scale < width) least = scale;
+      const centredBelow = (top: number) => HEIGHT / 2 + (height - top - floor) / 2 / scale;
+      const lines = [...new Set([0, ...covers.map((c) => c.b)])].filter((top) => top >= 0 && floor - top >= HEIGHT * scale).sort((a, b) => a - b);
+      for (const line of lines) {
+        cy = centredBelow(line);
+        if (!earthCovered()) return clamp();
+      }
+      // Where no line leaves it clear at that size, smaller: the whole Earth between the corners at the top
+      // and whatever is at the foot, a sheet or the corners there, so the corners stay over its edges' room.
+      // Not below two fifths of the width, where it would be a thumbnail: as large as it fits then, and the
+      // corners over some of it.
+      const upper = (c: Box) => c.t + c.b < height;
+      const top = Math.max(0, ...covers.filter(upper).map((c) => c.b + GAP));
+      const foot = Math.min(under > 0 ? floor : floor - GAP, ...covers.filter((c) => !upper(c)).map((c) => c.t - GAP));
+      const fits = Math.min(width, (foot - top) / HEIGHT);
+      if (fits >= width * 0.4) {
+        scale = fits;
+        if (scale < width) least = scale;
+        cy = HEIGHT / 2 + (height - top - foot) / 2 / scale;
+        return clamp();
+      }
+      cy = centredBelow(0);
+      return clamp();
+    }
     for (const floor of [height - Math.max(inset, reach), height - inset]) {
       scale = width;
       const centredBelow = (top: number) => HEIGHT / 2 + (height - top - floor) / 2 / scale;
@@ -1354,6 +1403,8 @@
    */
   let creditShown = $state(true);
   let creditMax = $state<number | null>(null);
+  /** CSS px the credit is lifted above the sheet's line, clear of the page's corners over the map's foot. */
+  let creditLift = $state(0);
   /**
    * Measures again, once the map has mounted. The key's own box does not change when a line arrives that
    * its cap already cuts, so the cap is worked out again whenever its lines do: a key cut to one line
@@ -1366,6 +1417,7 @@
     const el = canvas;
     // The map's own lines go into the page's key, so the key is one panel [cover].
     if (cover && moreEl) cover.append(moreEl);
+    if (dock && controlsEl) dock.append(controlsEl);
 
     const size = () => {
       const box = el.getBoundingClientRect();
@@ -1388,7 +1440,9 @@
         // nothing where the Earth needs the room (320 × 568, signed on, at half: 2026-11-01).
         const whole = first ? Math.max(1, Math.round(first.height / line)) : 0;
         const was = room;
-        room = Math.max(whole, Math.min(3, Math.floor((height - reach - EARTH - GAP - top - 8) / line))) * line;
+        // In a corner, its own padding and edge and the gap above the sheet come off the room too.
+        const edge = corners.length > 0 ? 8 + GAP + 2 * GAP : 8;
+        room = Math.max(whole, Math.min(3, Math.floor((height - reach - EARTH - GAP - top - edge) / line))) * line;
         cut = moreEl.scrollHeight > moreEl.clientHeight + 1;
         // The key is measured below before its new cap is drawn: measured again once it is, so the
         // opening view is fitted to the key as it stands (a key cut from three lines to two left the
@@ -1400,13 +1454,22 @@
       }
       keyBox = boxOf(cover);
       controlsBox = boxOf(controlsEl);
-      chipMax = controlsBox ? Math.max(120, controlsBox.l - 2 * CHIP_PAD) : null;
+      chipMax = controlsBox ? Math.max(120, openRight() - 2 * CHIP_PAD) : null;
+      // A corner a sheet has hidden covers nothing.
+      const shownCorners = corners.filter((c) => getComputedStyle(c).visibility !== 'hidden');
+      // The credit goes above the corners over the map's foot, where it was under them and unseen: the
+      // credit is what a CC BY layer asks for, on the map (2026-11-05).
+      const footLine = height - sheet;
+      const wasLift = creditLift;
+      creditLift = Math.max(0, ...shownCorners.map(boxOf).filter((c): c is Box => c !== null && c.b > footLine - 24 && c.t < footLine).map((c) => Math.ceil(footLine - c.t)));
       // At full the sheet leaves a strip the key covers; elsewhere the credit is one line above the sheet.
-      creditShown = height - sheet > (keyBox?.b ?? 0) + 24;
-      const creditTop = height - sheet - 4 - 18;
+      creditShown = footLine - creditLift > (keyBox?.b ?? 0) + 24;
+      const creditTop = footLine - creditLift - 4 - 18;
       creditMax = controlsBox && creditTop < controlsBox.b + 4 ? controlsBox.l - 8 - 12 : width - 16;
       creditBox = creditShown ? boxOf(creditEl) : null;
-      layerData.covers = covers = [keyBox, controlsBox].filter((c): c is Box => c !== null);
+      // Measured again once it is lifted, so the names keep above where it is rather than where it was.
+      if (creditLift !== wasLift) void tick().then(size);
+      layerData.covers = covers = [keyBox, controlsBox, ...shownCorners.map(boxOf)].filter((c): c is Box => c !== null);
       // Capped at 2: a 3x phone would quadruple the pixels filled for no visible gain.
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       el.width = Math.round(width * dpr);
@@ -1417,7 +1480,7 @@
       request();
     };
     const observer = new ResizeObserver(size);
-    for (const watched of [el, insetEl, reachEl, sheetEl, cover, moreEl, creditEl]) if (watched) observer.observe(watched);
+    for (const watched of [el, insetEl, reachEl, sheetEl, cover, moreEl, creditEl, ...corners]) if (watched) observer.observe(watched);
     resize = size;
     size();
 
@@ -1704,6 +1767,12 @@
       tap = null;
       onPointerUp(e);
     }}
+    ontouchend={(e) => {
+      // A finger's tap is the map's, click and all. What it opens comes up under the finger, Com's head
+      // among it, and the click a phone sends once the finger lifts landed on Close and shut it again
+      // (2026-11-05). Every gesture here is the canvas's own [touch-action: none].
+      e.preventDefault();
+    }}
     onkeydown={onKey}
     onfocus={() => {
       // The reticle is the keyboard's: a tap or a click focuses the canvas too, and shows none.
@@ -1725,7 +1794,7 @@
   <!-- What is under the pointer or the reticle, as seen; what a screen reader is told is beside it. -->
   <div class="chip" bind:this={chipEl} aria-hidden="true" data-chip style:left="{chipAt.left}px" style:top="{chipAt.top}px" style:max-width={chipMax === null ? null : `${chipMax}px`}>{chip?.text ?? ''}</div>
   <div class="sr" role="status" data-said>{said}</div>
-  {#if credit && creditShown}<small class="credit" bind:this={creditEl} data-credit style:max-width={creditMax === null ? null : `${creditMax}px`}>{credit}</small>{/if}
+  {#if credit && creditShown}<small class="credit" bind:this={creditEl} data-credit style:max-width={creditMax === null ? null : `${creditMax}px`} style:bottom={creditLift > 0 ? `calc(var(--map-sheet, var(--map-inset, 0px)) + ${creditLift + 4}px)` : null}>{credit}</small>{/if}
   <!--
     The map's own lines in the key, moved into the page's key as the map mounts [cover]: what the layer
     is, whose and how old, a line each, and what each mark the overlays draw means, drawn as the canvas
@@ -1740,14 +1809,16 @@
     </li>
   {/snippet}
   <div class="key-more" bind:this={moreEl} data-key-more data-cut={cut || null} style:max-height={room === null ? null : `${room}px`}>{#if keyLines.length > 0}<p data-legend={mapLayers.chosen}>{#each keyLines as k, n (n)}{#if n > 0}<span class="sr">{'. '}</span>{/if}<span class="line">{k.line}</span>{/each}</p>{/if}{#if swatches.length > 0}<ul class="swatches" data-swatches aria-label="Map key">{#each swatches as s (s.text)}{@render swatch(s)}{/each}</ul>{/if}</div>
-  <div class="controls" bind:this={controlsEl}>
+  <div class="controls" class:docked={!!dock} bind:this={controlsEl}>
     <button type="button" aria-label="Zoom in" onclick={() => zoomAt(1.5)}>+</button>
     <button type="button" aria-label="Zoom out" onclick={() => zoomAt(1 / 1.5)}>−</button>
     <button type="button" aria-label="Show the whole map" onclick={reset}>⌂</button>
-    <!-- What the map divides the Earth by: chosen in Com, so nothing it opens can cover Distress [com.md §4]. -->
-    <button type="button" aria-label="Map layers" data-layers disabled={status !== 'ready' || !onpick} onclick={() => onpick?.({ kind: 'layers' })}>
-      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 4 3 9l9 5 9-5zm-9 9 9 5 9-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" /></svg>
-    </button>
+    <!-- What the map divides the Earth by: chosen in Com, so nothing it opens can cover Distress [com.md §4]. Docked, the corner it is in opens them. -->
+    {#if !dock}
+      <button type="button" aria-label="Map layers" data-layers disabled={status !== 'ready' || !onpick} onclick={() => onpick?.({ kind: 'layers' })}>
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 4 3 9l9 5 9-5zm-9 9 9 5 9-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" /></svg>
+      </button>
+    {/if}
   </div>
   {#if status === 'failed'}
     <!-- Offline is a normal state here [C10]. Say what happened rather than show an empty box. -->
@@ -1954,6 +2025,19 @@
     }
   }
   .controls button:focus-visible { outline: 2px solid var(--t-ink); outline-offset: 1px; }
+  /* In a corner of the page's: a row inside it, at the floor's 48 px. */
+  .controls.docked {
+    position: static;
+    flex-direction: row;
+    gap: 0.25rem;
+  }
+  .controls.docked button {
+    width: 3rem;
+    min-width: 3rem;
+    height: 3rem;
+    min-height: 3rem;
+    font-size: 1.2rem;
+  }
   .controls svg {
     display: block;
     margin: auto;

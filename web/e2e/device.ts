@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
-import type { Page, Response } from '@playwright/test';
+import { expect, type Page, type Response } from '@playwright/test';
 import type { AccruingField, WipeableField } from '../src/lib/terminal/fields';
 
 /** The URL pattern of the chunk a module was split into, read from the build under test. */
@@ -467,6 +467,38 @@ export async function open(page: Page, path: string): Promise<Response | null> {
   const response = await page.goto(path);
   await page.waitForSelector('html[data-hydrated="true"]', { timeout: 15_000 });
   return response;
+}
+
+/*
+ * The landing page's corners [com.md §3, 2026-11-05]. The map is the whole screen and nothing is open
+ * over it until a corner is tapped: what was on Com's root, the search and your own missions, is now
+ * behind Find and You. These open them as a person does, by the corner, and wait for what opened.
+ */
+
+/** Find, with the cursor in the search, as it opens. */
+export async function openFind(page: Page): Promise<void> {
+  await page.locator('[data-find-open]').click();
+  await expect(page.locator('[data-root="find"]')).toBeVisible();
+  await expect(page.locator('#lookup')).toBeFocused();
+}
+
+/** You, on a device with a profile: your missions, for an operator, and your profile and status. */
+export async function openYou(page: Page): Promise<void> {
+  await page.locator('[data-terminal-link]').click();
+  await expect(page.locator('[data-root="you"]')).toBeVisible();
+}
+
+/** Back to the map with nothing open over it, a step at a time, by Back and Close in Com's head. */
+export async function toMap(page: Page): Promise<void> {
+  const com = page.locator('[data-com]');
+  for (let i = 0; i < 8 && (await com.getAttribute('data-detent')) !== 'closed'; i++) {
+    const was = await page.evaluate(() => JSON.stringify(history.state));
+    await page.locator('[data-back]').click();
+    await page.waitForFunction((was) => JSON.stringify(history.state) !== was, was);
+    // The step drawn, so the next read of the sheet is of where it went rather than where it was.
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(null))));
+  }
+  await expect(com).toHaveAttribute('data-detent', 'closed');
 }
 
 /**

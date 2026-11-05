@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure';
-import { blankDevice, chunkOf, open, seedDevice } from './device';
+import { blankDevice, chunkOf, open, openFind, openYou, seedDevice, toMap } from './device';
 import { frame, inkNear, mapReady, pixelAt, placesOff, screenAt, tap, tapAt, toneNear, zoomAt } from './map';
-import { METRES_PER_UNIT } from '../src/lib/grid/topology';
+import { HEIGHT, METRES_PER_UNIT } from '../src/lib/grid/topology';
 import { admit, mission, resign, standInKey, type StandIn } from './registry';
 import { serveHazards } from './hazards';
 import { serveZones } from './zsp';
@@ -107,24 +107,26 @@ const EVERYWHERE = [
 ] as const;
 
 /*
- * The opening view on the phones the project claims, where the world is a short band and the key and
- * the map's controls take a real share of the screen. Signed on, the Distress strip takes its height
- * too. Equal Earth made the world half as tall as it is wide, and centred above the sheet it sat under
- * the key: Britain was under it on a 375 × 667 phone, and Tokyo under the controls (2026-10-19). And at
- * half, where every screen the map opens comes up, the layer picker among them, the sheet covered the
- * southern half of it. The world now sits clear of all of them, narrower where it has to be.
+ * The opening view on the phones the project claims, where the world is a short band and the corners
+ * over it, the Map's key and controls among them, take a real share of the screen. Signed on, the
+ * Distress strip takes its height too. Equal Earth made the world half as tall as it is wide, and
+ * centred above the sheet it sat under the key: Britain was under it on a 375 × 667 phone, and Tokyo
+ * under the controls (2026-10-19). And at half, where every screen the map opens comes up, the layer
+ * picker among them, the sheet covered the southern half of it. The world now sits clear of all of
+ * them, narrower where it has to be. Since 2026-11-05 nothing is open until a corner is tapped
+ * [com.md §3], so the opening view is the map alone.
  */
 for (const viewport of [{ width: 393, height: 727 }, { width: 375, height: 667 }, { width: 320, height: 568 }]) {
   test.describe(`the opening view on a ${viewport.width} × ${viewport.height} phone`, () => {
     test.use({ viewport });
 
     for (const signedOn of [false, true]) {
-      test(`${signedOn ? 'signed on' : 'not signed on'}: the whole Earth, and none of it under the key, the controls or the sheet`, async ({ page }) => {
+      test(`${signedOn ? 'signed on' : 'not signed on'}: the whole Earth, and none of it under the corners, the controls or the sheet`, async ({ page }) => {
         await seedDevice(page, signedOn ? { callsign: 'kestrel', relayEvents: [] } : { __noStorage: true });
         await open(page, '/');
         await mapReady(page);
         await frame(page);
-        await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'peek');
+        await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'closed');
         for (const [name, lon, lat] of EVERYWHERE) {
           expect((await screenAt(page, lon, lat)).uncovered, `${name} is on screen and uncovered`).toBe(true);
         }
@@ -229,7 +231,7 @@ test.describe('the landing map draws, and tells nobody', () => {
     expect((await picture(page)).hash).not.toBe(zoomed.hash);
   });
 
-  test('it opens on the whole Earth, above the sheet, and nothing moves it until a person does', async ({ page }) => {
+  test('it opens on the whole Earth, clear of the corners, and nothing moves it until a person does', async ({ page }) => {
     /*
      * Rewritten on purpose (2026-10-18). It was "it opens on the regions, not on Greenwich": the
      * opening view framed where most regions are, and 1,889 of the 1,912 are in the US, so it
@@ -245,8 +247,8 @@ test.describe('the landing map draws, and tells nobody', () => {
     await regions;
     await frame(page);
     expect(await canvas.getAttribute('data-view'), 'the regions arriving moved the map').toBe(opened);
-    // Every inhabited continent, above the sheet at peek, and none of it under the map's key.
-    await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'peek');
+    // Every inhabited continent, with nothing open over the map, and none of it under a corner.
+    await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'closed');
     for (const [name, lon, lat] of EVERYWHERE) {
       expect((await screenAt(page, lon, lat)).uncovered, `${name} is on screen and uncovered`).toBe(true);
     }
@@ -295,27 +297,42 @@ test.describe('the landing map draws, and tells nobody', () => {
     expect(await uncovered(way)).toBe(true);
   });
 
-  test('the map centres above the sheet by the sheet’s own height, given once', async ({ page }) => {
+  /*
+   * It was "the map centres above the sheet by the sheet's own height, given once": the peek, a fixed
+   * 12.75rem the map was told and the sheet was drawn at. There is no peek since 2026-11-05 [com.md §3]:
+   * with nothing open the map has the whole screen, and the Earth its full width on an upright phone;
+   * once a corner opens Com at half, the whole Earth above the sheet, by the height the sheet is drawn at.
+   */
+  test('the whole Earth at full width with nothing open, and above the sheet, by its own height, once something opens', async ({ page }) => {
     await ready(page);
-    await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'peek');
-    const [inset, sheet] = await page.evaluate(() =>
-      ['.grid .inset', '[data-com]'].map((q) => document.querySelector(q)!.getBoundingClientRect().height)
+    const canvas = page.locator('.grid canvas');
+    /** The Earth's box on screen, from the view the canvas is drawing. */
+    const earth = () =>
+      canvas.evaluate((c: HTMLCanvasElement, H) => {
+        const [cx, cy, scale] = (c.dataset.view ?? '').split(' ').map(Number) as [number, number, number];
+        const r = c.getBoundingClientRect();
+        const top = r.top + r.height / 2 - cy * scale;
+        const left = r.left + r.width / 2 - cx * scale;
+        return { top, foot: top + H * scale, left, right: left + scale, canvasTop: r.top, canvasWidth: r.width };
+      }, HEIGHT);
+    await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'closed');
+    const closed = await earth();
+    expect(Math.abs(closed.right - closed.left - closed.canvasWidth), `the Earth is ${closed.right - closed.left}px of a ${closed.canvasWidth}px screen`).toBeLessThanOrEqual(1);
+    expect(closed.left).toBeGreaterThanOrEqual(-1);
+
+    await openFind(page);
+    await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'half');
+    // The sheet eases to its height over 0.2 s; the map is told it at once.
+    await page.waitForTimeout(400);
+    await frame(page);
+    const [told, sheet] = await page.evaluate(() =>
+      ['.grid .inset.sheet', '[data-com]'].map((q) => document.querySelector(q)!.getBoundingClientRect().height)
     );
-    expect(Math.abs(inset! - sheet!), `the map keeps ${inset}px clear, and the sheet is ${sheet}px`).toBeLessThanOrEqual(1);
-    // One number, so a change to the sheet cannot leave the map centring above where it was.
-    const copies = await page.evaluate(() =>
-      [...document.styleSheets]
-        .flatMap((s) => {
-          try {
-            return [...s.cssRules].map((r) => r.cssText);
-          } catch {
-            return [];
-          }
-        })
-        .join('\n')
-        .match(/12\.75rem/g)?.length ?? 0
-    );
-    expect(copies).toBe(1);
+    expect(Math.abs(told! - sheet!), `the map keeps ${told}px clear, and the sheet is ${sheet}px`).toBeLessThanOrEqual(1);
+    const half = await earth();
+    const sheetTop = (await page.locator('[data-com]').boundingBox())!.y;
+    expect(half.foot, 'the Earth runs under the sheet at half').toBeLessThanOrEqual(sheetTop + 1);
+    expect(half.top, 'the Earth runs off the top of the screen at half').toBeGreaterThanOrEqual(half.canvasTop - 1);
   });
 
   test('a device set to low signature gets the map in low signature, not at full brightness', async ({ page }) => {
@@ -502,24 +519,46 @@ test.describe('the landing map without its script', () => {
 });
 
 test.describe('the landing page: Com over the map', () => {
-  const detentOf = (page: Page) => page.locator('[data-com]').getAttribute('data-detent');
-  /** One tap on the handle moves one step: peek → half → full → peek. */
-  async function setDetent(page: Page, want: 'peek' | 'half' | 'full') {
-    for (let i = 0; i < 3 && (await detentOf(page)) !== want; i++) {
+  /** One tap on the handle moves one step: half ⇄ full. Closed is no height: it is Close, Escape or Back. */
+  async function setDetent(page: Page, want: 'half' | 'full') {
+    for (let i = 0; i < 2 && (await page.locator('[data-com]').getAttribute('data-detent')) !== want; i++) {
       await page.locator('.grab').click();
     }
     await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', want);
   }
+  /** On screen whole, at the thumb floor, and the thing a tap at its centre lands on. */
+  async function inReach(locator: Locator, name: string) {
+    await expect(locator, name).toBeInViewport({ ratio: 1 });
+    expect((await locator.boundingBox())!.height, `${name} is under the 48px thumb floor`).toBeGreaterThanOrEqual(48);
+    expect(await uncovered(locator), `something covers ${name}`).toBe(true);
+  }
 
-  test('somebody who needs a place sees the search at once, and no Distress they cannot use', async ({ page }) => {
+  /*
+   * It was "sees the search at once", in a peek that held the whole field. Since 2026-11-05 the map is
+   * the whole screen [com.md §3]: the search is the Find corner, there at once at the thumb's foot, and
+   * a tap opens it with the cursor already in it.
+   */
+  test('somebody who needs a place finds Find at once, which opens the search with the cursor in it, and no Distress they cannot use', async ({ page }) => {
     // Search first [com.md §2]: the landing page is also where somebody looks for a bed
     // tonight, and a form in front of the search would make them meet a sign-up first.
     await blankDevice(page);
     await open(page, '/');
-    await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'peek');
+    await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'closed');
+    const find = page.locator('[data-find-open]');
+    await inReach(find, 'Find');
+    await expect(find).toContainText('Find');
+    await expect(page.locator('.distress-layer')).toBeHidden();
+    // And joining is right there in the other corner at the foot, for the person who came to help.
+    const join = page.getByRole('link', { name: /create profile/i });
+    await expect(join).toHaveCount(1);
+    await inReach(join, 'Create profile');
+    await expect(join).toHaveAttribute('href', '/terminal/setup/');
+
+    await find.click();
+    const search = page.getByLabel(/where are you, or what do you need/i);
+    await expect(search).toBeFocused();
     // All of it, not a sliver: an earlier layout passed a looser check with only the field's top
     // edge on screen, because the page was sized taller than the phone it was on.
-    const search = page.getByLabel(/where are you, or what do you need/i);
     await expect(search).toBeInViewport({ ratio: 1 });
     // And nothing floats over it.
     const clear = await search.evaluate((el) => {
@@ -528,29 +567,77 @@ test.describe('the landing page: Com over the map', () => {
       return hit === el || el.contains(hit);
     });
     expect(clear).toBe(true);
-    await expect(page.locator('.distress-layer')).toBeHidden();
-    // And joining is right there in the sheet's head, at its lowest, for the person who came to help.
-    const join = page.getByRole('link', { name: /create profile/i });
-    await expect(join).toHaveCount(1);
-    await expect(join).toBeInViewport({ ratio: 1 });
   });
 
-  test('typing lifts the sheet so the results can be seen', async ({ page }) => {
+  /* It was "typing lifts the sheet": the search sat in a peek too short for its results. Find opens at half. */
+  test('Find opens at half, so what it finds is in view as it is typed', async ({ page }) => {
     await blankDevice(page);
     await open(page, '/');
-    await page.getByLabel(/where are you, or what do you need/i).focus();
+    await openFind(page);
     await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'half');
+    await page.locator('#lookup').fill('philadelphia');
+    const first = page.locator('.nc-results li a').first();
+    await expect(first).toBeVisible({ timeout: 10_000 });
+    await expect(first).toBeInViewport({ ratio: 1 });
+    expect(await uncovered(first), 'the first result is under something').toBe(true);
   });
 
-  test('the handle steps the sheet through its three heights, by touch and by key', async ({ page }) => {
+  /* It was three heights, peek, half and full. There is no peek: closed is the map [com.md §3]. */
+  test('the handle steps the sheet between its two heights, by touch and by key, and Close, Escape and a drag down return to the map', async ({ page }) => {
     await blankDevice(page);
     await open(page, '/');
-    await setDetent(page, 'half');
+    await openFind(page);
+    await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'half');
+    await expect(page.locator('.grab')).toHaveAttribute('aria-label', 'Show more');
     await setDetent(page, 'full');
     await expect(page.locator('.grab')).toHaveAttribute('aria-label', 'Show less');
     await page.locator('.grab').focus();
     await page.keyboard.press('Enter');
-    await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'peek');
+    await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'half');
+    // Close, with nothing under the Find view: back to the map, and its four corners.
+    const back = page.locator('[data-back]');
+    await expect(back).toHaveText('Close');
+    await back.click();
+    await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'closed');
+    for (const corner of ['missions', 'map', 'find', 'you']) await expect(page.locator(`[data-corner="${corner}"]`), corner).toBeVisible();
+    // Escape, with focus in Com, does the same.
+    await openFind(page);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'closed');
+    // And a drag down from half, on the handle.
+    await openFind(page);
+    const grab = (await page.locator('.grab').boundingBox())!;
+    await page.mouse.move(grab.x + grab.width / 2, grab.y + grab.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(grab.x + grab.width / 2, grab.y + grab.height / 2 + 120, { steps: 4 });
+    await page.mouse.up();
+    await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'closed');
+    expect(new URL(page.url()).pathname).toBe('/');
+  });
+
+  test('what is open over the map can be switched from a top corner, which the sheet leaves in view', async ({ page }) => {
+    await seedDevice(page, { callsign: 'kestrel', relayEvents: [] });
+    await open(page, '/');
+    await mapReady(page);
+    await openYou(page);
+    // On an upright phone the sheet takes the foot, and the corners there with it; the top two stay.
+    await expect(page.locator('[data-corner="find"]')).toBeHidden();
+    await expect(page.locator('[data-corner="you"]')).toBeHidden();
+    await inReach(page.getByRole('button', { name: 'Map layers' }), 'the Map corner');
+    await page.getByRole('button', { name: 'Map layers' }).click();
+    await expect(page.locator('[data-screen="layers"]')).toBeVisible();
+    await expect(page.locator('[data-root="you"]')).toHaveCount(0);
+    // A step back from here is to You, not the map, and the head says so.
+    await expect(page.locator('[data-back]')).toHaveText('Back');
+    await page.locator('[data-back]').click();
+    await expect(page.locator('[data-root="you"]')).toBeVisible();
+    await expect(page.locator('[data-back]')).toHaveText('Close');
+    // And from You, Your missions: Back to You.
+    await page.locator('[data-yours]').click();
+    await expect(page.locator('[data-screen="yours"]')).toBeVisible();
+    await expect(page.locator('[data-back]')).toHaveText('Back');
+    await toMap(page);
+    await expect(page.locator('[data-corner="you"]')).toBeVisible();
   });
 
   // Distress at every height, with and without a screen open, is com-distress.spec.ts.
@@ -649,8 +736,9 @@ test.describe('the landing page: missions you can open', () => {
     await expect(place.locator('[data-post]').first()).toHaveText('California');
     await expect(place.locator(`[data-mission="${HEAT_D}"]`)).toBeVisible();
 
+    // Close: nothing was under it, so the map with nothing open.
     await page.locator('[data-back]').click();
-    await expect(page.getByLabel(/where are you, or what do you need/i)).toBeVisible();
+    await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'closed');
 
     await page.locator('[data-missions="open"]').click();
     await page.locator(`[data-mission="${HEAT_D}"]`).click();
@@ -675,7 +763,7 @@ test.describe('the landing page: missions you can open', () => {
     await expect(unknown).toContainText('Not in this version');
     await expect(unknown).toContainText('another version of NavCom opened this screen');
     await page.locator('[data-back]').click();
-    await expect(page.getByLabel(/where are you, or what do you need/i)).toBeVisible();
+    await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'closed');
   });
 
   test.describe('when the code for Com’s screens cannot arrive', () => {
@@ -730,7 +818,7 @@ test.describe('the landing page: missions you can open', () => {
       await page.locator('[data-missions="open"]').click();
       await expect(page.locator('[data-screen-failed]')).toContainText('Not loaded — it needs one visit with a connection');
       await page.locator('[data-back]').click();
-      await expect(page.getByLabel(/where are you, or what do you need/i)).toBeVisible();
+      await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'closed');
       await page.locator('[data-missions="open"]').click();
       await reloadIntoMissions(page);
     });
@@ -903,8 +991,8 @@ test.describe('the landing page: missions you can open', () => {
 
   test('an operator reports the work the day after, and sees it wait to settle', async ({ page }) => {
     await withHeat(page, { __noStorage: false, callsign: 'kestrel' });
-    // Signed on, Com's root starts with your own situation [com.md §2].
-    await expect(page.locator('[data-yours]')).toBeVisible();
+    // Signed on, the You corner says your own situation over the map [com.md §2, §3].
+    await expect(page.locator('[data-terminal-link]')).toContainText('kestrel · nothing claimed');
     await page.locator('[data-missions="open"]').click();
     await page.locator(`[data-mission="${HEAT_D}"]`).click();
     await page.getByRole('button', { name: 'Take part' }).click();
@@ -916,6 +1004,8 @@ test.describe('the landing page: missions you can open', () => {
     await page.locator('[data-back]').click();
     await expect(page.locator('[data-screen="missions"]')).toBeVisible();
     await page.locator('[data-back]').click();
+    await expect(page.locator('[data-terminal-link]')).toContainText('kestrel · 1 held');
+    await openYou(page);
     await page.locator('[data-yours]').click();
     await expect(page.locator(`[data-report-mission="${HEAT_D}"]`)).toContainText('reports open tomorrow');
 
@@ -923,6 +1013,7 @@ test.describe('the landing page: missions you can open', () => {
     await page.clock.setFixedTime(new Date(DURING.getTime() + 86_400_000));
     await open(page, '/');
     await expect(page.locator('[data-missions="open"]')).toContainText('Open missions · live', { timeout: 15_000 });
+    await openYou(page);
     await page.locator('[data-yours]').click();
     await expect(page.locator('[data-screen="yours"]')).toContainText('Heat relief');
     await page.locator(`[data-report-mission="${HEAT_D}"]`).click();
@@ -1206,16 +1297,20 @@ test.describe('the landing page: missions you can open', () => {
     }
   });
 
-  test('signed out, Com’s root is the search, with no missions of your own above it', async ({ page }) => {
+  test('signed out, the You corner is Create profile, and Find is the search, with no missions of your own above it', async ({ page }) => {
     await withHeat(page);
+    await expect(page.locator('[data-corner="you"] [data-create-profile]')).toHaveAttribute('href', '/terminal/setup/');
+    await expect(page.locator('[data-yours]')).toHaveCount(0);
+    await openFind(page);
     await expect(page.locator('[data-yours]')).toHaveCount(0);
   });
 
-  /** The Yours panel's header on the signed-in root. */
+  /** The Yours panel's header on the You view, which the You corner opens. */
   const yoursPost = (page: Page) => page.locator('section.nc-panel', { has: page.locator('[data-yours]') }).locator('[data-post]');
 
   test('the claim slot reads nothing claimed rather than disappearing [com.md §7; audit 11.I]', async ({ page }) => {
     await withHeat(page, { __noStorage: false, callsign: 'kestrel' });
+    await openYou(page);
     await expect(yoursPost(page)).toHaveText('nothing claimed');
     await page.locator('[data-missions="open"]').click();
     await page.locator(`[data-mission="${HEAT_D}"]`).click();
@@ -1234,6 +1329,9 @@ test.describe('the landing page: missions you can open', () => {
     await page.locator('[data-back]').click();
     await page.locator('[data-back]').click();
     await expect(yoursPost(page)).toHaveText('nothing claimed');
+    // And the You corner over the map, the same slot in the same words.
+    await toMap(page);
+    await expect(page.locator('[data-terminal-link]')).toContainText('kestrel · nothing claimed');
   });
 
   test('a release no relay confirmed stays on the mission, with a control that sends it once there is signal [audit 11.S, finding 66]', async ({ page }) => {
@@ -1291,7 +1389,9 @@ test.describe('the landing page: missions you can open', () => {
     await expect(page.locator('[data-screen="missions"]')).toBeVisible();
     await expect(page.locator('.distress-layer a')).toBeVisible();
     await page.goBack();
-    await expect(page.getByLabel(/where are you, or what do you need/i)).toBeVisible();
+    // The map with nothing open, where the list was opened from.
+    await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'closed');
+    await expect(page.locator('[data-missions="open"]')).toBeVisible();
     expect(new URL(page.url()).pathname).toBe('/');
     // Forward walks the same history back in, and the in-sheet Back still steps one screen.
     await page.goForward();
@@ -1303,18 +1403,34 @@ test.describe('the landing page: missions you can open', () => {
     // must go to the root too, not into the screen that was open before the reload.
     await page.reload();
     await page.waitForSelector('html[data-hydrated="true"]', { timeout: 15_000 });
-    const root = page.getByLabel(/where are you, or what do you need/i);
-    await expect(root).toBeVisible();
+    const closed = page.locator('[data-com][data-detent="closed"]');
+    await expect(closed).toHaveCount(1);
     await page.locator('[data-missions="open"]').click();
     await expect(page.locator('[data-screen="missions"]')).toBeVisible();
     await page.locator('[data-back]').click();
-    await expect(root).toBeVisible();
+    await expect(closed).toHaveCount(1);
+    expect(new URL(page.url()).pathname).toBe('/');
   });
 
   test('Com’s own controls are at the terminal’s thumb floor [tokens.css; audit 11.I]', async ({ page }) => {
     // 48px is the floor. The handle was 36px and the only way to move the sheet by touch; a tap
     // that missed it landed on the map, where a lit province opens a different screen.
     await withHeat(page, { __noStorage: false, callsign: 'kestrel' });
+    await mapReady(page);
+    // The corners, with nothing open: each the way into what it holds.
+    for (const [name, sel] of [
+      ['the missions line', '[data-missions="open"]'],
+      ['the Map corner', '[data-layers]'],
+      ['Find', '[data-find-open]'],
+      ['Places', '[data-corner="find"] button.layer'],
+      ['You', '[data-terminal-link]'],
+      ['the display toggle in the You corner', '[data-signature-toggle]']
+    ]) {
+      const box = await page.locator(sel).boundingBox();
+      expect(box, name).not.toBeNull();
+      expect(box!.height, name).toBeGreaterThanOrEqual(48);
+    }
+    await openYou(page);
     await page.locator('[data-yours]').click();
     for (const [name, sel] of [
       ['the sheet handle', '.grab'],
@@ -1328,7 +1444,13 @@ test.describe('the landing page: missions you can open', () => {
     }
   });
 
-  test.describe('on a slow cell, what was done before the page woke up survives it [audit 11.I]', () => {
+  /*
+   * It held a region picked, and words typed, before the page hydrated: the search was in the peek, and
+   * usable from the prerendered HTML. Since 2026-11-05 the search is behind the Find corner [com.md §3],
+   * which before the scripts arrive is what it is in the HTML: a link, to the directory, which needs none.
+   * What a person does before the page wakes up still gets them somewhere real.
+   */
+  test.describe('on a slow cell, what is tapped before the page wakes up still goes somewhere real [audit 11.I]', () => {
     /** Scripts held back, as a congested cell delivers them: the page is there and not yet live. */
     async function slowScripts(page: Page) {
       await page.route('**/_app/immutable/**/*.js', async (route) => {
@@ -1337,27 +1459,31 @@ test.describe('the landing page: missions you can open', () => {
       });
       await blankDevice(page);
       await page.goto('/', { waitUntil: 'commit' });
-      await page.locator('#lookup').waitFor({ state: 'attached' });
+      await page.locator('[data-find-open]').waitFor({ state: 'visible' });
     }
     const awake = (page: Page) => page.locator('html[data-hydrated="true"]').count();
 
-    test('a region picked before hydration stays picked, and loads', async ({ page }) => {
-      // The picker's own label names this case: "No signal, or geolocation said no?"
-      const index = page.waitForRequest('**/console-index/philadelphia.json', { timeout: 15_000 });
+    test('Find, before the page wakes up, is the directory, which needs no script', async ({ page }) => {
       await slowScripts(page);
-      await page.locator('#region-pick').selectOption('philadelphia');
-      expect(await awake(page), 'the pick has to land before the page hydrates, or this tests nothing').toBe(0);
-      await page.waitForSelector('html[data-hydrated="true"]', { timeout: 15_000 });
-      await expect(page.locator('#region-pick')).toHaveValue('philadelphia');
-      await index;
+      await expect(page.locator('[data-find-open]')).toHaveAttribute('href', '/directory/');
+      expect(await awake(page), 'the tap has to land before the page hydrates, or this tests nothing').toBe(0);
+      await page.locator('[data-find-open]').click();
+      await page.waitForURL((u) => u.pathname === '/directory/');
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     });
 
-    test('words typed before hydration lift the sheet so the results can be seen', async ({ page }) => {
+    test('Create profile, before the page wakes up, is the sign-up', async ({ page }) => {
       await slowScripts(page);
-      await page.locator('#lookup').fill('Philadelphia');
-      expect(await awake(page), 'the typing has to land before the page hydrates, or this tests nothing').toBe(0);
+      expect(await awake(page), 'the tap has to land before the page hydrates, or this tests nothing').toBe(0);
+      await page.locator('[data-create-profile]').click();
+      await page.waitForURL((u) => u.pathname === '/terminal/setup/');
+    });
+
+    test('once it wakes, Find opens here instead, with the cursor in the search', async ({ page }) => {
+      await slowScripts(page);
       await page.waitForSelector('html[data-hydrated="true"]', { timeout: 15_000 });
-      await expect(page.locator('#lookup')).toHaveValue('Philadelphia');
+      await openFind(page);
+      expect(new URL(page.url()).pathname).toBe('/');
       await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'half');
     });
   });
@@ -1378,6 +1504,7 @@ test.describe('the landing page: missions you can open', () => {
       await page.route(chunkOf('src/lib/missions/live.ts'), (r) => r.abort());
       await open(page, '/');
       await expect(page.locator('[data-missions="unloaded"]')).toBeVisible({ timeout: 15_000 });
+      await openYou(page);
       await page.locator('[data-yours]').click();
       const held = page.locator(`[data-held$="${HEAT_D}"]`);
       // Which missions are open is not known on this phone right now: that is not "over" [invariant 7].
@@ -1389,22 +1516,54 @@ test.describe('the landing page: missions you can open', () => {
     });
   });
 
+  /*
+   * It was "Com sits beside the map, and covers none of its controls". Since 2026-11-05 Com is a panel
+   * over the map on the side of the corner that opened it [com.md §3], and the corners on that side
+   * move in beside it: every corner and the map's controls stay in reach, whichever is open.
+   */
   test.describe('on a small phone held sideways [audit 11.I]', () => {
     for (const viewport of [{ width: 667, height: 375 }, { width: 640, height: 360 }]) {
       test.describe(`${viewport.width}×${viewport.height}`, () => {
         test.use({ viewport });
 
-        test('Com sits beside the map, and covers none of its controls', async ({ page }) => {
+        test('Com is a panel on the side of the corner that opened it, and every corner and the map’s controls stay in reach', async ({ page }) => {
           // A fixed peek was most of a short screen: half came out shorter than peek, and the sheet
           // covered "Show the whole map" at every height.
           await withHeat(page, { __noStorage: false, callsign: 'kestrel' });
           await expect(page.locator('[data-grid="ready"]')).toBeVisible({ timeout: 15_000 });
-          for (const name of ['Show the whole map', 'Zoom in', 'Zoom out', 'Map layers', 'Places']) {
-            expect(await uncovered(page.getByRole('button', { name })), name).toBe(true);
+          const controls = async (where: string) => {
+            for (const name of ['Show the whole map', 'Zoom in', 'Zoom out', 'Map layers', 'Places']) {
+              expect(await uncovered(page.getByRole('button', { name })), `${name}, ${where}`).toBe(true);
+            }
+            for (const sel of ['[data-missions="open"]', '[data-find-open]', '[data-terminal-link]']) {
+              await expect(page.locator(sel), `${sel}, ${where}`).toBeInViewport({ ratio: 1 });
+              expect(await uncovered(page.locator(sel)), `${sel}, ${where}`).toBe(true);
+            }
+            // Distress, too [invariant 2].
+            expect(await uncovered(page.locator('.distress-layer a')), `Distress, ${where}`).toBe(true);
+          };
+          await controls('with nothing open');
+          const com = page.locator('[data-com]');
+          for (const [corner, side, opens] of [
+            ['missions', 'start', () => page.locator('[data-missions="open"]').click()],
+            ['find', 'start', () => openFind(page)],
+            ['map', 'end', () => page.getByRole('button', { name: 'Map layers' }).click()],
+            ['you', 'end', () => openYou(page)]
+          ] as const) {
+            await opens();
+            await expect(com, corner).toHaveAttribute('data-side', side);
+            await expect(com, corner).not.toHaveAttribute('data-detent', 'closed');
+            // A panel the height of the map, at the opening corner's edge, and no wider than half of it.
+            const box = (await com.boundingBox())!;
+            const nav = (await page.locator('[data-nav]').boundingBox())!;
+            expect(Math.abs(box.y - nav.y), `${corner}: a panel, not a sheet`).toBeLessThan(2);
+            expect(Math.abs(box.height - nav.height), `${corner}: a panel, not a sheet`).toBeLessThan(2);
+            if (side === 'start') expect(box.x, corner).toBeLessThan(nav.x + 2);
+            else expect(box.x + box.width, corner).toBeGreaterThan(nav.x + nav.width - 2);
+            expect(box.width, corner).toBeLessThanOrEqual(nav.width / 2);
+            await controls(`with ${corner} open`);
+            await toMap(page);
           }
-          // Com itself, and Distress, are both there to be reached.
-          expect(await uncovered(page.locator('[data-yours]'))).toBe(true);
-          expect(await uncovered(page.locator('.distress-layer a'))).toBe(true);
         });
       });
     }
@@ -1550,11 +1709,13 @@ test.describe('the landing map: every shape and point is a door [map.md §6]', (
     await expect(page.locator('[data-screen="place"][data-place="ke"]')).toBeVisible();
     await frame(page);
     await expect(page.locator('[data-chip]')).toHaveText('');
-    expect(await inkNear(page, at.x, at.y, 12), 'Kenya’s outline was not lifted').toBeGreaterThan(20);
+    // Read again: with Com open over its foot, the map has re-fitted the Earth above it [com.md §3].
+    const open = await screenAt(page, ...NAIROBI);
+    expect(await inkNear(page, open.x, open.y, 12), 'Kenya’s outline was not lifted').toBeGreaterThan(20);
     await page.locator('[data-back]').click();
     await expect(page.locator('[data-screen="place"]')).toHaveCount(0);
-    await frame(page);
-    expect(await inkNear(page, at.x, at.y, 12), 'Kenya stayed lifted after its place closed').toBe(0);
+    const closed = await screenAt(page, ...NAIROBI);
+    expect(await inkNear(page, closed.x, closed.y, 12), 'Kenya stayed lifted after its place closed').toBe(0);
   });
 
   test('a national mission takes no tap from the states it outlines: a finger on Texas opens Texas, and lists it', async ({ page }) => {
@@ -1650,8 +1811,10 @@ test.describe('the landing map: every shape and point is a door [map.md §6]', (
      */
     await withMissions(page, [HEAT_PACKAGE, library()]);
     await zoomAt(page, ...LIBRARY, 2048);
-    // The wheel's pointer is a mouse, whose hover rings the mission: off the map, onto Com, so only the ring is drawn.
-    await page.locator('[data-com]').hover({ position: { x: 20, y: 20 } });
+    // The wheel's pointer is a mouse, whose hover rings the mission: onto the Map corner, where the map
+    // takes no hover, so only the ring is drawn.
+    const key = (await page.locator('[data-corner="map"]').boundingBox())!;
+    await page.mouse.move(key.x + 3, key.y + key.height - 3);
     await frame(page);
     const [lon, lat] = [Math.round(LIBRARY[0] * 100) / 100, Math.round(LIBRARY[1] * 100) / 100];
     const exact = await screenAt(page, ...LIBRARY);

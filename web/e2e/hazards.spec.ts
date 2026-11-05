@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { chunkOf, open, seedDevice } from './device';
+import { chunkOf, open, seedDevice, toMap } from './device';
 import { hazardFixture, serveHazards } from './hazards';
 import { bring, frame, inkNear, mapReady, screenAt, tap } from './map';
 import { CAPS, HAZARD_FEEDS } from '../src/lib/outside';
@@ -108,9 +108,10 @@ test('draws each event at the point its source gave, in the neutrals, with a key
   await expect(swatches.locator('[data-swatch="triangle-hatched"]')).toHaveText('Volcanoes · 1');
   await expect(swatches.locator('[data-swatch="triangle"]')).toHaveText('Fires · 1');
   await expect(swatches.locator('[data-swatch="diamond-hatched"]')).toHaveText('Droughts · 1');
-  // Sharing lines, so the key takes two lines for five kinds rather than five.
+  // Sharing lines, so the key takes fewer lines than kinds rather than five: three in the Map corner,
+  // half the width of the key that ran across the map's top and took two (2026-11-05, com.md §3).
   const tops = new Set(await swatches.locator('li').evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top))));
-  expect(tops.size, 'a line a kind').toBeLessThanOrEqual(2);
+  expect(tops.size, 'a line a kind').toBeLessThanOrEqual(3);
 });
 
 test('a feed that does not answer reads not read: unknown, on the map and on the screen, never none', async ({ page }) => {
@@ -318,6 +319,8 @@ test.describe('on a desktop, a hover says what is under the pointer', () => {
     await page.clock.setFixedTime(new Date('2026-10-19T13:20:00Z'));
     await landed(page);
     await hazardsOn(page);
+    // The layers closed: on a wide screen they are a panel over the map's end, where Indonesia is.
+    await toMap(page);
     const at = await screenAt(page, ...RUTENG);
     expect(at.uncovered).toBe(true);
     await page.mouse.move(at.x, at.y);

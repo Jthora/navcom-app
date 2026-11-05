@@ -141,13 +141,15 @@
   const clockBehind = $derived((feed.status === 'live' || feed.status === 'cached') && feed.clockBehind);
 
   /*
-   * Com, on a phone, is a sheet over the map with three heights [com.md §3]: peek shows the
-   * search, so somebody who needs a bed tonight can type at once; half shows results; full
-   * shows everything. On a wide screen it is a sidebar and the heights do not apply.
+   * The map is the whole screen, and the page is four corners over it (the owner, 2026-11-05) [com.md
+   * §3]: each a node that says what its corner holds, and a tap on one opens it. Com is where it opens:
+   * on a phone a sheet at half or full, on a wide screen a panel on that corner's side. Closed, there is
+   * only the map and the corners.
    */
-  type Detent = 'peek' | 'half' | 'full';
-  let detent = $state<Detent>('peek');
-  const NEXT: Record<Detent, Detent> = { peek: 'half', half: 'full', full: 'peek' };
+  type Detent = 'half' | 'full';
+  let detent = $state<Detent>('half');
+  const NEXT: Record<Detent, Detent> = { half: 'full', full: 'half' };
+  type Corner = 'missions' | 'map' | 'find' | 'you';
   let dragFrom: number | null = null;
   function grabDown(e: PointerEvent) {
     dragFrom = e.clientY;
@@ -157,18 +159,12 @@
     if (dragFrom === null) return;
     const dy = e.clientY - dragFrom;
     dragFrom = null;
-    if (dy < -40) detent = detent === 'peek' ? 'half' : 'full';
-    else if (dy > 40) detent = detent === 'full' ? 'half' : 'peek';
-    else detent = NEXT[detent];
+    if (dy < -40) detent = 'full';
+    else if (dy > 40) {
+      if (detent === 'full') detent = 'half';
+      else back();
+    } else detent = NEXT[detent];
   }
-  /**
-   * Typing should show what it finds: the search lifts the sheet to half. On focus and on every
-   * keystroke, because a field focused before the page hydrated never fires its focus handler,
-   * and the results sat under the peek's edge however much was typed [audit 11.I].
-   */
-  const lift = () => {
-    if (detent === 'peek') detent = 'half';
-  };
 
   /**
    * Com is a navigation stack whose root is the search [com.md §1, §2]. Which screens there are,
@@ -187,6 +183,18 @@
     return Array.isArray(com) ? (com as unknown[]) : [];
   });
   const top = $derived(stack.at(-1));
+  /** Which corner is open, in the same history: the phone's back closes it as Back does. */
+  const corner = $derived(((page.state as { corner?: unknown }).corner ?? null) as Corner | null);
+  /** Whether this entry was opened over something already open, so that a step back is not to the map. */
+  const over = $derived((page.state as { over?: unknown }).over === true);
+  /** Whether anything is open over the map: a screen, or Find or You, which are this page's own. */
+  const shown = $derived(stack.length > 0 || corner === 'find' || corner === 'you');
+  /** On a wide screen, the side a view opens on: its corner's. What the map opens comes in at the end. */
+  const side = $derived(corner === 'missions' || corner === 'find' ? 'start' : 'end');
+  let lookupEl = $state<HTMLInputElement>();
+  /** The four corners, for the map to keep its names and its opening view clear of [GridMap corners]. */
+  let corners = $state<HTMLElement[]>([]);
+  let dockEl = $state<HTMLElement>();
   /**
    * Com's own code: its screens, and the one component that draws whichever is on top [com.md §6].
    * Imported once, as the page mounts. A failure is final for the page: the browser keeps it, and a
@@ -199,7 +207,7 @@
   let comEl = $state<HTMLElement>();
   /** Escape steps back, when focus is in Com: anywhere else it belongs to whatever has it. */
   function onKey(e: KeyboardEvent) {
-    if (e.key === 'Escape' && stack.length > 0 && comEl?.contains(document.activeElement)) back();
+    if (e.key === 'Escape' && shown && comEl?.contains(document.activeElement)) back();
   }
 
   /** Every screen moves to another through this: no destination needs a callback of its own. */
@@ -210,8 +218,10 @@
    * is arriving shows; then full, if Com says so once it is here, which on a slow cell is later.
    */
   async function open(s: Screen, fresh = false) {
-    pushState('', { com: fresh ? [s] : [...stack, s] });
-    if (detent === 'peek') detent = 'half';
+    const was = shown;
+    const from: Corner | null = s.kind === 'missions' && fresh ? 'missions' : s.kind === 'layers' && fresh ? 'map' : fresh ? null : corner;
+    pushState('', { com: fresh ? [s] : [...stack, s], corner: from, over: was });
+    if (!was) detent = 'half';
     await comArrives;
     if (Com?.SCREENS[s.kind].height === 'full') detent = 'full';
     await Com?.load(s.kind);
@@ -219,9 +229,22 @@
     await tick();
     screenEl?.focus();
   }
-  /** One step back through the same history the system back gesture walks. */
+  /** One step back through the same history the system back gesture walks: off the root, the map. */
   function back() {
-    if (stack.length > 0) history.back();
+    if (shown) history.back();
+  }
+  /**
+   * A corner, opened. Missions and Map open Com's own screens; Find and You are this page's, so the
+   * search works at the first keystroke with nothing to load [com.md §6]. Find puts the cursor in it.
+   */
+  async function enter(c: Corner) {
+    if (c === 'missions') return open({ kind: 'missions', province: null }, true);
+    if (c === 'map') return open({ kind: 'layers' }, true);
+    const was = shown;
+    pushState('', { com: [], corner: c, over: was });
+    if (!was) detent = 'half';
+    await tick();
+    (c === 'find' ? lookupEl : screenEl)?.focus();
   }
 
   /**
@@ -449,9 +472,6 @@
       }
       if (pending) void open({ kind: 'mission', address: pending }, true);
     }, 0);
-    // Focus that arrived before the page hydrated fired no handler: lift for it now [audit 11.I].
-    const early = document.activeElement?.id;
-    if (early === 'lookup' || early === 'region-pick') lift();
 
     void import('$lib/components/grid/GridMap.svelte')
       .then((m) => (GridMap = m.default))
@@ -559,7 +579,7 @@
     separate stations. NavCom fuses them into one post."]. Nav is the map, filling the screen;
     Com is a sheet over it on a phone and a sidebar beside it on a wide screen [com.md §3].
   -->
-  <main class="bridge">
+  <main class="bridge" data-shown={shown || null} data-side={side}>
     <section class="nav" data-nav aria-label="Map">
       {#if GridMap}
         <!-- What each mission lights, and what a tap opens, is the map's own [GridMap]. -->
@@ -571,6 +591,8 @@
           bind:placesStatus
           missionsAge={missionAge || null}
           cover={keyEl}
+          {corners}
+          dock={dockEl}
           label="Map of the Earth, with open missions lit{coverage ? ', and the directory’s places' : ''}"
           onpick={(s) => open(s, true)}
         />
@@ -586,95 +608,129 @@
           </div>
         </div>
       {/if}
-      <div class="nav-key" bind:this={keyEl}>
-        <!--
-          Not "The Watchtower" — that term names a specific node's keypair elsewhere
-          [docs/spec/bootstrap.spec.md]. This is the one screen every kind of visitor sees
-          first, and the product's own name belongs here unqualified.
-        -->
-        <h1>NavCom</h1>
-        {#if missionsUnloaded}
-          <strong data-missions="unloaded">Missions not loaded — they need one visit with a connection</strong>
-        {:else if feed.status === 'connecting'}
-          <strong data-missions="connecting">Reaching The Record…</strong>
-        {:else if feed.status === 'unavailable'}
-          <strong data-missions="unavailable">Missions unavailable — neither The Record nor its mirror can be reached</strong>
-        {:else if active.length === 0 && refused.length === 0}
-          <strong data-missions="none" data-feed={feed.status}>No open missions · {missionAge}</strong>
-        {:else}
-          <!-- The way into the missions that needs no map: a keyboard and a screen reader get here too. -->
-          <button
-            type="button"
-            class="missions-open"
-            data-missions="open"
-            data-feed={feed.status}
-            onclick={() => open({ kind: 'missions', province: null }, true)}
-          ><b class="ring" aria-hidden="true"></b>{active.length > 0 ? 'Open missions' : 'No open missions'} · {missionAge}{#if refused.length > 0}<span data-refused-count> · {refused.length} not read</span>{/if}</button>
-        {/if}
-        {#if clockBehind}<strong data-clock-behind>This phone's clock is behind — check it before taking part</strong>{/if}
-        <button type="button" class="layer" aria-pressed={coverage} disabled={mapStatus !== 'ready'} onclick={() => (coverage = !coverage)}>
-          Places
-        </button>
-        {#if placesStatus === 'failed'}<strong data-places="failed">Places not loaded — they need one visit with a connection</strong>{/if}
-        <!-- The map puts its own lines here, as it mounts: what is drawn, whose, how old [invariant 7]. At the top, where the sheet never reaches. -->
-      </div>
     </section>
 
-    <section class="com" data-com data-detent={detent} aria-label="Com" bind:this={comEl}>
+    <!--
+      Four corners over the map (the owner, 2026-11-05) [com.md §3]: each a node that says what its corner
+      holds and opens it, so the map keeps the whole screen and nothing sits in its middle. Missions and the
+      Map at the top, where the thumb reaches least and the eye first; Find and You at the foot, where the
+      thumb is. Each works before the script arrives: a link where it can be one.
+    -->
+    <div class="corner" data-corner="missions" bind:this={corners[0]}>
       <!--
-        The sheet's handle: drag it, or tap it, to change how much of Com shows. A real button,
-        so a keyboard can reach it — a click with no pointer behind it (detail 0) is a key.
+        Not "The Watchtower" — that term names a specific node's keypair elsewhere
+        [docs/spec/bootstrap.spec.md]. This is the one screen every kind of visitor sees
+        first, and the product's own name belongs here unqualified.
+      -->
+      <h1>NavCom</h1>
+      {#if missionsUnloaded}
+        <strong data-missions="unloaded">Missions not loaded — they need one visit with a connection</strong>
+      {:else if feed.status === 'connecting'}
+        <strong data-missions="connecting">Reaching The Record…</strong>
+      {:else if feed.status === 'unavailable'}
+        <strong data-missions="unavailable">Missions unavailable — neither The Record nor its mirror can be reached</strong>
+      {:else if active.length === 0 && refused.length === 0}
+        <strong data-missions="none" data-feed={feed.status}>No open missions · {missionAge}</strong>
+      {:else}
+        <!-- The way into the missions that needs no map: a keyboard and a screen reader get here too. -->
+        <button
+          type="button"
+          class="missions-open"
+          data-missions="open"
+          data-feed={feed.status}
+          aria-expanded={corner === 'missions'}
+          onclick={() => enter('missions')}
+        ><b class="ring" aria-hidden="true"></b>{#if active.length > 0}<b class="count" data-missions-count>{active.length}</b>{/if}<span>{active.length > 0 ? 'Open missions' : 'No open missions'} · {missionAge}{#if refused.length > 0}<span data-refused-count> · {refused.length} not read</span>{/if}</span></button>
+      {/if}
+      {#if clockBehind}<strong data-clock-behind>This phone's clock is behind — check it before taking part</strong>{/if}
+    </div>
+
+    <!-- The map's own: what is drawn, whose and how old, which the map puts here as it mounts [invariant 7], and its controls. -->
+    <div class="corner" data-corner="map" bind:this={keyEl}>
+      <div class="corner-row" bind:this={corners[1]}>
+        <button type="button" class="corner-open" data-layers aria-label="Map layers" aria-expanded={corner === 'map'} disabled={mapStatus !== 'ready'} onclick={() => enter('map')}>Map</button>
+        <div class="dock" bind:this={dockEl}></div>
+      </div>
+    </div>
+
+    <div class="corner" data-corner="find" bind:this={corners[2]}>
+      <a
+        class="corner-open"
+        href="/directory/"
+        data-find-open
+        aria-expanded={corner === 'find'}
+        onclick={(e) => {
+          e.preventDefault();
+          void enter('find');
+        }}
+      ><span class="corner-k">Find</span><span class="corner-v">{nearRegion ? `Near ${nearRegion.name}` : 'a shelter, a clinic, a city'}</span></a>
+      <button type="button" class="layer" aria-pressed={coverage} disabled={mapStatus !== 'ready'} onclick={() => (coverage = !coverage)}>Places</button>
+      {#if placesStatus === 'failed'}<strong data-places="failed">Places not loaded — they need one visit with a connection</strong>{/if}
+    </div>
+
+    <div class="corner" data-corner="you" bind:this={corners[3]}>
+      <!--
+        The one door to your own side of NavCom. With no profile on this device it is the page's call to
+        action, Create profile, which the owner looked for on a first visit and did not find behind "Field
+        Terminal" (2026-11-01); with one, your name, and what you hold.
+      -->
+      {#if hasProfile}
+        <a
+          class="corner-open"
+          href="/terminal/"
+          data-terminal-link
+          aria-expanded={corner === 'you'}
+          onclick={(e) => {
+            e.preventDefault();
+            void enter('you');
+          }}
+        ><span class="corner-k">You</span><span class="corner-v">{profile ?? 'You'}{operator ? ` · ${holding > 0 ? `${holding} held` : 'nothing claimed'}` : ''}</span></a>
+      {:else}
+        <a class="corner-open cta" href="/terminal/setup/" data-sveltekit-reload data-terminal-link data-create-profile><span class="corner-k">You</span><span class="corner-v">Create profile</span></a>
+      {/if}
+      {#if !shown}{@render signatureToggle()}{/if}
+    </div>
+
+    {#snippet signatureToggle()}
+      <!--
+        Reachable from every screen, not just one [signature.spec.ts already asserts this for the terminal]:
+        in the You corner over the map, and in Com's head while something is open over it. One at a time.
+        `aria-pressed` tracked low-signature while the label named the destination, so a screen reader
+        announced "DOCUMENT, toggle button, pressed" in low signature: the label names the destination.
+      -->
+      <button
+        class="signature"
+        data-signature-toggle
+        aria-label={sig === 'low' ? 'Switch to document mode' : 'Switch to low signature'}
+        onclick={() => {
+          sig = sig === 'low' ? 'document' : 'low';
+          setSignature(sig);
+        }}
+      >{sig === 'low' ? 'Document' : 'Low signature'}</button>
+    {/snippet}
+
+    <section class="com" data-com data-detent={shown ? detent : 'closed'} data-side={side} aria-label="Com" bind:this={comEl} inert={!shown}>
+      <!--
+        Back steps through Com's stack, and from its root back to the map. The handle, on a phone, moves
+        between half and full: a real button, so a keyboard can reach it — a click with no pointer behind it
+        (detail 0) is a key.
       -->
       <div class="com-head">
-        {#if stack.length > 0}
-          <!-- Escape does the same, anywhere in Com. -->
-          <button type="button" class="back" data-back onclick={back}>Back</button>
-        {:else}
-          <!--
-            The one door to your own side of NavCom, in the head where every height of the sheet shows
-            it. With no profile on this device it is the page's call to action, Create profile, which
-            the owner looked for on a first visit and did not find behind "Field Terminal" (2026-11-01);
-            with one, it is your name, as an account's is. Back takes this place once a screen opens.
-          -->
-          {#if hasProfile}
-            <a class="back" href="/terminal/" data-sveltekit-reload data-terminal-link aria-label="Your profile and status">{profile ?? 'You'}</a>
-          {:else}
-            <a class="back cta" href="/terminal/setup/" data-sveltekit-reload data-terminal-link data-create-profile>Create profile</a>
-          {/if}
-        {/if}
-      <button
-        type="button"
-        class="grab"
-        aria-label={detent === 'full' ? 'Show less' : 'Show more'}
-        aria-expanded={detent !== 'peek'}
-        onpointerdown={grabDown}
-        onpointerup={grabUp}
-        onclick={(e) => {
-          if (e.detail === 0) detent = NEXT[detent];
-        }}
-      ><span aria-hidden="true"></span></button>
-        <!--
-          Reachable from every screen, not just one [signature.spec.ts already asserts this for the
-          terminal] — this page is another screen of the same app now, not a separate site, so the
-          same rule applies here.
-        -->
-        <!--
-          Same fix as the terminal's, because this was the same defect copied.
-
-          `aria-pressed` tracked low-signature while the label named the destination, so a screen
-          reader announced "DOCUMENT, toggle button, pressed" while the page was in low signature —
-          the two halves contradicting each other, each individually valid, which is why an
-          automated pass cannot find it.
-        -->
+        <!-- Escape does the same, anywhere in Com. -->
+        <!-- Back while a step back is to something else open, a screen, Find or You; Close when it is to the map. -->
+        <button type="button" class="back" data-back onclick={back}>{stack.length > 1 || over ? 'Back' : 'Close'}</button>
         <button
-          class="signature"
-          data-signature-toggle
-          aria-label={sig === 'low' ? 'Switch to document mode' : 'Switch to low signature'}
-          onclick={() => {
-            sig = sig === 'low' ? 'document' : 'low';
-            setSignature(sig);
+          type="button"
+          class="grab"
+          aria-label={detent === 'full' ? 'Show less' : 'Show more'}
+          aria-expanded={detent === 'full'}
+          onpointerdown={grabDown}
+          onpointerup={grabUp}
+          onclick={(e) => {
+            if (e.detail === 0) detent = NEXT[detent];
           }}
-        >{sig === 'low' ? 'Document' : 'Low signature'}</button>
+        ><span aria-hidden="true"></span></button>
+        {#if shown}{@render signatureToggle()}{/if}
       </div>
       <div class="com-body">
         {#if stack.length > 0}
@@ -697,8 +753,9 @@
               <Readout value="Loading" tone="cold" />
             {/if}
           </div>
-        {:else}
-  <div class="nc-bridge">
+        {:else if corner === 'you'}
+  <!-- Your own side: what you hold, and the way to your profile and status [com.md §2]. -->
+  <div class="nc-bridge" data-root="you">
     {#if operator}
       <!-- A fixed slot: it reads "nothing claimed" rather than coming and going [com.md §7]. -->
       <Panel label="Yours" post={holding > 0 ? `${holding} held` : 'nothing claimed'}>
@@ -707,6 +764,12 @@
         </button>
       </Panel>
     {/if}
+    <Panel label="You" post={profile}>
+      <a class="yours-open" href="/terminal/" data-sveltekit-reload data-status-link>Your profile and status</a>
+    </Panel>
+  </div>
+        {:else}
+  <div class="nc-bridge" data-root="find">
     <Panel label="Find" post={nearRegion ? `Near ${nearRegion.name}` : null}>
       <label for="lookup" class="nc-lookup-label">Where are you, or what do you need</label>
       <input
@@ -715,8 +778,7 @@
         bind:value={query}
         placeholder="a shelter, a clinic, a city…"
         autocomplete="off"
-        onfocus={lift}
-        oninput={lift}
+        bind:this={lookupEl}
       />
       {#if results.length > 0}
         <ul class="nc-results">
@@ -758,7 +820,7 @@
       {#if !query.trim()}
         <div class="nc-manual">
           <label for="region-pick">No signal, or geolocation said no? Pick a region</label>
-          <select id="region-pick" bind:value={manualRegion} onfocus={lift}>
+          <select id="region-pick" bind:value={manualRegion}>
             <option value="">Not now</option>
             {#each regionOptions as r (r.region)}
               <option value={r.region}>{r.name}</option>
@@ -876,16 +938,10 @@
     padding: 0;
     background: var(--t-ground, #0b0e12);
     --distress-h: 0px;
-    /*
-     * The sheet's height at peek, given once: the sheet is drawn at it, and the map centres its
-     * opening view above it [--map-inset], so a change to one cannot leave the other behind.
-     */
-    --peek: 12.75rem;
-    /*
-     * Its height at half, given once too: every screen a tap on the map opens comes up at half, the
-     * layer picker among them, and the map keeps the whole Earth in view above it [--map-reach].
-     */
+    /* The sheet's height at half, where everything opens on a phone; full is all but a strip of map. */
     --half: 55%;
+    /* How far each corner sits from the screen's edges. */
+    --corner-gap: 0.5rem;
   }
   /*
    * And the document given a height, only while this page is showing. With every child fixed,
@@ -908,17 +964,18 @@
     inset: 0 0 var(--distress-h) 0;
   }
   /*
-   * How much of the map's foot the sheet covers at peek, where the map centres its opening view; at
-   * half, which it keeps the Earth above; and now, which its readout and reticle stay above. A layer of
-   * its own, so the map's readout can sit over the key and never over the sheet.
+   * The whole screen, at every size (the owner, 2026-11-05): nothing permanent covers the map, so its
+   * opening view is the whole Earth as large as it fits [GridMap corners]. How much the sheet covers
+   * now, which the map's readout and reticle stay above, is the one thing it is told.
    */
   .nav {
     position: absolute;
     inset: 0;
     z-index: 0;
-    --map-inset: var(--peek);
+    --map-inset: 0px;
+    /* On a phone, the sheet at half, where everything opens: the map cuts its key's lines to leave the Earth room above it. */
     --map-reach: var(--half);
-    --map-sheet: var(--peek);
+    --map-sheet: 0px;
   }
   .bridge:has(> .com[data-detent='half']) > .nav {
     --map-sheet: var(--half);
@@ -952,20 +1009,19 @@
     color: var(--t-ink);
   }
   /*
-   * The key: one panel on the ground, so nothing the map draws runs through its words, the age lines
-   * invariant 7 rests on among them. The name on a line of its own, the missions and Places side by
-   * side, then whatever the map puts here [GridMap cover], so the key is as short as it can be and the
-   * Earth keeps its room above the sheet. Gestures over it reach the map; only its controls take a touch.
+   * The four corners: each a node on the ground, so nothing the map draws runs through its words, the age
+   * lines invariant 7 rests on among them. A caption and a line or two of what the corner holds; the whole
+   * node is the way in. Gestures over a node's empty ground reach the map; only its controls take a touch.
    */
-  .nav-key {
+  .corner {
     position: absolute;
-    inset-inline-start: calc(0.5rem + env(safe-area-inset-left, 0px));
-    inset-block-start: calc(0.5rem + env(safe-area-inset-top, 0px));
+    z-index: 1;
+    box-sizing: border-box;
+    max-width: calc(50% - 1.5 * var(--corner-gap));
     display: flex;
-    flex-flow: row wrap;
-    align-items: center;
-    gap: 0.3rem 0.5rem;
-    padding: 0.35rem 0.5rem;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.35rem;
     border: 1px solid var(--t-line-strong);
     /* Plain first: a browser without color-mix drops the second and keeps the ground [panel.css]. */
     background: var(--t-ground);
@@ -973,32 +1029,97 @@
     font-family: var(--font-mono, ui-monospace, monospace);
     font-size: 0.75rem;
     color: var(--t-muted);
-    max-width: calc(100% - 5.5rem);
     pointer-events: none;
   }
-  .nav-key :is(button, a) {
+  /* Global, so the map's own controls docked here take a touch too: they are GridMap's, scoped to it. */
+  .corner :global(:is(button, a)) {
     pointer-events: auto;
   }
-  .nav-key h1 {
-    flex-basis: 100%;
-    margin: 0;
-    font-size: 1rem;
-    line-height: 1.15;
-    letter-spacing: 0.08em;
+  [data-corner='missions'] {
+    inset-block-start: calc(var(--corner-gap) + env(safe-area-inset-top, 0px));
+    inset-inline-start: calc(var(--corner-gap) + env(safe-area-inset-left, 0px));
   }
-  .nav-key strong {
+  [data-corner='map'] {
+    inset-block-start: calc(var(--corner-gap) + env(safe-area-inset-top, 0px));
+    inset-inline-end: calc(var(--corner-gap) + env(safe-area-inset-right, 0px));
+    align-items: flex-end;
+  }
+  [data-corner='find'] {
+    inset-block-end: calc(var(--corner-gap) + env(safe-area-inset-bottom, 0px));
+    inset-inline-start: calc(var(--corner-gap) + env(safe-area-inset-left, 0px));
+  }
+  [data-corner='you'] {
+    inset-block-end: calc(var(--corner-gap) + env(safe-area-inset-bottom, 0px));
+    inset-inline-end: calc(var(--corner-gap) + env(safe-area-inset-right, 0px));
+    align-items: flex-end;
+  }
+  .corner h1 {
+    margin: 0;
+    font-size: 0.6875rem;
+    line-height: 1.2;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--t-faint);
+  }
+  .corner strong {
     font-weight: 400;
   }
-  .nav-key [data-clock-behind],
-  .nav-key [data-places] {
-    flex-basis: 100%;
-    order: 3;
+  /* The way into a corner: its caption and its line, at the terminal's thumb floor. */
+  .corner-open {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.1rem;
+    min-height: 3rem;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--t-line);
+    background: transparent;
+    color: var(--t-ink);
+    font: inherit;
+    text-align: start;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .corner-open[aria-expanded='true'] {
+    border-color: var(--t-ink);
+  }
+  .corner-k {
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--t-faint);
+  }
+  .corner-v {
+    font-size: 0.85rem;
+    overflow-wrap: anywhere;
+  }
+  .corner-open.cta {
+    border-color: var(--t-oncall);
+  }
+  .corner-open.cta .corner-v {
+    color: var(--t-oncall);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  [data-corner='map'] .corner-open {
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+  }
+  .corner-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.3rem;
+  }
+  .dock {
+    display: contents;
   }
   /*
    * The missions' own mark, as the map draws one at its smallest: a ring with its centre. It was a lit
    * square, which the directory's places are now (audit, 2026-10-24); a lit province has its own row.
    */
-  .nav-key .ring {
+  .corner .ring {
     flex: none;
     box-sizing: border-box;
     width: 12px;
@@ -1007,39 +1128,52 @@
     border-radius: 50%;
     background: radial-gradient(circle, var(--t-ink) 1.5px, transparent 2px);
   }
-  /* A layer switch, at the terminal's thumb floor rather than its full action height. */
-  .nav-key .layer {
+  /* A layer switch, at the terminal's thumb floor, as quiet as the corner it is in. */
+  .corner .layer {
     min-height: 3rem;
     padding: 0 0.7rem;
-    font-size: 0.85rem;
+    border: 1px solid var(--t-line);
+    background: transparent;
+    color: var(--t-ink);
+    font-family: var(--font-mono, ui-monospace, monospace);
+    font-size: 0.75rem;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
-  .nav-key .layer[aria-pressed='true'] {
+  .corner .layer[aria-pressed='true'] {
     border-color: var(--t-ink);
   }
+  .corner .signature {
+    position: static;
+    min-height: 3rem;
+    font-size: 0.68rem;
+  }
   /*
-   * On a 360 px phone the name rides on the key's edge, a panel's caption, and the missions and Places
-   * share a row beside the map's controls, which are the floor's 48 px there: the name on a line of its
-   * own and Places wrapping under it made the key 137 px tall, and left the Earth 50 px above the sheet at
-   * half (audit, 2026-10-24).
+   * On an upright phone with a sheet open, the strip of map above it is the Earth's: Missions folds to its
+   * ring and count, still saying all of it to a screen reader, and the Map corner takes the width, so its
+   * controls sit on one row and the key's age line wraps least [invariant 7]. Closed, both are as they were.
    */
-  @media (max-width: 380px) {
-    .nav-key {
-      max-width: calc(100% - 4.75rem);
-    }
-    .nav-key h1 {
-      position: absolute;
-      inset-block-start: -0.55em;
-      inset-inline-start: 0.35rem;
-      padding: 0 0.25rem;
-      font-size: 0.6875rem;
-      line-height: 1;
-      background: var(--t-ground);
-    }
+  .bridge[data-shown] > [data-corner='missions'] :is(h1, .missions-open > span, strong) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .bridge[data-shown] > [data-corner='map'] {
+    max-width: calc(100% - 6.5rem);
+  }
+  /* Covered by what opened, so not half-shown under it: a phone's sheet takes the foot. */
+  .bridge[data-shown] > :is([data-corner='find'], [data-corner='you']) {
+    visibility: hidden;
   }
 
-  /* Com on a phone: a sheet at one of three heights, over the map. */
+  /* Com on a phone: a sheet at one of two heights, over the map; closed, nothing at all. */
   .com {
     position: absolute;
+    z-index: 2;
     inset-inline: 0;
     bottom: 0;
     height: var(--detent);
@@ -1054,8 +1188,8 @@
    * Measured, not guessed: the search field ends 162px into the sheet on a Pixel 5 and 176px on
    * an iPhone SE, where its label wraps. Peek shows all of it with room to spare.
    */
-  .com[data-detent='peek'] {
-    --detent: var(--peek);
+  .com[data-detent='closed'] {
+    display: none;
   }
   .com[data-detent='half'] {
     --detent: var(--half);
@@ -1118,6 +1252,12 @@
      half came out shorter than peek — and the sheet covered the map's own controls at every height
      [audit 11.I]. A short, wide screen has room beside the map, not beneath it. */
   @media (min-width: 48rem), (orientation: landscape) and (max-height: 30rem) {
+    /*
+     * On a wide screen, or a phone held sideways, a panel on the side of the corner that opened it, over
+     * the map rather than beside it: the map keeps the whole screen, and only that side's corners are
+     * covered while it is open. Missions and Find open at the start; the Map, You and what the map opens
+     * at the end. Logical sides, so a right-to-left page gets the mirror image.
+     */
     .com {
       inset-block: 0;
       inset-inline: auto 0;
@@ -1125,14 +1265,17 @@
       height: auto;
       border-block-start: 0;
       border-inline-start: 1px solid var(--t-line-strong);
-      box-shadow: none;
+      box-shadow: 0 0 1.5rem rgb(0 0 0 / 0.45);
       transition: none;
     }
+    .com[data-side='start'] {
+      inset-inline: 0 auto;
+      border-inline-start: 0;
+      border-inline-end: 1px solid var(--t-line-strong);
+    }
+    /* A panel beside the corner, not a sheet over the foot: the map is told nothing covers its foot. */
     .nav,
     .bridge:has(> .com[data-detent]) > .nav {
-      inset-block: 0;
-      inset-inline: 0 min(28rem, 42%);
-      --map-inset: 0px;
       --map-reach: 0px;
       --map-sheet: 0px;
     }
@@ -1140,20 +1283,33 @@
       display: none;
     }
     .com-head {
-      justify-content: flex-end;
+      justify-content: space-between;
       padding-block-start: 0.75rem;
     }
-    .com-head .back {
-      margin-inline-end: auto;
+    /* The corners on the panel's side move in beside it, so all four stay in reach, the Map's controls among them. */
+    .bridge[data-shown] > :is([data-corner='find'], [data-corner='you']) {
+      visibility: visible;
+    }
+    .bridge[data-shown][data-side='start'] > :is([data-corner='missions'], [data-corner='find']) {
+      inset-inline-start: calc(min(28rem, 42%) + var(--corner-gap));
+    }
+    .bridge[data-shown][data-side='end'] > :is([data-corner='map'], [data-corner='you']) {
+      inset-inline-end: calc(min(28rem, 42%) + var(--corner-gap));
+    }
+    .corner,
+    .bridge[data-shown] > [data-corner='map'] {
+      max-width: calc(29% - 1.5 * var(--corner-gap));
+    }
+    .bridge[data-shown] > [data-corner='missions'] :is(h1, .missions-open > span, strong) {
+      position: static;
+      width: auto;
+      height: auto;
+      overflow: visible;
+      clip-path: none;
+      white-space: normal;
     }
   }
 
-  /*
-   * The sheet's head: the handle, and the display-mode toggle beside it. The terminal floats the
-   * toggle in a corner, which on this page put it over the search; at the foot of Com it was out
-   * of reach whenever the sheet was low. In the head it is reachable at every height and on a
-   * wide screen, and it covers nothing because it is part of the sheet.
-   */
   .com-head {
     flex: none;
     display: flex;
@@ -1167,23 +1323,6 @@
   .com-head .signature {
     position: static;
     min-height: 3rem;
-  }
-  a.back {
-    display: inline-flex;
-    align-items: center;
-    text-decoration: none;
-  }
-  .com-head .back.cta {
-    border-color: var(--t-oncall);
-    color: var(--t-oncall);
-  }
-  .com-head a.back {
-    max-width: 12rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    display: inline-block;
-    line-height: 3rem;
   }
   .com-head .back {
     flex: none;
@@ -1225,17 +1364,25 @@
   }
   /* The missions line in the map's key, as the button it is. */
   .missions-open {
-    display: inline-flex;
+    display: flex;
     align-items: center;
-    gap: 0.4rem;
+    gap: 0.45rem;
     min-height: 3rem;
-    padding: 0 0.5rem;
-    margin-inline-start: -0.5rem;
-    border: 1px solid transparent;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid var(--t-line);
     background: transparent;
-    color: inherit;
+    color: var(--t-ink);
     font: inherit;
+    font-size: 0.85rem;
+    text-align: start;
     cursor: pointer;
+  }
+  .missions-open .count {
+    color: var(--t-ink);
+    font-weight: 600;
+  }
+  .missions-open[aria-expanded='true'] {
+    border-color: var(--t-ink);
   }
   .missions-open:hover {
     border-color: var(--t-line);

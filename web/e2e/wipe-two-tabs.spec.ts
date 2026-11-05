@@ -94,8 +94,9 @@ test('a map open in another tab stops showing claims a wipe took, without waitin
   await map.clock.setFixedTime(DURING);
   await seedDevice(map, { callsign: 'Wren', relayEvents: [HEAT], wipeable: { mission_claims: [CLAIM] } });
   await open(map, '/');
-  const yours = map.locator('section.nc-panel', { has: map.locator('[data-yours]') }).locator('[data-post]');
-  await expect(yours).toHaveText('1 held');
+  // The You corner, over the map, says what this phone holds [com.md §3].
+  const yours = map.locator('[data-corner="you"] [data-terminal-link]');
+  await expect(yours).toContainText('1 held');
   await expect.poll(() => missionsKept(map), { timeout: 15_000 }).toBe(true);
 
   const wiping = await map.context().newPage();
@@ -105,7 +106,7 @@ test('a map open in another tab stops showing claims a wipe took, without waitin
   await expect(wiping).toHaveURL(/\/terminal\/$/);
 
   // The map counted again from what is left. It used to show "1 held" until the next minute's tick.
-  await expect(yours).toHaveText('nothing claimed', { timeout: 5_000 });
+  await expect(yours).toContainText('nothing claimed', { timeout: 5_000 });
 });
 
 test('a page brought back after a wipe draws again from what is left, and only then', async ({ page }) => {
@@ -117,8 +118,9 @@ test('a page brought back after a wipe draws again from what is left, and only t
   await page.clock.setFixedTime(DURING);
   await seedDevice(page, { callsign: 'Wren', relayEvents: [HEAT], wipeable: { mission_claims: [CLAIM] } });
   await open(page, '/');
-  const yours = page.locator('section.nc-panel', { has: page.locator('[data-yours]') }).locator('[data-post]');
-  await expect(yours).toHaveText('1 held');
+  // The You corner, over the map, says what this phone holds [com.md §3].
+  const yours = page.locator('[data-corner="you"] [data-terminal-link]');
+  await expect(yours).toContainText('1 held');
   // What hears a restore comes with the missions copy, once it is loaded.
   await expect.poll(() => missionsKept(page), { timeout: 15_000 }).toBe(true);
   const restore = () =>
@@ -130,7 +132,7 @@ test('a page brought back after a wipe draws again from what is left, and only t
   await restore();
   await page.waitForTimeout(500);
   expect(await page.evaluate(() => (window as unknown as { __same?: boolean }).__same)).toBe(true);
-  await expect(yours).toHaveText('1 held');
+  await expect(yours).toContainText('1 held');
 
   /*
    * Wiped while it was frozen, and signed on again before Back: there is a `navcom.wipeable` on
@@ -141,7 +143,7 @@ test('a page brought back after a wipe draws again from what is left, and only t
     localStorage.setItem('navcom.wipeable', JSON.stringify({ signon: { area: 'Downtown', since: 1 }, '~': 'made-since' }));
   });
   await restore();
-  await expect(yours).toHaveText('nothing claimed', { timeout: 10_000 });
+  await expect(yours).toContainText('nothing claimed', { timeout: 10_000 });
   expect(await page.evaluate(() => (window as unknown as { __same?: boolean }).__same)).toBeUndefined();
 });
 

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { expect, test, type Page } from '@playwright/test';
 import { generateSecretKey, getPublicKey } from 'nostr-tools/pure';
-import { open, seedDevice } from './device';
+import { open, openYou, seedDevice } from './device';
 import { admit, manifestKeyOf, manifestPin, mission, standInKey, type StandIn, type StandInKey } from './registry';
 
 /**
@@ -234,6 +234,7 @@ test.describe('sealed sending to a key whose secret leaked', () => {
     await page.clock.setFixedTime(new Date(DURING.getTime() + 86_400_000));
     await open(page, '/');
     await expect(page.locator('[data-missions="open"]')).toContainText('Open missions · live', { timeout: 15_000 });
+    await openYou(page);
     await page.locator('[data-yours]').click();
     await page.locator('[data-report-mission="leaked-key"]').click();
     const report = page.locator('[data-screen="report"]');
@@ -288,6 +289,7 @@ test.describe('what this phone already sealed to Mecha Jono’s old key', () => 
       }
     } as Parameters<typeof seedDevice>[1]);
     await open(page, '/');
+    await openYou(page);
     await page.locator('[data-yours]').click();
     const sealedReport = page.locator(`[data-sent="${'a'.repeat(64)}"]`);
     await expect(sealedReport.locator('[data-leaked]')).toContainText("Sealed to Mecha Jono's old key");

@@ -4,6 +4,7 @@ import { finalizeEvent, getPublicKey } from 'nostr-tools/pure';
 import { hermetic, publish, RelayNet, shots } from './journey-harness';
 import { admit, mission, resign, standInKey, type StandIn } from './registry';
 import { screenAt } from './map';
+import { openYou } from './device';
 
 /**
  * Journeys: what a person does from a first visit, walked on a phone's screen, end to end.
@@ -242,6 +243,7 @@ test('a newcomer: from navcom.app to a callsign, a card, and a mission taken, re
   await page.clock.setSystemTime(new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1, 15, 0)));
   await page.reload();
   await page.waitForSelector('html[data-hydrated="true"]');
+  await openYou(page);
   await page.locator('[data-yours]').click();
   await page.locator(`[data-report-mission="${LIBRARY}"]`).click();
   await expect(page.locator('[data-screen="report"]')).toBeVisible();
@@ -269,6 +271,7 @@ test('a newcomer: from navcom.app to a callsign, a card, and a mission taken, re
   );
   await page.reload();
   await page.waitForSelector('html[data-hydrated="true"]');
+  await openYou(page);
   await page.locator('[data-yours]').click();
   await expect(page.locator(`[data-sent="${report.id}"]`)).toContainText(/settled/i, { timeout: 20_000 });
   await step(page, 'settled');
@@ -428,6 +431,7 @@ test('two strangers in one city find each other on its board, pair, and see each
   // Her card, opened from Find on the map, knows they are paired: Raven wrote to it, so this phone
   // learned which peer it belongs to, and there is nobody left to write to.
   await go(Raven, '/');
+  await openYou(Raven);
   await Raven.locator('[data-yours]').click();
   await Raven.locator('[data-open-find]').click();
   // The cities arrive after the screen does, from the file the landing page searches.

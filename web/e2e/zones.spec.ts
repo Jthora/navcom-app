@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { open, seedDevice } from './device';
-import { frame, inkNear, mapReady, screenAt, seen, tapAt, toneNear, zoomAt } from './map';
+import { frame, inkNear, mapReady, placesOff, screenAt, seen, tapAt, toneNear, zoomAt } from './map';
 import { admit, mission, standInKey, type StandIn } from './registry';
 import { serveZones } from './zsp';
 
@@ -111,6 +111,9 @@ test.describe('Starcom’s Zones on the map', () => {
   test('a tap on a Zone opens it and fetches exactly its container’s Sectors; a tap on a Sector then says where it sits', async ({ page }) => {
     const asked = await serveZones(page);
     await landed(page);
+    // Places comes on by itself with no mission open, and a region's square, a point, takes a tap first
+    // in every layer [GridMap hitAt]: Portland's and Seattle's are a few px from Oregon at this view.
+    await placesOff(page);
     await chooseZones(page);
     await page.locator('[data-back]').click();
     await tapAt(page, -120, 45, 'Laurentia West');
@@ -451,10 +454,13 @@ test.describe('the Zones this build ships, on a phone six times slower', () => {
     await zoomAt(page, lon, lat, 4);
     await page.waitForTimeout(400);
     await frame(page);
+    // In the open middle of the map with nothing open: between the top corners' feet and the bottom ones' tops.
     const box = (await page.locator('.grid canvas').boundingBox())!;
-    const keyFoot = (await page.locator('.nav-key').boundingBox())!;
-    const sheet = (await page.locator('[data-com]').boundingBox())!;
-    const [x, y] = [box.x + box.width / 2 - 60, (keyFoot.y + keyFoot.height + sheet.y) / 2];
+    const feet = await page.evaluate(() => {
+      const b = (c: string) => document.querySelector(`[data-corner="${c}"]`)!.getBoundingClientRect();
+      return { top: Math.max(b('missions').bottom, b('map').bottom), foot: Math.min(b('find').top, b('you').top) };
+    });
+    const [x, y] = [box.x + box.width / 2 - 60, (feet.top + feet.foot) / 2];
     await record(true);
     await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 1 }] });
     for (let i = 1; i <= 20; i++) {

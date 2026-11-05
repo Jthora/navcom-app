@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { finalizeEvent, generateSecretKey, getPublicKey } from 'nostr-tools/pure';
-import { open, seedDevice } from './device';
+import { open, openYou, seedDevice } from './device';
 import { admit, mission, standInKey, type StandIn, type StandInKey } from './registry';
 
 /**
@@ -89,6 +89,7 @@ test.describe('a phone that ran an earlier bundle', () => {
         wipeable: { mission_history: [{ mission: remembered(key, d, t - 5 * 86_400), since: t - 3 * 86_400 }] }
       } as Parameters<typeof seedDevice>[1]);
       await open(page, '/');
+      await openYou(page);
       await page.locator('[data-yours]').click();
       await expect(page.locator('[data-screen="yours"]')).toBeVisible();
       // Today it is listed under "To report", with the planted words, and an open report on it goes
@@ -127,6 +128,7 @@ test.describe('labels under a key whose secret leaked', () => {
         }
       }
     });
+    await openYou(page);
     await page.locator('[data-yours]').click();
     const row = page.locator(`[data-sent="${report}"]`);
     await expect(row).toBeVisible();

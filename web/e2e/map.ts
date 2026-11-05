@@ -53,17 +53,23 @@ export async function placesOff(page: Page) {
   await frame(page);
 }
 
-/** Where (lon, lat) is on screen, in CSS px, and whether a tap there would reach the map itself. */
+/**
+ * Where (lon, lat) is on screen, in CSS px, and whether a tap there would reach the map itself. A frame
+ * first: Com opening or closing re-fits the map that hasn't been moved [GridMap world], and a position
+ * read in the frame before is where the place was, not where it is.
+ */
 export async function screenAt(page: Page, lon: number, lat: number): Promise<{ x: number; y: number; uncovered: boolean }> {
+  await frame(page);
   const [ux, uy] = project(lon, lat);
   return canvas(page).evaluate(
     (c: HTMLCanvasElement, [ux, uy]) => {
-      // The canvas topmost, and nothing over it that passes touches through: the key and the credit, which
-      // `elementFromPoint` sees through. GridMap opens nothing for a tap under the key.
+      // The canvas topmost, and nothing over it that passes touches through: the page's four corners and the
+      // credit, which `elementFromPoint` sees through. GridMap opens nothing for a tap under the Map corner,
+      // and a person does not reach for the map through a corner's words. A corner a sheet has hidden covers nothing.
       const open = (x: number, y: number) =>
-        !['.nav-key', '[data-credit]'].some((sel) => {
-          const b = document.querySelector(sel)?.getBoundingClientRect();
-          return !!b && b.width > 0 && x >= b.left && x <= b.right && y >= b.top && y <= b.bottom;
+        ![...document.querySelectorAll('[data-corner], [data-credit]')].some((el) => {
+          const b = el.getBoundingClientRect();
+          return getComputedStyle(el).visibility !== 'hidden' && b.width > 0 && x >= b.left && x <= b.right && y >= b.top && y <= b.bottom;
         }) && document.elementFromPoint(x, y) === c;
       const [cx, cy, scale] = (c.dataset.view ?? '').split(' ').map(Number) as [number, number, number];
       const r = c.getBoundingClientRect();
@@ -96,16 +102,16 @@ export async function tapAt(page: Page, lon: number, lat: number, what = `${lat}
 
 /**
  * A point of the canvas nothing covers, as near as there is one to the middle of all such points, in
- * CSS px: found by asking the page what is at each point of a grid, so a key, the controls and the
+ * CSS px: found by asking the page what is at each point of a grid, so the corners, the controls and the
  * sheet at whatever height it is are all accounted for. Null when nothing of the canvas is uncovered.
  */
 async function clearSpot(page: Page): Promise<{ x: number; y: number } | null> {
   return canvas(page).evaluate((c: HTMLCanvasElement) => {
-    // As `screenAt` asks it: the canvas topmost, and not under the key or the credit, which touches pass through.
+    // As `screenAt` asks it: the canvas topmost, and not under a corner or the credit, which touches pass through.
     const open = (x: number, y: number) =>
-      !['.nav-key', '[data-credit]'].some((sel) => {
-        const b = document.querySelector(sel)?.getBoundingClientRect();
-        return !!b && b.width > 0 && x >= b.left && x <= b.right && y >= b.top && y <= b.bottom;
+      ![...document.querySelectorAll('[data-corner], [data-credit]')].some((el) => {
+        const b = el.getBoundingClientRect();
+        return getComputedStyle(el).visibility !== 'hidden' && b.width > 0 && x >= b.left && x <= b.right && y >= b.top && y <= b.bottom;
       }) && document.elementFromPoint(x, y) === c;
     const r = c.getBoundingClientRect();
     const clear: [number, number][] = [];

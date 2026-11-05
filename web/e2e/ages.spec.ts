@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { open, seedDevice } from './device';
+import { open, seedDevice, toMap } from './device';
 import { bring, frame, mapReady, overEarth, screenAt, tap, toneNear, zoomAt } from './map';
 
 /**
@@ -20,12 +20,6 @@ test.use({ serviceWorkers: 'block' });
 
 const OCTOBER = new Date('2026-10-19T12:00:00Z');
 const DECEMBER = new Date('2026-12-15T12:00:00Z');
-
-/** The sheet down to its peek, so the map has the room to zoom in on a place. */
-async function peek(page: Page) {
-  for (let i = 0; i < 3 && (await page.locator('[data-com]').getAttribute('data-detent')) !== 'peek'; i++) await page.locator('.grab').click();
-  await expect(page.locator('[data-com]')).toHaveAttribute('data-detent', 'peek');
-}
 
 async function landed(page: Page, at: Date) {
   await page.clock.setFixedTime(at);
@@ -94,8 +88,8 @@ test('in October a region’s mark is a small solid muted square, 14–89 days a
   await landed(page, OCTOBER);
   const region = await loneRegion(page);
   await agesOn(page);
-  await page.locator('[data-back]').click();
-  await peek(page);
+  // Closed to the map, so it has the whole screen to zoom in on a place.
+  await toMap(page);
   await zoomAt(page, region.lon, region.lat, 4);
   const at = await screenAt(page, region.lon, region.lat);
   expect(await toneNear(page, at.x, at.y, 1, '--t-muted'), `${region.name}: no solid muted square at its centre`).toBeGreaterThan(0);
@@ -110,8 +104,8 @@ test('in October a region’s mark is a small solid muted square, 14–89 days a
   await open(later, '/');
   await mapReady(later);
   await agesOn(later);
-  await later.locator('[data-back]').click();
-  await peek(later);
+  // Closed to the map, so it has the whole screen to zoom in on a place.
+  await toMap(later);
   await zoomAt(later, region.lon, region.lat, 4);
   const there = await screenAt(later, region.lon, region.lat);
   expect(await toneNear(later, there.x, there.y, 1, '--t-muted'), 'December: still a solid square at its centre').toBe(0);
@@ -126,8 +120,8 @@ test('at the whole-Earth view each mark is drawn at the size its key draws it, a
   await mapReady(page);
   const region = await loneRegion(page);
   await agesOn(page);
-  await page.locator('[data-back]').click();
-  await peek(page);
+  // Closed to the map, so it has the whole screen to zoom in on a place.
+  await toMap(page);
   await frame(page);
   // Not zoomed: the view the map opens on, where the key is read. Far from any other region, so its own.
   const at = await bring(page, region.lon, region.lat);
@@ -163,8 +157,8 @@ test('a region none of whose places carries a date is unknown, and drawn crossed
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(file) });
   });
   await agesOn(page);
-  await page.locator('[data-back]').click();
-  await peek(page);
+  // Closed to the map, so it has the whole screen to zoom in on a place.
+  await toMap(page);
   await zoomAt(page, region.lon, region.lat, 4);
   const at = await screenAt(page, region.lon, region.lat);
   // Hollow, with a cross from corner to corner: nothing between the cross's arms, as a filled reading would be.
@@ -182,8 +176,8 @@ test('a tap on a region says when it was checked, its oldest and its newest, and
   await landed(page, OCTOBER);
   const region = await loneRegion(page);
   await agesOn(page);
-  await page.locator('[data-back]').click();
-  await peek(page);
+  // Closed to the map, so it has the whole screen to zoom in on a place.
+  await toMap(page);
   await zoomAt(page, region.lon, region.lat, 4);
   const at = await screenAt(page, region.lon, region.lat);
   await tap(page, at.x, at.y);
@@ -197,8 +191,10 @@ test('the key under the map’s own leaves the whole Earth uncovered, with the l
   await landed(page, OCTOBER);
   await agesOn(page);
   await expect(page.locator('[data-swatches]')).toBeVisible();
-  expect(await overEarth(page, page.locator('[data-swatches]')), 'the ages’ key covers the Earth').toBe(false);
-  expect(await overEarth(page, page.locator('.nav-key')), 'the map’s key covers the Earth').toBe(false);
+  // As far as it is shown: on a phone at half the key is cut to its lines, and the swatches past them
+  // are clipped rather than drawn over the Earth [GridMap room].
+  expect(await overEarth(page, page.locator('[data-key-more]')), 'the ages’ key covers the Earth').toBe(false);
+  expect(await overEarth(page, page.locator('[data-corner="map"]')), 'the map’s key covers the Earth').toBe(false);
 });
 
 test.describe('on a desktop, a hover says when a region was checked', () => {

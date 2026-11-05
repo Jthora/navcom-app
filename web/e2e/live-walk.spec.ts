@@ -129,6 +129,9 @@ test('navcom.app, signed on, an evening on a phone, with nothing published', asy
     await go(page, '/');
     await page.waitForSelector('[data-missions="open"], [data-missions="none"]', { timeout: 45_000 }).catch(() => {});
     await shot(page, 'root-signed-on');
+    // Your missions are behind the You corner since the corners (2026-11-05) [com.md §3].
+    await page.locator('[data-terminal-link]').click();
+    await shot(page, 'you');
     await page.locator('[data-yours]').click();
     await shot(page, 'yours');
   });
