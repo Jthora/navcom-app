@@ -8,6 +8,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.WindowManager;
+import androidx.activity.OnBackPressedCallback;
 import androidx.core.content.ContextCompat;
 import android.webkit.ServiceWorkerClient;
 import androidx.webkit.WebViewCompat;
@@ -41,6 +42,12 @@ import com.getcapacitor.BridgeWebViewClient;
  * shown over the lock screen, so a locked phone reaches it without the code. Over the lock it is that
  * screen and nothing else: opening anything else puts the app back behind the lock, and unlocking
  * ends the exemption. It opens the screen; the hold sends, as everywhere.
+ *
+ * **The system back steps back through the page** (2026-11-10), as it does in a browser: out of Com,
+ * a screen at a time, and off the page it came from. Capacitor's core leaves back to the activity,
+ * which closed the app from wherever it was, Com open over the map among them. With nothing left to
+ * step back to, it leaves the app as any other app does. Over the lock, a step back off the Distress
+ * screen puts the app behind the lock, like opening anything else there.
  */
 public class MainActivity extends BridgeActivity {
 
@@ -94,6 +101,19 @@ public class MainActivity extends BridgeActivity {
                 }
             }
         );
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                final WebView view = bridge.getWebView();
+                if (view.canGoBack()) {
+                    view.goBack();
+                    return;
+                }
+                setEnabled(false);
+                getOnBackPressedDispatcher().onBackPressed();
+                setEnabled(true);
+            }
+        });
         ContextCompat.registerReceiver(this, unlocked, new IntentFilter(Intent.ACTION_USER_PRESENT), ContextCompat.RECEIVER_NOT_EXPORTED);
         openDistress(getIntent());
         ServiceWorkerController.getInstance().setServiceWorkerClient(
