@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The terminal's ground, t-ground in web/src/lib/terminal/tokens.css. -->
+    <color name="navcomGround">#0B0E12</color>
+</resources>

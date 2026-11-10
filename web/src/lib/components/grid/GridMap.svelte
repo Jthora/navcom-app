@@ -121,6 +121,7 @@
   let insetEl = $state<HTMLElement>();
   let reachEl = $state<HTMLElement>();
   let sheetEl = $state<HTMLElement>();
+  let safeEl = $state<HTMLElement>();
   let chipEl = $state<HTMLElement>();
   let controlsEl = $state<HTMLElement>();
   let moreEl = $state<HTMLElement>();
@@ -305,6 +306,11 @@
   let inset = 0;
   /** CSS px the sheet covers now, at whichever height it is, read from `--map-sheet`: the reticle and the readout stay above it. */
   let sheet = 0;
+  /**
+   * CSS px of each edge under a system bar or a camera's cutout, read from `--map-safe-*`, which a page that
+   * draws edge to edge sets: the map paints under them, and its opening view fits the whole Earth inside.
+   */
+  let safe = { t: 0, r: 0, b: 0, l: 0 };
   /**
    * Up to about 20 m a pixel on a phone at 52°N, so a street's records separate. The outlines are
    * 1:10m at best and look it there; what is drawn that close is the records, at the precision
@@ -1235,13 +1241,17 @@
     // Above whatever sheet is open now, so what a tap opened stays in view over it; and below a corner's
     // foot where the Earth fits there, which on an upright phone it does.
     if (corners.length > 0) {
-      // Clear of an open sheet by the gap kept everywhere else, so its edge never takes the poles.
-      const under = Math.max(inset, sheet);
+      // Clear of an open sheet by the gap kept everywhere else, so its edge never takes the poles; and inside
+      // the safe areas, so no system bar or cutout takes them either, centred between the sides' own.
+      const under = Math.max(inset, sheet, safe.b);
       const floor = height - under - (under > 0 ? GAP : 0);
-      scale = Math.min(width, floor / HEIGHT);
+      const room = width - safe.l - safe.r;
+      const centre = () => (cx = 0.5 - (safe.l - safe.r) / 2 / scale);
+      scale = Math.min(room, (floor - safe.t) / HEIGHT);
       if (scale < width) least = scale;
+      centre();
       const centredBelow = (top: number) => HEIGHT / 2 + (height - top - floor) / 2 / scale;
-      const lines = [...new Set([0, ...covers.map((c) => c.b)])].filter((top) => top >= 0 && floor - top >= HEIGHT * scale).sort((a, b) => a - b);
+      const lines = [...new Set([safe.t, ...covers.map((c) => c.b)])].filter((top) => top >= safe.t && floor - top >= HEIGHT * scale).sort((a, b) => a - b);
       for (const line of lines) {
         cy = centredBelow(line);
         if (!earthCovered()) return clamp();
@@ -1251,16 +1261,17 @@
       // Not below two fifths of the width, where it would be a thumbnail: as large as it fits then, and the
       // corners over some of it.
       const upper = (c: Box) => c.t + c.b < height;
-      const top = Math.max(0, ...covers.filter(upper).map((c) => c.b + GAP));
+      const top = Math.max(safe.t, ...covers.filter(upper).map((c) => c.b + GAP));
       const foot = Math.min(under > 0 ? floor : floor - GAP, ...covers.filter((c) => !upper(c)).map((c) => c.t - GAP));
-      const fits = Math.min(width, (foot - top) / HEIGHT);
+      const fits = Math.min(room, (foot - top) / HEIGHT);
       if (fits >= width * 0.4) {
         scale = fits;
         if (scale < width) least = scale;
+        centre();
         cy = HEIGHT / 2 + (height - top - foot) / 2 / scale;
         return clamp();
       }
-      cy = centredBelow(0);
+      cy = centredBelow(safe.t);
       return clamp();
     }
     for (const floor of [height - Math.max(inset, reach), height - inset]) {
@@ -1426,6 +1437,9 @@
       inset = Math.min(insetEl?.getBoundingClientRect().height ?? 0, height);
       reach = Math.min(reachEl?.getBoundingClientRect().height ?? 0, height);
       sheet = Math.min(sheetEl?.getBoundingClientRect().height ?? 0, height);
+      const pad = safeEl ? getComputedStyle(safeEl) : null;
+      const px = (v: string | undefined) => Math.max(0, parseFloat(v ?? '') || 0);
+      safe = { t: px(pad?.paddingTop), r: px(pad?.paddingRight), b: px(pad?.paddingBottom), l: px(pad?.paddingLeft) };
       const boxOf = (c: HTMLElement | undefined): Box | null => {
         const r = c?.getBoundingClientRect();
         if (!r || r.width === 0 || r.height === 0) return null;
@@ -1791,6 +1805,8 @@
   <div class="inset reach" bind:this={reachEl} aria-hidden="true"></div>
   <!-- And how much it covers now, at whichever height the sheet is [--map-sheet]. -->
   <div class="inset sheet" bind:this={sheetEl} aria-hidden="true"></div>
+  <!-- And the edges under a system bar or a cutout, as padding, measured [--map-safe-*]. -->
+  <div class="safe" bind:this={safeEl} aria-hidden="true"></div>
   <!-- What is under the pointer or the reticle, as seen; what a screen reader is told is beside it. -->
   <div class="chip" bind:this={chipEl} aria-hidden="true" data-chip style:left="{chipAt.left}px" style:top="{chipAt.top}px" style:max-width={chipMax === null ? null : `${chipMax}px`}>{chip?.text ?? ''}</div>
   <div class="sr" role="status" data-said>{said}</div>
@@ -1870,6 +1886,14 @@
   }
   .reach {
     height: var(--map-reach, 0px);
+  }
+  .safe {
+    position: absolute;
+    inset: 0;
+    box-sizing: border-box;
+    padding: var(--map-safe-t, 0px) var(--map-safe-r, 0px) var(--map-safe-b, 0px) var(--map-safe-l, 0px);
+    visibility: hidden;
+    pointer-events: none;
   }
   .sheet {
     height: var(--map-sheet, var(--map-inset, 0px));

@@ -100,6 +100,13 @@ both start there.
 | **Phone, upright** | A sheet from the foot, at **half** or **full** by its handle. The top corners stay above it, so Missions and the Map switch what is open |
 | **Phone sideways, tablet, desktop** | A panel on that corner's side, over the map rather than beside it: Missions and Find at the start, the Map, You and whatever the map itself opens at the end. Only that side's corners are covered |
 
+**Edge to edge (2026-11-10).** Held sideways in the installed app, the map stopped at the system bars and
+the camera's cutout, grey bands 82 of a Redmi A3's 825 px of width. So the landing page alone asks for
+`viewport-fit=cover`: the map paints under the bars and the cutout, and the corners, Com, `Distress` and the
+whole Earth of the opening view stay inside the safe areas. `Distress` grows by the foot's safe area rather
+than being squeezed by it. Every other page keeps the browser's default, since none is written against
+those areas, and every link into or out of the landing page reloads, so each page's own tag holds.
+
 **Close**, Escape and the system back all return to the map with its four corners. There is no peek:
 closed is the map. What the map itself opens, a place, a province, a mission, comes up as before, at the
 end side.

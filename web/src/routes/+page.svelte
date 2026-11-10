@@ -942,6 +942,17 @@
     --half: 55%;
     /* How far each corner sits from the screen's edges. */
     --corner-gap: 0.5rem;
+    /*
+     * The screen's safe areas. This page alone draws edge to edge (viewport-fit=cover, hooks.server.ts):
+     * the map paints under the system bars and a camera's cutout, and nothing on it that is read or tapped
+     * goes there. Zero wherever a browser does not give them.
+     */
+    --safe-t: env(safe-area-inset-top, 0px);
+    --safe-r: env(safe-area-inset-right, 0px);
+    --safe-b: env(safe-area-inset-bottom, 0px);
+    --safe-l: env(safe-area-inset-left, 0px);
+    /* What of the foot's safe area the page keeps clear itself: all of it, until Distress takes the foot. */
+    --foot-safe: var(--safe-b);
   }
   /*
    * And the document given a height, only while this page is showing. With every child fixed,
@@ -957,7 +968,9 @@
    * page's scope, because the prerendered copy it measures is this page's markup [com.md §4].
    */
   .landing:has(.distress-layer:not([hidden])) {
-    --distress-h: 3.75rem;
+    /* Taller by the foot's safe area rather than squeezed by it: a bar there left the control a sliver. */
+    --distress-h: calc(3.75rem + var(--safe-b));
+    --foot-safe: 0px;
   }
   .bridge {
     position: absolute;
@@ -976,6 +989,11 @@
     /* On a phone, the sheet at half, where everything opens: the map cuts its key's lines to leave the Earth room above it. */
     --map-reach: var(--half);
     --map-sheet: 0px;
+    /* The safe areas, so the opening view fits the whole Earth inside them while the map paints under them. */
+    --map-safe-t: var(--safe-t);
+    --map-safe-r: var(--safe-r);
+    --map-safe-b: var(--foot-safe);
+    --map-safe-l: var(--safe-l);
   }
   .bridge:has(> .com[data-detent='half']) > .nav {
     --map-sheet: var(--half);
@@ -1036,21 +1054,21 @@
     pointer-events: auto;
   }
   [data-corner='missions'] {
-    inset-block-start: calc(var(--corner-gap) + env(safe-area-inset-top, 0px));
-    inset-inline-start: calc(var(--corner-gap) + env(safe-area-inset-left, 0px));
+    inset-block-start: calc(var(--corner-gap) + var(--safe-t));
+    inset-inline-start: calc(var(--corner-gap) + var(--safe-l));
   }
   [data-corner='map'] {
-    inset-block-start: calc(var(--corner-gap) + env(safe-area-inset-top, 0px));
-    inset-inline-end: calc(var(--corner-gap) + env(safe-area-inset-right, 0px));
+    inset-block-start: calc(var(--corner-gap) + var(--safe-t));
+    inset-inline-end: calc(var(--corner-gap) + var(--safe-r));
     align-items: flex-end;
   }
   [data-corner='find'] {
-    inset-block-end: calc(var(--corner-gap) + env(safe-area-inset-bottom, 0px));
-    inset-inline-start: calc(var(--corner-gap) + env(safe-area-inset-left, 0px));
+    inset-block-end: calc(var(--corner-gap) + var(--foot-safe));
+    inset-inline-start: calc(var(--corner-gap) + var(--safe-l));
   }
   [data-corner='you'] {
-    inset-block-end: calc(var(--corner-gap) + env(safe-area-inset-bottom, 0px));
-    inset-inline-end: calc(var(--corner-gap) + env(safe-area-inset-right, 0px));
+    inset-block-end: calc(var(--corner-gap) + var(--foot-safe));
+    inset-inline-end: calc(var(--corner-gap) + var(--safe-r));
     align-items: flex-end;
   }
   .corner h1 {
@@ -1179,6 +1197,7 @@
     height: var(--detent);
     display: flex;
     flex-direction: column;
+    padding-inline: var(--safe-l) var(--safe-r);
     background: var(--t-ground, #0b0e12);
     border-top: 1px solid var(--t-line-strong);
     box-shadow: 0 -0.5rem 1.5rem rgb(0 0 0 / 0.45);
@@ -1225,7 +1244,7 @@
   .com-body {
     flex: 1;
     overflow-y: auto;
-    padding: 0 1rem 1.25rem;
+    padding: 0 1rem calc(1.25rem + var(--foot-safe));
     display: flex;
     flex-direction: column;
     gap: 1rem;
@@ -1237,7 +1256,7 @@
     bottom: 0;
     z-index: 30;
     height: var(--distress-h);
-    padding: 0.3rem 0.75rem calc(0.3rem + env(safe-area-inset-bottom, 0px));
+    padding: 0.3rem calc(0.75rem + var(--safe-r)) calc(0.3rem + var(--safe-b)) calc(0.75rem + var(--safe-l));
     background: var(--t-ground, #0b0e12);
     border-top: 1px solid var(--t-line-strong);
   }
@@ -1258,11 +1277,14 @@
      * covered while it is open. Missions and Find open at the start; the Map, You and what the map opens
      * at the end. Logical sides, so a right-to-left page gets the mirror image.
      */
+    /* Wider by the safe area on its outer side, which it keeps clear, and below the status bar at its top. */
     .com {
       inset-block: 0;
       inset-inline: auto 0;
-      width: min(28rem, 42%);
+      width: calc(min(28rem, 42%) + var(--safe-r));
       height: auto;
+      padding-block-start: var(--safe-t);
+      padding-inline: 0 var(--safe-r);
       border-block-start: 0;
       border-inline-start: 1px solid var(--t-line-strong);
       box-shadow: 0 0 1.5rem rgb(0 0 0 / 0.45);
@@ -1270,6 +1292,8 @@
     }
     .com[data-side='start'] {
       inset-inline: 0 auto;
+      width: calc(min(28rem, 42%) + var(--safe-l));
+      padding-inline: var(--safe-l) 0;
       border-inline-start: 0;
       border-inline-end: 1px solid var(--t-line-strong);
     }
@@ -1291,10 +1315,10 @@
       visibility: visible;
     }
     .bridge[data-shown][data-side='start'] > :is([data-corner='missions'], [data-corner='find']) {
-      inset-inline-start: calc(min(28rem, 42%) + var(--corner-gap));
+      inset-inline-start: calc(min(28rem, 42%) + var(--safe-l) + var(--corner-gap));
     }
     .bridge[data-shown][data-side='end'] > :is([data-corner='map'], [data-corner='you']) {
-      inset-inline-end: calc(min(28rem, 42%) + var(--corner-gap));
+      inset-inline-end: calc(min(28rem, 42%) + var(--safe-r) + var(--corner-gap));
     }
     .corner,
     .bridge[data-shown] > [data-corner='map'] {

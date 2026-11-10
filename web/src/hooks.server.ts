@@ -95,6 +95,17 @@ const REVEAL =
 /** The prerendered early copy through its own closing tag: a section on `/`, a div on `/terminal/`. */
 const EARLY = /(<(section|div)\b[^>]*\bid="distress-early"[^>]*>[\s\S]*?)(<\/\2>)/;
 
+/**
+ * The landing page alone draws edge to edge, at the owner's direction that the map take the whole screen
+ * (2026-11-05, com.md §3): held sideways on a phone the installed app had kept it out of the system bars and
+ * the camera's cutout, grey bands 82 of the Redmi A3's 825 CSS px of width. With `viewport-fit=cover` the page is given the safe
+ * areas and keeps everything read or tapped inside them. Every other page keeps the browser's default,
+ * because none of them is written against those areas, and every link into or out of this one reloads, so
+ * each page's own tag is the one in force.
+ */
+const VIEWPORT = '<meta name="viewport" content="width=device-width, initial-scale=1" />';
+const EDGE_TO_EDGE = '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />';
+
 export const handle: Handle = async ({ event, resolve }) => {
   /*
    * The reveal goes wherever a page carries the early copy: the terminal, and the landing page,
@@ -111,7 +122,8 @@ export const handle: Handle = async ({ event, resolve }) => {
   const reveals = terminal || path === '/';
   return resolve(event, {
     transformPageChunk: ({ html }) => {
-      const page = html.replace(MARKER, terminal ? BOOTSTRAP : '');
+      const shell = path === '/' ? html.replace(VIEWPORT, EDGE_TO_EDGE) : html;
+      const page = shell.replace(MARKER, terminal ? BOOTSTRAP : '');
       return reveals ? page.replace(EARLY, (_, open: string, _tag, close: string) => open + REVEAL + close) : page;
     }
   });

@@ -8,7 +8,7 @@
  * The device must have USB debugging on and this computer allowed. `-r` keeps what the app already
  * holds on the device across an update: a persona made in it survives a reinstall.
  */
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
@@ -34,5 +34,14 @@ console.log(adb('-s', serial, 'install', '-r', APK));
 // Started a moment after the update settles: started at once, the system could kill it as the old
 // install's empty process.
 await new Promise((r) => setTimeout(r, 2_000));
-adb('-s', serial, 'shell', 'am', 'start', '-n', 'app.navcom/.MainActivity');
+// `am start` exits 0 when it could not start anything, and says so in what it prints. A device just
+// booted and not yet unlocked is the usual case: until the first unlock it shows no app that cannot run
+// before it, NavCom among them.
+const run = spawnSync('adb', ['-s', serial, 'shell', 'am', 'start', '-n', 'app.navcom/.MainActivity'], { encoding: 'utf8' });
+const started = `${run.stdout}${run.stderr}`;
+if (run.status !== 0 || /Error/.test(started)) {
+  const locked = adb('-s', serial, 'shell', 'dumpsys', 'window').includes('isKeyguardShowing=true');
+  console.error(`[install] installed, but NavCom did not open${locked ? ': the device is locked, and after a restart it shows no app until it is unlocked once' : ''}.\n${started.trim()}`);
+  process.exit(1);
+}
 console.log('[install] opened NavCom');

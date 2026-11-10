@@ -13,6 +13,10 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <!-- Behind the system bars on every page that does not draw under them: the terminal's ground
+             (t-ground in the terminal's tokens), so they meet the page rather than framing it in grey, or in white on a phone in
+             light mode. The landing page draws under them itself (viewport-fit=cover). -->
+        <item name="android:windowBackground">@color/navcomGround</item>
     </style>
 
 
