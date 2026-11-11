@@ -82,7 +82,11 @@ test('navcom.app, signed on, an evening on a phone, with nothing published', asy
   });
 
   await step('callsign', async () => {
-    await go(page, '/terminal/setup/');
+    // The way a newcomer gets there: from the map, by the You corner's Create profile (com.md §3).
+    await go(page, '/');
+    await page.locator('[data-create-profile]').click();
+    await page.waitForURL('**/terminal/setup/', { timeout: 15_000 });
+    await page.waitForSelector('html[data-hydrated="true"]');
     await shot(page, 'setup', true);
     await page.locator('#callsign').fill('Nightjar');
     await page.getByRole('button', { name: /create profile/i }).click();
